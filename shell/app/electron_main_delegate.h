@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+#include "base/containers/span.h"
 #include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
 
@@ -26,8 +27,7 @@ std::string LoadResourceBundle(const std::string& locale);
 
 class ElectronMainDelegate : public content::ContentMainDelegate {
  public:
-  static const char* const kNonWildcardDomainNonPortSchemes[];
-  static const size_t kNonWildcardDomainNonPortSchemesSize;
+  static base::span<const char* const> GetNonWildcardDomainNonPortSchemes();
   ElectronMainDelegate();
   ~ElectronMainDelegate() override;
 

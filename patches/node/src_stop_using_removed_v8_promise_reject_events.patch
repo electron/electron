@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Thu, 18 Jun 2026 21:29:50 +0000
+Subject: src: stop using removed v8 promise reject events
+
+V8 removed kPromiseRejectAfterResolved and kPromiseResolveAfterResolved
+(previously deprecated) and no longer emits these events, so drop the
+dead handling and the constants exposed to lib/internal/process/promises.js.
+The JS switch cases for them simply never match, matching the new V8
+behavior.
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7897881
+
+diff --git a/src/node_task_queue.cc b/src/node_task_queue.cc
+index f1c53c44f201b295888e7932c5e3e2b19cb9c319..dfc5eeb188cfe7c38b68c1a5c605c3dcee03729e 100644
+--- a/src/node_task_queue.cc
++++ b/src/node_task_queue.cc
+@@ -19,9 +19,7 @@ using v8::FunctionCallbackInfo;
+ using v8::Isolate;
+ using v8::Just;
+ using v8::kPromiseHandlerAddedAfterReject;
+-using v8::kPromiseRejectAfterResolved;
+ using v8::kPromiseRejectWithNoHandler;
+-using v8::kPromiseResolveAfterResolved;
+ using v8::Local;
+ using v8::Maybe;
+ using v8::Number;
+@@ -77,10 +75,6 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
+                   "rejections",
+                   "unhandled", unhandledRejections,
+                   "handledAfter", rejectionsHandledAfter);
+-  } else if (event == kPromiseResolveAfterResolved) {
+-    value = message.GetValue();
+-  } else if (event == kPromiseRejectAfterResolved) {
+-    value = message.GetValue();
+   } else {
+     return;
+   }
+@@ -173,8 +167,6 @@ static void Initialize(Local<Object> target,
+   Local<Object> events = Object::New(isolate);
+   NODE_DEFINE_CONSTANT(events, kPromiseRejectWithNoHandler);
+   NODE_DEFINE_CONSTANT(events, kPromiseHandlerAddedAfterReject);
+-  NODE_DEFINE_CONSTANT(events, kPromiseResolveAfterResolved);
+-  NODE_DEFINE_CONSTANT(events, kPromiseRejectAfterResolved);
+ 
+   target->Set(env->context(),
+               FIXED_ONE_BYTE_STRING(isolate, "promiseRejectEvents"),

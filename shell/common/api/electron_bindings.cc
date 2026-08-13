@@ -5,9 +5,7 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/files/file.h"
 #include "base/process/process.h"
@@ -184,6 +182,10 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
       mem_info.free;
 #endif
   dict.Set("free", free.InKiB());
+
+#if BUILDFLAG(IS_LINUX)
+  dict.Set("available", mem_info.available.InKiB());
+#endif
 
 #if BUILDFLAG(IS_MAC)
   dict.Set("fileBacked", mem_info.file_backed.InKiB());

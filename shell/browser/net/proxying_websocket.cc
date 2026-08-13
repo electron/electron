@@ -48,7 +48,7 @@ ProxyingWebSocket::ProxyingWebSocket(
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
-        .Run(net::ERR_ABORTED, std::nullopt);
+        .Run(net::ERR_ABORTED, std::nullopt, std::nullopt);
   }
   if (on_headers_received_callback_) {
     std::move(on_headers_received_callback_)
@@ -295,7 +295,7 @@ void ProxyingWebSocket::OnBeforeSendHeadersComplete(
   if (receiver_as_header_client_.is_bound()) {
     CHECK(on_before_send_headers_callback_);
     std::move(on_before_send_headers_callback_)
-        .Run(error_code, request_headers_);
+        .Run(error_code, request_headers_, std::nullopt);
   }
 
   info_.AddResponseInfoFromResourceResponse(*response_);

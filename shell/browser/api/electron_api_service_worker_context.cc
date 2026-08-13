@@ -21,7 +21,6 @@
 #include "shell/common/gin_converters/service_worker_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
@@ -211,19 +210,23 @@ v8::Local<v8::Value> ServiceWorkerContext::GetFromVersionID(
 v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionID(
     v8::Isolate* isolate,
     int64_t version_id) {
-  return ServiceWorkerMain::From(isolate, service_worker_context_,
-                                 browser_context_id_, storage_partition_config_,
-                                 version_id)
-      .ToV8();
+  ServiceWorkerMain* worker = ServiceWorkerMain::From(
+      isolate, service_worker_context_, browser_context_id_,
+      storage_partition_config_, version_id);
+  v8::Local<v8::Value> wrapper;
+  if (worker && gin::TryConvertToV8(isolate, worker, &wrapper))
+    return wrapper;
+  return {};
 }
 
-gin_helper::Handle<ServiceWorkerMain>
-ServiceWorkerContext::GetWorkerFromVersionIDIfExists(v8::Isolate* isolate,
-                                                     int64_t version_id) {
-  if (auto* worker = ServiceWorkerMain::FromVersionID(
-          browser_context_id_, storage_partition_config_, version_id))
-    return gin_helper::CreateHandle(isolate, worker);
-
+v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionIDIfExists(
+    v8::Isolate* isolate,
+    int64_t version_id) {
+  ServiceWorkerMain* worker = ServiceWorkerMain::FromVersionID(
+      browser_context_id_, storage_partition_config_, version_id);
+  v8::Local<v8::Value> wrapper;
+  if (worker && gin::TryConvertToV8(isolate, worker, &wrapper))
+    return wrapper;
   return {};
 }
 

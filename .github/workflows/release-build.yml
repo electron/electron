@@ -34,7 +34,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -59,7 +59,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -83,10 +83,10 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -112,7 +112,7 @@ jobs:
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -122,18 +122,38 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build patched siso binaries for every CI build host (windows-amd64,
-  # linux-amd64, darwin-arm64) in parallel with the checkout jobs; the build
-  # jobs consume the host-matching artifact via SISO_PATH.
-  build-siso:
+  # Build the patched siso binary for each CI build host (windows-amd64,
+  # linux-amd64, darwin-arm64) in parallel with the checkout jobs; each host is
+  # a separate job so a cache miss or re-run for one host only blocks that
+  # host's build. The build jobs consume the host-matching artifact via
+  # SISO_PATH.
+  build-siso-macos:
     needs: setup
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
+    with:
+      host: darwin-arm64
+
+  build-siso-linux:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: linux-amd64
+
+  build-siso-windows:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: windows-amd64
 
   macos:
     name: macos-${{ matrix.target-arch }}-${{ matrix.target-variant }}
-    needs: [checkout-macos, build-siso]
+    needs: [checkout-macos, build-siso-macos]
     permissions:
       contents: read
     strategy:
@@ -157,12 +177,14 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
   linux:
     name: linux-${{ matrix.target-arch }}
-    needs: [setup, checkout-linux, build-siso]
+    needs: [setup, checkout-linux, build-siso-linux]
     permissions:
       contents: read
     strategy:
@@ -170,7 +192,6 @@ jobs:
       matrix:
         include:
           - target-arch: x64
-          - target-arch: arm
           - target-arch: arm64
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     with:
@@ -181,12 +202,14 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
   windows:
     name: windows-${{ matrix.target-arch }}
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     permissions:
       contents: read
     strategy:
@@ -195,14 +218,15 @@ jobs:
         include:
           - target-arch: x64
           - target-arch: arm64
-          - target-arch: x86
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: ${{ matrix.target-arch }}
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit

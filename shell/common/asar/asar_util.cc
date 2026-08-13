@@ -15,7 +15,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
-#include "base/threading/thread_local.h"
 #include "crypto/hash.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/thread_restrictions.h"
@@ -120,28 +119,32 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return base::ReadFileToString(real_path, contents);
   }
 
-  base::File src(asar_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!src.IsValid())
-    return false;
-
+  // Read through the archive's retained file handle rather than re-opening
+  // the archive by path: |info|'s offset and integrity hash come from the
+  // cached header, and the file on disk may have been replaced (e.g. by an
+  // app update) since that header was read. The retained handle always sees
+  // the bytes the header describes.
   contents->resize(info.size);
-  if (!src.ReadAndCheck(info.offset, base::as_writable_byte_span(*contents)))
+  if (!archive->ReadFileAt(info.offset, base::as_writable_byte_span(*contents)))
     return false;
 
   if (info.integrity)
-    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity);
+    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity,
+                           relative_path.AsUTF8Unsafe());
 
   return true;
 }
 
 void ValidateIntegrityOrDie(base::span<const uint8_t> input,
-                            const IntegrityPayload& integrity) {
+                            const IntegrityPayload& integrity,
+                            std::string_view what) {
   if (integrity.algorithm == HashAlgorithm::kSHA256) {
     const std::string hex_hash =
         base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(input)));
     if (integrity.hash != hex_hash) {
-      LOG(FATAL) << "Integrity check failed for asar archive ("
-                 << integrity.hash << " vs " << hex_hash << ")";
+      LOG(FATAL) << "Integrity check failed for asar archive entry '" << what
+                 << "' (" << integrity.hash << " vs " << hex_hash << ", "
+                 << input.size() << " bytes)";
     }
   } else {
     LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";

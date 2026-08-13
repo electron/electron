@@ -8,10 +8,10 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea92631285 100644
+index e0d5734d2acbd6e489db6cf993a43cbf614495e8..fde7dbb78affd54e69f86c221199d2f3aee19f6d 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -85,11 +85,13 @@
+@@ -90,11 +90,13 @@
  #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
@@ -25,7 +25,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -289,214 +291,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -334,216 +336,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -175,11 +175,13 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
 -      // a website can do with access to that directory and its contents.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
 -                                BlockType::kBlockAllChildren),
+-      // And block all of ~/.cache, matching the similar restrictions on mac
+-      // and windows.
+-      BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 -#endif
 -#if BUILDFLAG(IS_ANDROID)
 -      BlockPath::CreateRelative(base::DIR_ANDROID_APP_DATA,
 -                                BlockType::kBlockAllChildren),
--      BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 -#endif
 -      // TODO(crbug.com/40095723): Refine this list, for example add
 -      // XDG_CONFIG_HOME when it is not set ~/.config?
@@ -244,7 +246,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
  
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
-@@ -1469,16 +1267,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1542,16 +1338,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -261,7 +263,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1497,7 +1285,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1570,7 +1356,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -270,7 +272,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2923,7 +2711,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3037,7 +2823,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -279,7 +281,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3281,11 +3069,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3395,11 +3181,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -292,7 +294,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3336,6 +3120,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3450,6 +3232,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -301,7 +303,7 @@ index b544f92f1a23bf08d5039eed600e6ba0e3cbcea3..32a5ae7074cad7575b3923b2bf6930ea
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 4111e2c0098402e8befe192d35458b5124639713..956e285889efc1ac0547efaff03d5572a898511c 100644
+index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c34fd1436 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -326,7 +328,7 @@ index 4111e2c0098402e8befe192d35458b5124639713..956e285889efc1ac0547efaff03d5572
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -471,6 +475,219 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,221 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -480,11 +482,13 @@ index 4111e2c0098402e8befe192d35458b5124639713..956e285889efc1ac0547efaff03d5572
 +        // a website can do with access to that directory and its contents.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".dbus"),
 +                                  BlockType::kBlockAllChildren),
++        // And block all of ~/.cache, matching the similar restrictions on mac
++        // and windows.
++        BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +  #endif
 +  #if BUILDFLAG(IS_ANDROID)
 +        BlockPath::CreateRelative(base::DIR_ANDROID_APP_DATA,
 +                                  BlockType::kBlockAllChildren),
-+        BlockPath::CreateRelative(base::DIR_CACHE, BlockType::kBlockAllChildren),
 +  #endif
 +        // TODO(crbug.com/40095723): Refine this list, for example add
 +        // XDG_CONFIG_HOME when it is not set ~/.config?

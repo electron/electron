@@ -1,5 +1,4 @@
-import { clipboard } from 'electron/common';
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents, clipboard } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -10,8 +9,15 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers';
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { containsText, readPDF } from './lib/pdf-helpers';
+import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+const features = process._linkedBinding('electron_common_features');
+
+async function clipboardHasImageType(): Promise<boolean> {
+  return clipboard.has('image/png');
+}
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -525,6 +531,78 @@ describe('webFrameMain module', () => {
     });
   });
 
+  ifdescribe(features.isPrintingEnabled())('WebFrame.printToPDF', () => {
+    let server: http.Server;
+    let serverUrl: string;
+    let w: BrowserWindow;
+
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        if (req.url === '/frame') {
+          res.end('<p>This text lives in the iframe document</p>');
+        } else {
+          res.end('<p>This text lives in the parent document</p><iframe src="/frame"></iframe>');
+        }
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    it('can print an iframe, excluding the parent document', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      const data = await iframe.printToPDF({});
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.false();
+    });
+
+    it('can print the main frame', async () => {
+      await w.loadURL(serverUrl);
+
+      const data = await w.webContents.mainFrame.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.true();
+    });
+
+    it('does not crash when called on multiple frames in parallel', async () => {
+      await w.loadURL(serverUrl);
+
+      const frames = [w.webContents.mainFrame, ...w.webContents.mainFrame.frames];
+      const results = await Promise.all(frames.map((frame) => frame.printToPDF({})));
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      }
+    });
+
+    it('rejects on incorrectly typed parameters', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      await expect(iframe.printToPDF({ landscape: [] as any })).to.eventually.be.rejected();
+    });
+
+    it('rejects when the render frame is disposed', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      w.webContents.destroy();
+      await waitUntil(() => iframe.isDestroyed());
+      await expect(iframe.printToPDF({})).to.eventually.be.rejected();
+    });
+  });
+
   describe('webFrameMain.copyVideoFrameAt', () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
@@ -573,7 +651,7 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
-      expect(clipboard.readImage().isEmpty()).to.be.true();
+      expect(await clipboardHasImageType()).to.be.false();
       // wait for video to load
       await frame.executeJavaScript(
         `(${() => {
@@ -586,8 +664,7 @@ describe('webFrameMain module', () => {
         }})()`
       );
       frame.copyVideoFrameAt(point.x, point.y);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
-      expect(clipboard.readImage().isEmpty()).to.be.false();
+      await waitUntil(clipboardHasImageType);
     };
 
     beforeEach(() => {
@@ -602,7 +679,7 @@ describe('webFrameMain module', () => {
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
       await copyVideoFrameInFrame(w.webContents.mainFrame);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
 
     ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
@@ -612,7 +689,7 @@ describe('webFrameMain module', () => {
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
   });
 

@@ -19,7 +19,7 @@
 #include "components/upload_list/crash_upload_list.h"
 #include "components/upload_list/text_log_upload_list.h"
 #include "electron/mas.h"
-#include "gin/arguments.h"
+#include "gin/converter.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_paths.h"

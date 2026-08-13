@@ -66,28 +66,50 @@ def download(text, url, path):
   return path
 
 
+# Deflate level 6 is ~1.7x faster than level 9 on the multi-GB debug info
+# archives this is used for (pdb.zip, dsym-snapshot.zip, debug.zip), and the
+# output is only ~0.4% larger.
+ZIP_COMPRESSION_LEVEL = 6
+
 def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     allfiles = files + dirs
-    execute(['zip', '-r', '-y', '-9', zip_file_path] + allfiles)
+    execute(['zip', '-r', '-y', f'-{ZIP_COMPRESSION_LEVEL}', zip_file_path]
+            + allfiles)
   else:
     with zipfile.ZipFile(zip_file_path, "w",
                          zipfile.ZIP_DEFLATED,
-                         allowZip64=True) as zip_file:
+                         allowZip64=True,
+                         compresslevel=ZIP_COMPRESSION_LEVEL) as zip_file:
       for filename in files:
-        zip_file.write(filename, filename, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+        zip_file.write(filename, filename)
       for dirname in dirs:
         for root, _, filenames in os.walk(dirname):
           for f in filenames:
-            zip_file.write(os.path.join(root, f), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.write(os.path.join(root, f))
       zip_file.close()
 
 
 def make_tar_xz(tar_file_path, files, dirs):
   safe_unlink(tar_file_path)
   allfiles = files + dirs
-  execute(['tar', '-cJf', tar_file_path] + allfiles)
+  # xz is single threaded by default, which takes 30+ minutes for the ~7GB of
+  # dSYMs this is used for. Multi-threaded xz splits the input into
+  # independently compressed blocks (~1% larger, still a standard .xz stream
+  # that any xz decoder can read) and scales ~linearly with core count.
+  tar_version = subprocess.run(['tar', '--version'], capture_output=True,
+                               text=True, check=False).stdout
+  if 'bsdtar' in tar_version:
+    # macOS ships bsdtar, whose xz filter is configured via --options; a
+    # thread count of 0 means "one per CPU".
+    args = ['tar', '--options', 'xz:threads=0', '-cJf', tar_file_path]
+    env = None
+  else:
+    # GNU tar shells out to the xz binary, which reads XZ_OPT.
+    args = ['tar', '-cJf', tar_file_path]
+    env = dict(os.environ, XZ_OPT='-T0')
+  execute(args + allfiles, env=env)
 
 
 def rm_rf(path):

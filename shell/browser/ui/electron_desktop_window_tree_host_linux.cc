@@ -10,7 +10,6 @@
 
 #include <vector>
 
-#include "base/i18n/rtl.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_views.h"

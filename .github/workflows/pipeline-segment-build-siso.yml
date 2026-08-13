@@ -1,20 +1,28 @@
 name: Pipeline Segment - Build Siso
 
-# Builds a patched siso binary for every CI build host. Reads the siso revision
-# from the Chromium DEPS file at the pinned chromium_version, shallow-clones
-# chromium.googlesource.com/build at that revision, applies the patches under
-# .github/siso-patches/, and cross-compiles siso for each build host:
-# windows/amd64, linux/amd64 and darwin/arm64. siso runs on the build host (not
-# the target), so these three host arches cover every build job: Windows targets
-# use siso-windows-amd64, Linux targets (any arch) use siso-linux-amd64, and
-# macOS targets (x64 or arm64) use siso-darwin-arm64 because the macOS build
-# hosts are arm64. Each binary is published as a distinct artifact that the build
-# and publish jobs download and use via SISO_PATH. The built binary is cached
-# keyed on the siso revision + sha256 of the patch contents, so subsequent runs
-# just restore it.
+# Builds a patched siso binary for a single CI build host. Reads the siso
+# revision from the Chromium DEPS file at the pinned chromium_version,
+# shallow-clones chromium.googlesource.com/build at that revision, applies the
+# patches under .github/siso-patches/, and cross-compiles siso for the requested
+# build host. siso runs on the build host (not the target), so three host arches
+# cover every build job: Windows targets use windows-amd64, Linux targets (any
+# arch) use linux-amd64, and macOS targets (x64 or arm64) use darwin-arm64
+# because the macOS build hosts are arm64. Each caller invokes this segment once
+# per host it needs, so a cache miss (or manual re-run) for one host only affects
+# that host's builds rather than every platform. The binary is published as the
+# artifact siso-<host> that the build and publish jobs download and use via
+# SISO_PATH, and is cached keyed on the siso revision + sha256 of the patch
+# contents, so subsequent runs just restore it.
 
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      host:
+        description: >-
+          Build host to compile siso for: windows-amd64, linux-amd64 or
+          darwin-arm64.
+        required: true
+        type: string
 
 permissions: {}
 
@@ -23,25 +31,26 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - goos: windows
-            goarch: amd64
-            artifact: siso-windows-amd64
-            binary: siso.exe
-          - goos: linux
-            goarch: amd64
-            artifact: siso-linux-amd64
-            binary: siso
-          - goos: darwin
-            goarch: arm64
-            artifact: siso-darwin-arm64
-            binary: siso
     steps:
+    - name: Resolve host build parameters
+      id: host
+      env:
+        HOST: ${{ inputs.host }}
+      run: |
+        set -euo pipefail
+        case "$HOST" in
+          windows-amd64) goos=windows; goarch=amd64; binary=siso.exe ;;
+          linux-amd64)   goos=linux;   goarch=amd64; binary=siso ;;
+          darwin-arm64)  goos=darwin;  goarch=arm64; binary=siso ;;
+          *) echo "error: unsupported host: $HOST" >&2; exit 1 ;;
+        esac
+        {
+          echo "goos=${goos}"
+          echo "goarch=${goarch}"
+          echo "binary=${binary}"
+        } >> "$GITHUB_OUTPUT"
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 1
         ref: ${{ github.event.pull_request.head.sha }}
@@ -70,10 +79,10 @@ jobs:
         echo "Patches hash: ${PATCHES_HASH}"
     - name: Restore cached siso binary
       id: cache-siso
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        path: siso-out/${{ matrix.binary }}
-        key: siso-${{ matrix.goos }}-${{ matrix.goarch }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
+        path: siso-out/${{ steps.host.outputs.binary }}
+        key: siso-${{ inputs.host }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
     - name: Shallow clone chromium build repo at pinned revision
       if: steps.cache-siso.outputs.cache-hit != 'true'
       env:
@@ -101,24 +110,33 @@ jobs:
           am --3way "${patches[@]}"
     - name: Set up Go
       if: steps.cache-siso.outputs.cache-hit != 'true'
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version-file: chromium-build/siso/go.mod
         cache: false
-    - name: Build siso (${{ matrix.goos }}/${{ matrix.goarch }})
+    - name: Test patched siso spawn-helper packages
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      working-directory: chromium-build/siso
+      # Runs natively on the workflow host (no GOOS/GOARCH): `go build` alone
+      # never compiles or runs _test.go files, so without this the tests the
+      # in-tree patches add would not gate the build. localexec is included
+      # because it drives the spawn helper end-to-end.
+      run: |
+        go test ./execute/spawnhelper/ ./execute/localexec/
+    - name: Build siso (${{ inputs.host }})
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso
       env:
         CGO_ENABLED: '0'
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
+        GOOS: ${{ steps.host.outputs.goos }}
+        GOARCH: ${{ steps.host.outputs.goarch }}
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/siso-out"
-        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ matrix.binary }}" .
+        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ steps.host.outputs.binary }}" .
     - name: Upload siso artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: ${{ matrix.artifact }}
-        path: siso-out/${{ matrix.binary }}
+        name: siso-${{ inputs.host }}
+        path: siso-out/${{ steps.host.outputs.binary }}
         if-no-files-found: error
         retention-days: 1

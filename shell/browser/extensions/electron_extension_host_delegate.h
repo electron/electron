@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
 
 #include <memory>
-#include <string>
 
 #include "extensions/browser/extension_host_delegate.h"
 

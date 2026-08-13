@@ -15,7 +15,6 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/notreached.h"
 #include "base/sequence_checker.h"
 #include "content/public/browser/global_request_id.h"
 #include "content/public/common/url_utils.h"
@@ -28,25 +27,25 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/url_util.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
-#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/client_certificate_responder_delegate.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -460,6 +459,23 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   Emit("login", auth_info, std::move(cb));
 }
 
+void SimpleURLLoaderWrapper::OnCertificateRequested(
+    const std::optional<base::UnguessableToken>& window_id,
+    const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+    mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+        client_cert_responder) {
+  // In the utility process this observer is only bound when the host did not
+  // provide one; routing to the app event requires the browser process.
+  if (!electron::IsBrowserProcess()) {
+    mojo::Remote<network::mojom::ClientCertificateResponder> responder(
+        std::move(client_cert_responder));
+    responder->ContinueWithoutCertificate();
+    return;
+  }
+  SelectClientCertificateForResponder(browser_context_, cert_info,
+                                      std::move(client_cert_responder));
+}
+
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
     const GURL& url,
     int net_error,
@@ -481,15 +497,6 @@ void SimpleURLLoaderWrapper::OnClearSiteData(
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
     network::mojom::LoadInfoPtr info,
     OnLoadingStateUpdateCallback callback) {
-  std::move(callback).Run();
-}
-
-void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
-    const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
-        methods,
-    const std::optional<std::string>& with_lock,
-    OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
 
@@ -596,6 +603,7 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
             {"document", Val::kDocument},
             {"embed", Val::kEmbed},
             {"empty", Val::kEmpty},
+            {"fencedframe", Val::kFencedframe},
             {"font", Val::kFont},
             {"frame", Val::kFrame},
             {"iframe", Val::kIframe},
@@ -614,6 +622,20 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
         });
     if (auto iter = Lookup.find(destination); iter != Lookup.end())
       request->destination = iter->second;
+  }
+
+  if (base::FeatureList::IsEnabled(
+          network::features::kRestrictFrameDestinationsToNavigate) &&
+      (request->destination == network::mojom::RequestDestination::kDocument ||
+       request->destination == network::mojom::RequestDestination::kFrame ||
+       request->destination == network::mojom::RequestDestination::kIframe ||
+       request->destination ==
+           network::mojom::RequestDestination::kFencedframe) &&
+      request->mode != network::mojom::RequestMode::kNavigate) {
+    args->ThrowTypeError(
+        "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' "
+        "requires sec-fetch-mode 'navigate'");
+    return {};
   }
 
   bool credentials_specified =

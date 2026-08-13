@@ -228,21 +228,48 @@ Electron runs a subset of Node.js's upstream test suite using a custom runner (`
 
 ### BoringSSL incompatibilities
 
-Electron uses BoringSSL (via Chromium) instead of OpenSSL. Many crypto features are missing or behave differently:
+Electron builds Node.js against Chromium's BoringSSL instead of Node.js's bundled OpenSSL. As of the v24.18.0 roll this is wired up through a GN arg rather than large source patches:
 
-| Unsupported in BoringSSL | Guard pattern |
-|--------------------------|---------------|
-| ChaCha20-Poly1305 | `if (!process.features.openssl_is_boringssl)` |
-| AES-CCM (aes-128-ccm, aes-256-ccm) | `if (ciphers.includes('aes-128-ccm'))` |
-| AES-KW (key wrapping) | `if (!process.features.openssl_is_boringssl)` |
-| DSA keys | `if (!process.features.openssl_is_boringssl)` |
-| Ed448 / X448 curves | `if (!process.features.openssl_is_boringssl)` |
-| DH key PEM loading | `if (!process.features.openssl_is_boringssl)` |
-| PQC algorithms (ML-KEM, ML-DSA, SLH-DSA) | `if (hasOpenSSL(3, 5))` (already guards these) |
+```gn
+# build/args/all.gn
+# Build Node.js against Chromium's BoringSSL instead of node's bundled OpenSSL.
+node_openssl_path = "//third_party/boringssl"
+```
 
-When guarding tests, prefer checking cipher availability (`ciphers.includes(algo)`) over blanket BoringSSL checks where possible, as it's more precise and self-documenting.
+Upstream Node.js now supports building against BoringSSL natively (see nodejs/node commits `677ca7e76c9` and `61b20f60a39`), so most of Electron's historical BoringSSL workarounds have been **eliminated**. During the v24.18.0 roll:
 
-New upstream tests that exercise these features will need guards added to the `fix_crypto_tests_to_run_with_bssl` patch.
+- `fix_crypto_tests_to_run_with_bssl.patch` shrank from ~1100 lines to skipping just two test files.
+- `fix_handle_boringssl_and_openssl_incompatibilities.patch` dropped ~176 lines. What remains is C++-level shimming in `deps/ncrypto/ncrypto.cc`, `src/crypto/crypto_{common,context,hash}.cc`, `src/env.h`, `src/node_metadata.h`, and `src/node_options.h`.
+
+Expect to **delete** these workarounds over time rather than grow them. Only add a guard when a feature is genuinely still missing from BoringSSL; upstream tests increasingly self-skip when `process.features.openssl_is_boringssl` is set, so no Electron change is needed.
+
+**Preferred guard for a still-unsupported feature** — skip the whole test file at the top, and add it to `fix_crypto_tests_to_run_with_bssl.patch`:
+
+```js
+if (process.features.openssl_is_boringssl) {
+  common.skip('Skipping unsupported ML-DSA key tests');
+}
+```
+
+For tests that can't be cleanly guarded inline, add the whole file to `script/node-disabled-tests.json` instead.
+
+**Still unsupported in Chromium's BoringSSL** (as of v24.18.0):
+
+| Feature | Current handling |
+|---------|------------------|
+| RSA-PSS keygen (deprecation path) | file-level `common.skip` in `test-crypto-keygen-deprecation` |
+| ML-DSA keys | file-level `common.skip` in `test-crypto-pqc-key-objects-ml-dsa` |
+| ML-KEM keys | disabled in `node-disabled-tests.json` (`test-crypto-pqc-key-objects-ml-kem`) |
+| FIPS mode | disabled (`test-crypto-fips`) |
+| Secure heap | disabled (`test-crypto-secure-heap`) |
+| Stateless DH | disabled (`test-crypto-dh-stateless`) |
+| Assorted keygen / WebCrypto keygen | disabled (`test-crypto-keygen`, `test-webcrypto-keygen`, `wpt/test-webcrypto`) |
+
+**Behavioral differences (assertion updates, not skips)** — some errors just changed shape:
+
+- Creating a private key from an unsupported OKP (Ed448) JWK now throws `Invalid JWK OKP key` (previously `Invalid JWK data`); see nodejs/node#62499. Electron's `spec/node-spec.ts` assertion was loosened to `/Invalid JWK/`.
+
+When you do need to guard a test, prefer a precise capability check (e.g. `ciphers.includes('aes-128-ccm')`) over a blanket `process.features.openssl_is_boringssl` check where the feature can be probed directly.
 
 ### Snapshot test mismatches
 
@@ -300,8 +327,8 @@ Only add a test to `script/node-disabled-tests.json` as a **last resort** — wh
 
 These patches consistently require the most work during Node.js upgrades:
 
-- **`fix_handle_boringssl_and_openssl_incompatibilities.patch`** — Electron uses BoringSSL (via Chromium) while Node.js expects OpenSSL. This patch is large and complex, and upstream OpenSSL API changes frequently break it.
-- **`fix_crypto_tests_to_run_with_bssl.patch`** — Companion to the above; adapts Node.js crypto tests for BoringSSL. Can grow significantly during major upgrades.
+- **`fix_handle_boringssl_and_openssl_incompatibilities.patch`** — Electron uses BoringSSL (via Chromium) while Node.js expects OpenSSL. Historically large and complex, this patch was **greatly reduced** once Node.js gained native BoringSSL support (enabled via `node_openssl_path = "//third_party/boringssl"` in `build/args/all.gn`). It still shims some C++-level differences, and upstream OpenSSL/ncrypto API changes can break it.
+- **`fix_crypto_tests_to_run_with_bssl.patch`** — Companion to the above; adapts Node.js crypto tests for BoringSSL. Also **greatly reduced** now that upstream tests self-skip under BoringSSL — it mainly skips a handful of still-unsupported test files. See the "BoringSSL incompatibilities" section above.
 - **`support_v8_sandboxed_pointers.patch`** — V8 sandbox pointer support requires careful adaptation when V8 APIs change.
 - **`build_add_gn_build_files.patch`** — The GN build file patch is large and touches many build targets. Upstream build system changes frequently conflict.
 

@@ -13,6 +13,7 @@
 #import <Security/Security.h>
 
 #include "base/apple/scoped_cftyperef.h"
+#include "base/check_op.h"
 #include "base/containers/flat_map.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
@@ -123,6 +124,40 @@ NSNotificationCenter* GetNotificationCenter(NotificationCenterKind kind) {
     default:
       return nil;
   }
+}
+
+// Converts a system NSColor to an SkColor. Upstream moved this out of skia/
+// (see https://chromium-review.googlesource.com/c/chromium/src/+/8026713) into
+// a file-local helper, so replicate it here for Electron's usage.
+SkColor NSSystemColorToSkColor(NSColor* color) {
+  // It is expected that the colors that will flow through this function will be
+  // catalog colors. Being a catalog color means that it doesn't have explicit
+  // components, so convert it to a color that has components. If that resulting
+  // color can be converted, then we're done here.
+  NSColor* device_color =
+      [color colorUsingColorSpace:NSColorSpace.deviceRGBColorSpace];
+  if (device_color) {
+    return skia::NSDeviceColorToSkColor(device_color);
+  }
+
+  // Sometimes the conversion is not possible, but we can get an approximation
+  // by going through a CGColorRef.
+  CGColorRef cg_color = color.CGColor;
+  size_t component_count = CGColorGetNumberOfComponents(cg_color);
+
+  // 4 components means RGBA.
+  if (component_count == 4) {
+    return skia::CGColorRefToSkColor(cg_color);
+  }
+
+  // 1-2 components means a grayscale channel and maybe an alpha channel, which
+  // CGColorRefToSkColor will not like. But RGB is additive, so the conversion
+  // is easy (RGB to grayscale is less easy).
+  CHECK(component_count == 1 || component_count == 2);
+  float gray_value = *CGColorGetComponents(cg_color);
+  float alpha_value = CGColorGetAlpha(cg_color);
+
+  return SkColor4f{gray_value, gray_value, gray_value, alpha_value}.toSkColor();
 }
 
 }  // namespace
@@ -375,8 +410,7 @@ void SystemPreferences::SetUserDefault(const std::string& name,
 
 std::string SystemPreferences::GetAccentColor() {
   NSColor* sysColor = sysColor = [NSColor controlAccentColor];
-  return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor),
-                   false /* include_hash */);
+  return ToRGBAHex(NSSystemColorToSkColor(sysColor), false /* include_hash */);
 }
 
 std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
@@ -405,7 +439,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
     return "";
   }
 
-  return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor));
+  return ToRGBAHex(NSSystemColorToSkColor(sysColor));
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -422,6 +456,17 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (reason.empty()) {
+    promise.RejectWithErrorMessage("reason must be non-empty");
+    return handle;
+  }
+
+  NSString* localized_reason = base::SysUTF8ToNSString(reason);
+  if (!localized_reason) {
+    promise.RejectWithErrorMessage("reason must be valid UTF-8");
+    return handle;
+  }
+
   LAContext* context = [[LAContext alloc] init];
   base::apple::ScopedCFTypeRef<SecAccessControlRef> access_control =
       base::apple::ScopedCFTypeRef<SecAccessControlRef>(
@@ -437,12 +482,12 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   [context
       evaluateAccessControl:access_control.get()
                   operation:LAAccessControlOperationUseKeySign
-            localizedReason:[NSString stringWithUTF8String:reason.c_str()]
+            localizedReason:localized_reason
                       reply:^(BOOL success, NSError* error) {
                         // NOLINTBEGIN(bugprone-use-after-move)
                         if (!success) {
-                          std::string err_msg = std::string(
-                              [error.localizedDescription UTF8String]);
+                          std::string err_msg = base::SysNSStringToUTF8(
+                              error.localizedDescription);
                           runner->PostTask(
                               FROM_HERE,
                               base::BindOnce(
@@ -540,7 +585,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   if (sysColor)
-    return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor));
+    return ToRGBAHex(NSSystemColorToSkColor(sysColor));
   return "";
 }
 

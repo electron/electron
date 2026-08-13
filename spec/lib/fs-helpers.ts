@@ -22,7 +22,7 @@ export async function copyApp(targetDir: string): Promise<string> {
     '..',
     'script',
     'zip_manifests',
-    `dist_zip.${process.platform === 'win32' ? 'win' : 'linux'}.${process.arch === 'ia32' ? 'x86' : process.arch}.manifest`
+    `dist_zip.${process.platform === 'win32' ? 'win' : 'linux'}.${process.arch}.manifest`
   );
   const filesToCopy = fs
     .readFileSync(zipManifestPath, 'utf-8')

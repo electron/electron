@@ -10,7 +10,6 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
-#include "third_party/abseil-cpp/absl/strings/ascii.h"
 
 namespace {
 bool HasSwitch(const std::string& switch_string) {

@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_bar.h"
 #include "shell/browser/ui/views/menu_model_adapter.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
@@ -133,12 +133,17 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
     // Switching menu asynchronously to avoid crash.
     if (!switch_in_progress) {
       content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(&views::MenuRunner::Cancel,
-                                    base::Unretained(menu_runner_.get())));
+          FROM_HERE, base::BindOnce(&MenuDelegate::CancelSelf,
+                                    weak_factory_.GetWeakPtr()));
     }
   }
 
   return nullptr;
+}
+
+void MenuDelegate::CancelSelf() {
+  if (menu_runner_)
+    menu_runner_->Cancel();
 }
 
 }  // namespace electron

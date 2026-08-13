@@ -5,10 +5,8 @@
 #include "shell/browser/api/electron_api_browser_window.h"
 
 #include "base/containers/fixed_flat_set.h"
-#include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
-#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
-#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
@@ -19,6 +17,7 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -70,7 +69,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
   window()->AddDraggableRegionProvider(web_contents_view.get());
-  window()->set_primary_web_contents_view(
+  window()->InitPrimaryWebContentsView(
       static_cast<InspectableWebContentsView*>(web_contents_view->view()));
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
@@ -102,8 +101,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 }
 
 BrowserWindow::~BrowserWindow() {
-  window()->set_primary_web_contents_view(nullptr);
-
   if (api_web_contents_) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
@@ -117,7 +114,6 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
 }
 
 void BrowserWindow::WebContentsDestroyed() {
-  window()->set_primary_web_contents_view(nullptr);
   api_web_contents_ = nullptr;
   CloseImmediately();
 }
@@ -321,6 +317,13 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
   gin_helper::Dictionary options;
   if (!(args->Length() == 1 && args->GetNext(&options))) {
     options = gin::Dictionary::CreateEmpty(args->isolate());
+  }
+
+  std::string error_message;
+  if (!IsWindowNameValid(options, &error_message)) {
+    // Window name is already in use throw an error and do not create the window
+    thrower.ThrowError(error_message);
+    return nullptr;
   }
 
   return new BrowserWindow(args, options);

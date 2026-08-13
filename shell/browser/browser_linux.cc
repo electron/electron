@@ -5,7 +5,6 @@
 #include "shell/browser/browser.h"
 
 #include <fcntl.h>
-#include <stdlib.h>
 
 #include <string_view>
 

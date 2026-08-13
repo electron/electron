@@ -7,15 +7,12 @@
 #include <string>
 
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "content/public/common/page_type.h"
 #include "net/base/url_util.h"
 #include "shell/browser/web_contents_zoom_observer.h"
 #include "third_party/blink/public/common/page/page_zoom.h"

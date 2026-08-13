@@ -32,7 +32,8 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
 void ValidateIntegrityOrDie(base::span<const uint8_t> input,
-                            const IntegrityPayload& integrity);
+                            const IntegrityPayload& integrity,
+                            std::string_view what = {});
 
 }  // namespace asar
 

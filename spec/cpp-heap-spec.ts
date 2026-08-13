@@ -335,6 +335,155 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('serviceWorkerMain module', () => {
+    const setupWorkerSource = `async function setupWorker(fixturesDir) {
+      const { app, session, BrowserWindow } = require('electron');
+      const http = require('node:http');
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const crypto = require('node:crypto');
+
+      app.on('window-all-closed', () => {});
+
+      const uuid = crypto.randomUUID();
+      const server = http.createServer((req, res) => {
+        const url = new URL(req.url, 'http://' + req.headers.host);
+        const file = url.pathname.split('/')[2];
+        if (file.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+        res.end(fs.readFileSync(path.resolve(fixturesDir, file)));
+      });
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address();
+      const baseUrl = 'http://localhost:' + port + '/' + uuid;
+
+      const ses = session.fromPartition('cppheap-sw-' + uuid);
+      const serviceWorkers = ses.serviceWorkers;
+      const win = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+
+      const versionId = await new Promise((resolve) => {
+        const onChange = (event) => {
+          serviceWorkers.off('running-status-changed', onChange);
+          resolve(event.versionId);
+        };
+        serviceWorkers.on('running-status-changed', onChange);
+        win.webContents.loadURL(baseUrl + '/index.html');
+      });
+
+      return { win, server, ses, serviceWorkers, versionId };
+    }`;
+
+    it('does not crash on exit with a live service worker wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(
+        async (fixturesDir: string, setupWorker: string) => {
+          const { app } = require('electron');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          (globalThis as any).swRef = ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+
+          setTimeout(() => app.quit());
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource
+      );
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while the service worker is live', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixturesDir: string, setupWorker: string, heap: string, snapshotHelper: string) => {
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / ServiceWorkerMain'
+          ]);
+
+          ctx.win.destroy();
+          ctx.server.close();
+          return rooted;
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource,
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'ServiceWorkerMain should be rooted via SelfKeepAlive while the version is live');
+    });
+
+    it('should be released after the service worker is unregistered', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixturesDir: string, setupWorker: string, heap: string, snapshotHelper: string) => {
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          let worker: any = ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+          const { versionId } = ctx;
+
+          await ctx.win.webContents.executeJavaScript(
+            '(async () => { const rs = await navigator.serviceWorker.getRegistrations(); for (const r of rs) await r.unregister(); })()'
+          );
+
+          // Wait until the wrapper has been destroyed.
+          for (let i = 0; i < 100; i++) {
+            if (worker && worker.isDestroyed()) break;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+
+          // Drop the JS reference and GC. Neither the SelfKeepAlive root nor a
+          // JS wrapper should keep it alive anymore.
+          worker = null;
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / ServiceWorkerMain'
+          ]);
+          const stillExists = ctx.serviceWorkers._getWorkerFromVersionIDIfExists(versionId) != null;
+
+          ctx.win.destroy();
+          ctx.server.close();
+          return !rooted && !stillExists;
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource,
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(
+        true,
+        'ServiceWorkerMain should be released after the service worker is unregistered and GC runs'
+      );
+    });
+  });
+
   describe('nativeImage module', () => {
     it('should record as node in heap snapshot while a JS reference is held', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
@@ -519,23 +668,27 @@ describe('cpp heap', () => {
           const { protocol, net, app } = require('electron');
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
-          const { setTimeout: delay } = require('node:timers/promises');
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          const withTimeout = <T>(p: Promise<T>, ms: number, label: string) => {
-            const ac = new AbortController();
-            return Promise.race([
-              p.finally(() => ac.abort()),
-              delay(ms, undefined, { signal: ac.signal }).then(() => {
-                throw new Error(`timeout waiting for ${label}`);
-              })
-            ]);
-          };
 
           const gc = async () => {
             for (let i = 0; i < 10; i++) {
               await new Promise((resolve) => setTimeout(resolve, 0));
               v8Util.requestGarbageCollectionForTesting();
             }
+          };
+
+          // Yield to the event loop and run GC until `predicate` becomes true.
+          // This waits on the actual condition instead of a fixed delay,
+          // returning false only if it never settles within a generous attempt
+          // budget. Yielding before collecting lets any pending teardown tasks
+          // run so the collection sees no lingering references.
+          const gcUntil = async (predicate: () => boolean, attempts = 50) => {
+            for (let i = 0; i < attempts; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+              if (predicate()) return true;
+            }
+            return false;
           };
 
           let streamWeakRef: WeakRef<any> | undefined;
@@ -591,7 +744,9 @@ describe('cpp heap', () => {
           request.write(Buffer.from('hello'));
 
           try {
-            await withTimeout(reached, 5000, 'stream upload handler');
+            // Wait until the handler has parked a pending read and dropped its
+            // only JS reference to the stream.
+            await reached;
 
             await gc();
             const state = recordState();
@@ -600,19 +755,21 @@ describe('cpp heap', () => {
               'Electron / ChunkedDataPipeReadableStream'
             ]);
             const refAliveWhilePending = streamWeakRef!.deref() !== undefined;
-            // Settle the pending read by ending the request body.
+            // Settle the pending read by ending the request body, then wait for
+            // the read itself to complete.
             request.end();
-            await withTimeout(
-              pendingRead!.catch(() => {}),
-              5000,
-              'pending read to settle'
-            );
+            await pendingRead!.catch(() => {});
 
-            await gc();
-            const released = streamWeakRef!.deref() === undefined;
-
-            // The handler never produced a response; abort to clean up.
+            // Tear down the request so the network stack drops its reference to
+            // the upload stream; otherwise the live request keeps it reachable
+            // and it can never be collected. The handler never produced a
+            // response, so aborting is also the cleanup path.
             request.abort();
+
+            // Wait until the stream is actually released now that no read is
+            // pending and the request has been torn down.
+            const released = await gcUntil(() => streamWeakRef!.deref() === undefined);
+
             return { ok: true, aliveWhilePending, refAliveWhilePending, released };
           } catch (err) {
             request.abort();
@@ -876,6 +1033,222 @@ describe('cpp heap', () => {
         result.after1 * 0.1,
         `C++ heap grew by ${growth} bytes between two identical rounds of 100 menu rebuilds — likely a leak`
       );
+    });
+  });
+
+  describe('webFrameMain module', () => {
+    it('does not crash on exit with live frame wrappers', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+
+        (globalThis as any).frameRefs = [w.webContents.mainFrame, ...w.webContents.mainFrame.framesInSubtree];
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while the frame is live', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          // Access a property to materialize the lazy WebFrameMain wrapper.
+          console.log(w.webContents.mainFrame.url);
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain']);
+
+          w.destroy();
+          return rooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live');
+    });
+
+    it('should be released after the frame is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { app, BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Keep the app alive when the window closes so we can snapshot.
+          app.on('window-all-closed', () => {});
+
+          const collectGarbage = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+
+          const mainFrame = w.webContents.mainFrame;
+          // Access a property to materialize the lazy subframe wrappers.
+          const subframes = mainFrame.frames;
+
+          await w.loadURL('about:blank');
+          await collectGarbage();
+          const mainFrameIsActive = w.webContents.mainFrame === mainFrame && !mainFrame.detached;
+          const remainingSubframeCount = mainFrame.frames.length;
+          const subframeIsDetached = subframes[0]?.detached;
+          const hasOneFrame = containsRetainingPath(
+            recordState().snapshot,
+            ['C++ Persistent roots', 'Electron / WebFrameMain'],
+            {
+              occurrences: 1
+            }
+          );
+
+          w.destroy();
+          return {
+            subframeCount: subframes.length,
+            mainFrameIsActive,
+            remainingSubframeCount,
+            subframeIsDetached,
+            hasOneFrame
+          };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result.subframeCount).to.equal(1, 'a subframe WebFrameMain should be created before navigation');
+      expect(result.mainFrameIsActive).to.equal(true, 'the remaining WebFrameMain should be the active main frame');
+      expect(result.remainingSubframeCount).to.equal(
+        0,
+        'the active main frame should have no subframes after navigation'
+      );
+      expect(result.subframeIsDetached).to.equal(true, 'the subframe WebFrameMain should be detached after navigation');
+      expect(result.hasOneFrame).to.equal(
+        true,
+        'subframe WebFrameMain should be released after its frame is destroyed by navigation'
+      );
+    });
+
+    it('should release the root for a detached frame after navigation', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string, preload: string) => {
+          const { BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const createServer = async () => {
+            const server = http.createServer((_request: any, response: any) => response.end('<body></body>'));
+            server.listen(0, '127.0.0.1');
+            await once(server, 'listening');
+            return server;
+          };
+
+          const server = await createServer();
+          const getUrl = (server: any) => `http://127.0.0.1:${server.address().port}`;
+          const url = getUrl(server);
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          try {
+            await w.loadURL(url);
+            // Access a property to materialize the lazy WebFrameMain wrapper.
+            console.log(w.webContents.mainFrame.url);
+
+            let detachedFrame: Electron.WebFrameMain | null = null;
+            const unloaded = new Promise<void>((resolve) => {
+              ipcMain.once('preload-unload', (event: Electron.IpcMainEvent) => {
+                detachedFrame = event.senderFrame;
+                resolve();
+              });
+            });
+
+            const navigated = w.loadURL(crossOriginUrl);
+            await unloaded;
+            await navigated;
+
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+
+            console.log(detachedFrame!.detached);
+            return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain'], {
+              occurrences: 1
+            });
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
+      );
+      expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
+    });
+
+    it('should settle an in-flight call stack reply after frame disposal', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+        const { once } = require('node:events');
+        const http = require('node:http');
+        const { setTimeout: delay } = require('node:timers/promises');
+
+        app.on('window-all-closed', () => {});
+
+        const server = http.createServer((request: any, response: any) => {
+          response.setHeader('Document-Policy', 'include-js-call-stacks-in-crash-reports');
+          response.end(request.url === '/child' ? '<body></body>' : '<iframe src="/child"></iframe>');
+        });
+        server.listen(0, '127.0.0.1');
+        await once(server, 'listening');
+
+        const w = new BrowserWindow({ show: false });
+        try {
+          await w.loadURL(`http://127.0.0.1:${server.address().port}`);
+
+          const childFrame = w.webContents.mainFrame.frames[0];
+          const callStackPromise = childFrame.collectJavaScriptCallStack();
+          const settled = callStackPromise.then(
+            () => 'resolved',
+            (error: Error) => `rejected: ${error.message}`
+          );
+
+          childFrame.executeJavaScript('window.frameElement.remove()').catch(() => {});
+          return Promise.race([settled, delay(5000).then(() => 'timeout')]);
+        } finally {
+          w.destroy();
+          server.close();
+        }
+      });
+
+      expect(result).to.equal('rejected: Render frame was disposed before call stack was received');
     });
   });
 

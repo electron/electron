@@ -40,10 +40,10 @@ index fbfe1abebb19119387d55a1296aba5fd1ca7d99b..2c2d263bc026a0b63010498fb02d9bb8
      frontend_url = "/devtools/inspector.html";
    } else {
 diff --git a/content/public/browser/devtools_manager_delegate.cc b/content/public/browser/devtools_manager_delegate.cc
-index 8257dd01a79e617ff12554fd6cf5d32dc1abaf50..0a664b4ac5b28c7c9f6a2838859c915f9af5cbc1 100644
+index db9be7653aa0f0d7fac4679601a093cd7138cbda..40565699ab6769f696acefde92f54e26b1550a90 100644
 --- a/content/public/browser/devtools_manager_delegate.cc
 +++ b/content/public/browser/devtools_manager_delegate.cc
-@@ -116,6 +116,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+@@ -124,6 +124,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
    return false;
  }
  
@@ -55,10 +55,10 @@ index 8257dd01a79e617ff12554fd6cf5d32dc1abaf50..0a664b4ac5b28c7c9f6a2838859c915f
    return false;
  }
 diff --git a/content/public/browser/devtools_manager_delegate.h b/content/public/browser/devtools_manager_delegate.h
-index f08399ea042217b4c72d0a5cb4d71067ced65a87..90c14b184bca1b8680b2d3a533755f14b7fbf510 100644
+index 069a7b48a71ed650b2088721e61fc7d6d7947c08..6f0ad59678b63f8f4c5651527c6fb44bad57e95c 100644
 --- a/content/public/browser/devtools_manager_delegate.h
 +++ b/content/public/browser/devtools_manager_delegate.h
-@@ -160,6 +160,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
+@@ -169,6 +169,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
    // Returns whether frontend resources are bundled within the binary.
    virtual bool HasBundledFrontendResources();
  

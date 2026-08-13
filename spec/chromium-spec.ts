@@ -1,5 +1,4 @@
 import { MediaAccessPermissionRequest } from 'electron';
-import { clipboard } from 'electron/common';
 import {
   BrowserWindow,
   WebContents,
@@ -7,6 +6,8 @@ import {
   session,
   ipcMain,
   app,
+  clipboard,
+  ClipboardItem,
   protocol,
   webContents,
   dialog,
@@ -1384,9 +1385,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1441,9 +1441,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1498,9 +1497,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1553,9 +1551,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1604,9 +1601,8 @@ describe('chromium features', () => {
 
       w.loadFile(permPath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1655,9 +1651,8 @@ describe('chromium features', () => {
 
       w.loadFile(permPath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1716,9 +1711,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.on('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.on('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -2387,7 +2381,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       await expect(
-        w.webContents.executeJavaScript("window.open('', '', 'show=no,webPreferences='); null")
+        w.webContents.executeJavaScript("const b = window.open('', '', 'show=no,webPreferences='); b.close(); null")
       ).to.eventually.be.fulfilled();
     });
   });
@@ -2415,6 +2409,12 @@ describe('chromium features', () => {
           contextIsolation: false
         }
       });
+      // The opener is unsandboxed, so keep the child unsandboxed too or it is
+      // isolated in its own process with no opener.
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+      }));
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
@@ -2445,19 +2445,43 @@ describe('chromium features', () => {
     });
 
     it('supports windows opened from a <webview>', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-      w.loadURL('about:blank');
-      const childWindowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'webview-opener-postMessage.html'));
-      childWindowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-postMessage.html`);
-      const message = await w.webContents.executeJavaScript(`
+      // The test needs an unsandboxed embedder so the guest can opt out of
+      // the sandbox with the `nodeintegration` attribute, and a dedicated
+      // partition so the guest gets a fresh renderer process whose
+      // launch-time sandbox state matches the guest's own preferences
+      // (process reuse across tests could otherwise flip it).
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { webviewTag: true, nodeIntegration: true, contextIsolation: false }
+      });
+      const webviewReady = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
+      await w.loadURL('about:blank');
+      await w.webContents.executeJavaScript(`
         const webview = new WebView();
-        webview.allowpopups = true;
+        webview.setAttribute('allowpopups', 'on');
+        webview.setAttribute('nodeintegration', 'on');
         webview.setAttribute('webpreferences', 'contextIsolation=no');
-        webview.src = ${JSON.stringify(childWindowUrl)}
-        const consoleMessage = new Promise(resolve => webview.addEventListener('console-message', resolve, {once: true}));
+        webview.setAttribute('partition', 'webview-opener-match');
+        webview.src = 'about:blank';
         document.body.appendChild(webview);
-        consoleMessage.then(e => e.message)
+        null
       `);
+      const [, webviewContents] = await webviewReady;
+      if (webviewContents.isLoading()) await once(webviewContents, 'did-finish-load');
+
+      // Match the child's sandbox state to the unsandboxed guest so the
+      // opener relationship is preserved.
+      webviewContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: { sandbox: false } }
+      }));
+
+      const message = await webviewContents.executeJavaScript(`new Promise(resolve => {
+        window.addEventListener('message', e => resolve(e.data), { once: true });
+        const child = window.open('about:blank', '', 'show=no');
+        child.document.write('<script>window.opener.postMessage("message", "*")<\\/script>');
+        child.document.close();
+      })`);
 
       expect(message).to.equal('message');
     });
@@ -2903,7 +2927,11 @@ describe('chromium features', () => {
     describe('when opened from main window', () => {
       for (const { parent, child, nodeIntegration, openerAccessible } of table) {
         for (const sandboxPopup of [false, true]) {
-          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
+          // The opener runs unsandboxed (nodeIntegration), so a sandboxed
+          // popup can't share its process and is isolated with no opener.
+          const description = sandboxPopup
+            ? `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=true, child is isolated from the opener`
+            : `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=false, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
             const w = new BrowserWindow({
               show: true,
@@ -2918,6 +2946,13 @@ describe('chromium features', () => {
               }
             }));
             await w.loadURL(parent);
+            if (sandboxPopup) {
+              const openedNull = await w.webContents.executeJavaScript(
+                `window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}") === null`
+              );
+              expect(openedNull).to.be.true();
+              return;
+            }
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {
                 resolve(e.data)
@@ -4346,12 +4381,10 @@ describe('paste execCommand', () => {
     const w: BrowserWindow = new BrowserWindow({});
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const text = 'Sync Clipboard Disabled by default';
-    clipboard.write({
-      text
-    });
+    await clipboard.writeText(text);
     const paste = await readClipboard(w);
     expect(paste).to.be.empty();
-    expect(clipboard.readText()).to.equal(text);
+    expect(await clipboard.readText()).to.equal(text);
   });
 
   it('does not execute with default permissions', async () => {
@@ -4363,12 +4396,10 @@ describe('paste execCommand', () => {
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const text = 'Sync Clipboard Disabled by default permissions';
-    clipboard.write({
-      text
-    });
+    await clipboard.writeText(text);
     const paste = await readClipboard(w);
     expect(paste).to.be.empty();
-    expect(clipboard.readText()).to.equal(text);
+    expect(await clipboard.readText()).to.equal(text);
   });
 
   it('does not execute with permission denied', async () => {
@@ -4386,12 +4417,10 @@ describe('paste execCommand', () => {
       return true;
     });
     const text = 'Sync Clipboard Disabled by permission denied';
-    clipboard.write({
-      text
-    });
+    await clipboard.writeText(text);
     const paste = await readClipboard(w);
     expect(paste).to.be.empty();
-    expect(clipboard.readText()).to.equal(text);
+    expect(await clipboard.readText()).to.equal(text);
   });
 
   it('can trigger paste event when permission is granted', async () => {
@@ -4409,9 +4438,7 @@ describe('paste execCommand', () => {
       return false;
     });
     const text = 'Sync Clipboard Test';
-    clipboard.write({
-      text
-    });
+    await clipboard.writeText(text);
     const paste = await readClipboard(w);
     expect(paste).to.equal(text);
   });
@@ -4457,9 +4484,7 @@ describe('paste execCommand', () => {
     const [childWindow] = await childPromise;
     expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
     const text = 'Sync Clipboard Test for Child Window';
-    clipboard.write({
-      text
-    });
+    await clipboard.writeText(text);
     const paste = await readClipboard(childWindow);
     expect(paste).to.equal(text);
   });
@@ -4640,6 +4665,15 @@ describe('navigator.hid', () => {
     );
   };
 
+  // A device is only reliably grantable if it exposes both a name and a serial
+  // number. Devices lacking them (e.g. system devices whose reports are all
+  // protected) are dropped by Chromium's WebHID report filtering after
+  // selection, so requestDevice() would resolve empty for them and make the
+  // test flaky. Select such a valid device rather than blindly picking the
+  // first entry in the list.
+  const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
+    deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
+
   after(() => {
     server.close();
     closeAllWindows();
@@ -4675,9 +4709,10 @@ describe('navigator.hid', () => {
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
       expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
-      if (details.deviceList.length > 0) {
+      const foundDevice = findValidDevice(details.deviceList);
+      if (foundDevice) {
         haveDevices = true;
-        callback(details.deviceList[0].deviceId);
+        callback(foundDevice.deviceId);
       } else {
         callback();
       }
@@ -4710,18 +4745,11 @@ describe('navigator.hid', () => {
     let gotDevicePerms = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
       selectFired = true;
-      if (details.deviceList.length > 0) {
-        const foundDevice = details.deviceList.find((device) => {
-          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
-            haveDevices = true;
-            return true;
-          }
-          return false;
-        });
-        if (foundDevice) {
-          callback(foundDevice.deviceId);
-          return;
-        }
+      const foundDevice = findValidDevice(details.deviceList);
+      if (foundDevice) {
+        haveDevices = true;
+        callback(foundDevice.deviceId);
+        return;
       }
       callback();
     });
@@ -5093,11 +5121,11 @@ describe('iframe sandbox popups', () => {
   let serverUrl: string;
   let w: BrowserWindow;
 
-  const childHtml = `
+  const makeChildHtml = (href: string) => `
     <script>
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
-        a.href = 'https://example.com/sandbox-bypassed';
+        a.href = ${JSON.stringify(href)};
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
@@ -5109,10 +5137,16 @@ describe('iframe sandbox popups', () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       if (req.url === '/child') {
-        res.end(childHtml);
+        res.end(makeChildHtml('https://example.com/sandbox-bypassed'));
+      } else if (req.url === '/child-local-popup') {
+        res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/popup') {
+        res.end('<title>popup</title>');
       } else {
-        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
-        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+        const params = new URL(req.url!, serverUrl).searchParams;
+        const sandbox = params.get('sandbox') ?? '';
+        const child = params.get('child') ?? '/child';
+        res.end(`<iframe sandbox="${sandbox}" src="${child}"></iframe>`);
       }
     });
     serverUrl = (await listen(server)).url;
@@ -5158,5 +5192,39 @@ describe('iframe sandbox popups', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
     await setTimeout(200);
     expect(handlerCalls).to.equal(1);
+  });
+
+  async function openPopupFromSandboxedIframe(sandbox: string) {
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(
+      `${serverUrl}/?child=${encodeURIComponent('/child-local-popup')}&sandbox=${encodeURIComponent(sandbox)}`
+    );
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    return popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+  }
+
+  it('popups from a sandboxed iframe without allow-popups-to-escape-sandbox inherit the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups');
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
+  });
+
+  it('popups from a sandboxed iframe with allow-popups-to-escape-sandbox escape the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    expect(result.origin).to.equal(new URL(serverUrl).origin);
+    expect(result.localStorage).to.equal('allowed');
+    expect(result.cookie).to.equal('allowed');
   });
 });
