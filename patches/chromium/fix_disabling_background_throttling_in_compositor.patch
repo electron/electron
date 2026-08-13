@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index a1ee39845dc3abe2bedfbe6272e6aa3c65559458..d55ba712619790cac7525ba3993da6aa7b617674 100644
+index 0560284766ebfb71b20aa4131db89b62e3e5f730..6d7e77f3904e12f35f6aa01c932ca2634d84c5e7 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -368,7 +368,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -369,7 +369,8 @@ void Compositor::SetLayerTreeFrameSink(
    // to match the Compositor's.
    if (display_private_) {
      display_private_->Resize(size());
@@ -25,7 +25,7 @@ index a1ee39845dc3abe2bedfbe6272e6aa3c65559458..d55ba712619790cac7525ba3993da6aa
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -602,7 +603,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -609,7 +610,9 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_)
@@ -36,7 +36,7 @@ index a1ee39845dc3abe2bedfbe6272e6aa3c65559458..d55ba712619790cac7525ba3993da6aa
  
    if (changed) {
      observer_list_.Notify(&CompositorObserver::OnCompositorVisibilityChanged,
-@@ -1069,6 +1072,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1077,6 +1080,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -53,10 +53,10 @@ index a1ee39845dc3abe2bedfbe6272e6aa3c65559458..d55ba712619790cac7525ba3993da6aa
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index aac30397eb4750e2a009b887073be6cc923f3424..f910be63ddde39cc59542fefae8a70589acb78b0 100644
+index 12b9261ca465d7f7293a4941cfde9719f6d97135..8d2e633bba4231cfdfa4cfe198ce6f58411b8d03 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -503,6 +503,10 @@ class COMPOSITOR_EXPORT Compositor
+@@ -505,6 +505,10 @@ class COMPOSITOR_EXPORT Compositor
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  

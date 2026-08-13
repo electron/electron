@@ -16,9 +16,7 @@
 
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
-    : network_hints::SimpleNetworkHintsHandlerImpl(
-          frame_host->GetProcess()->GetDeprecatedID(),
-          frame_host->GetRoutingID()),
+    : network_hints::SimpleNetworkHintsHandlerImpl(frame_host->GetGlobalId()),
       browser_context_(frame_host->GetProcess()->GetBrowserContext()) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;

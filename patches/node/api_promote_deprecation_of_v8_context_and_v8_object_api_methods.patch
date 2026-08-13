@@ -71,6 +71,53 @@ index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7
  }
  
  inline Environment* Environment::GetCurrent(
+diff --git a/src/env.cc b/src/env.cc
+index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..168b6a812a87cf2d700afc71c205493c968fc540 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -666,13 +666,16 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+ void Environment::AssignToContext(Local<v8::Context> context,
+                                   Realm* realm,
+                                   const ContextInfo& info) {
+-  context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kEnvironment,
+-                                           this);
+-  context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kRealm, realm);
++  context->SetAlignedPointerInEmbedderData(
++      ContextEmbedderIndex::kEnvironment, this, v8::kEmbedderDataTypeTagDefault);
++  context->SetAlignedPointerInEmbedderData(
++      ContextEmbedderIndex::kRealm, realm, v8::kEmbedderDataTypeTagDefault);
+ 
+   // ContextifyContexts will update this to a pointer to the native object.
+   context->SetAlignedPointerInEmbedderData(
+-      ContextEmbedderIndex::kContextifyContext, nullptr);
++      ContextEmbedderIndex::kContextifyContext,
++      nullptr,
++      v8::kEmbedderDataTypeTagDefault);
+ 
+   // This must not be done before other context fields are initialized.
+   ContextEmbedderTag::TagNodeContext(context);
+@@ -687,12 +690,16 @@ void Environment::AssignToContext(Local<v8::Context> context,
+ 
+ void Environment::UnassignFromContext(Local<v8::Context> context) {
+   if (!context.IsEmpty()) {
+-    context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kEnvironment,
+-                                             nullptr);
+-    context->SetAlignedPointerInEmbedderData(ContextEmbedderIndex::kRealm,
+-                                             nullptr);
+     context->SetAlignedPointerInEmbedderData(
+-        ContextEmbedderIndex::kContextifyContext, nullptr);
++        ContextEmbedderIndex::kEnvironment,
++        nullptr,
++        v8::kEmbedderDataTypeTagDefault);
++    context->SetAlignedPointerInEmbedderData(
++        ContextEmbedderIndex::kRealm, nullptr, v8::kEmbedderDataTypeTagDefault);
++    context->SetAlignedPointerInEmbedderData(
++        ContextEmbedderIndex::kContextifyContext,
++        nullptr,
++        v8::kEmbedderDataTypeTagDefault);
+   }
+   UntrackContext(context);
+ }
 diff --git a/src/histogram.cc b/src/histogram.cc
 index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d29b4d681 100644
 --- a/src/histogram.cc
@@ -155,6 +202,35 @@ index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7
          ContextEmbedderTag::kNodeContextTagPtr) [[unlikely]] {
        return false;
      }
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index c69ff16bd85427d3c26d8b42029c8ebb618dea41..4aa790405fcdb028146c6e24baeedb9cf822ed50 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -157,9 +157,12 @@ ContextifyContext::ContextifyContext(Environment* env,
+   // This should only be done after the initial initializations of the context
+   // global object is finished.
+   DCHECK_NULL(v8_context->GetAlignedPointerFromEmbedderData(
+-      ContextEmbedderIndex::kContextifyContext));
++      ContextEmbedderIndex::kContextifyContext,
++      v8::kEmbedderDataTypeTagDefault));
+   v8_context->SetAlignedPointerInEmbedderData(
+-      ContextEmbedderIndex::kContextifyContext, this);
++      ContextEmbedderIndex::kContextifyContext,
++      this,
++      v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ void ContextifyContext::InitializeGlobalTemplates(IsolateData* isolate_data) {
+@@ -466,7 +469,8 @@ ContextifyContext* ContextifyContext::Get(Local<Object> object) {
+   }
+   return static_cast<ContextifyContext*>(
+       context->GetAlignedPointerFromEmbedderData(
+-          ContextEmbedderIndex::kContextifyContext));
++          ContextEmbedderIndex::kContextifyContext,
++          v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ bool ContextifyContext::IsStillInitializing(const ContextifyContext* ctx) {
 diff --git a/src/node_object_wrap.h b/src/node_object_wrap.h
 index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216dac49aa6 100644
 --- a/src/node_object_wrap.h
@@ -207,10 +283,20 @@ index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb2
  
  inline Realm* Realm::GetCurrent(
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index c3e995adf437413fe956e45c2ccc704d8737de59..8561933060ac30e3559d7ce2ac633d25f1e4d6ec 100644
+index c3e995adf437413fe956e45c2ccc704d8737de59..ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
-@@ -1461,7 +1461,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+@@ -1370,7 +1370,8 @@ StartupData SerializeNodeContextData(Local<Context> holder,
+     case ContextEmbedderIndex::kContextifyContext:
+     case ContextEmbedderIndex::kRealm:
+     case ContextEmbedderIndex::kContextTag: {
+-      void* data = holder->GetAlignedPointerFromEmbedderData(index);
++      void* data = holder->GetAlignedPointerFromEmbedderData(
++          index, v8::kEmbedderDataTypeTagDefault);
+       per_process::Debug(
+           DebugCategory::MKSNAPSHOT,
+           "Serialize context data, index=%d, holder=%p, ptr=%p\n",
+@@ -1461,7 +1462,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
    // For the moment we do not set any internal fields in ArrayBuffer
    // or ArrayBufferViews, so just return nullptr.
    if (holder->IsArrayBuffer() || holder->IsArrayBufferView()) {
@@ -220,7 +306,7 @@ index c3e995adf437413fe956e45c2ccc704d8737de59..8561933060ac30e3559d7ce2ac633d25
      return StartupData{nullptr, 0};
    }
  
-@@ -1481,7 +1482,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+@@ -1481,7 +1483,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
                       *holder);
  
    BaseObject* object_ptr = static_cast<BaseObject*>(

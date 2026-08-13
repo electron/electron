@@ -16,6 +16,12 @@ v8_enable_snapshot_native_code_counters = false
 # we use this api
 v8_enable_javascript_promise_hooks = true
 
+# Node's inspector dispatches protocol messages (and runs JS handlers) from
+# v8::Isolate::RequestInterrupt callbacks. V8 defaults this check to off only
+# when build_with_node is set, which Electron's build does not define.
+# TODO: remove once https://github.com/nodejs/node/pull/65028 is picked up.
+v8_disallow_js_in_api_interrupts_is_checked = false
+
 enable_cdm_host_verification = false
 ffmpeg_branding = "Chrome"
 proprietary_codecs = true

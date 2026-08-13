@@ -10,10 +10,10 @@ to handle this without patching, but this is fairly clean for now and no longer 
 patching legacy devtools code.
 
 diff --git a/front_end/entrypoints/main/MainImpl.ts b/front_end/entrypoints/main/MainImpl.ts
-index fbe15934ad5d6d7e6572f1c99d38009904a7543c..551361086cf761aea9b922e7b58f890923795056 100644
+index c6119f8fba68abd164f83bf70766695f0c900d8b..dbd5e241988c5630f2fba85f89dc10a7e3c5742d 100644
 --- a/front_end/entrypoints/main/MainImpl.ts
 +++ b/front_end/entrypoints/main/MainImpl.ts
-@@ -707,6 +707,8 @@ export class MainImpl {
+@@ -708,6 +708,8 @@ export class MainImpl {
  globalThis.Main = globalThis.Main || {};
  // @ts-expect-error Exported for Tests.js
  globalThis.Main.Main = MainImpl;
