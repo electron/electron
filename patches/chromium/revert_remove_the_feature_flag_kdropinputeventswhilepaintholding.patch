@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alice Zhao <alicelovescake@anthropic.com>
+Date: Thu, 13 Aug 2026 10:28:57 -0700
+Subject: Revert "Remove the feature flag kDropInputEventsWhilePaintHolding"
+
+Partially reverts https://chromium-review.googlesource.com/c/chromium/src/+/8229624,
+which removed the kDropInputEventsWhilePaintHolding kill switch and made
+dropping browser-side input events during paint-holding unconditional.
+
+Electron disables this feature (see shell/browser/feature_list.cc): apps and
+our spec fixtures dispatch input via webContents.sendInputEvent() as soon as
+a load finishes, before the first frame is committed, and those events are
+now silently dropped. Restore the feature and the check in
+RenderInputRouter::FilterInputEvent so the opt-out keeps working.
+
+TODO(codebytere): figure out how to properly wait for paint-hold instead
+(carried over from feature_list.cc).
+
+diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
+index 461a128e6151b3f61da330c48dcf63dff0fe30e3..a75ddffded2d5d60c685c009241b2909cd7982a8 100644
+--- a/components/input/render_input_router.cc
++++ b/components/input/render_input_router.cc
+@@ -31,6 +31,7 @@
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "third_party/blink/public/common/dom/dom_node_id.h"
++#include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/input/web_input_event.h"
+ #include "ui/base/mojom/menu_source_type.mojom.h"
+ #include "ui/latency/latency_info.h"
+@@ -343,7 +344,10 @@ blink::mojom::InputEventResultState RenderInputRouter::FilterInputEvent(
+   // Right after a navigation, RenderWidgetHost keeps the InputRouter inactive
+   // while browser paint-holding is active.  This is equivalent to a
+   // non-existent input event consumer.
+-  bool filter_for_paint_holding = input_router_ && !input_router_->IsActive();
++  bool filter_for_paint_holding =
++      base::FeatureList::IsEnabled(
++          blink::features::kDropInputEventsWhilePaintHolding) &&
++      input_router_ && !input_router_->IsActive();
+   if (event.GetType() == WebInputEvent::Type::kGestureScrollBegin) {
+     // If we filter a GSB for paint holding, we'd like to receive a new one -
+     // see IsWheelScrollInProgress. Note that we leave is_in_gesture_scroll_ set
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index a241e17a9e8cb25178458b151cb538bed003f8ea..980f5632d2e288bf94883b5995446552f9f98cf1 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -567,6 +567,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
+ BASE_FEATURE(kDiscardInputEventsToRecentlyMovedFrames,
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++// Drop input events at the browser process until the process receives the first
++// signal that the renderer has sent a frame to cc (https://crbug.com/40057499).
++BASE_FEATURE(kDropInputEventsWhilePaintHolding,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // Extends console.timestamp to support adding deep-links into the DevTools
+ // Performance Panel, which (when clicked) call into a DevTools extension.
+ BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index e57db0b7116ef9a7359217c8591c449baa088d11..51fbf7219550547521b579a904dce551556fd47d 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -404,6 +404,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+     kDiscardInputEventsToRecentlyMovedFrames);
+ 
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kDropInputEventsWhilePaintHolding);
++
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+     kEnableDevtoolsDeepLinkViaExtensibilityApi);
+ 
