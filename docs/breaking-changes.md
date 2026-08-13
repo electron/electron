@@ -12,6 +12,28 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (45.0)
+
+### Deprecated: arguments in `did-navigate` and `did-frame-navigate` events on `WebContents`
+
+The `did-navigate` and `did-frame-navigate` events on `WebContents` have been updated to
+provide details on the `Event` argument, including the navigated `frame` and the
+`responseHeaders` of the navigation. The remaining positional arguments are deprecated.
+
+```js
+// Deprecated
+webContents.on('did-navigate', (event, url, httpResponseCode, httpStatusText) => {})
+webContents.on('did-frame-navigate', (event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {})
+
+// Replace with:
+webContents.on('did-navigate', ({ url, httpResponseCode, httpStatusText, frame, responseHeaders }) => {})
+webContents.on('did-frame-navigate', ({ url, httpResponseCode, httpStatusText, isMainFrame, frame, responseHeaders }) => {})
+```
+
+The `frameProcessId` and `frameRoutingId` arguments of `did-frame-navigate` are replaced by the
+`frame` property, a [`WebFrameMain`](api/web-frame-main.md) which exposes the same values as
+`frame.processId` and `frame.routingId`.
+
 ## Planned Breaking API Changes (44.0)
 
 ### Behavior Changed: `window.open()` children of unsandboxed windows get their own sandboxed process
