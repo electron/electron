@@ -41,26 +41,19 @@ runs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
     # ts_library() runs the host tsgo binary (//third_party/typescript/tsgo.gni),
-    # which DEPS only fetches when host_os == "mac".
+    # which DEPS only fetches when host_os == "mac". The DEPS key and package
+    # are literal per-arch names (no CIPD ${platform} templating), so pick the
+    # directory from the runner arch.
     # Refs https://chromium-review.googlesource.com/c/chromium/src/+/8104602
-    - name: Fix typescript-go (macOS arm64)
-      if: ${{ inputs.target-platform == 'macos' && runner.arch == 'ARM64' }}
+    - name: Fix typescript-go (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
       with:
         dependency: typescript-go
         deps-file: src/DEPS
-        installation-dir: src/third_party/typescript/mac-arm64/src
+        installation-dir: src/third_party/typescript/${{ runner.arch == 'ARM64' && 'mac-arm64' || 'mac-amd64' }}/src
         target-platform: ${{ inputs.target-platform }}
-        package: chromium/third_party/typescript/mac-arm64
-    - name: Fix typescript-go (macOS x64)
-      if: ${{ inputs.target-platform == 'macos' && runner.arch == 'X64' }}
-      uses: ./src/electron/.github/actions/cipd-install
-      with:
-        dependency: typescript-go
-        deps-file: src/DEPS
-        installation-dir: src/third_party/typescript/mac-amd64/src
-        target-platform: ${{ inputs.target-platform }}
-        package: chromium/third_party/typescript/mac-amd64
+        package: chromium/third_party/typescript/${{ runner.arch == 'ARM64' && 'mac-arm64' || 'mac-amd64' }}
     - name: Fix rollup
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
