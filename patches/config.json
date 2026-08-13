@@ -6,6 +6,7 @@
   { "patch_dir": "src/electron/patches/v8", "repo": "src/v8" },
   { "patch_dir": "src/electron/patches/node", "repo": "src/third_party/electron_node" },
   { "patch_dir": "src/electron/patches/nan", "repo": "src/third_party/nan" },
+  { "patch_dir": "src/electron/patches/libaddressinput", "repo": "src/third_party/libaddressinput/src" },
   { "patch_dir": "src/electron/patches/perfetto", "repo": "src/third_party/perfetto" },
   { "patch_dir": "src/electron/patches/squirrel.mac", "repo": "src/third_party/squirrel.mac" },
   { "patch_dir": "src/electron/patches/ReactiveObjC", "repo": "src/third_party/squirrel.mac/vendor/ReactiveObjC" },
