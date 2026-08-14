@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nelson Gill <ngill@slack-corp.com>
+Date: Wed, 13 Aug 2026 12:00:00 -0700
+Subject: fix: use org.kde SNI bus name prefix for snap confinement
+
+Chromium 151+ changed the StatusNotifierItem well-known bus name from
+org.kde.StatusNotifierItem-{PID} to
+org.freedesktop.StatusNotifierItem-{PID}-{service_id}.
+
+Under snap strict confinement, the unity7 interface only grants:
+  dbus (bind) bus=session name=org.kde.StatusNotifierItem-[0-9]*
+
+The org.freedesktop prefix is not covered by any snap interface, causing
+AppArmor to deny the bus name registration and making the tray icon
+invisible for all Electron snap apps.
+
+The StatusNotifierItem specification and all known StatusNotifierWatcher
+implementations accept either prefix -- the bus name is just an ownership
+claim on the session bus and does not affect the SNI protocol. Restoring
+the org.kde prefix matches what Chromium <151 used and is compatible with
+all desktop environments.
+
+Upstream snapd bug: https://bugs.launchpad.net/snapd/+bug/2161950
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -298,7 +298,7 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+   service_id_ = NextServiceId();
+
+   service_name_ =
+-      base::StrCat({"org.freedesktop.StatusNotifierItem-",
++      base::StrCat({"org.kde.StatusNotifierItem-",
+                     base::NumberToString(base::Process::Current().Pid()), "-",
+                     base::NumberToString(service_id_)});
+
