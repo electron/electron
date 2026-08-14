@@ -359,8 +359,14 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
 
   auto it = external_files_.find(path.value());
   if (it != external_files_.end()) {
-    *out = it->second->path();
-    return true;
+    // The OS may have cleaned the temporary copy up since it was extracted
+    // (e.g. macOS's periodic $TMPDIR sweep); extract it again if so.
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    if (base::PathExists(it->second->path())) {
+      *out = it->second->path();
+      return true;
+    }
+    external_files_.erase(it);
   }
 
   FileInfo info;

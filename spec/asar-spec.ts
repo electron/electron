@@ -4,6 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
@@ -84,6 +85,30 @@ describe('asar package', () => {
       } else if (message === 'error') {
         throw new Error(error);
       }
+    });
+  });
+
+  describe('fs.createReadStream', () => {
+    it('reads a packed file again after its extracted copy was deleted', async () => {
+      const p = path.join(asarDir, 'a.asar', 'file1');
+      const read = async () => {
+        const chunks: Buffer[] = [];
+        for await (const chunk of importedFs.createReadStream(p)) chunks.push(chunk as Buffer);
+        return Buffer.concat(chunks).toString();
+      };
+      const expected = importedFs.readFileSync(p, 'utf8');
+      expect(await read()).to.equal(expected);
+      // Streams read from an extracted temporary copy; remove every copy the
+      // way an OS temp sweep would.
+      const originalFs = require('original-fs');
+      const tmp = os.tmpdir();
+      for (const name of originalFs.readdirSync(tmp)) {
+        const candidate = path.join(tmp, name);
+        try {
+          if (originalFs.statSync(candidate).size === expected.length && originalFs.readFileSync(candidate, 'utf8') === expected) originalFs.unlinkSync(candidate);
+        } catch {}
+      }
+      expect(await read()).to.equal(expected);
     });
   });
 
