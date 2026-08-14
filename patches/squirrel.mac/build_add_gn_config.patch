@@ -25,10 +25,10 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..a02e5f54d923513fd0676e91a99b8913bad6a57e
+index 0000000000000000000000000000000000000000..8ae262dd634f9ab619a46167415acf4575fadfe9
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,250 @@
+@@ -0,0 +1,274 @@
 +assert(is_mac)
 +
 +import("//build/config/mac/rules.gni")
@@ -233,6 +233,23 @@ index 0000000000000000000000000000000000000000..a02e5f54d923513fd0676e91a99b8913
 +  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
 +}
 +
++# Same flags Squirrel's Xcode project gives these files: warnings off, its
++# config header force-included in place of Sparkle's xcconfig defines.
++source_set("sparkle_binary_delta") {
++  visibility = [ ":squirrel_framework" ]
++  sources = sparkle_binary_delta_filenames.sources
++  include_dirs = sparkle_binary_delta_filenames.include_dirs
++  configs -= [ "//build/config/compiler:chromium_code" ]
++  configs += [ "//build/config/compiler:no_chromium_code" ]
++  cflags = [
++    "-w",
++    "-include",
++    rebase_path("Squirrel/SparkleDelta/SparkleDeltaConfig.h", root_build_dir),
++  ]
++  cflags_objc = [ "-fobjc-arc" ]
++  frameworks = [ "Foundation.framework" ]
++}
++
 +mac_framework_bundle("squirrel_framework") {
 +  output_name = "Squirrel"
 +  framework_version = "A"
@@ -258,6 +275,7 @@ index 0000000000000000000000000000000000000000..a02e5f54d923513fd0676e91a99b8913
 +  deps = [
 +    ":mantle_framework+link",
 +    ":reactiveobjc_framework+link",
++    ":sparkle_binary_delta",
 +  ]
 +  frameworks = [
 +    "AppKit.framework",
@@ -265,6 +283,11 @@ index 0000000000000000000000000000000000000000..a02e5f54d923513fd0676e91a99b8913
 +    "IOKit.framework",
 +    "Security.framework",
 +    "ServiceManagement.framework",
++  ]
++  libs = [
++    "bz2",
++    "compression",
++    "z",
 +  ]
 +  sources = squirrel_filenames.headers + squirrel_filenames.sources
 +
@@ -277,7 +300,8 @@ index 0000000000000000000000000000000000000000..a02e5f54d923513fd0676e91a99b8913
 +
 +  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
 +
-+  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ]
++  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ] +
++                 sparkle_binary_delta_filenames.include_dirs
 +}
 diff --git a/build/xcrun.gni b/build/xcrun.gni
 new file mode 100644
@@ -325,10 +349,10 @@ index 0000000000000000000000000000000000000000..a7aeeb7d3e187bd91ef12ed860d1e37e
 +    sys.exit(e.returncode)
 diff --git a/filenames.gni b/filenames.gni
 new file mode 100644
-index 0000000000000000000000000000000000000000..cee305c80588ffe2234bfadd5c211a9c301fe589
+index 0000000000000000000000000000000000000000..1168cbbca6cb75d5746f582b3554471c2db2f2fb
 --- /dev/null
 +++ b/filenames.gni
-@@ -0,0 +1,249 @@
+@@ -0,0 +1,285 @@
 +squirrel_filenames = {
 +  headers = [
 +    "Squirrel/NSBundle+SQRLVersionExtensions.h",
@@ -339,9 +363,11 @@ index 0000000000000000000000000000000000000000..cee305c80588ffe2234bfadd5c211a9c
 +    "Squirrel/SQRLCodeSignature.h",
 +    "Squirrel/SQRLDirectoryManager.h",
 +    "Squirrel/SQRLDownloadedUpdate.h",
++    "Squirrel/SQRLDownloader.h",
 +    "Squirrel/SQRLShipItLauncher.h",
 +    "Squirrel/SQRLShipItRequest.h",
 +    "Squirrel/SQRLUpdate.h",
++    "Squirrel/SQRLUpdateDelta.h",
 +    "Squirrel/SQRLUpdater.h",
 +    "Squirrel/SQRLZipArchiver.h",
 +    "Squirrel/Squirrel.h",
@@ -357,17 +383,51 @@ index 0000000000000000000000000000000000000000..cee305c80588ffe2234bfadd5c211a9c
 +    "Squirrel/SQRLDirectoryManager.m",
 +    "Squirrel/SQRLDownloadedUpdate.h",
 +    "Squirrel/SQRLDownloadedUpdate.m",
++    "Squirrel/SQRLDownloader.h",
++    "Squirrel/SQRLDownloader.m",
 +    "Squirrel/SQRLShipItLauncher.h",
 +    "Squirrel/SQRLShipItLauncher.m",
 +    "Squirrel/SQRLShipItRequest.h",
 +    "Squirrel/SQRLShipItRequest.m",
 +    "Squirrel/SQRLUpdate.h",
 +    "Squirrel/SQRLUpdate.m",
++    "Squirrel/SQRLUpdateDelta.h",
++    "Squirrel/SQRLUpdateDelta.m",
 +    "Squirrel/SQRLUpdater.h",
 +    "Squirrel/SQRLUpdater.m",
 +    "Squirrel/SQRLZipArchiver.h",
 +    "Squirrel/SQRLZipArchiver.m",
 +    "Squirrel/Squirrel.h",
++  ]
++}
++
++# Sparkle's BinaryDelta apply path and the bsdiff it vendors, compiled into
++# Squirrel.framework from vendor/Sparkle (Squirrel's own build takes them from
++# its Carthage/Checkouts/Sparkle submodule at the same tag).
++sparkle_binary_delta_filenames = {
++  sources = [
++    "vendor/Sparkle/Autoupdate/SPUDeltaArchive.h",
++    "vendor/Sparkle/Autoupdate/SPUDeltaArchive.m",
++    "vendor/Sparkle/Autoupdate/SPUDeltaArchiveProtocol.h",
++    "vendor/Sparkle/Autoupdate/SPUDeltaCompressionMode.h",
++    "vendor/Sparkle/Autoupdate/SPUSparkleDeltaArchive.h",
++    "vendor/Sparkle/Autoupdate/SPUSparkleDeltaArchive.m",
++    "vendor/Sparkle/Autoupdate/SPUXarDeltaArchive.h",
++    "vendor/Sparkle/Autoupdate/SUBinaryDeltaApply.h",
++    "vendor/Sparkle/Autoupdate/SUBinaryDeltaApply.m",
++    "vendor/Sparkle/Autoupdate/SUBinaryDeltaCommon.h",
++    "vendor/Sparkle/Autoupdate/SUBinaryDeltaCommon.m",
++    "vendor/Sparkle/Sparkle/AppKitPrevention.h",
++    "vendor/Sparkle/Vendor/bsdiff/bscommon.c",
++    "vendor/Sparkle/Vendor/bsdiff/bscommon.h",
++    "vendor/Sparkle/Vendor/bsdiff/bspatch.c",
++    "vendor/Sparkle/Vendor/bsdiff/bspatch.h",
++  ]
++
++  include_dirs = [
++    "vendor/Sparkle/Autoupdate",
++    "vendor/Sparkle/Vendor/bsdiff",
++    "vendor/Sparkle/Sparkle",
 +  ]
 +}
 +
