@@ -69,9 +69,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   [[nodiscard]] static bool IsValidContext(const void* context);
 
   // Get or create the default BrowserContext.
-  // The default session's context if it has been created, else nullptr.
-  static ElectronBrowserContext* GetExistingDefaultBrowserContext();
-
   static ElectronBrowserContext* GetDefaultBrowserContext(
       base::DictValue options = {});
 
