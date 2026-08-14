@@ -25,7 +25,7 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8ae262dd634f9ab619a46167415acf4575fadfe9
+index 0000000000000000000000000000000000000000..f484615ea6d344b68a2459c0197f82076da7bdaf
 --- /dev/null
 +++ b/BUILD.gn
 @@ -0,0 +1,274 @@
@@ -236,7 +236,7 @@ index 0000000000000000000000000000000000000000..8ae262dd634f9ab619a46167415acf45
 +# Same flags Squirrel's Xcode project gives these files: warnings off, its
 +# config header force-included in place of Sparkle's xcconfig defines.
 +source_set("sparkle_binary_delta") {
-+  visibility = [ ":squirrel_framework" ]
++  visibility = [ ":*" ]
 +  sources = sparkle_binary_delta_filenames.sources
 +  include_dirs = sparkle_binary_delta_filenames.include_dirs
 +  configs -= [ "//build/config/compiler:chromium_code" ]
