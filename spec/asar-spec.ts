@@ -105,7 +105,10 @@ describe('asar package', () => {
       for (const name of originalFs.readdirSync(tmp)) {
         const candidate = path.join(tmp, name);
         try {
-          if (originalFs.statSync(candidate).size === expected.length && originalFs.readFileSync(candidate, 'utf8') === expected) originalFs.unlinkSync(candidate);
+          const stat = originalFs.statSync(candidate);
+          if (stat.size === expected.length && originalFs.readFileSync(candidate, 'utf8') === expected) {
+            originalFs.unlinkSync(candidate);
+          }
         } catch {}
       }
       expect(await read()).to.equal(expected);
