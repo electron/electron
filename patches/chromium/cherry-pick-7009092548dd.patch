@@ -1,0 +1,425 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sean Maher <spvm@chromium.org>
+Date: Wed, 22 Jul 2026 10:42:17 -0700
+Subject: tts: Move GetSystemDefaultVoice() off the UI thread
+
+Currently, it has been observed that GetSystemDefaultVoice can block the
+UI thread for several seconds, as seen in the traces linked in the bug.
+
+Change the implementation to use cached values rather than synchronously
+querying on request, fetch the default voice at startup, and update it
+when it is used.
+
+Since text-to-speech is used in user-visible interactions (such as Web
+Speech synthesis, Read Aloud, Reading Mode, and screen readers), use
+base::TaskPriority::USER_VISIBLE with base::MayBlock().
+
+TAG=agy
+
+Bug: 536936876
+Change-Id: I1e28b20779488ba0fbe2cca3d39bb7d2d9c738eb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130884
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Sean Maher <spvm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666461}
+
+diff --git a/content/browser/speech/tts_mac.h b/content/browser/speech/tts_mac.h
+index 5a9d1fff27e2efa306eb67c0acf71eb9f8d80d6b..8c3cdbbd893e034da6b6131b2d54d1365bc81c7a 100644
+--- a/content/browser/speech/tts_mac.h
++++ b/content/browser/speech/tts_mac.h
+@@ -7,12 +7,35 @@
+ 
+ #import <AVFAudio/AVFAudio.h>
+ 
++#include <vector>
++
+ #include "base/functional/callback.h"
++#include "base/gtest_prod_util.h"
+ #include "base/no_destructor.h"
++#include "base/sequence_checker.h"
++#include "base/task/task_traits.h"
++#include "base/thread_annotations.h"
++#include "base/threading/sequence_bound.h"
+ #include "content/browser/speech/tts_platform_impl.h"
+ 
++namespace content {
++FORWARD_DECLARE_TEST(TtsMacTest, CachedVoiceData);
++}  // namespace content
++
+ class TtsPlatformImplMac;
+ 
++class CONTENT_EXPORT TtsPlatformImplMacBackgroundWorker {
++ public:
++  TtsPlatformImplMacBackgroundWorker() = default;
++  TtsPlatformImplMacBackgroundWorker(
++      const TtsPlatformImplMacBackgroundWorker&) = delete;
++  TtsPlatformImplMacBackgroundWorker& operator=(
++      const TtsPlatformImplMacBackgroundWorker&) = delete;
++  ~TtsPlatformImplMacBackgroundWorker() = default;
++
++  AVSpeechSynthesisVoice* GetSystemDefaultVoice();
++};
++
+ @interface ChromeTtsDelegate : NSObject <AVSpeechSynthesizerDelegate>
+ 
+ - (instancetype)initWithPlatformImplMac:(TtsPlatformImplMac*)ttsImplMac;
+@@ -48,6 +71,8 @@ class TtsPlatformImplMac : public content::TtsPlatformImpl {
+ 
+   void GetVoices(std::vector<content::VoiceData>* out_voices) override;
+ 
++  void RefreshVoices() override;
++
+   // Called by ChromeTtsDelegate when we get a callback from the
+   // native speech engine.
+   void OnSpeechEvent(int utterance_id,
+@@ -59,10 +84,12 @@ class TtsPlatformImplMac : public content::TtsPlatformImpl {
+   // Get the single instance of this class.
+   CONTENT_EXPORT static TtsPlatformImplMac* GetInstance();
+ 
+-  CONTENT_EXPORT static std::vector<content::VoiceData>& VoicesRefForTesting();
++  CONTENT_EXPORT static base::SequenceBound<TtsPlatformImplMacBackgroundWorker>&
++  GetBackgroundWorker();
+ 
+  private:
+   friend base::NoDestructor<TtsPlatformImplMac>;
++  FRIEND_TEST_ALL_PREFIXES(content::TtsMacTest, CachedVoiceData);
+   TtsPlatformImplMac();
+ 
+   void ProcessSpeech(int utterance_id,
+@@ -72,12 +99,28 @@ class TtsPlatformImplMac : public content::TtsPlatformImpl {
+                      base::OnceCallback<void(bool)> on_speak_finished,
+                      const std::string& parsed_utterance);
+ 
++  void UpdateSystemDefaultVoice();
++  void OnGotDefaultVoice(AVSpeechSynthesisVoice* default_voice);
++  const std::vector<content::VoiceData>& Voices();
++  void OnApplicationWillBecomeActive();
++
++  SEQUENCE_CHECKER(sequence_checker_);
++
+   AVSpeechSynthesizer* __strong speech_synthesizer_;
+   ChromeTtsDelegate* __strong delegate_;
++  id __strong application_active_observer_ = nil;
+   int utterance_id_ = kInvalidUtteranceId;
+   std::string utterance_;
+   int last_char_index_ = 0;
+   bool paused_ = false;
++
++  std::vector<content::VoiceData> voices_ GUARDED_BY_CONTEXT(sequence_checker_);
++  AVSpeechSynthesisVoice* __strong default_voice_
++      GUARDED_BY_CONTEXT(sequence_checker_) = nil;
++  bool is_updating_default_voice_ GUARDED_BY_CONTEXT(sequence_checker_) = false;
++  bool needs_reupdate_default_voice_ GUARDED_BY_CONTEXT(sequence_checker_) =
++      false;
++  bool received_voices_request_ GUARDED_BY_CONTEXT(sequence_checker_) = false;
+ };
+ 
+ #endif  // CONTENT_BROWSER_SPEECH_TTS_MAC_H_
+diff --git a/content/browser/speech/tts_mac.mm b/content/browser/speech/tts_mac.mm
+index 3563a9797dbb24ae193a686d5ff535fe714b7ec2..0b298b566272823b7272ebdd16d1b34883e5a4e0 100644
+--- a/content/browser/speech/tts_mac.mm
++++ b/content/browser/speech/tts_mac.mm
+@@ -16,6 +16,8 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/no_destructor.h"
+ #include "base/strings/sys_string_conversions.h"
++#include "base/task/task_traits.h"
++#include "base/task/thread_pool.h"
+ #include "base/values.h"
+ #include "content/public/browser/tts_controller.h"
+ 
+@@ -24,26 +26,28 @@
+ constexpr int kNoLength = -1;
+ constexpr char kNoError[] = "";
+ 
+-std::vector<content::VoiceData>& VoicesRef() {
+-  static base::NoDestructor<std::vector<content::VoiceData>> voices([]() {
+-    [NSNotificationCenter.defaultCenter
+-        addObserverForName:NSApplicationWillBecomeActiveNotification
+-                    object:nil
+-                     queue:nil
+-                usingBlock:^(NSNotification* notification) {
+-                  // The user might have switched to Settings or some other app
+-                  // to change voices or locale settings. Avoid a stale cache by
+-                  // forcing a rebuild of the voices vector after the app
+-                  // becomes active.
+-                  VoicesRef().clear();
+-                }];
+-    return std::vector<content::VoiceData>();
+-  }());
+-
+-  return *voices;
++AVSpeechUtterance* MakeUtterance(int utterance_id,
++                                 const std::string& utterance_string) {
++  AVSpeechUtterance* utterance = [AVSpeechUtterance
++      speechUtteranceWithString:base::SysUTF8ToNSString(utterance_string)];
++  objc_setAssociatedObject(utterance, @selector(identifier), @(utterance_id),
++                           OBJC_ASSOCIATION_RETAIN);
++  return utterance;
++}
++
++int GetUtteranceId(AVSpeechUtterance* utterance) {
++  NSNumber* identifier = base::apple::ObjCCast<NSNumber>(
++      objc_getAssociatedObject(utterance, @selector(identifier)));
++  if (identifier) {
++    return identifier.intValue;
++  }
++  return TtsPlatformImplMac::kInvalidUtteranceId;
+ }
+ 
+-AVSpeechSynthesisVoice* GetSystemDefaultVoice() {
++}  // namespace
++
++AVSpeechSynthesisVoice*
++TtsPlatformImplMacBackgroundWorker::GetSystemDefaultVoice() {
+   // This should be
+   //
+   //   [AVSpeechSynthesisVoice voiceWithLanguage:nil]
+@@ -107,20 +111,25 @@
+   return voice;
+ }
+ 
+-std::vector<content::VoiceData>& Voices() {
+-  std::vector<content::VoiceData>& voices = VoicesRef();
+-  if (!voices.empty()) {
+-    return voices;
++const std::vector<content::VoiceData>& TtsPlatformImplMac::Voices() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (!received_voices_request_) {
++    received_voices_request_ = true;
++    UpdateSystemDefaultVoice();
++  }
++  if (!voices_.empty()) {
++    return voices_;
+   }
+ 
+   NSMutableArray* av_speech_voices =
+       [[AVSpeechSynthesisVoice.speechVoices sortedArrayUsingDescriptors:@[
+         [NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]
+       ]] mutableCopy];
+-  AVSpeechSynthesisVoice* default_voice = GetSystemDefaultVoice();
+-  if (default_voice) {
+-    [av_speech_voices removeObject:default_voice];
+-    [av_speech_voices insertObject:default_voice atIndex:0];
++  if (default_voice_) {
++    [av_speech_voices removeObject:default_voice_];
++    [av_speech_voices insertObject:default_voice_ atIndex:0];
++  } else {
++    UpdateSystemDefaultVoice();
+   }
+ 
+   // For the case of multiple voices with the same name but of a different
+@@ -147,7 +156,7 @@
+     }
+   }
+ 
+-  voices.reserve(av_speech_voices.count);
++  voices_.reserve(av_speech_voices.count);
+   for (AVSpeechSynthesisVoice* av_speech_voice in av_speech_voices) {
+     NSString* voice_name = av_speech_voice.name;
+     if (!voice_name) {
+@@ -157,8 +166,8 @@
+       continue;
+     }
+ 
+-    voices.emplace_back();
+-    content::VoiceData& data = voices.back();
++    voices_.emplace_back();
++    content::VoiceData& data = voices_.back();
+ 
+     if (name_counts[voice_name].intValue > 1) {
+       // The language property on a voice is a BCP 47 code (i.e. "en-US") while
+@@ -184,35 +193,20 @@
+     data.events.insert(content::TTS_EVENT_RESUME);
+   }
+ 
+-  return voices;
+-}
+-
+-AVSpeechUtterance* MakeUtterance(int utterance_id,
+-                                 const std::string& utterance_string) {
+-  AVSpeechUtterance* utterance = [AVSpeechUtterance
+-      speechUtteranceWithString:base::SysUTF8ToNSString(utterance_string)];
+-  objc_setAssociatedObject(utterance, @selector(identifier), @(utterance_id),
+-                           OBJC_ASSOCIATION_RETAIN);
+-  return utterance;
+-}
+-
+-int GetUtteranceId(AVSpeechUtterance* utterance) {
+-  NSNumber* identifier = base::apple::ObjCCast<NSNumber>(
+-      objc_getAssociatedObject(utterance, @selector(identifier)));
+-  if (identifier) {
+-    return identifier.intValue;
+-  }
+-  return TtsPlatformImplMac::kInvalidUtteranceId;
++  return voices_;
+ }
+ 
+-}  // namespace
+-
+ // static
+ content::TtsPlatformImpl* content::TtsPlatformImpl::GetInstance() {
+   return TtsPlatformImplMac::GetInstance();
+ }
+ 
+-TtsPlatformImplMac::~TtsPlatformImplMac() = default;
++TtsPlatformImplMac::~TtsPlatformImplMac() {
++  if (application_active_observer_) {
++    [NSNotificationCenter.defaultCenter
++        removeObserver:application_active_observer_];
++  }
++}
+ 
+ bool TtsPlatformImplMac::PlatformImplSupported() {
+   return true;
+@@ -229,6 +223,11 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+     const content::VoiceData& voice,
+     const content::UtteranceContinuousParameters& params,
+     base::OnceCallback<void(bool)> on_speak_finished) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (!received_voices_request_) {
++    received_voices_request_ = true;
++    UpdateSystemDefaultVoice();
++  }
+   // Parse SSML and process speech. TODO(crbug.com/40273591):
+   // AVSpeechUtterance has an initializer -initWithSSMLRepresentation:. Should
+   // that be used instead?
+@@ -245,6 +244,7 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+     const content::UtteranceContinuousParameters& params,
+     base::OnceCallback<void(bool)> on_speak_finished,
+     const std::string& parsed_utterance) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   utterance_ = parsed_utterance;
+   paused_ = false;
+   utterance_id_ = utterance_id;
+@@ -326,12 +326,14 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+ }
+ 
+ bool TtsPlatformImplMac::StopSpeaking() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   [speech_synthesizer_ stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+   paused_ = false;
+   return true;
+ }
+ 
+ void TtsPlatformImplMac::Pause() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   if (!paused_) {
+     [speech_synthesizer_ pauseSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+     paused_ = true;
+@@ -342,6 +344,7 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+ }
+ 
+ void TtsPlatformImplMac::Resume() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   if (paused_) {
+     [speech_synthesizer_ continueSpeaking];
+     paused_ = false;
+@@ -352,18 +355,71 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+ }
+ 
+ bool TtsPlatformImplMac::IsSpeaking() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   return speech_synthesizer_.speaking;
+ }
+ 
+ void TtsPlatformImplMac::GetVoices(std::vector<content::VoiceData>* outVoices) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   *outVoices = Voices();
+ }
+ 
++void TtsPlatformImplMac::RefreshVoices() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  received_voices_request_ = true;
++  UpdateSystemDefaultVoice();
++}
++
++void TtsPlatformImplMac::UpdateSystemDefaultVoice() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (is_updating_default_voice_) {
++    needs_reupdate_default_voice_ = true;
++    return;
++  }
++  is_updating_default_voice_ = true;
++
++  GetBackgroundWorker()
++      .AsyncCall(&TtsPlatformImplMacBackgroundWorker::GetSystemDefaultVoice)
++      .Then(base::BindOnce(&TtsPlatformImplMac::OnGotDefaultVoice,
++                           base::Unretained(this)));
++}
++
++void TtsPlatformImplMac::OnGotDefaultVoice(
++    AVSpeechSynthesisVoice* default_voice) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  is_updating_default_voice_ = false;
++  bool default_voice_changed =
++      (default_voice_ != default_voice &&
++       (!default_voice_ || !default_voice ||
++        ![default_voice_.identifier isEqualToString:default_voice.identifier]));
++
++  default_voice_ = default_voice;
++  if (default_voice_changed) {
++    voices_.clear();
++    Voices();
++    content::TtsController::GetInstance()->VoicesChanged();
++  }
++
++  if (needs_reupdate_default_voice_) {
++    needs_reupdate_default_voice_ = false;
++    UpdateSystemDefaultVoice();
++  }
++}
++
++void TtsPlatformImplMac::OnApplicationWillBecomeActive() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (!received_voices_request_) {
++    return;
++  }
++  UpdateSystemDefaultVoice();
++}
++
+ void TtsPlatformImplMac::OnSpeechEvent(int utterance_id,
+                                        content::TtsEventType event_type,
+                                        int char_index,
+                                        int char_length,
+                                        const std::string& error_message) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   // Don't send events from an utterance that's already completed.
+   if (utterance_id != utterance_id_) {
+     return;
+@@ -382,6 +438,19 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+     : speech_synthesizer_([[AVSpeechSynthesizer alloc] init]),
+       delegate_([[ChromeTtsDelegate alloc] initWithPlatformImplMac:this]) {
+   speech_synthesizer_.delegate = delegate_;
++  application_active_observer_ = [NSNotificationCenter.defaultCenter
++      addObserverForName:NSApplicationWillBecomeActiveNotification
++                  object:nil
++                   queue:NSOperationQueue.mainQueue
++              usingBlock:^(NSNotification* notification) {
++                // The user might have switched to Settings or some other app
++                // to change voices or locale settings. Avoid a stale cache by
++                // forcing a rebuild of the voices vector after the app
++                // becomes active.
++                TtsPlatformImplMac::GetInstance()
++                    ->OnApplicationWillBecomeActive();
++              }];
++  UpdateSystemDefaultVoice();
+ }
+ 
+ // static
+@@ -391,8 +460,13 @@ int GetUtteranceId(AVSpeechUtterance* utterance) {
+ }
+ 
+ // static
+-std::vector<content::VoiceData>& TtsPlatformImplMac::VoicesRefForTesting() {
+-  return VoicesRef();
++base::SequenceBound<TtsPlatformImplMacBackgroundWorker>&
++TtsPlatformImplMac::GetBackgroundWorker() {
++  static base::NoDestructor<
++      base::SequenceBound<TtsPlatformImplMacBackgroundWorker>>
++      worker(base::ThreadPool::CreateSequencedTaskRunner(
++          {base::MayBlock(), base::TaskPriority::USER_VISIBLE}));
++  return *worker;
+ }
+ 
+ @implementation ChromeTtsDelegate {
