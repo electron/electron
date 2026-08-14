@@ -90,7 +90,7 @@ jobs:
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
       upload-out-gen-artifacts: true
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
   clang-tidy:
     uses: ./.github/workflows/pipeline-segment-electron-clang-tidy.yml
     permissions:
@@ -102,7 +102,7 @@ jobs:
       clang-tidy-container: ${{ inputs.clang-tidy-container }}
       target-platform: ${{ inputs.target-platform }}
       target-arch: ${{ inputs.target-arch }}
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     permissions:
@@ -115,7 +115,7 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
   test-wayland:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     permissions:
@@ -130,7 +130,7 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
       display-server: wayland
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
     permissions:
@@ -142,4 +142,4 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows

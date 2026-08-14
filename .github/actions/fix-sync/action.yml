@@ -123,7 +123,7 @@ runs:
       run : |
         # Fix dsymutil
         if [ "$TARGET_PLATFORM" = "macos" ]; then
-          if  [ "${{ env.TARGET_ARCH }}" == "arm64" ]; then
+          if  [ "$TARGET_ARCH" == "arm64" ]; then
             DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
           else
             DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
@@ -142,7 +142,7 @@ runs:
     - name: Set ninja in path
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
-      run : |
+      run : | # zizmor: ignore[github-env] adds a local tool path in trusted pipeline runs
         echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
     - name: Fix siso
       uses: ./src/electron/.github/actions/cipd-install

@@ -1,7 +1,7 @@
 name: PR Template Check
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] deliberate; only base-branch code runs, PR head is never checked out
     types: [opened, ready_for_review]
 
 # SECURITY: This workflow uses pull_request_target and has access to secrets.
@@ -22,6 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           sparse-checkout: .github/PULL_REQUEST_TEMPLATE.md
           sparse-checkout-cone-mode: false
       - name: Check for required sections

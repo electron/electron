@@ -50,6 +50,8 @@ jobs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -78,6 +80,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -104,6 +107,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -134,6 +138,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -192,7 +197,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   build-linux-arm64:
     permissions:
@@ -212,7 +217,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   build-macos-x64:
     permissions:
@@ -232,7 +237,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   build-macos-arm64:
     permissions:
@@ -252,7 +257,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   build-windows-x64:
     permissions:
@@ -271,7 +276,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   build-windows-arm64:
     permissions:
@@ -290,7 +295,7 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   # ---------------------------------------------------------------------------
   # V8 builtins PGO: instrumented d8 + JetStream 2 -> block-hint profile.
@@ -319,6 +324,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Install Dependencies
@@ -338,6 +344,7 @@ jobs:
     - name: Checkout Electron (after cache restore)
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Run Electron Only Hooks
@@ -408,7 +415,7 @@ jobs:
       artifact-key: linux_x64
       collect-runs-on: electron-arc-centralus-linux-amd64-8core
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   collect-linux-arm64:
     permissions:
@@ -422,7 +429,7 @@ jobs:
       # Instrumented arm64 crashes on GitHub-hosted arm64 runners; ARC nodes work.
       collect-runs-on: electron-arc-centralus-linux-arm64-4core
       collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   collect-macos-x64:
     permissions:
@@ -434,7 +441,7 @@ jobs:
       target-arch: x64
       artifact-key: darwin_x64
       collect-runs-on: macos-15-large
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   collect-macos-arm64:
     permissions:
@@ -446,7 +453,7 @@ jobs:
       target-arch: arm64
       artifact-key: darwin_arm64
       collect-runs-on: macos-15
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   collect-windows-x64:
     permissions:
@@ -458,7 +465,7 @@ jobs:
       target-arch: x64
       artifact-key: win_x64
       collect-runs-on: windows-latest
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   collect-windows-arm64:
     permissions:
@@ -470,7 +477,7 @@ jobs:
       target-arch: arm64
       artifact-key: win_arm64
       collect-runs-on: windows-11-arm
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   # ---------------------------------------------------------------------------
   # Merge: .profraw sets -> named .profdata (one x64 job, in-tree clang tooling)
@@ -497,6 +504,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Generate DEPS Hash
@@ -510,6 +518,7 @@ jobs:
     - name: Checkout Electron (after cache restore)
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Download llvm-profdata

@@ -16,7 +16,7 @@ runs:
   steps:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
     shell: bash
-    run: |
+    run: | # zizmor: ignore[github-env] writes a local path constant in trusted pipeline runs
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Install Dependencies
     uses: ./src/electron/.github/actions/install-dependencies
@@ -28,7 +28,7 @@ runs:
     shell: bash
     env:
       TARGET_PLATFORM: ${{ inputs.target-platform }}
-    run: |
+    run: | # zizmor: ignore[github-env] writes derived cache keys in trusted pipeline runs
       node src/electron/script/generate-deps-hash.js
       DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
@@ -104,6 +104,8 @@ runs:
   - name: Gclient Sync
     if: steps.check-cache.outputs.cache_exists == 'false'
     shell: bash
+    env:
+      IS_RELEASE: ${{ inputs.is-release }}
     run: |
       e d gclient config \
         --name "src/electron" \
@@ -116,7 +118,7 @@ runs:
       fi
 
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=0 DEPOT_TOOLS_WIN_TOOLCHAIN=0 ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
-      if [[ "${{ inputs.is-release }}" != "true" ]]; then
+      if [[ "$IS_RELEASE" != "true" ]]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
         cd src/electron

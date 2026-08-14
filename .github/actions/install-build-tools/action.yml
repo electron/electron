@@ -5,7 +5,7 @@ runs:
   steps:
   - name: Install Build Tools
     shell: bash
-    run: |
+    run: | # zizmor: ignore[github-env,adhoc-packages] adds depot_tools to PATH and installs latest build-tools by design; trusted pipeline runs
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         git config --global core.filemode false
         git config --global core.autocrlf false

@@ -8,7 +8,7 @@ runs:
   steps:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
     shell: bash
-    run: |
+    run: | # zizmor: ignore[github-env] writes a local path constant in trusted pipeline runs
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Set Chromium Git Cookie
     uses: ./src/electron/.github/actions/set-chromium-cookie

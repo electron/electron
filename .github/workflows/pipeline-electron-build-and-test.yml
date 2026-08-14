@@ -82,7 +82,7 @@ jobs:
       upload-to-storage: ${{ inputs.upload-to-storage }}
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     permissions:
@@ -97,4 +97,4 @@ jobs:
       test-container: ${{ inputs.test-container }}
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows

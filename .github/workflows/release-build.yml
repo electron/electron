@@ -35,6 +35,8 @@ jobs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -61,6 +63,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -88,6 +91,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -114,6 +118,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
@@ -180,7 +185,7 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   linux:
     name: linux-${{ matrix.target-arch }}
@@ -205,7 +210,7 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
 
   windows:
     name: windows-${{ matrix.target-arch }}
@@ -229,4 +234,4 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit] called workflow lives in this repo and reads secrets.* directly; enumeration would require redeclaring secrets across all pipeline workflows
