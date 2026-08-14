@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "shell/common/asar/asar_util.h"
+#include "net/base/filename_util.h"
+#include "url/gurl.h"
 
 #include <map>
 #include <memory>
@@ -149,6 +151,24 @@ void ValidateIntegrityOrDie(base::span<const uint8_t> input,
   } else {
     LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
   }
+}
+
+bool GetExtractedFileURL(const GURL& url,
+                         GURL* extracted_url,
+                         std::u16string* file_name) {
+  base::FilePath path;
+  if (!url.SchemeIsFile() || !net::FileURLToFilePath(url, &path))
+    return false;
+  base::FilePath asar_path, relative_path;
+  if (!GetAsarArchivePath(path, &asar_path, &relative_path))
+    return false;
+  std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
+  base::FilePath extracted_path;
+  if (!archive || !archive->CopyFileOut(relative_path, &extracted_path))
+    return false;
+  *extracted_url = net::FilePathToFileURL(extracted_path);
+  *file_name = path.BaseName().AsUTF16Unsafe();
+  return true;
 }
 
 }  // namespace asar
