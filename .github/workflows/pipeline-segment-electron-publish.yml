@@ -208,8 +208,8 @@ jobs:
           GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
           TARGET_ARCH: ${{ inputs.target-arch }}
         run: >
-          e init -f --root=$(pwd) --out=Default $GN_BUILD_TYPE
-          --import $GN_BUILD_TYPE --target-cpu $TARGET_ARCH --remote-build siso
+          e init -f --root=$(pwd) --out=Default $GN_BUILD_TYPE --import
+          $GN_BUILD_TYPE --target-cpu $TARGET_ARCH --remote-build siso
       - name: Run Electron Only Hooks
         run: |
           e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"

@@ -20,12 +20,19 @@ parsedBase.jobs.build.permissions = {
   'id-token': 'write'
 };
 
+// yaml.stringify drops comments, so re-attach the zizmor ignore comment from
+// the base workflow's container line to the generated output.
+const generated = (PREFIX + yaml.stringify(parsedBase)).replace(
+  /^(\s*container: .*build-container.*)$/m,
+  '$1 # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha'
+);
+
 if (process.argv.includes('--check')) {
-  if (fs.readFileSync(target, 'utf-8') !== PREFIX + yaml.stringify(parsedBase)) {
+  if (fs.readFileSync(target, 'utf-8') !== generated) {
     console.error(`${target} is out of date`);
     console.error('Please run "copy-pipeline-segment-publish.js" to update it');
     process.exit(1);
   }
 } else {
-  fs.writeFileSync(target, PREFIX + yaml.stringify(parsedBase));
+  fs.writeFileSync(target, generated);
 }
