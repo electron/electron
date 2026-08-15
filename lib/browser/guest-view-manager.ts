@@ -55,6 +55,7 @@ function makeWebPreferences(embedder: Electron.WebContents, params: Record<strin
     ['contextIsolation', true],
     ['javascript', false],
     ['nodeIntegration', false],
+    ['nodeIntegrationInWorker', false],
     ['sandbox', true],
     ['nodeIntegrationInSubFrames', false],
     ['enableWebSQL', false]
