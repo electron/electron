@@ -2880,6 +2880,98 @@ describe('chromium features', () => {
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
     });
+
+    describe('permission requests', () => {
+      const deviceGetUserMedia = `navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+      const desktopGetUserMedia = `navigator.mediaDevices.getUserMedia({
+          video: { mandatory: { chromeMediaSource: 'desktop' } }
+        }).then(s => ({ ok: true, kinds: s.getTracks().map(t => t.kind) }), e => ({ ok: false, err: e.message }))`;
+      const getDisplayMedia = `navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+
+      type SeenRequest = { permission: string, mediaTypes: string[] | undefined, securityOrigin: string | undefined };
+      const collectRequests = (ses: Electron.Session, grant: (permission: string) => boolean) => {
+        const seen: SeenRequest[] = [];
+        ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+          const { mediaTypes, securityOrigin } = details as MediaAccessPermissionRequest;
+          seen.push({ permission, mediaTypes, securityOrigin });
+          callback(grant(permission));
+        });
+        return seen;
+      };
+
+      it('reports camera and microphone getUserMedia as a media request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(deviceGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('media');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('reports desktop getUserMedia as a display-capture request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err, kinds } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(kinds).to.deep.equal(['video']);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.deep.equal(['video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('denies desktop getUserMedia when display-capture is denied', async () => {
+        const seen = collectRequests(session.defaultSession, (permission) => permission === 'media');
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(seen.map(r => r.permission)).to.deep.equal(['display-capture']);
+      });
+
+      it('reports getDisplayMedia as a display-capture request before the display media handler runs', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, () => true);
+        let requestsSeenByDisplayHandler = -1;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          requestsSeenByDisplayHandler = seen.length;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.true(err);
+        expect(requestsSeenByDisplayHandler).to.equal(1);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('does not run the display media handler for getDisplayMedia when display-capture is denied', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, (permission) => permission === 'media');
+        let displayHandlerCalled = false;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          displayHandlerCalled = true;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(displayHandlerCalled).to.be.false();
+        expect(seen.map(r => r.permission)).to.deep.equal(['display-capture']);
+      });
+    });
   });
 
   describe('window.opener access', () => {

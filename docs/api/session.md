@@ -981,11 +981,11 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
-    * `display-capture` - Request access to capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+    * `display-capture` - Request access to capture the screen, a window or a tab via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API) (`navigator.mediaDevices.getDisplayMedia`) or via `getUserMedia` with the `chromeMediaSource` constraints described in [desktopCapturer](desktop-capturer.md). Requests for camera or microphone devices are reported as `media` instead.
     * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
     * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
     * `idle-detection` - Request access to the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
-    * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `media` -  Request access to media devices such as camera, microphone and speakers. Screen, window and tab capture is reported as `display-capture` instead.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `midi` - Request MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
     * `midiSysex` - Request the use of system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
@@ -1018,6 +1018,31 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
   }
 
   callback(true)
+})
+```
+
+Both `media` and `display-capture` requests carry a
+[MediaAccessPermissionRequest](structures/media-access-permission-request.md) as
+`details`. A `media` request is for camera and/or microphone devices, while a
+`display-capture` request is for the screen, a window or a tab (whether made
+through `getDisplayMedia` or through `getUserMedia` with `chromeMediaSource`
+constraints). Applications that allow camera and microphone access but want to
+control screen sharing separately should handle the two permissions
+individually:
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'media') {
+    // Camera / microphone. `details.mediaTypes` lists which of them was requested.
+    return callback(true)
+  }
+  if (permission === 'display-capture') {
+    // Screen, window or tab capture.
+    return callback(new URL(details.requestingUrl).origin === 'https://meet.example.com')
+  }
+  callback(false)
 })
 ```
 

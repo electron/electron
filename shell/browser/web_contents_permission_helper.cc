@@ -80,6 +80,17 @@ bool SystemMediaPermissionDenied(const content::MediaStreamRequest& request) {
 }
 #endif
 
+// Whether the request is for screen, window or tab capture rather than for a
+// camera or microphone device. This covers both `getDisplayMedia()` and legacy
+// `getUserMedia()` calls that use the chromeMediaSource desktop/screen/tab
+// constraints.
+[[nodiscard]] bool IsDisplayCaptureRequest(
+    const content::MediaStreamRequest& request) {
+  return blink::IsScreenCaptureMediaType(request.audio_type) ||
+         blink::IsScreenCaptureMediaType(request.video_type) ||
+         request.audio_type == MediaStreamType::DISPLAY_AUDIO_CAPTURE;
+}
+
 // Handles requests for legacy-style `navigator.getUserMedia(...)` calls.
 // This includes desktop capture through the chromeMediaSource /
 // chromeMediaSourceId constraints.
@@ -252,25 +263,30 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   auto callback = base::BindOnce(&MediaAccessAllowed, request,
                                  std::move(response_callback));
 
+  // Screen, window and tab capture (getDisplayMedia and legacy getUserMedia
+  // with chromeMediaSource desktop/screen/tab constraints) is surfaced to the
+  // app as the "display-capture" permission; camera and microphone access is
+  // surfaced as "media". The two are different capabilities and apps must be
+  // able to tell them apart in setPermissionRequestHandler.
+  const bool is_display_capture = IsDisplayCaptureRequest(request);
+
   base::DictValue details;
   base::ListValue media_types;
-  if (request.audio_type ==
-      blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+  if (blink::IsAudioInputMediaType(request.audio_type))
     media_types.Append("audio");
-  }
-  if (request.video_type ==
-      blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
+  if (blink::IsVideoInputMediaType(request.video_type))
     media_types.Append("video");
-  }
   details.Set("mediaTypes", std::move(media_types));
   details.Set("securityOrigin", request.security_origin.spec());
 
-  // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
-  // are presented as same type in content_converter.h.
+  // For device capture the permission type doesn't matter here,
+  // AUDIO_CAPTURE/VIDEO_CAPTURE are presented as same type in
+  // content_converter.h.
   RequestPermission(content::RenderFrameHost::FromID(request.render_process_id,
                                                      request.render_frame_id),
-                    blink::PermissionType::AUDIO_CAPTURE, std::move(callback),
-                    false, std::move(details));
+                    is_display_capture ? blink::PermissionType::DISPLAY_CAPTURE
+                                       : blink::PermissionType::AUDIO_CAPTURE,
+                    std::move(callback), false, std::move(details));
 }
 
 void WebContentsPermissionHelper::RequestWebNotificationPermission(
