@@ -100,7 +100,7 @@ describe('asar package', () => {
       const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-dl-')), 'saved.js');
       const willDownload = once(w.webContents.session, 'will-download');
       w.webContents.downloadURL(fileUrl(src));
-      const [, item] = await willDownload as [unknown, Electron.DownloadItem];
+      const [, item] = (await willDownload) as [unknown, Electron.DownloadItem];
       item.savePath = savePath;
       const [, state] = await once(item, 'done');
       expect(state).to.equal('completed');
@@ -120,7 +120,8 @@ describe('asar package', () => {
         const button = document.querySelector('#viewer')?.shadowRoot?.querySelector('#toolbar')
           ?.shadowRoot?.querySelector('#downloads')?.shadowRoot?.querySelector('#save');
         if (button) { button.click(); resolve(true); } else { setTimeout(tick, 100); } }; tick(); })`;
-      const viewerFrame = () => w.webContents.mainFrame.framesInSubtree.find((f) => f.url.startsWith('chrome-extension://'));
+      const viewerFrame = () =>
+        w.webContents.mainFrame.framesInSubtree.find((f) => f.url.startsWith('chrome-extension://'));
       const deadline = Date.now() + 20000;
       let downloading: unknown[] | undefined;
       while (!downloading && Date.now() < deadline) {
@@ -134,7 +135,9 @@ describe('asar package', () => {
       const [, state] = await once(item, 'done');
       expect(state).to.equal('completed');
       expect(item.getFilename()).to.equal('cat.pdf');
-      expect(importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))).to.equal(true);
+      expect(
+        importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))
+      ).to.equal(true);
     });
   });
 
