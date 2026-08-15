@@ -37,16 +37,28 @@ const char kSeparators[] = "\\/";
 const char kSeparators[] = "/";
 #endif
 
+// Upper bound on how many "link" entries may be chained while resolving a
+// single path. Legitimate archives only ever produce short link chains (one
+// hop per symlinked directory captured at pack time), so this generous limit
+// never rejects a valid lookup, while stopping a header whose links form a
+// cycle from recursing until the stack is exhausted.
+constexpr int kMaxLinkDepth = 40;
+
 const base::DictValue* GetNodeFromPath(std::string path,
-                                       const base::DictValue& root);
+                                       const base::DictValue& root,
+                                       int depth);
 
 // Gets the "files" from "dir".
 const base::DictValue* GetFilesNode(const base::DictValue& root,
-                                    const base::DictValue& dir) {
+                                    const base::DictValue& dir,
+                                    int depth) {
   // Test for symbol linked directory.
   const std::string* link = dir.FindString("link");
   if (link != nullptr) {
-    const base::DictValue* linked_node = GetNodeFromPath(*link, root);
+    if (depth >= kMaxLinkDepth)
+      return nullptr;
+    const base::DictValue* linked_node =
+        GetNodeFromPath(*link, root, depth + 1);
     if (!linked_node)
       return nullptr;
     return linked_node->FindDict("files");
@@ -58,17 +70,19 @@ const base::DictValue* GetFilesNode(const base::DictValue& root,
 // Gets sub-file "name" from "dir".
 const base::DictValue* GetChildNode(const base::DictValue& root,
                                     const std::string& name,
-                                    const base::DictValue& dir) {
+                                    const base::DictValue& dir,
+                                    int depth) {
   if (name.empty())
     return &root;
 
-  const base::DictValue* files = GetFilesNode(root, dir);
+  const base::DictValue* files = GetFilesNode(root, dir, depth);
   return files ? files->FindDict(name) : nullptr;
 }
 
 // Gets the node of "path" from "root".
 const base::DictValue* GetNodeFromPath(std::string path,
-                                       const base::DictValue& root) {
+                                       const base::DictValue& root,
+                                       int depth) {
   if (path.empty())
     return &root;
 
@@ -77,7 +91,7 @@ const base::DictValue* GetNodeFromPath(std::string path,
        delimiter_position != std::string::npos;
        delimiter_position = path.find_first_of(kSeparators)) {
     const base::DictValue* child =
-        GetChildNode(root, path.substr(0, delimiter_position), *dir);
+        GetChildNode(root, path.substr(0, delimiter_position), *dir, depth);
     if (!child)
       return nullptr;
 
@@ -85,7 +99,12 @@ const base::DictValue* GetNodeFromPath(std::string path,
     path.erase(0, delimiter_position + 1);
   }
 
-  return GetChildNode(root, path, *dir);
+  return GetChildNode(root, path, *dir, depth);
+}
+
+const base::DictValue* GetNodeFromPath(std::string path,
+                                       const base::DictValue& root) {
+  return GetNodeFromPath(std::move(path), root, 0);
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
@@ -279,6 +298,12 @@ std::optional<base::FilePath> Archive::RelativePath() const {
 #endif
 
 bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
+  return GetFileInfo(path, info, 0);
+}
+
+bool Archive::GetFileInfo(const base::FilePath& path,
+                          FileInfo* info,
+                          int depth) const {
   if (!header_)
     return false;
 
@@ -287,8 +312,11 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
     return false;
 
   const std::string* link = node->FindString("link");
-  if (link)
-    return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info);
+  if (link) {
+    if (depth >= kMaxLinkDepth)
+      return false;
+    return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info, depth + 1);
+  }
 
   return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
@@ -323,7 +351,7 @@ bool Archive::Readdir(const base::FilePath& path,
   if (!node)
     return false;
 
-  const base::DictValue* files_node = GetFilesNode(*header_, *node);
+  const base::DictValue* files_node = GetFilesNode(*header_, *node, 0);
   if (!files_node)
     return false;
 

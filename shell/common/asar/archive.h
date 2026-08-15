@@ -113,6 +113,10 @@ class Archive {
   int GetUnsafeFD() const;
 
  private:
+  // Resolves |path|, following at most a bounded number of chained "link"
+  // entries so that a cyclic link in the header cannot recurse forever.
+  bool GetFileInfo(const base::FilePath& path, FileInfo* info, int depth) const;
+
   bool initialized_ = false;
   bool header_validated_ = false;
   const base::FilePath path_;
