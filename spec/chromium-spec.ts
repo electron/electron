@@ -2890,7 +2890,7 @@ describe('chromium features', () => {
       const getDisplayMedia = `navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
         .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
 
-      type SeenRequest = { permission: string, mediaTypes: string[] | undefined, securityOrigin: string | undefined };
+      type SeenRequest = { permission: string; mediaTypes: string[] | undefined; securityOrigin: string | undefined };
       const collectRequests = (ses: Electron.Session, grant: (permission: string) => boolean) => {
         const seen: SeenRequest[] = [];
         ses.setPermissionRequestHandler((wc, permission, callback, details) => {
@@ -2933,7 +2933,7 @@ describe('chromium features', () => {
         const { ok, err } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
         expect(ok).to.be.false();
         expect(err).to.equal('Permission denied');
-        expect(seen.map(r => r.permission)).to.deep.equal(['display-capture']);
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
       });
 
       it('reports getDisplayMedia as a display-capture request before the display media handler runs', async () => {
@@ -2955,6 +2955,48 @@ describe('chromium features', () => {
         expect(seen[0].securityOrigin).to.be.a('string');
       });
 
+      it('applies the display-capture permissions policy to desktop getUserMedia from a cross-origin iframe', async () => {
+        const iframeServer = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<body>iframe</body>');
+        });
+        const { url: iframeUrl } = await listen(iframeServer);
+        defer(() => iframeServer.close());
+
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+
+        const loadIframe = async (allow: string) => {
+          w.webContents.executeJavaScript(`(() => {
+            for (const f of document.querySelectorAll('iframe')) f.remove();
+            const iframe = document.createElement('iframe');
+            iframe.src = ${JSON.stringify(iframeUrl)};
+            iframe.allow = ${JSON.stringify(allow)};
+            document.body.appendChild(iframe);
+          })()`);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          return webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        };
+
+        // Without allow="display-capture" the policy defaults to 'self', so the
+        // cross-origin iframe is denied without the app being asked.
+        const denied = (await (await loadIframe('')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(denied.ok).to.be.false();
+        expect(denied.err).to.equal('Permission denied');
+        expect(seen).to.be.empty();
+
+        const allowed = (await (await loadIframe('display-capture')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(allowed.ok).to.be.true(allowed.err);
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
+
       it('does not run the display media handler for getDisplayMedia when display-capture is denied', async () => {
         const ses = session.fromPartition('' + Math.random());
         const seen = collectRequests(ses, (permission) => permission === 'media');
@@ -2969,7 +3011,7 @@ describe('chromium features', () => {
         expect(ok).to.be.false();
         expect(err).to.equal('Permission denied');
         expect(displayHandlerCalled).to.be.false();
-        expect(seen.map(r => r.permission)).to.deep.equal(['display-capture']);
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
       });
     });
   });

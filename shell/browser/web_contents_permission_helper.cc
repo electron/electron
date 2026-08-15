@@ -13,6 +13,7 @@
 #include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
@@ -260,15 +261,31 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback response_callback) {
-  auto callback = base::BindOnce(&MediaAccessAllowed, request,
-                                 std::move(response_callback));
-
   // Screen, window and tab capture (getDisplayMedia and legacy getUserMedia
   // with chromeMediaSource desktop/screen/tab constraints) is surfaced to the
   // app as the "display-capture" permission; camera and microphone access is
   // surfaced as "media". The two are different capabilities and apps must be
   // able to tell them apart in setPermissionRequestHandler.
   const bool is_display_capture = IsDisplayCaptureRequest(request);
+
+  auto* requesting_frame = content::RenderFrameHost::FromID(
+      request.render_process_id, request.render_frame_id);
+
+  // Blink only enforces the `display-capture` permissions policy for
+  // getDisplayMedia(); apply it to the legacy getUserMedia() desktop/tab
+  // capture path as well so that a frame the embedder has not allowed to
+  // capture the display cannot do so through the older API either.
+  if (is_display_capture && requesting_frame &&
+      !requesting_frame->IsFeatureEnabled(
+          network::mojom::PermissionsPolicyFeature::kDisplayCapture)) {
+    std::move(response_callback)
+        .Run(blink::mojom::StreamDevicesSet(),
+             MediaStreamRequestResult::CAPTURE_NOT_ALLOWED_BY_POLICY, nullptr);
+    return;
+  }
+
+  auto callback = base::BindOnce(&MediaAccessAllowed, request,
+                                 std::move(response_callback));
 
   base::DictValue details;
   base::ListValue media_types;
@@ -282,8 +299,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   // For device capture the permission type doesn't matter here,
   // AUDIO_CAPTURE/VIDEO_CAPTURE are presented as same type in
   // content_converter.h.
-  RequestPermission(content::RenderFrameHost::FromID(request.render_process_id,
-                                                     request.render_frame_id),
+  RequestPermission(requesting_frame,
                     is_display_capture ? blink::PermissionType::DISPLAY_CAPTURE
                                        : blink::PermissionType::AUDIO_CAPTURE,
                     std::move(callback), false, std::move(details));

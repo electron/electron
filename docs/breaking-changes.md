@@ -43,6 +43,12 @@ For `display-capture` requests, `details.mediaTypes` now lists `video` and/or
 The `setDisplayMediaRequestHandler` flow for `getDisplayMedia()` is unchanged and
 still runs after the permission request has been granted.
 
+The [`display-capture` Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Permissions-Policy/display-capture)
+is now also applied to `getUserMedia()` calls that use the `chromeMediaSource`
+constraints, matching `getDisplayMedia()`. Its default allowlist is `self`, so a
+cross-origin `<iframe>` that captures the screen this way now needs
+`allow="display-capture"` on the iframe element.
+
 ## Planned Breaking API Changes (44.0)
 
 ### Behavior Changed: `window.open()` children of unsandboxed windows get their own sandboxed process
