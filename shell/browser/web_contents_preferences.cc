@@ -364,6 +364,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 void WebContentsPreferences::SaveLastPreferences() {
   base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
+  dict.Set(options::kNodeIntegrationInWorker, node_integration_in_worker_);
   dict.Set(options::kNodeIntegrationInSubFrames,
            node_integration_in_sub_frames_);
   dict.Set(options::kSandbox, IsSandboxed());
