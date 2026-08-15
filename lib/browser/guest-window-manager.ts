@@ -152,6 +152,7 @@ const securityWebPreferences: { [key: string]: boolean } = {
   contextIsolation: true,
   javascript: false,
   nodeIntegration: false,
+  nodeIntegrationInWorker: false,
   sandbox: true,
   webviewTag: false,
   nodeIntegrationInSubFrames: false,
