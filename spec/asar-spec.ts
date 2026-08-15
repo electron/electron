@@ -254,8 +254,28 @@ describe('asar package', function () {
     });
 
     describe('archives with self-referential link entries', function () {
+      // Guard against a missing/renamed fixture silently passing the ENOENT
+      // assertions below: a path inside a non-existent .asar would also throw
+      // ENOENT. Assert the archive file itself is present first.
+      itremote('has the link-cycle fixtures on disk', function () {
+        // original-fs bypasses the asar wrapper so the archive file is stat'd
+        // as a plain file rather than resolved as an archive root.
+        const originalFs = require('original-fs') as typeof importedFs;
+        for (const name of ['cyclic-link.asar', 'cyclic-link2.asar', 'cyclic-dir-link.asar']) {
+          const archive = path.join(fixtures, 'asar', name);
+          expect(originalFs.statSync(archive).isFile(), `${name} fixture missing`).to.equal(true);
+        }
+      });
+
       itremote('throws instead of hanging on a self-linked file', function () {
         const p = path.join(fixtures, 'asar', 'cyclic-link.asar', 'a');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('throws instead of hanging on a two-node link cycle', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-link2.asar', 'a');
         expect(() => {
           fs.readFileSync(p);
         }).to.throw(/ENOENT/);
