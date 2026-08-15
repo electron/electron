@@ -9,7 +9,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -97,6 +96,10 @@ class ElectronBrowserContext : public content::BrowserContext {
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory() override;
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
       scoped_refptr<network::SharedURLLoaderFactory> factory);
+
+  base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   std::pair<network::URLLoaderFactoryBuilder,
             mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>

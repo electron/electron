@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 1c31e16a4db45f2d36d91abdbd3056959633c1da..f1edc34d7fd034a08af91f265b9e4cf2d870679a 100644
+index 857a63363486a092ae6242334fcce5ac5efd74a7..4f4e7ed33d3230e28c3e94ec2a79bc4458610993 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -566,7 +566,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -34,7 +34,7 @@ index 1c31e16a4db45f2d36d91abdbd3056959633c1da..f1edc34d7fd034a08af91f265b9e4cf2
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 30cf63190284f0f7c5d9a7c8f6b2e6b0956d0ec5..cb07f1755e152f0f3cd11e1757b8aa203e29fcc0 100644
+index 454bcb2466b39aefb636d9b3232fdefe5224708d..ebcda16a7972ce3d79342b91bd06000c269b17e9 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -98,7 +98,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -130,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 463c4d919e8bebcae109a3d7e80087b092a9640a..34e96f4a2ad4f9916b5c7cc412a82c6f990e31bb 100644
+index 70022df0744e19ece95ccfc65b4c738f9470989b..501ad4512ec551fcafae98d2d9f77161d68e9215 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -127,7 +127,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -142,7 +142,7 @@ index 463c4d919e8bebcae109a3d7e80087b092a9640a..34e96f4a2ad4f9916b5c7cc412a82c6f
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -355,7 +355,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -352,7 +352,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
@@ -152,10 +152,10 @@ index 463c4d919e8bebcae109a3d7e80087b092a9640a..34e96f4a2ad4f9916b5c7cc412a82c6f
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 9083019832678a33359c2392df18f4fe26c8f2d3..4a513b552eca4eb740b61fb602c15e3b7f6902a0 100644
+index bed216ff6d4d577d54ecf39c32c1bb1ed48c60fe..490e3bdca2a092cfb98f8a7cda2666ec979d953b 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -165,6 +165,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

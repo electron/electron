@@ -55,6 +55,9 @@ describe('process module', () => {
         const systemMemoryInfo = await invoke(() => process.getSystemMemoryInfo());
         expect(systemMemoryInfo.free).to.be.a('number');
         expect(systemMemoryInfo.total).to.be.a('number');
+        if (process.platform === 'linux') {
+          expect(systemMemoryInfo.available).to.be.a('number').greaterThan(0);
+        }
       });
     });
 

@@ -17,9 +17,6 @@
 #include "gin/converter.h"
 
 #include "base/strings/string_util.h"
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util_win.h"
-#endif
 
 namespace gin {
 
@@ -160,11 +157,11 @@ struct Converter<std::set<T>> {
   }
 };
 
-template <typename K, typename V>
-struct Converter<std::map<K, V>> {
+template <typename K, typename V, typename Compare>
+struct Converter<std::map<K, V, Compare>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> value,
-                     std::map<K, V>* out) {
+                     std::map<K, V, Compare>* out) {
     if (!value->IsObject())
       return false;
     out->clear();
@@ -191,7 +188,7 @@ struct Converter<std::map<K, V>> {
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const std::map<K, V>& dict) {
+                                   const std::map<K, V, Compare>& dict) {
     v8::Local<v8::Object> obj = v8::Object::New(isolate);
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     for (const auto& it : dict) {

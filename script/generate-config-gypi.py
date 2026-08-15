@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import ast
+import argparse
 import os
 import pprint
 import re
@@ -10,12 +11,17 @@ import sys
 ELECTRON_DIR = os.path.abspath(os.path.join(__file__, '..', '..'))
 NODE_DIR = os.path.join(ELECTRON_DIR, '..', 'third_party', 'electron_node')
 
-def run_node_configure(target_cpu):
+def run_node_configure(target_cpu, v8_enable_cppgc_microtask_queue):
   configure = os.path.join(NODE_DIR, 'configure.py')
   args = ['--dest-cpu', target_cpu]
   # Enabled in Chromium's V8, will be disabled on 32bit via
   # common.gypi rules
   args += ['--experimental-enable-pointer-compression']
+
+  # v8_cppgc_microtask_queue affects the public ABI of v8::MicrotaskQueue, so
+  # node-gyp built native addons must match how the embedded V8 was compiled.
+  if v8_enable_cppgc_microtask_queue:
+    args += ['--v8-enable-cppgc-microtask-queue']
 
   # Work around "No acceptable ASM compiler found" error on some System,
   # it breaks nothing since Electron does not use OpenSSL.
@@ -45,8 +51,8 @@ def read_electron_args():
       args[m.group(1)] = m.group(2)
   return args
 
-def main(target_file, target_cpu):
-  run_node_configure(target_cpu)
+def main(target_file, target_cpu, v8_enable_cppgc_microtask_queue):
+  run_node_configure(target_cpu, v8_enable_cppgc_microtask_queue)
   config = read_node_config_gypi()
   args = read_electron_args()
 
@@ -69,4 +75,13 @@ def main(target_file, target_cpu):
     file_out.write(pprint.pformat(config, indent=2))
 
 if __name__ == '__main__':
-  sys.exit(main(sys.argv[1], sys.argv[2]))
+  parser = argparse.ArgumentParser()
+  parser.add_argument('target_file')
+  parser.add_argument('target_cpu')
+  parser.add_argument('--v8-enable-cppgc-microtask-queue',
+                      action='store_true',
+                      dest='v8_enable_cppgc_microtask_queue',
+                      default=False)
+  parsed = parser.parse_args()
+  sys.exit(main(parsed.target_file, parsed.target_cpu,
+                parsed.v8_enable_cppgc_microtask_queue))

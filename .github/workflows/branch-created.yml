@@ -70,10 +70,11 @@ jobs:
           NEXT_UNSUPPORTED_MAJOR: ${{ steps.determine-next-unsupported-major.outputs.NEXT_UNSUPPORTED_MAJOR }}
         run: |
           PREVIOUS_MAJOR=$((MAJOR - 1))
+          NEXT_MAJOR=$((MAJOR + 1))
           UNSUPPORTED_MAJOR=$((NEXT_UNSUPPORTED_MAJOR - 1))
 
           # Create new labels
-          gh label create $MAJOR-x-y --color 8d9ee8 || true
+          gh label create ${NEXT_MAJOR}-x-y --color 8d9ee8 || true
           gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
           gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
           gh label create in-flight/$MAJOR-x-y --color db69a6 || true
@@ -224,6 +225,57 @@ jobs:
             }
 
             core.info(`Assigned ${draftIssues.length} draft issues to ${eligible.length} team members`);
+      - name: Add Merged PRs to Release Project Board
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        env:
+          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
+          PROJECT_NUMBER: ${{ steps.create-release-board.outputs.number }}
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const projectId = process.env.PROJECT_ID;
+            const projectNumber = process.env.PROJECT_NUMBER;
+            const major = process.env.MAJOR;
+
+            // Maps the `semver/*` label to the matching "Semver" field option
+            const semverLabelToField = {
+              'semver/major': 'Major',
+              'semver/minor': 'Minor',
+              'semver/patch': 'Patch',
+              'semver/none': 'None',
+            };
+
+            const pullRequests = await github.paginate(github.rest.issues.listForRepo, {
+              owner: 'electron',
+              repo: 'electron',
+              labels: `${major}-x-y`,
+              state: 'closed',
+              per_page: 100,
+            });
+
+            for (const pr of pullRequests) {
+              // `listForRepo` returns both issues and pull requests, and we only
+              // want pull requests which have actually been merged
+              if (!pr.pull_request?.merged_at) continue;
+
+              core.info(`Adding #${pr.number} to the release project board`);
+              const itemId = await actions.addItem('electron', projectNumber, pr.html_url);
+
+              const semverLabel = pr.labels
+                .map(label => (typeof label === 'string' ? label : label.name))
+                .find(name => name in semverLabelToField);
+
+              if (semverLabel) {
+                const fieldValue = semverLabelToField[semverLabel];
+                core.info(`Setting Semver to "${fieldValue}" for #${pr.number}`);
+                await actions.editItem(projectId, itemId, {
+                  field: 'Semver',
+                  fieldValue,
+                });
+              }
+            }
       - name: Dump Release Project Board Contents
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq

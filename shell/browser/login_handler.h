@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_LOGIN_HANDLER_H_
 
 #include "base/process/process_handle.h"
-#include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/login_delegate.h"
 
 namespace content {
@@ -15,6 +14,10 @@ class WebContents;
 
 namespace gin {
 class Arguments;
+}
+
+namespace net {
+class HttpResponseHeaders;
 }
 
 namespace electron {

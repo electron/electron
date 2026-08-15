@@ -42,6 +42,10 @@ class WebContentsPreferences
   // renderer sandboxed regardless of per-WC webPreferences.
   static bool ShouldUseSandbox(content::WebContents* web_contents);
 
+  // The sandbox state a WebContents constructed from |web_preferences| would
+  // have, following the same defaulting rules as IsSandboxed().
+  static bool IsSandboxed(const gin_helper::Dictionary& web_preferences);
+
   WebContentsPreferences(content::WebContents* web_contents,
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;

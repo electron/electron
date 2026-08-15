@@ -16,8 +16,8 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
+#include "base/logging.h"
 #include "base/memory/raw_ptr.h"
-#include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -31,7 +31,6 @@
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
@@ -39,7 +38,6 @@
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "ipc/constants.mojom.h"
 #include "net/http/http_response_headers.h"
@@ -49,6 +47,7 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
@@ -60,7 +59,6 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -676,7 +674,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
+    view_->SetContentsResizingStrategy(
+        DevToolsContentsResizingStrategy{devtools::DockSide::kNone, rect});
 }
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
@@ -735,10 +734,13 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
                  protocol_registry->FindRegistered(gurl.scheme())) {
+    auto* browser_context = static_cast<ElectronBrowserContext*>(
+        GetDevToolsWebContents()->GetBrowserContext());
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                             protocol_handler->second)));
+                                             protocol_handler->second,
+                                             browser_context->GetWeakPtr())));
   } else {
     auto* partition = GetDevToolsWebContents()
                           ->GetBrowserContext()

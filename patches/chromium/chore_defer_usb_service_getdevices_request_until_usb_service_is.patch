@@ -9,10 +9,10 @@ devices is available. This should no longer be necessary if/when
 https://crbug.com/1096743 is completed.
 
 diff --git a/services/device/usb/usb_service_impl.cc b/services/device/usb/usb_service_impl.cc
-index 15594a158d01e15e63185bf5779e2ef6fda82d72..c2aef55d5c77c645434be15117296c6d7180bd1c 100644
+index 9749b2a4e0c36426dc57971676d90f047c83a297..6ebe605282cd2e947aa03d67ba98a3c63ceffabd 100644
 --- a/services/device/usb/usb_service_impl.cc
 +++ b/services/device/usb/usb_service_impl.cc
-@@ -199,7 +199,7 @@ void UsbServiceImpl::GetDevices(GetDevicesCallback callback) {
+@@ -206,7 +206,7 @@ void UsbServiceImpl::GetDevices(GetDevicesCallback callback) {
      return;
    }
  

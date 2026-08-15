@@ -13,7 +13,7 @@ import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
@@ -142,6 +142,35 @@ describe('powerMonitor', () => {
           });
         });
       });
+    }
+  );
+
+  ifit(process.platform === 'darwin')(
+    'should emit "shutdown" event on macOS when the workspace signals power off',
+    async () => {
+      const remoteApp = await startRemoteControlApp();
+      const emitted = await remoteApp.remotely(async () => {
+        const { app, powerMonitor, systemPreferences } = require('electron');
+        const { once } = require('node:events');
+        try {
+          const shutdown = once(powerMonitor, 'shutdown', { signal: AbortSignal.timeout(5000) });
+          systemPreferences.postWorkspaceNotification('NSWorkspaceWillPowerOffNotification', {});
+          await shutdown;
+          return true;
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            return false;
+          } else {
+            throw err;
+          }
+        } finally {
+          setImmediate(() => app.quit());
+        }
+      });
+      expect(emitted).to.equal(true);
+
+      const [code] = await once(remoteApp.process, 'exit');
+      expect(code).to.equal(0);
     }
   );
 

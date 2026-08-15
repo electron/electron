@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296128441ae 100644
+index 397a23dd7d79f0c56d24dee57333757e510cf80e..8839579b994b84ebd2817df8b001bf1b11c22216 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2710,6 +2710,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2836,6 +2836,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054b5b72c8e 100644
+index 5fc6a328ee5e16967cd100f704c692984f4d2c81..3e4c3082fb13c5728c2085f28365ea14bdc1f8e5 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -888,6 +888,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -819,6 +819,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7a905faa1f886a59fb75c984756b61f7a04be080..8f0293c4ad865f22a0abad364562ab035ae93cbc 100644
+index 5b0f964d50690ddfafcf5f28154e53867690afd5..64083bccf4c253e47322f80391b0e24a541e619f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1462,6 +1462,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1288,6 +1288,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -193,10 +193,10 @@ index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f9caef599 100644
+index 275a8e94fdf401e7430a28d0f741866ab29f814f..552038ee43382703af3ef4f538ffa4cd6fd59a67 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -730,6 +730,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -758,6 +758,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -204,10 +204,10 @@ index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f
 +  // is consumed, so the service worker thread can read it later.
 +  electron_preload_data_ = std::move(creation_params->electron_preload_data);
    TRACE_EVENT("blink.worker", "WorkerGlobalScope::WorkerGlobalScope");
-   TRACE_EVENT_BEGIN("blink.worker", "WorkerGlobalScope setup",
-                     perfetto::Track::FromPointer(this));
+   TRACE_EVENT_BEGIN(
+       "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b8f92f759 100644
+index 44d8d345f15cc54c509e965757819dc0ee9f841d..719b4b3833dc202745d8591e40cea7b9e7b677fc 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
 @@ -31,6 +31,7 @@
@@ -218,7 +218,7 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -275,6 +276,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -292,6 +293,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -387,6 +394,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -406,6 +413,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  
@@ -242,7 +242,7 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
    // DevTools agents being configured while waiting for debugger) till the main
    // script has completed loading. This is so that VT does not run while script
 diff --git a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-index 060741bf1b44e277e1d8849039787d41cdd72a9f..84b5fa8000bd6df4b59c8f2615b1719c52144669 100644
+index e85f9c75e8ed6961ef75c1899e93ce12a9af3521..58e22915217f05c88e9f671f6092eeb2b1d7c4d0 100644
 --- a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
 +++ b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
 @@ -253,6 +253,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
@@ -256,10 +256,10 @@ index 060741bf1b44e277e1d8849039787d41cdd72a9f..84b5fa8000bd6df4b59c8f2615b1719c
        std::make_unique<ServiceWorkerGlobalScopeProxy>(
            *this, *worker_context_client_, initiator_thread_task_runner),
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d..d6f1b42b62e9e145329f5b565916652ab292163d 100644
+index 22b8e5873e4abbb2439d84e336fd9a210e1912f6..c907d6ef91de853c88e10c65187640440271c2ac 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -326,6 +326,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+@@ -328,6 +328,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
    return WorkerGlobalScope()->HasUsbEventHandlers();
  }
  

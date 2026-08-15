@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "base/apple/bundle_locations.h"
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
@@ -21,8 +20,7 @@
 #include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
-#include "base/strings/string_number_conversions.cc"
-#include "base/strings/string_util_internal.h"
+#include "base/strings/string_number_conversions.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/profiler/process_type.h"
@@ -48,12 +46,10 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
-#include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
-#include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 #include "v8/include/v8-snapshot.h"
@@ -84,7 +80,6 @@
 #include "components/crash/core/common/crash_key.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "shell/app/electron_crash_reporter_client.h"
-#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/common/crash_keys.h"
 #endif
 
@@ -169,10 +164,13 @@ ElectronMainDelegate::ElectronMainDelegate() {
 
 ElectronMainDelegate::~ElectronMainDelegate() = default;
 
-const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
-    extensions::kExtensionScheme};
-const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
-    std::size(kNonWildcardDomainNonPortSchemes);
+// static
+base::span<const char* const>
+ElectronMainDelegate::GetNonWildcardDomainNonPortSchemes() {
+  static const char* const kNonWildcardDomainNonPortSchemes[] = {
+      extensions::kExtensionScheme};
+  return kNonWildcardDomainNonPortSchemes;
+}
 
 std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -204,7 +202,7 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
-      kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
+      GetNonWildcardDomainNonPortSchemes());
 #endif
 
 #if BUILDFLAG(IS_WIN)

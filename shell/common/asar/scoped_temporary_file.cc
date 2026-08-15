@@ -67,7 +67,7 @@ bool ScopedTemporaryFile::InitFromFile(
     return false;
 
   if (integrity)
-    ValidateIntegrityOrDie(buf, *integrity);
+    ValidateIntegrityOrDie(buf, *integrity, "<copied-out entry>");
 
   base::File dest(path_, base::File::FLAG_OPEN | base::File::FLAG_WRITE);
   return dest.IsValid() && dest.WriteAtCurrentPosAndCheck(buf);

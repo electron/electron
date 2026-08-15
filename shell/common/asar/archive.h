@@ -12,6 +12,7 @@
 
 #include <uv.h>
 
+#include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
@@ -91,13 +92,25 @@ class Archive {
   // For unpacked file, this method will return its real path.
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 
+  // Reads |buf.size()| bytes at |offset| from the archive's retained file
+  // handle. Reading through the retained handle (instead of re-opening the
+  // archive by path) keeps reads consistent with the header that was
+  // integrity-validated when the archive was first opened, even if the file
+  // on disk has since been atomically replaced (e.g. by an app update while
+  // the app is running).
+  bool ReadFileAt(uint64_t offset, base::span<uint8_t> buf);
+
+  // Returns a duplicate of the archive's retained file handle, for consumers
+  // that need exclusive ownership of a base::File (e.g. concurrent streaming
+  // reads). The duplicate refers to the same underlying file as |file_|, so
+  // like ReadFileAt() it is unaffected by the on-disk file being replaced.
+  base::File DuplicateFile();
+
   // Returns the file's fd.
   // Using this fd will not validate the integrity of any files
   // you read out of the ASAR manually.  Callers are responsible
   // for integrity validation after this fd is handed over.
   int GetUnsafeFD() const;
-
-  base::FilePath path() const { return path_; }
 
  private:
   bool initialized_ = false;

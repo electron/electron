@@ -6,7 +6,11 @@ Subject: chore: revert [OSCrypt] Remove sync backend
 Electron still depends on the synchronous os_crypt API.
 Revert upstream CL 7765593 until migration to async is complete.
 
+Patch is modified to remove usage of "crypto/hkdf.h" on Windows for mock keys
+as it was removed upstream.
+
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7765593
+Ref: https://chromium-review.googlesource.com/c/chromium/src/+/8072603
 
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
 new file mode 100644
@@ -6117,10 +6121,10 @@ index 0000000000000000000000000000000000000000..8c48d3765d2fb7973fc33c6c6f53b89c
 +}  // namespace
 diff --git a/components/os_crypt/sync/os_crypt_win.cc b/components/os_crypt/sync/os_crypt_win.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..0c57faafad86957ff1fb85c4861e99224da35ffc
+index 0000000000000000000000000000000000000000..66661b8bcecacbd2062cfc91632c684b23976d63
 --- /dev/null
 +++ b/components/os_crypt/sync/os_crypt_win.cc
-@@ -0,0 +1,362 @@
+@@ -0,0 +1,353 @@
 +// Copyright 2014 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -6148,7 +6152,6 @@ index 0000000000000000000000000000000000000000..0c57faafad86957ff1fb85c4861e9922
 +#include "components/prefs/pref_service.h"
 +#include "components/version_info/version_info.h"
 +#include "crypto/aead.h"
-+#include "crypto/hkdf.h"
 +#include "crypto/random.h"
 +
 +namespace {
@@ -6450,14 +6453,6 @@ index 0000000000000000000000000000000000000000..0c57faafad86957ff1fb85c4861e9922
 +}
 +
 +std::string OSCryptImpl::GetRawEncryptionKey() {
-+  if (use_mock_key_) {
-+    if (mock_encryption_key_.empty())
-+      mock_encryption_key_.assign(
-+          crypto::HkdfSha256("peanuts", "salt", "info", kKeyLength));
-+    DCHECK(!mock_encryption_key_.empty()) << "Failed to initialize mock key.";
-+    return mock_encryption_key_;
-+  }
-+
 +  DCHECK(!encryption_key_.empty()) << "No key.";
 +  return encryption_key_;
 +}

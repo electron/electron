@@ -10,7 +10,6 @@
 #include <string>
 
 #include "base/containers/flat_set.h"
-#include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/nix/xdg_util.h"

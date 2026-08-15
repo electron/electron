@@ -9,7 +9,6 @@
 #include <optional>
 #include <utility>
 
-#include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
@@ -37,7 +36,6 @@
 #include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
-#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "gin/arguments.h"
@@ -361,7 +359,7 @@ ElectronBrowserContext::ElectronBrowserContext(
     base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry(this))),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   // Read options.
@@ -602,7 +600,7 @@ ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), net::IsolationInfo(), std::nullopt,
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
-          nullptr, nullptr, nullptr);
+          nullptr, nullptr, nullptr, /*is_for_network_service=*/false);
 
   return std::make_pair(std::move(factory_builder), std::move(header_client));
 }
@@ -812,6 +810,14 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
+      if (request.restrict_own_audio &&
+          id == media::AudioDeviceDescription::kLoopbackInputDeviceId) {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+        id = media::AudioDeviceDescription::kLoopbackWithoutChromeId;
+#else
+        id = media::AudioDeviceDescription::kLoopbackInputDeviceId;
+#endif
+      }
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(

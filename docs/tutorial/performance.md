@@ -276,7 +276,7 @@ variant.
 
 ### 4. Blocking the renderer process
 
-Since Electron ships with a current version of Chrome, you can make use of the
+Since Electron ships with a current version of Chromium, you can make use of the
 latest and greatest features the Web Platform offers to defer or offload heavy
 operations in a way that keeps your app smooth and responsive.
 

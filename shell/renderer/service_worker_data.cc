@@ -6,8 +6,6 @@
 
 #include "base/notimplemented.h"
 #include "shell/common/gin_converters/blink_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/heap_snapshot.h"
 #include "shell/renderer/electron_ipc_native.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"

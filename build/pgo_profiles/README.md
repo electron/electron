@@ -13,14 +13,18 @@ served from `https://dev-cdn-experimental.electronjs.org/pgo/`.
 ## How consumption works
 
 1. **State files** - `<target>.pgo.txt` in this directory names the profile
-   each target uses (e.g. `electron-linux-x64-<timestamp>-<sha>.profdata`).
-   Updating a profile means updating the state file; profile binaries are
-   never checked in.
+   each target uses plus its sha256, space-separated on one line (e.g.
+   `electron-linux-x64-<timestamp>-<sha>.profdata <sha256>`; files written
+   before hashes existed carry just the name). Updating a profile means
+   updating the state file; profile binaries are never checked in.
 2. **Download** - gclient hooks (see `DEPS`) run
    `script/pgo/download-profiles.py`, which downloads each state file's
    profile into this directory under its versioned name (the V8 builtins
    profile uses the fixed name `electron-v8-builtins.profile`, since GN args
-   files reference it statically).
+   files reference it statically). When the state file carries a sha256, the
+   downloaded bytes (and any previously downloaded local copy) are verified
+   against it and a mismatch fails the sync - the CDN blobs are mutable, so
+   the checked-in state file is what pins the exact profile bytes.
 3. **Build wiring** - Chromium's standard `chrome_pgo_phase = 2` machinery
    applies the profile. A small patch
    (`patches/chromium/build_resolve_pgo_profiles_from_electron_state_files.patch`)

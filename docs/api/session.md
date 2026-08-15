@@ -629,7 +629,61 @@ Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
+#### Event: 'select-webauthn-authenticator' _macOS_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
+
+Returns:
+
+* `event` Event\<\>
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `authenticators` string[] - The available authenticator names. Possible
+    values are `'touchID'` and `'platformPasskeys'`.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+* `callback` Function
+  * `authenticatorName` string | null (optional)
+
+Emitted when both `touchID` and `platformPasskeys` are configured via
+[`app.configureWebAuthn`](app.md#appconfigurewebauthnoptions-macos) and a
+WebAuthn request needs to choose which platform authenticator to use. `callback`
+should be called with one of the names from `event.authenticators`; passing no
+arguments or a name that does not match will cancel the request and the page
+will receive a `NotAllowedError`. If no listener is registered, `platformPasskeys`
+is used by default. If only one authenticator is available for the request, this
+event is not emitted and that authenticator is used automatically.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  app.configureWebAuthn({
+    touchID: { keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn' },
+    platformPasskeys: true
+  })
+
+  const win = new BrowserWindow()
+
+  win.webContents.session.on('select-webauthn-authenticator', (event, callback) => {
+    // Use the first available authenticator for the request.
+    callback(event.authenticators[0])
+  })
+})
+```
+
 #### Event: 'select-webauthn-account'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51255
+```
+-->
 
 Returns:
 
@@ -647,10 +701,15 @@ discoverable WebAuthn credentials and the user must choose one. `callback`
 should be called with the `credentialId` of the selected account; passing no
 arguments — or a `credentialId` that does not match one of the provided
 accounts — will cancel the request and the page will receive a
-`NotAllowedError`. If no listener is registered for this event, the request is
-cancelled with the same error. The credential request remains pending until
-the listener invokes the callback, so always invoke it exactly once — typically
-from a `try { … } finally { callback(…) }` block.
+`NotAllowedError`. The credential request remains pending until the listener
+invokes the callback, so always invoke it exactly once — typically from a
+`try { … } finally { callback(…) }` block.
+
+> [!NOTE]
+> If no listener is registered for this event, `navigator.credentials.get()`
+> calls that resolve multiple discoverable credentials are cancelled with a
+> `NotAllowedError`. Register a listener if your app supports
+> discoverable-credential (passkey) sign-in.
 
 On macOS, the Touch ID platform authenticator surfaces accounts via this event
 once it has been configured with
@@ -821,7 +880,7 @@ Returns `Promise<void>` - Resolves when all connections are closed.
 Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 Sends a request, similarly to how `fetch()` works in the renderer, using
-Chrome's network stack. This differs from Node's `fetch()`, which uses
+Chromium's network stack. This differs from Node's `fetch()`, which uses
 Node.js's HTTP stack.
 
 Example:
@@ -1679,6 +1738,12 @@ This method clears more types of data and is more thorough than the
 > Clearing cache data will also clear the shared dictionary cache. This means that any dictionaries used for compression may be reloaded after clearing the cache. If you wish to clear the shared dictionary cache but leave other cached data intact, you may want to use the `clearSharedDictionaryCache` method.
 
 For more information, refer to Chromium's [`BrowsingDataRemover` interface][browsing-data-remover].
+
+#### `ses.registerLocalAIHandler(handler)` _Experimental_
+
+* `handler` [UtilityProcess](utility-process.md#class-utilityprocess) | null
+
+Registers a local AI handler `UtilityProcess`. To clear the handler, call `registerLocalAIHandler(null)`, which will disconnect any existing Prompt API sessions and destroy any `LanguageModelUtility` instances.
 
 ### Instance Properties
 

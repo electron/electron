@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_FACTORY_H_
 
+#include "base/memory/self_deleting.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 
 namespace mojo {
@@ -21,9 +22,11 @@ class AsarURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create();
 
- private:
   AsarURLLoaderFactory(
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+      base::SelfDeletingPassKey key);
+
+ private:
   ~AsarURLLoaderFactory() override;
 
   // network::mojom::URLLoaderFactory:

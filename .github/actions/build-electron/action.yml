@@ -34,12 +34,23 @@ inputs:
     required: false
     default: 'true'
   generate-test-artifacts:
-    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
+    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots; mksnapshot fixup on non-release builds). Only disable when no test job consumes this build.'
     required: false
     default: 'true'
+  publish:
+    description: 'Whether to publish a release'
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ "${{ inputs.publish }}" = "true" ] && [ "${{ inputs.is-release }}" != "true" ]; then
+          echo "Can only publish release builds"
+          exit 1
+        fi
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
@@ -71,6 +82,21 @@ runs:
         REPO: ${{ github.repository }}
         OUTPUT_PATH: src/previous-object-checksums.json
       run: node src/electron/.github/actions/build-electron/download-previous-object-checksums.mjs
+    - name: Raise macOS AF_UNIX socket buffer limits
+      shell: bash
+      if: ${{ inputs.target-platform == 'macos' }}
+      # Best-effort mitigation for the siso spawn-helper ENOBUFS flake: macOS
+      # returns ENOBUFS on AF_UNIX stream-socket writes under kernel socket
+      # buffer exhaustion instead of blocking like Linux (see
+      # .github/siso-patches/0004-*.patch for the corresponding siso-side
+      # retry). Raise the default unix stream socket buffer sizes so the
+      # spawn-helper socketpair has more headroom. macOS caps
+      # kern.ipc.maxsockbuf at its 8MB compile-time limit (raising it is
+      # rejected with "Result too large"), and the 2MB send + 2MB recv
+      # values below fit comfortably under that cap. Failures are non-fatal.
+      run: |
+        sudo sysctl -w net.local.stream.sendspace=2097152 || true
+        sudo sysctl -w net.local.stream.recvspace=2097152 || true
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
@@ -90,10 +116,10 @@ runs:
 
         export NINJA_SUMMARIZE_BUILD=1
         export NO_COLOR=1
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
 
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          e build --target electron:release_build
+          e build --target electron:release_build $QUIET_FLAG
         else
           e build --target electron:testing_build $QUIET_FLAG
         fi
@@ -160,9 +186,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    # mksnapshot_args is consumed by both the mksnapshot tests and by
+    # @electron/mksnapshot from the released mksnapshot.zip, so this is needed
+    # whenever either tests or a release consume this build.
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.generate-test-artifacts == 'true' || inputs.is-release == 'true' }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
@@ -190,16 +219,12 @@ runs:
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
-    - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
+    - name: Generate Cross-Arch Snapshot (arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
-        if [ "${{ inputs.target-arch }}" = "arm" ]; then
-          MKSNAPSHOT_PATH="clang_x86_v8_arm"
-        elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          MKSNAPSHOT_PATH="clang_x64_v8_arm64"
-        fi
+        MKSNAPSHOT_PATH="clang_x64_v8_arm64"
 
         cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
@@ -215,7 +240,7 @@ runs:
       if: ${{ inputs.generate-chromedriver == 'true' }}
       run: |
         cd src
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
         e build --target electron:electron_chromedriver_zip $QUIET_FLAG
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
@@ -243,8 +268,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    # symbols.zip / pdb.zip / dsym archives are only consumed by the release
+    # uploader; every testing/PGO build passes generate-symbols: false and this
+    # was still spending 8-13 minutes per Windows build zipping PDBs nobody reads.
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-symbols == 'true' }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
@@ -257,20 +286,9 @@ runs:
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
       run: |
-        cd src
-        # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
-        # out/ffmpeg builds against the same SDK instead of the runner's system Xcode.
-        # The path has to live under root_build_dir, so copy the symlink tree and
-        # rewrite Default -> ffmpeg.
-        MAC_SDK_ARG=""
-        if [ "$(uname)" = "Darwin" ]; then
-          mkdir -p out/ffmpeg
-          cp -a out/Default/xcode_links out/ffmpeg/
-          MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
-        fi
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
+        e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu ${{ inputs.target-arch }} --remote-build siso
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
+        e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
@@ -295,7 +313,7 @@ runs:
 
         echo "Free space after: ${FREE_AFTER_GB}GB"
 
-        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+        if curl -sS -X POST "https://api.datadoghq.com/api/v2/series" \
           -H "Content-Type: application/json" \
           -H "DD-API-KEY: ${DD_API_KEY}" \
           -d @- << EOF
@@ -311,10 +329,13 @@ runs:
           ]
         }
         EOF
-
-        echo "Disk space metrics logged to Datadog"
+        then
+          echo "Disk space metrics logged to Datadog"
+        else
+          echo "::warning::Datadog metrics upload failed"
+        fi
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.publish == 'true' }}
       shell: bash
       id: github-upload
       run: |
@@ -328,7 +349,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate artifact attestation
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.publish == 'true' }}
       uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
       with:
         subject-path: ${{ steps.github-upload.outputs.UPLOADED_PATHS }}

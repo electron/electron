@@ -107,6 +107,19 @@ inline constexpr std::string_view kFocusable = "focusable";
 // The WebPreferences.
 inline constexpr std::string_view kWebPreferences = "webPreferences";
 
+// Window state persistence for BaseWindow
+inline constexpr std::string_view kWindowStatePersistence =
+    "windowStatePersistence";
+
+// Identifier for the window provided by the application
+inline constexpr std::string_view kName = "name";
+
+// Whether to save the window bounds
+inline constexpr std::string_view kBounds = "bounds";
+
+// Whether to save the window display mode
+inline constexpr std::string_view kDisplayMode = "displayMode";
+
 // Add a vibrancy effect to the browser window
 inline constexpr std::string_view kVibrancyType = "vibrancy";
 
