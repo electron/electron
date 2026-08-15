@@ -561,6 +561,9 @@ class WebContents final : public ExclusiveAccessContext,
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host,
       base::RepeatingClosure hang_monitor_restarter) override;
+  bool SaveFrame(const GURL& url,
+                 const content::Referrer& referrer,
+                 content::RenderFrameHost* rfh) override;
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;

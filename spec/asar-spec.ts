@@ -4,12 +4,16 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+const features = process._linkedBinding('electron_common_features');
 
 describe('asar package', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -84,6 +88,53 @@ describe('asar package', () => {
       } else if (message === 'error') {
         throw new Error(error);
       }
+    });
+  });
+
+  describe('downloads', () => {
+    const fileUrl = (p: string) => url.pathToFileURL(p).toString();
+
+    it('downloads a packed file through webContents.downloadURL()', async () => {
+      const w = new BrowserWindow({ show: false });
+      const src = path.join(asarDir, 'a.asar', 'ping.js');
+      const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-dl-')), 'saved.js');
+      const willDownload = once(w.webContents.session, 'will-download');
+      w.webContents.downloadURL(fileUrl(src));
+      const [, item] = await willDownload as [unknown, Electron.DownloadItem];
+      item.savePath = savePath;
+      const [, state] = await once(item, 'done');
+      expect(state).to.equal('completed');
+      expect(item.getFilename()).to.equal('ping.js');
+      expect(importedFs.readFileSync(savePath, 'utf8')).to.equal(importedFs.readFileSync(src, 'utf8'));
+    });
+
+    ifit(features.isPDFViewerEnabled())('saves a packed PDF from the PDF viewer', async () => {
+      const w = new BrowserWindow({ show: false });
+      const src = path.join(asarDir, 'pdf.asar', 'cat.pdf');
+      const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-pdf-')), 'saved.pdf');
+      const willDownload = once(w.webContents.session, 'will-download');
+      await w.loadURL(fileUrl(src));
+      // Click the viewer's download button once its plugin is up; an
+      // unedited document is saved through the browser as a download.
+      const clickSave = `new Promise((resolve) => { const tick = () => {
+        const button = document.querySelector('#viewer')?.shadowRoot?.querySelector('#toolbar')
+          ?.shadowRoot?.querySelector('#downloads')?.shadowRoot?.querySelector('#save');
+        if (button) { button.click(); resolve(true); } else { setTimeout(tick, 100); } }; tick(); })`;
+      const viewerFrame = () => w.webContents.mainFrame.framesInSubtree.find((f) => f.url.startsWith('chrome-extension://'));
+      const deadline = Date.now() + 20000;
+      let downloading: unknown[] | undefined;
+      while (!downloading && Date.now() < deadline) {
+        const frame = viewerFrame();
+        if (frame) await frame.executeJavaScript(clickSave, true).catch(() => {});
+        downloading = await Promise.race([willDownload, setTimeout(500).then(() => undefined)]);
+      }
+      expect(downloading, 'the viewer never started a download').to.be.an('array');
+      const item = downloading![1] as Electron.DownloadItem;
+      item.savePath = savePath;
+      const [, state] = await once(item, 'done');
+      expect(state).to.equal('completed');
+      expect(item.getFilename()).to.equal('cat.pdf');
+      expect(importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))).to.equal(true);
     });
   });
 
