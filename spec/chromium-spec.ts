@@ -3908,6 +3908,14 @@ describe('chromium features', () => {
     });
   });
 
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
+    });
+  });
+
   // FIXME(nornagon): this is broken on CI, it triggers:
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
