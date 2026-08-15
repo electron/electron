@@ -23,17 +23,17 @@ namespace electron::api {
 const gin::WrapperInfo AutoUpdater::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronAutoUpdater);
 
-AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
+AutoUpdater::AutoUpdater(v8::Isolate* isolate)
+    : per_isolate_data_{gin::PerIsolateData::From(isolate)} {
   auto_updater::AutoUpdater::SetDelegate(this);
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  per_isolate_data_->AddDisposeObserver(this);
 }
 
-AutoUpdater::~AutoUpdater() = default;
+AutoUpdater::~AutoUpdater() {
+  per_isolate_data_->RemoveDisposeObserver(this);
+}
 
 void AutoUpdater::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
   auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
