@@ -148,12 +148,23 @@ void DevToolsManagerDelegate::ClientDetached(
   // resize done by Emulation.setDeviceMetricsOverride, so a client that
   // detaches without clearing its overrides leaves the view pinned at the
   // emulated size forever. Restore it here until that is fixed upstream.
+  // This applies to every kind of client (remote debugging, the bundled
+  // frontend, webContents.debugger) since they all detach the same way.
   content::WebContents* web_contents =
       channel->GetAgentHost()->GetWebContents();
-  if (web_contents && !web_contents->IsBeingDestroyed()) {
-    static_cast<content::WebContentsImpl*>(web_contents)
-        ->ClearDeviceEmulationSize();
+  if (!web_contents || web_contents->IsBeingDestroyed())
+    return;
+
+  // Leave the size alone if another client still holds an override on the
+  // same WebContents; it is cleared when that client clears it or detaches.
+  for (content::DevToolsAgentHostClientChannel* other :
+       channels_with_device_overrides_) {
+    if (other->GetAgentHost()->GetWebContents() == web_contents)
+      return;
   }
+
+  static_cast<content::WebContentsImpl*>(web_contents)
+      ->ClearDeviceEmulationSize();
 }
 
 scoped_refptr<content::DevToolsAgentHost>
