@@ -55,7 +55,6 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/frame_view.h"
 #include "ui/views/window/non_client_view.h"
-#include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -1309,10 +1308,10 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  // Shadows are now drawn by CSD (Linux) or DWM (Windows) instead of Aura,
+  // so we no longer call wm::SetShadowElevation and similar to avoid
+  // artifacts. https://github.com/electron/electron/issues/51456.
   has_shadow_ = has_shadow;
-  wm::SetShadowElevation(GetNativeWindow(),
-                         has_shadow ? wm::kShadowElevationInactiveWindow
-                                    : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() const {
