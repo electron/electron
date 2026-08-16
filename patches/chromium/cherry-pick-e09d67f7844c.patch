@@ -24,13 +24,12 @@ Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
 Reviewed-by: Danilo Tedeschi <danft@google.com>
 Reviewed-by: David Sanders <dsanders11@ucsbalum.com>
 Cr-Commit-Position: refs/heads/main@{#1678275}
----
 
 diff --git a/ui/base/l10n/l10n_util_mac.mm b/ui/base/l10n/l10n_util_mac.mm
-index cad5022..efc4bf2 100644
+index cad5022d82a9b4987dd07ecc38c4eddddfa07512..efc4bf25fdd46635f1f763ca8e3afef9ed40c4d9 100644
 --- a/ui/base/l10n/l10n_util_mac.mm
 +++ b/ui/base/l10n/l10n_util_mac.mm
-@@ -62,6 +62,12 @@
+@@ -62,6 +62,12 @@ void OverrideLocaleWithCocoaLocale() {
    if (locale_value == "en")
      locale_value = "en-US";
  
