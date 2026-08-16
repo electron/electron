@@ -2,8 +2,6 @@
 
 const { downloadArtifact } = require('@electron/get');
 
-const { extract } = require('@electron-internal/extract-zip');
-
 const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
@@ -77,6 +75,12 @@ function isInstalled() {
 
 // unzips and makes path.txt point at the correct executable
 function extractFile(zipPath) {
+  // Loaded here, not at the top of the file: the extractor has a native
+  // binding, and an OS policy can block its load (see electron/electron#52481).
+  // A lazy require keeps `isInstalled()` working in that case, so an
+  // already-installed dist does not need the extractor at all.
+  const { extract } = require('@electron-internal/extract-zip');
+
   const distPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist');
 
   return extract(zipPath, { dir: path.join(__dirname, 'dist') }).then(() => {
