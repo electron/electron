@@ -2612,8 +2612,19 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     // embedded, so the window stays blank until a resize allocates a new id.
     // kHiddenButPainting is the same state content uses for a hidden but
     // captured WebContents: the widget renders, the page stays hidden.
-    static_cast<content::RenderWidgetHostViewBase*>(rwhv)->ShowWithVisibility(
-        content::PageVisibilityState::kHiddenButPainting);
+    //
+    // Guest (<webview>) main frames are child-frame views: their surface is
+    // embedded by the embedder's renderer, so there is no browser-side
+    // compositor state to keep in sync, and their ShowWithVisibility()
+    // refuses to show a frame the embedder has hidden (display: none). Keep
+    // the direct WasShown() for them so behavior there is unchanged.
+    auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
+    if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
+      rwh_impl->WasShown({});
+    } else {
+      rwhv_base->ShowWithVisibility(
+          content::PageVisibilityState::kHiddenButPainting);
+    }
   }
 }
 
