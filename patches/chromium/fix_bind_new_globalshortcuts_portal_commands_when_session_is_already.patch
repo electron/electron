@@ -17,10 +17,10 @@ Upstreamable as a standalone fix; this affects any consumer registering a
 command after startup when all previous commands were already approved.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index 59150acea1fa6c9558c2f7e155a5bf9c9b195df2..dd53a82cd8d2e9a938373953eb6f0a9e43b59556 100644
+index e161bbcb8b85a8576f5bd2f721853854e6aca0c4..d00fb54e295a4030fd001f611ecddd3c7596db68 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-@@ -294,6 +294,12 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
+@@ -286,6 +286,12 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
        return;
      }
    }
