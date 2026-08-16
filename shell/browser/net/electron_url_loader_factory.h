@@ -160,14 +160,16 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       network::mojom::URLResponseHeadPtr head,
       const network::ResourceRequest& original_request,
       const base::FilePath& path,
-      const gin_helper::Dictionary& opts);
+      const gin_helper::Dictionary& opts,
+      bool tag_response_opaque);
   static void StartLoadingHttp(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       const network::ResourceRequest& original_request,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       base::WeakPtr<ElectronBrowserContext> browser_context,
-      const gin_helper::Dictionary& dict);
+      const gin_helper::Dictionary& dict,
+      bool tag_response_opaque);
   static void StartLoadingStream(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
