@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 1 Jul 2026 18:54:36 +0000
-Subject: fix: bind new GlobalShortcuts portal commands when session is
- already up to date
+Subject: fix: bind new GlobalShortcuts portal commands when session is already
+ up to date
 
 When ListShortcuts reveals that every bound command is already registered
 with the portal, OnListShortcuts returns without calling BindShortcuts and
