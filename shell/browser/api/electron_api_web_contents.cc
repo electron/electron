@@ -1743,6 +1743,21 @@ void WebContents::RendererUnresponsive(
   EmitWithoutEvent("-unresponsive", event_object);
 }
 
+bool WebContents::SaveFrame(const GURL& url,
+                            const content::Referrer& referrer,
+                            content::RenderFrameHost* rfh) {
+  // Downloads read file: URLs from disk directly; save asar entries from an
+  // extracted copy.
+  GURL extracted_url;
+  std::u16string file_name;
+  if (!asar::GetExtractedFileURL(url, &extracted_url, &file_name))
+    return false;
+  web_contents()->SaveFrameWithHeaders(extracted_url, referrer, std::string(),
+                                       file_name, rfh,
+                                       /*is_subresource=*/false);
+  return true;
+}
+
 void WebContents::RendererResponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host) {
@@ -2814,9 +2829,18 @@ void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
     }
   }
 
+  GURL download_url = url;
+  std::u16string asar_file_name;
+  const bool from_asar =
+      asar::GetExtractedFileURL(url, &download_url, &asar_file_name);
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
-          web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
+          web_contents(), download_url, MISSING_TRAFFIC_ANNOTATION));
+  if (from_asar) {
+    // The suggested name is dropped when a page initiator is set.
+    download_params->set_suggested_name(asar_file_name);
+    download_params->set_initiator(std::nullopt);
+  }
   for (const auto& [name, value] : headers) {
     if (base::ToLowerASCII(name) ==
         base::ToLowerASCII(net::HttpRequestHeaders::kReferer)) {
