@@ -2952,14 +2952,17 @@ describe('webContents module', () => {
       // surface not available for capture"); in the fixed state the surface is
       // available immediately or after a frame or two.
       let image: Electron.NativeImage | undefined;
-      await waitUntil(async () => {
-        try {
-          image = await view.webContents.capturePage();
-          return true;
-        } catch {
-          return false;
-        }
-      }, { rate: 100, timeout: 5000 });
+      await waitUntil(
+        async () => {
+          try {
+            image = await view.webContents.capturePage();
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100, timeout: 5000 }
+      );
       const size = image!.getSize();
       expect(size.width).to.be.greaterThan(0);
       expect(size.height).to.be.greaterThan(0);
