@@ -5147,6 +5147,9 @@ describe('iframe sandbox popups', () => {
         res.end(makeChildHtml('https://example.com/sandbox-bypassed'));
       } else if (req.url === '/child-local-popup') {
         res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/csp-sandbox-top') {
+        res.setHeader('Content-Security-Policy', 'sandbox allow-scripts allow-popups');
+        res.end(makeChildHtml('/popup'));
       } else if (req.url === '/popup') {
         res.end('<title>popup</title>');
       } else {
@@ -5233,5 +5236,28 @@ describe('iframe sandbox popups', () => {
     expect(result.origin).to.equal(new URL(serverUrl).origin);
     expect(result.localStorage).to.equal('allowed');
     expect(result.cookie).to.equal('allowed');
+  });
+
+  it('popups opened by a sandboxed top-level frame inherit the sandbox', async () => {
+    // A document made sandboxed by a CSP header is a sandboxed main frame (no
+    // parent); a window it opens must stay sandboxed just like an iframe's does.
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(`${serverUrl}/csp-sandbox-top`);
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    const result = await popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
   });
 });
