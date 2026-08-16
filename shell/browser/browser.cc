@@ -22,6 +22,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/thread_restrictions.h"
 
 namespace electron {
@@ -130,7 +131,11 @@ void Browser::Exit(gin::Arguments* args) {
 
 void Browser::ExitWithCode(int code) {
   if (!ElectronBrowserMainParts::Get()->SetExitCode(code)) {
-    // Message loop is not ready, quit directly.
+    // Message loop is not ready, quit directly. Nothing below us gets torn
+    // down on this path, so at least undo Node's per-process initialization
+    // before exit() starts running static destructors underneath any threads
+    // Node has started.
+    NodeBindings::TearDownOncePerProcess();
     exit(code);
   } else {
     // Prepare to quit when all windows have been closed.
