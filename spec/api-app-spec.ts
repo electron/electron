@@ -235,6 +235,25 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
     });
 
+    it('exits cleanly when called before ready right after loading tls', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
+      // This guards against a shutdown race that was lost roughly one run in
+      // five, so go a few rounds.
+      for (let i = 0; i < 15; i++) {
+        appProcess = cp.spawn(process.execPath, [appPath]);
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(123, message);
+        expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
+      }
+    });
+
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');

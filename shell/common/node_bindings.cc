@@ -540,6 +540,17 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+
+  if (initialized_node_per_process_)
+    TearDownOncePerProcess();
+}
+
+// static
+void NodeBindings::TearDownOncePerProcess() {
+  if (!g_is_initialized)
+    return;
+  g_is_initialized = false;
+  node::TearDownOncePerProcess();
 }
 
 void NodeBindings::StopPolling() {
@@ -746,6 +757,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   }
 
   g_is_initialized = true;
+  initialized_node_per_process_ = true;
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
