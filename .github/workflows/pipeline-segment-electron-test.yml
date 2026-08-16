@@ -25,6 +25,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-coverage:
+        description: 'Running against a Clang source-based code coverage build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -37,7 +42,7 @@ on:
         default: x11
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-coverage }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -65,12 +70,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-coverage && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        # Coverage runs unsharded so the whole suite lands in one profile set.
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.is-coverage, fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      COVERAGE_PROFILE_DIR: /tmp/electron-coverage
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
@@ -185,6 +192,22 @@ jobs:
         echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
+    - name: Load coverage specific environment variables
+      if: ${{ inputs.is-coverage == true }}
+      run: |
+        # World-writable because Linux tests run as builduser via runuser, and
+        # every Electron child process inherits LLVM_PROFILE_FILE and writes here.
+        mkdir -p "$COVERAGE_PROFILE_DIR"
+        chmod 777 "$COVERAGE_PROFILE_DIR"
+        # %4m caps the profile set at four files (the runtime merges into them
+        # under a lock); %c enables continuous mode so counters survive the
+        # abnormal exits and sandboxed processes the suite produces.
+        echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
+        # Instrumented binaries run several times slower than a normal build.
+        # MOCHA_TIMEOUT only raises the suite default; specs that call
+        # this.timeout() explicitly scale themselves off IS_COVERAGE.
+        echo "MOCHA_TIMEOUT=180000" >> $GITHUB_ENV
+        echo "IS_COVERAGE=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -283,7 +306,7 @@ jobs:
 
     - name: Run Electron Tests
       shell: bash
-      timeout-minutes: 60
+      timeout-minutes: ${{ case(inputs.is-coverage, 330, 60) }}
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
@@ -294,7 +317,7 @@ jobs:
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.is-coverage, 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
         if [ "${{ inputs.display-server }}" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
@@ -384,6 +407,16 @@ jobs:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
+    # Raw counters only; pipeline-segment-electron-coverage-report.yml indexes
+    # them and renders the report.
+    - name: Upload Coverage Profiles
+      if: ${{ inputs.is-coverage && !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: coverage_profraw_${{ env.ARTIFACT_KEY }}
+        path: ${{ env.COVERAGE_PROFILE_DIR }}
+        if-no-files-found: error
+        retention-days: 7
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash

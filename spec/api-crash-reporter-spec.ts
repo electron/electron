@@ -317,8 +317,10 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
 
     describe('OOM crash keys', () => {
+      const oomTimeout = process.env.IS_COVERAGE ? 300000 : 120000;
+
       it('reports OOM stack trace and heap statistics when renderer runs out of memory', async function () {
-        this.timeout(120000);
+        this.timeout(oomTimeout);
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-oom', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();
@@ -330,7 +332,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       });
 
       it('captures the calling function on JSON.stringify OOM', async function () {
-        this.timeout(120000);
+        this.timeout(oomTimeout);
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-oom-json', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();
@@ -340,7 +342,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       });
 
       it('captures OOM crash keys inside a web worker', async function () {
-        this.timeout(120000);
+        this.timeout(oomTimeout);
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-oom-worker', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();
