@@ -71,7 +71,7 @@ index 721c7cb973f808ce48318c3f8616379054295ce6..54472e64b4ad060e12a42173f2180c1b
  }
  
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index f2b1cdff827eae3726febe590f2f30b5f6d89046..f945cc4368276ede338843d6f6c92425b3514a66 100644
+index dcce405488dd4c61c218a6b6c356d5932de99fb2..a67db088f014a747726152f7dc59a8b63a189e6b 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
 @@ -124,6 +124,12 @@ bool IsSubprocess() {
