@@ -806,5 +806,47 @@ describe('MenuItems', () => {
       menu.items[0].badge = { type: 'updates', count: 5 };
       expect(menu.items[0].badge).to.deep.equal({ type: 'updates', count: 5 });
     });
+
+    it('should remove an existing badge', () => {
+      const item = new MenuItem({ label: 'test', badge: { type: 'alerts', count: 3 } });
+      item.badge = undefined;
+      expect(item.badge).to.be.undefined();
+
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'none', content: 'New' } }]);
+      menu.items[0].badge = undefined;
+      expect(menu.items[0].badge).to.be.undefined();
+      menu.items[0].badge = { type: 'new-items', count: 2 };
+      expect(menu.items[0].badge).to.deep.equal({ type: 'new-items', count: 2 });
+    });
+
+    it('should default the badge type to none', () => {
+      const item = new MenuItem({ label: 'test', badge: { content: 'Beta' } });
+      expect(item.badge).to.deep.equal({ content: 'Beta' });
+    });
+
+    it('should throw on an invalid badge', () => {
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'bogus', count: 1 } as any })).to.throw(
+        /Invalid badge type/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts' } })).to.throw(
+        /badge.count must be a non-negative integer/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'updates', count: -1 } })).to.throw(
+        /badge.count must be a non-negative integer/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts', count: 1, content: 'x' } })).to.throw(
+        /badge.content can only be used/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none' } })).to.throw(/badge.content must be a string/);
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none', content: 'x', count: 1 } })).to.throw(
+        /badge.count cannot be used/
+      );
+
+      const item = new MenuItem({ label: 'test' });
+      expect(() => {
+        item.badge = { type: 'bogus' } as any;
+      }).to.throw(/Invalid badge type/);
+      expect(item.badge).to.be.undefined();
+    });
   });
 });

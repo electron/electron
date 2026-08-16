@@ -131,9 +131,12 @@ void ElectronMenuModel::SetSharingItem(SharingItem item) {
   sharing_item_.emplace(std::move(item));
 }
 
-void ElectronMenuModel::SetBadge(size_t index, Badge badge) {
-  int command_id = GetCommandIdAt(index);
-  badges_[command_id] = std::move(badge);
+void ElectronMenuModel::SetBadge(size_t index, std::optional<Badge> badge) {
+  const int command_id = GetCommandIdAt(index);
+  if (badge)
+    badges_[command_id] = std::move(*badge);
+  else
+    badges_.erase(command_id);
 }
 
 bool ElectronMenuModel::GetBadgeAt(size_t index, Badge* badge) const {

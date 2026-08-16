@@ -18,6 +18,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
@@ -54,14 +55,8 @@ struct Converter<Badge> {
     gin_helper::Dictionary dict;
     if (!ConvertFromV8(isolate, val, &dict))
       return false;
-
-    std::string type_str;
-    if (dict.Get("type", &type_str)) {
-      out->type = base::UTF8ToUTF16(type_str);
-    } else {
-      out->type = u"none";
-    }
-
+    out->type = "none";
+    dict.Get("type", &(out->type));
     dict.GetOptional("count", &(out->count));
     dict.GetOptional("content", &(out->content));
     return true;
@@ -285,16 +280,7 @@ void Menu::SetCustomType(int index, const std::u16string& customType) {
 }
 
 #if BUILDFLAG(IS_MAC)
-void Menu::SetBadge(int index, const gin_helper::Dictionary& badge_dict) {
-  ElectronMenuModel::Badge badge;
-  std::string type_str;
-  if (badge_dict.Get("type", &type_str)) {
-    badge.type = base::UTF8ToUTF16(type_str);
-  } else {
-    badge.type = u"none";
-  }
-  badge_dict.GetOptional("count", &badge.count);
-  badge_dict.GetOptional("content", &badge.content);
+void Menu::SetBadge(int index, std::optional<ElectronMenuModel::Badge> badge) {
   model_->SetBadge(index, std::move(badge));
 }
 #endif
