@@ -1420,7 +1420,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     auto* initiator = static_cast<content::RenderFrameHostImpl*>(
         content::RenderFrameHost::FromID(params.source_render_process_id,
                                          params.source_render_frame_id));
-    if (initiator && initiator->GetParent()) {
+    if (initiator) {
       // Use the initiating document's active sandboxing flag set (its policy
       // container flags), which is what
       // content::WebContentsImpl::CreateWithOpener consults when deciding
@@ -1432,7 +1432,7 @@ content::WebContents* WebContents::OpenURLFromTab(
       if (!allow(SandboxFlags::kPopups)) {
         initiator->AddMessageToConsole(
             blink::mojom::ConsoleMessageLevel::kError,
-            "Blocked opening a new window because the iframe is sandboxed "
+            "Blocked opening a new window because the opener is sandboxed "
             "and the 'allow-popups' keyword is not set.");
         return nullptr;
       }
