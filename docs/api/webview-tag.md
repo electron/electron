@@ -230,6 +230,12 @@ A name by itself is given a `true` boolean value.
 A preference can be set to another value by including an `=`, followed by the value.
 Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are interpreted as `false`.
 
+Security-critical preferences cannot be used to make the guest less secure than
+its embedder. When the embedder has any of `contextIsolation`, `javascript`,
+`nodeIntegration`, `nodeIntegrationInWorker`, `sandbox`, `nodeIntegrationInSubFrames`
+or `enableWebSQL` set to its more secure value, the guest inherits that value and
+the corresponding `webpreferences` entry is ignored.
+
 ### `enableblinkfeatures`
 
 ```html
