@@ -115,15 +115,11 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOffTheRecordContext(
 BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
     BrowserContext* context) {
   DCHECK(context);
-  // In-memory sessions borrow the default session's extensions. This also
-  // runs while contexts are torn down, so it must never create one.
   if (context->IsOffTheRecord()) {
-    if (auto* original =
-            ElectronBrowserContext::GetExistingDefaultBrowserContext()) {
-      return original;
-    }
+    return ElectronBrowserContext::GetDefaultBrowserContext();
+  } else {
+    return context;
   }
-  return context;
 }
 
 content::BrowserContext*
