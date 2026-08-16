@@ -1,7 +1,10 @@
-From 01036c1aead23607c2f90725908bfa70455f9046 Mon Sep 17 00:00:00 2001
-From: Steinar H. Gunderson <sesse@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Steinar H. Gunderson" <sesse@chromium.org>
 Date: Wed, 17 Jun 2026 05:19:13 -0700
-Subject: [PATCH] Reapply "Speed up ScriptRunIterator."
+Subject: Reapply "Speed up ScriptRunIterator."
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This reverts commit 9d9108796bb827dfa21378d6d3e86e39dd8c5e5f.
 
@@ -20,28 +23,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7956398
 Reviewed-by: Dominik Röttsches <drott@chromium.org>
 Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1648228}
----
 
-diff --git a/third_party/blink/renderer/core/css/threaded/font_object_threaded_test.cc b/third_party/blink/renderer/core/css/threaded/font_object_threaded_test.cc
-index d0573d905..730f350 100644
---- a/third_party/blink/renderer/core/css/threaded/font_object_threaded_test.cc
-+++ b/third_party/blink/renderer/core/css/threaded/font_object_threaded_test.cc
-@@ -76,9 +76,7 @@
-   });
- }
- 
--// This test is disabled because it is failing on Linux TSAN:
--// https://issues.chromium.org/issues/524628213
--TSAN_TEST(FontObjectThreadedTest, DISABLED_TextIntercepts) {
-+TSAN_TEST(FontObjectThreadedTest, TextIntercepts) {
-   callbacks_per_thread_ = 10;
-   RunOnThreads([]() {
-     Font* font = CreateTestFont(AtomicString("Ahem"),
 diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator.cc b/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
-index 3f56ec9..8bcb4997 100644
+index 3f56ec9b3b7f82146793314d9fda66ca00eb8d64..8bcb4997dd2b64b40880ea0f74b29fe689dd7f74 100644
 --- a/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
 +++ b/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
-@@ -117,6 +117,17 @@
+@@ -117,6 +117,17 @@ ScriptData::~ScriptData() = default;
  
  void ICUScriptData::GetScripts(UChar32 ch, UScriptCodeList& dst) const {
    IcuError status;
@@ -59,7 +46,7 @@ index 3f56ec9..8bcb4997 100644
    // Leave room to insert primary script. It's not strictly necessary but
    // it ensures that the result won't ever be greater than kMaxScriptCount,
    // which some client someday might expect.
-@@ -137,7 +148,6 @@
+@@ -137,7 +148,6 @@ void ICUScriptData::GetScripts(UChar32 ch, UScriptCodeList& dst) const {
      count = dst.size();
      status = U_ZERO_ERROR;
    }
@@ -67,7 +54,7 @@ index 3f56ec9..8bcb4997 100644
  
    if (U_FAILURE(status)) {
      DLOG(ERROR) << "Could not get icu script data: " << status << " for 0x"
-@@ -219,6 +229,65 @@
+@@ -219,6 +229,65 @@ const ICUScriptData* ICUScriptData::Instance() {
    return &icu_script_data_instance;
  }
  
@@ -133,7 +120,7 @@ index 3f56ec9..8bcb4997 100644
  ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text,
                                       const ScriptData* data)
      : text_(text.data()),
-@@ -248,11 +317,18 @@
+@@ -248,11 +317,18 @@ ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text,
  ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text)
      : ScriptRunIterator(text, ICUScriptData::Instance()) {}
  
@@ -152,7 +139,7 @@ index 3f56ec9..8bcb4997 100644
    wtf_size_t pos;
    UChar32 ch;
    while (Fetch(&pos, &ch)) {
-@@ -278,6 +354,72 @@
+@@ -278,6 +354,72 @@ bool ScriptRunIterator::Consume(unsigned* limit, UScriptCode* script) {
        current_set_ = *next_set_;
        return true;
      }
@@ -225,7 +212,7 @@ index 3f56ec9..8bcb4997 100644
    }
  
    *limit = length_;
-@@ -467,6 +609,10 @@
+@@ -467,6 +609,10 @@ bool ScriptRunIterator::Fetch(wtf_size_t* pos, UChar32* ch) {
      return true;
    }
  
@@ -237,7 +224,7 @@ index 3f56ec9..8bcb4997 100644
  
    script_data_->GetScripts(ahead_character_, *ahead_set_);
 diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator.h b/third_party/blink/renderer/platform/fonts/script_run_iterator.h
-index a816dbbf..46c86b4 100644
+index a816dbbf84f60773fbe65660074ca41316754501..46c86b4e7a6f0558a5b49734edf83a5a41f566de 100644
 --- a/third_party/blink/renderer/platform/fonts/script_run_iterator.h
 +++ b/third_party/blink/renderer/platform/fonts/script_run_iterator.h
 @@ -8,10 +8,14 @@
@@ -255,7 +242,7 @@ index a816dbbf..46c86b4 100644
  #include "third_party/blink/renderer/platform/wtf/vector.h"
  
  namespace blink {
-@@ -49,6 +53,7 @@
+@@ -49,6 +53,7 @@ class PLATFORM_EXPORT ScriptRunIterator {
    bool MergeSets();
    void FixupStack(UScriptCode resolved_script, bool exclude_last);
    bool Fetch(wtf_size_t* pos, UChar32*);
@@ -263,7 +250,7 @@ index a816dbbf..46c86b4 100644
  
    UScriptCode ResolveCurrentScript() const;
  
-@@ -109,9 +114,35 @@
+@@ -109,9 +114,35 @@ class PLATFORM_EXPORT ScriptData {
    virtual UChar32 GetPairedBracket(UChar32) const = 0;
  
    virtual PairedBracketType GetPairedBracketType(UChar32) const = 0;
@@ -300,7 +287,7 @@ index a816dbbf..46c86b4 100644
   public:
    ~ICUScriptData() override = default;
  
-@@ -122,6 +153,38 @@
+@@ -122,6 +153,38 @@ class PLATFORM_EXPORT ICUScriptData : public ScriptData {
    UChar32 GetPairedBracket(UChar32) const override;
  
    PairedBracketType GetPairedBracketType(UChar32) const override;
@@ -340,10 +327,10 @@ index a816dbbf..46c86b4 100644
  }  // namespace blink
  
 diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc b/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
-index a58cf1bb..c891ccf7 100644
+index a58cf1bb86d536fa4981eb3f082ec597c239ba3c..c891ccf703e6f1d23b83b5113be6402105279e6b 100644
 --- a/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
 +++ b/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
-@@ -111,6 +111,11 @@
+@@ -111,6 +111,11 @@ class MockScriptData : public ScriptData {
      return PairedBracketType::kBracketTypeOpen;
    }
  
@@ -355,7 +342,7 @@ index a58cf1bb..c891ccf7 100644
    static int TableLookup(int value) {
      for (int i = 0; i < 16; ++i) {
        if (kTable[i] == value) {
-@@ -782,6 +787,13 @@
+@@ -782,6 +787,13 @@ TEST_F(ScriptRunIteratorTest, CommonMalayalam) {
    CHECK_SCRIPT_RUNS({{"100-ാം", USCRIPT_MALAYALAM}});
  }
  
