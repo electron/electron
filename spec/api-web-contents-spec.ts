@@ -3786,6 +3786,42 @@ describe('webContents module', () => {
 
       w.webContents.setBackgroundThrottling(false);
     });
+
+    // Regression test: disabling throttling on a WebContentsView while its
+    // window is hidden used to un-hide the RenderWidgetHost without telling the
+    // view, so the surface the renderer produced was never embedded and the
+    // window stayed blank (and un-capturable) once shown, until a resize.
+    it('leaves a hidden WebContentsView paintable once its window is shown', async () => {
+      const w = new BaseWindow({ show: false, width: 300, height: 200 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 300, height: 200 });
+      await view.webContents.loadURL('data:text/html,<body style="background:%23ff0000">');
+      view.webContents.setBackgroundThrottling(false);
+      // Give the renderer time to submit frames while still hidden.
+      await setTimeout(500);
+      w.show();
+      // In the broken state capturePage rejects forever ("Current display
+      // surface not available for capture"); in the fixed state the surface is
+      // available immediately or after a frame or two.
+      let image: Electron.NativeImage | undefined;
+      await waitUntil(async () => {
+        try {
+          image = await view.webContents.capturePage();
+          return true;
+        } catch {
+          return false;
+        }
+      }, { rate: 100, timeout: 5000 });
+      const size = image!.getSize();
+      expect(size.width).to.be.greaterThan(0);
+      expect(size.height).to.be.greaterThan(0);
+      const px = image!.toBitmap();
+      // BGRA; expect the red background, not the blank white surface.
+      expect(px[2]).to.equal(255);
+      expect(px[1]).to.equal(0);
+      expect(px[0]).to.equal(0);
+    });
   });
 
   describe('getBackgroundThrottling()', () => {
