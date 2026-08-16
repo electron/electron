@@ -7,6 +7,7 @@ import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
@@ -1144,6 +1145,44 @@ describe('protocol module', () => {
         await w.loadURL(remoteUrl);
         const { type, status, body } = await w.webContents.executeJavaScript(`
           fetch('no-cors://host/secret', { mode: 'no-cors' })
+            .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
+        `);
+        expect(type).to.equal('opaque');
+        expect(status).to.equal(0);
+        expect(body).to.equal('');
+      });
+
+      it('returns an opaque response for a registerFileProtocol scheme fetched cross-origin with mode: no-cors', async () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'protocol-spec-'));
+        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+        const secretFile = path.join(dir, 'secret.txt');
+        fs.writeFileSync(secretFile, secret);
+        protocol.registerFileProtocol('no-cors-file', (_req, cb) => cb({ path: secretFile }));
+        defer(() => protocol.unregisterProtocol('no-cors-file'));
+
+        await w.loadURL(remoteUrl);
+        const { type, status, body } = await w.webContents.executeJavaScript(`
+          fetch('no-cors-file://host/secret', { mode: 'no-cors' })
+            .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
+        `);
+        expect(type).to.equal('opaque');
+        expect(status).to.equal(0);
+        expect(body).to.equal('');
+      });
+
+      it('returns an opaque response for a registerHttpProtocol scheme fetched cross-origin with mode: no-cors', async () => {
+        const upstream = http.createServer((req, res) => {
+          res.setHeader('content-type', 'text/plain');
+          res.end(secret);
+        });
+        defer(() => upstream.close());
+        const { url: upstreamUrl } = await listen(upstream);
+        protocol.registerHttpProtocol('no-cors-http', (_req, cb) => cb({ url: upstreamUrl }));
+        defer(() => protocol.unregisterProtocol('no-cors-http'));
+
+        await w.loadURL(remoteUrl);
+        const { type, status, body } = await w.webContents.executeJavaScript(`
+          fetch('no-cors-http://host/secret', { mode: 'no-cors' })
             .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
         `);
         expect(type).to.equal('opaque');
