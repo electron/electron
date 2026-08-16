@@ -326,6 +326,10 @@ struct PartitionKey {
   bool in_memory_;
 };
 
+// Set while the default session's context is alive, including while the
+// other contexts are torn down ahead of it in DestroyAllContexts().
+ElectronBrowserContext* g_default_browser_context = nullptr;
+
 [[nodiscard]] auto& ContextMap() {
   static base::NoDestructor<
       std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>>
@@ -914,12 +918,26 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
     base::DictValue options) {
+  const bool is_default = partition.empty() && !in_memory;
+  // In-memory sessions are off-the-record contexts of the default session
+  // (see ElectronExtensionsBrowserClient::GetOriginalContext), so it exists
+  // first and, per DestroyAllContexts(), goes away last.
+  if (in_memory && !g_default_browser_context)
+    GetDefaultBrowserContext();
   auto& context = ContextMap()[PartitionKey(partition, in_memory)];
   if (!context) {
     context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
                                              std::move(options)});
+    if (is_default)
+      g_default_browser_context = context.get();
   }
   return context.get();
+}
+
+// static
+ElectronBrowserContext*
+ElectronBrowserContext::GetExistingDefaultBrowserContext() {
+  return g_default_browser_context;
 }
 
 // static
