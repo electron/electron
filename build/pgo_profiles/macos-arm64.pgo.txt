@@ -1,1 +1,1 @@
-electron-macos-arm64-1786250269-c8c4b71bf9.profdata d3615cf440156dfd6fd6fcd1fa1d388f1359147c6a0a2a4608eb51f4ccd78daf
+electron-macos-arm64-1786870435-418852857f.profdata e1837b0f881fddf428d87928edbea9cb6f33b43d3dbc8cb2277c96bcd2520ec1
