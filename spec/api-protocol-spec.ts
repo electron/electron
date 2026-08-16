@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
@@ -1381,14 +1382,13 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged codeCache', function () {
-    const temp = require('temp').track();
     const appPath = path.join(fixturesPath, 'apps', 'refresh-page');
 
     let w: BrowserWindow;
     let codeCachePath: string;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
-      codeCachePath = temp.path();
+      codeCachePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'electron-code-cache-')), 'cache');
     });
 
     afterEach(async () => {
