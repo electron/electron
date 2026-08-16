@@ -40,7 +40,6 @@ class BrowserWindow : public BaseWindow,
 
   // content::WebContentsObserver:
   void BeforeUnloadDialogCancelled() override;
-  void RenderViewReady() override;
   void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
@@ -76,12 +75,6 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
-
-  // When true and the window is created with show: false, the renderer is
-  // told it is visible as soon as it is ready so that PerformanceObserver
-  // paint‐timing entries (first-paint / first-contentful-paint) are
-  // produced even before the native window is shown.
-  bool paint_when_initially_hidden_ = false;
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;

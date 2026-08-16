@@ -7463,27 +7463,24 @@ describe('BrowserWindow module', () => {
         paintWhenInitiallyHidden: true
       });
       await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      expect(w.isVisible()).to.be.false('window is visible');
 
+      // first-contentful-paint is only reported once the frame carrying the
+      // content has actually been presented.
       const entries = await w.webContents.executeJavaScript(`
         new Promise((resolve) => {
-          const observer = new PerformanceObserver((list) => {
-            const paintEntries = list.getEntries().filter(
-              e => e.name === 'first-paint' || e.name === 'first-contentful-paint'
-            );
-            if (paintEntries.length > 0) {
+          new PerformanceObserver((list, observer) => {
+            const names = list.getEntries().map(e => e.name);
+            if (names.includes('first-contentful-paint')) {
               observer.disconnect();
-              resolve(paintEntries.map(e => e.name));
+              resolve(names);
             }
-          });
-          observer.observe({ entryTypes: ['paint'] });
-
-          const header = document.createElement('h1');
-          header.innerText = 'Paint me!!';
-          document.getElementById('div').appendChild(header);
+          }).observe({ type: 'paint', buffered: true });
         });
       `);
 
       expect(entries).to.be.an('array').that.includes('first-contentful-paint');
+      expect(w.isVisible()).to.be.false('window is visible');
     });
   });
 
