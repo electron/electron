@@ -1552,6 +1552,9 @@ describe('asar package', function () {
       itremote('throws EISDIR when opening a directory', function () {
         expect(() => fs.openSync(path.join(asarDir, 'a.asar', 'dir1'), 'r')).to.throw(/EISDIR/);
         expect(() => fs.openSync(path.join(asarDir, 'a.asar'), 'r')).to.throw(/EISDIR/);
+        // ...including through a symbolic link to a directory.
+        expect(() => fs.openSync(path.join(asarDir, 'a.asar', 'link2'), 'r')).to.throw(/EISDIR/);
+        expect(() => fs.openSync(path.join(asarDir, 'a.asar', 'link2', 'link2'), 'r')).to.throw(/EISDIR/);
       });
 
       itremote('opens files with an empty size', function () {
@@ -1848,6 +1851,43 @@ describe('asar package', function () {
           const { bytesRead } = await handle.readv(buffers, 0);
           expect(bytesRead).to.equal(expected.length);
           expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          await handle.close();
+        }
+      });
+
+      itremote('skips zero-length buffers and clamps at the end of the entry like preadv', async function () {
+        const p = path.join(asarDir, 'a.asar', 'file1'); // 6 bytes: 'file1\n'
+        {
+          // Zero-length buffers do not stop the read, whether or not the tail is clamped.
+          const fd = fs.openSync(p, 'r');
+          const buffers = [Buffer.alloc(0), Buffer.alloc(3), Buffer.alloc(0), Buffer.alloc(3)];
+          expect(fs.readvSync(fd, buffers, 0)).to.equal(6);
+          expect(Buffer.concat(buffers).toString()).to.equal('file1\n');
+          const clamped = [Buffer.alloc(0), Buffer.alloc(20)];
+          expect(fs.readvSync(fd, clamped, 2)).to.equal(4);
+          expect(clamped[1].subarray(0, 4).toString()).to.equal('le1\n');
+          expect(clamped[1][4]).to.equal(0);
+          const clampedMore = [Buffer.alloc(2), Buffer.alloc(0), Buffer.alloc(2), Buffer.alloc(100)];
+          expect(fs.readvSync(fd, clampedMore, 3)).to.equal(3);
+          expect(Buffer.concat(clampedMore).subarray(0, 3).toString()).to.equal('e1\n');
+          fs.closeSync(fd);
+        }
+        {
+          // Same through the file position and the async / promise forms.
+          const fd = fs.openSync(p, 'r');
+          const first = [Buffer.alloc(0), Buffer.alloc(4)];
+          expect(await promisify(fs.readv)(fd, first)).to.equal(4);
+          expect(first[1].toString()).to.equal('file');
+          const rest = [Buffer.alloc(0), Buffer.alloc(10)];
+          expect(await promisify(fs.readv)(fd, rest)).to.equal(2);
+          expect(rest[1].subarray(0, 2).toString()).to.equal('1\n');
+          expect(await promisify(fs.readv)(fd, [Buffer.alloc(0), Buffer.alloc(10)])).to.equal(0);
+          fs.closeSync(fd);
+          const handle = await fs.promises.open(p, 'r');
+          const buffers = [Buffer.alloc(0), Buffer.alloc(3), Buffer.alloc(0), Buffer.alloc(30)];
+          const { bytesRead } = await handle.readv(buffers, 1);
+          expect(bytesRead).to.equal(5);
+          expect(Buffer.concat(buffers).subarray(0, 5).toString()).to.equal('ile1\n');
           await handle.close();
         }
       });
@@ -2245,6 +2285,27 @@ describe('asar package', function () {
         await handle.close();
       });
 
+      itremote('stops routing a descriptor number as soon as close() is requested', async function () {
+        // FileHandle#close() runs close(2) on the threadpool; until then a real
+        // file opened right after may be handed the same number. It must never
+        // be served from the archive-backed reader.
+        const temp = require('temp').track();
+        const real = temp.path();
+        fs.writeFileSync(real, 'real-file-content');
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        for (let i = 0; i < 200; i++) {
+          const handle = await fs.promises.open(p, 'r');
+          const closing = handle.close();
+          const fd = fs.openSync(real, 'r');
+          const buffer = Buffer.alloc(17);
+          expect(fs.readSync(fd, buffer, 0, 17, 0)).to.equal(17);
+          expect(buffer.toString()).to.equal('real-file-content');
+          expect(fs.fstatSync(fd).size).to.equal(17);
+          fs.closeSync(fd);
+          await closing;
+        }
+      });
+
       itremote('close semantics match Node', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
@@ -2330,6 +2391,29 @@ describe('asar package', function () {
         fs.copyFileSync(p, dest, fs.constants.COPYFILE_FICLONE);
         expect(fs.readFileSync(dest).toString()).to.equal('file1\n');
         expect(() => fs.copyFileSync(p, dest, fs.constants.COPYFILE_FICLONE_FORCE)).to.throw(/ENOTSUP/);
+      });
+
+      itremote('lets native fs decide about copy-on-write clones of unpacked files', function () {
+        const originalFs = require('node:original-fs');
+        const temp = require('temp').track();
+        const unpacked = path.join(asarDir, 'unpack.asar', 'a.txt');
+        const real = path.join(asarDir, 'unpack.asar.unpacked', 'a.txt');
+        const outcome = (fn: () => void) => {
+          try {
+            fn();
+            return 'ok';
+          } catch (e: any) {
+            return e.code;
+          }
+        };
+        const viaAsar = temp.path();
+        const viaOriginal = temp.path();
+        // Whatever the filesystem says about reflinks, the answer for an unpacked
+        // entry must match the answer for the real file behind it.
+        expect(outcome(() => fs.copyFileSync(unpacked, viaAsar, fs.constants.COPYFILE_FICLONE_FORCE))).to.equal(
+          outcome(() => originalFs.copyFileSync(real, viaOriginal, fs.constants.COPYFILE_FICLONE_FORCE))
+        );
+        if (fs.existsSync(viaAsar)) expect(fs.readFileSync(viaAsar).equals(fs.readFileSync(real))).to.be.true();
       });
 
       itremote('validates the mode argument like Node', function () {
@@ -2690,11 +2774,22 @@ describe('asar package', function () {
         empty.closeSync();
       });
 
-      itremote('supports the buffer encoding', function () {
+      itremote('supports the buffer and other name encodings', function () {
         const dir = fs.opendirSync(path.join(asarDir, 'a.asar'), { encoding: 'buffer' as any });
         const dirent = dir.readSync()!;
         expect(Buffer.isBuffer(dirent.name)).to.be.true();
         dir.closeSync();
+        const hex = fs.opendirSync(path.join(asarDir, 'a.asar'), { encoding: 'hex' as any });
+        const names: string[] = [];
+        let d;
+        while ((d = hex.readSync()) !== null) names.push(d.name as any);
+        hex.closeSync();
+        expect(names.sort()).to.deep.equal(
+          fs
+            .readdirSync(path.join(asarDir, 'a.asar'))
+            .map((n) => Buffer.from(n).toString('hex'))
+            .sort()
+        );
       });
 
       itremote('reports ENOTDIR and ENOENT', async function () {
@@ -2726,6 +2821,10 @@ describe('asar package', function () {
         expect(Buffer.isBuffer(asBuffer)).to.be.true();
         expect(asBuffer.toString()).to.equal('file1');
         expect(fs.readlinkSync(path.join(a, 'link1'), { encoding: 'utf8' })).to.equal('file1');
+        expect(fs.readlinkSync(path.join(a, 'link1'), 'hex')).to.equal(Buffer.from('file1').toString('hex'));
+        expect(fs.readlinkSync(path.join(a, 'link1'), { encoding: 'base64' })).to.equal(
+          Buffer.from('file1').toString('base64')
+        );
         // Resolving the target against the link's directory gives a readable path.
         const resolve = (link: string) => path.resolve(path.dirname(link), fs.readlinkSync(link));
         expect(fs.readFileSync(resolve(path.join(a, 'link1'))).toString()).to.equal('file1\n');

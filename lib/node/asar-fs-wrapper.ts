@@ -698,6 +698,14 @@ function sweepStaleAsarFds() {
   }
 }
 
+// Applies an fs `encoding` option to a name the way the native bindings do:
+// 'buffer' yields a Buffer, other encodings re-encode the UTF-8 name.
+const encodeName = (name: string, encoding: any) => {
+  if (encoding === 'buffer') return Buffer.from(name);
+  if (encoding && encoding !== 'utf8' && encoding !== 'utf-8') return Buffer.from(name).toString(encoding);
+  return name;
+};
+
 // The fs binding accepts a position as a number, a bigint, or null /
 // undefined / -1 for "the current file position".
 const normalizePosition = (position: number | bigint | null | undefined) => {
@@ -724,8 +732,10 @@ function openAsarEntry(
 
   const info = archive.getFileInfo(filePath);
   if (!info) {
-    const stats = archive.stat(filePath);
-    if (stats && stats.type === AsarFileType.kDirectory) {
+    // getFileInfo follows links itself, so a link to a directory ends up here
+    // as well; resolve links to tell EISDIR from ENOENT.
+    const resolved = resolveAsarLinks(archive, filePath);
+    if (resolved && resolved.stats.type === AsarFileType.kDirectory) {
       throw createError(AsarError.IS_DIR, { asarPath, filePath, syscall });
     }
     throw createError(AsarError.NOT_FOUND, { asarPath, filePath, syscall });
@@ -1244,7 +1254,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       let type = result[1][i];
       if (info.isAsar) {
         const archive = getOrCreateArchive(info.asarPath);
-        if (!archive) return;
+        if (!archive) continue;
         const stats = archive.stat(info.filePath);
         if (!stats) continue;
         type = stats.type;
@@ -1786,6 +1796,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // Node's C++ FileHandle takes ownership of the fd (and closes it on
     // close() or garbage collection); the JS FileHandle wraps this object.
     const handle = new binding.FileHandle(reader.fd);
+    // close() runs the actual close(2) on the threadpool and only resets the
+    // handle's fd to -1 afterwards, on the loop thread; forget the entry as
+    // soon as close is requested so that a real file opened in between and
+    // handed the same descriptor number can never be routed through this
+    // reader.
+    const { close } = handle;
+    handle.close = function (this: any, ...closeArgs: any[]) {
+      forgetAsarFd(reader.fd);
+      return close.apply(this, closeArgs);
+    };
     if (openAsarFiles.size > 256) sweepStaleAsarFds();
     openAsarFiles.set(reader.fd, { reader, handle: new WeakRef(handle) });
     return completeRequest(req, null, handle);
@@ -1838,16 +1858,18 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         filled.push(take);
         remaining -= take;
       }
+      // (Zero-length buffers must not end the loop: like preadv, they are
+      // skipped and later buffers are still filled.)
       const readAllClamped = async () => {
         let total = 0;
-        for (let i = 0; i < buffers.length && filled[i] > 0; i++) {
+        for (let i = 0; i < buffers.length; i++) {
           total += await readFully(reader.fd, buffers[i], 0, filled[i], reader.offset + start + total);
         }
         return total;
       };
       if (req === undefined) {
         let total = 0;
-        for (let i = 0; i < buffers.length && filled[i] > 0; i++) {
+        for (let i = 0; i < buffers.length; i++) {
           total += readFullySync(reader.fd, buffers[i], 0, filled[i], reader.offset + start + total);
         }
         return total;
@@ -2001,29 +2023,34 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const { asarPath, filePath } = pathInfo;
 
     let opened;
+    const modeFlags = mode ?? 0;
     try {
       // Same validation as node's native CopyFile (GetValidFileMode).
       if (mode !== null && mode !== undefined && (typeof mode !== 'number' || (mode | 0) !== mode)) {
         throw new (errorCodes as any).ERR_INVALID_ARG_TYPE('mode', 'int32', mode);
       }
-      const modeFlags = mode ?? 0;
       if (modeFlags < 0 || modeFlags > kMaxCopyFileMode) {
         throw new (errorCodes as any).ERR_OUT_OF_RANGE('mode', `>= 0 && <= ${kMaxCopyFileMode}`, mode);
-      }
-      if ((modeFlags & constants.COPYFILE_FICLONE_FORCE) !== 0) {
-        throw createError(AsarError.NOT_SUPPORTED, { asarPath, filePath, syscall: 'copyfile' });
       }
       opened = openAsarEntry(asarPath, filePath, constants.O_RDONLY, 'copyfile');
     } catch (error) {
       return completeRequest(req, error as Error);
     }
     if ('unpackedPath' in opened) {
+      // Unpacked entries are real files: let native fs handle them, including
+      // copy-on-write clones.
       args[0] = opened.unpackedPath;
       return originalBinding.copyFile(...args);
     }
 
     const { reader } = opened;
     const closeSourceFd = () => originalBinding.close(reader.fd);
+    if ((modeFlags & constants.COPYFILE_FICLONE_FORCE) !== 0) {
+      // A packed entry can never be reflinked.
+      closeSourceFd();
+      reader.dispose();
+      return completeRequest(req, createError(AsarError.NOT_SUPPORTED, { asarPath, filePath, syscall: 'copyfile' }));
+    }
     if (req === undefined) {
       try {
         copyPackedFileSync(reader, dest, mode ?? 0);
@@ -2069,7 +2096,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // Both sides are archive-relative; anchor them at a root so that the
     // computation does not depend on the process's working directory.
     const target = path.relative(path.join(path.sep, path.dirname(filePath)), path.join(path.sep, linkTarget)) || '.';
-    return completeRequest(req, null, encoding === 'buffer' ? Buffer.from(target) : target);
+    return completeRequest(req, null, encodeName(target, encoding));
   };
 
   //
@@ -2095,7 +2122,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         const taken = this.entries.splice(0, count);
         result = [];
         for (const [name, type] of taken) {
-          result.push(encoding === 'buffer' ? Buffer.from(name) : name, type);
+          result.push(encodeName(name, encoding), type);
         }
       }
       return completeRequest(req, null, result);
