@@ -24,7 +24,6 @@ Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
 Reviewed-by: Greg Thompson <grt@chromium.org>
 Reviewed-by: Charlie Reis <creis@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1678427}
----
 
 diff --git a/chrome/app/main_dll_loader_win.cc b/chrome/app/main_dll_loader_win.cc
 index 721c7cb973f808ce48318c3f8616379054295ce6..54472e64b4ad060e12a42173f2180c1bc60db06f 100644

@@ -35,13 +35,12 @@ Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
 Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
 Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#1678281}
----
 
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index b52430a0..ab3f702 100644
+index bc3fa4b1bb0bb31b1620b5962d93111e4e0328a6..df888345341a9559e4031d164696faff040211db 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -107,6 +107,8 @@
+@@ -106,6 +106,8 @@
  #endif
  
  #if BUILDFLAG(IS_WIN)
@@ -50,7 +49,7 @@ index b52430a0..ab3f702 100644
  #include "base/win/access_token.h"
  #include "base/win/security_descriptor.h"
  #include "base/win/win_util.h"
-@@ -567,6 +569,17 @@
+@@ -557,6 +559,17 @@ void InitGpuPersistentCacheFileFactoryOnce() {
    }
  }
  
@@ -68,7 +67,7 @@ index b52430a0..ab3f702 100644
  }  // anonymous namespace
  
  // static
-@@ -614,6 +627,12 @@
+@@ -604,6 +617,12 @@ GpuProcessHost* GpuProcessHost::Get(GpuProcessKind kind, bool force_create) {
      return nullptr;
    }
  
@@ -81,7 +80,7 @@ index b52430a0..ab3f702 100644
    if (kind != GPU_PROCESS_KIND_INFO_COLLECTION) {
      InitGpuPersistentCacheFileFactoryOnce();
    }
-@@ -1474,6 +1493,14 @@
+@@ -1435,6 +1454,14 @@ void GpuProcessHost::RecordProcessCrash() {
    if (!process_launched_ || kind_ != GPU_PROCESS_KIND_SANDBOXED)
      return;
  
