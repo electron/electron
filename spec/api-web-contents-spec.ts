@@ -1321,7 +1321,9 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
 
       const created: number[] = [];
-      const onCreated = (_: any, wc: WebContents) => { created.push(wc.id); };
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
       app.on('web-contents-created', onCreated);
       try {
         const devtoolsOpened = once(w.webContents, 'devtools-opened');
