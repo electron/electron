@@ -235,7 +235,9 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
     });
 
-    it('exits cleanly when called before ready right after loading tls', async () => {
+    // Exiting before 'ready' leaves browser start-up state unfreed by design,
+    // which LeakSanitizer reports and turns into exit code 1.
+    ifit(!process.env.IS_ASAN)('exits cleanly when called before ready right after loading tls', async () => {
       const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
       // This guards against a shutdown race that was lost roughly one run in
       // five, so go a few rounds.
