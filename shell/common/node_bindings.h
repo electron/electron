@@ -122,6 +122,14 @@ class NodeBindings {
   static void RegisterBuiltinBindings();
   static bool IsInitialized();
 
+  // Undo node::InitializeOncePerProcess() for this process. Must run before
+  // the process exits whenever Node was initialized: among other things it
+  // joins the thread Node uses to load CA certificates off the main thread
+  // (started the first time `tls` is loaded), which otherwise races exit-time
+  // static destruction and abort()s. Safe to call more than once and when Node
+  // was never initialized.
+  static void TearDownOncePerProcess();
+
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
@@ -230,6 +238,10 @@ class NodeBindings {
 
   // Indicates whether polling thread has been created.
   bool initialized_ = false;
+
+  // Whether this instance ran node::InitializeOncePerProcess() and so owns the
+  // matching TearDownOncePerProcess() in its destructor.
+  bool initialized_node_per_process_ = false;
 
   // Whether PrepareEmbedThread has initialized the semaphore and async handle.
   // Unlike |initialized_|, this is never reset — the handles live until the
