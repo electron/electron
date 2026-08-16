@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Aug 2026 13:31:16 -0700
+Subject: mac: resolve the Cocoa locale override to a locale with a pak
+
+l10n_util::OverrideLocaleWithCocoaLocale() stores [OuterBundle()
+preferredLocalizations][0] verbatim, but the outer bundle can advertise
+localizations the framework has no locale.pak for (an embedder shipping
+de-DE.lproj when the framework only has de.lproj). The override then
+resolves to an empty pak path, LoadLocaleResources() loads nothing, and
+every localized string is empty for the rest of the session. Non-Apple
+platforms already run the requested locale through
+CheckAndResolveLocale(); do the same here at the one point the Cocoa
+value enters, falling back to en-US the way the non-Apple path does.
+
+No behavior change for Chrome: its outer bundle only advertises
+pak-backed localizations, so CheckAndResolveLocale() returns the input
+unchanged.
+
+Bug: 542025190
+Change-Id: Id933ff4a8c5e2ca598907f052e6e7bf9343300b2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8175050
+Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
+Reviewed-by: Danilo Tedeschi <danft@google.com>
+Reviewed-by: David Sanders <dsanders11@ucsbalum.com>
+Cr-Commit-Position: refs/heads/main@{#1678275}
+---
+
+diff --git a/ui/base/l10n/l10n_util_mac.mm b/ui/base/l10n/l10n_util_mac.mm
+index cad5022..efc4bf2 100644
+--- a/ui/base/l10n/l10n_util_mac.mm
++++ b/ui/base/l10n/l10n_util_mac.mm
+@@ -62,6 +62,12 @@
+   if (locale_value == "en")
+     locale_value = "en-US";
+ 
++  // The outer bundle can advertise a localization the framework has no
++  // locale.pak for (e.g. de-DE.lproj beside de.lproj); resolve to one that
++  // does, falling back to en-US like GetApplicationLocaleInternalNonMac().
++  locale_value =
++      l10n_util::CheckAndResolveLocale(locale_value).value_or("en-US");
++
+   g_overridden_locale.Get() = locale_value;
+ }
+ 
