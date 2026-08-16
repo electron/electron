@@ -29,7 +29,7 @@ def start():
         DBusTestCase.spawn_server_template('notification_daemon', None, log)
         DBusTestCase.spawn_server_template(
             os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                         'dbusmock_xdg_file_chooser_portal.py'), None, log)
+                         'dbusmock_xdg_desktop_portal.py'), None, log)
 
 
 if __name__ == '__main__':
