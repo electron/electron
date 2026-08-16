@@ -17,6 +17,7 @@
 #include "base/values.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -35,6 +36,7 @@
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/cors.mojom.h"
+#include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
@@ -314,6 +316,71 @@ class URLPipeLoader : public network::mojom::URLLoader,
   base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
 };
 
+// Forwards everything to a wrapped client while forcing the delivered response
+// to be tagged as opaque. The file and http sinks build or forward their own
+// response head, so they would otherwise lose the opaque tag that StartLoading
+// computes for cross-origin no-cors loads; interpose here so the tag reaches
+// the renderer no matter which sink serves the response.
+class OpaqueResponseFilter : public network::mojom::URLLoaderClient {
+ public:
+  // Returns a client remote to hand to a sink. Owns itself; deletes on
+  // completion or disconnect.
+  static mojo::PendingRemote<network::mojom::URLLoaderClient> Wrap(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> destination) {
+    auto* filter = new OpaqueResponseFilter(std::move(destination));
+    mojo::PendingRemote<network::mojom::URLLoaderClient> proxy;
+    filter->receiver_.Bind(proxy.InitWithNewPipeAndPassReceiver());
+    filter->receiver_.set_disconnect_handler(base::BindOnce(
+        &OpaqueResponseFilter::DeleteThis, base::Unretained(filter)));
+    return proxy;
+  }
+
+  // disable copy
+  OpaqueResponseFilter(const OpaqueResponseFilter&) = delete;
+  OpaqueResponseFilter& operator=(const OpaqueResponseFilter&) = delete;
+
+  // network::mojom::URLLoaderClient:
+  void OnReceiveEarlyHints(network::mojom::EarlyHintsPtr early_hints) override {
+    destination_->OnReceiveEarlyHints(std::move(early_hints));
+  }
+  void OnReceiveResponse(
+      network::mojom::URLResponseHeadPtr head,
+      mojo::ScopedDataPipeConsumerHandle body,
+      std::optional<mojo_base::BigBuffer> cached_metadata) override {
+    head->response_type = network::mojom::FetchResponseType::kOpaque;
+    destination_->OnReceiveResponse(std::move(head), std::move(body),
+                                    std::move(cached_metadata));
+  }
+  void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
+                         network::mojom::URLResponseHeadPtr head) override {
+    destination_->OnReceiveRedirect(redirect_info, std::move(head));
+  }
+  void OnUploadProgress(int64_t current_position,
+                        int64_t total_size,
+                        OnUploadProgressCallback callback) override {
+    destination_->OnUploadProgress(current_position, total_size,
+                                   std::move(callback));
+  }
+  void OnTransferSizeUpdated(int32_t transfer_size_diff) override {
+    destination_->OnTransferSizeUpdated(transfer_size_diff);
+  }
+  void OnComplete(const network::URLLoaderCompletionStatus& status) override {
+    destination_->OnComplete(status);
+    DeleteThis();
+  }
+
+ private:
+  explicit OpaqueResponseFilter(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> destination)
+      : destination_(std::move(destination)) {}
+  ~OpaqueResponseFilter() override = default;
+
+  void DeleteThis() { delete this; }
+
+  mojo::Receiver<network::mojom::URLLoaderClient> receiver_{this};
+  mojo::Remote<network::mojom::URLLoaderClient> destination_;
+};
+
 }  // namespace
 
 ElectronURLLoaderFactory::RedirectedRequest::RedirectedRequest(
@@ -516,12 +583,16 @@ void ElectronURLLoaderFactory::StartLoading(
   // For cross-origin no-cors loads (e.g. <img>, fetch({mode:'no-cors'})), the
   // body must not be script-readable; tag the response as opaque so Blink
   // applies opaque filtering. CorsURLLoader normally does this, but per-scheme
-  // factories bypass it.
-  if (request.mode == network::mojom::RequestMode::kNoCors &&
+  // factories bypass it. The string/buffer/stream sinks deliver |head| below,
+  // but the file and http sinks build or forward their own head, so those are
+  // wrapped separately to carry the tag through - see StartLoadingFile and
+  // StartLoadingHttp.
+  const bool tag_response_opaque =
+      request.mode == network::mojom::RequestMode::kNoCors &&
       request.request_initiator &&
-      !request.request_initiator->IsSameOriginWith(request.url)) {
+      !request.request_initiator->IsSameOriginWith(request.url);
+  if (tag_response_opaque)
     head->response_type = network::mojom::FetchResponseType::kOpaque;
-  }
 
   // Handle redirection.
   //
@@ -602,10 +673,10 @@ void ElectronURLLoaderFactory::StartLoading(
       base::FilePath path;
       if (gin::ConvertFromV8(args->isolate(), response, &path))
         StartLoadingFile(std::move(client), std::move(loader), std::move(head),
-                         request, path, dict);
+                         request, path, dict, tag_response_opaque);
       else if (!dict.IsEmpty() && dict.Get("path", &path))
         StartLoadingFile(std::move(client), std::move(loader), std::move(head),
-                         request, path, dict);
+                         request, path, dict, tag_response_opaque);
       else
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
@@ -614,7 +685,8 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kHttp:
       if (GURL url; !dict.IsEmpty() && dict.Get("url", &url) && url.is_valid())
         StartLoadingHttp(std::move(client), std::move(loader), request,
-                         traffic_annotation, std::move(browser_context), dict);
+                         traffic_annotation, std::move(browser_context), dict,
+                         tag_response_opaque);
       else
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
@@ -647,11 +719,12 @@ void ElectronURLLoaderFactory::StartLoading(
         // |response.path|.
         if (GURL url; dict.Get("url", &url))
           StartLoadingHttp(std::move(client), std::move(loader), request,
-                           traffic_annotation, std::move(browser_context),
-                           dict);
+                           traffic_annotation, std::move(browser_context), dict,
+                           tag_response_opaque);
         else if (base::FilePath path; dict.Get("path", &path))
           StartLoadingFile(std::move(client), std::move(loader),
-                           std::move(head), request, path, dict);
+                           std::move(head), request, path, dict,
+                           tag_response_opaque);
         else
           // Don't know what kind of response this is, so fail.
           OnComplete(std::move(client), request_id,
@@ -682,13 +755,20 @@ void ElectronURLLoaderFactory::StartLoadingFile(
     network::mojom::URLResponseHeadPtr head,
     const network::ResourceRequest& original_request,
     const base::FilePath& path,
-    const gin_helper::Dictionary& opts) {
+    const gin_helper::Dictionary& opts,
+    bool tag_response_opaque) {
   network::ResourceRequest request = original_request;
   request.url = net::FilePathToFileURL(path);
   if (!opts.IsEmpty()) {
     opts.Get("referrer", &request.referrer);
     opts.Get("method", &request.method);
   }
+
+  // The asar loader and the file loader build their own response head, which
+  // would drop the opaque tag computed in StartLoading. Interpose so a
+  // cross-origin no-cors load stays opaque.
+  if (tag_response_opaque)
+    client = OpaqueResponseFilter::Wrap(std::move(client));
 
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
@@ -703,7 +783,14 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     const network::ResourceRequest& original_request,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     base::WeakPtr<ElectronBrowserContext> serving_browser_context,
-    const gin_helper::Dictionary& dict) {
+    const gin_helper::Dictionary& dict,
+    bool tag_response_opaque) {
+  // URLPipeLoader forwards the upstream response head, which would drop the
+  // opaque tag computed in StartLoading. Interpose so a cross-origin no-cors
+  // load stays opaque.
+  if (tag_response_opaque)
+    client = OpaqueResponseFilter::Wrap(std::move(client));
+
   auto request = std::make_unique<network::ResourceRequest>();
   request->headers = original_request.headers;
   request->cors_exempt_headers = original_request.cors_exempt_headers;
