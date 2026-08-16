@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Steinar H. Gunderson" <sesse@chromium.org>
+Date: Wed, 17 Jun 2026 05:19:13 -0700
+Subject: Reapply "Speed up ScriptRunIterator."
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This reverts commit 9d9108796bb827dfa21378d6d3e86e39dd8c5e5f.
+
+Seemingly THREAD_SAFE_STATIC_LOCAL doesn't mean “this is thread-safe”,
+it means “I promise that the underlying object is thread-safe”. We add
+a mutex around bits_cache_, and reenable the disabled TSan test.
+
+We could consider having a reader/writer lock instead of a mutex,
+but we expect concurrency here to be very low (we don't do layout
+from multiple threads), and filling in a new script takes ~1 ms,
+so the time under the mutex isn't enormous either.
+
+Fixed: 524628213
+Change-Id: Ie7c7b6d39b284931770c7027cbab4e5ce1a3d860
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7956398
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648228}
+
+diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator.cc b/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
+index 3f56ec9b3b7f82146793314d9fda66ca00eb8d64..8bcb4997dd2b64b40880ea0f74b29fe689dd7f74 100644
+--- a/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
++++ b/third_party/blink/renderer/platform/fonts/script_run_iterator.cc
+@@ -117,6 +117,17 @@ ScriptData::~ScriptData() = default;
+ 
+ void ICUScriptData::GetScripts(UChar32 ch, UScriptCodeList& dst) const {
+   IcuError status;
++  UScriptCode primary_script = GetScriptForOpenType(ch, &status);
++  if (primary_script == USCRIPT_HIRAGANA && U_SUCCESS(status)) {
++    // Collapse all hana into one category (see GetScriptForOpenType()).
++    // All hana have only a single script extension, namely itself,
++    // so we don't need to ask, and this way, we also get down to
++    // singletons faster.
++    dst.resize(1);
++    dst[0] = primary_script;
++    return;
++  }
++
+   // Leave room to insert primary script. It's not strictly necessary but
+   // it ensures that the result won't ever be greater than kMaxScriptCount,
+   // which some client someday might expect.
+@@ -137,7 +148,6 @@ void ICUScriptData::GetScripts(UChar32 ch, UScriptCodeList& dst) const {
+     count = dst.size();
+     status = U_ZERO_ERROR;
+   }
+-  UScriptCode primary_script = GetScriptForOpenType(ch, &status);
+ 
+   if (U_FAILURE(status)) {
+     DLOG(ERROR) << "Could not get icu script data: " << status << " for 0x"
+@@ -219,6 +229,65 @@ const ICUScriptData* ICUScriptData::Instance() {
+   return &icu_script_data_instance;
+ }
+ 
++ScriptData::RunExtensionLookups ICUScriptData::GetSafeToExtendExistingRun(
++    UScriptCode script) const {
++  base::AutoLock lock(bits_cache_lock_);
++  std::unique_ptr<UnicodeBitSet>& bits =
++      bits_cache_.insert(script, nullptr).stored_value->value;
++  if (bits) {
++    return {bits.get(), &inherited_not_common_chars_};
++  }
++  bits = std::make_unique<UnicodeBitSet>();
++  std::array<UScriptCode, kMaxScriptCount> codes;
++
++  // Try to find out, for every character in our range, whether GetScripts()
++  // would have returned anything containing the script. (Actually calling
++  // GetScripts() is a bit too slow.)
++  for (UChar32 ch = 0; ch < static_cast<UChar32>(bits->size()); ++ch) {
++    if (GetPairedBracketType(ch) != PairedBracketType::kBracketTypeNone) {
++      continue;
++    }
++    IcuError status;
++
++    UScriptCode primary_script = GetScriptForOpenType(ch, &status);
++    if (U_FAILURE(status)) {
++      // False negatives are always fine.
++      continue;
++    }
++    if (primary_script == script) {
++      bits->set(ch);
++      continue;
++    }
++
++    int count =
++        uscript_getScriptExtensions(ch, codes.data(), codes.size(), &status);
++    if (U_FAILURE(status)) {
++      // False negatives are always fine.
++      continue;
++    }
++
++    if (primary_script == USCRIPT_COMMON && count <= 1) {
++      bits->set(ch);
++      continue;
++    }
++    if (primary_script == USCRIPT_INHERITED) {
++      if (count == 0) {
++        bits->set(ch);
++        continue;
++      } else {
++        inherited_not_common_chars_.set(ch);
++      }
++    }
++
++    const UScriptCode* end = &codes[std::min<size_t>(count, codes.size())];
++    if (std::ranges::contains(codes.data(), end, script)) {
++      bits->set(ch);
++    }
++  }
++
++  return {bits.get(), &inherited_not_common_chars_};
++}
++
+ ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text,
+                                      const ScriptData* data)
+     : text_(text.data()),
+@@ -248,11 +317,18 @@ ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text,
+ ScriptRunIterator::ScriptRunIterator(base::span<const UChar> text)
+     : ScriptRunIterator(text, ICUScriptData::Instance()) {}
+ 
++ALWAYS_INLINE static bool IsSet(unsigned ch,
++                                const ScriptData::UnicodeBitSet* set) {
++  return ch < ScriptData::kFirstSurrogate && set->test(ch);
++}
++
+ bool ScriptRunIterator::Consume(unsigned* limit, UScriptCode* script) {
+   if (current_set_.empty()) {
+     return false;
+   }
+ 
++  const ScriptData::UnicodeBitSet* can_remain_in_script = nullptr;
++  const ScriptData::UnicodeBitSet* inherited_not_common_chars = nullptr;
+   wtf_size_t pos;
+   UChar32 ch;
+   while (Fetch(&pos, &ch)) {
+@@ -278,6 +354,72 @@ bool ScriptRunIterator::Consume(unsigned* limit, UScriptCode* script) {
+       current_set_ = *next_set_;
+       return true;
+     }
++
++    // If we're down to a singleton script, anything that's allowed in that
++    // script (common, inherited, or some list that contains the script
++    // anywhere) will just be skipped by MergeSets() and has no effect on any of
++    // our state (except advancing the iterator). This is a very common case,
++    // so we check for that and enter a tight loop into a precomputed bitmap
++    // if it happens. Note that if we hit a bracket (whether open or close),
++    // that will not be part of this set, and thus we'll jump back to the top
++    // of the loop and handle that before coming back in here to continue.
++    // (Being in this fast path is fine even if we're inside a bracket.)
++    if (!can_remain_in_script && current_set_.size() == 1 &&
++        current_set_.at(0) > USCRIPT_INHERITED) {
++      ScriptData::RunExtensionLookups lookups =
++          script_data_->GetSafeToExtendExistingRun(current_set_.at(0));
++      can_remain_in_script = lookups.can_remain_in_script;
++      inherited_not_common_chars = lookups.inherited_not_common_chars;
++    }
++    if (can_remain_in_script && ahead_pos_ <= length_ &&
++        IsSet(ahead_character_, can_remain_in_script)) {
++      // Implicitly consume ahead_character_, then look at the rest of the
++      // string. Note that ahead_pos_ (and thus ptr) points to what will be
++      // loaded into ahead_character_ _after_ consuming it; it is _not_ the
++      // position of what's currently in ahead_character_.
++      //
++      // Note that ++ptr may take us onto the start of a surrogate.
++      // However, since UnicodeBitSet only has elements below kFirstSurrogate
++      // (U+D800), and IsSet() rejects anything above this, we will never
++      // proceed past that surrogate here.
++      //
++      // SAFETY: We already tested that ahead_pos_ <= length_ above, and
++      // ahead_pos_ is unsigned, so we know that ptr is within text_[0..length]
++      // at all times, and within text_[0..length) when we dereference it due to
++      // the check (ptr != end) in the for loop.
++      const UChar* end = UNSAFE_BUFFERS(text_ + length_);
++      const UChar* ptr;
++      for (ptr = UNSAFE_BUFFERS(text_ + ahead_pos_); ptr != end;
++           UNSAFE_BUFFERS(++ptr)) {
++        if (!IsSet(*ptr, can_remain_in_script)) {
++          // Let the regular path handle the next character. We've already
++          // consumed ahead_character_ (and possibly a lot more), so we need
++          // to refill it ahead of the next iteration. After
++          // FetchNextCharacter(), ahead_character_ will contain the problematic
++          // code point (from which the next call to Fetch() will return it),
++          // and ahead_pos_ will point to the next byte after that. This matches
++          // the normal path through the slow-path loop.
++          ahead_pos_ = static_cast<wtf_size_t>(ptr - text_);
++
++          if (*ptr >= ScriptData::kFirstSurrogate ||
++              IsSet(*ptr, inherited_not_common_chars)) {
++            // We (possibly) wrongly accepted the previous character
++            // and need to back up one more character to check it.
++            // See inherited_not_common_chars_ for details.
++            --ahead_pos_;
++          }
++
++          FetchNextCharacter();
++          break;
++        }
++      }
++
++      if (ptr == end) {
++        // We're done.
++        ahead_pos_ = length_ + 1;
++        break;
++      }
++    }
+   }
+ 
+   *limit = length_;
+@@ -467,6 +609,10 @@ bool ScriptRunIterator::Fetch(wtf_size_t* pos, UChar32* ch) {
+     return true;
+   }
+ 
++  return FetchNextCharacter();
++}
++
++bool ScriptRunIterator::FetchNextCharacter() {
+   UNSAFE_TODO(U16_NEXT(text_, ahead_pos_, length_, ahead_character_));
+ 
+   script_data_->GetScripts(ahead_character_, *ahead_set_);
+diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator.h b/third_party/blink/renderer/platform/fonts/script_run_iterator.h
+index a816dbbf84f60773fbe65660074ca41316754501..46c86b4e7a6f0558a5b49734edf83a5a41f566de 100644
+--- a/third_party/blink/renderer/platform/fonts/script_run_iterator.h
++++ b/third_party/blink/renderer/platform/fonts/script_run_iterator.h
+@@ -8,10 +8,14 @@
+ #include <unicode/uchar.h>
+ #include <unicode/uscript.h>
+ 
++#include <bitset>
++
+ #include "base/containers/span.h"
++#include "base/synchronization/lock.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ #include "third_party/blink/renderer/platform/wtf/deque.h"
++#include "third_party/blink/renderer/platform/wtf/hash_map.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ 
+ namespace blink {
+@@ -49,6 +53,7 @@ class PLATFORM_EXPORT ScriptRunIterator {
+   bool MergeSets();
+   void FixupStack(UScriptCode resolved_script, bool exclude_last);
+   bool Fetch(wtf_size_t* pos, UChar32*);
++  bool FetchNextCharacter();
+ 
+   UScriptCode ResolveCurrentScript() const;
+ 
+@@ -109,9 +114,35 @@ class PLATFORM_EXPORT ScriptData {
+   virtual UChar32 GetPairedBracket(UChar32) const = 0;
+ 
+   virtual PairedBracketType GetPairedBracketType(UChar32) const = 0;
++
++  static constexpr unsigned kFirstSurrogate = 0xD800;
++  using UnicodeBitSet = std::bitset<kFirstSurrogate>;
++
++  // Get the set of Unicode code points that would be allowed to skip
++  // once we know which script we're in (i.e., current_set_ is a singleton
++  // that's not common or inherited). This set is, generally, the set
++  // of code points that either explicitly supports the given script,
++  // or is classified as common/inherited. However, we exclude brackets,
++  // which have special handling.
++  //
++  // This takes a bit of time to compute, so we cache it per-script
++  // across the entire rendering process (ICUScriptData is already
++  // a process-wide singleton). We also only care about the code points
++  // up to U+D800 (which covers most of the BMP), in order to never
++  // have to worry about surrogates; as long as the UChars we read
++  // fit in the bitset, we can assume one codepoint == one UChar.
++  //
++  // The second return value is the set of inherited and not-common
++  // characters (see inherited_not_common_chars_ for description).
++  struct RunExtensionLookups {
++    const ScriptData::UnicodeBitSet* can_remain_in_script;
++    const ScriptData::UnicodeBitSet* inherited_not_common_chars;
++  };
++  virtual RunExtensionLookups GetSafeToExtendExistingRun(
++      UScriptCode script) const = 0;
+ };
+ 
+-class PLATFORM_EXPORT ICUScriptData : public ScriptData {
++class PLATFORM_EXPORT ICUScriptData final : public ScriptData {
+  public:
+   ~ICUScriptData() override = default;
+ 
+@@ -122,6 +153,38 @@ class PLATFORM_EXPORT ICUScriptData : public ScriptData {
+   UChar32 GetPairedBracket(UChar32) const override;
+ 
+   PairedBracketType GetPairedBracketType(UChar32) const override;
++
++ private:
++  RunExtensionLookups GetSafeToExtendExistingRun(
++      UScriptCode script) const override;
++
++  // For each script we've seen so far, a bitmap specifying which characters
++  // are acceptable in that script and can be simply skipped (and that are not
++  // brackets). Allowed to have false negatives.
++  mutable HashMap<UScriptCode, std::unique_ptr<UnicodeBitSet>> bits_cache_
++      GUARDED_BY(bits_cache_lock_);
++
++  // There are some characters that have primary script USCRIPT_INHERITED
++  // but a nonempty script extension list (scx); this means that is inherits
++  // the previous character's script, but only if it is in the scx.
++  // Specifically, FetchNextCharacter() handles this by overwriting
++  // USCRIPT_COMMON script list by the following character's scx
++  // (if it is inherited); so if there's e.g. a run of Latin characters
++  // followed by a digit (normally common) and then a combining character
++  // that's only valid for e.g. Indic scripts, then the digit should
++  // _not_ be allowed to be part of the Latin run even though it's common.
++  //
++  // If this happens in the fast path where we skip characters, we would
++  // have accepted the digit, and then need to unaccept it (go back one
++  // character) when we see the inherited character one step later.
++  // This bitmap notes which characters have that property.
++  //
++  // Note that for any given script, a character may be in both its bits_cache_
++  // bitmap and this (because its scx contains the given script); if so,
++  // the former takes precedence.
++  mutable UnicodeBitSet inherited_not_common_chars_;
++
++  mutable base::Lock bits_cache_lock_;
+ };
+ }  // namespace blink
+ 
+diff --git a/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc b/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
+index a58cf1bb86d536fa4981eb3f082ec597c239ba3c..c891ccf703e6f1d23b83b5113be6402105279e6b 100644
+--- a/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
++++ b/third_party/blink/renderer/platform/fonts/script_run_iterator_test.cc
+@@ -111,6 +111,11 @@ class MockScriptData : public ScriptData {
+     return PairedBracketType::kBracketTypeOpen;
+   }
+ 
++  RunExtensionLookups GetSafeToExtendExistingRun(
++      UScriptCode script) const override {
++    return {nullptr, nullptr};
++  }
++
+   static int TableLookup(int value) {
+     for (int i = 0; i < 16; ++i) {
+       if (kTable[i] == value) {
+@@ -782,6 +787,13 @@ TEST_F(ScriptRunIteratorTest, CommonMalayalam) {
+   CHECK_SCRIPT_RUNS({{"100-ാം", USCRIPT_MALAYALAM}});
+ }
+ 
++TEST_F(ScriptRunIteratorTest, IdeographicCommaDoesNotCountAsLatin) {
++  CHECK_SCRIPT_RUNS({{"也：", USCRIPT_HAN},
++                     {"ABC", USCRIPT_LATIN},
++                     {"、", USCRIPT_BOPOMOFO},
++                     {"DEF", USCRIPT_LATIN}});
++}
++
+ std::pair<int, UChar32> MaximumScriptExtensions() {
+   int max_extensions = 0;
+   UChar32 max_extensionscp = 0;
