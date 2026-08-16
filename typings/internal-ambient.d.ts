@@ -73,9 +73,12 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    executable: boolean;
     integrity?: {
       algorithm: 'SHA256';
       hash: string;
+      blockSize: number;
+      blocks: string[];
     };
   };
 
@@ -92,6 +95,7 @@ declare namespace NodeJS {
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
+    dupFd(): number | -1;
   }
 
   interface AsarBinding {

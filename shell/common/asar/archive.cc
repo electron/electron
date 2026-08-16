@@ -24,7 +24,13 @@
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <fcntl.h>
 #include <io.h>
+#include <windows.h>
+#else
+#include <fcntl.h>
+
+#include "base/posix/eintr_wrapper.h"
 #endif
 
 namespace asar {
@@ -407,10 +413,11 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return false;
 
 #if BUILDFLAG(IS_POSIX)
-  if (info.executable) {
-    // chmod a+x temp_file;
-    base::SetPosixFilePermissions(temp_file->path(), 0755);
-  }
+  // The temporary file is a cached, integrity-validated copy that may be
+  // handed out again for the lifetime of this process, so make it read-only
+  // to keep it from being modified out from under later consumers.
+  base::SetPosixFilePermissions(temp_file->path(),
+                                info.executable ? 0555 : 0444);
 #endif
 
   *out = temp_file->path();
@@ -440,6 +447,27 @@ base::File Archive::DuplicateFile() {
 
 int Archive::GetUnsafeFD() const {
   return fd_;
+}
+
+int Archive::DuplicateFd() {
+  if (!file_.IsValid())
+    return -1;
+
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+#if BUILDFLAG(IS_WIN)
+  HANDLE handle = nullptr;
+  if (!::DuplicateHandle(::GetCurrentProcess(), file_.GetPlatformFile(),
+                         ::GetCurrentProcess(), &handle, 0,
+                         /*bInheritHandle=*/FALSE, DUPLICATE_SAME_ACCESS)) {
+    return -1;
+  }
+  int fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle), _O_RDONLY);
+  if (fd == -1)
+    ::CloseHandle(handle);
+  return fd;
+#else
+  return HANDLE_EINTR(fcntl(fd_, F_DUPFD_CLOEXEC, 0));
+#endif
 }
 
 }  // namespace asar

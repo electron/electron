@@ -27,6 +27,7 @@ class Archive : public node::ObjectWrap {
     NODE_SET_PROTOTYPE_METHOD(tpl, "copyFileOut", &Archive::CopyFileOut);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getFdAndValidateIntegrityLater",
                               &Archive::GetFD);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "dupFd", &Archive::DupFd);
 
     return tpl;
   }
@@ -82,17 +83,20 @@ class Archive : public node::ObjectWrap {
     dict.Set("size", info.size);
     dict.Set("unpacked", info.unpacked);
     dict.Set("offset", info.offset);
+    dict.Set("executable", info.executable);
     if (info.integrity.has_value()) {
+      const asar::IntegrityPayload& payload = info.integrity.value();
       gin_helper::Dictionary integrity(isolate, v8::Object::New(isolate));
-      asar::HashAlgorithm algorithm = info.integrity.value().algorithm;
-      switch (algorithm) {
+      switch (payload.algorithm) {
         case asar::HashAlgorithm::kSHA256:
           integrity.Set("algorithm", "SHA256");
           break;
         case asar::HashAlgorithm::kNone:
           NOTREACHED();
       }
-      integrity.Set("hash", info.integrity.value().hash);
+      integrity.Set("hash", payload.hash);
+      integrity.Set("blockSize", payload.block_size);
+      integrity.Set("blocks", payload.blocks);
       dict.Set("integrity", integrity);
     }
     args.GetReturnValue().Set(dict.GetHandle());
@@ -182,6 +186,15 @@ class Archive : public node::ObjectWrap {
 
     args.GetReturnValue().Set(gin::ConvertToV8(
         isolate, wrap->archive_ ? wrap->archive_->GetUnsafeFD() : -1));
+  }
+
+  // Return a new caller-owned read-only file descriptor for the archive.
+  static void DupFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
+    auto* isolate = args.GetIsolate();
+    auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
+
+    args.GetReturnValue().Set(gin::ConvertToV8(
+        isolate, wrap->archive_ ? wrap->archive_->DuplicateFd() : -1));
   }
 
   std::shared_ptr<asar::Archive> archive_;
