@@ -307,6 +307,29 @@ describe('asar package', function () {
       });
     });
 
+    describe('archives with self-referential link entries', function () {
+      itremote('throws instead of hanging on a self-linked file', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-link.asar', 'a');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('throws instead of hanging on a link that resolves through itself', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('reports the missing entry from statSync without hanging', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
+        expect(() => {
+          fs.statSync(p);
+        }).to.throw(/ENOENT/);
+      });
+    });
+
     describe('fs.readFile', function () {
       itremote('reads a normal file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
