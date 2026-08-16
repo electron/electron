@@ -298,8 +298,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
 #if BUILDFLAG(IS_LINUX)
-  // Resize handles and shadows on frameless windows need translucent insets.
-  if (!has_frame())
+  // Wayland CSD resize handles and shadows need translucent insets. Keep
+  // opaque X11 frameless windows on the system visual: ARGB windows visibly
+  // lag behind their native bounds during interactive GPU-composited resizes.
+  if (!has_frame() && !x11_util::IsX11())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
 #endif
 

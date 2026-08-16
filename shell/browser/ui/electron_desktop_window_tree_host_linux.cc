@@ -40,7 +40,13 @@ ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
     default;
 
 bool ElectronDesktopWindowTreeHostLinux::SupportsClientFrameShadow() const {
-  return platform_window()->CanSetDecorationInsets() &&
+  // Opaque X11 frameless windows use the internal resize band instead of
+  // translucent CSD shadow insets. This matches Electron's pre-43 behavior and
+  // keeps those windows on the system visual during interactive resizes.
+  const bool uses_internal_x11_frameless_resize =
+      x11_util::IsX11() && !native_window_view_->has_frame();
+  return !uses_internal_x11_frameless_resize &&
+         platform_window()->CanSetDecorationInsets() &&
          views::Widget::IsWindowCompositingSupported();
 }
 
