@@ -5,15 +5,9 @@
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 
 #include <propkey.h>
-#include <propvarutil.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <wrl/module.h>
-#ifdef StrCat
-// Undefine Windows shlwapi.h StrCat macro to avoid conflict with
-// base/strings/strcat.h which deliberately defines a StrCat macro sentinel.
-#undef StrCat
-#endif
 
 #include <memory>
 #include <string>
@@ -32,6 +26,7 @@
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/propvarutil.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_propvariant.h"
 #include "base/win/win_util.h"
