@@ -1,0 +1,256 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 16 Jul 2026 15:51:55 -0700
+Subject: [gpu] Add pack_large_row_length_separately_pack_buffer workaround
+
+When packing into a pixel pack buffer with a very large stride,
+temporarily reset the driver's GL_PACK_ROW_LENGTH and read back pixels
+row-by-row. Apply this workaround to Mali drivers.
+
+Workaround was ported to the validating command decoder from ANGLE.
+
+Co-authored with Gemini.
+
+TAG: agy
+CONV: 00e8b985-f726-4445-86d5-e26b326cf4f3
+Test: gl_tests --gtest_filter=*PackLargeRowLength*
+Test: gpu_unittests --gtest_filter=*ReadPixels2LargeRowLengthWorkaround*
+Bug: 529867799
+Change-Id: I417b398e77031fcefcf60808c9a9b3dabc53e3ba
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8104079
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1663552}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index d2cde67dde467981be80f9356d8af8aead4ef4e3..832feeb90681155b2e3ee65495839aaa7092df1f 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -11631,6 +11631,13 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+         uint32_t leading_bytes = static_cast<uint32_t>(-x) * group_size;
+         UNSAFE_TODO(pixels += leading_bytes);
+       }
++      bool large_row_length_workaround =
++          pixels_shm_id == 0 &&
++          workarounds().pack_large_row_length_separately_pack_buffer &&
++          padded_row_size >= 0x10000000u;
++      if (large_row_length_workaround) {
++        api()->glPixelStoreiFn(GL_PACK_ROW_LENGTH, 0);
++      }
+       for (GLint iy = rect.y(); iy < rect.bottom(); ++iy) {
+         bool reset_row_length = false;
+         if (iy + 1 == max_y && pixels_shm_id == 0 &&
+@@ -11648,6 +11655,9 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+         }
+         UNSAFE_TODO(pixels += padded_row_size);
+       }
++      if (large_row_length_workaround) {
++        api()->glPixelStoreiFn(GL_PACK_ROW_LENGTH, state_.pack_row_length);
++      }
+     }
+   } else {
+     if (async && features().use_async_readpixels &&
+@@ -11693,7 +11703,17 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+       }
+     }
+     if (pixels_shm_id == 0 &&
+-        workarounds().pack_parameters_workaround_with_pack_buffer) {
++        workarounds().pack_large_row_length_separately_pack_buffer &&
++        padded_row_size >= 0x10000000u) {
++      api()->glPixelStoreiFn(GL_PACK_ROW_LENGTH, 0);
++      for (GLint iy = y; iy < max_y; ++iy) {
++        api()->glReadPixelsFn(x, iy, width, 1, format, type, pixels);
++        // SAFETY: maximum bounds were validated to be in-range above.
++        UNSAFE_BUFFERS(pixels += padded_row_size);
++      }
++      api()->glPixelStoreiFn(GL_PACK_ROW_LENGTH, state_.pack_row_length);
++    } else if (pixels_shm_id == 0 &&
++               workarounds().pack_parameters_workaround_with_pack_buffer) {
+       // If we ever have a device that needs both of these workarounds, we'll
+       // need to do some extra work to implement that correctly here.
+       DCHECK(
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+index 915fe5adf8d50dca1e8f0e13d2ae78071a04e029..0b1493141cdbc768018bfc293ac54f8c9be0b686 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+@@ -949,6 +949,50 @@ TEST_P(GLES2DecoderManualInitTest, ReadPixels2RowLengthWorkaround) {
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+ }
+ 
++TEST_P(GLES2DecoderManualInitTest, ReadPixels2LargeRowLengthWorkaround) {
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.pack_large_row_length_separately_pack_buffer = true;
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLsizei kWidth = 1;
++  const GLsizei kHeight = 2;
++  const GLenum kFormat = GL_RGBA;
++  const GLenum kType = GL_UNSIGNED_BYTE;
++  const GLint kLargeRowLength = 0x7fffffc;
++  constexpr GLsizeiptr kByteOffsetToVerify = 0x1ffffff0;
++  GLsizeiptr size = kByteOffsetToVerify + 256;
++
++  DoBindBuffer(GL_PIXEL_PACK_BUFFER, client_buffer_id_, kServiceBufferId);
++  DoBufferData(GL_PIXEL_PACK_BUFFER, size);
++
++  DoPixelStorei(GL_PACK_ROW_LENGTH, kLargeRowLength);
++
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++
++  EXPECT_CALL(*gl_, PixelStorei(GL_PACK_ROW_LENGTH, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  for (GLint ii = 0; ii < kHeight; ++ii) {
++    void* offset = reinterpret_cast<void*>(ii * kByteOffsetToVerify);
++    EXPECT_CALL(*gl_, ReadPixels(0, ii, kWidth, 1, kFormat, kType, offset))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++  EXPECT_CALL(*gl_, PixelStorei(GL_PACK_ROW_LENGTH, kLargeRowLength))
++      .Times(1)
++      .RetiresOnSaturation();
++
++  cmds::ReadPixels cmd;
++  cmd.Init(0, 0, kWidth, kHeight, kFormat, kType, 0, 0, 0, 0, false);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++}
++
+ TEST_P(GLES2DecoderManualInitTest, ReadPixels2AlignmentWorkaround) {
+   gpu::GpuDriverBugWorkarounds workarounds;
+   workarounds.pack_parameters_workaround_with_pack_buffer = true;
+diff --git a/gpu/command_buffer/tests/gl_readback_unittest.cc b/gpu/command_buffer/tests/gl_readback_unittest.cc
+index 73855bd805641fd237bc8100fc1896234ef6f8bf..604272f6ae78d4e71ec3e333d1ceb26f38d11293 100644
+--- a/gpu/command_buffer/tests/gl_readback_unittest.cc
++++ b/gpu/command_buffer/tests/gl_readback_unittest.cc
+@@ -5,6 +5,7 @@
+ #include <GLES2/gl2.h>
+ #include <GLES2/gl2ext.h>
+ #include <GLES2/gl2extchromium.h>
++#include <GLES3/gl3.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+@@ -22,6 +23,7 @@
+ #include "build/build_config.h"
+ #include "gpu/command_buffer/tests/gl_manager.h"
+ #include "gpu/command_buffer/tests/gl_test_utils.h"
++#include "gpu/config/gpu_test_config.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+@@ -329,4 +331,76 @@ TEST_F(GLReadbackTest, MAYBE_ReadPixelsFloat) {
+   glDeleteProgram(program);
+ }
+ 
++TEST_F(GLReadbackTest, PackLargeRowLengthSeparatelyPackBuffer) {
++  // Test fails on these configurations due to underlying driver or ANGLE
++  // implementation bugs.
++#if BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86_FAMILY)
++  return;
++#else
++#if BUILDFLAG(IS_MAC)
++  if (GPUTestBotConfig::CurrentConfigMatches("Intel") ||
++      GPUTestBotConfig::CurrentConfigMatches("AMD")) {
++    return;
++  }
++#endif
++
++  GLManager::Options options;
++  options.context_type = CONTEXT_TYPE_OPENGLES3;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.pack_large_row_length_separately_pack_buffer = true;
++  gl_.Destroy();
++  gl_.InitializeWithWorkarounds(options, workarounds);
++
++  if (!gl_.IsInitialized()) {
++    return;
++  }
++
++  const uint8_t kExpectedColor[4] = {65, 128, 192, 255};
++  constexpr GLint kLargeRowLength = 0x7fffffc;
++  constexpr GLsizeiptr kByteOffsetToVerify = 0x1ffffff0;
++  constexpr GLsizeiptr kBufferSize = kByteOffsetToVerify + 256;
++
++  GLuint pbo = 0;
++  glGenBuffers(1, &pbo);
++  glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
++  glBufferData(GL_PIXEL_PACK_BUFFER, kBufferSize, nullptr, GL_STREAM_READ);
++  if (glGetError() == GL_OUT_OF_MEMORY) {
++    glDeleteBuffers(1, &pbo);
++    return;
++  }
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glClearColor(kExpectedColor[0] / 255.0f, kExpectedColor[1] / 255.0f,
++               kExpectedColor[2] / 255.0f, kExpectedColor[3] / 255.0f);
++  glClear(GL_COLOR_BUFFER_BIT);
++
++  glPixelStorei(GL_PACK_ROW_LENGTH, kLargeRowLength);
++  glPixelStorei(GL_PACK_ALIGNMENT, 4);
++  glReadPixels(0, 0, 1, 2, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  uint8_t actualColorRow0[4] = {0};
++  uint8_t actualColorRow1[4] = {0};
++
++  glGetBufferSubDataCHROMIUM(GL_PIXEL_PACK_BUFFER, 0, sizeof(actualColorRow0),
++                             actualColorRow0);
++  glGetBufferSubDataCHROMIUM(GL_PIXEL_PACK_BUFFER, kByteOffsetToVerify,
++                             sizeof(actualColorRow1), actualColorRow1);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
++  glDeleteBuffers(1, &pbo);
++
++  EXPECT_EQ(kExpectedColor[0], actualColorRow0[0]);
++  EXPECT_EQ(kExpectedColor[1], actualColorRow0[1]);
++  EXPECT_EQ(kExpectedColor[2], actualColorRow0[2]);
++  EXPECT_EQ(kExpectedColor[3], actualColorRow0[3]);
++
++  EXPECT_EQ(kExpectedColor[0], actualColorRow1[0]);
++  EXPECT_EQ(kExpectedColor[1], actualColorRow1[1]);
++  EXPECT_EQ(kExpectedColor[2], actualColorRow1[2]);
++  EXPECT_EQ(kExpectedColor[3], actualColorRow1[3]);
++#endif
++}
++
+ }  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index ee9f1835ff8d42b5a295cbabc9df1ba5d45a7717..84c9a8d22e982675dc5f2bd70788427f079b5c86 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3853,6 +3853,15 @@
+         "reattach_fbo_depth_stencil_on_reallocation"
+       ]
+     },
++    {
++      "id": 484,
++      "cr_bugs": [529867799],
++      "description": "Pack large row length separately when packing into a pixel pack buffer to work around Mali driver bug.",
++      "gl_vendor": "ARM.*",
++      "features": [
++        "pack_large_row_length_separately_pack_buffer"
++      ]
++    },
+     {
+       "id": 486,
+       "cr_bugs": [534903095],
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index b054fffbfecddf540c4fcb473a4cd5457e92f20e..28e3cac4c0769cb38aac8ab4ea38b080ea606c06 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -107,6 +107,7 @@ msaa_is_slow
+ msaa_is_slow_2
+ multisample_renderbuffer_resize_emulation
+ no_downscaled_overlay_promotion
++pack_large_row_length_separately_pack_buffer
+ pack_parameters_workaround_with_pack_buffer
+ prefer_draw_to_copy
+ r8_egl_images_broken

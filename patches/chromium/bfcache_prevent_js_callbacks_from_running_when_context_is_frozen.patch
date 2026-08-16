@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yuzu Saijo <yuzus@google.com>
+Date: Tue, 16 Jun 2026 21:50:18 -0700
+Subject: [bfcache] Prevent JS callbacks from running when context is frozen
+
+Before this CL, JavaScript callbacks were only stopped when context is
+paused. This CL changes it so that they stop running when context is
+frozen, too.
+
+Migrating from `IsContextPaused()` to `IsContextFrozenOrPaused()` is the
+general approach we take.
+
+Bug: 511277457
+Change-Id: I0b7cc83324d27591b034c31fa190106b61442174
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7894097
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Yuki Shiino <yukishiino@chromium.org>
+Commit-Queue: Yuzu Saijo <yuzus@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648072}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/generated_code_helper.cc b/third_party/blink/renderer/bindings/core/v8/generated_code_helper.cc
+index 7d259bfa81c0302ce7e56d1fdd3d5a7ff2eaee95..706b718d6400121a0caa99f36f188591451757f1 100644
+--- a/third_party/blink/renderer/bindings/core/v8/generated_code_helper.cc
++++ b/third_party/blink/renderer/bindings/core/v8/generated_code_helper.cc
+@@ -42,11 +42,13 @@ bool IsCallbackFunctionRunnableInternal(
+       relevant_execution_context->IsContextDestroyed()) {
+     return false;
+   }
+-  if (relevant_execution_context->IsContextPaused()) {
+-    if (ignore_pause == IgnorePause::kDontIgnore)
+-      return false;
++  // When execution context is frozen, callbacks should never run.
++  // When paused, callbacks should not run except when explicitly set to ignore.
++  if (relevant_execution_context->IsContextFrozen() ||
++      (relevant_execution_context->IsContextPaused() &&
++       ignore_pause == IgnorePause::kDontIgnore)) {
++    return false;
+   }
+-
+   // TODO(yukishiino): Callback function type value must make the incumbent
+   // environment alive, i.e. the reference to v8::Context must be strong.
+   v8::HandleScope handle_scope(incumbent_script_state->GetIsolate());
+@@ -66,9 +68,10 @@ bool IsCallbackFunctionRunnableInternal(
+       incumbent_execution_context->IsContextDestroyed()) {
+     return false;
+   }
+-  if (incumbent_execution_context->IsContextPaused()) {
+-    if (ignore_pause == IgnorePause::kDontIgnore)
+-      return false;
++  if (incumbent_execution_context->IsContextFrozen() ||
++      (incumbent_execution_context->IsContextPaused() &&
++       ignore_pause == IgnorePause::kDontIgnore)) {
++    return false;
+   }
+   return !incumbent_script_state->World().IsMainWorld() ||
+          incumbent_execution_context->CanExecuteScripts(kAboutToExecuteScript);
+diff --git a/third_party/blink/renderer/core/execution_context/execution_context.cc b/third_party/blink/renderer/core/execution_context/execution_context.cc
+index 4642e129996c2b3434c5a0ad108b30398b0f62a4..dba4df7cfc7b220f9b432dcb5265137d7312ae75 100644
+--- a/third_party/blink/renderer/core/execution_context/execution_context.cc
++++ b/third_party/blink/renderer/core/execution_context/execution_context.cc
+@@ -324,6 +324,10 @@ bool ExecutionContext::IsContextPaused() const {
+   return lifecycle_state_ == mojom::blink::FrameLifecycleState::kPaused;
+ }
+ 
++bool ExecutionContext::IsContextFrozen() const {
++  return lifecycle_state_ == mojom::blink::FrameLifecycleState::kFrozen;
++}
++
+ LoaderFreezeMode ExecutionContext::GetLoaderFreezeMode() const {
+   if (is_in_back_forward_cache_) {
+     DCHECK_EQ(lifecycle_state_, mojom::blink::FrameLifecycleState::kFrozen);
+diff --git a/third_party/blink/renderer/core/execution_context/execution_context.h b/third_party/blink/renderer/core/execution_context/execution_context.h
+index d30cdd97881761751618f8c1e6a6c411936f4814..4a73a62e76bff486b61ea1c1b0f857fead038e91 100644
+--- a/third_party/blink/renderer/core/execution_context/execution_context.h
++++ b/third_party/blink/renderer/core/execution_context/execution_context.h
+@@ -258,6 +258,7 @@ class CORE_EXPORT ExecutionContext : public Supplementable<ExecutionContext>,
+   void CountDeprecation(WebFeature feature) override;
+ 
+   bool IsContextPaused() const;
++  bool IsContextFrozen() const;
+   LoaderFreezeMode GetLoaderFreezeMode() const;
+   mojom::FrameLifecycleState ContextPauseState() const {
+     return lifecycle_state_;
+diff --git a/third_party/blink/web_tests/external/wpt/html/browsers/browsing-the-web/back-forward-cache/weblocks-worker.https.window.js b/third_party/blink/web_tests/external/wpt/html/browsers/browsing-the-web/back-forward-cache/weblocks-worker.https.window.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..99cdfbf2aab2fd406db72dc0bc5dc21fa3fb88a6
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/browsers/browsing-the-web/back-forward-cache/weblocks-worker.https.window.js
+@@ -0,0 +1,97 @@
++// META: title=WebLocks granted to a dedicated worker in BFCache should be deferred.
++// META: script=/common/dispatcher/dispatcher.js
++// META: script=/common/get-host-info.sub.js
++// META: script=/common/utils.js
++// META: script=/html/browsers/browsing-the-web/back-forward-cache/resources/rc-helper.js
++// META: script=/html/browsers/browsing-the-web/remote-context-helper/resources/remote-context-helper.js
++// META: script=/html/browsers/browsing-the-web/remote-context-helper-tests/resources/test-helper.js
++
++'use strict';
++
++promise_test(async t => {
++  const rcHelper = new RemoteContextHelper();
++  // Open a window with noopener so that BFCache will work.
++  const rc1 = await rcHelper.addWindow(
++      /*extraConfig=*/ {}, /*options=*/ { features: 'noopener' });
++
++  // BroadcastChannel to receive the grant notification from worker.
++  const bc = new BroadcastChannel('bfcache_lock_test_channel');
++  let grantedReceived = false;
++  bc.onmessage = t.step_func(e => {
++    if (e.data === 'granted') {
++      grantedReceived = true;
++    }
++  });
++
++  // Acquire the lock in the main test window first.
++  let mainLockResolver;
++  const mainLockPromise = new Promise(resolve => { mainLockResolver = resolve; });
++  navigator.locks.request('bfcache_weblock_test', async lock => {
++    mainLockResolver();
++    // Keep holding the lock until we decide to release it.
++    await new Promise(resolve => {
++      t.add_cleanup(resolve);
++      globalThis.releaseMainLock = resolve;
++    });
++  });
++  await mainLockPromise;
++
++  // Start a worker in the remote context.
++  const worker = await rc1.addWorker(
++      /*workerVar=*/ undefined,
++    {
++      scripts: [],
++    }
++  );
++
++  // In the worker, request the same lock.
++  // Since the main window holds it, this will pend.
++  await worker.executeScript(() => {
++    navigator.locks.request('bfcache_weblock_test', () => {
++      const bc = new BroadcastChannel('bfcache_lock_test_channel');
++      bc.postMessage('granted');
++    });
++  });
++
++  // Prepare rc1 for BFCache.
++  await prepareForBFCache(rc1);
++
++  // Navigate away.
++  const rc1Away = await rc1.navigateToNew();
++  await assertSimplestScriptRuns(rc1Away);
++
++  // Now rc1 and its worker should be in BFCache.
++  // Wait a bit to ensure they are frozen.
++  await new Promise(resolve => t.step_timeout(resolve, 1000));
++
++  // Release the lock in the main window.
++  // If the worker is correctly frozen, it will acquire the lock but will not run the callback.
++  globalThis.releaseMainLock();
++
++  // Wait to see if the worker does not run the callback.
++  await new Promise(resolve => t.step_timeout(resolve, 1000));
++
++  // Assert that we have not received the message yet.
++  assert_false(grantedReceived, "Lock should not be granted while in BFCache");
++
++  // Restore rc1 from BFCache.
++  await rc1Away.historyBack();
++  await assertImplementsBFCacheOptional(rc1);
++
++  // Now that it is restored, the worker should unfreeze and run the callback.
++  // Wait for the message to arrive.
++  if (!grantedReceived) {
++    await new Promise(resolve => {
++      bc.addEventListener('message', t.step_func(e => {
++        if (e.data === 'granted') {
++          resolve();
++        }
++      }));
++      // Set a timeout just in case it never arrives.
++      t.step_timeout(() => resolve(), 2000);
++    });
++  }
++
++  assert_true(grantedReceived, "Lock should be granted after restore");
++
++}, 'WebLocks grant to worker in BFCache is deferred');
