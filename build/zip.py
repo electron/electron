@@ -61,13 +61,21 @@ def skip_path(dep, dist_zip, target_cpu):
   # and arm 64 binaries of mksnapshot since they are built on x64 hardware.
   # Consumers of arm and arm64 mksnapshot can generate snapshot_blob.bin
   # themselves by running mksnapshot.
+  #
+  # Outputs of a secondary toolchain live under $root_out_dir/<toolchain>/
+  # (e.g. clang_x64_v8_arm64/gen/...), so match PATHS_TO_SKIP against the
+  # path relative to that toolchain dir too.
+  candidates = [dep]
+  if dep.startswith('clang_') and '/' in dep:
+    toolchain_relative_dep = dep.split('/', 1)[1]
+    candidates += [toolchain_relative_dep, './' + toolchain_relative_dep]
   should_skip = (
-    any(dep.startswith(path) for path in PATHS_TO_SKIP) or
+    any(c.startswith(path) for c in candidates for path in PATHS_TO_SKIP) or
     any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP) or
     (
       "arm" in target_cpu
       and dist_zip == "mksnapshot.zip"
-      and dep == "snapshot_blob.bin"
+      and "snapshot_blob.bin" in candidates
     )
   )
   if should_skip and os.environ.get('ELECTRON_DEBUG_ZIP_SKIP') == '1':
@@ -102,6 +110,7 @@ def main(argv):
     with zipfile.ZipFile(
       dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True
     ) as z:
+      written = set()
       for dep in dist_files:
         if os.path.isdir(dep):
           for root, _, files in os.walk(dep):
@@ -127,6 +136,11 @@ def main(argv):
                 name_to_write = os.path.basename(arcname)
             else:
               name_to_write = os.path.basename(arcname)
+          # Flattening can map several deps onto one name (e.g. the same
+          # file built by two toolchains); keep the first.
+          if name_to_write in written:
+            continue
+          written.add(name_to_write)
           z.write(
             dep,
             name_to_write,
