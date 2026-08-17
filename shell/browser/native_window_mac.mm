@@ -371,8 +371,13 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
-  if (content_view())
-    root_view->RemoveChildView(content_view());
+  if (views::View* old_view = content_view()) {
+    set_content_view(nullptr);
+    if (old_view->owned_by_client())
+      root_view->RemoveChildView(old_view);
+    else
+      root_view->RemoveChildViewT(old_view);
+  }
 
   set_content_view(view);
 
