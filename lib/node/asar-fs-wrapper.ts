@@ -60,12 +60,14 @@ const { validateBoolean, validateFunction } = __non_webpack_require__(
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
 const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
 
-// Consecutive lookups nearly always hit the same archive, so paths under the
-// archive native returned last are split here. Tails native could split again
-// (".asar" under ASCII, macOS or Windows case folding, hence \u017f) or would
-// truncate (NUL) still go through it.
+// Paths under the archive native returned last are split in JS; tails native
+// could split again (".asar" under any platform's case folding) or truncate
+// at a NUL still go through it.
 let lastArchivePath = '';
 const nestedArchiveRe = /\.a[s\u017f]ar/i;
+// What path.normalize() would rewrite in a tail: "."/".." components, doubled
+// or trailing separators, and on Windows any forward slash.
+const needsNormalizeRe = process.platform === 'win32' ? /(?:^|[\\/])\.\.?(?:[\\/]|$)|[\\/][\\/]|\/|\\$/ : /(?:^|\/)\.\.?(?:\/|$)|\/\/|\/$/;
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
@@ -83,19 +85,14 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
   if (!asarRe.test(archivePath)) return { isAsar: <const>false };
 
-  archivePath = path.normalize(archivePath);
-  if (lastArchivePath !== '' && archivePath.startsWith(lastArchivePath)) {
-    if (archivePath.length === lastArchivePath.length) {
-      return { isAsar: <const>true, asarPath: lastArchivePath, filePath: '' };
-    }
-    if (archivePath[lastArchivePath.length] === path.sep) {
-      let filePath = archivePath.slice(lastArchivePath.length + 1);
-      if (filePath.endsWith(path.sep)) filePath = filePath.slice(0, -1);
-      if (filePath !== '' && !filePath.includes('\0') && !nestedArchiveRe.test(filePath)) {
-        return { isAsar: <const>true, asarPath: lastArchivePath, filePath };
-      }
+  if (lastArchivePath !== '' && archivePath.length > lastArchivePath.length + 1 &&
+      archivePath[lastArchivePath.length] === path.sep && archivePath.startsWith(lastArchivePath)) {
+    const filePath = archivePath.slice(lastArchivePath.length + 1);
+    if (!needsNormalizeRe.test(filePath) && !filePath.includes('\0') && !nestedArchiveRe.test(filePath)) {
+      return { isAsar: <const>true, asarPath: lastArchivePath, filePath };
     }
   }
+  archivePath = path.normalize(archivePath);
   const result = asar.splitPath(archivePath);
   if (result.isAsar && result.filePath !== '') lastArchivePath = result.asarPath;
   return result;
