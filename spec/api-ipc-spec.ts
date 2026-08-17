@@ -144,6 +144,57 @@ describe('ipc module', () => {
     });
   });
 
+  describe('payloads across the shared-memory threshold', () => {
+    let w: BrowserWindow;
+    const sizes = [0, 1, 65535, 65536, 65537, 256 * 1024 + 3, 3 * 1024 * 1024 + 1];
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      await w.loadURL('about:blank');
+      ipcMain.handle('echo-large', (_e, arg) => arg);
+      ipcMain.on('echo-large-sync', (e, arg) => { e.returnValue = arg; });
+      ipcMain.on('echo-large-send', (e, arg) => { e.sender.send('echo-large-reply', arg); });
+    });
+    after(async () => {
+      w.destroy();
+      ipcMain.removeHandler('echo-large');
+      ipcMain.removeAllListeners('echo-large-sync');
+      ipcMain.removeAllListeners('echo-large-send');
+    });
+
+    function digest (value: any): any {
+      if (typeof value === 'string') return { string: value.length, ends: value.slice(0, 4) + value.slice(-4) };
+      if (value instanceof Uint8Array) return { u8: value.length, sum: value.reduce((a: number, b: number) => (a + b) % 65521, 0) };
+      return { text: digest(value.text), bytes: digest(value.bytes), meta: value.meta };
+    }
+
+    function samples (n: number) {
+      const text = `<${'x'.repeat(n)}>`;
+      const bytes = new Uint8Array(n).map((_, i) => (i * 7) & 255);
+      return [text, bytes, { text, bytes, meta: { n, list: [1, 'two', { three: true }] } }];
+    }
+
+    it('round trips strings, typed arrays and nested objects of each size through invoke, sendSync and send', async () => {
+      const result = await w.webContents.executeJavaScript(`(${async (sizes: number[], samples: (n: number) => any[], digest: (v: any) => any) => {
+        const { ipcRenderer } = require('electron');
+        const out: any[] = [];
+        for (const n of sizes) {
+          for (const value of samples(n)) {
+            out.push(digest(await ipcRenderer.invoke('echo-large', value)));
+            out.push(digest(ipcRenderer.sendSync('echo-large-sync', value)));
+            out.push(digest(await new Promise((resolve) => {
+              ipcRenderer.once('echo-large-reply', (_e: any, v: any) => resolve(v));
+              ipcRenderer.send('echo-large-send', value);
+            })));
+          }
+        }
+        return out;
+      }})(${JSON.stringify(sizes)}, ${samples}, ${digest})`, true);
+      const expected = sizes.flatMap((n) => samples(n).flatMap((value) => Array(3).fill(digest(value))));
+      expect(result).to.deep.equal(expected);
+    });
+  });
+
   describe('ordering', () => {
     let w: BrowserWindow;
 
