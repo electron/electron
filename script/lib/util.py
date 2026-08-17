@@ -111,11 +111,11 @@ def make_tar_xz(tar_file_path, files, dirs):
   # one thread), and GNU tar only threads via XZ_OPT.
   xz = shutil.which('xz')
   if xz:
-    with open(tar_file_path, 'wb') as out:
-      tar = subprocess.Popen(['tar', '-cf', '-'] + allfiles,
-                             stdout=subprocess.PIPE)
-      xz_proc = subprocess.Popen([xz, '-T0', XZ_PRESET, '-c'],
-                                 stdin=tar.stdout, stdout=out)
+    with open(tar_file_path, 'wb') as out, \
+         subprocess.Popen(['tar', '-cf', '-'] + allfiles,
+                          stdout=subprocess.PIPE) as tar, \
+         subprocess.Popen([xz, '-T0', XZ_PRESET, '-c'],
+                          stdin=tar.stdout, stdout=out) as xz_proc:
       tar.stdout.close()
       xz_rc = xz_proc.wait()
       tar_rc = tar.wait()
