@@ -710,14 +710,31 @@ Overrides the current application's name.
 
 ### `app.setDesktopName(name)` _Linux_
 
-* `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
+* `name` string - The `.desktop` filename (e.g. `'com.example.MyApp.desktop'`).
 
 Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
-This should match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
+This must match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
 
-This value is used to determine the default XDG application ID on Wayland and `WM_CLASS` on X11. If it is not set,
-Electron will attempt to infer a name, but it may not match the packaged app's actual `.desktop` file. This could result
-in the app showing a generic icon or failing to respond to global keyboard shortcuts.
+The name (without the `.desktop` suffix) is the app's identity for Linux desktop integration.
+It should be a reverse-DNS style ID such as `com.example.MyApp`, following the
+[desktop entry naming conventions](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html).
+This value is used as:
+
+* the XDG application ID (`app_id`) on Wayland and `WM_CLASS` on X11, used to match the app's icon and window grouping.
+* the app ID that `xdg-desktop-portal` reports to portal backends such as
+  [GlobalShortcuts](global-shortcut.md).
+
+Portals increasingly enforce this identity. If the name is not a valid reverse-DNS ID or does not match an
+installed `.desktop` file:
+
+* GNOME 50.0/50.1 (Ubuntu 26.04) rejects [`globalShortcut`](global-shortcut.md) binds with
+  `org.freedesktop.portal.Error.NotAllowed` — with no error surfaced to the app (see
+  [#52218](https://github.com/electron/electron/issues/52218)).
+* `xdg-desktop-portal` 1.21 and later refuses portal sessions for app IDs it cannot resolve to a `.desktop` file.
+
+If this value is not set and `desktopName` is not present in `package.json`, Electron falls back to a lowercased,
+hyphenated slug of the app's name (e.g. `My App` → `my-app.desktop`), which is unlikely to be a valid portal
+identity — packaged apps should always set it explicitly.
 
 This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
 
