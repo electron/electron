@@ -96,12 +96,6 @@ env:
   ELECTRON_OUT_DIR: Default
   ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
   RUNNER_LABEL: ${{ inputs.build-runs-on }}
-  # The macOS runners have 5 cores and 14 GB, so a remote step that siso gives
-  # up on (its 2 minute client-side deadline covers RBE queueing, upload and
-  # execution) and re-runs locally costs 5-10 minutes per LTO compile and
-  # lands on the critical path. no-fallback makes siso retry remotely (with a
-  # 4x longer deadline) instead of ever compiling locally.
-  SISO_EXPERIMENTS: ${{ inputs.target-platform == 'macos' && 'no-fallback' || '' }}
 
 jobs:
   build:
