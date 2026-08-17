@@ -129,8 +129,11 @@ const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kLink, constants.S_IFLNK]
 ]);
 
-const kReadOnlyMode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR;
-const kExecuteMode = constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
+// Literal permission bits rather than fs.constants.S_I*: the group/other and
+// execute constants are not defined on Windows, and these fake modes should
+// look the same on every platform.
+const kReadOnlyMode = 0o644;
+const kExecuteMode = 0o111;
 
 // Builds the raw stat array that node's fs binding would have produced, so
 // that node's own getStatsFromBinding() can turn it into a (BigInt)Stats.
@@ -140,7 +143,7 @@ const kExecuteMode = constants.S_IXUSR | constants.S_IXGRP | constants.S_IXOTH;
 function makeStatArray(type: AsarFileType, size: number, ino: number, useBigint: boolean, executable = false) {
   let mode = kReadOnlyMode | fileTypeToMode.get(type)!;
   if (executable || type !== AsarFileType.kFile) mode |= kExecuteMode;
-  if (type === AsarFileType.kLink) mode |= constants.S_IWGRP | constants.S_IWOTH;
+  if (type === AsarFileType.kLink) mode |= 0o022;
   const values = [
     1, // dev
     mode,
@@ -1751,11 +1754,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // Node's native fs functions CHECK() their exact argument count to decide
   // between sync and async forms, so pass-through calls must forward the
   // original argument list untouched (in particular, never append a trailing
-  // `undefined`).
+  // `undefined`).  Forwarding uses Function#apply and index access rather
+  // than spread / array destructuring: those depend on Array.prototype's
+  // iterator, which user code is allowed to delete (Node's own internals use
+  // primordials for the same reason) and fs must keep working when it does.
   binding.open = function (...args: any[]) {
-    const [pathArgument, flags, , req] = args;
+    const pathArgument = args[0];
+    const flags = args[1];
+    const req = args[3];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalBinding.open(...args);
+    if (!pathInfo.isAsar) return originalBinding.open.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
     let opened;
@@ -1766,7 +1774,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
-      return originalBinding.open(...args);
+      return originalBinding.open.apply(undefined, args);
     }
 
     const { reader } = opened;
@@ -1776,9 +1784,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.openFileHandle = function (...args: any[]) {
-    const [pathArgument, flags, , req] = args;
+    const pathArgument = args[0];
+    const flags = args[1];
+    const req = args[3];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalBinding.openFileHandle(...args);
+    if (!pathInfo.isAsar) return originalBinding.openFileHandle.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
     let opened;
@@ -1789,7 +1799,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
-      return originalBinding.openFileHandle(...args);
+      return originalBinding.openFileHandle.apply(undefined, args);
     }
 
     const { reader } = opened;
@@ -1812,9 +1822,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.read = function (...args: any[]) {
-    const [fd, buffer, offset, length, position, req] = args;
+    const fd = args[0];
+    const buffer = args[1];
+    const offset = args[2];
+    const length = args[3];
+    const position = args[4];
+    const req = args[5];
     const reader = lookupAsarFd(fd);
-    if (reader === undefined) return originalBinding.read(...args);
+    if (reader === undefined) return originalBinding.read.apply(undefined, args);
 
     const pos = normalizePosition(position);
     if (reader.integrity === null) {
@@ -1825,36 +1840,39 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (count === 0) return completeRequest(req, null, 0);
       args[3] = count;
       args[4] = reader.offset + start;
-      return originalBinding.read(...args);
+      return originalBinding.read.apply(undefined, args);
     }
     if (req === undefined) return reader.readSync(buffer, offset, length, pos);
     return completeRequestWithPromise(req, reader.read(buffer, offset, length, pos));
   };
 
   binding.readBuffers = function (...args: any[]) {
-    const [fd, buffers, position, req] = args as [number, Uint8Array[], number | bigint | null, any];
+    const fd: number = args[0];
+    const buffers: Uint8Array[] = args[1];
+    const position: number | bigint | null = args[2];
+    const req = args[3];
     const reader = lookupAsarFd(fd);
-    if (reader === undefined) return originalBinding.readBuffers(...args);
+    if (reader === undefined) return originalBinding.readBuffers.apply(undefined, args);
 
     const pos = normalizePosition(position);
     if (reader.integrity === null) {
       // Fast path (see binding.read): when every buffer fits inside the
       // entry the native readv can be used as-is with a translated position.
       let wanted = 0;
-      for (const buffer of buffers) wanted += buffer.byteLength;
+      for (let i = 0; i < buffers.length; i++) wanted += buffers[i].byteLength;
       const { start, count } = reader.resolveRange(wanted, pos);
       if (count === 0) return completeRequest(req, null, 0);
       if (count === wanted) {
         args[2] = reader.offset + start;
-        return originalBinding.readBuffers(...args);
+        return originalBinding.readBuffers.apply(undefined, args);
       }
       // Otherwise the tail must be clamped; the read position was already
       // advanced by resolveRange, so serve the buffers positionally from
       // `start`.
       const filled: number[] = [];
       let remaining = count;
-      for (const buffer of buffers) {
-        const take = Math.min(remaining, buffer.byteLength);
+      for (let i = 0; i < buffers.length; i++) {
+        const take = Math.min(remaining, buffers[i].byteLength);
         filled.push(take);
         remaining -= take;
       }
@@ -1878,7 +1896,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     if (req === undefined) {
       let total = 0;
-      for (const buffer of buffers) {
+      for (let i = 0; i < buffers.length; i++) {
+        const buffer = buffers[i];
         const n = reader.readSync(buffer, 0, buffer.byteLength, pos < 0 ? -1 : pos + total);
         total += n;
         if (n < buffer.byteLength) break;
@@ -1887,7 +1906,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     const readAll = async () => {
       let total = 0;
-      for (const buffer of buffers) {
+      for (let i = 0; i < buffers.length; i++) {
+        const buffer = buffers[i];
         const n = await reader.read(buffer, 0, buffer.byteLength, pos < 0 ? -1 : pos + total);
         total += n;
         if (n < buffer.byteLength) break;
@@ -1898,21 +1918,23 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.fstat = function (...args: any[]) {
-    const [fd, useBigint, req] = args;
+    const fd = args[0];
+    const useBigint = args[1];
+    const req = args[2];
     const reader = lookupAsarFd(fd);
-    if (reader === undefined) return originalBinding.fstat(...args);
+    if (reader === undefined) return originalBinding.fstat.apply(undefined, args);
     return completeRequest(req, null, reader.statArray(Boolean(useBigint)));
   };
 
   binding.close = function (...args: any[]) {
     const fd = args[0];
     if (lookupAsarFd(fd) !== undefined) forgetAsarFd(fd);
-    return originalBinding.close(...args);
+    return originalBinding.close.apply(undefined, args);
   };
 
   binding.readFileUtf8 = function (...args: any[]) {
     const reader = lookupAsarFd(args[0]);
-    if (reader === undefined) return originalBinding.readFileUtf8(...args);
+    if (reader === undefined) return originalBinding.readFileUtf8.apply(undefined, args);
     return reader.readToEndSync().toString('utf8');
   };
 
@@ -1921,15 +1943,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // EACCES (or land in the real file for unpacked entries) instead of
   // whatever the OS says about a path that goes through a file.
   binding.writeFileUtf8 = function (...args: any[]) {
-    const [pathOrFd, , flags] = args;
+    const pathOrFd = args[0];
+    const flags = args[2];
     const pathInfo = splitPath(pathOrFd);
-    if (!pathInfo.isAsar) return originalBinding.writeFileUtf8(...args);
+    if (!pathInfo.isAsar) return originalBinding.writeFileUtf8.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
     const opened = openAsarEntry(asarPath, filePath, flags, 'open');
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
-      return originalBinding.writeFileUtf8(...args);
+      return originalBinding.writeFileUtf8.apply(undefined, args);
     }
     // Only reachable with read-only flags, which writeFile never uses.
     originalBinding.close(opened.reader.fd);
@@ -1944,7 +1967,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const original = originalBinding[name];
     binding[name] = function (...args: any[]) {
       const fd = args[0];
-      if (lookupAsarFd(fd) === undefined) return original(...args);
+      if (lookupAsarFd(fd) === undefined) return original.apply(undefined, args);
       const req = args[args.length - 1];
       const hasReq = req !== undefined && (req === kUsePromises || typeof req === 'object');
       const error = createError(AsarError.NO_ACCESS, { filePath: `fd ${fd}`, syscall: name });
@@ -2017,9 +2040,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   }
 
   binding.copyFile = function (...args: any[]) {
-    const [src, dest, mode, req] = args;
+    const src = args[0];
+    const dest = args[1];
+    const mode = args[2];
+    const req = args[3];
     const pathInfo = splitPath(src);
-    if (!pathInfo.isAsar) return originalBinding.copyFile(...args);
+    if (!pathInfo.isAsar) return originalBinding.copyFile.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
     let opened;
@@ -2040,7 +2066,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       // Unpacked entries are real files: let native fs handle them, including
       // copy-on-write clones.
       args[0] = opened.unpackedPath;
-      return originalBinding.copyFile(...args);
+      return originalBinding.copyFile.apply(undefined, args);
     }
 
     const { reader } = opened;
@@ -2071,9 +2097,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   //
 
   binding.readlink = function (...args: any[]) {
-    const [pathArgument, encoding, req] = args;
+    const pathArgument = args[0];
+    const encoding = args[1];
+    const req = args[2];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalBinding.readlink(...args);
+    if (!pathInfo.isAsar) return originalBinding.readlink.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -2164,15 +2192,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   }
 
   dirBinding.opendir = function (...args: any[]) {
-    const [pathArgument, , req] = args;
+    const pathArgument = args[0];
+    const req = args[2];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalDirBinding.opendir(...args);
+    if (!pathInfo.isAsar) return originalDirBinding.opendir.apply(undefined, args);
     return openAsarDir(pathInfo, req);
   };
 
   dirBinding.opendirSync = function (...args: any[]) {
     const pathInfo = splitPath(args[0]);
-    if (!pathInfo.isAsar) return originalDirBinding.opendirSync(...args);
+    if (!pathInfo.isAsar) return originalDirBinding.opendirSync.apply(undefined, args);
     return openAsarDir(pathInfo, undefined);
   };
 
@@ -2192,8 +2221,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.cpSyncCheckPaths = function (...args: any[]) {
-    const [src, dest, dereference, recursive] = args;
-    if (!splitPath(src).isAsar) return originalBinding.cpSyncCheckPaths(...args);
+    const src = args[0];
+    const dest = args[1];
+    const dereference = args[2];
+    const recursive = args[3];
+    if (!splitPath(src).isAsar) return originalBinding.cpSyncCheckPaths.apply(undefined, args);
 
     const statFn = dereference ? fs.statSync : fs.lstatSync;
     const srcStat = statFn(src);
@@ -2241,8 +2273,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.cpSyncOverrideFile = function (...args: any[]) {
-    const [src, dest, mode, preserveTimestamps] = args;
-    if (!splitPath(src).isAsar) return originalBinding.cpSyncOverrideFile(...args);
+    const src = args[0];
+    const dest = args[1];
+    const mode = args[2];
+    const preserveTimestamps = args[3];
+    if (!splitPath(src).isAsar) return originalBinding.cpSyncOverrideFile.apply(undefined, args);
     fs.unlinkSync(dest);
     fs.copyFileSync(src, dest, mode);
     if (preserveTimestamps) {
@@ -2252,8 +2287,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   binding.cpSyncCopyDir = function (...args: any[]) {
-    const [src, dest, force, dereference, errorOnExist, verbatimSymlinks, preserveTimestamps] = args;
-    if (!splitPath(src).isAsar) return originalBinding.cpSyncCopyDir(...args);
+    const src = args[0];
+    const dest = args[1];
+    const force = args[2];
+    const dereference = args[3];
+    const errorOnExist = args[4];
+    const verbatimSymlinks = args[5];
+    const preserveTimestamps = args[6];
+    if (!splitPath(src).isAsar) return originalBinding.cpSyncCopyDir.apply(undefined, args);
 
     const copyDir = (srcDir: string, destDir: string) => {
       fs.mkdirSync(destDir, { recursive: true });
@@ -2342,8 +2383,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     overrideChildProcess(require('child_process'));
   } else {
     const originalModuleLoad = Module._load;
-    Module._load = (request: string, ...args: any[]) => {
-      const loadResult = originalModuleLoad(request, ...args);
+    Module._load = function (this: any, request: string) {
+      const loadResult = originalModuleLoad.apply(this, arguments as any);
       if (request === 'child_process' || request === 'node:child_process') {
         if (!asarReady.has(loadResult)) {
           asarReady.add(loadResult);
