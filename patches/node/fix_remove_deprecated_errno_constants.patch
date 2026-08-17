@@ -10,7 +10,7 @@ This change removes the usage of these constants to fix a compilation failure du
 See: https://github.com/llvm/llvm-project/pull/80542
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index e7c63e7bdec298980f00cf74c35bc8579c6bb36d..9c21ac5299a4b25781629dac5c393cc1eec2869e 100644
+index 7de059e0939a8d576ab188e2f6645b83b952a5b5..921d5cdcd33af2c58bfa1bc545456cf469c1125e 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
 @@ -154,7 +154,6 @@ struct uv__queue {
