@@ -28,9 +28,9 @@ const binding = internalBinding('fs');
 const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 
 const getOrCreateArchive = (archivePath: string) => {
-  const isCached = cachedArchives.has(archivePath);
-  if (isCached) {
-    return cachedArchives.get(archivePath)!;
+  const cached = cachedArchives.get(archivePath);
+  if (cached !== undefined) {
+    return cached;
   }
 
   try {
@@ -60,6 +60,13 @@ const { validateBoolean, validateFunction } = __non_webpack_require__(
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
 const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
 
+// Consecutive lookups nearly always hit the same archive, so paths under the
+// archive native returned last are split here. Tails native could split again
+// (".asar" under ASCII, macOS or Windows case folding, hence \u017f) or would
+// truncate (NUL) still go through it.
+let lastArchivePath = '';
+const nestedArchiveRe = /\.a[s\u017f]ar/i;
+
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   // Shortcut for disabled asar.
@@ -76,7 +83,22 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
   if (!asarRe.test(archivePath)) return { isAsar: <const>false };
 
-  return asar.splitPath(path.normalize(archivePath));
+  archivePath = path.normalize(archivePath);
+  if (lastArchivePath !== '' && archivePath.startsWith(lastArchivePath)) {
+    if (archivePath.length === lastArchivePath.length) {
+      return { isAsar: <const>true, asarPath: lastArchivePath, filePath: '' };
+    }
+    if (archivePath[lastArchivePath.length] === path.sep) {
+      let filePath = archivePath.slice(lastArchivePath.length + 1);
+      if (filePath.endsWith(path.sep)) filePath = filePath.slice(0, -1);
+      if (filePath !== '' && !filePath.includes('\0') && !nestedArchiveRe.test(filePath)) {
+        return { isAsar: <const>true, asarPath: lastArchivePath, filePath };
+      }
+    }
+  }
+  const result = asar.splitPath(archivePath);
+  if (result.isAsar && result.filePath !== '') lastArchivePath = result.asarPath;
+  return result;
 };
 
 // Convert asar archive's Stats object to fs's Stats object.
@@ -116,8 +138,10 @@ const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kLink, constants.S_IFLNK]
 ]);
 
+let Stats: any;
+
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
-  const { Stats } = require('fs');
+  Stats ??= require('fs').Stats;
 
   const mode =
     constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
@@ -306,12 +330,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return true;
   };
 
-  const { lstatSync } = fs;
-  fs.lstatSync = (pathArgument: string, options: any) => {
-    const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return lstatSync(pathArgument, options);
-    const { asarPath, filePath } = pathInfo;
-
+  const asarLstatSync = ({ asarPath, filePath }: { asarPath: string; filePath: string }, options: any) => {
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
       if (shouldThrowStatError(options)) {
@@ -331,16 +350,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return asarStatsToFsStats(stats);
   };
 
-  const { lstat } = fs;
-  fs.lstat = (pathArgument: string, options: any, callback: any) => {
+  const { lstatSync } = fs;
+  fs.lstatSync = (pathArgument: string, options: any) => {
     const pathInfo = splitPath(pathArgument);
-    if (typeof options === 'function') {
-      callback = options;
-      options = {};
-    }
-    if (!pathInfo.isAsar) return lstat(pathArgument, options, callback);
-    const { asarPath, filePath } = pathInfo;
+    if (!pathInfo.isAsar) return lstatSync(pathArgument, options);
+    return asarLstatSync(pathInfo, options);
+  };
 
+  const asarLstat = ({ asarPath, filePath }: { asarPath: string; filePath: string }, callback: any) => {
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
       const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
@@ -359,28 +376,36 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     nextTick(callback, [null, fsStats]);
   };
 
-  fs.promises.lstat = util.promisify(fs.lstat);
-
-  const { statSync } = fs;
-  fs.statSync = (pathArgument: string, options: any) => {
-    const { isAsar } = splitPath(pathArgument);
-    if (!isAsar) return statSync(pathArgument, options);
-
-    // Do not distinguish links for now.
-    return fs.lstatSync(pathArgument, options);
-  };
-
-  const { stat } = fs;
-  fs.stat = (pathArgument: string, options: any, callback: any) => {
-    const { isAsar } = splitPath(pathArgument);
+  const { lstat } = fs;
+  fs.lstat = (pathArgument: string, options: any, callback: any) => {
+    const pathInfo = splitPath(pathArgument);
     if (typeof options === 'function') {
       callback = options;
       options = {};
     }
-    if (!isAsar) return stat(pathArgument, options, callback);
+    if (!pathInfo.isAsar) return lstat(pathArgument, options, callback);
+    asarLstat(pathInfo, callback);
+  };
 
-    // Do not distinguish links for now.
-    process.nextTick(() => fs.lstat(pathArgument, options, callback));
+  fs.promises.lstat = util.promisify(fs.lstat);
+
+  // Links are not distinguished for now, so stat inside an archive is lstat.
+  const { statSync } = fs;
+  fs.statSync = (pathArgument: string, options: any) => {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) return statSync(pathArgument, options);
+    return asarLstatSync(pathInfo, options);
+  };
+
+  const { stat } = fs;
+  fs.stat = (pathArgument: string, options: any, callback: any) => {
+    const pathInfo = splitPath(pathArgument);
+    if (typeof options === 'function') {
+      callback = options;
+      options = {};
+    }
+    if (!pathInfo.isAsar) return stat(pathArgument, options, callback);
+    asarLstat(pathInfo, callback);
   };
 
   fs.promises.stat = util.promisify(fs.stat);

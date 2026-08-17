@@ -1733,6 +1733,21 @@ describe('asar package', function () {
       });
     });
 
+    describe('consecutive lookups', function () {
+      itremote('do not let a nested archive name or an odd tail change how later paths split', function () {
+        const archive = path.join(asarDir, 'a.asar');
+        expect(fs.readFileSync(path.join(archive, 'file1'), 'utf8').trim()).to.equal('file1');
+        expect(fs.existsSync(path.join(archive, 'dir1', 'nope.asar', 'x'))).to.equal(false);
+        expect(() => fs.readFileSync(path.join(archive, 'dir1', 'nope.asar', 'x'))).to.throw(/Invalid package/);
+        expect(fs.existsSync(archive + path.sep + path.sep + 'file1')).to.equal(true);
+        expect(fs.existsSync(path.join(archive, 'file1') + path.sep)).to.equal(true);
+        expect(fs.existsSync(path.join(archive, 'file1\0nope'))).to.equal(false);
+        expect(fs.readdirSync(archive)).to.include('file1');
+        expect(fs.existsSync(path.join(asarDir, 'echo.asar', 'file1'))).to.equal(false);
+        expect(fs.readFileSync(path.join(archive, 'dir1', 'file1'), 'utf8').trim()).to.equal('file1');
+      });
+    });
+
     describe('process.noAsar', function () {
       const errorName = process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR';
 
