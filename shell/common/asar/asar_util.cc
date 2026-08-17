@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -81,24 +82,62 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
                         base::FilePath* relative_path,
                         bool allow_root) {
-  base::FilePath iter = full_path;
+  using StringType = base::FilePath::StringType;
+  constexpr auto is_separator = &base::FilePath::IsSeparator;
+  const StringType& value = full_path.value();
+
+  // Walk the components from the deepest one up, the way repeated DirName()
+  // calls would, but on offsets into |value| instead of freshly built paths.
+  size_t end = value.size();
+  while (end > 0 && is_separator(value[end - 1]))
+    --end;
+  size_t component_end = end;
+  bool leaf = true;
   while (true) {
-    base::FilePath dirname = iter.DirName();
-    if (iter.MatchesExtension(kAsarExtension) && !IsDirectoryCached(iter))
-      break;
-    else if (iter == dirname)
+    size_t start = component_end;
+    while (start > 0 && !is_separator(value[start - 1]))
+      --start;
+    const auto component = base::FilePath::StringViewType{value}.substr(
+        start, component_end - start);
+    // ".asar" is five characters; MatchesExtension() decides the rest (case
+    // folding, dotfiles) exactly as it does for a whole path.
+    if (component.size() >= 5 &&
+        component[component.size() - 5] ==
+            base::FilePath::kExtensionSeparator &&
+        base::FilePath(component).MatchesExtension(kAsarExtension)) {
+      base::FilePath candidate =
+          leaf ? full_path : base::FilePath(value.substr(0, component_end));
+      if (!IsDirectoryCached(candidate)) {
+        if (leaf && !allow_root)
+          return false;
+        base::FilePath tail;
+        size_t pos = component_end;
+        while (pos < end) {
+          while (pos < end && is_separator(value[pos]))
+            ++pos;
+          size_t next = pos;
+          while (next < end && !is_separator(value[next]))
+            ++next;
+          if (next > pos) {
+            tail = tail.Append(
+                base::FilePath::StringViewType{value}.substr(pos, next - pos));
+          }
+          pos = next;
+        }
+        *asar_path = std::move(candidate);
+        *relative_path = std::move(tail);
+        return true;
+      }
+    }
+    if (start == 0)
       return false;
-    iter = dirname;
+    leaf = false;
+    component_end = start;
+    while (component_end > 0 && is_separator(value[component_end - 1]))
+      --component_end;
+    if (component_end == 0)
+      return false;
   }
-
-  base::FilePath tail;
-  if (!((allow_root && iter == full_path) ||
-        iter.AppendRelativePath(full_path, &tail)))
-    return false;
-
-  *asar_path = iter;
-  *relative_path = tail;
-  return true;
 }
 
 bool ReadFileToString(const base::FilePath& path, std::string* contents) {
