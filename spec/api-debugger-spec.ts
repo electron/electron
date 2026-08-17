@@ -7,7 +7,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedUntil } from './lib/events-helpers';
-import { listen } from './lib/spec-helpers';
+import { listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('debugger module', () => {
@@ -64,6 +64,25 @@ describe('debugger module', () => {
       await detach;
       expect(w.webContents.debugger.isAttached()).to.be.false();
       expect(w.devToolsWebContents.isDestroyed()).to.be.false();
+    });
+
+    it('clears device metrics overrides left behind by the session', async () => {
+      await w.webContents.loadURL('about:blank');
+      const innerSize = () => w.webContents.executeJavaScript('window.innerWidth + "x" + window.innerHeight');
+
+      w.webContents.debugger.attach();
+      await w.webContents.debugger.sendCommand('Emulation.setDeviceMetricsOverride', {
+        width: 200,
+        height: 150,
+        deviceScaleFactor: 0,
+        mobile: false
+      });
+      expect(await innerSize()).to.equal('200x150');
+
+      // Detaching without Emulation.clearDeviceMetricsOverride used to leave
+      // the view pinned at the emulated size.
+      w.webContents.debugger.detach();
+      await waitUntil(async () => (await innerSize()) !== '200x150');
     });
   });
 
