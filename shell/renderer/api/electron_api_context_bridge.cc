@@ -162,7 +162,6 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
-  TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContextInner");
   if (recursion_depth >= kMaxRecursion) {
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
                                        ? source_context
@@ -372,7 +371,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Context::Scope destination_context_scope(destination_context);
     v8::Local<v8::Array> arr = value.As<v8::Array>();
     size_t length = arr->Length();
-    v8::Local<v8::Array> cloned_arr = v8::Array::New(isolate, length);
+    v8::LocalVector<v8::Value> cloned(isolate);
+    cloned.reserve(length);
     for (size_t i = 0; i < length; i++) {
       auto value_for_array = PassValueToOtherContextInner(
           isolate, source_context, source_execution_context,
@@ -381,18 +381,18 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           error_target);
       if (value_for_array.IsEmpty())
         return {};
-
-      if (!IsTrue(cloned_arr->Set(destination_context, static_cast<int>(i),
-                                  value_for_array.ToLocalChecked()))) {
-        return {};
-      }
+      cloned.push_back(value_for_array.ToLocalChecked());
     }
+    v8::Local<v8::Array> cloned_arr =
+        v8::Array::New(isolate, cloned.data(), cloned.size());
     object_cache->CacheProxiedObject(value, cloned_arr);
     return v8::MaybeLocal<v8::Value>(cloned_arr);
   }
 
-  // Clone certain DOM APIs only within Window contexts.
-  if (source_execution_context->IsWindow()) {
+  // Clone certain DOM APIs only within Window contexts. Only objects backed by
+  // an API template can be Blink wrappers, so plain objects skip the probes.
+  if (source_execution_context->IsWindow() && value->IsObject() &&
+      value.As<v8::Object>()->IsApiWrapper()) {
     // Custom logic to "clone" Element references
     blink::WebElement elem = blink::WebElement::FromV8Value(isolate, value);
     if (!elem.IsNull()) {
@@ -685,35 +685,30 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         }
       }
 
+      v8::Local<v8::Value> value;
       {
         v8::Context::Scope source_context_scope(source_context);
-        v8::Local<v8::Value> value;
         if (!api.Get(key, &value))
           continue;
+      }
 
-        auto passed_value = PassValueToOtherContextInner(
-            isolate, source_context, source_execution_context,
-            destination_context, value, api.GetHandle(), object_cache,
-            support_dynamic_properties, recursion_depth + 1, error_target);
-        if (passed_value.IsEmpty())
-          return {};
+      auto passed_value = PassValueToOtherContextInner(
+          isolate, source_context, source_execution_context,
+          destination_context, value, api.GetHandle(), object_cache,
+          support_dynamic_properties, recursion_depth + 1, error_target);
+      if (passed_value.IsEmpty())
+        return {};
 
-        {
-          v8::Context::Scope inner_destination_context_scope(
-              destination_context);
-          // Use CreateDataProperty (not Set) so that a key named "__proto__"
-          // becomes an own data property instead of invoking the inherited
-          // Object.prototype.__proto__ setter and mutating the prototype.
-          v8::Local<v8::Value> proxied_value = passed_value.ToLocalChecked();
-          if (key->IsName()) {
-            std::ignore = proxy.GetHandle()->CreateDataProperty(
-                destination_context, key.As<v8::Name>(), proxied_value);
-          } else {
-            std::ignore = proxy.GetHandle()->CreateDataProperty(
-                destination_context, key.As<v8::Uint32>()->Value(),
-                proxied_value);
-          }
-        }
+      // Use CreateDataProperty (not Set) so that a key named "__proto__"
+      // becomes an own data property instead of invoking the inherited
+      // Object.prototype.__proto__ setter and mutating the prototype.
+      v8::Local<v8::Value> proxied_value = passed_value.ToLocalChecked();
+      if (key->IsName()) {
+        std::ignore = proxy.GetHandle()->CreateDataProperty(
+            destination_context, key.As<v8::Name>(), proxied_value);
+      } else {
+        std::ignore = proxy.GetHandle()->CreateDataProperty(
+            destination_context, key.As<v8::Uint32>()->Value(), proxied_value);
       }
     }
 
