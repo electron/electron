@@ -1425,6 +1425,29 @@ On macOS it does not remove the focus from the window.
 
 Returns `boolean` - Whether the window can be focused.
 
+#### `win.setActivable(activable)` _macOS_
+
+* `activable` boolean
+
+Sets whether a `panel` window can become the main window. This behavior can also
+be set at creation with the `activable` option, whose default is `true` for panel
+windows. When `activable` is `false`, a panel can still become the key window if
+`focusable` is `true`.
+
+When `activable` is `false`, the panel does not emit the `focus` and `blur`
+events in the main process. To listen for focus changes in the renderer process,
+use the DOM `window` events:
+
+```js
+window.addEventListener('focus', () => {})
+window.addEventListener('blur', () => {})
+```
+
+This method has no effect on non-panel window types.
+
+The `activable` setting is independent of `focusable`. When `focusable` is
+`false`, the panel cannot become either the key or main window.
+
 #### `win.setParentWindow(parent)`
 
 * `parent` BaseWindow | null

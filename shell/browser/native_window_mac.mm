@@ -283,6 +283,9 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
 
   if (windowType == "panel") {
     [window_ setLevel:NSFloatingWindowLevel];
+    bool activable = true;
+    options.Get(options::kActivable, &activable);
+    SetActivable(activable);
   }
 
   if (bool val; options.Get(options::kFocusable, &val) && !val)
@@ -1242,6 +1245,12 @@ void NativeWindowMac::SetFocusable(bool focusable) {
 
 bool NativeWindowMac::IsFocusable() const {
   return ![window_ disableKeyOrMainWindow];
+}
+
+void NativeWindowMac::SetActivable(bool activable) {
+  if (![window_ isKindOfClass:[ElectronNSPanel class]])
+    return;
+  [static_cast<ElectronNSPanel*>(window_) setCanActivate:activable];
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
