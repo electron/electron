@@ -142,9 +142,7 @@ jobs:
       - name: Free up space (macOS)
         if: ${{ inputs.target-platform == 'macos' }}
         uses: ./src/electron/.github/actions/free-space-macos
-      - name: Check disk space after freeing up space
-        if: ${{ inputs.target-platform == 'macos' }}
-        run: df -h
+        background: true
       - name: Setup Node.js/npm
         if: ${{ inputs.target-platform == 'macos' }}
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -154,9 +152,6 @@ jobs:
           cache-dependency-path: src/electron/yarn.lock
       - name: Install Dependencies
         uses: ./src/electron/.github/actions/install-dependencies
-      - name: Install AZCopy
-        if: ${{ inputs.target-platform == 'macos' }}
-        run: brew install azcopy
       - name: Set GN_EXTRA_ARGS for Linux
         if: ${{ inputs.target-platform == 'linux' }}
         run: >
@@ -177,6 +172,14 @@ jobs:
           DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
           echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
           echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+      - name: Wait for space cleanup to finish
+        wait-all: null
+      - name: Check disk space after freeing up space
+        if: ${{ inputs.target-platform == 'macos' }}
+        run: df -h
+      - name: Install AZCopy
+        if: ${{ inputs.target-platform == 'macos' }}
+        run: brew install azcopy
       - name: Restore src cache via AZCopy
         if: ${{ inputs.target-platform != 'linux' }}
         uses: ./src/electron/.github/actions/restore-cache-azcopy
