@@ -3,10 +3,12 @@ From: Samuel Attard <sattard@anthropic.com>
 Date: Wed, 20 May 2026 00:10:34 +0100
 Subject: electron: build-time V8 code cache for the electron/js2c bundles
 
-Makes the embedded electron/js2c/* framework bundles consumable from a
-build-time-generated V8 code cache so each process deserializes them
-(kConsumeCodeCache) instead of parsing and compiling from source at
-startup.
+Makes the embedded electron/js2c/* framework bundles -- and, in processes
+whose Node.js environment is bootstrapped from scratch rather than
+deserialized from the embedded Node startup snapshot, Node's own
+builtins -- consumable from a build-time-generated V8 code cache so each
+process deserializes them (kConsumeCodeCache) instead of parsing and
+compiling from source at startup.
 
 - The caller-parameterized 4-arg BuiltinLoader::LookupAndCompileFunction
   (used by electron::util::CompileAndCall for the framework bundles)
@@ -15,10 +17,16 @@ startup.
   compile-from-source fallback. It also mirrors the 3-arg path's
   should_eager_compile_ / to_eager_compile_ handling so the build-time
   generator can request kEagerCompile.
+- BuiltinLoader::SetProcessDefaultCodeCache(): a process-wide cache every
+  BuiltinLoader constructed afterwards is seeded with. The bootstrap
+  (per-context scripts in NewContext, internal/bootstrap/* inside
+  CreateEnvironment) runs before an embedder can reach
+  env->builtin_loader(), so RefreshCodeCache alone cannot cover it; a
+  snapshot's cache and later RefreshCodeCache calls still merge over the
+  default.
 - Test-only (DCHECK builds, compiled out of production): a process-global
-  record of which electron/js2c/* bundles' code cache was accepted,
-  exposed to the api-js2c-code-cache spec via the electron v8_util
-  binding.
+  record of which builtins' code cache was accepted, exposed to the
+  api-js2c-code-cache spec via the electron v8_util binding.
 
 This patch only adds the consume-side hooks in node; the build-time
 generator and per-flavor wiring live in Electron's own GN files.
@@ -26,10 +34,12 @@ generator and per-flavor wiring live in Electron's own GN files.
 Cannot be upstreamed as-is: it is specific to Electron's js2c framework
 bundles and the electron::util::CompileAndCall compile path. Could be
 removed if Node exposed a public API for supplying a code cache to a
-caller-parameterized builtin compile.
+caller-parameterized builtin compile, and an embedder API for providing
+a builtin code cache to environments that are not created from a
+snapshot.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 180fefa046d9a070fc31fbb0a3555817823332a2..ec1f9ce6ae7059faae6a5f727eff41b2b3fc489d 100644
+index 180fefa046d9a070fc31fbb0a3555817823332a2..e7e95ffd1eb19e3fbf6a0f65338c5f3fbd4d6302 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -1,4 +1,5 @@
@@ -38,34 +48,63 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..ec1f9ce6ae7059faae6a5f727eff41b2
  #include "debug_utils-inl.h"
  #include "env-inl.h"
  #include "module_wrap.h"
-@@ -14,6 +15,26 @@
+@@ -14,6 +15,43 @@
  namespace node {
  namespace builtins {
  
 +// Electron, test-only (DCHECK builds): per-process record of whether each
-+// electron/js2c/* bundle's build-time code cache was consumed. Backs the
-+// code-cache spec; compiled out in production.
++// builtin compiled in this process (the electron/js2c/* bundles and Node's
++// own lib/ builtins) consumed a build-time/snapshot code cache. Backs the
++// code-cache spec; compiled out in production. Guarded because builtins are
++// compiled on worker threads too.
 +#if DCHECK_IS_ON()
++static Mutex& ElectronJs2cCacheStatusMutex() {
++  static auto* mu = new Mutex();
++  return *mu;
++}
 +static std::map<std::string, bool>& ElectronJs2cCacheStatusMap() {
 +  static auto* m = new std::map<std::string, bool>();
 +  return *m;
 +}
-+const std::map<std::string, bool>& ElectronJs2cCacheStatus() {
++std::map<std::string, bool> ElectronJs2cCacheStatus() {
++  Mutex::ScopedLock lock(ElectronJs2cCacheStatusMutex());
 +  return ElectronJs2cCacheStatusMap();
 +}
 +static void RecordElectronJs2cCacheStatus(const std::string& id,
 +                                          bool accepted) {
-+  if (id.rfind("electron/js2c/", 0) == 0)
-+    ElectronJs2cCacheStatusMap()[id] = accepted;
++  Mutex::ScopedLock lock(ElectronJs2cCacheStatusMutex());
++  ElectronJs2cCacheStatusMap()[id] = accepted;
 +}
 +#else
 +static inline void RecordElectronJs2cCacheStatus(const std::string&, bool) {}
 +#endif
 +
++// Electron: see SetProcessDefaultCodeCache() in the header.
++namespace {
++const std::vector<CodeCacheInfo>* g_process_default_code_cache = nullptr;
++}  // namespace
++
++void BuiltinLoader::SetProcessDefaultCodeCache(
++    const std::vector<CodeCacheInfo>* cache) {
++  g_process_default_code_cache = cache;
++}
++
  using loader::HostDefinedOptions;
  using v8::Boolean;
  using v8::Context;
-@@ -401,6 +422,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
+@@ -48,6 +86,11 @@ BuiltinLoader::BuiltinLoader()
+     : config_(GetConfig()), code_cache_(std::make_shared<BuiltinCodeCache>()) {
+   LoadJavaScriptSource();
+   LoadEmbedderJavaScriptSource();
++  // Electron: seed with the embedder's process-wide build-time cache, if any.
++  if (g_process_default_code_cache != nullptr &&
++      !g_process_default_code_cache->empty()) {
++    RefreshCodeCache(*g_process_default_code_cache);
++  }
+ #ifdef NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH
+   AddExternalizedBuiltin("internal/deps/undici/undici",
+                          STRINGIFY(NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH));
+@@ -401,6 +444,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
      DCHECK_EQ(this, optional_realm->env()->builtin_loader());
      RecordResult(builtin_source->id, result, optional_realm);
    }
@@ -73,7 +112,7 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..ec1f9ce6ae7059faae6a5f727eff41b2
  
    if (has_cache) {
      per_process::Debug(DebugCategory::CODE_CACHE,
-@@ -474,13 +496,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -474,13 +518,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    Local<String> filename = OneByteString(isolate, filename_s);
    Local<String> source = builtin_source->source.ToStringChecked(isolate);
    ScriptOrigin origin(filename, 0, 0, true);
@@ -129,7 +168,7 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..ec1f9ce6ae7059faae6a5f727eff41b2
  
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..58963d27f4d8ac0579fb8d49ec17f44ea15d2440 100644
+index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..bea6aa2e57e4961edc273c742ef4caa44df08154 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -11,6 +11,8 @@
@@ -141,15 +180,51 @@ index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..58963d27f4d8ac0579fb8d49ec17f44e
  #include "builtin_info.h"
  #include "node_external_reference.h"
  #include "node_mutex.h"
-@@ -240,6 +242,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+@@ -135,6 +137,19 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+       const std::vector<std::string>& lazy_builtins,
+       std::vector<CodeCacheInfo>* out);
+   void RefreshCodeCache(const std::vector<CodeCacheInfo>& in);
++  // Electron: a process-wide code cache every BuiltinLoader constructed
++  // afterwards starts out with (the Environment's, the thread_local one that
++  // compiles the per-context scripts in InitializePrimordials, embedder-owned
++  // ones). Lets an embedder whose environments are bootstrapped from scratch
++  // rather than deserialized from a snapshot supply a build-time cache that
++  // covers the bootstrap itself, which runs inside CreateEnvironment before
++  // the embedder can reach env->builtin_loader(). A snapshot's own cache and
++  // later RefreshCodeCache() calls merge over it. `cache` must outlive every
++  // loader; pass it before the first loader is constructed. Not thread-safe
++  // against concurrent loader construction -- call it during single-threaded
++  // process setup.
++  static void SetProcessDefaultCodeCache(
++      const std::vector<CodeCacheInfo>* cache);
+ 
+   void CopySourceAndCodeCacheReferenceFrom(const BuiltinLoader* other);
+ 
+@@ -240,6 +255,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
    friend class ::PerProcessTest;
  };
  
 +// Electron, test-only (DCHECK builds): see node_builtins.cc.
 +#if DCHECK_IS_ON()
-+const std::map<std::string, bool>& ElectronJs2cCacheStatus();
++std::map<std::string, bool> ElectronJs2cCacheStatus();
 +#endif
 +
  }  // namespace builtins
  
  }  // namespace node
+diff --git a/unofficial.gni b/unofficial.gni
+index 1285f83662e4f252faa1730df04cafc588cd7556..e9dc3102d88965c8730c31fa041abb8e718c1c83 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -159,6 +159,11 @@ template("node_gn_build") {
+       "//electron:electron_js2c",
+       "deps/simdjson",
+       "$node_v8_path",
++
++      # node_builtins.h includes base/dcheck_is_on.h, which needs this generated
++      # header; public so that everything compiling against node's headers is
++      # ordered after it too.
++      "//base:debugging_buildflags",
+     ]
+     deps = [
+       ":run_node_js2c",

@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 16 Aug 2026 20:48:03 +0000
+Subject: fix: don't arm delayed worker task timers after the platform's
+ StopTask ran
+
+WorkerThreadsTaskRunner::DelayedTaskScheduler keeps its incoming tasks in
+a TaskQueue, which is a std::priority_queue whose comparator treats all
+plain v8::Tasks as equal -- so FlushTasks() pops a batch in unspecified
+order, not FIFO. When V8 posts a delayed worker task shortly before the
+platform shuts down, the StopTask queued by DelayedTaskScheduler::Stop()
+can therefore run *before* that ScheduleTask although it was pushed
+after it. StopTask cancels the armed timers and closes the async handle;
+the ScheduleTask then arms a fresh uv timer on the dying loop, uv_run()
+stays alive until it fires, and WorkerThreadsTaskRunner::Shutdown()
+blocks in uv_thread_join() for the full delay -- observed as ~10% of
+ELECTRON_RUN_AS_NODE / child_process.fork() children stalling for exactly
+8 s (V8's memory-reducer delay) at exit in release builds once they boot
+from the Node snapshot (which shifts startup timing enough to hit the
+window).
+
+Mark the scheduler stopped in StopTask and drop ScheduleTasks that run
+after it, exactly as StopTask already drops the tasks whose timers were
+armed. Upstreamable; the underlying ordering issue affects every
+TaskQueue<T> without a priority member since the queue became a
+priority_queue.
+
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..4a345d6cc321d4f5969a76a1a800f3e517528fcb 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -136,6 +136,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+     uv_async_send(&flush_tasks_);
+   }
+ 
++
+  private:
+   void Run() {
+     TRACE_EVENT_METADATA1("__metadata", "thread_name", "name",
+@@ -173,6 +174,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+     explicit StopTask(DelayedTaskScheduler* scheduler): scheduler_(scheduler) {}
+ 
+     void Run() override {
++      scheduler_->stopped_ = true;
+       std::vector<uv_timer_t*> timers;
+       for (uv_timer_t* timer : scheduler_->timers_)
+         timers.push_back(timer);
+@@ -196,6 +198,16 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+           delay_in_seconds_(delay_in_seconds) {}
+ 
+     void Run() override {
++      // tasks_ is a TaskQueue, i.e. a std::priority_queue whose comparator
++      // treats all plain Tasks as equal, so FlushTasks() pops a batch in
++      // unspecified order: a StopTask can run before a ScheduleTask that was
++      // posted earlier in the same batch. Arming a timer after the StopTask
++      // has torn the loop's handles down would keep uv_run() -- and with it
++      // WorkerThreadsTaskRunner::Shutdown()'s uv_thread_join() -- alive until
++      // the delay expires (e.g. 8 s for V8's memory reducer), stalling process
++      // exit. The platform is going away; drop the task like StopTask drops
++      // the already-armed ones.
++      if (scheduler_->stopped_) return;
+       uint64_t delay_millis = llround(delay_in_seconds_ * 1000);
+       std::unique_ptr<uv_timer_t> timer(new uv_timer_t());
+       CHECK_EQ(0, uv_timer_init(&scheduler_->loop_, timer.get()));
+@@ -240,6 +252,8 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+   TaskQueue<Task> tasks_;
+   uv_loop_t loop_;
+   uv_async_t flush_tasks_;
++  // Set on the scheduler thread by StopTask; read there by ScheduleTask.
++  bool stopped_ = false;
+   std::unordered_set<uv_timer_t*> timers_;
+ };
+ 
