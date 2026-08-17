@@ -37,8 +37,13 @@
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
-#include "shell/browser/ui/views/frameless_view.h"
 #include "ui/views/view_utils.h"
+#endif
+
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/ui/views/frameless_view.h"
+#elif BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #endif
 
 #if defined(USE_OZONE)
@@ -739,9 +744,16 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 #if !BUILDFLAG(IS_MAC)
   // We need to ensure we account for resizing borders on Windows and Linux.
   if ((!has_frame() || has_client_frame()) && IsResizable()) {
-    auto* frame = views::AsViewClass<FramelessView>(
-        widget()->non_client_view()->frame_view());
-    if (frame) {
+    // TODO(mitchchn): bring back a cross-platform interface for
+    // frame operations. (Both Windows and Linux used to inherit
+    // from FramelessView.)
+#if BUILDFLAG(IS_WIN)
+    using ResizableFrameView = FramelessView;
+#else
+    using ResizableFrameView = ElectronFrameViewLinux;
+#endif
+    auto* frame_view = widget()->non_client_view()->frame_view();
+    if (auto* frame = views::AsViewClass<ResizableFrameView>(frame_view)) {
       int border_hit = frame->ResizingBorderHitTest(point);
       if (border_hit != HTNOWHERE)
         return border_hit;
