@@ -308,6 +308,19 @@ jobs:
             
           fi
         fi
+    - name: Verify custom mksnapshot blobs reach the main process
+      # electron-mksnapshot / LoadBrowserProcessSpecificV8Snapshot users replace
+      # the V8 snapshot blobs; check on one native leg that a build's own
+      # mksnapshot output is still picked up by the main process (the embedded
+      # Node startup snapshot must step aside for it). The build leg only
+      # exercises --create-snapshot-only.
+      if: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && inputs.is-asan != true && inputs.display-server != 'wayland' && matrix.shard == 1 }}
+      shell: bash
+      run: |
+        cd src
+        (cd out/Default && unzip -:o mksnapshot.zip)
+        chown -R :builduser out && chmod -R g+w out
+        runuser -u builduser -- xvfb-run python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
     - name: Take screenshot on timeout or cancellation
       if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
       shell: bash
