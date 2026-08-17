@@ -162,12 +162,8 @@ jobs:
         include:
           - target-arch: x64
             target-variant: darwin
-          - target-arch: x64
-            target-variant: mas
           - target-arch: arm64
             target-variant: darwin
-          - target-arch: arm64
-            target-variant: mas
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     with:
       build-runs-on: macos-15-xlarge
