@@ -117,7 +117,7 @@ index cb1ad6bcfa7ea421642d097d6a9a8a5e04d5cf7c..6b7e4211a8969351168fc982fe3466a2
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6c1be2637 100644
+index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..b3d0d2c236c1d8c161f007e01f193070194b2ba8 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -1489,7 +1489,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
@@ -129,41 +129,6 @@ index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6
  #endif
    return size;
  }
-@@ -1512,6 +1512,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
-       env->isolate_data()->is_building_snapshot()) {
-     buf = ArrayBuffer::New(isolate, size);
-   } else {
-+#if defined(V8_ENABLE_SANDBOX)
-+    // When the V8 sandbox is enabled, all array buffers must be allocated
-+    // within the V8 memory cage via the V8 allocator.
-+    std::unique_ptr<ArrayBuffer::Allocator> allocator(
-+        ArrayBuffer::Allocator::NewDefaultAllocator());
-+    void* data = allocator->AllocateUninitialized(size);
-+    if (!data) [[unlikely]] {
-+      THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
-+      return;
-+    }
-+    std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
-+        data,
-+        size,
-+        [](void* data, size_t length, void*) {
-+          std::unique_ptr<ArrayBuffer::Allocator> allocator(
-+              ArrayBuffer::Allocator::NewDefaultAllocator());
-+          allocator->Free(data, length);
-+        },
-+        nullptr);
-+#else
-     std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
-         isolate,
-         size,
-@@ -1522,6 +1542,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
-       THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
-       return;
-     }
-+#endif
- 
-     buf = ArrayBuffer::New(isolate, std::move(store));
-   }
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
 --- a/src/node_i18n.cc
