@@ -4,10 +4,13 @@
 
 #include "shell/browser/net/node_stream_loader.h"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 
+#include "base/numerics/safe_conversions.h"
 #include "mojo/public/cpp/system/string_data_source.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -50,9 +53,17 @@ NodeStreamLoader::~NodeStreamLoader() {
 }
 
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
+  // A declared Content-Length sizes the pipe (up to the network service's
+  // default); streams of unknown length keep mojo's default (0).
+  const uint32_t pipe_size =
+      head->content_length > 0
+          ? base::saturated_cast<uint32_t>(
+                std::min<int64_t>(head->content_length,
+                                  network::GetDataPipeDefaultAllocationSize()))
+          : 0;
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+  MojoResult rv = mojo::CreateDataPipe(pipe_size, producer, consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;

@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/numerics/safe_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -22,6 +23,7 @@
 #include "net/base/mime_util.h"
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/asar/asar_file_validator.h"
 #include "shell/common/asar/archive.h"
@@ -48,12 +50,16 @@ net::Error ConvertMojoResultToNetError(MojoResult result) {
   }
 }
 
-constexpr size_t kDefaultFileUrlPipeSize = 65536;
-
-// Because this makes things simpler.
-static_assert(kDefaultFileUrlPipeSize >= net::kMaxBytesToSniff,
-              "Default file data pipe size must be at least as large as a MIME-"
-              "type sniffing buffer.");
+// A pipe as large as the body up to what FileURLLoader uses for file://, so
+// small files do not pay for a 2 MB shared buffer and large ones are not fed
+// through in 64 KB slices. Never smaller than the MIME sniffing buffer, which
+// is written in one go.
+uint32_t ResponsePipeSize(uint64_t body_size) {
+  return base::saturated_cast<uint32_t>(std::clamp<uint64_t>(
+      body_size, net::kMaxBytesToSniff,
+      network::GetDataPipeDefaultAllocationSize(
+          network::DataPipeAllocationSize::kLargerSizeIfPossible)));
+}
 
 // Modified from the |FileURLLoader| in |file_url_loader_factory.cc|, to serve
 // asar files instead of normal files.
@@ -139,7 +145,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     mojo::ScopedDataPipeProducerHandle producer_handle;
     mojo::ScopedDataPipeConsumerHandle consumer_handle;
-    if (mojo::CreateDataPipe(kDefaultFileUrlPipeSize, producer_handle,
+    if (mojo::CreateDataPipe(ResponsePipeSize(info.size), producer_handle,
                              consumer_handle) != MOJO_RESULT_OK) {
       OnClientComplete(net::ERR_FAILED);
       return;
@@ -225,8 +231,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (first_byte_to_send < read_result.bytes_read) {
       // Write any data we read for MIME sniffing, constraining by range where
-      // applicable. This will always fit in the pipe (see assertion near
-      // |kDefaultFileUrlPipeSize| definition).
+      // applicable. This will always fit in the pipe (see ResponsePipeSize()).
       const size_t write_size = std::min(
           (read_result.bytes_read - first_byte_to_send), total_bytes_to_send);
       base::span<const uint8_t> bytes =
