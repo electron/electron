@@ -28,7 +28,13 @@ eliminating the Node bootstrap recompile.
   -- no weak override, which lld-link cannot fold -- and there is no GN
   cycle through run_node_mksnapshot. Both depend on
   //base:debugging_buildflags for the generated header node_builtins.h
-  pulls in through base/dcheck_is_on.h.
+  pulls in through base/dcheck_is_on.h. run_node_mksnapshot exists only in
+  the default toolchain and every toolchain's ":node_snapshot" compiles its
+  one output: on cross builds the snapshot code-cache tool is built in
+  v8_snapshot_toolchain, and a second node_mksnapshot run there is not
+  guaranteed to produce a byte-identical snapshot (it does not on Windows),
+  which left the tool's cache keyed to a read-only-heap checksum the
+  shipped framework's snapshot did not have.
 - node_snapshot_builder.h / node_snapshotable.cc / embed_helpers.cc:
   Set/GetBaseSnapshotForCreation so the SnapshotCreator EXTENDS the V8
   startup snapshot (params.snapshot_blob) rather than building the heap
@@ -281,7 +287,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1285f83662e4f252faa1730df04cafc588cd7556..a4cfd560a4a0a37d23eab3b2ca4943627825ff98 100644
+index 1285f83662e4f252faa1730df04cafc588cd7556..b129d19879fa9421b04ff67b55a7b55b4ae9d5ae 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -377,7 +383,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..a4cfd560a4a0a37d23eab3b2ca494362
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -325,14 +349,19 @@ template("node_gn_build") {
+@@ -325,26 +349,121 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -388,32 +394,54 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..a4cfd560a4a0a37d23eab3b2ca494362
        }
      }
  
-     action("run_node_mksnapshot") {
+-    action("run_node_mksnapshot") {
 -      deps = [ ":node_mksnapshot($v8_snapshot_toolchain)" ]
-+      deps = [
-+        ":node_mksnapshot($v8_snapshot_toolchain)",
-+
-+        # The V8 startup snapshot node_mksnapshot extends.
-+        "$node_v8_path:run_mksnapshot_default",
-+      ]
-       script = "$node_v8_path/tools/run.py"
-       sources = []
-       data = []
-@@ -344,10 +373,91 @@ template("node_gn_build") {
-       args = [
-         "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
-         rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
-+
-+        # Electron's V8 has external startup data, so node_mksnapshot must
-+        # load the V8 startup snapshot and extend it rather than build the
-+        # heap from scratch (node_mksnapshot.cc parses this flag before
-+        # InitializeOncePerProcess).
-+        "--electron-v8-snapshot-blob=" +
-+            rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
-       ]
-     }
-   }
+-      script = "$node_v8_path/tools/run.py"
+-      sources = []
+-      data = []
++    # One run per build: every toolchain's ":node_snapshot" compiles this file,
++    # so the browser js2c code-cache tool (v8_snapshot_toolchain) is keyed to
++    # the exact snapshot the framework ships (two runs need not be identical).
++    if (current_toolchain == default_toolchain) {
++      action("run_node_mksnapshot") {
++        deps = [
++          ":node_mksnapshot($v8_snapshot_toolchain)",
  
+-      mksnapshot_dir = get_label_info(":node_mksnapshot($v8_snapshot_toolchain)",
+-                                      "root_out_dir")
++          # The V8 startup snapshot node_mksnapshot extends.
++          "$node_v8_path:run_mksnapshot_default",
++        ]
++        script = "$node_v8_path/tools/run.py"
++        sources = []
++        data = []
++
++        mksnapshot_dir =
++            get_label_info(":node_mksnapshot($v8_snapshot_toolchain)",
++                           "root_out_dir")
++
++        outputs = [ "$target_gen_dir/node_snapshot.cc" ]
++        args = [
++          "./" +
++              rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
++          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
++
++          # Electron's V8 has external startup data, so node_mksnapshot must
++          # load the V8 startup snapshot and extend it rather than build the
++          # heap from scratch (node_mksnapshot.cc parses this flag before
++          # InitializeOncePerProcess).
++          "--electron-v8-snapshot-blob=" +
++              rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
++        ]
++      }
++    }
++  }
+ 
+-      outputs = [ "$target_gen_dir/node_snapshot.cc" ]
+-      args = [
+-        "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
+-        rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
+-      ]
 +  # The no-snapshot fallback GetEmbeddedSnapshotData(), as its own source_set so
 +  # libnode doesn't carry it. Linked by libnode consumers that do NOT link
 +  # ":node_snapshot" and don't already compile the stub themselves:
@@ -471,8 +499,10 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..a4cfd560a4a0a37d23eab3b2ca494362
 +      "$node_v8_path:v8_libplatform",
 +    ]
 +    if (node_use_node_snapshot) {
-+      sources = [ "$target_gen_dir/node_snapshot.cc" ]
-+      deps += [ ":run_node_mksnapshot" ]
++      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"
++      sources = [ get_label_info(_run_node_mksnapshot, "target_gen_dir") +
++                  "/node_snapshot.cc" ]
++      deps += [ _run_node_mksnapshot ]
 +      if (is_clang || !is_win) {
 +        # The generated node_snapshot.cc is huge auto-generated C++.
 +        cflags_cc += [
@@ -485,9 +515,6 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..a4cfd560a4a0a37d23eab3b2ca494362
 +      # ":node_snapshot_stub" so consumers of ":node_snapshot" still get one
 +      # definition of GetEmbeddedSnapshotData().
 +      sources = [ "src/node_snapshot_stub.cc" ]
-+    }
-+  }
-+
-   action("generate_config_gypi") {
-     deps = [ "$node_v8_path:v8_generate_features_json" ]
-     script = "tools/generate_config_gypi.py"
+     }
+   }
+ 
