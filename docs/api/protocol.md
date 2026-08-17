@@ -124,6 +124,32 @@ The `<video>` and `<audio>` HTML elements expect protocols to buffer their
 responses by default. The `stream` flag configures those elements to correctly
 expect streaming responses.
 
+Without `corsEnabled`, requests to the scheme that use the CORS protocol, such as
+`fetch()` and `XMLHttpRequest` from a page on a different origin, are rejected
+before the protocol handler runs. Requests that do not use the CORS protocol,
+such as an `<img>` load, are unaffected.
+
+Setting `corsEnabled: true` allows those cross-origin requests through. Electron
+does not validate `Access-Control-Allow-Origin` on responses to custom schemes,
+so the response body is readable by the requesting origin whether or not the
+handler sets that header:
+
+```js
+const { protocol } = require('electron')
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+  { scheme: 'open', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } }
+])
+
+// A page on https://example.com can read `open://` responses, but not `app://` ones.
+```
+
+> [!IMPORTANT]
+> `corsEnabled` grants cross-origin access; it does not enforce the CORS
+> protocol. Do not set it on a scheme that serves data other origins should not
+> be able to read.
+
 ### `protocol.handle(scheme, handler)`
 
 * `scheme` string - scheme to handle, for example `https` or `my-app`. This is
