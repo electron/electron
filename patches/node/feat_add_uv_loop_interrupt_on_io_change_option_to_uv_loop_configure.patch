@@ -10,24 +10,26 @@ from another thread (Electron's embed thread in NodeBindings) whenever a
 watcher/handle is started, stopped or fed, so that a poll started with a
 now-stale uv_backend_timeout() gets to see the change.
 
-Unlike the upstream PR, the interrupt is gated on uv_run() not being on
-the stack for that loop (tracked by an `in_run` depth counter in the
-loop's private uv__loop_internal_fields_t, loop-thread only, no atomics).
-While uv_run() executes the external poller is parked, the change is
-picked up by the current/next loop iteration, and once uv_run() returns
-the embedder re-reads uv_backend_timeout() - which is 0 for a non-empty
-pending/watcher queue and reflects newly started timers - before polling
-again, so interrupting there only costs a write()/kevent()/PQCS on the
-loop thread plus a spurious wakeup of the poller (and, in Electron, an
-extra empty UvRunOnce task per tick). uv_async_send() keeps calling
-uv__loop_interrupt() unconditionally; only the IO-change call sites go
-through the gate.
+On top of the upstream PR this adds uv_loop_interrupt_suspend/resume().
+An embedder that knows its poller is parked suspends the interrupt
+around its own uv_run(): NodeBindings::UvRunOnce holds the embed thread
+on embed_sem_ for the whole of that uv_run(), and the thread re-reads
+uv_backend_timeout() (0 for a non-empty pending/watcher queue, and aware
+of newly started timers) before it polls again, so an interrupt there is
+only a write()/kevent()/PQCS on the loop thread plus a spurious wakeup
+of the poller and, in Electron, an extra empty UvRunOnce task per tick.
+The depth is loop-thread only. uv_async_send() is never suppressed, and
+a uv_run() issued from anywhere else (e.g. a native module pumping the
+loop from a Chromium task while the embed thread is polling) keeps
+interrupting. Prepare/check handles started while suspended are not
+visible to uv_backend_timeout() and wait for the next wakeup; Node only
+does that in StartProfilerIdleNotifier.
 
 diff --git a/deps/uv/docs/src/loop.rst b/deps/uv/docs/src/loop.rst
-index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..ad1fac89f8f595e1fa3513a08de8e512c17362b5 100644
+index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..d1857ddb3cdb6ae6139268c7e060ebddd0de667b 100644
 --- a/deps/uv/docs/src/loop.rst
 +++ b/deps/uv/docs/src/loop.rst
-@@ -86,6 +86,15 @@ API
+@@ -86,6 +86,14 @@ API
  
        This option is necessary to use :c:func:`uv_metrics_idle_time`.
  
@@ -36,15 +38,31 @@ index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..ad1fac89f8f595e1fa3513a08de8e512
 +
 +      This option is usually when implementing event loop integration, to make
 +      the polling of backend fd interrupt to recognize the changes of IO events.
-+      Changes made while :c:func:`uv_run` is executing on the loop do not
-+      trigger an interrupt; the embedder is expected to re-read
-+      :c:func:`uv_backend_timeout` after :c:func:`uv_run` returns.
++      See :c:func:`uv_loop_interrupt_suspend` for suppressing the interrupt
++      while the embedder's poller is known to be parked.
 +
      - UV_LOOP_USE_IO_URING_SQPOLL: Enable SQPOLL io_uring instance to handle
        asynchronous file system operations.
  
+@@ -93,6 +101,16 @@ API
+ 
+     .. versionchanged:: 1.49.0 added the UV_LOOP_USE_IO_URING_SQPOLL option.
+ 
++.. c:function:: void uv_loop_interrupt_suspend(uv_loop_t* loop)
++.. c:function:: void uv_loop_interrupt_resume(uv_loop_t* loop)
++
++    Suppress, and re-enable, the wakeups requested with
++    `UV_LOOP_INTERRUPT_ON_IO_CHANGE`. Calls nest. An embedder that polls
++    :c:func:`uv_backend_fd` from another thread suspends while that thread is
++    known to be parked (typically around its own :c:func:`uv_run` call) and
++    must re-read :c:func:`uv_backend_timeout` before letting it poll again.
++    Loop thread only; :c:func:`uv_async_send` is never suppressed.
++
+ .. c:function:: int uv_loop_close(uv_loop_t* loop)
+ 
+     Releases all internal loop resources. Call this function only when the loop
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index da06345557bb6c1e8c5f82547dcc2a13c431760d..e7c63e7bdec298980f00cf74c35bc8579c6bb36d 100644
+index da06345557bb6c1e8c5f82547dcc2a13c431760d..7de059e0939a8d576ab188e2f6645b83b952a5b5 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
 @@ -261,6 +261,7 @@ typedef struct uv_metrics_s uv_metrics_t;
@@ -55,6 +73,15 @@ index da06345557bb6c1e8c5f82547dcc2a13c431760d..e7c63e7bdec298980f00cf74c35bc857
    UV_LOOP_USE_IO_URING_SQPOLL
  #define UV_LOOP_USE_IO_URING_SQPOLL UV_LOOP_USE_IO_URING_SQPOLL
  } uv_loop_option;
+@@ -305,6 +306,8 @@ UV_EXTERN void uv_loop_delete(uv_loop_t*);
+ UV_EXTERN size_t uv_loop_size(void);
+ UV_EXTERN int uv_loop_alive(const uv_loop_t* loop);
+ UV_EXTERN int uv_loop_configure(uv_loop_t* loop, uv_loop_option option, ...);
++UV_EXTERN void uv_loop_interrupt_suspend(uv_loop_t* loop);
++UV_EXTERN void uv_loop_interrupt_resume(uv_loop_t* loop);
+ UV_EXTERN int uv_loop_fork(uv_loop_t* loop);
+ 
+ UV_EXTERN int uv_run(uv_loop_t*, uv_run_mode mode);
 diff --git a/deps/uv/src/unix/async.c b/deps/uv/src/unix/async.c
 index f7995fc35197af99c70c6a50d97576e58debdf11..b2bcacfd48880c62e1efb6c4b057ecaceb97b04e 100644
 --- a/deps/uv/src/unix/async.c
@@ -137,28 +164,10 @@ index f7995fc35197af99c70c6a50d97576e58debdf11..b2bcacfd48880c62e1efb6c4b057ecac
  static int uv__async_start(uv_loop_t* loop) {
    int pipefd[2];
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..045c1ec244da962a6403df8a803f7eabdb866c7a 100644
+index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..f3a589b1d8f3e041240c09518f3341dbc6503747 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -429,6 +429,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
-   int r;
-   int can_sleep;
- 
-+  uv__get_internal_fields(loop)->in_run++;
-+
-   r = uv__loop_alive(loop);
-   if (!r)
-     uv__update_time(loop);
-@@ -488,6 +490,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
-   if (loop->stop_flag != 0)
-     loop->stop_flag = 0;
- 
-+  uv__get_internal_fields(loop)->in_run--;
-+
-   return r;
- }
- 
-@@ -982,6 +986,8 @@ int uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -982,6 +982,8 @@ int uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      loop->nfds++;
    }
  
@@ -167,7 +176,7 @@ index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..045c1ec244da962a6403df8a803f7eab
    return 0;
  }
  
-@@ -1030,6 +1036,8 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -1030,6 +1032,8 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    }
    else if (uv__queue_empty(&w->watcher_queue))
      uv__queue_insert_tail(&loop->watcher_queue, &w->watcher_queue);
@@ -176,7 +185,7 @@ index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..045c1ec244da962a6403df8a803f7eab
  }
  
  
-@@ -1046,6 +1054,8 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+@@ -1046,6 +1050,8 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
  void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
    if (uv__queue_empty(&w->pending_queue))
      uv__queue_insert_tail(&loop->pending_queue, &w->pending_queue);
@@ -266,10 +275,10 @@ index da9fa3c8b80b8666e645f0dd8b61b5b32abd14e5..415eac3cc0b0a99ad6753feadc0cbbd1
 +  abort();
 +}
 diff --git a/deps/uv/src/uv-common.c b/deps/uv/src/uv-common.c
-index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..93dbaaf6b9bb28b5050d23cd6243d8e33905677d 100644
+index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..3420b3dd882d65c29e4539cc667169149576b0ab 100644
 --- a/deps/uv/src/uv-common.c
 +++ b/deps/uv/src/uv-common.c
-@@ -843,6 +843,38 @@ int uv_loop_configure(uv_loop_t* loop, uv_loop_option option, ...) {
+@@ -843,6 +843,47 @@ int uv_loop_configure(uv_loop_t* loop, uv_loop_option option, ...) {
  }
  
  
@@ -279,14 +288,12 @@ index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..93dbaaf6b9bb28b5050d23cd6243d8e3
 + * backend fd from another thread so it can pick up the new backend state and
 + * timeout.
 + *
-+ * The wakeup is skipped while uv_run() is on the stack for this loop: the
-+ * external poller must not be polling concurrently with uv_run() anyway, the
-+ * change is consumed by the current or next loop iteration, and once uv_run()
-+ * returns the embedder re-reads uv_backend_timeout() - which returns 0 for a
-+ * non-empty pending/watcher queue and accounts for newly started timers -
-+ * before it polls again. Interrupting there would only cost a syscall plus a
-+ * spurious wakeup of the poller. `in_run` is only written by uv_run() and read
-+ * here, both on the loop thread, so it needs no synchronisation.
++ * The wakeup is skipped while the embedder has declared its poller parked via
++ * uv_loop_interrupt_suspend(): nothing is polling then, and before it polls
++ * again the embedder re-reads uv_backend_timeout(), which returns 0 for a
++ * non-empty pending/watcher queue and accounts for newly started timers, so an
++ * interrupt would only cost a syscall plus a spurious wakeup. The depth is
++ * only touched from the loop thread, so it needs no synchronisation.
 + *
 + * uv_async_send() deliberately calls uv__loop_interrupt() directly and is not
 + * subject to this gating; it is the cross-thread wakeup primitive.
@@ -298,10 +305,21 @@ index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..93dbaaf6b9bb28b5050d23cd6243d8e3
 +  if (!(lfields->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE))
 +    return;
 +
-+  if (lfields->in_run != 0)
++  if (lfields->interrupt_suspended != 0)
 +    return;
 +
 +  uv__loop_interrupt(loop);
++}
++
++
++void uv_loop_interrupt_suspend(uv_loop_t* loop) {
++  uv__get_internal_fields(loop)->interrupt_suspended++;
++}
++
++
++void uv_loop_interrupt_resume(uv_loop_t* loop) {
++  assert(uv__get_internal_fields(loop)->interrupt_suspended != 0);
++  uv__get_internal_fields(loop)->interrupt_suspended--;
 +}
 +
 +
@@ -309,7 +327,7 @@ index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..93dbaaf6b9bb28b5050d23cd6243d8e3
  static uv_loop_t* default_loop_ptr;
  
 diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
-index 5452a549388cf94865a36bf8c4f93c07c50dc278..0123eefe4a52a199e5ee800f354b5b983f715c9b 100644
+index 5452a549388cf94865a36bf8c4f93c07c50dc278..203f53d58d3cd0b057539cf76bbc170f1e7c7ad1 100644
 --- a/deps/uv/src/uv-common.h
 +++ b/deps/uv/src/uv-common.h
 @@ -148,6 +148,10 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap);
@@ -331,18 +349,16 @@ index 5452a549388cf94865a36bf8c4f93c07c50dc278..0123eefe4a52a199e5ee800f354b5b98
    }                                                                           \
    while (0)
  
-@@ -431,6 +436,9 @@ struct uv__loop_internal_fields_s {
+@@ -431,6 +436,7 @@ struct uv__loop_internal_fields_s {
    unsigned int flags;
    uv__loop_metrics_t loop_metrics;
    int current_timeout;
-+  /* Nesting depth of uv_run() on this loop. Only touched from the loop thread
-+   * (uv_run() itself and uv__loop_interrupt_on_io_change()), so no atomics. */
-+  unsigned int in_run;
++  unsigned int interrupt_suspended; /* uv_loop_interrupt_suspend() depth */
  #ifdef __linux__
    struct uv__iou ctl;
    struct uv__iou iou;
 diff --git a/deps/uv/src/win/core.c b/deps/uv/src/win/core.c
-index 317238fd22962964fdc211eb837e9c593b562c8e..46153ff22c45562dcab1f8f3a397e0b5c5bf92be 100644
+index 317238fd22962964fdc211eb837e9c593b562c8e..01f23777b3708d44ee7b076b323f0947fb8ccde6 100644
 --- a/deps/uv/src/win/core.c
 +++ b/deps/uv/src/win/core.c
 @@ -384,10 +384,20 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
@@ -366,29 +382,11 @@ index 317238fd22962964fdc211eb837e9c593b562c8e..46153ff22c45562dcab1f8f3a397e0b5
  int uv_backend_fd(const uv_loop_t* loop) {
    return -1;
  }
-@@ -703,6 +713,8 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
-   int r;
-   int can_sleep;
- 
-+  uv__get_internal_fields(loop)->in_run++;
-+
-   r = uv__loop_alive(loop);
-   if (!r)
-     uv_update_time(loop);
-@@ -760,6 +772,8 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
-   if (loop->stop_flag != 0)
-     loop->stop_flag = 0;
- 
-+  uv__get_internal_fields(loop)->in_run--;
-+
-   return r;
- }
- 
 diff --git a/deps/uv/test/test-embed.c b/deps/uv/test/test-embed.c
-index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a439d90c3e 100644
+index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..17a62c69f6abde96bf0a94f0c9122a0373b76e17 100644
 --- a/deps/uv/test/test-embed.c
 +++ b/deps/uv/test/test-embed.c
-@@ -25,55 +25,274 @@
+@@ -25,55 +25,277 @@
  #include <stdlib.h>
  #include <errno.h>
  
@@ -431,7 +429,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +
 +#if defined(HAVE_EPOLL)
 +/* Number of times the main loop's backend fd was still readable right after
-+ * uv_run() returned, i.e. somebody interrupted the loop from inside uv_run(). */
++ * uv_run() returned, i.e. the loop was interrupted while its poller was parked. */
 +static int backend_ready_after_run;
 +#endif
  
@@ -526,8 +524,11 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +static void embed_cb(uv_async_t* async) {
 +  embed_cb_called++;
 +
-+  /* Run tasks in main loop */
++  /* Run tasks in main loop. The embed thread is parked on `embed_sem` until we
++   * post it below, so IO changes made in here need not interrupt the loop. */
++  uv_loop_interrupt_suspend(&main_loop);
 +  uv_run(&main_loop, UV_RUN_NOWAIT);
++  uv_loop_interrupt_resume(&main_loop);
 +
 +#if defined(HAVE_EPOLL)
 +  {
@@ -650,9 +651,9 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +
 +
 +static void start_main_timer_async_cb(uv_async_t* async) {
-+  /* This runs from inside uv_run(UV_RUN_NOWAIT) on the main loop. Starting a
-+   * handle here must not interrupt the loop: nobody is polling it right now
-+   * and the poller re-reads uv_backend_timeout() once uv_run() returns. */
++  /* This runs from embed_cb's uv_run() with interrupts suspended. Starting a
++   * handle here must not interrupt the loop; the poller picks the timer up via
++   * uv_backend_timeout() once uv_run() returns. */
 +  ASSERT_PTR_EQ(async, &main_async);
 +  main_timer_started_at = uv_hrtime();
 +  ASSERT_OK(uv_timer_init(&main_loop, &main_timer));
@@ -665,7 +666,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +}
 +
 +
-+TEST_IMPL(embed_with_timer_started_in_run) {
++TEST_IMPL(embed_with_interrupt_suspended) {
 +  uint64_t elapsed_ms;
 +
 +  init_loops(start_main_timer_async_cb);
@@ -673,7 +674,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +  ASSERT_OK(uv_loop_configure(&main_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE));
 +
 +  /* Wake the main loop up through its async handle; the async callback then
-+   * starts `main_timer` from inside uv_run(). */
++   * starts `main_timer` while interrupts are suspended. */
 +  ASSERT_OK(uv_timer_init(&external_loop, &external_timer));
 +  ASSERT_OK(uv_timer_start(&external_timer, kick_main_async_cb, 100, 0));
 +
@@ -687,7 +688,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
 +  ASSERT_LT(elapsed_ms, 1000);
 +
 +#if defined(HAVE_EPOLL)
-+  /* Nothing interrupted the loop from inside uv_run() ... */
++  /* Nothing interrupted the loop while the poller was parked ... */
 +  ASSERT_OK(backend_ready_after_run);
 +  /* ... so the main loop ran exactly three times: the initial run, once for
 +   * the async that started the timer and once for the timer itself, with no
@@ -700,7 +701,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a4
    return 0;
  }
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index b79a4ea74edf649d271696624272746c5301da27..f1b6b0262fcfbdb17c0cc255b2fe14fe05f7d2bf 100644
+index b79a4ea74edf649d271696624272746c5301da27..fbd1ab4edfe9d35703b0e5e8f5b8d8937b58a1a9 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
 @@ -286,6 +286,8 @@ TEST_DECLARE   (process_priority)
@@ -708,7 +709,7 @@ index b79a4ea74edf649d271696624272746c5301da27..f1b6b0262fcfbdb17c0cc255b2fe14fe
  TEST_DECLARE   (active)
  TEST_DECLARE   (embed)
 +TEST_DECLARE   (embed_with_external_timer)
-+TEST_DECLARE   (embed_with_timer_started_in_run)
++TEST_DECLARE   (embed_with_interrupt_suspended)
  TEST_DECLARE   (async)
  TEST_DECLARE   (async_null_cb)
  TEST_DECLARE   (eintr_handling)
@@ -717,7 +718,7 @@ index b79a4ea74edf649d271696624272746c5301da27..f1b6b0262fcfbdb17c0cc255b2fe14fe
  
    TEST_ENTRY  (embed)
 +  TEST_ENTRY  (embed_with_external_timer)
-+  TEST_ENTRY  (embed_with_timer_started_in_run)
++  TEST_ENTRY  (embed_with_interrupt_suspended)
  
    TEST_ENTRY  (async)
    TEST_ENTRY  (async_null_cb)
