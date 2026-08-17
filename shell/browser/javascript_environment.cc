@@ -22,6 +22,7 @@
 #include "electron/fuses.h"
 #include "electron/snapshot_checksum.h"
 #include "gin/array_buffer.h"
+#include "gin/per_isolate_data.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
@@ -250,6 +251,9 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
     v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
+  // After DoCleanup() so that observers created by JS that ran during it (e.g.
+  // a webContents 'destroyed' handler) are notified too.
+  gin::PerIsolateData::From(isolate())->NotifyBeforeMicrotasksRunnerDispose();
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   microtasks_runner_.reset();
 }
