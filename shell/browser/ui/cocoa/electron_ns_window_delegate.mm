@@ -118,16 +118,15 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidBecomeMain:(NSNotification*)notification {
-  shell_->NotifyWindowFocus();
   shell_->RedrawTrafficLights();
 }
 
 - (void)windowDidResignMain:(NSNotification*)notification {
-  shell_->NotifyWindowBlur();
   shell_->RedrawTrafficLights();
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
+  shell_->NotifyWindowFocus();
   shell_->NotifyWindowIsKeyChanged(true);
   shell_->RedrawTrafficLights();
 }
@@ -140,6 +139,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   if ([NSApp isActive] && ([NSApp keyWindow] == [notification object]))
     return;
 
+  shell_->NotifyWindowBlur();
   shell_->NotifyWindowIsKeyChanged(false);
   shell_->RedrawTrafficLights();
 }

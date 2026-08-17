@@ -1515,6 +1515,11 @@ describe('BrowserWindow module', () => {
         await isShow;
         await isFocus;
 
+        const isBlur = once(w, 'blur');
+        w.blur();
+        await isBlur;
+        expect(w.isFocused()).to.equal(false);
+
         const getActiveAppOsa =
           'tell application "System Events" to get the name of the first process whose frontmost is true';
         const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
@@ -6663,6 +6668,14 @@ describe('BrowserWindow module', () => {
           w.setHiddenInMissionControl(false);
           expect(w.isHiddenInMissionControl()).to.be.false('isHiddenInMissionControl');
         });
+      });
+    });
+
+    ifdescribe(process.platform === 'darwin')('panel activable state', () => {
+      it('can be changed', () => {
+        const panel = new BrowserWindow({ type: 'panel', show: false });
+        expect(() => panel.setActivable(true)).not.to.throw();
+        expect(() => panel.setActivable(false)).not.to.throw();
       });
     });
 

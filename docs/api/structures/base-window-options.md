@@ -28,6 +28,9 @@
   `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
   stop interacting with wm, so the window will always stay on top in all
   workspaces.
+* `activable` boolean (optional) _macOS_ - Whether a `panel` window can become
+  the main window. Default is `false` for panel windows. This option has no
+  effect on other window types.
 * `alwaysOnTop` boolean (optional) - Whether the window should always stay on top of
   other windows. Default is `false`. Not supported on Wayland (Linux).
 * `fullscreen` boolean (optional) - Whether the window should show in fullscreen. When

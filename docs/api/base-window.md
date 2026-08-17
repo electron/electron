@@ -1425,6 +1425,20 @@ On macOS it does not remove the focus from the window.
 
 Returns `boolean` - Whether the window can be focused.
 
+#### `win.setActivable(activable)` _macOS_
+
+* `activable` boolean
+
+Sets whether a `panel` window can become the main window. This behavior can also
+be set at creation with the `activable` option, whose default is `false` for panel
+windows. When `activable` is `false`, a panel can still become the key window if
+`focusable` is `true`.
+
+This method has no effect on non-panel window types.
+
+The `activable` setting is independent of `focusable`. When `focusable` is
+`false`, the panel cannot become either the key or main window.
+
 #### `win.setParentWindow(parent)`
 
 * `parent` BaseWindow | null
