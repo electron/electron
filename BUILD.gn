@@ -953,35 +953,48 @@ if (electron_generate_js2c_code_cache) {
   # One generated cache per process flavor: V8's code-cache key includes
   # FlagList::Hash() over non-default flags, which differs per process type.
   # The flag deltas below were captured from live processes.
+  # `node_builtins`: whether the flavor also carries a cache for Node's own
+  # builtins, i.e. whether its processes bootstrap their Node.js environment
+  # from scratch on this build instead of deserializing it from the embedded
+  # Node startup snapshot (~6.5 MB per flavor, so only where it is consumed).
+  # Renderer / web-worker environments always bootstrap from scratch; the node
+  # service's utility process only on builds without a Node snapshot; the
+  # sandboxed renderer has no Node environment and no process type consumes the
+  # worker flavor for one.
   _js2c_cc_flavors = [
     {
       name = "sandbox"  # sandboxed renderer (no Node env)
       flags = "--enable-sharedarraybuffer-per-context"
+      node_builtins = false
     },
     {
       name = "renderer"
       flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
               "--no-freeze-flags-after-init"
+      node_builtins = true
     },
     {
       name = "utility"
       flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = !node_use_node_snapshot
     },
     {
       name = "worker"
       flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = false
     },
   ]
 
   # The browser flavor is special-cased below when a Node startup snapshot is
   # embedded: its isolate (and so its code-cache read-only checksum) comes from
   # that snapshot, not the v8 context snapshot. Without a snapshot it boots from
-  # the v8 context snapshot like the rest.
+  # the v8 context snapshot like the rest, and bootstraps Node from scratch.
   if (!node_use_node_snapshot) {
     _js2c_cc_flavors += [
       {
         name = "browser"
         flags = "--rehash-snapshot --no-freeze-flags-after-init"
+        node_builtins = true
       },
     ]
   }
@@ -1008,6 +1021,11 @@ if (electron_generate_js2c_code_cache) {
         _f.name,
         _f.flags,
       ]
+      if (_f.node_builtins) {
+        args += [ "1" ]
+      } else {
+        args += [ "0" ]
+      }
     }
   }
 
@@ -1036,6 +1054,10 @@ if (electron_generate_js2c_code_cache) {
         rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
         "browser",
         "--rehash-snapshot --no-freeze-flags-after-init",
+
+        # Processes created from the Node snapshot deserialize Node's builtins'
+        # code cache from it.
+        "0",
       ]
     }
   }

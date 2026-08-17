@@ -85,6 +85,16 @@ void FeedEnvironmentCodeCache(node::Environment* env) {
     env->builtin_loader()->RefreshCodeCache(cache);
 }
 
+void InstallProcessCodeCache() {
+  static const bool installed = [] {
+    const auto& cache = GetNativesCodeCache(CurrentProcessJs2cCacheFlavor());
+    if (!cache.empty())
+      node::builtins::BuiltinLoader::SetProcessDefaultCodeCache(&cache);
+    return true;
+  }();
+  (void)installed;
+}
+
 void EmitWarning(const std::string_view warning_msg,
                  const std::string_view warning_type) {
   EmitWarning(JavascriptEnvironment::GetIsolate(), warning_msg, warning_type);
