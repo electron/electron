@@ -20,18 +20,6 @@ index c80020b2bda2af39b38295dad3c6208cb8294b88..873015289db9709c00c32080e5387d9c
      void OnDisposed() override;
  
     private:
-diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 7c640559dc7a09730f0053be8798d10bc8ac1a1c..24127c579e149345cc9b937b17dbfe630b0d3c35 100644
---- a/gin/isolate_holder.cc
-+++ b/gin/isolate_holder.cc
-@@ -225,6 +225,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
- 
- void IsolateHolder::WillDestroyMicrotasksRunner() {
-   DCHECK(g_initialized_microtasks_runner);
-+  isolate_data_->NotifyBeforeMicrotasksRunnerDispose();
-   g_destroyed_microtasks_runner = true;
- }
- 
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
 index 9670f9f904c6c864e82409617ac4c7698c6fc3ef..d1014af4b63da244820ff865a8e824ddf68433a9 100644
 --- a/gin/per_isolate_data.cc
