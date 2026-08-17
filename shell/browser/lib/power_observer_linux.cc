@@ -4,7 +4,6 @@
 #include "shell/browser/lib/power_observer_linux.h"
 
 #include <unistd.h>
-#include <uv.h>
 #include <utility>
 
 #include "base/command_line.h"
@@ -14,6 +13,7 @@
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "shell/common/uv_includes.h"
 
 namespace {
 

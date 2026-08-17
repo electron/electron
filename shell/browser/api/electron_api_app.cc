@@ -1696,6 +1696,20 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     return;
   }
 
+  // Validate before applying so a TypeError leaves existing configuration
+  // untouched; null/undefined mean "not set".
+  std::optional<bool> platform_passkeys;
+  v8::Local<v8::Value> platform_passkeys_value;
+  if (options.Get("platformPasskeys", &platform_passkeys_value) &&
+      !platform_passkeys_value->IsNullOrUndefined()) {
+    if (!platform_passkeys_value->IsBoolean()) {
+      thrower.ThrowTypeError(
+          "configureWebAuthn: 'platformPasskeys' must be a boolean");
+      return;
+    }
+    platform_passkeys = platform_passkeys_value.As<v8::Boolean>()->Value();
+  }
+
   gin_helper::Dictionary touch_id;
   if (options.Get("touchID", &touch_id)) {
     std::string keychain_access_group;
@@ -1733,10 +1747,9 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     }
   }
 
-  bool platform_passkeys = false;
-  if (options.Get("platformPasskeys", &platform_passkeys)) {
+  if (platform_passkeys.has_value()) {
     ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
-        platform_passkeys);
+        *platform_passkeys);
   }
 }
 
