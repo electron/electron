@@ -21,8 +21,7 @@ again, so interrupting there only costs a write()/kevent()/PQCS on the
 loop thread plus a spurious wakeup of the poller (and, in Electron, an
 extra empty UvRunOnce task per tick). uv_async_send() keeps calling
 uv__loop_interrupt() unconditionally; only the IO-change call sites go
-through the gate. This gated variant should be proposed on libuv#3308 so
-the patch can eventually be dropped.
+through the gate.
 
 diff --git a/deps/uv/docs/src/loop.rst b/deps/uv/docs/src/loop.rst
 index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..ad1fac89f8f595e1fa3513a08de8e512c17362b5 100644
