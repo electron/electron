@@ -654,9 +654,13 @@ Emitted when both `touchID` and `platformPasskeys` are configured via
 WebAuthn request needs to choose which platform authenticator to use. `callback`
 should be called with one of the names from `event.authenticators`; passing no
 arguments or a name that does not match will cancel the request and the page
-will receive a `NotAllowedError`. If no listener is registered, `platformPasskeys`
-is used by default. If only one authenticator is available for the request, this
-event is not emitted and that authenticator is used automatically.
+will receive a `NotAllowedError`. The request remains pending until the
+listener invokes the callback, so always invoke it exactly once — typically
+from a `try { … } finally { callback(…) }` block. If no listener is registered,
+`platformPasskeys` is used by default; a listener that throws before invoking
+the callback is treated as unhandled and the default applies. If only one
+authenticator is available for the request, this event is not emitted and that
+authenticator is used automatically.
 
 ```js
 const { app, BrowserWindow } = require('electron')
@@ -707,9 +711,11 @@ invokes the callback, so always invoke it exactly once — typically from a
 
 > [!NOTE]
 > If no listener is registered for this event, `navigator.credentials.get()`
-> calls that resolve multiple discoverable credentials are cancelled with a
-> `NotAllowedError`. Register a listener if your app supports
-> discoverable-credential (passkey) sign-in.
+> calls that resolve discoverable Touch ID credentials are cancelled with a
+> `NotAllowedError` — even when only a single credential matches. Register a
+> listener if your app supports discoverable-credential (passkey) sign-in.
+> Assertions fulfilled by `platformPasskeys` select the account in the system
+> sheet and do not use this event.
 
 On macOS, the Touch ID platform authenticator surfaces accounts via this event
 once it has been configured with
