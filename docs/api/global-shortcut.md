@@ -61,16 +61,9 @@ portal, which changes the module's behavior in several ways:
   System Settings).
 * **Bindings persist across relaunches**, keyed by the app's portal identity: after the user accepts once,
   registering the same shortcuts on later launches re-binds them silently.
-* **`register()` is optimistic on this path.** The portal bind is asynchronous and consent-gated, so
-  `register()` returning `true` means the request was submitted, not that the shortcut is bound. If the
-  portal denies the bind (invalid app identity, dismissed dialog), there is currently no way to observe the
-  failure — `isRegistered()` will also report `true`. See
-  [#52218](https://github.com/electron/electron/issues/52218).
-* **On GNOME, the portal path currently requires a feature flag.** Chromium keeps the portal listener
-  disabled on GNOME, so until [#52221](https://github.com/electron/electron/pull/52221) ships, apps must
-  launch with `--enable-features=GlobalShortcutsPortalPreferredTrigger` (e.g. via
-  `app.commandLine.appendSwitch()`) — otherwise `register()` returns `false` on GNOME Wayland. Other
-  desktops only need the default-enabled `GlobalShortcutsPortal` feature.
+* **The portal path is enabled by default.** The `GlobalShortcutsPortal` and
+  `GlobalShortcutsPortalPreferredTrigger` features are on by default, so no feature flags are needed —
+  including on GNOME (see [#52221](https://github.com/electron/electron/pull/52221)).
 
 ## Methods
 
@@ -96,9 +89,6 @@ the registered shortcut is pressed by the user.
 When the accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
-
-On Linux Wayland the returned value is optimistic — the portal resolves the
-bind asynchronously. See [Usage on Linux](#usage-on-linux).
 
 The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
 the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
@@ -150,9 +140,6 @@ Returns `boolean` - Whether this application has registered `accelerator`.
 When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they
 don't want applications to fight for global shortcuts.
-
-On Linux Wayland this reflects whether a bind was requested, not whether the
-portal granted it. See [Usage on Linux](#usage-on-linux).
 
 ### `globalShortcut.unregister(accelerator)`
 
