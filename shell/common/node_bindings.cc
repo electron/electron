@@ -1124,8 +1124,11 @@ void NodeBindings::UvRunOnce() {
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-    // Deal with uv events.
+    // The embed thread is parked on |embed_sem_| until we post it below and
+    // re-reads uv_backend_timeout() before polling, so skip the interrupts.
+    uv_loop_interrupt_suspend(uv_loop_);
     int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    uv_loop_interrupt_resume(uv_loop_);
 
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
