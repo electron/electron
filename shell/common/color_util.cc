@@ -5,7 +5,6 @@
 #include "shell/common/color_util.h"
 
 #include <algorithm>
-#include <cmath>
 
 #include "content/public/common/color_parser.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"

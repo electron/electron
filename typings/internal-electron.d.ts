@@ -148,11 +148,16 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
+    _printToPDF(options: any): Promise<Buffer>;
     _lifecycleStateForTesting: string;
   }
 
-  interface WebFrame {
+  interface WebFrame extends NodeJS.EventEmitter {
     _isEvalAllowed(): boolean;
+    _setIsolatedWorldCreationCallback(callback: (worldId: number) => void): void;
+    getIsolatedWorlds(): number[];
+    on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
+    once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
   }
 
   interface WebPreferences {
@@ -164,6 +169,7 @@ declare namespace Electron {
 
   interface Session {
     _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
+    _registerLocalAIHandler(handler: ElectronInternal.UtilityProcessWrapper | null): void;
   }
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;

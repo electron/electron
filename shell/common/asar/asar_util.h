@@ -14,6 +14,8 @@ namespace base {
 class FilePath;
 }
 
+class GURL;
+
 namespace asar {
 
 class Archive;
@@ -31,8 +33,15 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 // Same with base::ReadFileToString but supports asar Archive.
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
+// For a file: URL inside an asar archive, returns a file: URL to an
+// extracted copy of the entry plus the entry's name; false otherwise.
+bool GetExtractedFileURL(const GURL& url,
+                         GURL* extracted_url,
+                         std::u16string* file_name);
+
 void ValidateIntegrityOrDie(base::span<const uint8_t> input,
-                            const IntegrityPayload& integrity);
+                            const IntegrityPayload& integrity,
+                            std::string_view what = {});
 
 }  // namespace asar
 

@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/strings/sys_string_conversions.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
 #import <StoreKit/StoreKit.h>
@@ -154,8 +154,8 @@
 
   if (productDiscount.priceLocale != nil) {
     productDiscountStruct.priceLocale =
-        [[self formatPrice:productDiscount.price
-                 withLocal:productDiscount.priceLocale] UTF8String];
+        base::SysNSStringToUTF8([self formatPrice:productDiscount.price
+                                        withLocal:productDiscount.priceLocale]);
   }
 
   if (productDiscount.subscriptionPeriod != nil) {
@@ -164,9 +164,8 @@
   }
 
   productDiscountStruct.type = (int)productDiscount.type;
-  if (productDiscount.identifier != nil) {
-    productDiscountStruct.identifier = [productDiscount.identifier UTF8String];
-  }
+  productDiscountStruct.identifier =
+      base::SysNSStringToUTF8(productDiscount.identifier);
   productDiscountStruct.price = [productDiscount.price doubleValue];
 
   return productDiscountStruct;
@@ -181,18 +180,14 @@
   in_app_purchase::Product productStruct;
 
   // Product Identifier
-  if (product.productIdentifier != nil) {
-    productStruct.productIdentifier = [product.productIdentifier UTF8String];
-  }
+  productStruct.productIdentifier =
+      base::SysNSStringToUTF8(product.productIdentifier);
 
   // Product Attributes
-  if (product.localizedDescription != nil) {
-    productStruct.localizedDescription =
-        [product.localizedDescription UTF8String];
-  }
-  if (product.localizedTitle != nil) {
-    productStruct.localizedTitle = [product.localizedTitle UTF8String];
-  }
+  productStruct.localizedDescription =
+      base::SysNSStringToUTF8(product.localizedDescription);
+  productStruct.localizedTitle =
+      base::SysNSStringToUTF8(product.localizedTitle);
 
   // Pricing Information
   if (product.price != nil) {
@@ -200,14 +195,12 @@
 
     if (product.priceLocale != nil) {
       productStruct.formattedPrice =
-          [[self formatPrice:product.price
-                   withLocal:product.priceLocale] UTF8String];
+          base::SysNSStringToUTF8([self formatPrice:product.price
+                                          withLocal:product.priceLocale]);
 
       // Currency Information
-      if (product.priceLocale.currencyCode != nil) {
-        productStruct.currencyCode =
-            [product.priceLocale.currencyCode UTF8String];
-      }
+      productStruct.currencyCode =
+          base::SysNSStringToUTF8(product.priceLocale.currencyCode);
     }
   }
 
@@ -220,10 +213,8 @@
         [self skProductSubscriptionPeriodToStruct:product.subscriptionPeriod];
   }
 
-  if (product.subscriptionGroupIdentifier != nil) {
-    productStruct.subscriptionGroupIdentifier =
-        [product.subscriptionGroupIdentifier UTF8String];
-  }
+  productStruct.subscriptionGroupIdentifier =
+      base::SysNSStringToUTF8(product.subscriptionGroupIdentifier);
 
   if (product.discounts != nil) {
     productStruct.discounts.reserve([product.discounts count]);
@@ -242,10 +233,8 @@
   // fields of Electron's Product structure.
   productStruct.isDownloadable = [product isDownloadable];
 
-  if (product.downloadContentVersion != nil) {
-    productStruct.downloadContentVersion =
-        [product.downloadContentVersion UTF8String];
-  }
+  productStruct.downloadContentVersion =
+      base::SysNSStringToUTF8(product.downloadContentVersion);
 
   if (product.downloadContentLengths != nil) {
     productStruct.downloadContentLengths.reserve(

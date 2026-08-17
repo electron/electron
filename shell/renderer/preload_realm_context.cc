@@ -6,18 +6,15 @@
 
 #include "base/command_line.h"
 #include "base/containers/span.h"
-#include "base/process/process.h"
 #include "base/process/process_metrics.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/js2c_bundle_ids.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
-#include "third_party/blink/renderer/bindings/core/v8/script_controller.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
 #include "third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h"  // nogncheck
@@ -103,12 +100,6 @@ class PreloadRealmLifetimeController
     return initiator_script_state_->ContextIsValid()
                ? initiator_script_state_->GetContext()
                : v8::MaybeLocal<v8::Context>();
-  }
-
-  v8::Isolate* GetInitiatorIsolate() {
-    return initiator_script_state_->ContextIsValid()
-               ? initiator_script_state_->GetIsolate()
-               : nullptr;
   }
 
   electron::ServiceWorkerData* service_worker_data() {
@@ -245,17 +236,15 @@ class PreloadRealmLifetimeController
 
 }  // namespace
 
-v8::MaybeLocal<v8::Context> GetInitiatorContext(v8::Local<v8::Context> context,
-                                                v8::Isolate* target_isolate) {
+v8::MaybeLocal<v8::Context> GetInitiatorContext(
+    v8::Local<v8::Context> context) {
   DCHECK(!context.IsEmpty());
-  DCHECK(target_isolate);
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(context);
   if (!execution_context->IsShadowRealmGlobalScope())
     return v8::MaybeLocal<v8::Context>();
   auto* controller = PreloadRealmLifetimeController::From(context);
   if (controller) {
-    target_isolate = controller->GetInitiatorIsolate();
     return controller->GetInitiatorContext();
   }
   return v8::MaybeLocal<v8::Context>();
@@ -302,18 +291,14 @@ void OnCreatePreloadableV8Context(
       shadow_realm_global_scope->GetWrapperTypeInfo();
 
   // Create a new v8::Context.
-  // Initialize V8 extensions before creating the context.
-  v8::ExtensionConfiguration extension_configuration =
-      blink::ScriptController::ExtensionsFor(shadow_realm_global_scope);
-
   v8::Local<v8::ObjectTemplate> global_template =
       wrapper_type_info->GetV8ClassTemplate(isolate, *world)
           .As<v8::FunctionTemplate>()
           ->InstanceTemplate();
   v8::Local<v8::Object> global_proxy;  // Will request a new global proxy.
   v8::Local<v8::Context> context =
-      v8::Context::New(isolate, &extension_configuration, global_template,
-                       global_proxy, v8::DeserializeInternalFieldsCallback(),
+      v8::Context::New(isolate, nullptr, global_template, global_proxy,
+                       v8::DeserializeInternalFieldsCallback(),
                        initiator_execution_context->GetMicrotaskQueue());
   context->UseDefaultSecurityToken();
 

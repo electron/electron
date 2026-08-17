@@ -1,4 +1,4 @@
-From 804392d5fd11ec739755fd5e21cba6dd0b06afac Mon Sep 17 00:00:00 2001
+From e4205f448c9502886a7b6da04c54e4555f759b9f Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Thu, 25 Jun 2026 15:27:05 -0700
 Subject: [PATCH] siso: do not let background subtree upload poison the cached subtree
@@ -22,10 +22,10 @@ Also adds reapitest.Fake.UnaryInterceptor so tests can inject CAS RPC
 failures, plus a regression test that fails on the previous code.
 
 diff --git a/siso/build/tree_input.go b/siso/build/tree_input.go
-index be2aa11..8b8bd72 100644
+index 3caaf8d..e53bfa8 100644
 --- a/siso/build/tree_input.go
 +++ b/siso/build/tree_input.go
-@@ -182,35 +182,37 @@
+@@ -188,35 +188,37 @@ func (st *subtree) init(ctx context.Context, b *Builder, dir string, files []str
  		rootDS.Set(data)
  		ds.Delete(st.d)
  		missings, err := b.reapiclient.Missing(ctx, []digest.Digest{st.d})
@@ -226,11 +226,11 @@ index 0000000..bb610d7
 +	}
 +}
 diff --git a/siso/reapi/reapitest/reapitest.go b/siso/reapi/reapitest/reapitest.go
-index 130a388..c617519 100644
+index d5068d5..da6f0f5 100644
 --- a/siso/reapi/reapitest/reapitest.go
 +++ b/siso/reapi/reapitest/reapitest.go
-@@ -40,6 +40,12 @@
- 	CAS *blobstore.ContentAddressableStorage
+@@ -46,6 +46,12 @@ type Fake struct {
+ 	DigestFunction digest.Function
  
  	ExecuteFunc func(*Fake, *rpb.Action) (*rpb.ActionResult, error)
 +
@@ -241,8 +241,8 @@ index 130a388..c617519 100644
 +	UnaryInterceptor grpc.UnaryServerInterceptor
  }
  
- // Execute runs command on fake reapi.
-@@ -73,7 +79,11 @@
+ // fn returns the fake server's digest function (SHA-256 by default).
+@@ -92,7 +98,11 @@ func newServer(ctx context.Context, t *testing.T, fake *Fake) *testServer {
  	t.Logf("fake reapi at %s", s.addr)
  
  	dir := t.TempDir()

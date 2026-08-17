@@ -28,7 +28,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..8061013fcfe3c3b02aabaca044706942
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 54f1121eb712c089dfced2a0aaa49aa875341f3c..592964bdc28400765026eafcdb137bfc9e1222b4 100644
+index 116d699f505a4f53ec816ccb83b634cccdf2a67c..65af9f464fcd60ab5ecb2c5c2c119cde3119137f 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -9,7 +9,7 @@ const {
@@ -168,10 +168,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1fa9e314ad796cdf74f718f0eb2a1553
      }
  
 diff --git a/node.gyp b/node.gyp
-index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..6719cd91d48676ed551b748b1ff3ec2f21d08e86 100644
+index 6387b945506278085dff461aeff51e5d20f457e6..679941992c86ca02070d3df55e194d6904bda646 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -185,9 +185,9 @@
+@@ -186,9 +186,9 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -182,7 +182,7 @@ index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..6719cd91d48676ed551b748b1ff3ec2f
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -320,9 +320,9 @@
+@@ -322,9 +322,9 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -390,10 +390,10 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..a95dd02d4149a02ff40c759010e130c8
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 225b1465b7c97d972a38968faf6d685017a80bf0..4a53a07f4d5e79354e647ba3ff6e2e1095a5b684 100644
+index f1a0a87f760da50d11ef9fa14d6157589a584ce9..2a07ce3a82b50e71bae2ed999f96f9afcba801c7 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
-@@ -127,7 +127,8 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -135,7 +135,8 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
    node::Utf8Value category_name(isolate, args[0]);
  
    const uint8_t* enabled_pointer =
@@ -563,10 +563,10 @@ index 18e4f43efaae3a60b924e697918867e604513194..7cbaf01235750138c680c8ec2ed5d206
    uint32_t current_chunk_seq_ = 1;
    uint32_t id_;
 diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
-index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507078b88a1 100644
+index 6940df51d0f2226e6907d9bd6d03f23e19ff5a38..e5b205bd92bef4c871beae659905da77906a2d4a 100644
 --- a/src/tracing/node_trace_writer.cc
 +++ b/src/tracing/node_trace_writer.cc
-@@ -96,6 +96,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
+@@ -102,6 +102,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
    }
  }
  
@@ -574,7 +574,7 @@ index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507
  void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    Mutex::ScopedLock scoped_lock(stream_mutex_);
    // If this is the first trace event, open a new file for streaming.
-@@ -112,6 +113,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
+@@ -118,6 +119,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    ++total_traces_;
    json_trace_writer_->AppendTraceEvent(trace_event);
  }
@@ -583,11 +583,11 @@ index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507
  void NodeTraceWriter::FlushPrivate() {
    std::string str;
 diff --git a/src/tracing/node_trace_writer.h b/src/tracing/node_trace_writer.h
-index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196ddfd15c26 100644
+index 88a802425fcbbe1cdadc05c09d2af2de1eb6109c..d63475977313f2a65c24a71863dda57e661f8945 100644
 --- a/src/tracing/node_trace_writer.h
 +++ b/src/tracing/node_trace_writer.h
-@@ -20,7 +20,9 @@ class NodeTraceWriter : public AsyncTraceWriter {
-   ~NodeTraceWriter() override;
+@@ -23,7 +23,9 @@ class NodeTraceWriter : public AsyncTraceWriter {
+                                  int file_num);
  
    void InitializeOnThread(uv_loop_t* loop) override;
 +#ifndef V8_USE_PERFETTO

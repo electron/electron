@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/strings/string_util.h"
 #include "base/uuid.h"
 #include "gin/converter.h"
 

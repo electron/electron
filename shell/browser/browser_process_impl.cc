@@ -27,6 +27,7 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
+#include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
@@ -34,7 +35,6 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
-#include "content/public/common/content_switches.h"
 #include "extensions/common/constants.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
@@ -43,6 +43,7 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -153,6 +154,8 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   os_crypt_async::SecretPortalKeyProvider::RegisterLocalPrefs(
       pref_registry.get());
 #endif
+
+  pref_registry->RegisterDictionaryPref(electron::kWindowStates);
 
   in_memory_pref_store_ = base::MakeRefCounted<ValueMapPrefStore>();
   ApplyProxyModeFromCommandLine(in_memory_pref_store());

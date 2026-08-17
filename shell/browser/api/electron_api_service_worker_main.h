@@ -13,14 +13,15 @@
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_version_base_info.h"
 #include "content/public/browser/storage_partition_config.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 
 class GURL;
@@ -31,8 +32,6 @@ class Arguments;
 
 namespace gin_helper {
 class Dictionary;
-template <typename T>
-class Handle;
 template <typename T>
 class Promise;
 }  // namespace gin_helper
@@ -49,20 +48,20 @@ struct ServiceWorkerKey {
 };
 
 // Creates a wrapper to align with the lifecycle of the non-public
-// content::ServiceWorkerVersion. Object instances are pinned for the lifetime
-// of the underlying SW such that registered IPC handlers continue to dispatch.
+// content::ServiceWorkerVersion. Object instances root themselves on the cppgc
+// heap (via SelfKeepAlive) for the lifetime of the underlying SW such that
+// registered IPC handlers continue to dispatch.
 //
 // Instances are uniquely identified by pairing their version ID with the
 // BrowserContext and StoragePartition in which they're registered.
 class ServiceWorkerMain final
-    : public gin_helper::DeprecatedWrappable<ServiceWorkerMain>,
-      public gin_helper::Pinnable<ServiceWorkerMain>,
+    : public gin::Wrappable<ServiceWorkerMain>,
       public gin_helper::Constructible<ServiceWorkerMain> {
  public:
   // Create a new ServiceWorkerMain and return the V8 wrapper of it.
-  static gin_helper::Handle<ServiceWorkerMain> New(v8::Isolate* isolate);
+  static ServiceWorkerMain* New(v8::Isolate* isolate);
 
-  static gin_helper::Handle<ServiceWorkerMain> From(
+  static ServiceWorkerMain* From(
       v8::Isolate* isolate,
       content::ServiceWorkerContext* sw_context,
       std::string browser_context_id,
@@ -77,9 +76,16 @@ class ServiceWorkerMain final
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "ServiceWorkerMain"; }
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
+                             int64_t version_id,
+                             ServiceWorkerKey key);
+  ~ServiceWorkerMain() override;
 
   // disable copy
   ServiceWorkerMain(const ServiceWorkerMain&) = delete;
@@ -87,12 +93,6 @@ class ServiceWorkerMain final
 
   void OnRunningStatusChanged(blink::EmbeddedWorkerStatus running_status);
   void OnVersionRedundant();
-
- protected:
-  explicit ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
-                             int64_t version_id,
-                             ServiceWorkerKey key);
-  ~ServiceWorkerMain() override;
 
  private:
   void Destroy();
@@ -142,7 +142,13 @@ class ServiceWorkerMain final
   std::optional<content::ServiceWorkerVersionBaseInfo> version_info_;
 
   raw_ptr<content::ServiceWorkerContext> service_worker_context_;
+
+  GC_PLUGIN_IGNORE(
+      "Context tracking of the associated remote is not needed in the browser "
+      "process.")
   mojo::AssociatedRemote<mojom::ElectronRenderer> remote_;
+
+  gin_helper::SelfKeepAlive<ServiceWorkerMain> keep_alive_{this};
 };
 
 }  // namespace electron::api

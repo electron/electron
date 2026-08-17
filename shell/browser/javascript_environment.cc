@@ -8,14 +8,15 @@
 #include <string>
 #include <utility>
 
-#include "base/allocator/partition_alloc_features.h"
-#include "base/allocator/partition_allocator/src/partition_alloc/partition_alloc.h"
-#include "base/bits.h"
 #include "base/command_line.h"
-#include "base/feature_list.h"
+#include "base/compiler_specific.h"
+#include "base/containers/span.h"
+#include "base/logging.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
+#include "electron/fuses.h"
+#include "electron/snapshot_checksum.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
@@ -28,6 +29,7 @@
 #include "third_party/electron_node/src/node_wasm_web_api.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-locker.h"
+#include "v8/include/v8-snapshot.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -37,6 +39,27 @@ namespace electron {
 
 namespace {
 
+// Whether the V8 snapshot blob this process loaded (v8_context_snapshot.bin,
+// or browser_v8_context_snapshot.bin under the
+// LoadBrowserProcessSpecificV8Snapshot fuse) is the one this build shipped, as
+// opposed to a custom blob produced with electron-mksnapshot. Compares size
+// and V8's blob header -- which embeds V8's checksums of the rest of the
+// blob -- against build-time constants, so no hashing at startup.
+bool LoadedV8SnapshotIsBuiltIn() {
+  if (electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled())
+    return false;
+  v8::StartupData blob{nullptr, 0};
+  gin::V8Initializer::GetV8ExternalSnapshotData(&blob);
+  if (!blob.data || blob.raw_size <= 0)
+    return false;
+  const auto loaded = base::as_bytes(UNSAFE_BUFFERS(
+      base::span<const char>(blob.data, static_cast<size_t>(blob.raw_size))));
+  const auto expected_prefix = base::span(snapshot_checksum::kHeaderPrefix);
+  return loaded.size() == snapshot_checksum::kSize &&
+         loaded.size() >= expected_prefix.size() &&
+         loaded.first(expected_prefix.size()) == expected_prefix;
+}
+
 // The Node startup snapshot a JavascriptEnvironment's isolate is created
 // from, when one is embedded and this process is allowed to consume it.
 // The snapshot was built by extending the same snapshot_blob.bin the rest
@@ -45,16 +68,37 @@ namespace {
 // must use the blink v8_context_snapshot, and the utility-process node
 // service does its own thing.
 const node::SnapshotData* NodeSnapshotForThisProcess() {
-  if (!electron::IsBrowserProcess())
-    return nullptr;
-  // The ELECTRON_RUN_AS_NODE entry point (shell/app/node_main.cc) runs without
-  // a process type, so IsBrowserProcess() is true for it too -- but it boots
-  // Node directly and builds its IsolateData without snapshot_data, so handing
-  // it a snapshot-backed isolate would trip node::CreateEnvironment's
-  // snapshot_data CHECK. It isn't the app-start path this targets; skip it.
-  if (electron::IsRunningAsNode())
-    return nullptr;
-  return node::SnapshotBuilder::GetEmbeddedSnapshotData();
+  static const node::SnapshotData* const snapshot =
+      []() -> const node::SnapshotData* {
+    if (!electron::IsBrowserProcess())
+      return nullptr;
+    // The ELECTRON_RUN_AS_NODE entry point (shell/app/node_main.cc) runs
+    // without a process type, so IsBrowserProcess() is true for it too -- but
+    // it boots Node directly and builds its IsolateData without snapshot_data,
+    // so handing it a snapshot-backed isolate would trip
+    // node::CreateEnvironment's snapshot_data CHECK. It isn't the app-start
+    // path this targets; skip it.
+    if (electron::IsRunningAsNode())
+      return nullptr;
+    const node::SnapshotData* embedded =
+        node::SnapshotBuilder::GetEmbeddedSnapshotData();
+    if (!embedded)
+      return nullptr;
+    // A custom V8 snapshot (electron-mksnapshot, or the browser-specific blob
+    // the LoadBrowserProcessSpecificV8Snapshot fuse selects) exists to put
+    // objects into the main process's context. The embedded Node snapshot was
+    // built on top of the stock blob at build time and cannot contain them, so
+    // creating the main context from it would silently drop the custom
+    // snapshot's contents. Fall back to bootstrapping Node from scratch on the
+    // loaded blob, as builds without a Node snapshot do.
+    if (!LoadedV8SnapshotIsBuiltIn()) {
+      VLOG(1) << "Custom V8 snapshot loaded; not creating the main process's "
+                 "Node.js environment from the embedded Node snapshot.";
+      return nullptr;
+    }
+    return embedded;
+  }();
+  return snapshot;
 }
 
 std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(

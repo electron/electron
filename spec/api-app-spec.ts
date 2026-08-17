@@ -1,7 +1,6 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
-import * as semver from 'semver';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -236,6 +235,27 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
     });
 
+    // Exiting before 'ready' leaves browser start-up state unfreed by design,
+    // which LeakSanitizer reports and turns into exit code 1.
+    ifit(!process.env.IS_ASAN)('exits cleanly when called before ready right after loading tls', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
+      // This guards against a shutdown race that was lost roughly one run in
+      // five, so go a few rounds.
+      for (let i = 0; i < 15; i++) {
+        appProcess = cp.spawn(process.execPath, [appPath]);
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(123, message);
+        expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
+      }
+    });
+
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -356,6 +376,19 @@ describe('app module', () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content="data"'],
         expectedAdditionalData: 'data'
+      });
+    });
+
+    it('preserves NUL followed by whitespace in additional data', async () => {
+      // The real invariant here is the V8-serialized format of the data. Using
+      // a string here is just a convenient way to test the invariant.
+      const expectedAdditionalData = {
+        value: 'foo\0\tbar'
+      };
+
+      await testArgumentPassing({
+        args: ['--send-data', `--data-content=${JSON.stringify(expectedAdditionalData)}`],
+        expectedAdditionalData
       });
     });
 
@@ -717,8 +750,6 @@ describe('app module', () => {
       '/f',
       '/d'
     ];
-    const productVersion = isMac ? cp.execSync('sw_vers -productVersion').toString().trim() : '';
-    const isVenturaOrHigher = semver.gt(semver.coerce(productVersion) || '0.0.0', '13.0.0');
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
@@ -737,21 +768,15 @@ describe('app module', () => {
 
       const settings = app.getLoginItemSettings();
       expect(settings.openAtLogin).to.equal(true);
-      expect(settings.openAsHidden).to.equal(false);
       expect(settings.wasOpenedAtLogin).to.equal(false);
-      expect(settings.wasOpenedAsHidden).to.equal(false);
-      expect(settings.restoreState).to.equal(false);
-      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
+      expect(settings.status).to.equal('enabled');
     });
 
     ifit(isWin)('sets and returns the app as a login item (windows)', () => {
       app.setLoginItemSettings({ openAtLogin: true, enabled: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -768,10 +793,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, enabled: false });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: false,
         launchItems: [
           {
@@ -780,41 +802,6 @@ describe('app module', () => {
             args: [],
             scope: 'user',
             enabled: false
-          }
-        ]
-      });
-    });
-
-    ifit(!isWin)('adds a login item that loads in hidden mode', () => {
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-
-      const settings = app.getLoginItemSettings();
-      expect(settings.openAtLogin).to.equal(true);
-
-      const hasOpenAsHidden = process.platform === 'darwin' && !isVenturaOrHigher;
-      expect(settings.openAsHidden).to.equal(hasOpenAsHidden);
-      expect(settings.wasOpenedAtLogin).to.equal(false);
-      expect(settings.wasOpenedAsHidden).to.equal(false);
-      expect(settings.restoreState).to.equal(false);
-      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
-    });
-
-    ifit(isWin)('adds a login item that loads in hidden mode (windows)', () => {
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
-        executableWillLaunchAtLogin: true,
-        launchItems: [
-          {
-            name: 'electron.app.Electron',
-            path: process.execPath,
-            args: [],
-            scope: 'user',
-            enabled: true
           }
         ]
       });
@@ -830,21 +817,8 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
     });
 
-    ifit(isMac)('correctly sets and unsets the LoginItem as hidden', () => {
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(!isVenturaOrHigher);
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false });
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
-    });
-
     ifdescribe(isMac)('using SMAppService', () => {
-      ifit(isVenturaOrHigher)('can set a login item', () => {
+      it('can set a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,
           type: 'mainAppService'
@@ -853,15 +827,12 @@ describe('app module', () => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           status: 'enabled',
           openAtLogin: true,
-          openAsHidden: false,
-          restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
           executableWillLaunchAtLogin: false
         });
       });
 
-      ifit(isVenturaOrHigher)('throws when setting non-default type with no name', () => {
+      it('throws when setting non-default type with no name', () => {
         expect(() => {
           app.setLoginItemSettings({
             openAtLogin: true,
@@ -870,7 +841,7 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
-      ifit(isVenturaOrHigher)('throws when getting non-default type with no name', () => {
+      it('throws when getting non-default type with no name', () => {
         expect(() => {
           app.getLoginItemSettings({
             type: 'daemonService'
@@ -878,7 +849,17 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
-      ifit(isVenturaOrHigher)('can unset a login item', () => {
+      it('does not crash when the service name is not valid UTF-8', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: false,
+            type: 'daemonService',
+            serviceName: '\uD800'
+          });
+        }).to.not.throw();
+      });
+
+      it('can unset a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,
           type: 'mainAppService'
@@ -892,10 +873,7 @@ describe('app module', () => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           status: 'not-registered',
           openAtLogin: false,
-          openAsHidden: false,
-          restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
           executableWillLaunchAtLogin: false
         });
       });
@@ -936,10 +914,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -962,10 +937,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -984,10 +956,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg2'] });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -1011,10 +980,7 @@ describe('app module', () => {
     ifit(isWin)('finds launch items independent of path quotation or casing', () => {
       const expectation = {
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -1064,10 +1030,7 @@ describe('app module', () => {
       await once(appProcess, 'exit');
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: false,
         launchItems: [
           {
@@ -1084,10 +1047,7 @@ describe('app module', () => {
     ifit(isWin)('detects enabled by TaskManager', async () => {
       const expectation = {
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -1981,93 +1941,90 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))(
-    'sandbox options',
-    () => {
-      let appProcess: cp.ChildProcess = null as any;
-      let server: net.Server = null as any;
-      const socketPath =
-        process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm64'))('sandbox options', () => {
+    let appProcess: cp.ChildProcess = null as any;
+    let server: net.Server = null as any;
+    const socketPath =
+      process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          server = net.createServer();
-          server.listen(socketPath);
-          done();
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer();
+        server.listen(socketPath);
+        done();
+      });
+    });
+
+    afterEach((done) => {
+      if (appProcess != null) appProcess.kill();
+
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
         });
-      });
+      } else {
+        done();
+      }
+    });
 
-      afterEach((done) => {
-        if (appProcess != null) appProcess.kill();
+    describe('when app.enableSandbox() is called', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-        if (server) {
-          server.close(() => {
-            if (process.platform === 'win32') {
-              done();
-            } else {
-              fs.unlink(socketPath, () => done());
-            }
-          });
-        } else {
-          done();
-        }
-      });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-      describe('when app.enableSandbox() is called', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-          server.once('error', (error) => {
-            done(error);
-          });
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
-            });
+            done();
           });
         });
       });
+    });
 
-      describe('when the app is launched with --enable-sandbox', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+    describe('when the app is launched with --enable-sandbox', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              done();
-            });
+            done();
           });
         });
       });
-    }
-  );
+    });
+  });
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {

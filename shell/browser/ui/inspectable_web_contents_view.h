@@ -11,7 +11,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "ui/gfx/native_ui_types.h"
 #include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;

@@ -108,7 +108,7 @@ index 8ac33c08d89f9ff7da5ff97835050f3f1d419793..eb631ad802ab6684a74e07f03ceb5c10
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 16c80d9ff00089ced6d65dc618316079b9204ba2..96fb7867eb92e19bc8513907124b2cfdaecc4c55 100644
+index 2be83df2581b809ae1bc25a2b70ac2ec9a6790cd..7e3833dff21a005cbf23651ba19e4e8f72368fb1 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -21,6 +21,7 @@
@@ -119,7 +119,7 @@ index 16c80d9ff00089ced6d65dc618316079b9204ba2..96fb7867eb92e19bc8513907124b2cfd
  #include "base/sequence_checker.h"
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"
-@@ -268,6 +269,22 @@ void PrintDialogGtk::UpdateSettings(
+@@ -275,6 +276,22 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());

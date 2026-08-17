@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <utility>
 
-#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
@@ -20,6 +19,7 @@
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/result_codes.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -53,6 +53,10 @@
 #include <io.h>
 #include "base/win/windows_types.h"
 #endif
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace electron {
 
@@ -497,6 +501,23 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
       create_network_observer_;
   return params;
 }
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+void UtilityProcessWrapper::BindAIManager(
+    std::optional<int32_t> web_contents_id,
+    const url::Origin& security_origin,
+    const blink::LocalFrameToken& frame_token,
+    int32_t render_process_id,
+    mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) {
+  auto params = node::mojom::BindAIManagerParams::New();
+  params->web_contents_id = web_contents_id;
+  params->security_origin = security_origin;
+  params->frame_token = frame_token;
+  params->render_process_id = render_process_id;
+
+  node_service_remote_->BindAIManager(std::move(params), std::move(ai_manager));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 // static
 UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(

@@ -24,10 +24,6 @@
 #include "components/version_info/version_info_values.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
-#include "base/debug/dump_without_crashing.h"
-#endif
-
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/string_util_win.h"
 #endif

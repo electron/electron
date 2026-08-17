@@ -2,6 +2,7 @@ import { app, contentTracing, EnableHeapProfilingOptions, TraceConfig, TraceCate
 
 import { expect } from 'chai';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -12,8 +13,8 @@ import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
 const isCI = !!process.env.CI;
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
-// FIXME: The tests are skipped on linux arm/arm64
-ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'linux')('contentTracing', () => {
+// FIXME: The tests are skipped on linux arm64
+ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
   const record = async (
     options: TraceConfig | TraceCategoriesAndOptions,
     outputFilePath: string | undefined,
@@ -28,11 +29,16 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
     return resultFilePath;
   };
 
-  const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+  // Every test attempt (including mocha retries) writes to its own file. A
+  // previous attempt that timed out can still have a trace endpoint writing to
+  // its output path in the background, and two endpoints finalizing the same
+  // path race on the final rename.
+  let outputFilePath: string;
   beforeEach(() => {
-    if (fs.existsSync(outputFilePath)) {
-      fs.unlinkSync(outputFilePath);
-    }
+    outputFilePath = path.join(app.getPath('temp'), `electron-content-tracing-${randomUUID()}.json`);
+  });
+  afterEach(() => {
+    fs.rmSync(outputFilePath, { force: true });
   });
 
   describe('startRecording', function () {
@@ -85,10 +91,12 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
 
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
-      // If the `categoryFilter` param above is not respected
-      // the file size will be above 60KB.
+      // If the `categoryFilter` param above is not respected the file will
+      // contain actual trace events and be far larger. When the filter is
+      // respected the file only contains metadata, whose size grows slowly as
+      // Chromium adds fields, so keep generous headroom above that baseline.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 60; // Depends on a platform.
+      const expectedMaximumFileSize = 100; // Depends on a platform.
 
       expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
       expect(fileSizeInKiloBytes).to.be.below(

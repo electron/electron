@@ -4,6 +4,7 @@
 
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 
@@ -13,16 +14,27 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "device/fido/authenticator_get_assertion_response.h"
+#include "device/fido/fido_authenticator.h"
+#include "device/fido/public/fido_types.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
 #include "gin/arguments.h"
+#include "gin/converter.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
+#include "shell/browser/webauthn/electron_platform_passkeys_discovery.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "url/origin.h"
+#endif
 
 namespace electron {
 
@@ -44,6 +56,20 @@ std::string CredentialIdFor(
   }
   return {};
 }
+
+#if BUILDFLAG(IS_MAC)
+// Mirrors Chromium's cross-origin (iframe) ceremony check.
+bool IsSameOriginWithAncestors(content::RenderFrameHost* frame) {
+  const url::Origin& origin = frame->GetLastCommittedOrigin();
+  for (content::RenderFrameHost* parent = frame->GetParent(); parent;
+       parent = parent->GetParent()) {
+    if (!parent->GetLastCommittedOrigin().IsSameOriginWith(origin)) {
+      return false;
+    }
+  }
+  return true;
+}
+#endif
 
 }  // namespace
 
@@ -83,6 +109,7 @@ void ElectronAuthenticatorRequestClientDelegate::RegisterActionCallbacks(
         void(device::FidoRequestHandlerBase::BlePermissionCallback)>
         request_ble_permission_callback) {
   cancel_callback_ = std::move(cancel_callback);
+  request_callback_ = std::move(request_callback);
 }
 
 void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
@@ -200,5 +227,195 @@ void ElectronAuthenticatorRequestClientDelegate::OnAccountSelected(
   // consistent failure mode whether it cancels deliberately or by mistake.
   CancelPendingAccountSelection();
 }
+
+bool ElectronAuthenticatorRequestClientDelegate::
+    EmbedderControlsAuthenticatorDispatch(
+        const device::FidoAuthenticator& authenticator) {
+#if BUILDFLAG(IS_MAC)
+  if (authenticator.AuthenticatorTransport() !=
+      device::FidoTransportProtocol::kInternal) {
+    return false;
+  }
+
+  // Only intercept dispatch when both Touch ID and platform passkeys are
+  // configured — that's the only scenario where dual prompts can appear.
+  // When only one is configured, Chromium's auto-dispatch is correct.
+  if (!ElectronWebAuthenticationDelegate::IsPlatformPasskeysEnabled() ||
+      !ElectronWebAuthenticationDelegate::IsTouchIdConfigured()) {
+    return false;
+  }
+
+  auto type = authenticator.GetType();
+  if (type == device::AuthenticatorType::kTouchID ||
+      type == device::AuthenticatorType::kICloudKeychain) {
+    controls_dispatch_ = true;
+    return true;
+  }
+#endif
+  return false;
+}
+
+void ElectronAuthenticatorRequestClientDelegate::FidoAuthenticatorAdded(
+    const device::FidoAuthenticator& authenticator) {
+  if (!controls_dispatch_)
+    return;
+
+  std::string display_name;
+  switch (authenticator.GetType()) {
+    case device::AuthenticatorType::kTouchID:
+      display_name = "touchID";
+      break;
+    case device::AuthenticatorType::kICloudKeychain:
+      display_name = "platformPasskeys";
+      break;
+    default:
+      return;
+  }
+
+  pending_authenticators_.push_back(
+      {authenticator.GetId(), std::move(display_name)});
+}
+
+void ElectronAuthenticatorRequestClientDelegate::
+    OnTransportAvailabilityEnumerated(
+        device::FidoRequestHandlerBase::TransportAvailabilityInfo data) {
+  if (!controls_dispatch_ || pending_authenticators_.empty())
+    return;
+  MaybeEmitSelectAuthenticatorEvent();
+}
+
+void ElectronAuthenticatorRequestClientDelegate::
+    MaybeEmitSelectAuthenticatorEvent() {
+  if (pending_authenticators_.size() == 1) {
+    // Run may destroy |this|; consume member state first.
+    std::string id = std::move(pending_authenticators_[0].id);
+    pending_authenticators_.clear();
+    auto callback = request_callback_;
+    callback.Run(id);
+    return;
+  }
+
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(render_frame_host_id_);
+  content::WebContents* web_contents =
+      rfh ? content::WebContents::FromRenderFrameHost(rfh) : nullptr;
+  gin::WeakCell<api::Session>* session =
+      web_contents
+          ? api::Session::FromBrowserContext(web_contents->GetBrowserContext())
+          : nullptr;
+
+  if (!session || !session->Get()) {
+    DispatchDefaultAuthenticator();
+    return;
+  }
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  std::vector<std::string> authenticators;
+  authenticators.reserve(pending_authenticators_.size());
+  for (const auto& authenticator : pending_authenticators_) {
+    authenticators.push_back(authenticator.display_name);
+  }
+
+  v8::Local<v8::Object> session_wrapper;
+  if (!session->Get()->GetWrapper(isolate).ToLocal(&session_wrapper)) {
+    DispatchDefaultAuthenticator();
+    return;
+  }
+
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("relyingPartyId", relying_party_id_);
+  dict.Set("authenticators", authenticators);
+  dict.SetGetter("frame", rfh);
+
+  v8::Local<v8::Value> emit_result = gin_helper::EmitEvent(
+      isolate, session_wrapper, "select-webauthn-authenticator", event_object,
+      base::BindRepeating(
+          &ElectronAuthenticatorRequestClientDelegate::OnAuthenticatorSelected,
+          weak_factory_.GetWeakPtr()));
+
+  bool had_listener = false;
+  if (!gin::ConvertFromV8(isolate, emit_result, &had_listener) ||
+      !had_listener) {
+    DispatchDefaultAuthenticator();
+  }
+}
+
+void ElectronAuthenticatorRequestClientDelegate::
+    DispatchDefaultAuthenticator() {
+  // A listener may have consumed the selection synchronously and then thrown.
+  if (pending_authenticators_.empty()) {
+    return;
+  }
+  auto auth = std::ranges::find(pending_authenticators_, "platformPasskeys",
+                                &PendingAuthenticator::display_name);
+  // Run may destroy |this|; consume member state first.
+  std::string id = std::move(auth != pending_authenticators_.end()
+                                 ? auth->id
+                                 : pending_authenticators_.front().id);
+  pending_authenticators_.clear();
+  auto callback = request_callback_;
+  callback.Run(id);
+}
+
+void ElectronAuthenticatorRequestClientDelegate::OnAuthenticatorSelected(
+    gin::Arguments* args) {
+  // Repeating callback: ignore any call after the first.
+  if (pending_authenticators_.empty()) {
+    return;
+  }
+
+  std::string selected_name;
+  const bool has_name = args->GetNext(&selected_name) && !selected_name.empty();
+  const auto selected =
+      has_name ? std::ranges::find(pending_authenticators_, selected_name,
+                                   &PendingAuthenticator::display_name)
+               : pending_authenticators_.end();
+
+  // Run may destroy |this|; consume member state first.
+  if (selected != pending_authenticators_.end()) {
+    std::string id = std::move(selected->id);
+    pending_authenticators_.clear();
+    auto callback = request_callback_;
+    callback.Run(id);
+    return;
+  }
+
+  // No argument, empty, or unknown name: cancel.
+  pending_authenticators_.clear();
+  if (cancel_callback_) {
+    std::move(cancel_callback_).Run();
+  }
+}
+
+#if BUILDFLAG(IS_MAC)
+std::vector<std::unique_ptr<device::FidoDiscoveryBase>>
+ElectronAuthenticatorRequestClientDelegate::CreatePlatformDiscoveries() {
+  std::vector<std::unique_ptr<device::FidoDiscoveryBase>> discoveries;
+  if (ElectronWebAuthenticationDelegate::IsPlatformPasskeysEnabled()) {
+    auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
+    if (rfh && IsSameOriginWithAncestors(rfh)) {
+      discoveries.push_back(
+          std::make_unique<ElectronPlatformPasskeysDiscovery>(rfh));
+    } else if (rfh) {
+      // Apple's API can't serve cross-origin ceremonies; other authenticators
+      // still can.
+      rfh->AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kWarning,
+          "WebAuthn platform passkeys are unavailable to cross-origin "
+          "(iframe) requests: Apple's ASAuthorizationController cannot "
+          "fulfill them. Other authenticators can still serve the request; "
+          "the Touch ID authenticator supports iframes.");
+    }
+  }
+  return discoveries;
+}
+#endif
 
 }  // namespace electron

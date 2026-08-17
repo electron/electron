@@ -9,9 +9,7 @@
 #include <vector>
 
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/mac/in_app_purchase.h"
 #include "shell/browser/mac/in_app_purchase_observer.h"
-#include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "v8/include/v8-forward.h"
 

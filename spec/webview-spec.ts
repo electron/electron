@@ -667,6 +667,14 @@ describe('<webview> tag', function () {
         show: false,
         webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false }
       });
+      // Cross-scripting the popup requires it to share the webview's
+      // unsandboxed process, so opt the child out of the default sandbox.
+      w.webContents.on('did-attach-webview', (_event, webviewContents) => {
+        webviewContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+        }));
+      });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);
@@ -799,6 +807,63 @@ describe('<webview> tag', function () {
           typeofOpenedWindow: 'object'
         }
       });
+    });
+  });
+
+  describe('webpreferences inheritance', () => {
+    afterEach(closeAllWindows);
+
+    // The guest page spins up a dedicated Worker and reports back, via the
+    // console, whether that Worker has access to Node's `require`.
+    const guestSrc =
+      'data:text/html,' +
+      encodeURIComponent(`<script>
+      const src = 'try { postMessage(typeof require) } catch (e) { postMessage("err") }';
+      const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      wk.onmessage = (e) => console.log('WORKER_REQUIRE:' + e.data);
+    </script>`);
+
+    async function workerRequireTypeof(w: BrowserWindow, webpreferences: string): Promise<string> {
+      await w.loadURL('about:blank');
+      return w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const webview = new WebView()
+        webview.setAttribute('src', ${JSON.stringify(guestSrc)})
+        webview.setAttribute('webpreferences', ${JSON.stringify(webpreferences)})
+        webview.addEventListener('console-message', (e) => {
+          if (e.message.startsWith('WORKER_REQUIRE:')) {
+            resolve(e.message.slice('WORKER_REQUIRE:'.length))
+          }
+        })
+        document.body.appendChild(webview)
+      })`);
+    }
+
+    it('does not let the webpreferences attribute grant a worker Node access the embedder lacks', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: false,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
+    });
+
+    it('keeps a guest worker free of Node when the embedder is sandboxed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: true,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
     });
   });
 

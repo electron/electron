@@ -12,7 +12,6 @@ import {
 
 import { assert, expect } from 'chai';
 
-import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -23,6 +22,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
+import { containsText, readPDF } from './lib/pdf-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
@@ -336,6 +336,70 @@ describe('webContents module', () => {
           }
         });
       }).to.not.throw();
+    });
+  });
+
+  // Exercises a real silent print with options against a virtual printer
+  // provisioned by script/spec-runner.js and exposed via
+  // ELECTRON_TEST_PRINTER_NAME.
+  // Self-skips when no such printer is available.
+  ifdescribe(features.isPrintingEnabled())('webContents.print() settings', function () {
+    let w: BrowserWindow;
+    const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME ?? null;
+
+    const printerVisible = async (name: string) => {
+      const probe = new BrowserWindow({ show: false });
+      try {
+        await probe.loadURL('about:blank');
+        return await waitUntil(
+          async () => {
+            const printers = await probe.webContents.getPrintersAsync();
+            return printers.some((p) => p.name === name);
+          },
+          { timeout: 10000 }
+        )
+          .then(() => true)
+          .catch(() => false);
+      } finally {
+        probe.destroy();
+      }
+    };
+
+    before(async function () {
+      this.timeout(30000);
+      if (!deviceName || !(await printerVisible(deviceName))) {
+        return this.skip();
+      }
+    });
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(closeAllWindows);
+
+    it('resolves settings for a silent print with options', async function () {
+      this.timeout(60000);
+      if (!deviceName) return this.skip();
+
+      await w.loadURL('data:text/html,<h1>print test</h1>');
+
+      const printResult = new Promise<[boolean, string]>((resolve) => {
+        w.webContents.print({ silent: true, deviceName, printBackground: true }, (success, failureReason) =>
+          resolve([success, failureReason])
+        );
+      });
+
+      // Guard against environments where silent printing surfaces a native
+      // dialog (which would block the callback) — skip rather than hang.
+      const result = await Promise.race([printResult, setTimeout(30000).then(() => 'timeout' as const)]);
+      if (result === 'timeout') return this.skip();
+
+      const [success, failureReason] = result;
+      // Regression guard for #52266: non-empty print settings must never again
+      // be rejected up front during settings resolution with "Invalid printer
+      // settings".
+      expect(failureReason, `settings resolution failed: ${failureReason}`).to.not.match(/Invalid printer settings/);
+      expect(success, `print failed: ${failureReason}`).to.equal(true);
     });
   });
 
@@ -1415,16 +1479,38 @@ describe('webContents module', () => {
       await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
     }
 
+    // The DevTools frontend should route context menus through the native
+    // DevToolsHost binding rather than a JS override injected by Electron.
+    function usesNativeShowContextMenu(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+    }
+
+    // Triggers InspectorFrontendHost.showContextMenuAtPoint with an empty
+    // item list at a non-editable point. No menu UI is shown, but a correctly
+    // routed request still round-trips through the browser, which reports
+    // the menu closed back to the frontend as DevToolsAPI.contextMenuCleared.
+    // A request swallowed by the generic context-menu path never resolves.
+    function devToolsMenuRequestRoundTrips(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(`new Promise(resolve => {
+        const timeout = setTimeout(() => resolve(false), 5000);
+        const original = DevToolsAPI.contextMenuCleared.bind(DevToolsAPI);
+        DevToolsAPI.contextMenuCleared = () => {
+          clearTimeout(timeout);
+          DevToolsAPI.contextMenuCleared = original;
+          resolve(true);
+          original();
+        };
+        InspectorFrontendHost.showContextMenuAtPoint(10, 10, [], document);
+      })`);
+    }
+
     it('uses the native showContextMenuAtPoint implementation', async () => {
       const w = new BrowserWindow({ show: false });
       await openDevTools(w);
 
-      // The DevTools frontend should route context menus through the native
-      // DevToolsHost binding rather than a JS override injected by Electron.
-      const usesNativeContextMenu = await w.webContents.devToolsWebContents!.executeJavaScript(
-        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
-      );
-      expect(usesNativeContextMenu).to.be.true();
+      expect(await usesNativeShowContextMenu(w.webContents.devToolsWebContents!)).to.be.true();
     });
 
     it('uses the native window.confirm implementation', async () => {
@@ -1437,6 +1523,58 @@ describe('webContents module', () => {
         'window.confirm.toString().includes("[native code]")'
       );
       expect(confirmIsNative).to.be.true();
+    });
+
+    // Baseline for the setDevToolsWebContents() regression test below: the
+    // managed (built-in) DevTools route via InspectableWebContents.
+    it('routes context menu requests through the native menu path', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      const roundTripped = await devToolsMenuRequestRoundTrips(w.webContents.devToolsWebContents!);
+      expect(roundTripped).to.be.true();
+    });
+
+    describe('with setDevToolsWebContents()', () => {
+      async function openCustomDevTools(w: BrowserWindow, devtools: BrowserWindow) {
+        await w.loadURL('about:blank');
+        w.webContents.setDevToolsWebContents(devtools.webContents);
+        const devtoolsReady = once(devtools.webContents, 'dom-ready');
+        w.webContents.openDevTools();
+        await devtoolsReady;
+        await waitUntil(() => devtools.webContents.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+        // The browser only delivers context-menu-closed notifications to a
+        // focused frame; focus the frontend like a user interacting with it.
+        devtools.webContents.focus();
+        await waitUntil(() => devtools.webContents.executeJavaScript('document.hasFocus()'));
+      }
+
+      it('uses the native showContextMenuAtPoint implementation', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        expect(await usesNativeShowContextMenu(devtools.webContents)).to.be.true();
+      });
+
+      // Regression test for https://github.com/electron/electron/issues/51962:
+      // a DevTools frontend hosted in a user-provided WebContents must show
+      // its popup menus via the native DevTools menu path rather than having
+      // the request swallowed by the generic 'context-menu' event plumbing.
+      it('routes context menu requests through the native menu path', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        let emittedContextMenu = false;
+        devtools.webContents.once('context-menu', () => {
+          emittedContextMenu = true;
+        });
+
+        const roundTripped = await devToolsMenuRequestRoundTrips(devtools.webContents);
+        expect(roundTripped).to.be.true();
+        expect(emittedContextMenu).to.be.false();
+      });
     });
   });
 
@@ -1709,6 +1847,7 @@ describe('webContents module', () => {
     });
 
     it('can correctly convert accelerators to key codes', async () => {
+      await w.webContents.executeJavaScript('document.getElementById("input").focus()');
       const keyup = once(ipcMain, 'keyup');
       w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
       w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
@@ -3647,6 +3786,45 @@ describe('webContents module', () => {
 
       w.webContents.setBackgroundThrottling(false);
     });
+
+    // Regression test: disabling throttling on a WebContentsView while its
+    // window is hidden used to un-hide the RenderWidgetHost without telling the
+    // view, so the surface the renderer produced was never embedded and the
+    // window stayed blank (and un-capturable) once shown, until a resize.
+    it('leaves a hidden WebContentsView paintable once its window is shown', async () => {
+      const w = new BaseWindow({ show: false, width: 300, height: 200 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 300, height: 200 });
+      await view.webContents.loadURL('data:text/html,<body style="background:%23ff0000">');
+      view.webContents.setBackgroundThrottling(false);
+      // Give the renderer time to submit frames while still hidden.
+      await setTimeout(500);
+      w.show();
+      // In the broken state capturePage rejects forever ("Current display
+      // surface not available for capture"); in the fixed state the surface is
+      // available immediately or after a frame or two.
+      let image: Electron.NativeImage | undefined;
+      await waitUntil(
+        async () => {
+          try {
+            image = await view.webContents.capturePage();
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100, timeout: 5000 }
+      );
+      const size = image!.getSize();
+      expect(size.width).to.be.greaterThan(0);
+      expect(size.height).to.be.greaterThan(0);
+      const px = image!.toBitmap();
+      // BGRA; expect the red background, not the blank white surface.
+      expect(px[2]).to.equal(255);
+      expect(px[1]).to.equal(0);
+      expect(px[0]).to.equal(0);
+    });
   });
 
   describe('getBackgroundThrottling()', () => {
@@ -3694,45 +3872,8 @@ describe('webContents module', () => {
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let server: http.Server | null;
-    const readPDF = async (data: any) => {
-      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
-      const pdfPath = path.resolve(tmpDir, 'test.pdf');
-      await fs.promises.writeFile(pdfPath, data);
-      const pdfReaderPath = path.resolve(fixturesPath, 'api', 'pdf-reader.mjs');
-
-      const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
-        stdio: 'pipe'
-      });
-
-      const stdout: Buffer[] = [];
-      const stderr: Buffer[] = [];
-      result.stdout.on('data', (chunk) => stdout.push(chunk));
-      result.stderr.on('data', (chunk) => stderr.push(chunk));
-
-      const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-        result.on('close', (code, signal) => {
-          resolve([code, signal]);
-        });
-      });
-      await fs.promises.rm(tmpDir, { force: true, recursive: true });
-      if (code !== 0) {
-        const errMsg = Buffer.concat(stderr).toString().trim();
-        console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
-      }
-      try {
-        return JSON.parse(Buffer.concat(stdout).toString().trim());
-      } catch (err) {
-        console.error('Error parsing PDF file:', err);
-        console.error('Raw output:', Buffer.concat(stdout).toString().trim());
-        throw err;
-      }
-    };
 
     let w: BrowserWindow;
-
-    const containsText = (items: any[], text: RegExp) => {
-      return items.some(({ str }: { str: string }) => str.match(text));
-    };
 
     beforeEach(() => {
       w = new BrowserWindow({

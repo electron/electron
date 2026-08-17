@@ -8,7 +8,6 @@
 #include <list>
 #include <memory>
 #include <optional>
-#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -57,7 +56,6 @@
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/download_request_utils.h"
-#include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_details.h"
@@ -75,15 +73,15 @@
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
+#include "content/public/common/page_visibility_state.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
-#include "content/public/common/webplugininfo.h"
+#include "content/public/common/url_constants.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "media/base/mime_util.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
@@ -105,6 +103,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
@@ -113,10 +112,10 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -148,7 +147,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/reply_channel.h"
@@ -172,8 +170,10 @@
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -199,10 +199,8 @@
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
-#include "printing/page_range.h"
+#include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
 
@@ -458,22 +456,6 @@ constexpr char kDpi[] = "dpi";
 constexpr char kMarginType[] = "marginType";
 constexpr char kMargins[] = "margins";
 
-// Constants we use for printToPDF options.
-constexpr char kLandscape[] = "landscape";
-constexpr char kDisplayHeaderFooter[] = "displayHeaderFooter";
-constexpr char kPrintBackground[] = "printBackground";
-constexpr char kScale[] = "scale";
-constexpr char kPaperWidth[] = "paperWidth";
-constexpr char kPaperHeight[] = "paperHeight";
-constexpr char kMarginTop[] = "marginTop";
-constexpr char kMarginBottom[] = "marginBottom";
-constexpr char kMarginLeft[] = "marginLeft";
-constexpr char kMarginRight[] = "marginRight";
-constexpr char kHeaderTemplate[] = "headerTemplate";
-constexpr char kFooterTemplate[] = "footerTemplate";
-constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
-constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
-constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
 constexpr char kDpiHorizontal[] = "horizontal";
 constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
@@ -1179,11 +1161,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
-  // DevTools frontend messages use base::Unretained delegate callbacks.
-  // Clear the delegate before other teardown work can trigger callbacks
-  // into this partially destroyed WebContents.
-  if (inspectable_web_contents_)
+  // A queued DevTools embedder-message IPC (e.g. "loadCompleted") can be
+  // dispatched after this WebContents has begun teardown. Both delegate
+  // interfaces it can call back into (DevToolsOpened()/DevToolsClosed() on the
+  // view delegate, and the DevTools*File/FileSystem handlers on the
+  // InspectableWebContents delegate) are bound with base::Unretained(this), so
+  // a late callback would dereference this freed WebContents (a use-after-free
+  // seen as a SIGSEGV probing owner_window_). Clear both delegates up front so
+  // any such late callback becomes a no-op instead of touching freed memory.
+  if (inspectable_web_contents_) {
     inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+    inspectable_web_contents_->SetDelegate(nullptr);
+  }
 
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -1334,19 +1323,64 @@ void WebContents::WebContentsCreatedWithFullParams(
   new WebContentsPreferences(new_contents, dict);
 }
 
-bool WebContents::IsWebContentsCreationOverridden(
+bool WebContents::OnWillCreateWindow(
     content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    content::mojom::WindowContainerType window_container_type,
-    const GURL& opener_url,
-    const content::mojom::CreateNewWindowParams& params) {
-  bool default_prevented = Emit(
-      "-will-add-new-contents", params.target_url, params.frame_name,
-      params.raw_features, params.disposition, *params.referrer, params.body);
-  // If the app prevented the default, redirect to CreateCustomWebContents,
-  // which always returns nullptr, which will result in the window open being
-  // prevented (window.open() will return null in the renderer).
-  return default_prevented;
+    const GURL& target_url,
+    const std::string& frame_name,
+    const std::string& raw_features,
+    WindowOpenDisposition disposition,
+    const content::Referrer& referrer,
+    const scoped_refptr<network::ResourceRequestBody>& body,
+    bool opener_suppressed,
+    bool* no_javascript_access) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  pending_child_web_preferences_.Reset();
+
+  // If the app prevents the default the window open is denied and
+  // window.open() will return null in the renderer.
+  if (Emit("-will-add-new-contents", target_url, frame_name, raw_features,
+           disposition, referrer, body)) {
+    pending_child_web_preferences_.Reset();
+    return false;
+  }
+
+  // A suppressed opener (e.g. noopener) already puts the child in its own
+  // BrowsingInstance and process, so its sandbox state is honoured either way.
+  if (opener_suppressed)
+    return true;
+
+  // The OS sandbox is fixed when a renderer process launches, so a child whose
+  // sandbox state differs from the opener's process must not share it.
+  std::optional<bool> opener_sandboxed =
+      ElectronBrowserClient::Get()->IsRendererProcessSandboxed(
+          opener->GetProcess()->GetID());
+  if (!opener_sandboxed) {
+    opener_sandboxed = WebContentsPreferences::ShouldUseSandbox(
+        content::WebContents::FromRenderFrameHost(opener));
+  }
+
+  gin_helper::Dictionary child_web_preferences =
+      gin::Dictionary::CreateEmpty(isolate);
+  if (!pending_child_web_preferences_.IsEmpty()) {
+    gin::ConvertFromV8(isolate, pending_child_web_preferences_.Get(isolate),
+                       &child_web_preferences);
+  }
+
+  if (WebContentsPreferences::IsSandboxed(child_web_preferences) !=
+      *opener_sandboxed) {
+    opener->AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kWarning,
+        "window.open(): the new window's sandbox setting differs from the "
+        "sandbox state of the opener's renderer process, so it was created in "
+        "a separate process without an opener relationship and window.open() "
+        "returned null. Set `sandbox` (or `nodeIntegration`) explicitly in "
+        "webContents.setWindowOpenHandler() to match the opener if the "
+        "windows need to share a process.");
+    *no_javascript_access = true;
+  }
+  return true;
 }
 
 void WebContents::SetNextChildWebPreferences(
@@ -1356,20 +1390,6 @@ void WebContents::SetNextChildWebPreferences(
   // Store these prefs for when Chrome calls WebContentsCreatedWithFullParams
   // with the new child contents.
   pending_child_web_preferences_.Reset(isolate, preferences.GetHandle());
-}
-
-content::WebContents* WebContents::CreateCustomWebContents(
-    content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    bool is_new_browsing_instance,
-    const GURL& opener_url,
-    const std::string& frame_name,
-    const GURL& target_url,
-    WindowOpenDisposition disposition,
-    const blink::mojom::WindowFeatures& window_features,
-    const content::StoragePartitionConfig& partition_config,
-    content::SessionStorageNamespace* session_storage_namespace) {
-  return nullptr;
 }
 
 void WebContents::MaybeOverrideCreateParamsForNewWindow(
@@ -1465,7 +1485,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     auto* initiator = static_cast<content::RenderFrameHostImpl*>(
         content::RenderFrameHost::FromID(params.source_render_process_id,
                                          params.source_render_frame_id));
-    if (initiator && initiator->GetParent()) {
+    if (initiator) {
       // Use the initiating document's active sandboxing flag set (its policy
       // container flags), which is what
       // content::WebContentsImpl::CreateWithOpener consults when deciding
@@ -1477,7 +1497,7 @@ content::WebContents* WebContents::OpenURLFromTab(
       if (!allow(SandboxFlags::kPopups)) {
         initiator->AddMessageToConsole(
             blink::mojom::ConsoleMessageLevel::kError,
-            "Blocked opening a new window because the iframe is sandboxed "
+            "Blocked opening a new window because the opener is sandboxed "
             "and the 'allow-popups' keyword is not set.");
         return nullptr;
       }
@@ -1751,6 +1771,21 @@ void WebContents::RendererUnresponsive(
   EmitWithoutEvent("-unresponsive", event_object);
 }
 
+bool WebContents::SaveFrame(const GURL& url,
+                            const content::Referrer& referrer,
+                            content::RenderFrameHost* rfh) {
+  // Downloads read file: URLs from disk directly; save asar entries from an
+  // extracted copy.
+  GURL extracted_url;
+  std::u16string file_name;
+  if (!asar::GetExtractedFileURL(url, &extracted_url, &file_name))
+    return false;
+  web_contents()->SaveFrameWithHeaders(extracted_url, referrer, std::string(),
+                                       file_name, rfh,
+                                       /*is_subresource=*/false);
+  return true;
+}
+
 void WebContents::RendererResponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host) {
@@ -1759,6 +1794,28 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
+  // A WebContents hosting a DevTools frontend directly (e.g. one passed to
+  // webContents.setDevToolsWebContents()) keeps its own delegate, so menu
+  // requests from InspectorFrontendHost.showContextMenuAtPoint() arrive here
+  // instead of at InspectableWebContents. Such requests are recognizable by
+  // carrying menu items in |params.custom_items| or by the kNone source type
+  // (the request is programmatic, not a user gesture). Show them as a native
+  // menu anchored to whichever widget hosts this WebContents; emitting
+  // 'context-menu' would drop the items and leave the frontend waiting for a
+  // selection forever. Ordinary right-clicks in the frontend still emit
+  // 'context-menu' below.
+  if (render_frame_host.GetMainFrame()->GetLastCommittedURL().SchemeIs(
+          content::kChromeDevToolsScheme) &&
+      (!params.custom_items.empty() ||
+       params.source_type == ui::mojom::MenuSourceType::kNone)) {
+    devtools_context_menu_ =
+        std::make_unique<DevToolsContextMenu>(web_contents(), params);
+    devtools_context_menu_->RunMenuAt(
+        views::Widget::GetTopLevelWidgetForNativeView(
+            web_contents()->GetNativeView()));
+    return true;
+  }
+
   ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
       ui::ClipboardBuffer::kCopyPaste, std::nullopt,
       base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,
@@ -2313,10 +2370,6 @@ void WebContents::MaybeSendRendererStartupData(
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
-  // Build the ordered preload list: session-registered preloads of type
-  // 'frame' first (in registration order), then the per-WebContents
-  // webPreferences.preload last — same order as the legacy
-  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2324,29 +2377,7 @@ void WebContents::MaybeSendRendererStartupData(
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(rfh->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(rfh);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
@@ -2645,7 +2676,29 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
   if (rwh_impl->IsHidden()) {
-    rwh_impl->WasShown({});
+    // Un-hide through the view rather than calling
+    // RenderWidgetHostImpl::WasShown() directly, so that the platform view
+    // (and on macOS the BrowserCompositorMac / DelegatedFrameHost) also
+    // learns the widget is now producing frames. Bypassing the view leaves the
+    // DelegatedFrameHost embedding a stale LocalSurfaceId that the renderer no
+    // longer submits to; when the window is later shown, the "already shown"
+    // host makes the view skip its show handling and the surface is never
+    // embedded, so the window stays blank until a resize allocates a new id.
+    // kHiddenButPainting is the same state content uses for a hidden but
+    // captured WebContents: the widget renders, the page stays hidden.
+    //
+    // Guest (<webview>) main frames are child-frame views: their surface is
+    // embedded by the embedder's renderer, so there is no browser-side
+    // compositor state to keep in sync, and their ShowWithVisibility()
+    // refuses to show a frame the embedder has hidden (display: none). Keep
+    // the direct WasShown() for them so behavior there is unchanged.
+    auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
+    if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
+      rwh_impl->WasShown({});
+    } else {
+      rwhv_base->ShowWithVisibility(
+          content::PageVisibilityState::kHiddenButPainting);
+    }
   }
 }
 
@@ -2800,9 +2853,18 @@ void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
     }
   }
 
+  GURL download_url = url;
+  std::u16string asar_file_name;
+  const bool from_asar =
+      asar::GetExtractedFileURL(url, &download_url, &asar_file_name);
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
-          web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
+          web_contents(), download_url, MISSING_TRAFFIC_ANNOTATION));
+  if (from_asar) {
+    // The suggested name is dropped when a page initiator is set.
+    download_params->set_suggested_name(asar_file_name);
+    download_params->set_initiator(std::nullopt);
+  }
   for (const auto& [name, value] : headers) {
     if (base::ToLowerASCII(name) ==
         base::ToLowerASCII(net::HttpRequestHeaders::kReferer)) {
@@ -3407,27 +3469,6 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
                                std::move(print_callback));
 }
 
-void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                  print_to_pdf::PdfPrintResult print_result,
-                  scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
-    promise.RejectWithErrorMessage(
-        "Failed to generate PDF: " +
-        print_to_pdf::PdfPrintResultToString(print_result));
-    return;
-  }
-
-  v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
-
-  v8::Local<v8::Value> buffer =
-      electron::Buffer::Copy(isolate, *data).ToLocalChecked();
-
-  promise.Resolve(buffer);
-}
 }  // namespace
 
 void WebContents::Print(gin::Arguments* const args) {
@@ -3602,64 +3643,8 @@ void WebContents::Print(gin::Arguments* const args) {
                      std::move(settings), std::move(callback)));
 }
 
-// Partially duplicated and modified from
-// headless/lib/browser/protocol/page_handler.cc;l=41
 v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  // This allows us to track headless printing calls.
-  auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
-  auto landscape = settings.GetDict().FindBool(kLandscape);
-  auto display_header_footer =
-      settings.GetDict().FindBool(kDisplayHeaderFooter);
-  auto print_background = settings.GetDict().FindBool(kPrintBackground);
-  auto scale = settings.GetDict().FindDouble(kScale);
-  auto paper_width = settings.GetDict().FindDouble(kPaperWidth);
-  auto paper_height = settings.GetDict().FindDouble(kPaperHeight);
-  auto margin_top = settings.GetDict().FindDouble(kMarginTop);
-  auto margin_bottom = settings.GetDict().FindDouble(kMarginBottom);
-  auto margin_left = settings.GetDict().FindDouble(kMarginLeft);
-  auto margin_right = settings.GetDict().FindDouble(kMarginRight);
-  auto page_ranges = *settings.GetDict().FindString(kPageRanges);
-  auto header_template = *settings.GetDict().FindString(kHeaderTemplate);
-  auto footer_template = *settings.GetDict().FindString(kFooterTemplate);
-  auto prefer_css_page_size = settings.GetDict().FindBool(kPreferCSSPageSize);
-  auto generate_tagged_pdf = settings.GetDict().FindBool(kGenerateTaggedPDF);
-  auto generate_document_outline =
-      settings.GetDict().FindBool(kGenerateDocumentOutline);
-
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
-  absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
-      print_pages_params = print_to_pdf::GetPrintPagesParams(
-          rfh->GetLastCommittedURL(), landscape, display_header_footer,
-          print_background, scale, paper_width, paper_height, margin_top,
-          margin_bottom, margin_left, margin_right,
-          std::make_optional(header_template),
-          std::make_optional(footer_template), prefer_css_page_size,
-          generate_tagged_pdf, generate_document_outline);
-
-  if (absl::holds_alternative<std::string>(print_pages_params)) {
-    auto error = absl::get<std::string>(print_pages_params);
-    promise.RejectWithErrorMessage("Invalid print parameters: " + error);
-    return handle;
-  }
-
-  auto* manager = PrintViewManagerElectron::FromWebContents(web_contents());
-  if (!manager) {
-    promise.RejectWithErrorMessage("Failed to find print manager");
-    return handle;
-  }
-
-  auto params = std::move(
-      absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
-  params->params->document_cookie = unique_id.value_or(0);
-
-  manager->PrintToPdf(rfh, page_ranges, std::move(params),
-                      base::BindOnce(&OnPDFCreated, std::move(promise)));
-
-  return handle;
+  return PrintFrameToPDF(GetRenderFrameHostToUse(web_contents()), settings);
 }
 #endif
 
@@ -4263,7 +4248,7 @@ content::RenderFrameHost* WebContents::FocusedFrame() {
 
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
-  if (frame)
+  if (frame && frame->IsRenderFrameLive())
     frame->NotifyUserActivation(
         blink::mojom::UserActivationNotificationType::kInteraction);
 }

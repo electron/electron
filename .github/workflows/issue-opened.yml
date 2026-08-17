@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   add-to-issue-triage:
-    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') }}
+    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') || contains(github.event.issue.body, '# Expected Behavior') }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -27,7 +27,7 @@ jobs:
           project-number: 90
           token: ${{ steps.generate-token.outputs.token }}
   set-labels:
-    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') }}
+    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') || contains(github.event.issue.body, '# Expected Behavior') }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -38,7 +38,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Sparse checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             .
@@ -156,7 +156,7 @@ jobs:
 
           Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
 
-          The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://www.electronjs.org/releases/stable) of Electron, please update this issue to reflect that version of Electron.
+          The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://releases.electronjs.org/) of Electron, please update this issue to reflect that version of Electron.
 
           Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-info%20%E2%9D%8C label for this reason. This issue will be closed in 10 days if the above is not addressed.
           EOF

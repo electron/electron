@@ -7,18 +7,30 @@
 
 #include "base/memory/raw_ptr.h"
 #include "ui/gfx/geometry/rounded_corners_f.h"
-#include "ui/views/window/frame_view_layout_linux.h"
+#include "ui/views/window/native_frame_view_layout_linux.h"
+
+namespace ui {
+class NavButtonProvider;
+}  // namespace ui
 
 namespace electron {
 
 class NativeWindowViews;
 
-// Adapts FrameViewLayoutLinux for ElectronFrameViewLinux's shadow-only, WCO,
-// and transparent modes.
-class ElectronFrameViewLayoutLinux : public views::FrameViewLayoutLinux {
+// Adapts NativeFrameViewLayoutLinux for ElectronFrameViewLinux's
+// shadow-only, WCO, and transparent modes.
+class ElectronFrameViewLayoutLinux : public views::NativeFrameViewLayoutLinux {
  public:
-  explicit ElectronFrameViewLayoutLinux(NativeWindowViews* window);
+  ElectronFrameViewLayoutLinux(NativeWindowViews* window,
+                               ui::NavButtonProvider* nav_buttons);
   ~ElectronFrameViewLayoutLinux() override;
+
+  void set_nav_buttons(ui::NavButtonProvider* nav_buttons) {
+    nav_buttons_ = nav_buttons;
+    set_nav_button_provider(nav_buttons);
+  }
+
+  ui::NavButtonProvider* nav_buttons() const { return nav_buttons_; }
 
   bool wants_frame() const { return wants_frame_; }
   void set_wants_frame(bool wants_frame) { wants_frame_ = wants_frame; }
@@ -30,22 +42,28 @@ class ElectronFrameViewLayoutLinux : public views::FrameViewLayoutLinux {
   gfx::Rect GetLeadingButtonRect() const;
   gfx::Rect GetTrailingButtonRect() const;
 
-  // FrameViewLayoutLinux:
+  // NativeFrameViewLayoutLinux:
   gfx::Insets GetRestoredFrameBorderInsets() const override;
   int GetTopAreaHeight() const override;
   int GetClientTopOffset() const override;
   bool ShouldShowTitlebarAndBorder() const override;
   gfx::ShadowValues GetShadowValues(bool active) const override;
   gfx::RoundedCornersF GetCornerRadii() const override;
+  gfx::Insets GetTopAreaBorderInsets() const override;
+  ButtonLayoutParams GetButtonLayoutParams(
+      views::FrameButton button_id,
+      views::Button* button) const override;
+  gfx::Insets GetTopAreaSpacing() const override;
 
  protected:
-  // FrameViewLayoutLinux:
+  // NativeFrameViewLayoutLinux:
   void LayoutWindowControls() override;
 
  private:
   int GetWCOContentHeight() const;
 
   raw_ptr<NativeWindowViews> window_;
+  raw_ptr<ui::NavButtonProvider> nav_buttons_;
   bool wants_frame_;
 };
 

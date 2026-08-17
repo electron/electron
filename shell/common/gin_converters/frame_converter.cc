@@ -26,7 +26,11 @@ v8::Local<v8::Value> Converter<content::RenderFrameHost*>::ToV8(
     content::RenderFrameHost* val) {
   if (!val)
     return v8::Null(isolate);
-  return electron::api::WebFrameMain::From(isolate, val).ToV8();
+  v8::Local<v8::Value> value;
+  if (!TryConvertToV8(isolate, electron::api::WebFrameMain::From(isolate, val),
+                      &value))
+    return v8::Null(isolate);
+  return value;
 }
 
 // static

@@ -62,6 +62,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-cors-file', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-cors-http', privileges: { supportFetchAPI: true } },
   { scheme: 'no-cors-standard', privileges: { standard: true, supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
   { scheme: 'stream', privileges: { standard: true, stream: true } },

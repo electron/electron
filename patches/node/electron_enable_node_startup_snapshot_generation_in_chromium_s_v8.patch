@@ -3,50 +3,97 @@ From: Samuel Attard <sattard@anthropic.com>
 Date: Tue, 19 May 2026 10:37:56 +0100
 Subject: electron: enable node startup snapshot generation in Chromium's V8
 
-Re-enable node_use_node_snapshot for native builds so node_mksnapshot
-generates an embedded Node startup snapshot the Electron browser process
-can be created from, eliminating the Node bootstrap recompile.
+Re-enable node_use_node_snapshot so node_mksnapshot generates an embedded
+Node startup snapshot the Electron browser process can be created from,
+eliminating the Node bootstrap recompile.
 
-- node.gni: gate to native builds (cross-compile stays off).
+- node.gni: enable the snapshot (and the builtins' code cache that
+  complements it) wherever the v8_snapshot_toolchain node_mksnapshot is
+  built in can execute the code its V8 generates -- native builds, x64
+  hosts targeting arm64 (V8's arm64 simulator), and mac arm64 hosts
+  targeting x64 when v8_snapshot_toolchain is the Rosetta-run
+  //build/toolchain/mac:clang_x64 (Electron CI's setting) -- i.e.
+  host_os == target_os except V8's default mac clang_arm64_v8_x64
+  toolchain, which emits x64 code from an arm64 binary with no simulator.
+  Neither the snapshot nor the code cache contains machine code, so what a
+  cross node_mksnapshot produces is valid on the target.
 - unofficial.gni: node_mksnapshot host tool (no_chromium_code,
   zstd:compress, NODE_USE_V8_PLATFORM=1 in v8_snapshot_toolchain,
   external_startup_data config, --electron-v8-snapshot-blob arg);
-  source_set("node_snapshot") provides the strong
-  GetEmbeddedSnapshotData over a now-weak node_snapshot_stub.cc so the
-  shipped framework links the real snapshot without a GN cycle.
+  GetEmbeddedSnapshotData() moves out of libnode into two source_sets,
+  ":node_snapshot" (the generated snapshot, linked by the shipped
+  framework and the snapshot code-cache tool) and ":node_snapshot_stub"
+  (the nullptr fallback, linked by node_mksnapshot, the node CLI and the
+  other host tools), so every target links exactly one strong definition
+  -- no weak override, which lld-link cannot fold -- and there is no GN
+  cycle through run_node_mksnapshot. Both depend on
+  //base:debugging_buildflags for the generated header node_builtins.h
+  pulls in through base/dcheck_is_on.h.
 - node_snapshot_builder.h / node_snapshotable.cc / embed_helpers.cc:
   Set/GetBaseSnapshotForCreation so the SnapshotCreator EXTENDS the V8
   startup snapshot (params.snapshot_blob) rather than building the heap
   from scratch -- Chromium's V8 only links the deserialize-only
   setup-isolate delegate; the full one is private to V8's own mksnapshot.
-- util.cc: NewFunctionTemplate / SetFastMethod drop the fast-API
-  c_function while building a snapshot. V8 stores c_function_overloads
-  as Managed<CFunctionWithSignature> -- a Foreign holding a heap-allocated
-  ManagedPtrDestructor* -- which V8's snapshot serializer cannot encode
-  as an external reference. Slow-callback fallback after deserialize.
+- node_external_reference.h: Register(const v8::CFunction&) also
+  registers the address of the CFunction object itself. Since V8 stores
+  the v8::CFunction directly in FunctionTemplateInfo (wrapped in a
+  Foreign), the snapshot serializer encodes that address and needs it in
+  the external reference table. Upstream has the same change
+  (nodejs/node@0401a2d, 2026-06-02); drop this hunk once Electron's Node
+  includes it.
 - node_builtins.cc: RefreshCodeCache merges instead of replacing so the
   build-time js2c cache for electron/js2c/* can be fed alongside the
   snapshot's per-builtin cache.
-- node_mksnapshot.cc: read --electron-v8-snapshot-blob, set the c_function
-  drop env var, plumb the base blob to the SnapshotCreator.
+- node_mksnapshot.cc: read --electron-v8-snapshot-blob and plumb the base
+  blob to the SnapshotCreator.
+- unofficial.gni: check for mold linkers in addition to lld in disable_icf
+  config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 8239967653fee7791800ee3292e77b91bffaaef9..c71d66df5d78b8e86ef5cf405ca7c9c8d7e716ee 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe5241076836a33b8fc 100644
 --- a/node.gni
 +++ b/node.gni
-@@ -64,11 +64,10 @@ declare_args() {
-   # Use code cache to speed up startup. Disabled for cross compilation.
-   node_use_node_code_cache = host_os == target_os && host_cpu == target_cpu
+@@ -31,6 +31,13 @@ declare_args() {
+   ]
+ }
  
++import("$node_v8_path/gni/snapshot_toolchain.gni")
++
++# See node_use_node_snapshot below.
++node_snapshot_toolchain_runs_target_code =
++    host_os == target_os &&
++    v8_snapshot_toolchain != "//build/toolchain/mac:clang_arm64_v8_x64"
++
+ # Equivalent of gyp file's configurations.
+ declare_args() {
+   # Enable the V8 inspector protocol for use with node.
+@@ -61,14 +68,21 @@ declare_args() {
+   # default to https://nodejs.org/download/release/').
+   node_release_urlbase = ""
+ 
+-  # Use code cache to speed up startup. Disabled for cross compilation.
+-  node_use_node_code_cache = host_os == target_os && host_cpu == target_cpu
+-
 -  # Use snapshot to speed up startup.
 -  # TODO(zcbenz): There are few broken things for now:
 -  #   1. cross-os compilation is not supported.
 -  #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
 -  node_use_node_snapshot = false
-+  # Use snapshot to speed up startup. Known breakage is cross-compile only
-+  # (cross-os unsupported; node_mksnapshot crashes cross-compiling x64 from
-+  # arm64), so gate to native builds like node_use_node_code_cache above.
-+  node_use_node_snapshot = host_os == target_os && host_cpu == target_cpu
++  # Embed a startup snapshot of the bootstrapped Node.js environment, and the
++  # V8 code cache for the builtins that complements it, to speed up startup.
++  # Neither contains machine code, so cross-arch builds can generate them, but
++  # node_mksnapshot runs the Node.js bootstrap -- it executes target-CPU code --
++  # so the v8_snapshot_toolchain it is built in must be able to run what its V8
++  # generates: natively; under V8's simulator (x64 hosts targeting arm64, e.g.
++  # //build/toolchain/linux:clang_x64_v8_arm64, or the win host toolchain with
++  # v8_target_cpu = "arm64"); or as an x64 binary under Rosetta (mac arm64
++  # hosts targeting x64 with v8_snapshot_toolchain =
++  # "//build/toolchain/mac:clang_x64", which is how Electron's CI builds mac
++  # x64). V8's default toolchain for mac arm64 -> x64, clang_arm64_v8_x64, is
++  # an arm64 binary emitting x64 code with no simulator and cannot; neither can
++  # a cross-OS host tool.
++  node_use_node_snapshot = node_snapshot_toolchain_runs_target_code
++  node_use_node_code_cache = node_snapshot_toolchain_runs_target_code
  
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
@@ -156,7 +203,7 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index 8561933060ac30e3559d7ce2ac633d25f1e4d6ec..79dad674d21bc82096830eaf5a5100b0220b6cf4 100644
+index ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976..bc48096932b0a1004aec4317dc0c265bd6f1c045 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
@@ -236,7 +283,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfffb79f2e33 100644
+index 1285f83662e4f252faa1730df04cafc588cd7556..06aeced9d41519efd801603631418e6ec46a8a42 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -337,7 +384,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
 -        } else if ((!is_apple && use_gold) || use_lld) {
-+        } else if (use_lld) {
++        } else if (use_lld || linker_path != "") {
            ldflags = [ "-Wl,--icf=none" ]
          }
        }
@@ -354,7 +401,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
        script = "$node_v8_path/tools/run.py"
        sources = []
        data = []
-@@ -344,10 +373,89 @@ template("node_gn_build") {
+@@ -344,10 +373,91 @@ template("node_gn_build") {
        args = [
          "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
@@ -388,6 +435,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
 +    }
 +    public_configs = [ ":zstd_include_config" ]
 +    deps = [
++      "//base:debugging_buildflags",
 +      "deps/ada",
 +      "deps/simdjson",
 +      "deps/uv",
@@ -416,6 +464,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
 +    }
 +    public_configs = [ ":zstd_include_config" ]
 +    deps = [
++      "//base:debugging_buildflags",
 +      "deps/uv",
 +      "deps/ada",
 +      "deps/simdjson",

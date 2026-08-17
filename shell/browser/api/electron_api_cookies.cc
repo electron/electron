@@ -13,8 +13,6 @@
 #include "base/time/time.h"
 #include "base/values.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"

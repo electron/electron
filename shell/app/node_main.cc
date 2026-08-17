@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
@@ -21,11 +20,9 @@
 #include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
-#include "gin/array_buffer.h"
-#include "gin/public/isolate_holder.h"
+#include "gin/converter.h"
 #include "gin/v8_initializer.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
@@ -331,6 +328,11 @@ int NodeMain() {
   base::ThreadPoolInstance::Get()->Shutdown();
 
   v8::V8::Dispose();
+
+  // Matches node::InitializeOncePerProcess() above. In particular this joins
+  // the off-thread CA certificate loader that `require('tls')` starts, which
+  // would otherwise race the static destructors run by exit() and abort().
+  node::TearDownOncePerProcess();
 
   return exit_code;
 }

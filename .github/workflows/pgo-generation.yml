@@ -49,7 +49,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -76,7 +76,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -102,7 +102,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -132,7 +132,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -142,13 +142,33 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # All builds need the patched siso binary (same as build.yml); the matrix
-  # produces windows-amd64, linux-amd64 and darwin-arm64 artifacts.
-  build-siso:
+  # All builds need the patched siso binary (same as build.yml). Each host is a
+  # separate job so a cache miss or re-run for one host only blocks that host's
+  # builds; they produce the windows-amd64, linux-amd64 and darwin-arm64
+  # artifacts.
+  build-siso-macos:
     needs: setup
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: darwin-arm64
+
+  build-siso-linux:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: linux-amd64
+
+  build-siso-windows:
+    needs: setup
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: windows-amd64
 
   # ---------------------------------------------------------------------------
   # Instrumented builds (gn-build-type: pgo-instrument -> build/args/pgo-instrument.gn)
@@ -160,32 +180,12 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
-      is-release: false
-      gn-build-type: pgo-instrument
-      generate-symbols: false
-      generate-chromedriver: false
-      generate-test-artifacts: false
-      upload-to-storage: '0'
-    secrets: inherit
-
-  build-linux-arm:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-linux, build-siso]
-    with:
-      build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
-      target-arch: arm
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
@@ -200,7 +200,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -220,7 +220,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-macos, build-siso]
+    needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
       target-platform: macos
@@ -240,7 +240,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-macos, build-siso]
+    needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
       target-platform: macos
@@ -260,30 +260,11 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: x64
-      is-release: false
-      gn-build-type: pgo-instrument
-      generate-symbols: false
-      generate-chromedriver: false
-      generate-test-artifacts: false
-      upload-to-storage: '0'
-    secrets: inherit
-
-  build-windows-x86:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso]
-    with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
-      target-platform: win
-      target-arch: x86
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
@@ -298,9 +279,9 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: arm64
       is-release: false
@@ -336,7 +317,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -355,7 +336,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -429,19 +410,6 @@ jobs:
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
     secrets: inherit
 
-  collect-linux-arm:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
-    needs: [checkout-linux, build-linux-arm]
-    with:
-      target-platform: linux
-      target-arch: arm
-      artifact-key: linux_arm
-      collect-runs-on: electron-arc-centralus-linux-arm64-4core
-      collect-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --memory=12g","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
-    secrets: inherit
-
   collect-linux-arm64:
     permissions:
       contents: read
@@ -492,18 +460,6 @@ jobs:
       collect-runs-on: windows-latest
     secrets: inherit
 
-  collect-windows-x86:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
-    needs: build-windows-x86
-    with:
-      target-platform: win
-      target-arch: x86
-      artifact-key: win_x86
-      collect-runs-on: windows-latest
-    secrets: inherit
-
   collect-windows-arm64:
     permissions:
       contents: read
@@ -523,7 +479,7 @@ jobs:
   merge-profiles:
     name: Merge Profiles
     # checkout-linux provides the container image SHA and the src cache.
-    needs: [checkout-linux, collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
+    needs: [checkout-linux, collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64]
     # Merge whatever was collected; repo guard because !cancelled() runs in forks.
     if: ${{ !cancelled() && github.repository == 'electron/electron' }}
     runs-on: electron-arc-centralus-linux-amd64-4core
@@ -539,7 +495,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -552,7 +508,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -611,7 +567,7 @@ jobs:
     # published: a partial profile set must never reach the CDN or the state
     # files. Skipped jobs (the skip-* inputs) are allowed - intentionally
     # regenerating a subset of platforms is fine; failures are not.
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles]
+    needs: [collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles]
     if: ${{ !cancelled() && github.repository == 'electron/electron' && needs.merge-profiles.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.upload-to-storage }}
     runs-on: ubuntu-latest
     # Holds the Azure OIDC credentials; restricted to protected branches.
@@ -636,7 +592,7 @@ jobs:
         name: pgo-v8-builtins-profiles
         path: profiles
     - name: Azure Login
-      uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
+      uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca
       with:
         client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
@@ -684,6 +640,11 @@ jobs:
         BRANCH="pgo/update/${BASE_BRANCH}-${GITHUB_RUN_ID}"
 
         # Map every uploaded profile to its state file in build/pgo_profiles.
+        # Each state file records "<name> <sha256>"; the hash is computed here
+        # from the exact bytes this job uploaded to Azure, and verified by
+        # script/pgo/download-profiles.py on every download. The CDN blobs are
+        # mutable, so the hash in the reviewed state file - not the blob - is
+        # what pins the profile a build uses.
         updated=0
         for f in profiles/*; do
           name=$(basename "$f")
@@ -697,10 +658,11 @@ jobs:
               echo "skipping unrecognized profile: $name"
               continue ;;
           esac
-          echo "$state <- $name"
+          sha256=$(sha256sum "$f" | cut -d' ' -f1)
+          echo "$state <- $name $sha256"
           args=(
             --field message="build: update $(basename "$state" .pgo.txt) PGO profile"
-            --field content="$(printf '%s\n' "$name" | base64 -w0)"
+            --field content="$(printf '%s %s\n' "$name" "$sha256" | base64 -w0)"
             --field branch="$BRANCH"
           )
           # Existing files need their current blob sha; absent ones (a state
@@ -734,7 +696,7 @@ jobs:
 
   # Aggregate gate so a single status reflects the whole run.
   pgo-done:
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles, upload-profiles]
+    needs: [collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles, upload-profiles]
     if: always() && !cancelled() && github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions: {}
