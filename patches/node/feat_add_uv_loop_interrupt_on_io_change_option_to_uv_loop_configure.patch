@@ -5,11 +5,30 @@ Subject: feat: add UV_LOOP_INTERRUPT_ON_IO_CHANGE option to uv_loop_configure
 
 https://github.com/libuv/libuv/pull/3308
 
+The option makes libuv wake up whoever is polling the loop's backend fd
+from another thread (Electron's embed thread in NodeBindings) whenever a
+watcher/handle is started, stopped or fed, so that a poll started with a
+now-stale uv_backend_timeout() gets to see the change.
+
+Unlike the upstream PR, the interrupt is gated on uv_run() not being on
+the stack for that loop (tracked by an `in_run` depth counter in the
+loop's private uv__loop_internal_fields_t, loop-thread only, no atomics).
+While uv_run() executes the external poller is parked, the change is
+picked up by the current/next loop iteration, and once uv_run() returns
+the embedder re-reads uv_backend_timeout() - which is 0 for a non-empty
+pending/watcher queue and reflects newly started timers - before polling
+again, so interrupting there only costs a write()/kevent()/PQCS on the
+loop thread plus a spurious wakeup of the poller (and, in Electron, an
+extra empty UvRunOnce task per tick). uv_async_send() keeps calling
+uv__loop_interrupt() unconditionally; only the IO-change call sites go
+through the gate. This gated variant should be proposed on libuv#3308 so
+the patch can eventually be dropped.
+
 diff --git a/deps/uv/docs/src/loop.rst b/deps/uv/docs/src/loop.rst
-index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..eec28dd8ea8e5da86e82442e1fdfec5e8e591054 100644
+index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..ad1fac89f8f595e1fa3513a08de8e512c17362b5 100644
 --- a/deps/uv/docs/src/loop.rst
 +++ b/deps/uv/docs/src/loop.rst
-@@ -86,6 +86,12 @@ API
+@@ -86,6 +86,15 @@ API
  
        This option is necessary to use :c:func:`uv_metrics_idle_time`.
  
@@ -18,6 +37,9 @@ index 3d1973ba4f9f0cf1cd95c7b0d3ff5246530df343..eec28dd8ea8e5da86e82442e1fdfec5e
 +
 +      This option is usually when implementing event loop integration, to make
 +      the polling of backend fd interrupt to recognize the changes of IO events.
++      Changes made while :c:func:`uv_run` is executing on the loop do not
++      trigger an interrupt; the embedder is expected to re-read
++      :c:func:`uv_backend_timeout` after :c:func:`uv_run` returns.
 +
      - UV_LOOP_USE_IO_URING_SQPOLL: Enable SQPOLL io_uring instance to handle
        asynchronous file system operations.
@@ -116,36 +138,51 @@ index f7995fc35197af99c70c6a50d97576e58debdf11..b2bcacfd48880c62e1efb6c4b057ecac
  static int uv__async_start(uv_loop_t* loop) {
    int pipefd[2];
 diff --git a/deps/uv/src/unix/core.c b/deps/uv/src/unix/core.c
-index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..e348d776c983dee56d5d7199ee789a931970929b 100644
+index 73027cbc52ab0f10eee1efd603c071d8ba4239f4..045c1ec244da962a6403df8a803f7eabdb866c7a 100644
 --- a/deps/uv/src/unix/core.c
 +++ b/deps/uv/src/unix/core.c
-@@ -982,6 +982,9 @@ int uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -429,6 +429,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
+   int r;
+   int can_sleep;
+ 
++  uv__get_internal_fields(loop)->in_run++;
++
+   r = uv__loop_alive(loop);
+   if (!r)
+     uv__update_time(loop);
+@@ -488,6 +490,8 @@ int uv_run(uv_loop_t* loop, uv_run_mode mode) {
+   if (loop->stop_flag != 0)
+     loop->stop_flag = 0;
+ 
++  uv__get_internal_fields(loop)->in_run--;
++
+   return r;
+ }
+ 
+@@ -982,6 +986,8 @@ int uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
      loop->nfds++;
    }
  
-+  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
-+    uv__loop_interrupt(loop);
++  uv__loop_interrupt_on_io_change(loop);
 +
    return 0;
  }
  
-@@ -1030,6 +1033,9 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
+@@ -1030,6 +1036,8 @@ void uv__io_stop(uv_loop_t* loop, uv__io_t* w, unsigned int events) {
    }
    else if (uv__queue_empty(&w->watcher_queue))
      uv__queue_insert_tail(&loop->watcher_queue, &w->watcher_queue);
 +
-+  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
-+    uv__loop_interrupt(loop);
++  uv__loop_interrupt_on_io_change(loop);
  }
  
  
-@@ -1046,6 +1052,9 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
+@@ -1046,6 +1054,8 @@ void uv__io_close(uv_loop_t* loop, uv__io_t* w) {
  void uv__io_feed(uv_loop_t* loop, uv__io_t* w) {
    if (uv__queue_empty(&w->pending_queue))
      uv__queue_insert_tail(&loop->pending_queue, &w->pending_queue);
 +
-+  if (uv__get_internal_fields(loop)->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE)
-+    uv__loop_interrupt(loop);
++  uv__loop_interrupt_on_io_change(loop);
  }
  
  
@@ -229,32 +266,84 @@ index da9fa3c8b80b8666e645f0dd8b61b5b32abd14e5..415eac3cc0b0a99ad6753feadc0cbbd1
 +
 +  abort();
 +}
+diff --git a/deps/uv/src/uv-common.c b/deps/uv/src/uv-common.c
+index f1e8928d37ebf47225dbfd394fbf1163e1d9f666..93dbaaf6b9bb28b5050d23cd6243d8e33905677d 100644
+--- a/deps/uv/src/uv-common.c
++++ b/deps/uv/src/uv-common.c
+@@ -843,6 +843,38 @@ int uv_loop_configure(uv_loop_t* loop, uv_loop_option option, ...) {
+ }
+ 
+ 
++/* Called - always from the loop thread - whenever a watcher, handle or pending
++ * callback has been started, stopped or queued on `loop`. If the embedder asked
++ * for it (UV_LOOP_INTERRUPT_ON_IO_CHANGE), wake up whoever is polling the
++ * backend fd from another thread so it can pick up the new backend state and
++ * timeout.
++ *
++ * The wakeup is skipped while uv_run() is on the stack for this loop: the
++ * external poller must not be polling concurrently with uv_run() anyway, the
++ * change is consumed by the current or next loop iteration, and once uv_run()
++ * returns the embedder re-reads uv_backend_timeout() - which returns 0 for a
++ * non-empty pending/watcher queue and accounts for newly started timers -
++ * before it polls again. Interrupting there would only cost a syscall plus a
++ * spurious wakeup of the poller. `in_run` is only written by uv_run() and read
++ * here, both on the loop thread, so it needs no synchronisation.
++ *
++ * uv_async_send() deliberately calls uv__loop_interrupt() directly and is not
++ * subject to this gating; it is the cross-thread wakeup primitive.
++ */
++void uv__loop_interrupt_on_io_change(uv_loop_t* loop) {
++  uv__loop_internal_fields_t* lfields;
++
++  lfields = uv__get_internal_fields(loop);
++  if (!(lfields->flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE))
++    return;
++
++  if (lfields->in_run != 0)
++    return;
++
++  uv__loop_interrupt(loop);
++}
++
++
+ static uv_loop_t default_loop_struct;
+ static uv_loop_t* default_loop_ptr;
+ 
 diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
-index 5452a549388cf94865a36bf8c4f93c07c50dc278..0b09a2ee182090a922ccac3351e4bb4cc7123e96 100644
+index 5452a549388cf94865a36bf8c4f93c07c50dc278..0123eefe4a52a199e5ee800f354b5b983f715c9b 100644
 --- a/deps/uv/src/uv-common.h
 +++ b/deps/uv/src/uv-common.h
-@@ -148,6 +148,8 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap);
+@@ -148,6 +148,10 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap);
  
  void uv__loop_close(uv_loop_t* loop);
  
 +void uv__loop_interrupt(uv_loop_t* loop);
 +
++void uv__loop_interrupt_on_io_change(uv_loop_t* loop);
++
  int uv__read_start(uv_stream_t* stream,
                     uv_alloc_cb alloc_cb,
                     uv_read_cb read_cb);
-@@ -290,6 +292,10 @@ void uv__threadpool_cleanup(void);
+@@ -290,6 +294,7 @@ void uv__threadpool_cleanup(void);
      if (((h)->flags & UV_HANDLE_ACTIVE) != 0) break;                          \
      (h)->flags |= UV_HANDLE_ACTIVE;                                           \
      if (((h)->flags & UV_HANDLE_REF) != 0) uv__active_handle_add(h);          \
-+    int loop_flags = uv__get_internal_fields((h)->loop)->flags;               \
-+    if (loop_flags & UV_LOOP_INTERRUPT_ON_IO_CHANGE) {                        \
-+      uv__loop_interrupt((h)->loop);                                          \
-+    }                                                                         \
++    uv__loop_interrupt_on_io_change((h)->loop);                               \
    }                                                                           \
    while (0)
  
+@@ -431,6 +436,9 @@ struct uv__loop_internal_fields_s {
+   unsigned int flags;
+   uv__loop_metrics_t loop_metrics;
+   int current_timeout;
++  /* Nesting depth of uv_run() on this loop. Only touched from the loop thread
++   * (uv_run() itself and uv__loop_interrupt_on_io_change()), so no atomics. */
++  unsigned int in_run;
+ #ifdef __linux__
+   struct uv__iou ctl;
+   struct uv__iou iou;
 diff --git a/deps/uv/src/win/core.c b/deps/uv/src/win/core.c
-index 317238fd22962964fdc211eb837e9c593b562c8e..01f23777b3708d44ee7b076b323f0947fb8ccde6 100644
+index 317238fd22962964fdc211eb837e9c593b562c8e..46153ff22c45562dcab1f8f3a397e0b5c5bf92be 100644
 --- a/deps/uv/src/win/core.c
 +++ b/deps/uv/src/win/core.c
 @@ -384,10 +384,20 @@ int uv__loop_configure(uv_loop_t* loop, uv_loop_option option, va_list ap) {
@@ -278,11 +367,29 @@ index 317238fd22962964fdc211eb837e9c593b562c8e..01f23777b3708d44ee7b076b323f0947
  int uv_backend_fd(const uv_loop_t* loop) {
    return -1;
  }
+@@ -703,6 +713,8 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
+   int r;
+   int can_sleep;
+ 
++  uv__get_internal_fields(loop)->in_run++;
++
+   r = uv__loop_alive(loop);
+   if (!r)
+     uv_update_time(loop);
+@@ -760,6 +772,8 @@ int uv_run(uv_loop_t *loop, uv_run_mode mode) {
+   if (loop->stop_flag != 0)
+     loop->stop_flag = 0;
+ 
++  uv__get_internal_fields(loop)->in_run--;
++
+   return r;
+ }
+ 
 diff --git a/deps/uv/test/test-embed.c b/deps/uv/test/test-embed.c
-index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf893ab93d2 100644
+index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..6e852149f53ffab91a7718dadd97e0a439d90c3e 100644
 --- a/deps/uv/test/test-embed.c
 +++ b/deps/uv/test/test-embed.c
-@@ -25,54 +25,184 @@
+@@ -25,55 +25,274 @@
  #include <stdlib.h>
  #include <errno.h>
  
@@ -299,12 +406,17 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +#if defined(HAVE_EPOLL)
 +# include <sys/epoll.h>
 +#endif
-+
+ 
 +#if !defined(_WIN32)
 +# include <sys/types.h>
 +# include <sys/time.h>
 +#endif
  
+-static void thread_main(void* arg) {
+-  ASSERT_LE(0, uv_barrier_wait(&barrier));
+-  uv_sleep(250);
+-  ASSERT_OK(uv_async_send(&async));
+-}
 +static uv_loop_t main_loop;
 +static uv_loop_t external_loop;
 +static uv_thread_t embed_thread;
@@ -312,14 +424,17 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +static uv_async_t embed_async;
 +static uv_async_t main_async;
 +static volatile int embed_closed;
- 
--static void thread_main(void* arg) {
--  ASSERT_LE(0, uv_barrier_wait(&barrier));
--  uv_sleep(250);
--  ASSERT_OK(uv_async_send(&async));
--}
++
 +static uv_timer_t main_timer;
 +static int main_timer_called;
++static uint64_t main_timer_called_at;
++static int embed_cb_called;
++
++#if defined(HAVE_EPOLL)
++/* Number of times the main loop's backend fd was still readable right after
++ * uv_run() returned, i.e. somebody interrupted the loop from inside uv_run(). */
++static int backend_ready_after_run;
++#endif
  
  
 -static void async_cb(uv_async_t* handle) {
@@ -342,7 +457,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +                               bytes,
 +                               key,
 +                               overlapped);
-+}
+ }
 +#else
 +static void embed_thread_poll_unix(int fd, int timeout) {
 +  int r;
@@ -362,7 +477,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +    r = select(fd + 1, &readset, NULL, NULL, timeout >= 0 ? &tv : NULL);
 +#endif
 +  } while (r == -1 && errno == EINTR);
- }
++}
 +#endif /* !_WIN32 */
  
  
@@ -410,8 +525,21 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +
 +
 +static void embed_cb(uv_async_t* async) {
++  embed_cb_called++;
++
 +  /* Run tasks in main loop */
 +  uv_run(&main_loop, UV_RUN_NOWAIT);
++
++#if defined(HAVE_EPOLL)
++  {
++    /* The embed thread is parked on `embed_sem` right now, so it is safe to
++     * peek at the backend fd from this thread. epoll is level-triggered here,
++     * so peeking does not consume anything. */
++    struct epoll_event ev;
++    if (epoll_wait(uv_backend_fd(&main_loop), &ev, 1, 0) > 0)
++      backend_ready_after_run++;
++  }
++#endif
 +
 +  /* Tell embed thread to continue polling */
 +  uv_sem_post(&embed_sem);
@@ -420,6 +548,7 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +
 +static void main_timer_cb(uv_timer_t* timer) {
 +  main_timer_called++;
++  main_timer_called_at = uv_hrtime();
 +  embed_closed = 1;
 +
 +  uv_close((uv_handle_t*) &embed_async, NULL);
@@ -427,22 +556,28 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +}
 +
 +
-+static void init_loops(void) {
-+  ASSERT_EQ(0, uv_loop_init(&main_loop));
-+  ASSERT_EQ(0, uv_loop_init(&external_loop));
++static void init_loops(uv_async_cb main_async_cb) {
++  ASSERT_OK(uv_loop_init(&main_loop));
++  ASSERT_OK(uv_loop_init(&external_loop));
 +
 +  main_timer_called = 0;
++  main_timer_called_at = 0;
++  embed_cb_called = 0;
 +  embed_closed = 0;
++#if defined(HAVE_EPOLL)
++  backend_ready_after_run = 0;
++#endif
 +
-+  uv_async_init(&external_loop, &embed_async, embed_cb);
++  ASSERT_OK(uv_async_init(&external_loop, &embed_async, embed_cb));
 +
-+  /* Create a dummy async for main loop otherwise backend timeout will
-+     always be 0 */
-+  uv_async_init(&main_loop, &main_async, embed_cb);
++  /* The main loop needs at least one active handle, otherwise
++     uv_backend_timeout() is always 0. Tests may also use it to get a callback
++     dispatched from inside uv_run() on the main loop. */
++  ASSERT_OK(uv_async_init(&main_loop, &main_async, main_async_cb));
 +
 +  /* Start worker that will poll main loop and interrupt external loop */
-+  uv_sem_init(&embed_sem, 0);
-+  uv_thread_create(&embed_thread, embed_thread_runner, NULL);
++  ASSERT_OK(uv_sem_init(&embed_sem, 0));
++  ASSERT_OK(uv_thread_create(&embed_thread, embed_thread_runner, NULL));
 +}
 +
 +
@@ -452,24 +587,30 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +
 +  /* Run external loop */
 +  uv_run(&external_loop, UV_RUN_DEFAULT);
-+
+ 
+-  ASSERT_OK(uv_thread_join(&thread));
+-  uv_barrier_destroy(&barrier);
 +  uv_thread_join(&embed_thread);
 +  uv_sem_destroy(&embed_sem);
-+  uv_loop_close(&external_loop);
-+  uv_loop_close(&main_loop);
++
++  close_loop(&external_loop);
++  ASSERT_OK(uv_loop_close(&external_loop));
++  close_loop(&main_loop);
++  ASSERT_OK(uv_loop_close(&main_loop));
 +}
 +
 +
 +TEST_IMPL(embed) {
-+  init_loops();
++  init_loops(NULL);
 +
 +  /* Start timer in main loop */
-+  uv_timer_init(&main_loop, &main_timer);
-+  uv_timer_start(&main_timer, main_timer_cb, 250, 0);
++  ASSERT_OK(uv_timer_init(&main_loop, &main_timer));
++  ASSERT_OK(uv_timer_start(&main_timer, main_timer_cb, 250, 0));
 +
 +  run_loop();
-+  ASSERT_EQ(main_timer_called, 1);
++  ASSERT_EQ(1, main_timer_called);
 +
++  uv_library_shutdown();
 +  return 0;
 +}
 +
@@ -478,47 +619,106 @@ index 84fc7cad31fd4986ba4b2070f828b20c20bcb534..b0da9d1cddc69428e9fb3379d1338cf8
 +
 +
 +static void external_timer_cb(uv_timer_t* timer) {
-+  /* Start timer in main loop */
-+  uv_timer_init(&main_loop, &main_timer);
-+  uv_timer_start(&main_timer, main_timer_cb, 250, 0);
++  /* Start timer in main loop. This runs on the external loop, i.e. outside of
++   * uv_run() on the main loop, while the embed thread is blocked polling the
++   * main loop's backend fd with an infinite timeout: only the interrupt gets
++   * it to notice the new timer. */
++  ASSERT_OK(uv_timer_init(&main_loop, &main_timer));
++  ASSERT_OK(uv_timer_start(&main_timer, main_timer_cb, 250, 0));
 +}
 +
 +
 +TEST_IMPL(embed_with_external_timer) {
-+  init_loops();
++  init_loops(NULL);
 +
 +  /* Interrupt embed polling when a handle is started */
-+  ASSERT_EQ(0, uv_loop_configure(&main_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE));
++  ASSERT_OK(uv_loop_configure(&main_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE));
 +
 +  /* Start timer in external loop, whose callback will not interrupt the
 +     polling in embed thread */
-+  uv_timer_init(&external_loop, &external_timer);
-+  uv_timer_start(&external_timer, external_timer_cb, 100, 0);
- 
--  ASSERT_OK(uv_thread_join(&thread));
--  uv_barrier_destroy(&barrier);
++  ASSERT_OK(uv_timer_init(&external_loop, &external_timer));
++  ASSERT_OK(uv_timer_start(&external_timer, external_timer_cb, 100, 0));
++
 +  run_loop();
-+  ASSERT_EQ(main_timer_called, 1);
++  ASSERT_EQ(1, main_timer_called);
++
++  uv_library_shutdown();
++  return 0;
++}
++
++
++static uint64_t main_timer_started_at;
++
++
++static void start_main_timer_async_cb(uv_async_t* async) {
++  /* This runs from inside uv_run(UV_RUN_NOWAIT) on the main loop. Starting a
++   * handle here must not interrupt the loop: nobody is polling it right now
++   * and the poller re-reads uv_backend_timeout() once uv_run() returns. */
++  ASSERT_PTR_EQ(async, &main_async);
++  main_timer_started_at = uv_hrtime();
++  ASSERT_OK(uv_timer_init(&main_loop, &main_timer));
++  ASSERT_OK(uv_timer_start(&main_timer, main_timer_cb, 250, 0));
++}
++
++
++static void kick_main_async_cb(uv_timer_t* timer) {
++  ASSERT_OK(uv_async_send(&main_async));
++}
++
++
++TEST_IMPL(embed_with_timer_started_in_run) {
++  uint64_t elapsed_ms;
++
++  init_loops(start_main_timer_async_cb);
++
++  ASSERT_OK(uv_loop_configure(&main_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE));
++
++  /* Wake the main loop up through its async handle; the async callback then
++   * starts `main_timer` from inside uv_run(). */
++  ASSERT_OK(uv_timer_init(&external_loop, &external_timer));
++  ASSERT_OK(uv_timer_start(&external_timer, kick_main_async_cb, 100, 0));
++
++  run_loop();
++  ASSERT_EQ(1, main_timer_called);
++
++  /* The embed thread must have picked the timer up via uv_backend_timeout()
++   * and fired it on time even though starting it did not interrupt the loop. */
++  ASSERT_GT(main_timer_started_at, 0);
++  elapsed_ms = (main_timer_called_at - main_timer_started_at) / 1000000;
++  ASSERT_LT(elapsed_ms, 1000);
++
++#if defined(HAVE_EPOLL)
++  /* Nothing interrupted the loop from inside uv_run() ... */
++  ASSERT_OK(backend_ready_after_run);
++  /* ... so the main loop ran exactly three times: the initial run, once for
++   * the async that started the timer and once for the timer itself, with no
++   * spurious wakeup in between. */
++  ASSERT_EQ(3, embed_cb_called);
++#endif
  
-   MAKE_VALGRIND_HAPPY(loop);
+-  MAKE_VALGRIND_HAPPY(loop);
++  uv_library_shutdown();
    return 0;
+ }
 diff --git a/deps/uv/test/test-list.h b/deps/uv/test/test-list.h
-index b79a4ea74edf649d271696624272746c5301da27..9d6f6491fe2afe6ef3549a89d77b22a684179eac 100644
+index b79a4ea74edf649d271696624272746c5301da27..f1b6b0262fcfbdb17c0cc255b2fe14fe05f7d2bf 100644
 --- a/deps/uv/test/test-list.h
 +++ b/deps/uv/test/test-list.h
-@@ -286,6 +286,7 @@ TEST_DECLARE   (process_priority)
+@@ -286,6 +286,8 @@ TEST_DECLARE   (process_priority)
  TEST_DECLARE   (has_ref)
  TEST_DECLARE   (active)
  TEST_DECLARE   (embed)
 +TEST_DECLARE   (embed_with_external_timer)
++TEST_DECLARE   (embed_with_timer_started_in_run)
  TEST_DECLARE   (async)
  TEST_DECLARE   (async_null_cb)
  TEST_DECLARE   (eintr_handling)
-@@ -940,6 +941,7 @@ TASK_LIST_START
+@@ -940,6 +942,8 @@ TASK_LIST_START
    TEST_ENTRY  (active)
  
    TEST_ENTRY  (embed)
 +  TEST_ENTRY  (embed_with_external_timer)
++  TEST_ENTRY  (embed_with_timer_started_in_run)
  
    TEST_ENTRY  (async)
    TEST_ENTRY  (async_null_cb)
