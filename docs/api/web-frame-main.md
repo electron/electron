@@ -175,6 +175,35 @@ app.on('web-contents-created', (_, webContents) => {
 })
 ```
 
+Enabling the feature is not sufficient on its own: the document loaded in the
+frame must also opt in, by being served with the
+`include-js-call-stacks-in-crash-reports` [Document Policy][document-policy].
+Without it, the promise resolves with `Website owner has not opted in for JS
+call stacks in crash reports.` instead of a call stack.
+
+Document Policy is only delivered by an HTTP response header, so a document
+loaded from a `file://` URL cannot opt in. Serve the page over HTTP or from a
+custom protocol and set the header on the response:
+
+```js
+const { app, protocol } = require('electron')
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true } }
+])
+
+app.whenReady().then(() => {
+  protocol.handle('app', () => {
+    return new Response('<script>/* ... */</script>', {
+      headers: {
+        'content-type': 'text/html',
+        'document-policy': 'include-js-call-stacks-in-crash-reports'
+      }
+    })
+  })
+})
+```
+
 #### `frame.copyVideoFrameAt(x, y)`
 
 * `x` Integer
@@ -348,3 +377,4 @@ newly navigated page replaced it in the frame tree.
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePortMain`]: message-port-main.md
 [unload]: https://developer.mozilla.org/en-US/docs/Web/API/Window/unload_event
+[document-policy]: https://wicg.github.io/document-policy/
