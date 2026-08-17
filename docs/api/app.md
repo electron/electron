@@ -716,12 +716,12 @@ Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-en
 This must match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
 
 The name (without the `.desktop` suffix) is the app's identity for Linux desktop integration.
-It should be a valid reverse-DNS [GApplication ID](https://docs.gtk.org/gio/type_func.Application.id_is_valid.html)
-such as `com.example.MyApp`. Electron exports it as the `CHROME_DESKTOP` environment variable, which becomes:
+It should be a reverse-DNS style ID such as `com.example.MyApp`, following the
+[desktop entry naming conventions](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html).
+This value is used as:
 
 * the XDG application ID (`app_id`) on Wayland and `WM_CLASS` on X11, used to match the app's icon and window grouping.
-* the name of the transient systemd scope the process runs in (`app-<name>-<pid>.scope`).
-* through that scope, the app ID that `xdg-desktop-portal` reports to portal backends such as
+* the app ID that `xdg-desktop-portal` reports to portal backends such as
   [GlobalShortcuts](global-shortcut.md).
 
 Portals increasingly enforce this identity. If the name is not a valid reverse-DNS ID or does not match an
@@ -731,8 +731,6 @@ installed `.desktop` file:
   `org.freedesktop.portal.Error.NotAllowed` — with no error surfaced to the app (see
   [#52218](https://github.com/electron/electron/issues/52218)).
 * `xdg-desktop-portal` 1.21 and later refuses portal sessions for app IDs it cannot resolve to a `.desktop` file.
-* Single-word names containing dashes (e.g. `my-app`) were additionally misparsed by `xdg-desktop-portal`,
-  giving the app a wrong identity entirely (fixed in [#52220](https://github.com/electron/electron/pull/52220)).
 
 If this value is not set and `desktopName` is not present in `package.json`, Electron falls back to a lowercased,
 hyphenated slug of the app's name (e.g. `My App` → `my-app.desktop`), which is unlikely to be a valid portal
