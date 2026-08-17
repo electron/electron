@@ -65,6 +65,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "shell/app/preallocate_fd_table_linux.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -460,6 +461,9 @@ bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
 
 #if BUILDFLAG(IS_LINUX)
 void ElectronMainDelegate::ZygoteForked() {
+  // fork() sized this process's descriptor table to the zygote's open files.
+  PreallocateFileDescriptorTable();
+
   // Needs to be called after we have DIR_USER_DATA.  BrowserMain sets
   // this up for the browser process in a different manner.
   ElectronCrashReporterClient::Create();

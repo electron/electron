@@ -22,6 +22,8 @@ filenames = {
   ]
 
   lib_sources_linux = [
+    "shell/app/preallocate_fd_table_linux.cc",
+    "shell/app/preallocate_fd_table_linux.h",
     "shell/browser/browser_linux.cc",
     "shell/browser/lib/power_observer_linux.cc",
     "shell/browser/lib/power_observer_linux.h",

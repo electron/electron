@@ -13,6 +13,7 @@
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #include "shell/app/node_main.h"
+#include "shell/app/preallocate_fd_table_linux.h"
 #include "shell/app/uv_stdio_fix.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
@@ -29,6 +30,7 @@ namespace {
 
 int main(int argc, char* argv[]) {
   FixStdioStreams();
+  electron::PreallocateFileDescriptorTable();
 
   // Chromium expects the original argv in its original memory location
   // to update /proc/<pid>/cmdline.
