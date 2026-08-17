@@ -1152,6 +1152,11 @@ On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
 
+On Linux, the progress bar shows on docks and taskbars that support the
+LauncherEntry D-Bus API. It is associated with the app's `.desktop` file, so
+[`app.setDesktopName`](app.md#appsetdesktopnamename-linux) must match the name
+of the app's actual `.desktop` file. Indeterminate mode is not supported.
+
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 
 * `overlay` [NativeImage](native-image.md) | null - the icon to display on the bottom

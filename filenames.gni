@@ -25,6 +25,8 @@ filenames = {
     "shell/browser/browser_linux.cc",
     "shell/browser/lib/power_observer_linux.cc",
     "shell/browser/lib/power_observer_linux.h",
+    "shell/browser/linux/launcher_entry.cc",
+    "shell/browser/linux/launcher_entry.h",
     "shell/browser/linux/unity_service.cc",
     "shell/browser/linux/unity_service.h",
     "shell/browser/notifications/linux/libnotify_notification.cc",

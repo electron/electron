@@ -21,6 +21,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
@@ -257,13 +258,12 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 }
 
 bool Browser::SetBadgeCount(std::optional<int> count) {
-  if (IsUnityRunning() && count.has_value()) {
-    unity::SetDownloadCount(count.value());
-    badge_count_ = count.value();
-    return true;
-  } else {
+  if (!count.has_value())
     return false;
-  }
+  if (!launcher_entry::SetBadgeCount(count.value()))
+    return false;
+  badge_count_ = count.value();
+  return true;
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}

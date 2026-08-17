@@ -682,8 +682,7 @@ describe('app module', () => {
   });
 
   describe('app.badgeCount', () => {
-    const platformIsNotSupported =
-      process.platform === 'win32' || (process.platform === 'linux' && !app.isUnityRunning());
+    const platformIsSupported = process.platform === 'darwin' || process.platform === 'linux';
 
     const expectedBadgeCount = 42;
 
@@ -691,7 +690,7 @@ describe('app module', () => {
       app.badgeCount = 0;
     });
 
-    ifdescribe(!platformIsNotSupported)('on supported platform', () => {
+    ifdescribe(platformIsSupported)('on supported platform', () => {
       describe('with properties', () => {
         it('sets a badge count', function () {
           app.badgeCount = expectedBadgeCount;
@@ -704,25 +703,11 @@ describe('app module', () => {
           app.setBadgeCount(expectedBadgeCount);
           expect(app.getBadgeCount()).to.equal(expectedBadgeCount);
         });
-        it('sets an non numeric (dot) badge count', function () {
+        // A badge count is required on Linux; only macOS displays a plain
+        // dot when no count is provided.
+        ifit(process.platform === 'darwin')('sets an non numeric (dot) badge count', function () {
           app.setBadgeCount();
           // Badge count should be zero when non numeric (dot) is requested
-          expect(app.getBadgeCount()).to.equal(0);
-        });
-      });
-    });
-
-    ifdescribe(process.platform !== 'win32' && platformIsNotSupported)('on unsupported platform', () => {
-      describe('with properties', () => {
-        it('does not set a badge count', function () {
-          app.badgeCount = 9999;
-          expect(app.badgeCount).to.equal(0);
-        });
-      });
-
-      describe('with functions', () => {
-        it('does not set a badge count)', function () {
-          app.setBadgeCount(9999);
           expect(app.getBadgeCount()).to.equal(0);
         });
       });

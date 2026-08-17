@@ -60,7 +60,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/notimplemented.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/linux/unity_service.h"
+#include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
@@ -1592,9 +1592,7 @@ void NativeWindowViews::SetProgressBar(double progress,
 #if BUILDFLAG(IS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
 #elif BUILDFLAG(IS_LINUX)
-  if (unity::IsRunning()) {
-    unity::SetProgressFraction(progress);
-  }
+  launcher_entry::SetProgress(progress);
 #endif
 }
 
