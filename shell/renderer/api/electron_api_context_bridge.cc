@@ -4,6 +4,7 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <set>
@@ -46,14 +47,16 @@ namespace api {
 
 namespace {
 
-constexpr std::string_view kProxyFunctionPrivateKey =
-    "electron_contextBridge_proxy_fn";
-constexpr std::string_view kProxyFunctionReceiverPrivateKey =
-    "electron_contextBridge_proxy_fn_receiver";
-constexpr std::string_view kSupportsDynamicPropertiesPrivateKey =
-    "electron_contextBridge_supportsDynamicProperties";
 constexpr std::string_view kOriginalFunctionPrivateKey =
     "electron_contextBridge_original_fn";
+
+// Slots of the array a proxy function carries as its v8::Function data.
+enum ProxyFunctionState : uint32_t {
+  kProxiedFunction = 0,
+  kProxiedFunctionReceiver,
+  kSupportsDynamicProperties,
+  kProxyFunctionStateLength,
+};
 
 static int kMaxRecursion = 1000;
 
@@ -212,14 +215,13 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
 
-      v8::Local<v8::Object> state = v8::Object::New(isolate);
-      SetPrivate(isolate, destination_context, state, kProxyFunctionPrivateKey,
-                 func);
-      SetPrivate(isolate, destination_context, state,
-                 kProxyFunctionReceiverPrivateKey, parent_value);
-      SetPrivate(isolate, destination_context, state,
-                 kSupportsDynamicPropertiesPrivateKey,
-                 gin::ConvertToV8(isolate, support_dynamic_properties));
+      v8::Local<v8::Value> slots[kProxyFunctionStateLength];
+      slots[kProxiedFunction] = func;
+      slots[kProxiedFunctionReceiver] = parent_value;
+      slots[kSupportsDynamicProperties] =
+          v8::Boolean::New(isolate, support_dynamic_properties);
+      v8::Local<v8::Array> state =
+          v8::Array::New(isolate, slots, kProxyFunctionStateLength);
 
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
@@ -477,27 +479,24 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   TRACE_EVENT0("electron", "ContextBridge::ProxyFunctionWrapper");
-  CHECK(info.Data()->IsObject());
-  v8::Local<v8::Object> data = info.Data().As<v8::Object>();
-  bool support_dynamic_properties = false;
+  CHECK(info.Data()->IsArray());
+  v8::Local<v8::Array> state = info.Data().As<v8::Array>();
   gin::Arguments args{info};
   v8::Isolate* const isolate = args.isolate();
   // Context the proxy function was called from
   v8::Local<v8::Context> calling_context = isolate->GetCurrentContext();
 
-  // Pull the original function and its context off of the data private key
-  v8::MaybeLocal<v8::Value> sdp_value = GetPrivate(
-      isolate, calling_context, data, kSupportsDynamicPropertiesPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_func =
-      GetPrivate(isolate, calling_context, data, kProxyFunctionPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_recv = GetPrivate(
-      isolate, calling_context, data, kProxyFunctionReceiverPrivateKey);
+  // Pull the original function and its receiver out of the state slots.
   v8::Local<v8::Value> func_value;
-  if (sdp_value.IsEmpty() || maybe_func.IsEmpty() || maybe_recv.IsEmpty() ||
-      !gin::ConvertFromV8(isolate, sdp_value.ToLocalChecked(),
-                          &support_dynamic_properties) ||
-      !maybe_func.ToLocal(&func_value))
+  v8::Local<v8::Value> recv;
+  v8::Local<v8::Value> sdp_value;
+  if (!state->Get(calling_context, kProxiedFunction).ToLocal(&func_value) ||
+      !state->Get(calling_context, kProxiedFunctionReceiver).ToLocal(&recv) ||
+      !state->Get(calling_context, kSupportsDynamicProperties)
+           .ToLocal(&sdp_value) ||
+      !func_value->IsFunction())
     return;
+  const bool support_dynamic_properties = sdp_value->IsTrue();
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context =
@@ -528,9 +527,8 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     v8::Local<v8::Value> error_message;
     {
       v8::TryCatch try_catch(isolate);
-      maybe_return_value =
-          func->Call(func_owning_context, maybe_recv.ToLocalChecked(),
-                     proxied_args.size(), proxied_args.data());
+      maybe_return_value = func->Call(func_owning_context, recv,
+                                      proxied_args.size(), proxied_args.data());
       if (try_catch.HasCaught()) {
         did_error = true;
         v8::Local<v8::Value> exception = try_catch.Exception();
