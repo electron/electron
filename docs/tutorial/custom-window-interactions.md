@@ -34,6 +34,30 @@ button {
 If you're only setting a custom title bar as draggable, you also need to make all
 buttons in title bar non-draggable.
 
+### The standardized `window-drag` property
+
+`app-region` predates standardization. The CSS Working Group has since
+standardized [`window-drag`][window-drag-spec], which Chromium implements as of
+Electron 44. Chromium keeps `app-region` as a surrogate for `window-drag`, so
+both properties write the same underlying value and either may be used.
+
+The keywords are not the same, though:
+
+| `app-region`          | `window-drag`         |
+| --------------------- | --------------------- |
+| `app-region: drag`    | `window-drag: move`   |
+| `app-region: no-drag` | no equivalent         |
+
+`window-drag: none` is not a replacement for `app-region: no-drag`. `no-drag`
+excludes its area from an ancestor's draggable region, while `none` only means
+that the element does not define a draggable region of its own, so an element
+with `window-drag: none` inside a `window-drag: move` region stays draggable.
+Keep using `app-region: no-drag` to re-enable pointer events on buttons and
+other controls.
+
+Because `app-region` works on every supported version of Electron and covers
+both cases, the examples on this page use it.
+
 ### Tip: disable text selection
 
 When creating a draggable region, the dragging behavior may conflict with text selection.
@@ -107,3 +131,4 @@ This makes the web page click-through when over the `#clickThroughElement` eleme
 and returns to normal outside it.
 
 [ignore-mouse-events]: ../api/browser-window.md#winsetignoremouseeventsignore-options
+[window-drag-spec]: https://drafts.csswg.org/css-ui-4/#window-drag
