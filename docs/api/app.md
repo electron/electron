@@ -1217,7 +1217,9 @@ indicates success while any other value indicates failure according to Chromium 
     resolver is used in preference to getaddrinfo. When enabled, the built-in
     resolver will attempt to use the system's DNS settings to do DNS lookups
     itself. Enabled by default on macOS, disabled by default on Windows and
-    Linux.
+    Linux. This only applies to insecure lookups: DoH is controlled by
+    `secureDnsMode` and `secureDnsServers`, and remains in use when this is
+    `false`.
   * `enableHappyEyeballs` boolean (optional) - Whether the
     [Happy Eyeballs V3][happy-eyeballs-v3] algorithm should be used in creating
     network connections. When enabled, hostnames resolving to multiple IP

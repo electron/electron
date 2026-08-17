@@ -799,8 +799,10 @@ pooled sockets using previous proxy from being reused by future requests.
     * `any` (default) - Resolver will pick an appropriate source. Results could
       come from DNS, MulticastDNS, HOSTS file, etc
     * `system` - Results will only be retrieved from the system or OS, e.g. via
-      the `getaddrinfo()` system call
-    * `dns` - Results will only come from DNS queries
+      the `getaddrinfo()` system call. This does not go through the built-in
+      resolver, so DNS-over-HTTPS is not used
+    * `dns` - Results will only come from DNS queries, made by the built-in
+      resolver, so DNS-over-HTTPS is used when it is configured
     * `mdns` - Results will only come from Multicast DNS queries
     * `localOnly` - No external sources will be used. Results will only come
       from fast local sources that are available no matter the source setting,
@@ -817,6 +819,12 @@ pooled sockets using previous proxy from being reused by future requests.
     * `disable`
 
 Returns [`Promise<ResolvedHost>`](structures/resolved-host.md) - Resolves with the resolved IP addresses for the `host`.
+
+To resolve a host through the DNS-over-HTTPS servers configured with
+[`app.configureHostResolver`](app.md#appconfigurehostresolveroptions), leave
+`source` unset or set it to `dns`, and leave `secureDnsPolicy` at its default.
+Setting `source` to `system` hands the lookup to the OS resolver, which knows
+nothing about that configuration.
 
 #### `ses.resolveProxy(url)`
 
