@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
@@ -64,8 +63,6 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
 
   std::string GetFeedURL();
   void QuitAndInstall();
-
-  const raw_ptr<gin::PerIsolateData> per_isolate_data_;
 };
 
 }  // namespace electron::api

@@ -584,15 +584,16 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
   Dispose();
 }
 
 void Session::Dispose() {
+  if (!keep_alive_)
+    return;
+
   ElectronBrowserContext* const browser_context = this->browser_context();
   if (!browser_context)
     return;
-  browser_context_ = nullptr;
 
   browser_context->GetDownloadManager()->RemoveObserver(this);
 
@@ -1906,8 +1907,11 @@ const char* Session::GetHumanReadableName() const {
 }
 
 void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->RemoveDisposeObserver(this);
   Dispose();
   weak_factory_.Invalidate();
+  browser_context_ = nullptr;
   keep_alive_.Clear();
 }
 

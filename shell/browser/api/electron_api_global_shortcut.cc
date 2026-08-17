@@ -56,14 +56,12 @@ namespace electron::api {
 const gin::WrapperInfo GlobalShortcut::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronGlobalShortcut);
 
-GlobalShortcut::GlobalShortcut(v8::Isolate* isolate)
-    : per_isolate_data_{gin::PerIsolateData::From(isolate)} {
-  per_isolate_data_->AddDisposeObserver(this);
+GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->AddDisposeObserver(this);
 }
 
-GlobalShortcut::~GlobalShortcut() {
-  per_isolate_data_->RemoveDisposeObserver(this);
-}
+GlobalShortcut::~GlobalShortcut() = default;
 
 void GlobalShortcut::Dispose() {
   is_disposed_ = true;
@@ -320,6 +318,8 @@ const char* GlobalShortcut::GetHumanReadableName() const {
 }
 
 void GlobalShortcut::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->RemoveDisposeObserver(this);
   Dispose();
 }
 

@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
-#include "base/memory/raw_ptr.h"
 #include "extensions/common/extension_id.h"
 #include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
@@ -73,7 +72,6 @@ class GlobalShortcut final : public gin::Wrappable<GlobalShortcut>,
   CommandCallbackMap command_callback_map_;
   bool is_disposed_ = false;
 
-  const raw_ptr<gin::PerIsolateData> per_isolate_data_;
   gin::WeakCellFactory<GlobalShortcut> weak_factory_{this};
 };
 
