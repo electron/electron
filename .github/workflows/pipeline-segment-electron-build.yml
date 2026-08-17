@@ -132,12 +132,13 @@ jobs:
         CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Safe to background: it only deletes preinstalled toolchains/simulators that
+    # none of the setup steps below read; the wait-all before the src cache
+    # restore (the step that needs the freed disk) is a no-op on win/linux.
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
-    - name: Check disk space after freeing up space
-      if: ${{ inputs.target-platform == 'macos' }}
-      run: df -h
+      background: true
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -147,9 +148,6 @@ jobs:
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Install AZCopy
-      if: ${{ inputs.target-platform == 'macos' }}
-      run: brew install azcopy
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
       env:
@@ -172,6 +170,16 @@ jobs:
         DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Wait for space cleanup to finish
+      wait-all:
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h
+    # Must stay after the wait: free-space-macos runs brew uninstall/autoremove,
+    # which cannot overlap another brew invocation.
+    - name: Install AZCopy
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: brew install azcopy
     - name: Restore src cache via AZCopy
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy

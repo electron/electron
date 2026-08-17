@@ -65,12 +65,26 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
   });
 
   describe('platformPasskeys', () => {
+    afterEach(() => {
+      // Reset the process-global flag so it doesn't leak into later suites.
+      configureWebAuthn({ platformPasskeys: false });
+    });
+
     it('accepts platformPasskeys: true', () => {
       expect(() => configureWebAuthn({ platformPasskeys: true })).to.not.throw();
     });
 
     it('accepts platformPasskeys: false', () => {
       expect(() => configureWebAuthn({ platformPasskeys: false })).to.not.throw();
+    });
+
+    it('throws when platformPasskeys is not a boolean', () => {
+      expect(() => configureWebAuthn({ platformPasskeys: 'no' })).to.throw(/platformPasskeys/);
+    });
+
+    it('treats platformPasskeys: null and undefined as not set', () => {
+      expect(() => configureWebAuthn({ platformPasskeys: undefined })).to.not.throw();
+      expect(() => configureWebAuthn({ platformPasskeys: null })).to.not.throw();
     });
 
     it('accepts both touchID and platformPasskeys together', () => {
@@ -180,6 +194,8 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
 
   afterEach(async () => {
     session.defaultSession.removeAllListeners('select-webauthn-authenticator');
+    // Reset the process-global flag so it doesn't leak into later suites.
+    configureWebAuthn({ platformPasskeys: false });
     try {
       w.webContents.debugger.detach();
     } catch {}

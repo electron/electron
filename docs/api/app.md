@@ -718,14 +718,31 @@ Overrides the current application's name.
 
 ### `app.setDesktopName(name)` _Linux_
 
-* `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
+* `name` string - The `.desktop` filename (e.g. `'com.example.MyApp.desktop'`).
 
 Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
-This should match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
+This must match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
 
-This value is used to determine the default XDG application ID on Wayland and `WM_CLASS` on X11. If it is not set,
-Electron will attempt to infer a name, but it may not match the packaged app's actual `.desktop` file. This could result
-in the app showing a generic icon or failing to respond to global keyboard shortcuts.
+The name (without the `.desktop` suffix) is the app's identity for Linux desktop integration.
+It should be a reverse-DNS style ID such as `com.example.MyApp`, following the
+[desktop entry naming conventions](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html).
+This value is used as:
+
+* the XDG application ID (`app_id`) on Wayland and `WM_CLASS` on X11, used to match the app's icon and window grouping.
+* the app ID that `xdg-desktop-portal` reports to portal backends such as
+  [GlobalShortcuts](global-shortcut.md).
+
+Portals increasingly enforce this identity. If the name is not a valid reverse-DNS ID or does not match an
+installed `.desktop` file:
+
+* GNOME 50.0/50.1 (Ubuntu 26.04) rejects [`globalShortcut`](global-shortcut.md) binds with
+  `org.freedesktop.portal.Error.NotAllowed` — with no error surfaced to the app (see
+  [#52218](https://github.com/electron/electron/issues/52218)).
+* `xdg-desktop-portal` 1.21 and later refuses portal sessions for app IDs it cannot resolve to a `.desktop` file.
+
+If this value is not set and `desktopName` is not present in `package.json`, Electron falls back to a lowercased,
+hyphenated slug of the app's name (e.g. `My App` → `my-app.desktop`), which is unlikely to be a valid portal
+identity — packaged apps should always set it explicitly.
 
 This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
 
@@ -1283,7 +1300,9 @@ added:
   * `platformPasskeys` boolean (optional) - Enables passkeys via Apple's
     `ASAuthorizationController`. When enabled, passkey operations present the
     system credential provider sheet (iCloud Keychain, 1Password, Bitwarden,
-    etc.) and credentials sync across the user's devices.
+    etc.) and credentials sync across the user's devices. Defaults to `false`.
+    Passing `null`/`undefined` (or omitting the key) leaves the previous
+    setting unchanged.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1299,7 +1318,15 @@ When `platformPasskeys` is `true`, passkey operations use Apple's
 `ASAuthorizationController` which delegates to the system's configured
 Credential Provider Extensions. This enables the same passkey experience as
 Safari — credentials are available across all devices signed into the same
-account.
+account. Unlike Touch ID credentials, platform passkeys are stored by the
+credential provider and scoped to the relying party, not to Electron: they are
+shared across all [`session`](session.md) partitions and with any other app or
+browser associated with the same domain. Platform passkeys cannot serve
+cross-origin (iframe) requests; those requests are left to the other available
+authenticators (Touch ID supports iframes) and a warning is logged to the
+DevTools console. The `prf` and `largeBlob` WebAuthn extensions are not
+currently supported by this authenticator — `prf` inputs are ignored, and a
+`create()` call with `largeBlob: { support: 'required' }` fails.
 
 ```js
 const { app } = require('electron')
@@ -1387,7 +1414,9 @@ the embedded development provisioning profile described above:
 > browser), the `clientDataJSON` returned to the page reports
 > `origin: "https://<rpId>"` — the associated domain — rather than the page's
 > own origin. Relying-party servers that enforce a strict `expectedOrigin`
-> allowlist must include `https://<rpId>` for verification to succeed.
+> allowlist must include `https://<rpId>` for verification to succeed. This
+> also means the relying party cannot distinguish which subdomain of the
+> associated domain initiated the ceremony.
 
 > [!NOTE]
 > Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
@@ -1471,17 +1500,25 @@ Using `basic` should be preferred if only basic information like `vendorId` or `
 
 Promise is rejected if the GPU is completely disabled, i.e. no hardware and software implementations are available.
 
-### `app.setBadgeCount([count])` _macOS_
+### `app.setBadgeCount([count])` _Linux_ _macOS_
 
-* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications).
+* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
 Returns `boolean` - Whether the call succeeded.
 
-Sets the Dock icon counter badge for current app. Setting the count to `0` will hide the
+Sets the counter badge for current app. Setting the count to `0` will hide the
 badge.
 
+On macOS, it shows on the Dock icon. On Linux, it shows on docks and taskbars that support the LauncherEntry D-Bus API,
+
 > [!NOTE]
-> You need to ensure that your application has the permission
+> On Linux, the badge is associated with the app's `.desktop` file, so
+> [`app.setDesktopName`](#appsetdesktopnamename-linux) (or the `desktopName`
+> field in `package.json`) must match the name of the app's actual `.desktop`
+> file.
+
+> [!NOTE]
+> On macOS, you need to ensure that your application has the permission
 > to display notifications for this method to work.
 
 ### `app.getBadgeCount()` _macOS_
@@ -1867,12 +1904,12 @@ This API must be called after the `ready` event is emitted.
 A `Menu | null` property that returns [`Menu`](menu.md) if one has been set and `null` otherwise.
 Users can pass a [Menu](menu.md) to set this property.
 
-### `app.badgeCount` _macOS_
+### `app.badgeCount` _Linux_ _macOS_
 
-An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge. Setting this with any nonzero integer shows the count on the Dock icon.
+An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge. Setting this with any nonzero integer shows the count on the Dock icon on macOS, or on the launcher on Linux.
 
 > [!NOTE]
-> You need to ensure that your application has the permission
+> On macOS, you need to ensure that your application has the permission
 > to display notifications for this property to take effect.
 
 ### `app.commandLine` _Readonly_

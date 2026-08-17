@@ -73,6 +73,7 @@
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
+#include "content/public/common/page_visibility_state.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/url_constants.h"
@@ -127,6 +128,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -816,6 +818,18 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
+  // Nothing owns a remote api::WebContents on the JS side, so its wrapper is
+  // only kept alive by whoever happens to hold a reference to it. Some callers
+  // create it and only pick it back up later (e.g. the DevTools WebContents is
+  // created in InspectableWebContents::ShowDevTools and next looked up in
+  // DevToolsOpened once the frontend has loaded); if a GC runs in between the
+  // wrapper is collected while the C++ object is still reachable via
+  // From(), and FromOrCreate() then hands back an empty handle. Pin the
+  // wrapper for as long as the underlying content::WebContents is alive, see
+  // WebContentsDestroyed().
+  if (type_ == Type::kRemote)
+    Pin(isolate);
+
   // TODO: This works for main frames, but does not work for child frames.
   // See: https://github.com/electron/electron/issues/49256
   web_contents->SetSupportsDraggableRegions(true);
@@ -1483,7 +1497,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     auto* initiator = static_cast<content::RenderFrameHostImpl*>(
         content::RenderFrameHost::FromID(params.source_render_process_id,
                                          params.source_render_frame_id));
-    if (initiator && initiator->GetParent()) {
+    if (initiator) {
       // Use the initiating document's active sandboxing flag set (its policy
       // container flags), which is what
       // content::WebContentsImpl::CreateWithOpener consults when deciding
@@ -1495,7 +1509,7 @@ content::WebContents* WebContents::OpenURLFromTab(
       if (!allow(SandboxFlags::kPopups)) {
         initiator->AddMessageToConsole(
             blink::mojom::ConsoleMessageLevel::kError,
-            "Blocked opening a new window because the iframe is sandboxed "
+            "Blocked opening a new window because the opener is sandboxed "
             "and the 'allow-popups' keyword is not set.");
         return nullptr;
       }
@@ -1767,6 +1781,21 @@ void WebContents::RendererUnresponsive(
   dict.Set("rendererInitialized", rwh_impl->renderer_initialized());
 
   EmitWithoutEvent("-unresponsive", event_object);
+}
+
+bool WebContents::SaveFrame(const GURL& url,
+                            const content::Referrer& referrer,
+                            content::RenderFrameHost* rfh) {
+  // Downloads read file: URLs from disk directly; save asar entries from an
+  // extracted copy.
+  GURL extracted_url;
+  std::u16string file_name;
+  if (!asar::GetExtractedFileURL(url, &extracted_url, &file_name))
+    return false;
+  web_contents()->SaveFrameWithHeaders(extracted_url, referrer, std::string(),
+                                       file_name, rfh,
+                                       /*is_subresource=*/false);
+  return true;
 }
 
 void WebContents::RendererResponsive(
@@ -2606,6 +2635,9 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
 }
 
 void WebContents::WebContentsDestroyed() {
+  // The underlying content::WebContents is gone, let the wrapper be collected.
+  Unpin();
+
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
@@ -2659,7 +2691,29 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
   if (rwh_impl->IsHidden()) {
-    rwh_impl->WasShown({});
+    // Un-hide through the view rather than calling
+    // RenderWidgetHostImpl::WasShown() directly, so that the platform view
+    // (and on macOS the BrowserCompositorMac / DelegatedFrameHost) also
+    // learns the widget is now producing frames. Bypassing the view leaves the
+    // DelegatedFrameHost embedding a stale LocalSurfaceId that the renderer no
+    // longer submits to; when the window is later shown, the "already shown"
+    // host makes the view skip its show handling and the surface is never
+    // embedded, so the window stays blank until a resize allocates a new id.
+    // kHiddenButPainting is the same state content uses for a hidden but
+    // captured WebContents: the widget renders, the page stays hidden.
+    //
+    // Guest (<webview>) main frames are child-frame views: their surface is
+    // embedded by the embedder's renderer, so there is no browser-side
+    // compositor state to keep in sync, and their ShowWithVisibility()
+    // refuses to show a frame the embedder has hidden (display: none). Keep
+    // the direct WasShown() for them so behavior there is unchanged.
+    auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
+    if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
+      rwh_impl->WasShown({});
+    } else {
+      rwhv_base->ShowWithVisibility(
+          content::PageVisibilityState::kHiddenButPainting);
+    }
   }
 }
 
@@ -2814,9 +2868,18 @@ void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
     }
   }
 
+  GURL download_url = url;
+  std::u16string asar_file_name;
+  const bool from_asar =
+      asar::GetExtractedFileURL(url, &download_url, &asar_file_name);
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
-          web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
+          web_contents(), download_url, MISSING_TRAFFIC_ANNOTATION));
+  if (from_asar) {
+    // The suggested name is dropped when a page initiator is set.
+    download_params->set_suggested_name(asar_file_name);
+    download_params->set_initiator(std::nullopt);
+  }
   for (const auto& [name, value] : headers) {
     if (base::ToLowerASCII(name) ==
         base::ToLowerASCII(net::HttpRequestHeaders::kReferer)) {

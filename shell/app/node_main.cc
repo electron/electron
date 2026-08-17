@@ -329,6 +329,11 @@ int NodeMain() {
 
   v8::V8::Dispose();
 
+  // Matches node::InitializeOncePerProcess() above. In particular this joins
+  // the off-thread CA certificate loader that `require('tls')` starts, which
+  // would otherwise race the static destructors run by exit() and abort().
+  node::TearDownOncePerProcess();
+
   return exit_code;
 }
 

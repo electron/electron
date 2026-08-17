@@ -235,6 +235,27 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
     });
 
+    // Exiting before 'ready' leaves browser start-up state unfreed by design,
+    // which LeakSanitizer reports and turns into exit code 1.
+    ifit(!process.env.IS_ASAN)('exits cleanly when called before ready right after loading tls', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
+      // This guards against a shutdown race that was lost roughly one run in
+      // five, so go a few rounds.
+      for (let i = 0; i < 15; i++) {
+        appProcess = cp.spawn(process.execPath, [appPath]);
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(123, message);
+        expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
+      }
+    });
+
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -660,7 +681,7 @@ describe('app module', () => {
   });
 
   describe('app.badgeCount', () => {
-    const platformIsNotSupported = process.platform === 'win32' || process.platform === 'linux';
+    const platformIsSupported = process.platform === 'darwin' || process.platform === 'linux';
 
     const expectedBadgeCount = 42;
 
@@ -668,7 +689,7 @@ describe('app module', () => {
       app.badgeCount = 0;
     });
 
-    ifdescribe(!platformIsNotSupported)('on supported platform', () => {
+    ifdescribe(platformIsSupported)('on supported platform', () => {
       describe('with properties', () => {
         it('sets a badge count', function () {
           app.badgeCount = expectedBadgeCount;
@@ -681,25 +702,11 @@ describe('app module', () => {
           app.setBadgeCount(expectedBadgeCount);
           expect(app.getBadgeCount()).to.equal(expectedBadgeCount);
         });
-        it('sets an non numeric (dot) badge count', function () {
+        // A badge count is required on Linux; only macOS displays a plain
+        // dot when no count is provided.
+        ifit(process.platform === 'darwin')('sets an non numeric (dot) badge count', function () {
           app.setBadgeCount();
           // Badge count should be zero when non numeric (dot) is requested
-          expect(app.getBadgeCount()).to.equal(0);
-        });
-      });
-    });
-
-    ifdescribe(process.platform !== 'win32' && platformIsNotSupported)('on unsupported platform', () => {
-      describe('with properties', () => {
-        it('does not set a badge count', function () {
-          app.badgeCount = 9999;
-          expect(app.badgeCount).to.equal(0);
-        });
-      });
-
-      describe('with functions', () => {
-        it('does not set a badge count)', function () {
-          app.setBadgeCount(9999);
           expect(app.getBadgeCount()).to.equal(0);
         });
       });

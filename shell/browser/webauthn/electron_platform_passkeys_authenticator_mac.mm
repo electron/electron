@@ -19,6 +19,7 @@
 
 #include "base/base64url.h"
 #include "base/compiler_specific.h"
+#include "base/containers/span.h"
 #include "base/functional/bind.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -39,7 +40,6 @@
 #include "device/fido/public/fido_constants.h"
 #include "device/fido/public/fido_types.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
-#include "device/fido/public/public_key_credential_params.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
 #include "shell/browser/native_window.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
@@ -64,6 +64,23 @@ bool IsExcludedCredentialError(const std::string& error_domain,
   // 1006 == ASAuthorizationErrorMatchedExcludedCredential (macOS 15+).
   return error_domain == base::SysNSStringToUTF8(ASAuthorizationErrorDomain) &&
          error_code == 1006;
+}
+
+// kAuthenticatorResponseInvalid is ignored for this authenticator type (the
+// page would hang until timeout), so fail with a terminal status instead.
+constexpr auto kMakeCredentialTerminalFailure =
+    device::MakeCredentialStatus::kUserConsentDenied;
+constexpr auto kGetAssertionTerminalFailure =
+    device::GetAssertionStatus::kUserConsentDenied;
+
+// Cross-origin rejects are deterministic; the page only sees NotAllowedError.
+void LogCrossOriginUnsupported(content::RenderFrameHost* rfh) {
+  rfh->AddMessageToConsole(
+      blink::mojom::ConsoleMessageLevel::kError,
+      "WebAuthn platform passkey request rejected: Apple's "
+      "ASAuthorizationController cannot fulfill cross-origin (iframe) "
+      "ceremonies. Serve the request from a top-level (or same-origin) frame, "
+      "or configure the Touch ID authenticator, which supports iframes.");
 }
 
 NSData* VectorToNSData(const std::vector<uint8_t>& vec) {
@@ -347,21 +364,6 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
       return;
     }
 
-    // The public ASAuthorization API ignores pubKeyCredParams and always mints
-    // an ES256 (-7) credential. If the RP doesn't accept ES256, creating a
-    // credential here would produce one it immediately rejects, so fail early.
-    const auto& params =
-        request.public_key_credential_params.public_key_credential_params();
-    const bool supports_es256 = std::ranges::any_of(params, [](const auto& p) {
-      return p.algorithm == base::strict_cast<int32_t>(
-                                device::CoseAlgorithmIdentifier::kEs256);
-    });
-    if (!supports_es256) {
-      std::move(callback).Run(device::MakeCredentialStatus::kNoCommonAlgorithms,
-                              std::nullopt);
-      return;
-    }
-
     // Hand Apple the real challenge (not client_data_hash) so it builds a
     // clientDataJSON — with our challenge and the associated-domain origin —
     // and signs over its hash, letting the RP verify against the
@@ -373,18 +375,15 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
     if (!client_data.valid) {
       // Falling back to client_data_hash here would let Apple hash it again,
       // producing a signature no RP can verify. Reject instead.
-      std::move(callback).Run(
-          device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-          std::nullopt);
+      std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
       return;
     }
     if (client_data.cross_origin) {
       // Apple's public API always builds a top-level `origin: https://<rpId>`
       // clientDataJSON, so we can't represent a cross-origin (iframe) ceremony.
       // Reject rather than silently present it to the RP as same-origin.
-      std::move(callback).Run(
-          device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-          std::nullopt);
+      LogCrossOriginUnsupported(rfh);
+      std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
       return;
     }
 
@@ -501,16 +500,15 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
     if (!client_data.valid) {
       // Falling back to client_data_hash here would let Apple hash it again,
       // producing a signature no RP can verify. Reject instead.
-      std::move(callback).Run(
-          device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+      std::move(callback).Run(kGetAssertionTerminalFailure, {});
       return;
     }
     if (client_data.cross_origin) {
       // Apple's public API always builds a top-level `origin: https://<rpId>`
       // clientDataJSON, so we can't represent a cross-origin (iframe) ceremony.
       // Reject rather than silently present it to the RP as same-origin.
-      std::move(callback).Run(
-          device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+      LogCrossOriginUnsupported(rfh);
+      std::move(callback).Run(kGetAssertionTerminalFailure, {});
       return;
     }
 
@@ -617,6 +615,15 @@ ElectronPlatformPasskeysAuthenticator::Options() const {
   return *options;
 }
 
+std::optional<base::span<const int32_t>>
+ElectronPlatformPasskeysAuthenticator::GetAlgorithms() {
+  // Pre-filters non-ES256 RPs before dispatch. Returning kNoCommonAlgorithms
+  // from MakeCredential would hit the base GetTouch() no-op and hang.
+  static constexpr int32_t kAlgorithms[] = {
+      base::strict_cast<int32_t>(device::CoseAlgorithmIdentifier::kEs256)};
+  return base::span<const int32_t>(kAlgorithms);
+}
+
 std::optional<device::FidoTransportProtocol>
 ElectronPlatformPasskeysAuthenticator::AuthenticatorTransport() const {
   return device::FidoTransportProtocol::kInternal;
@@ -655,6 +662,20 @@ void ElectronPlatformPasskeysAuthenticator::MaybeLogUnconfiguredError() {
       "via the entitlement's ?mode=developer modifier.");
 }
 
+void ElectronPlatformPasskeysAuthenticator::LogInvalidResponse() {
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromFrameToken(render_frame_host_token_);
+  if (!rfh) {
+    return;
+  }
+  rfh->AddMessageToConsole(
+      blink::mojom::ConsoleMessageLevel::kError,
+      "WebAuthn platform passkey request failed: the response from the system "
+      "credential provider failed parsing or validation, and the request was "
+      "cancelled. This may indicate an incompatible credential provider or "
+      "macOS version.");
+}
+
 void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
     MakeCredentialCallback callback) {
   if (!objc_storage_->succeeded) {
@@ -674,18 +695,16 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   std::optional<cbor::Value> cbor_value =
       cbor::Reader::Read(objc_storage_->raw_attestation_object);
   if (!cbor_value) {
-    std::move(callback).Run(
-        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-        std::nullopt);
+    LogInvalidResponse();
+    std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
     return;
   }
 
   std::optional<device::AttestationObject> attestation_object =
       device::AttestationObject::Parse(*cbor_value);
   if (!attestation_object) {
-    std::move(callback).Run(
-        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-        std::nullopt);
+    LogInvalidResponse();
+    std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
     return;
   }
 
@@ -699,9 +718,8 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   if (!std::ranges::equal(
           response.attestation_object.authenticator_data().GetCredentialId(),
           objc_storage_->credential_id)) {
-    std::move(callback).Run(
-        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-        std::nullopt);
+    LogInvalidResponse();
+    std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
     return;
   }
 
@@ -722,9 +740,8 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
                                    objc_storage_->expected_challenge,
                                    objc_storage_->expected_origin,
                                    objc_storage_->expected_type)) {
-    std::move(callback).Run(
-        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
-        std::nullopt);
+    LogInvalidResponse();
+    std::move(callback).Run(kMakeCredentialTerminalFailure, std::nullopt);
     return;
   }
   response.raw_client_data_json =
@@ -746,8 +763,8 @@ void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
       device::AuthenticatorData::DecodeAuthenticatorData(
           base::span<const uint8_t>(objc_storage_->raw_authenticator_data));
   if (!auth_data) {
-    std::move(callback).Run(
-        device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+    LogInvalidResponse();
+    std::move(callback).Run(kGetAssertionTerminalFailure, {});
     return;
   }
 
@@ -774,8 +791,8 @@ void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
                                    objc_storage_->expected_challenge,
                                    objc_storage_->expected_origin,
                                    objc_storage_->expected_type)) {
-    std::move(callback).Run(
-        device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+    LogInvalidResponse();
+    std::move(callback).Run(kGetAssertionTerminalFailure, {});
     return;
   }
   response.raw_client_data_json =

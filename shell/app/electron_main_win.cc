@@ -4,7 +4,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include <shellapi.h>
 #include <shellscalingapi.h>
 #include <tchar.h>
@@ -15,15 +14,11 @@
 #include <string>
 #include <utility>
 
-// workaround for base/strings/strcat.h(18,9): error: 'StrCat' macro redefined
-// [-Werror,-Wmacro-redefined]
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
 #include "base/strings/cstring_view.h"
+#include "base/win/atl.h"  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include "base/win/dark_mode_support.h"
 #include "chrome/app/exit_code_watcher_win.h"
 #include "components/crash/core/app/crash_switches.h"
@@ -38,8 +33,6 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
 #include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
-
-#pragma clang diagnostic pop
 
 namespace {
 

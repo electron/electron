@@ -548,6 +548,17 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+
+  if (initialized_node_per_process_)
+    TearDownOncePerProcess();
+}
+
+// static
+void NodeBindings::TearDownOncePerProcess() {
+  if (!g_is_initialized)
+    return;
+  g_is_initialized = false;
+  node::TearDownOncePerProcess();
 }
 
 void NodeBindings::StopPolling() {
@@ -754,6 +765,7 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   }
 
   g_is_initialized = true;
+  initialized_node_per_process_ = true;
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
@@ -1121,8 +1133,11 @@ void NodeBindings::UvRunOnce() {
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-    // Deal with uv events.
+    // The embed thread is parked on |embed_sem_| until we post it below and
+    // re-reads uv_backend_timeout() before polling, so skip the interrupts.
+    uv_loop_interrupt_suspend(uv_loop_);
     int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    uv_loop_interrupt_resume(uv_loop_);
 
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
