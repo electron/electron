@@ -1,4 +1,4 @@
-import { webContents } from 'electron/main';
+import { BrowserWindow, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -27,6 +27,7 @@ import {
   startRemoteControlApp,
   useRemoteContext
 } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -483,6 +484,72 @@ describe('node feature', () => {
           }, 10);
         });
       });
+    });
+  });
+
+  describe('environments sharing a renderer', () => {
+    afterEach(closeAllWindows);
+
+    const nodePreferences = { nodeIntegration: true, contextIsolation: false, sandbox: false };
+
+    const churnDuring = (teardown: string) => `new Promise((resolve) => {
+      const fs = require('node:fs');
+      let immediates = 0;
+      const spin = () => { if (++immediates < 200) setImmediate(spin); };
+      setImmediate(spin);
+      let read = false;
+      fs.readFile(__filename, () => { read = true; });
+      let closed = 0;
+      const watchers = Array.from({ length: 5 }, () => fs.watch(__filename));
+      for (const w of watchers) w.on('close', () => closed++);
+      for (const w of watchers) w.close();
+      ${teardown};
+      const done = () => immediates < 200 || !read ? setTimeout(done, 10) : resolve({ immediates, read, closed });
+      setTimeout(done, 10);
+    })`;
+
+    const openWindow = async (webPreferences = {}) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { ...nodePreferences, ...webPreferences } });
+      const errors: string[] = [];
+      w.webContents.on('console-message', ({ level, message }) => {
+        if (level === 'error') errors.push(message);
+      });
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      return { w, errors };
+    };
+
+    it('keeps the opener working when a same-process child window closes', async () => {
+      const { w, errors } = await openWindow();
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: nodePreferences }
+      }));
+      for (let i = 0; i < 3; i++) {
+        const childCreated = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+        await w.webContents.executeJavaScript("window.child = window.open('base-page.html'); undefined");
+        const [child] = await childCreated;
+        if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+        const closed = once(child, 'closed');
+        const result = await w.webContents.executeJavaScript(churnDuring('window.child.close()'));
+        await closed;
+        expect(result).to.deep.equal({ immediates: 200, read: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps the parent frame working when a node-integrated iframe is removed', async () => {
+      const { w, errors } = await openWindow({ nodeIntegrationInSubFrames: true });
+      for (let i = 0; i < 3; i++) {
+        await w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          frame.onload = () => resolve();
+          document.body.appendChild(window.frame = frame);
+        })`);
+        const result = await w.webContents.executeJavaScript(churnDuring('window.frame.remove()'));
+        expect(result).to.deep.equal({ immediates: 200, read: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
     });
   });
 

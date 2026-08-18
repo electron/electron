@@ -58,7 +58,8 @@ WebWorkerObserver* WebWorkerObserver::Create() {
 
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker,
+                               nullptr)),
       electron_bindings_(
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 

@@ -534,19 +534,25 @@ base::FilePath GetResourcesPath() {
 }
 }  // namespace
 
-NodeBindings::NodeBindings(BrowserEnvironment browser_env)
+NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
-      uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
+      uv_loop_{loop ? loop : &owned_loop_.emplace()} {
+  if (owned_loop_)
+    CHECK_EQ(0, uv_loop_init(uv_loop_));
+
+  // Interrupt embed polling when a handle is started.
+  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
+}
 
 NodeBindings::~NodeBindings() {
   StopPolling();
 
-  // Clear uv.
-  uv_sem_destroy(&embed_sem_);
-  dummy_uv_handle_.reset();
+  if (embed_thread_prepared_) {
+    uv_sem_destroy(&embed_sem_);
+    dummy_uv_handle_.reset();
+  }
 
-  // Clean up worker loop
-  if (in_worker_loop())
+  if (owned_loop_)
     stop_and_close_uv_loop(uv_loop_);
 
   if (initialized_node_per_process_)
@@ -589,38 +595,6 @@ void NodeBindings::StopPolling() {
   // Allow PrepareEmbedThread + StartPolling to restart.
   embed_closed_ = false;
   initialized_ = false;
-}
-
-node::IsolateData* NodeBindings::isolate_data(
-    v8::Local<v8::Context> context) const {
-  if (context->GetNumberOfEmbedderDataFields() <=
-      kElectronContextEmbedderDataIndex) {
-    return nullptr;
-  }
-  auto* isolate_data = static_cast<node::IsolateData*>(
-      context->GetAlignedPointerFromEmbedderData(
-          kElectronContextEmbedderDataIndex, v8::kEmbedderDataTypeTagDefault));
-  CHECK(isolate_data);
-  CHECK(isolate_data->event_loop());
-  return isolate_data;
-}
-
-// static
-uv_loop_t* NodeBindings::InitEventLoop(BrowserEnvironment browser_env,
-                                       uv_loop_t* worker_loop) {
-  uv_loop_t* event_loop = nullptr;
-
-  if (browser_env == BrowserEnvironment::kWorker) {
-    uv_loop_init(worker_loop);
-    event_loop = worker_loop;
-  } else {
-    event_loop = uv_default_loop();
-  }
-
-  // Interrupt embed polling when a handle is started.
-  uv_loop_configure(event_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
-
-  return event_loop;
 }
 
 void NodeBindings::RegisterBuiltinBindings() {

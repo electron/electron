@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "base/containers/flat_set.h"
+#include "base/containers/flat_map.h"
 #include "shell/renderer/renderer_client_base.h"
 
 namespace node {
@@ -51,23 +51,23 @@ class ElectronRendererClient : public RendererClientBase {
       v8::Local<v8::Context> context) override;
   void SetUpWebAssemblyTrapHandler() override;
 
+  // A frame's node::Environment and the uv loop integration driving it. Every
+  // environment gets its own loop so that freeing one, which runs its loop
+  // until its handles close, never dispatches another environment's callbacks.
+  struct FrameEnvironment;
+
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
   // Whether the node integration has been initialized.
   bool node_integration_initialized_ = false;
 
+  // Integrates uv_default_loop() for the whole process; hosts whichever
+  // environment is created while it is free (normally the main frame's).
   const std::unique_ptr<NodeBindings> node_bindings_;
   const std::unique_ptr<ElectronBindings> electron_bindings_;
 
-  // The node::Environment::GetCurrent API does not return nullptr when it
-  // is called for a context without node::Environment, so we have to keep
-  // a book of the environments created.
-  base::flat_set<std::shared_ptr<node::Environment>> environments_;
-
-  // Getting main script context from web frame would lazily initializes
-  // its script context. Doing so in a web page without scripts would trigger
-  // assertion, so we have to keep a book of injected web frames.
-  base::flat_set<content::RenderFrame*> injected_frames_;
+  base::flat_map<content::RenderFrame*, std::unique_ptr<FrameEnvironment>>
+      environments_;
 };
 
 }  // namespace electron

@@ -180,7 +180,8 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       node_bindings_{
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser,
+                               uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
       browser_{std::make_unique<Browser>()} {
