@@ -913,6 +913,16 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
+      ifit(isVenturaOrHigher)('does not crash when the service name is not valid UTF-8', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: false,
+            type: 'daemonService',
+            serviceName: '\uD800'
+          });
+        }).to.not.throw();
+      });
+
       ifit(isVenturaOrHigher)('can unset a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,
