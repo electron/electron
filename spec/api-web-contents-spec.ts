@@ -2476,49 +2476,34 @@ describe('webContents module', () => {
         }
       `);
 
-      it('moves the caret through non-editable text when enabled', async () => {
+      it('moves the caret through non-editable text only while enabled', async () => {
         const w = new BrowserWindow({ show: true });
         await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
         w.focus();
         w.webContents.focus();
+
+        // Initialize to something neither phase expects so an unrun poll can't pass
+        let offset = -1;
+        // Renderer preferences propagate asynchronously, so poll for each state
+        const pollForOffset = (expected: number) =>
+          waitUntil(
+            async () => {
+              await collapseSelectionToStart(w);
+              pressRight(w, 3);
+              offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+              return offset === expected;
+            },
+            { rate: 100, timeout: 3000 }
+          );
 
         w.webContents.caretBrowsingEnabled = true;
-
-        let offset = 0;
-        await waitUntil(
-          async () => {
-            await collapseSelectionToStart(w);
-            pressRight(w, 3);
-            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
-            return offset === 3;
-          },
-          { rate: 100, timeout: 3000 }
-        );
-
+        await pollForOffset(3);
         expect(offset).to.equal(3);
-      });
 
-      it('does not move the caret through non-editable text when disabled', async () => {
-        const w = new BrowserWindow({ show: true });
-        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
-        w.focus();
-        w.webContents.focus();
-
+        // Now that the input pipeline is known to reach the page, a caret that
+        // stays put is attributable to the preference
         w.webContents.caretBrowsingEnabled = false;
-
-        // Initialize to something other than 0 to ensure the awaited code actually gets
-        // a selection.
-        let offset = -1;
-        await waitUntil(
-          async () => {
-            await collapseSelectionToStart(w);
-            pressRight(w, 3);
-            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
-            return offset === 3;
-          },
-          { rate: 100, timeout: 3000 }
-        ).catch(() => {});
-
+        await pollForOffset(0);
         expect(offset).to.equal(0);
       });
     });
