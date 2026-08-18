@@ -34,6 +34,7 @@
 #if BUILDFLAG(ENABLE_WIDEVINE)
 #include "base/json/json_file_value_serializer.h"
 #include "base/native_library.h"
+#include "base/version.h"
 #include "components/cdm/common/cdm_manifest.h"
 #include "content/public/common/cdm_info.h"
 #include "media/base/audio_codecs.h"
@@ -93,10 +94,25 @@ std::optional<base::FilePath> GetWidevineSubPackagePath(
   return std::nullopt;
 }
 
+std::optional<base::Version> GetWidevineVersionFromSwitch() {
+  const std::string version_string =
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kWidevineCdmVersion);
+  base::Version parsed(version_string);
+  if (parsed.IsValid()) {
+    return parsed;
+  }
+  return std::nullopt;
+}
+
 bool ParseWidevineManifestFromPath(
     const base::FilePath& manifest_path,
     media::CdmCapability* capability,
-    std::optional<base::FilePath>* sub_package_path_out) {
+    std::optional<base::FilePath>* sub_package_path_out,
+    const std::optional<base::Version>& fallback_version) {
+  if (sub_package_path_out)
+    sub_package_path_out->reset();
+
   JSONFileValueDeserializer deserializer(manifest_path);
   int error_code;
   std::string error_message;
@@ -106,13 +122,21 @@ bool ParseWidevineManifestFromPath(
     return false;
 
   base::DictValue& manifest_dict = manifest->GetDict();
+  if (sub_package_path_out) {
+    // Preserve the platform-specific library path even when capability parsing
+    // needs the version supplied on the command line.
+    *sub_package_path_out = GetWidevineSubPackagePath(manifest_dict);
+  }
+
+  if (!manifest_dict.contains("version") && fallback_version) {
+    manifest_dict.Set("version", fallback_version->GetString());
+  }
+
   if (!IsCdmManifestCompatibleWithChrome(manifest_dict) ||
       !ParseCdmManifest(manifest_dict, capability)) {
     return false;
   }
 
-  if (sub_package_path_out)
-    *sub_package_path_out = GetWidevineSubPackagePath(manifest_dict);
   return true;
 }
 
@@ -134,23 +158,14 @@ bool TryGetBundledWidevineCdm(
   base::FilePath manifest_path =
       install_dir.Append(FILE_PATH_LITERAL("manifest.json"));
   media::CdmCapability capability;
-  if (!ParseWidevineManifestFromPath(manifest_path, &capability, nullptr))
+  if (!ParseWidevineManifestFromPath(manifest_path, &capability, nullptr,
+                                     GetWidevineVersionFromSwitch())) {
     return false;
+  }
 
   *cdm_path = cdm_library_path;
   *capability_out = std::move(capability);
   return true;
-}
-
-std::optional<base::Version> GetWidevineVersionFromSwitch() {
-  const std::string version_string =
-      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-          switches::kWidevineCdmVersion);
-  base::Version parsed(version_string);
-  if (parsed.IsValid()) {
-    return parsed;
-  }
-  return std::nullopt;
 }
 
 bool IsWidevineAvailable(
@@ -182,13 +197,15 @@ bool IsWidevineAvailable(
           cdm_dir.Append(FILE_PATH_LITERAL("manifest.json"));
       media::CdmCapability capability;
       std::optional<base::FilePath> sub_package_path;
+      const std::optional<base::Version> fallback_version =
+          GetWidevineVersionFromSwitch();
       if (ParseWidevineManifestFromPath(manifest_path, &capability,
-                                        &sub_package_path)) {
+                                        &sub_package_path, fallback_version)) {
         *cached_capability = std::move(capability);
         if (cdm_version_out)
           *cdm_version_out = (*cached_capability)->version;
       } else if (cdm_version_out) {
-        *cdm_version_out = GetWidevineVersionFromSwitch();
+        *cdm_version_out = fallback_version;
       }
 
       base::FilePath cdm_library_dir = cdm_dir;

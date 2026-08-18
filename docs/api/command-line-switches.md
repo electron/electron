@@ -268,6 +268,13 @@ platform-specific Widevine CDM library. If this switch is not set, Electron
 checks for bundled Widevine CDM files at
 `<Electron executable directory>/WidevineCdm`.
 
+On Linux, pass this switch on Electron's process command line. Calling
+`app.commandLine.appendSwitch` from the app's main script is too late because
+the zygote loads library CDMs before that script runs. When the manifest does
+not contain a version, pass `--widevine-cdm-version` on the process command
+line as well. Alternatively, bundle the `WidevineCdm` directory beside the
+Electron executable.
+
 This switch is only effective in builds where Widevine support is enabled
 (`enable_widevine = true`).
 
