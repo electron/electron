@@ -510,12 +510,13 @@ describe('node feature', () => {
       setTimeout(done, 10);
     })`;
 
-    const loopWork = ['immediate', 'fs', 'napi'];
+    const loopWork = ['immediate', 'fs', 'napi async work', 'napi threadsafe function'];
     const exerciseLoop = (wc: Electron.WebContents) =>
       wc.executeJavaScript(`Promise.all([
         new Promise((resolve) => setImmediate(() => resolve('immediate'))),
         new Promise((resolve) => require('node:fs').readFile(__filename, () => resolve('fs'))),
-        new Promise((resolve) => require('@electron-ci/echo').async('napi', resolve))
+        new Promise((resolve) => require('@electron-ci/echo').async('napi async work', resolve)),
+        new Promise((resolve) => require('@electron-ci/echo').threadsafe('napi threadsafe function', resolve))
       ])`);
 
     const openWindow = async (webPreferences = {}) => {
