@@ -23,7 +23,7 @@ import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
-import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
+import { ifdescribe, defer, waitUntil, listen, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -2301,6 +2301,9 @@ describe('webContents module', () => {
   describe('caretBrowsingEnabled', () => {
     afterEach(closeAllWindows);
 
+    const platformCaretBrowsing = () =>
+      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
     it('defaults to false', () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.caretBrowsingEnabled).to.be.false();
@@ -2324,7 +2327,7 @@ describe('webContents module', () => {
       expect(w.webContents.caretBrowsingEnabled).to.be.true();
     });
 
-    // Test that repeated calls aren't incorrectly incrementing/decrementing the underlying refcount
+    // Test that repeated calls aren't incorrectly incrementing the underlying refcount
     it('can be enabled repeatedly without poisoning future calls', () => {
       const w = new BrowserWindow({ show: false });
 
@@ -2389,6 +2392,53 @@ describe('webContents module', () => {
 
       w2.webContents.caretBrowsingEnabled = false;
       expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // These depend on a binding that is only available when DCHECK_IS_ON.
+    ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      it('stays on while another WebContents still has caret browsing enabled', () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w1.webContents.caretBrowsingEnabled = true;
+        w2.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w1.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w2.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('takes at most one reference per WebContents however often it is set', () => {
+        const w = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('is withdrawn once an enabled WebContents is destroyed', async () => {
+        const w = new BrowserWindow({ show: false });
+        const contents = w.webContents;
+        contents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        const destroyed = once(contents, 'destroyed');
+        w.close();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
     });
 
     describe('renderer-side caret movement', () => {
