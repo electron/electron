@@ -1089,6 +1089,12 @@ events will be emitted for that. However when users start your app in command
 line, the system's single instance mechanism will be bypassed, and you have to
 use this method to ensure single instance.
 
+> [!NOTE]
+> On macOS and Linux, the second instance's command line arguments and
+> `additionalData` are sent to the primary instance in a single message that is
+> limited to 32 MB. Larger messages are dropped: this method still returns
+> `false`, but the primary instance does not emit `second-instance`.
+
 An example of activating the window of primary instance when a second instance
 starts:
 
