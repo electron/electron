@@ -419,7 +419,8 @@ void SimpleURLLoaderWrapper::Start() {
       &SimpleURLLoaderWrapper::OnDownloadProgress, weak_cell));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
-  loader_->DownloadAsStream(url_loader_factory_.get(), this);
+  body_ = std::make_unique<ResponseBody>(this);
+  loader_->DownloadAsStream(url_loader_factory_.get(), body_.get());
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
@@ -514,10 +515,8 @@ void SimpleURLLoaderWrapper::OnPlatformLocalNetworkPermissionRequired(
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
   url_loader_factory_.reset();
-  relay_watcher_.reset();
-  relay_producer_.reset();
-  relay_client_.reset();
-  relay_receiver_.reset();
+  if (body_)
+    body_->Abort();
   keep_alive_.Clear();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
@@ -762,8 +761,132 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
       std::move(request), options, chunk_pipe_getter);
 }
 
+ResponseBody::ResponseBody(Delegate* delegate) : delegate_(delegate) {}
+
+ResponseBody::~ResponseBody() = default;
+
+void ResponseBody::Hold() {
+  held_ = true;
+}
+
+void ResponseBody::RelayTo(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    mojo::ScopedDataPipeProducerHandle producer,
+    std::string prefix) {
+  DCHECK(held_);
+  client_.Bind(std::move(client));
+  client_.set_disconnect_handler(base::BindOnce(
+      &ResponseBody::Finish, weak_factory_.GetWeakPtr(), net::ERR_ABORTED));
+  if (loader)
+    receiver_.Bind(std::move(loader));
+  producer_ = std::move(producer);
+  pending_.insert(0, prefix);
+  watcher_ = std::make_unique<mojo::SimpleWatcher>(
+      FROM_HERE, mojo::SimpleWatcher::ArmingPolicy::MANUAL,
+      base::SequencedTaskRunner::GetCurrentDefault());
+  watcher_->Watch(producer_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+                  base::BindRepeating(&ResponseBody::OnWritable,
+                                      weak_factory_.GetWeakPtr()));
+  Pump();
+}
+
+void ResponseBody::Abort() {
+  if (!result_)
+    result_ = net::ERR_ABORTED;
+  watcher_.reset();
+  producer_.reset();
+  client_.reset();
+  receiver_.reset();
+}
+
+void ResponseBody::OnDataReceived(std::string_view chunk,
+                                  base::OnceClosure resume) {
+  if (!held_) {
+    delegate_->OnBodyData(chunk, std::move(resume));
+    return;
+  }
+  // Not resuming until the pipe has taken the chunk is the backpressure, both
+  // while waiting for RelayTo() and while the relay client is slow.
+  resume_ = std::move(resume);
+  if (producer_.is_valid() && pending_.empty())
+    chunk.remove_prefix(WriteSome(chunk));
+  pending_.append(chunk);
+  if (producer_.is_valid())
+    Pump();
+}
+
+void ResponseBody::OnComplete(bool success) {
+  const int net_error = delegate_->OnBodyComplete(success);
+  if (!held_)
+    return;
+  result_ = net_error;
+  if (producer_.is_valid() && pending_.empty())
+    Finish(net_error);
+}
+
+// Writes as much of |bytes| as the pipe takes right now; returns how much.
+size_t ResponseBody::WriteSome(std::string_view bytes) {
+  size_t written = 0;
+  while (written < bytes.size()) {
+    base::span<uint8_t> buffer;
+    MojoResult result = producer_->BeginWriteData(
+        bytes.size() - written, MOJO_BEGIN_WRITE_DATA_FLAG_NONE, buffer);
+    if (result == MOJO_RESULT_SHOULD_WAIT) {
+      watcher_->ArmOrNotify();
+      break;
+    }
+    if (result != MOJO_RESULT_OK) {
+      Finish(net::ERR_ABORTED);
+      break;
+    }
+    size_t n = std::min(buffer.size(), bytes.size() - written);
+    buffer.first(n).copy_from(base::as_byte_span(bytes).subspan(written, n));
+    producer_->EndWriteData(n);
+    written += n;
+  }
+  written_ += written;
+  return written;
+}
+
+void ResponseBody::Pump() {
+  pending_.erase(0, WriteSome(pending_));
+  if (!pending_.empty() || !producer_.is_valid())
+    return;
+  if (resume_) {
+    std::move(resume_).Run();
+  } else if (result_) {
+    Finish(*result_);
+  }
+}
+
+void ResponseBody::OnWritable(MojoResult result) {
+  if (result != MOJO_RESULT_OK) {
+    Finish(net::ERR_ABORTED);
+    return;
+  }
+  Pump();
+}
+
+void ResponseBody::Finish(int net_error) {
+  watcher_.reset();
+  producer_.reset();
+  if (client_.is_bound() && client_.is_connected()) {
+    network::URLLoaderCompletionStatus status(net_error);
+    status.completion_time = base::TimeTicks::Now();
+    status.encoded_data_length = base::ByteSize(written_);
+    status.encoded_body_length = base::ByteSize(written_);
+    status.decoded_body_length = base::ByteSize(written_);
+    client_->OnComplete(status);
+  }
+  client_.reset();
+  receiver_.reset();
+  delegate_->OnRelayDone();
+}
+
 void SimpleURLLoaderWrapper::Hold() {
-  holding_ = true;
+  if (body_)
+    body_->Hold();
 }
 
 void SimpleURLLoaderWrapper::RelayTo(
@@ -771,129 +894,40 @@ void SimpleURLLoaderWrapper::RelayTo(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::ScopedDataPipeProducerHandle producer,
     std::string prefix) {
-  DCHECK(holding_);
   keep_alive_ = this;
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  auto weak_cell = gin::WrapPersistent(
-      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
-  relay_client_.Bind(std::move(client));
-  relay_client_.set_disconnect_handler(
-      base::BindOnce(&SimpleURLLoaderWrapper::Cancel, weak_cell));
-  if (loader)
-    relay_receiver_.Bind(std::move(loader));
-  relay_producer_ = std::move(producer);
-  relay_pending_.insert(0, prefix);
-  relay_watcher_ = std::make_unique<mojo::SimpleWatcher>(
-      FROM_HERE, mojo::SimpleWatcher::ArmingPolicy::MANUAL,
-      base::SequencedTaskRunner::GetCurrentDefault());
-  relay_watcher_->Watch(
-      relay_producer_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
-      base::BindRepeating(&SimpleURLLoaderWrapper::OnRelayWritable, weak_cell));
-  if (!loader_ && !finished_) {
-    FinishRelay(net::ERR_ABORTED);  // cancelled before the handler returned
-    return;
-  }
-  RelayWrite();
+  body_->RelayTo(std::move(client), std::move(loader), std::move(producer),
+                 std::move(prefix));
 }
 
-// Writes as much of |bytes| as the pipe takes right now; returns how much.
-size_t SimpleURLLoaderWrapper::RelaySome(std::string_view bytes) {
-  size_t written = 0;
-  while (written < bytes.size()) {
-    base::span<uint8_t> buffer;
-    MojoResult result = relay_producer_->BeginWriteData(
-        bytes.size() - written, MOJO_BEGIN_WRITE_DATA_FLAG_NONE, buffer);
-    if (result == MOJO_RESULT_SHOULD_WAIT) {
-      relay_watcher_->ArmOrNotify();
-      break;
-    }
-    if (result != MOJO_RESULT_OK) {
-      Cancel();
-      break;
-    }
-    size_t n = std::min(buffer.size(), bytes.size() - written);
-    buffer.first(n).copy_from(base::as_byte_span(bytes).subspan(written, n));
-    relay_producer_->EndWriteData(n);
-    written += n;
-  }
-  relay_written_ += written;
-  return written;
+void SimpleURLLoaderWrapper::OnRelayDone() {
+  Cancel();
 }
 
-void SimpleURLLoaderWrapper::RelayWrite() {
-  relay_pending_.erase(0, RelaySome(relay_pending_));
-  if (!relay_pending_.empty() || !relay_producer_.is_valid())
-    return;
-  if (relay_resume_) {
-    std::move(relay_resume_).Run();
-  } else if (finished_) {
-    FinishRelay(*finished_);
-  }
-}
-
-void SimpleURLLoaderWrapper::OnRelayWritable(MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    Cancel();
-    return;
-  }
-  RelayWrite();
-}
-
-void SimpleURLLoaderWrapper::FinishRelay(int net_error) {
-  relay_watcher_.reset();
-  relay_producer_.reset();
-  if (relay_client_) {
-    network::URLLoaderCompletionStatus status(net_error);
-    status.completion_time = base::TimeTicks::Now();
-    status.encoded_data_length = base::ByteSize(relay_written_);
-    status.encoded_body_length = base::ByteSize(relay_written_);
-    status.decoded_body_length = base::ByteSize(relay_written_);
-    relay_client_->OnComplete(status);
-  }
-  relay_client_.reset();
-  relay_receiver_.reset();
-  keep_alive_.Clear();
-}
-
-void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
-                                            base::OnceClosure resume) {
+void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
+                                        base::OnceClosure resume) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  if (holding_) {
-    relay_resume_ = std::move(resume);
-    if (relay_producer_.is_valid() && relay_pending_.empty())
-      string_view.remove_prefix(RelaySome(string_view));
-    relay_pending_.append(string_view);
-    if (relay_producer_.is_valid())
-      RelayWrite();
-    return;
-  }
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
+  auto array_buffer = v8::ArrayBuffer::New(isolate, chunk.size());
   // TODO SAFETY: migrate this to shell/common/v8_util.h
   UNSAFE_BUFFERS(
-      std::ranges::copy(string_view, static_cast<char*>(array_buffer->Data())));
+      std::ranges::copy(chunk, static_cast<char*>(array_buffer->Data())));
   Emit("data", array_buffer, std::move(resume));
 }
 
-void SimpleURLLoaderWrapper::OnComplete(bool success) {
-  finished_ = success ? net::OK : loader_->NetError();
-  if (holding_) {
-    // JS has let go of the body; the relay client gets the outcome instead.
-    loader_.reset();
-    url_loader_factory_.reset();
-    if (relay_producer_.is_valid() && relay_pending_.empty())
-      FinishRelay(*finished_);
-    return;
-  }
-  if (success) {
-    Emit("complete");
-  } else {
-    Emit("error", net::ErrorToString(*finished_));
+int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
+  const int net_error = success ? net::OK : loader_->NetError();
+  if (!body_->held()) {
+    if (success) {
+      Emit("complete");
+    } else {
+      Emit("error", net::ErrorToString(net_error));
+    }
+    keep_alive_.Clear();
   }
   loader_.reset();
   url_loader_factory_.reset();
-  keep_alive_.Clear();
+  return net_error;
 }
 
 void SimpleURLLoaderWrapper::OnResponseStarted(

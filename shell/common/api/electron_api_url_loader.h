@@ -13,6 +13,7 @@
 
 #include "base/byte_size.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -56,24 +57,85 @@ namespace electron::api {
 
 class JSChunkedDataPipeGetter;
 
+// Receives a request's response body from SimpleURLLoader. Chunks are handed
+// to the delegate (JS) until Hold(); from then on they are kept, and RelayTo()
+// streams the kept and all further chunks into a data pipe for another
+// URLLoaderClient and completes that client once the request has completed.
+class ResponseBody final : public network::SimpleURLLoaderStreamConsumer,
+                           private network::mojom::URLLoader {
+ public:
+  class Delegate {
+   public:
+    virtual void OnBodyData(std::string_view chunk,
+                            base::OnceClosure resume) = 0;
+    // Returns the request's net error. Once held, the delegate only releases
+    // the request here; the outcome reaches the relay client instead of JS.
+    virtual int OnBodyComplete(bool success) = 0;
+    // The relay client has been completed or went away.
+    virtual void OnRelayDone() = 0;
+
+   protected:
+    virtual ~Delegate() = default;
+  };
+
+  explicit ResponseBody(Delegate* delegate);
+  ~ResponseBody() override;
+
+  void Hold();
+  bool held() const { return held_; }
+  // |prefix| is body data the delegate had already taken before Hold().
+  void RelayTo(mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+               mojo::PendingReceiver<network::mojom::URLLoader> loader,
+               mojo::ScopedDataPipeProducerHandle producer,
+               std::string prefix);
+  // Drops the relay client without completing it.
+  void Abort();
+
+ private:
+  // network::SimpleURLLoaderStreamConsumer
+  void OnDataReceived(std::string_view chunk,
+                      base::OnceClosure resume) override;
+  void OnComplete(bool success) override;
+  void OnRetry(base::OnceClosure start_retry) override {}
+  // network::mojom::URLLoader, towards the relay client
+  void FollowRedirect(
+      network::HttpRequestHeadersUpdateParams headers_update_params,
+      const std::optional<GURL>& new_url) override {}
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {}
+
+  size_t WriteSome(std::string_view bytes);
+  void Pump();
+  void OnWritable(MojoResult result);
+  void Finish(int net_error);
+
+  const raw_ptr<Delegate> delegate_;
+  bool held_ = false;
+  std::string pending_;
+  base::OnceClosure resume_;
+  std::optional<int> result_;
+  size_t written_ = 0;
+  mojo::ScopedDataPipeProducerHandle producer_;
+  std::unique_ptr<mojo::SimpleWatcher> watcher_;
+  mojo::Remote<network::mojom::URLLoaderClient> client_;
+  mojo::Receiver<network::mojom::URLLoader> receiver_{this};
+  base::WeakPtrFactory<ResponseBody> weak_factory_{this};
+};
+
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
-      private network::SimpleURLLoaderStreamConsumer,
-      private network::mojom::URLLoaderNetworkServiceObserver,
-      private network::mojom::URLLoader {
+      public ResponseBody::Delegate,
+      private network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
   static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
 
   void Cancel();
 
-  // Relay mode, for protocol.handle handlers that return a net.fetch response
-  // untouched: Hold() stops handing body chunks to JS; RelayTo() then writes
-  // |prefix| (the bytes JS had already pulled) and the rest of the body into
-  // |producer| and completes |client|, with no further JS involvement.
-  void Hold();
+  // For protocol.handle handlers that return a net.fetch response untouched:
+  // stream the body to |client| instead of JS. See ResponseBody.
   void RelayTo(mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                mojo::PendingReceiver<network::mojom::URLLoader> loader,
                mojo::ScopedDataPipeProducerHandle producer,
@@ -95,11 +157,12 @@ class SimpleURLLoaderWrapper final
                          JSChunkedDataPipeGetter* chunk_pipe_getter);
 
  private:
-  // SimpleURLLoaderStreamConsumer:
-  void OnDataReceived(std::string_view string_view,
-                      base::OnceClosure resume) override;
-  void OnComplete(bool success) override;
-  void OnRetry(base::OnceClosure start_retry) override {}
+  void Hold();
+
+  // ResponseBody::Delegate:
+  void OnBodyData(std::string_view chunk, base::OnceClosure resume) override;
+  int OnBodyComplete(bool success) override;
+  void OnRelayDone() override;
 
   // network::mojom::URLLoaderNetworkServiceObserver:
   void OnAuthRequired(
@@ -166,23 +229,12 @@ class SimpleURLLoaderWrapper final
 
   void Start();
 
-  // Relay mode helpers.
-  size_t RelaySome(std::string_view bytes);
-  void RelayWrite();
-  void OnRelayWritable(MojoResult result);
-  void FinishRelay(int net_error);
-  // network::mojom::URLLoader (relay mode; the client end is a renderer):
-  void FollowRedirect(
-      network::HttpRequestHeadersUpdateParams headers_update_params,
-      const std::optional<GURL>& new_url) override {}
-  void SetPriority(net::RequestPriority priority,
-                   int32_t intra_priority_value) override {}
-
   SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  std::unique_ptr<ResponseBody> body_;  // outlives |loader_|, its producer
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   GC_PLUGIN_IGNORE(
@@ -192,17 +244,6 @@ class SimpleURLLoaderWrapper final
   cppgc::Member<JSChunkedDataPipeGetter> chunk_pipe_getter_;
 
   int64_t content_length_ = -1;
-  bool holding_ = false;
-  std::string relay_pending_;
-  size_t relay_written_ = 0;
-  base::OnceClosure relay_resume_;
-  std::optional<int> finished_;  // net error, once the request completed
-  mojo::ScopedDataPipeProducerHandle relay_producer_;
-  std::unique_ptr<mojo::SimpleWatcher> relay_watcher_;
-  GC_PLUGIN_IGNORE("Browser-process mojo endpoints, no context tracking.")
-  mojo::Remote<network::mojom::URLLoaderClient> relay_client_;
-  GC_PLUGIN_IGNORE("Browser-process mojo endpoints, no context tracking.")
-  mojo::Receiver<network::mojom::URLLoader> relay_receiver_{this};
   gin_helper::SelfKeepAlive<SimpleURLLoaderWrapper> keep_alive_{this};
   gin::WeakCellFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
