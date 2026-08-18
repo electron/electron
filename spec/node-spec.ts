@@ -499,17 +499,31 @@ describe('node feature', () => {
       setImmediate(spin);
       let read = false;
       fs.readFile(__filename, () => { read = true; });
+      let echoed = false;
+      require('@electron-ci/echo').async(true, (value) => { echoed = value; });
       let closed = 0;
       const watchers = Array.from({ length: 5 }, () => fs.watch(__filename));
       for (const w of watchers) w.on('close', () => closed++);
       for (const w of watchers) w.close();
       ${teardown};
-      const done = () => immediates < 200 || !read ? setTimeout(done, 10) : resolve({ immediates, read, closed });
+      const done = () => immediates < 200 || !read || !echoed ? setTimeout(done, 10) : resolve({ immediates, read, echoed, closed });
       setTimeout(done, 10);
     })`;
 
+    const loopWork = ['immediate', 'fs', 'napi'];
+    const exerciseLoop = (wc: Electron.WebContents) =>
+      wc.executeJavaScript(`Promise.all([
+        new Promise((resolve) => setImmediate(() => resolve('immediate'))),
+        new Promise((resolve) => require('node:fs').readFile(__filename, () => resolve('fs'))),
+        new Promise((resolve) => require('@electron-ci/echo').async('napi', resolve))
+      ])`);
+
     const openWindow = async (webPreferences = {}) => {
       const w = new BrowserWindow({ show: false, webPreferences: { ...nodePreferences, ...webPreferences } });
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: nodePreferences }
+      }));
       const errors: string[] = [];
       w.webContents.on('console-message', ({ level, message }) => {
         if (level === 'error') errors.push(message);
@@ -518,21 +532,46 @@ describe('node feature', () => {
       return { w, errors };
     };
 
+    const openChild = async (w: BrowserWindow, url: string) => {
+      const childCreated = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+      await w.webContents.executeJavaScript(`window.child = window.open(${JSON.stringify(url)}); undefined`);
+      const [child] = await childCreated;
+      if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+      expect(child.webContents.getOSProcessId()).to.equal(w.webContents.getOSProcessId());
+      return child;
+    };
+
+    it('runs each same-process child window on a working loop of its own', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      const blankChild = await openChild(w, 'about:blank');
+      await expect(exerciseLoop(blankChild.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps a child window working while its opener reloads', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      for (let i = 0; i < 2; i++) {
+        const pending = exerciseLoop(child.webContents);
+        w.webContents.reload();
+        await once(w.webContents, 'did-finish-load');
+        await expect(pending).to.eventually.deep.equal(loopWork);
+        await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      }
+      await expect(exerciseLoop(w.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
     it('keeps the opener working when a same-process child window closes', async () => {
       const { w, errors } = await openWindow();
-      w.webContents.setWindowOpenHandler(() => ({
-        action: 'allow',
-        overrideBrowserWindowOptions: { show: false, webPreferences: nodePreferences }
-      }));
       for (let i = 0; i < 3; i++) {
-        const childCreated = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
-        await w.webContents.executeJavaScript("window.child = window.open('base-page.html'); undefined");
-        const [child] = await childCreated;
-        if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+        const child = await openChild(w, 'base-page.html');
         const closed = once(child, 'closed');
         const result = await w.webContents.executeJavaScript(churnDuring('window.child.close()'));
         await closed;
-        expect(result).to.deep.equal({ immediates: 200, read: true, closed: 5 });
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
       }
       expect(errors).to.deep.equal([]);
     });
@@ -547,7 +586,7 @@ describe('node feature', () => {
           document.body.appendChild(window.frame = frame);
         })`);
         const result = await w.webContents.executeJavaScript(churnDuring('window.frame.remove()'));
-        expect(result).to.deep.equal({ immediates: 200, read: true, closed: 5 });
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
       }
       expect(errors).to.deep.equal([]);
     });
