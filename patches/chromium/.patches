@@ -268,3 +268,8 @@ m150_expose_trustedtypespolicy_createparseroptions_only_on_window.patch
 httpcachetransaction_fix_confusion_around_range_request_w_vary_range.patch
 ui_gtk_pin_gtk-modules_to_an_empty_string_during_initialization.patch
 fix_wayland_window_stuck_maximized_after_early_maximize.patch
+cherry-pick-e480c72d3627.patch
+cherry-pick-ffb3d5c5df87.patch
+cherry-pick-4e17fa56c471.patch
+cherry-pick-0c2b2640e6fb.patch
+cherry-pick-7cf589757eab.patch
