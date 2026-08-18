@@ -8,28 +8,35 @@
 #include <string>
 #include <utility>
 
+#include "base/check.h"
 #include "base/command_line.h"
 #include "base/compiler_specific.h"
 #include "base/containers/span.h"
 #include "base/logging.h"
+#include "base/synchronization/lock.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
+#include "base/thread_annotations.h"
 #include "electron/snapshot_checksum.h"
 #include "gin/array_buffer.h"
 #include "gin/per_isolate_data.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
+#include "partition_alloc/partition_alloc_constants.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
+#include "v8/include/v8-initialization.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-locker.h"
+#include "v8/include/v8-platform.h"
 #include "v8/include/v8-snapshot.h"
 
 namespace {
@@ -39,6 +46,70 @@ v8::Isolate* g_isolate;
 namespace electron {
 
 namespace {
+
+#if defined(V8_ENABLE_SANDBOX)
+// V8's built-in in-sandbox allocator (behind ArrayBuffer::Allocator::
+// NewDefaultAllocator(), which Node uses for Buffers) is a slow fallback that
+// embedders are expected to replace; route it to gin's PartitionAlloc
+// partition inside the sandbox, as Blink does for renderers. Requests beyond
+// PartitionAlloc's single-allocation cap (~2 GiB) come straight from the
+// sandbox's address space instead.
+class InSandboxAllocator final : public v8::Allocator {
+ public:
+  void* Allocate(size_t size) override {
+    if (size > partition_alloc::MaxAllocationSize())
+      return AllocatePages(size);
+    return gin::ArrayBufferAllocator::SharedInstance()->Allocate(size);
+  }
+  void* AllocateUninitialized(size_t size) override {
+    if (size > partition_alloc::MaxAllocationSize())
+      return AllocatePages(size);
+    return gin::ArrayBufferAllocator::SharedInstance()->AllocateUninitialized(
+        size);
+  }
+  void* AllocateUninitializedOrCrash(size_t size) override {
+    void* result = AllocateUninitialized(size);
+    CHECK(result);
+    return result;
+  }
+  void Free(void* ptr) override {
+    if (!ptr)
+      return;
+    {
+      base::AutoLock lock(lock_);
+      auto it = pages_.find(ptr);
+      if (it != pages_.end()) {
+        v8::V8::GetSandboxAddressSpace()->FreePages(
+            reinterpret_cast<uintptr_t>(ptr), it->second);
+        pages_.erase(it);
+        return;
+      }
+    }
+    gin::ArrayBufferAllocator::SharedInstance()->Free(ptr, 0);
+  }
+
+ private:
+  // Fresh sandbox pages are zero-filled, so this serves both entry points.
+  void* AllocatePages(size_t size) {
+    v8::VirtualAddressSpace* space = v8::V8::GetSandboxAddressSpace();
+    size_t granularity = space->allocation_granularity();
+    size_t rounded = (size + granularity - 1) / granularity * granularity;
+    if (rounded < size)
+      return nullptr;
+    uintptr_t address =
+        space->AllocatePages(v8::VirtualAddressSpace::kNoHint, rounded,
+                             granularity, v8::PagePermissions::kReadWrite);
+    if (!address)
+      return nullptr;
+    base::AutoLock lock(lock_);
+    pages_.emplace(reinterpret_cast<void*>(address), rounded);
+    return reinterpret_cast<void*>(address);
+  }
+
+  base::Lock lock_;
+  absl::flat_hash_map<void*, size_t> pages_ GUARDED_BY(lock_);
+};
+#endif
 
 // Whether the V8 snapshot blob this process loaded (v8_context_snapshot.bin,
 // or in the browser process under the LoadBrowserProcessSpecificV8Snapshot
@@ -201,6 +272,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
       false /* disallow_v8_feature_flag_overrides */,
       nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
       false /* create_v8_platform */);
+
+#if defined(V8_ENABLE_SANDBOX)
+  v8::V8::SetInSandboxAllocator(std::make_shared<InSandboxAllocator>());
+#endif
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
