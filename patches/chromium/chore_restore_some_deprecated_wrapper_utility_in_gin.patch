@@ -9,7 +9,7 @@ Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/BUILD.gn b/gin/BUILD.gn
-index ed562a2d424f2c0eed81aa6300644f146b5cb17f..44f8c84563692364346afbd5041aaf4287d78bba 100644
+index ac87f68f7ed7cb3eb20d505a59b5edb9f74b4280..9499f2415cbda98b00e1d6c9ca8a58fb8cc43a01 100644
 --- a/gin/BUILD.gn
 +++ b/gin/BUILD.gn
 @@ -79,6 +79,7 @@ component("gin") {
@@ -32,18 +32,6 @@ index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb2151
      void OnDisposed() override;
  
     private:
-diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 9f49bb0b6873eb2a6218f4fad1429d25a7c54f91..9e56b056202cc4e8bfd5391521fab0f0d3f61d0d 100644
---- a/gin/isolate_holder.cc
-+++ b/gin/isolate_holder.cc
-@@ -226,6 +226,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
- 
- void IsolateHolder::WillDestroyMicrotasksRunner() {
-   DCHECK(g_initialized_microtasks_runner);
-+  isolate_data_->NotifyBeforeMicrotasksRunnerDispose();
-   g_destroyed_microtasks_runner = true;
- }
- 
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
 index b07da3a191cd0424fe76ee762de091a9ec24d5a4..49ecd470ce29078418ccb490caa8cfde17a6944e 100644
 --- a/gin/object_template_builder.cc

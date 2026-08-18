@@ -849,20 +849,17 @@ void ElectronBrowserClient::GetAdditionalWebUISchemes(
 void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* browser_context =
-      static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  if (!browser_context->IsOffTheRecord()) {
-    extensions::ExtensionRegistry* registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    const extensions::Extension* extension =
-        registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
-    if (!extension)
-      return;
+  auto* browser_context = site_instance->GetBrowserContext();
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  const extensions::Extension* extension =
+      registry->enabled_extensions().GetExtensionOrAppByURL(
+          site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
+  if (!extension)
+    return;
 
-    extensions::ProcessMap::Get(browser_context)
-        ->Insert(extension->id(), site_instance->GetProcess()->GetID());
-  }
+  extensions::ProcessMap::Get(browser_context)
+      ->Insert(extension->id(), site_instance->GetProcess()->GetID());
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
@@ -1486,7 +1483,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
     network::mojom::URLLoaderFactoryOverridePtr* factory_override,
-    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
+    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner,
+    bool is_for_network_service) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* const web_request =

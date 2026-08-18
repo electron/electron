@@ -348,8 +348,11 @@ bool ElectronBrowserContext::IsValidContext(const void* context) {
 // static
 void ElectronBrowserContext::DestroyAllContexts() {
   auto& map = ContextMap();
-  // Avoid UAF by destroying the default context last. See ba629e3 for info.
-  const auto extracted = map.extract(PartitionKey{"", false});
+  // Destroy the default context last (see ba629e3) but keep it in the map
+  // meanwhile: the other contexts look it up while they are torn down.
+  std::erase_if(map, [](const auto& entry) {
+    return entry.first != PartitionKey{"", false};
+  });
   map.clear();
 }
 
@@ -600,7 +603,7 @@ ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), net::IsolationInfo(), std::nullopt,
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
-          nullptr, nullptr, nullptr);
+          nullptr, nullptr, nullptr, /*is_for_network_service=*/false);
 
   return std::make_pair(std::move(factory_builder), std::move(header_client));
 }

@@ -47,6 +47,7 @@
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
+#include "net/dns/public/insecure_dns_mode.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -1695,6 +1696,20 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     return;
   }
 
+  // Validate before applying so a TypeError leaves existing configuration
+  // untouched; null/undefined mean "not set".
+  std::optional<bool> platform_passkeys;
+  v8::Local<v8::Value> platform_passkeys_value;
+  if (options.Get("platformPasskeys", &platform_passkeys_value) &&
+      !platform_passkeys_value->IsNullOrUndefined()) {
+    if (!platform_passkeys_value->IsBoolean()) {
+      thrower.ThrowTypeError(
+          "configureWebAuthn: 'platformPasskeys' must be a boolean");
+      return;
+    }
+    platform_passkeys = platform_passkeys_value.As<v8::Boolean>()->Value();
+  }
+
   gin_helper::Dictionary touch_id;
   if (options.Get("touchID", &touch_id)) {
     std::string keychain_access_group;
@@ -1732,10 +1747,9 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     }
   }
 
-  bool platform_passkeys = false;
-  if (options.Get("platformPasskeys", &platform_passkeys)) {
+  if (platform_passkeys.has_value()) {
     ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
-        platform_passkeys);
+        *platform_passkeys);
   }
 }
 
@@ -1866,10 +1880,10 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
-      doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/,
-      false /*insecure_dns_via_platform_apis_enabled*/);
+      enable_built_in_resolver ? net::InsecureDnsMode::kEnabledBuiltIn
+                               : net::InsecureDnsMode::kDisabled,
+      enable_happy_eyeballs_v3, secure_dns_mode, doh_config,
+      additional_dns_query_types_enabled, {} /*fallback_doh_nameservers*/);
 }
 
 // static

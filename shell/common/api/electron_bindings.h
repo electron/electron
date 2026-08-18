@@ -11,7 +11,7 @@
 #include "base/process/process_metrics.h"
 #include "services/resource_coordinator/public/mojom/memory_instrumentation/memory_instrumentation.mojom-forward.h"
 #include "shell/common/node_bindings.h"
-#include "uv.h"  // NOLINT(build/include_directory)
+#include "shell/common/uv_includes.h"
 
 namespace base {
 class FilePath;

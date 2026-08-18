@@ -118,10 +118,10 @@ index 637aeccb8de8d793eabc38e32bef6834ac0e6ad3..c5dd0b18d7338457e47ae47088d98224
    callback(EVP_des_ede3_cbc(), "des-ede3-cbc", nullptr, arg);
    callback(EVP_rc2_cbc(), "rc2-cbc", nullptr, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 324033da90439198533c8191ff3be8202505197c..c5a8c6dc38ee63244adc2bd2720c151cb143ee4e 100644
+index 1410f33d7fc6545a94b1b30cea21f21cbaa71644..05d31f905427c2342972b532b3f778beb5f289f8 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -630,6 +630,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -635,6 +635,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);

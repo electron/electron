@@ -1308,6 +1308,40 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
+    // Regression test for https://github.com/electron/electron/issues/52158.
+    // The api::WebContents wrapping the DevTools WebContents is created as soon
+    // as openDevTools() is called but only referenced again once the frontend
+    // has finished loading. A GC in between used to collect its wrapper, after
+    // which `devtools-opened` would either crash the main process (if the
+    // collected object had not been freed yet) or create a second
+    // api::WebContents for the same DevTools WebContents.
+    it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
+      const gc = require('node:vm').runInNewContext('gc');
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const created: number[] = [];
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
+      app.on('web-contents-created', onCreated);
+      try {
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach', activate: false });
+        gc({ type: 'major', execution: 'sync' });
+        await devtoolsOpened;
+      } finally {
+        app.removeListener('web-contents-created', onCreated);
+      }
+
+      const devtools = w.webContents.devToolsWebContents;
+      expect(devtools).to.not.be.null();
+      expect(devtools!.isDestroyed()).to.be.false();
+      // Exactly one WebContents (the DevTools one) was created, and it is the
+      // one we ended up with.
+      expect(created).to.deep.equal([devtools!.id]);
+    });
+
     it('updates and restores the inspected page viewport for right-docked DevTools', async () => {
       const w = new BrowserWindow({ show: false, width: 800, height: 600 });
       await w.loadURL('about:blank');
@@ -2022,6 +2056,44 @@ describe('webContents module', () => {
         await w.loadURL('data:text/html,<body>test</body>');
         expect(w.webContents.isFocused()).to.be.false();
       });
+    });
+  });
+
+  describe('disableWakeLocks webPreference', () => {
+    const blankPage = path.join(fixturesPath, 'api', 'blank.html');
+    afterEach(closeAllWindows);
+
+    const wakeLockCode = `
+      (async () => {
+        let wakeLockAvailability = true;
+
+        try {
+          const lock = await navigator.wakeLock.request("screen");
+          wakeLockAvailability = (lock !== null && !lock.released);
+          lock.addEventListener("release", () => {
+            wakeLockAvailability = false;
+          });
+        } catch {
+          wakeLockAvailability = false;
+        }
+        
+        // Brief pause to ensure the state stabilizes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        return wakeLockAvailability;
+      })();
+    `;
+
+    it('wake locks are enabled by default', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(blankPage);
+      assert(await w.webContents.executeJavaScript(wakeLockCode));
+    });
+
+    it('wake locks are unusable when disabled', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
+      await w.loadFile(blankPage);
+      assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
     });
   });
 
@@ -4052,6 +4124,45 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { backgroundThrottling: true } });
 
       w.webContents.setBackgroundThrottling(false);
+    });
+
+    // Regression test: disabling throttling on a WebContentsView while its
+    // window is hidden used to un-hide the RenderWidgetHost without telling the
+    // view, so the surface the renderer produced was never embedded and the
+    // window stayed blank (and un-capturable) once shown, until a resize.
+    it('leaves a hidden WebContentsView paintable once its window is shown', async () => {
+      const w = new BaseWindow({ show: false, width: 300, height: 200 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 300, height: 200 });
+      await view.webContents.loadURL('data:text/html,<body style="background:%23ff0000">');
+      view.webContents.setBackgroundThrottling(false);
+      // Give the renderer time to submit frames while still hidden.
+      await setTimeout(500);
+      w.show();
+      // In the broken state capturePage rejects forever ("Current display
+      // surface not available for capture"); in the fixed state the surface is
+      // available immediately or after a frame or two.
+      let image: Electron.NativeImage | undefined;
+      await waitUntil(
+        async () => {
+          try {
+            image = await view.webContents.capturePage();
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100, timeout: 5000 }
+      );
+      const size = image!.getSize();
+      expect(size.width).to.be.greaterThan(0);
+      expect(size.height).to.be.greaterThan(0);
+      const px = image!.toBitmap();
+      // BGRA; expect the red background, not the blank white surface.
+      expect(px[2]).to.equal(255);
+      expect(px[1]).to.equal(0);
+      expect(px[0]).to.equal(0);
     });
   });
 

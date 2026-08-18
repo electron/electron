@@ -57,6 +57,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/notimplemented.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
@@ -560,8 +561,13 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 }
 
 void NativeWindowViews::SetContentView(views::View* view) {
-  if (content_view()) {
-    root_view_.GetMainView()->RemoveChildView(content_view());
+  if (views::View* old_view = content_view()) {
+    set_content_view(nullptr);
+    focused_view_ = nullptr;
+    if (old_view->owned_by_client())
+      root_view_.GetMainView()->RemoveChildView(old_view);
+    else
+      root_view_.GetMainView()->RemoveChildViewT(old_view);
   }
   set_content_view(view);
   focused_view_ = view;
@@ -1592,6 +1598,8 @@ void NativeWindowViews::SetProgressBar(double progress,
                                        NativeWindow::ProgressState state) {
 #if BUILDFLAG(IS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
+#elif BUILDFLAG(IS_LINUX)
+  launcher_entry::SetProgress(progress);
 #endif
 }
 

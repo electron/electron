@@ -150,6 +150,7 @@ void WebContentsPreferences::Clear() {
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
   deprecated_paste_enabled_ = false;
   focus_on_navigation_ = true;
+  disable_wake_locks_ = false;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -250,6 +251,8 @@ void WebContentsPreferences::SetFromDictionary(
                       &deprecated_paste_enabled_);
 
   web_preferences.Get(options::kFocusOnNavigation, &focus_on_navigation_);
+
+  web_preferences.Get(options::kDisableWakeLocks, &disable_wake_locks_);
 
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
@@ -383,6 +386,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 void WebContentsPreferences::SaveLastPreferences() {
   base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
+  dict.Set(options::kNodeIntegrationInWorker, node_integration_in_worker_);
   dict.Set(options::kNodeIntegrationInSubFrames,
            node_integration_in_sub_frames_);
   dict.Set(options::kSandbox, IsSandboxed());
@@ -398,6 +402,7 @@ void WebContentsPreferences::SaveLastPreferences() {
   dict.Set("disableDialogs", disable_dialogs_);
   dict.Set("safeDialogs", safe_dialogs_);
   dict.Set("safeDialogsMessage", safe_dialogs_message_.value_or(""));
+  dict.Set(options::kDisableWakeLocks, disable_wake_locks_);
 
   last_web_preferences_ = base::Value(std::move(dict));
 }
