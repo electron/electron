@@ -92,10 +92,26 @@ Electron reads the CDM version from `manifest.json` when possible. If the
 manifest does not contain the version, pass the library's version with
 `--widevine-cdm-version`.
 
-The command line switches have to be passed before the `ready` event of `app`
-module gets emitted.
+On Linux, these switches must be present on Electron's process command line.
+The zygote loads library CDMs before Electron runs the app's main script, so
+calling `app.commandLine.appendSwitch` from that script is too late for
+sandboxed renderers:
 
-Example code:
+```sh
+electron \
+  --widevine-cdm-path=/path/to/WidevineCdm \
+  --widevine-cdm-version=4.10.2891.0 \
+  /path/to/app
+```
+
+The version switch is optional when `manifest.json` contains a valid version.
+Bundling the `WidevineCdm` directory beside the Electron executable also makes
+it available early enough on Linux.
+
+On Windows and macOS, the switches can be appended from the app's main script
+before the `ready` event is emitted.
+
+Example code for Windows and macOS:
 
 ```js
 const { app, BrowserWindow } = require('electron')
@@ -112,8 +128,8 @@ app.whenReady().then(() => {
 })
 ```
 
-If `--widevine-cdm-path` is not provided, Electron checks for bundled CDM files
-at `<Electron executable directory>/WidevineCdm`.
+On all platforms, if `--widevine-cdm-path` is not provided, Electron checks for
+bundled CDM files at `<Electron executable directory>/WidevineCdm`.
 
 ## Verifying Widevine CDM support
 
