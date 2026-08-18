@@ -1,0 +1,192 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Fri, 14 Aug 2026 01:10:32 -0700
+Subject: [M150] Stop emulating missing decoders
+
+Original change's description:
+> Stop emulating missing decoders
+>
+> Emulation of missing content decoders has unintended consequences for
+> downstream features such as ORB. This CL removes the emulation of the
+> missing decoders but keeps the Network.setAcceptedEncodings to affect
+> the Accept-Encoding header.
+>
+> Fixed: 516715010
+> Change-Id: If36f580d7fcc2e856776eba047077965935cacba
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8179012
+> Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+> Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+> Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1673121}
+
+(cherry picked from commit 8781bebfa7f1f687e854496d14fe071c587a54c1)
+
+Bug: 546214792,516715010
+Change-Id: If36f580d7fcc2e856776eba047077965935cacba
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8257213
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4288}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/net/filter/filter_source_stream.cc b/net/filter/filter_source_stream.cc
+index 076141503be927d69b8d07440aa4a83dd62f6d67..7367b5aca18dcdef924348c8e80ebb18303ffc17 100644
+--- a/net/filter/filter_source_stream.cc
++++ b/net/filter/filter_source_stream.cc
+@@ -107,10 +107,7 @@ SourceStreamType FilterSourceStream::ParseEncodingType(
+ }
+ 
+ // static
+-std::vector<SourceStreamType> FilterSourceStream::GetContentEncodingTypes(
+-    const std::optional<base::flat_set<SourceStreamType>>&
+-        accepted_stream_types,
+-    const HttpResponseHeaders& headers) {
++std::vector<SourceStreamType> FilterSourceStream::GetContentEncodingTypes(const HttpResponseHeaders& headers) {
+   std::vector<SourceStreamType> types;
+   size_t iter = 0;
+   while (std::optional<std::string_view> type =
+@@ -121,12 +118,6 @@ std::vector<SourceStreamType> FilterSourceStream::GetContentEncodingTypes(
+       case SourceStreamType::kDeflate:
+       case SourceStreamType::kGzip:
+       case SourceStreamType::kZstd:
+-        if (accepted_stream_types &&
+-            !accepted_stream_types->contains(source_type)) {
+-          // If the source type is disabled, we treat it
+-          // in the same way as SourceStreamType::kUnknown.
+-          return std::vector<SourceStreamType>();
+-        }
+         types.push_back(source_type);
+         break;
+       case SourceStreamType::kNone:
+diff --git a/net/filter/filter_source_stream.h b/net/filter/filter_source_stream.h
+index be9e706a7eef9e832ff0ce42523ca4e76c6319fa..deb24279321f8719a11dd7883ac66a88c3bfcf3b 100644
+--- a/net/filter/filter_source_stream.h
++++ b/net/filter/filter_source_stream.h
+@@ -58,11 +58,7 @@ class NET_EXPORT_PRIVATE FilterSourceStream : public SourceStream {
+   //   - No "Content-Encoding" HTTP header is set.
+   //   - The value of "Content-Encoding" HTTP header is empty string.
+   //   - An unknown encoding type is encountered.
+-  //   - An encoding type is found that is not within the accepted_stream_types
+-  //     set (if provided).
+   static std::vector<SourceStreamType> GetContentEncodingTypes(
+-      const std::optional<base::flat_set<SourceStreamType>>&
+-          accepted_stream_types,
+       const HttpResponseHeaders& headers);
+ 
+   // Creates a chained decoding SourceStream by wrapping the provided `upstream`
+diff --git a/net/filter/filter_source_stream_unittest.cc b/net/filter/filter_source_stream_unittest.cc
+index 900c5f2aa162659cb48aeaf69a9fc91a1369ae5a..44451787eff8405bb7bbbae8a8a92e2d2f5e75b3 100644
+--- a/net/filter/filter_source_stream_unittest.cc
++++ b/net/filter/filter_source_stream_unittest.cc
+@@ -584,85 +584,53 @@ TEST_P(FilterSourceStreamTest, ThrottleSourceStream) {
+ TEST(FilterSourceStreamTest, GetContentEncodingTypes) {
+   struct {
+     const std::string_view headers;
+-    const std::optional<base::flat_set<SourceStreamType>> accepted_stream_types;
+     const std::vector<SourceStreamType> expected_result;
+     const std::string_view test_comment;
+   } kTestCases[] = {
+-      {"HTTP/1.1 200 OK\n", std::nullopt, {}, "No Content-Encoding header"},
++      {"HTTP/1.1 200 OK\n", {}, "No Content-Encoding header"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: deflate\n",
+-       std::nullopt,
+        {SourceStreamType::kDeflate},
+        "Single deflate encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: gzip\n",
+-       std::nullopt,
+        {SourceStreamType::kGzip},
+        "Single gzip encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: x-gzip\n",
+-       std::nullopt,
+        {SourceStreamType::kGzip},
+        "Single x-gzip encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: br\n",
+-       std::nullopt,
+        {SourceStreamType::kBrotli},
+        "Single br encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: zstd\n",
+-       std::nullopt,
+        {SourceStreamType::kZstd},
+        "Single zstd encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: br, gzip\n",
+-       std::nullopt,
+        {SourceStreamType::kBrotli, SourceStreamType::kGzip},
+        "Multiple encodings (brotli and gzip)"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: gzip, br\n",
+-       std::nullopt,
+        {SourceStreamType::kGzip, SourceStreamType::kBrotli},
+        "Multiple encodings (gzip and brotli) - different order"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: unknown\n",
+-       std::nullopt,
+        {},
+        "Unknown encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: identity\n",
+-       std::nullopt,
+        {},
+        "Identity encoding"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: gzip, unknown\n",
+-       std::nullopt,
+        {},
+        "Unknown encoding after gzip"},
+       {"HTTP/1.1 200 OK\nContent-Encoding:  gzip, br\n",
+-       std::nullopt,
+        {SourceStreamType::kGzip, SourceStreamType::kBrotli},
+        "Extra spaces between encodings"},
+-      {"HTTP/1.1 200 OK\nContent-Encoding: br\n",
+-       base::flat_set<SourceStreamType>({SourceStreamType::kBrotli}),
+-       {SourceStreamType::kBrotli},
+-       "Accepted types match"},
+-      {"HTTP/1.1 200 OK\nContent-Encoding: gzip\n",
+-       base::flat_set<SourceStreamType>({SourceStreamType::kBrotli}),
+-       {},
+-       "No accepted types match"},
+-      {"HTTP/1.1 200 OK\nContent-Encoding: br, gzip\n",
+-       base::flat_set<SourceStreamType>({SourceStreamType::kBrotli}),
+-       {},
+-       "Unaccepted type found"},
+       {"HTTP/1.1 200 OK\ncontent-encoding: GZip\n",
+-       std::nullopt,
+        {SourceStreamType::kGzip},
+        "Case-insensitive gzip"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: BR\n",
+-       std::nullopt,
+        {SourceStreamType::kBrotli},
+        "Case-insensitive brotli"},
+       {"HTTP/1.1 200 OK\nContent-Encoding: deflate, gzip, br\n",
+-       std::nullopt,
+        {SourceStreamType::kDeflate, SourceStreamType::kGzip,
+         SourceStreamType::kBrotli},
+        "Three encodings"},
+-      {"HTTP/1.1 200 OK\nContent-Encoding: deflate, gzip, br\n",
+-       base::flat_set<SourceStreamType>(
+-           {SourceStreamType::kDeflate, SourceStreamType::kBrotli}),
+-       {},
+-       "Three encodings, two accepted"},
+   };
+ 
+   for (const auto& test_case : kTestCases) {
+@@ -670,8 +638,7 @@ TEST(FilterSourceStreamTest, GetContentEncodingTypes) {
+     auto headers = base::MakeRefCounted<HttpResponseHeaders>(
+         net::HttpUtil::AssembleRawHeaders(test_case.headers));
+     std::vector<SourceStreamType> types =
+-        FilterSourceStream::GetContentEncodingTypes(
+-            test_case.accepted_stream_types, *headers);
++        FilterSourceStream::GetContentEncodingTypes(*headers);
+     EXPECT_THAT(types, test_case.expected_result);
+   }
+ }
+diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
+index 5c8e620ec1f0c69fbaafa165398367043a99682b..47b418d73374cb6278fd566295436dc8c8645ffc 100644
+--- a/net/url_request/url_request_http_job.cc
++++ b/net/url_request/url_request_http_job.cc
+@@ -1546,8 +1546,7 @@ std::unique_ptr<SourceStream> URLRequestHttpJob::SetUpSourceStream() {
+ 
+   HttpResponseHeaders* headers = GetResponseHeaders();
+   std::vector<SourceStreamType> types =
+-      FilterSourceStream::GetContentEncodingTypes(
+-          request_->accepted_stream_types(), *headers);
++      FilterSourceStream::GetContentEncodingTypes(*headers);
+ 
+   if (request()->client_side_content_decoding_enabled() &&
+       !headers->HasHeader("use-as-dictionary")) {

@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Tue, 4 Aug 2026 14:39:10 -0400
+Subject: [M151] [ganesh] Check result inside GrResourceProvider::writePixels
+
+Original change's description:
+> [ganesh] Check result inside GrResourceProvider::writePixels
+>
+> Bug: 540027341
+> Fixed: 540027341
+> Change-Id: Icde9d077dfb3ec3cdb7a6e775c6472443dba8781
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1315336
+> Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+> Reviewed-by: Robert Phillips <robertphillips@google.com>
+> Commit-Queue: Robert Phillips <robertphillips@google.com>
+
+(cherry picked from commit 5e4f3217c17a8d88195d4c2924613420a256457b)
+
+Bug: 546215593,540027341,540027341
+Change-Id: Icde9d077dfb3ec3cdb7a6e775c6472443dba8781
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1325876
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/GrResourceProvider.cpp b/src/gpu/ganesh/GrResourceProvider.cpp
+index f7598cb89d54903abf0bcf79c512581cbea5920b..b10b0a358eb0fe9769e9a1af248304bfa304e2c6 100644
+--- a/src/gpu/ganesh/GrResourceProvider.cpp
++++ b/src/gpu/ganesh/GrResourceProvider.cpp
+@@ -922,11 +922,13 @@ sk_sp<GrTexture> GrResourceProvider::writePixels(sk_sp<GrTexture> texture,
+     if (tempColorType == GrColorType::kUnknown) {
+         return nullptr;
+     }
+-    SkAssertResult(fGpu->writePixels(texture.get(),
+-                                     SkIRect::MakeSize(baseSize),
+-                                     colorType,
+-                                     tempColorType,
+-                                     tmpTexels.get(),
+-                                     mipLevelCount));
++    if (!fGpu->writePixels(texture.get(),
++                           SkIRect::MakeSize(baseSize),
++                           colorType,
++                           tempColorType,
++                           tmpTexels.get(),
++                           mipLevelCount)) {
++        return nullptr;
++    }
+     return texture;
+ }
