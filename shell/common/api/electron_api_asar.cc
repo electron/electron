@@ -122,6 +122,7 @@ class Archive : public node::ObjectWrap {
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
     dict.Set("type", static_cast<int>(stats.type));
+    dict.Set("executable", stats.executable);
     args.GetReturnValue().Set(dict.GetHandle());
   }
 

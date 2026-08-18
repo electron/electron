@@ -1940,6 +1940,8 @@ describe('asar package', function () {
       itremote('reports conventional permission bits for stat/lstat', function () {
         const a = path.join(asarDir, 'a.asar');
         expect(fs.statSync(path.join(a, 'file1')).mode & 0o777).to.equal(0o644);
+        expect(fs.statSync(path.join(asarDir, 'echo.asar', 'echo')).mode & 0o777).to.equal(0o755);
+        expect(fs.lstatSync(path.join(asarDir, 'echo.asar', 'echo')).mode & 0o777).to.equal(0o755);
         expect(fs.statSync(path.join(a, 'dir1')).mode & 0o777).to.equal(0o755);
         expect(fs.statSync(a).mode & 0o777).to.equal(0o755);
         expect(fs.lstatSync(path.join(a, 'link1')).mode & 0o777).to.equal(0o777);
@@ -2306,6 +2308,35 @@ describe('asar package', function () {
         }
       });
 
+      itremote('does not capture a descriptor number that was closed behind its back', async function () {
+        // Something outside fs (a native FileHandle built on the number, a
+        // handle moved to a worker, ...) can close a packed descriptor
+        // without going through fs.close. Simulate that with original-fs and
+        // check the next owner of the number is served natively.
+        const originalFs = require('node:original-fs');
+        const temp = require('temp').track();
+        const real = temp.path();
+        fs.writeFileSync(real, 'real-file-content');
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        for (const variant of ['sync', 'async', 'handle']) {
+          const stale = fs.openSync(p, 'r');
+          originalFs.closeSync(stale);
+          let fd: number;
+          if (variant === 'sync') fd = fs.openSync(real, 'r');
+          else if (variant === 'async') fd = await promisify(fs.open)(real, 'r');
+          else fd = (await fs.promises.open(real, 'r')).fd;
+          const buffer = Buffer.alloc(17);
+          expect(fs.readSync(fd, buffer, 0, 17, 0)).to.equal(17);
+          expect(buffer.toString()).to.equal('real-file-content');
+          expect(fs.fstatSync(fd).size).to.equal(17);
+          if (variant !== 'handle') fs.closeSync(fd);
+          // A packed open that gets the same number again works too.
+          const again = fs.openSync(p, 'r');
+          expect(fs.readFileSync(again).toString()).to.equal('file1\n');
+          fs.closeSync(again);
+        }
+      });
+
       itremote('close semantics match Node', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
@@ -2463,6 +2494,17 @@ describe('asar package', function () {
           const d5 = temp.path();
           fs.copyFileSync(path.join(asarDir, 'a.asar', 'file1'), d5);
           expect(fs.statSync(d5).mode & 0o111).to.equal(0);
+          // cp chmods the destination to the source's stat mode afterwards, so
+          // stat must agree with what copyFile preserved.
+          const d6 = temp.path();
+          fs.cpSync(path.join(asarDir, 'echo.asar', 'echo'), d6);
+          expect(fs.statSync(d6).mode & 0o111).to.not.equal(0);
+          const d7 = temp.path();
+          await fs.promises.cp(path.join(asarDir, 'echo.asar', 'echo'), d7);
+          expect(fs.statSync(d7).mode & 0o111).to.not.equal(0);
+          const d8 = temp.path();
+          fs.cpSync(path.join(asarDir, 'echo.asar'), d8, { recursive: true, filter: () => true });
+          expect(fs.statSync(path.join(d8, 'echo')).mode & 0o111).to.not.equal(0);
         }
       });
 

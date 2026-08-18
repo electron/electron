@@ -144,8 +144,10 @@ Because archives are read-only, opening a file inside an archive with any
 flag that allows writing (`w`, `a`, `r+`, ...) fails with `EACCES`, and
 `fs.fchmod`, `fs.fchown` and `fs.futimes` on such a descriptor fail with
 `EACCES` too. Passing one of these descriptors to code outside of Node's `fs`
-module (for example a native addon that reads from the raw descriptor) is not
-supported: the descriptor refers to the archive file, not to the entry.
+module (for example a native addon that reads from the raw descriptor,
+`child_process` `stdio`, `net.Socket({ fd })` or
+`http2stream.respondWithFile()`) is not supported: the descriptor refers to
+the archive file, not to the entry.
 
 ### Extra Unpacking on Some APIs
 

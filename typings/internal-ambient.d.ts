@@ -86,6 +86,7 @@ declare namespace NodeJS {
     size: number;
     offset: number;
     type: number;
+    executable: boolean;
   };
 
   interface AsarArchive {

@@ -23,7 +23,9 @@ copy. They now return a descriptor that is backed by the archive itself, so
 and the `FileHandle` methods read directly out of the archive with no
 temporary file. Such a descriptor is only meaningful through Node's `fs`
 module: passing it to code that reads the raw descriptor itself (a native
-addon, `child_process` `stdio`, `net.Socket({ fd })`, ...) is not supported.
+addon, `child_process` `stdio`, `net.Socket({ fd })`,
+`http2stream.respondWithFile()` / `respondWithFD()`, a `FileHandle`
+transferred to a worker, ...) is not supported.
 Opening a file inside an archive with a flag that allows writing (`w`, `a`,
 `r+`, ...) now fails with `EACCES` instead of silently writing to the
 temporary copy, and `fs.fchmod`, `fs.fchown` and `fs.futimes` on these

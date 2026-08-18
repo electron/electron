@@ -169,7 +169,7 @@ function makeStatArray(type: AsarFileType, size: number, ino: number, useBigint:
 
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat, options?: any) {
   const useBigint = Boolean(options && typeof options === 'object' && options.bigint);
-  return getStatsFromBinding(makeStatArray(stats.type, stats.size, ++nextInode, useBigint));
+  return getStatsFromBinding(makeStatArray(stats.type, stats.size, ++nextInode, useBigint, stats.executable));
 };
 
 const enum AsarError {
@@ -691,6 +691,40 @@ function forgetAsarFd(fd: number) {
   if (entry === undefined) return;
   openAsarFiles.delete(fd);
   entry.reader.dispose();
+}
+
+// A descriptor number handed out (or handed back) by native fs may still have
+// an entry here if the previous owner of that number was closed behind our
+// back (a native FileHandle built on it, e.g. by http2's respondWithFile, a
+// FileHandle transferred to a worker, or one dropped and closed on GC).  Such
+// an entry must never capture the new owner's reads.
+function forgetStaleAsarFd(fd: unknown) {
+  if (openAsarFiles.size !== 0 && typeof fd === 'number') forgetAsarFd(fd);
+}
+
+// Calls a native open-like binding (args[3] being its request) and drops any
+// stale entry for the descriptor it produces.  The check is only wired up
+// while entries exist, so the common case stays a plain pass-through.
+function passThroughOpen(fn: Function, args: any[], getFd: (value: any) => unknown) {
+  if (openAsarFiles.size === 0) return fn.apply(undefined, args);
+  const req = args[3];
+  if (req === undefined) {
+    const fd = fn.apply(undefined, args);
+    forgetStaleAsarFd(getFd(fd));
+    return fd;
+  }
+  if (req === kUsePromises) {
+    return fn.apply(undefined, args).then((value: any) => {
+      forgetStaleAsarFd(getFd(value));
+      return value;
+    });
+  }
+  const oncomplete = req.oncomplete;
+  req.oncomplete = function (this: any, error: any, value: any) {
+    if (!error) forgetStaleAsarFd(getFd(value));
+    return oncomplete.call(this, error, value);
+  };
+  return fn.apply(undefined, args);
 }
 
 function sweepStaleAsarFds() {
@@ -1763,7 +1797,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const flags = args[1];
     const req = args[3];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalBinding.open.apply(undefined, args);
+    if (!pathInfo.isAsar) return passThroughOpen(originalBinding.open, args, (fd) => fd);
     const { asarPath, filePath } = pathInfo;
 
     let opened;
@@ -1774,11 +1808,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
-      return originalBinding.open.apply(undefined, args);
+      return passThroughOpen(originalBinding.open, args, (fd) => fd);
     }
 
     const { reader } = opened;
     if (openAsarFiles.size > 256) sweepStaleAsarFds();
+    // The number may have belonged to a handle that was closed behind our
+    // back; make sure its entry (and retained block) is released first.
+    forgetAsarFd(reader.fd);
     openAsarFiles.set(reader.fd, { reader });
     return completeRequest(req, null, reader.fd);
   };
@@ -1788,7 +1825,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const flags = args[1];
     const req = args[3];
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return originalBinding.openFileHandle.apply(undefined, args);
+    if (!pathInfo.isAsar) return passThroughOpen(originalBinding.openFileHandle, args, (handle) => handle?.fd);
     const { asarPath, filePath } = pathInfo;
 
     let opened;
@@ -1799,7 +1836,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
-      return originalBinding.openFileHandle.apply(undefined, args);
+      return passThroughOpen(originalBinding.openFileHandle, args, (handle) => handle?.fd);
     }
 
     const { reader } = opened;
@@ -1817,6 +1854,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return close.apply(this, closeArgs);
     };
     if (openAsarFiles.size > 256) sweepStaleAsarFds();
+    forgetAsarFd(reader.fd);
     openAsarFiles.set(reader.fd, { reader, handle: new WeakRef(handle) });
     return completeRequest(req, null, handle);
   };
