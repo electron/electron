@@ -7,6 +7,9 @@ node_module_version = 149
 # Build Node.js against Chromium's BoringSSL instead of node's bundled OpenSSL.
 node_openssl_path = "//third_party/boringssl"
 
+# Use Chromium's simdutf rather than building a second copy from node's deps.
+node_simdutf_path = "//electron/build/simdutf"
+
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
 

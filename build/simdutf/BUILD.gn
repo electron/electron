@@ -1,0 +1,10 @@
+# Node.js includes "simdutf.h" unqualified; Chromium's target doesn't export
+# its dir, so node_simdutf_path points here instead.
+config("simdutf_include") {
+  include_dirs = [ "//third_party/simdutf" ]
+}
+
+group("simdutf") {
+  public_deps = [ "//third_party/simdutf" ]
+  public_configs = [ ":simdutf_include" ]
+}
