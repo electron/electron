@@ -7678,12 +7678,14 @@ describe('BrowserWindow module', () => {
         const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
         await foregroundWindow.loadFile(colorFile);
 
+        // This verifies how the transparent window composites over the window
+        // behind it, so it has to capture the display rather than one window.
         const screenCapture = new ScreenCapture(display);
-        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, (size) => ({
+        await screenCapture.expectColorAtPointMatches(HexColors.GREEN, (size) => ({
           x: size.width / 4,
           y: size.height / 2
         }));
-        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.RED, (size) => ({
+        await screenCapture.expectColorAtPointMatches(HexColors.RED, (size) => ({
           x: (size.width * 3) / 4,
           y: size.height / 2
         }));
@@ -7719,6 +7721,8 @@ describe('BrowserWindow module', () => {
         foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
         await once(ipcMain, 'set-transparent');
 
+        // This verifies how the transparent window composites over the window
+        // behind it, so it has to capture the display rather than one window.
         const screenCapture = new ScreenCapture(display);
         await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
       }
@@ -7736,9 +7740,9 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        const screenCapture = new ScreenCapture(display);
+        const capture = ScreenCapture.forWindow(window);
         // color-scheme is set to dark so background should not be white
-        await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+        await capture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
 
         window.close();
       }
@@ -7760,8 +7764,8 @@ describe('BrowserWindow module', () => {
       w.loadURL('data:text/html,<html></html>');
       await once(w, 'ready-to-show');
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
 });
