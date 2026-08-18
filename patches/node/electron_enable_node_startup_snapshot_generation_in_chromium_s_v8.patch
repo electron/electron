@@ -289,7 +289,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1285f83662e4f252faa1730df04cafc588cd7556..94f7ac684107ed1693fdc1f6663cfb4729bd8a0d 100644
+index 59bb1eddde665a4cd2086c632109d0112daf33a3..88e5ea2d515164ee2d5b44bff6cad0e7c298c53b 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
