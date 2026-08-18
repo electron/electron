@@ -1008,21 +1008,27 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   });
 
+  // Module resolution repeats most archive probes and an open archive's header
+  // never changes, so answers derived from it are kept (bounded).
+  const moduleStatCache = new Map<string, number>();
+  const kModuleStatCacheLimit = 16 * 1024;
   const { internalModuleStat } = binding;
   internalBinding('fs').internalModuleStat = (pathArgument: string) => {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
+    const cached = moduleStatCache.get(pathArgument);
+    if (cached !== undefined) return cached;
     const { asarPath, filePath } = pathInfo;
 
-    // -ENOENT
+    // -ENOENT; not cached, the archive may appear later.
     const archive = getOrCreateArchive(asarPath);
     if (!archive) return -34;
 
-    // -ENOENT
     const stats = archive.stat(filePath);
-    if (!stats) return -34;
-
-    return stats.type === AsarFileType.kDirectory ? 1 : 0;
+    const result = !stats ? -34 : stats.type === AsarFileType.kDirectory ? 1 : 0;
+    if (moduleStatCache.size >= kModuleStatCacheLimit) moduleStatCache.clear();
+    moduleStatCache.set(pathArgument, result);
+    return result;
   };
 
   const { kUsePromises } = binding;
