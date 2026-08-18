@@ -2439,6 +2439,24 @@ describe('webContents module', () => {
 
         expect(platformCaretBrowsing()).to.be.false();
       });
+
+      it('is not left on by a will-destroy listener that re-enables caret browsing', async () => {
+        const contents = (webContents as typeof ElectronInternal.WebContents).create();
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        // will-destroy is emitted from the destructor, after it has released
+        // this WebContents' reference, while the wrapper is still dispatchable.
+        (contents as any).on('will-destroy', () => {
+          contents.caretBrowsingEnabled = true;
+        });
+
+        const destroyed = once(contents, 'destroyed');
+        contents.destroy();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
     });
 
     describe('renderer-side caret movement', () => {
