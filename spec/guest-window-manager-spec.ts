@@ -379,9 +379,9 @@ describe('webContents.setWindowOpenHandler', () => {
       await childWindow.webContents.executeJavaScript(
         "const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;"
       );
-      const screenCapture = new ScreenCapture(display);
+      const capture = ScreenCapture.forWindow(childWindow);
       // color-scheme is set to dark so background should not be white
-      await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+      await capture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
     });
   });
 
