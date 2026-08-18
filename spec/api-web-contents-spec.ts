@@ -2518,7 +2518,29 @@ describe('webContents module', () => {
         expect(guest.caretBrowsingEnabled).to.be.true();
       });
 
-      it('releases exactly one reference when an inherited preference is disabled', async () => {
+      ifit(isTestingBindingAvailable())(
+        'releases exactly one reference when an inherited preference is disabled',
+        async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).to.be.true();
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.true();
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.false();
+        }
+      );
+
+      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
         w.webContents.caretBrowsingEnabled = true;
 
@@ -2527,13 +2549,15 @@ describe('webContents module', () => {
         const [, guest] = await created;
 
         expect(guest.caretBrowsingEnabled).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true();
 
-        w.webContents.caretBrowsingEnabled = false;
+        // An attached guest's WebContents is owned by its embedder frame, so the
+        // wrapper holding the reference is only deleted at garbage collection.
+        const destroyed = once(guest, 'destroyed');
+        w.close();
+        await destroyed;
 
-        // The setter updates the process-wide refcount as a side effect. Improper
-        // book-keeping would take the count below zero, which aborts the process
-        // under dcheck_always_on rather than failing an assertion here.
-        guest.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
       });
     });
   });

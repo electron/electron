@@ -1187,7 +1187,8 @@ WebContents::~WebContents() {
   // Release this instance's contribution to the process-wide caret browsing
   // refcount. Runs before any of the early returns below so a WebContents
   // destroyed with caret browsing on cannot leak a count and pin the platform
-  // state on forever.
+  // state on forever. Note theat WebContentsDestroyed() releases it too and
+  // normally gets there first.
   ReconcileCaretBrowsingCount(false);
 
   // A queued DevTools embedder-message IPC (e.g. "loadCompleted") can be
@@ -2637,6 +2638,10 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
 }
 
 void WebContents::WebContentsDestroyed() {
+  // The underlying WebContents is gone; drop this instance's contribution to
+  // the process-wide caret browsing count.
+  ReconcileCaretBrowsingCount(false);
+
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
