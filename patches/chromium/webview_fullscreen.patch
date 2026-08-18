@@ -37,10 +37,10 @@ index 18d61b4c4434ffcfc5835d1c65864e6e96d838f1..63c520adcac0bf9df74839d614a6d3b6
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a9dde6bc932896520cacf7c04b893964ce4aca42..ccf32daf4e8a86efdebe1fb28bef245bd26d4c4e 100644
+index d0dec02614bff9f1471c110e41d1b5eee25a1ac8..bb36dc11771c826ae3842091773fbcf98dc8aa9d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4625,21 +4625,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4629,21 +4629,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");

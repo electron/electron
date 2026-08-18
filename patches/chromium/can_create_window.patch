@@ -21,10 +21,10 @@ index e1107cb51f36676e812b95c05e2112dd9d94996c..18d61b4c4434ffcfc5835d1c65864e6e
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8ece528e778386ace3bbd60a97c368863d89b144..41f087af7b91ee9de6aa8501d6ca87f960869ce7 100644
+index 503e19a566b58e7e99446b87cee60554819dcc07..d5df2dda24a5c001d2683887d3e44089824bf873 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5583,6 +5583,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5587,6 +5587,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 8ece528e778386ace3bbd60a97c368863d89b144..41f087af7b91ee9de6aa8501d6ca87f9
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5637,6 +5641,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5641,6 +5645,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -49,7 +49,7 @@ index 8ece528e778386ace3bbd60a97c368863d89b144..41f087af7b91ee9de6aa8501d6ca87f9
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5678,13 +5689,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5682,13 +5693,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
