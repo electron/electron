@@ -17,6 +17,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -102,6 +103,18 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
   }
 
   WindowList::AddWindow(this);
+}
+
+InspectableWebContentsView* NativeWindow::primary_web_contents_view() {
+  return static_cast<InspectableWebContentsView*>(
+      primary_web_contents_view_.view());
+}
+
+void NativeWindow::InitPrimaryWebContentsView(
+    InspectableWebContentsView* view) {
+  CHECK(view);
+  CHECK(!primary_web_contents_view_);
+  primary_web_contents_view_.SetView(view);
 }
 
 NativeWindow::~NativeWindow() {
