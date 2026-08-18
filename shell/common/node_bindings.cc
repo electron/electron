@@ -923,9 +923,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Blink's.
     is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
 
-    // Isolate message listeners are additive (you can add multiple), so instead
-    // we add an extra one here to ensure that the async hook stack is properly
-    // cleared when errors are thrown.
+    // Instead we add our own to ensure that the async hook stack is properly
+    // cleared when errors are thrown. Listeners are additive and this runs for
+    // every environment created on the isolate, so drop the previous one.
+    isolate->RemoveMessageListeners(ErrorMessageListener);
     isolate->AddMessageListenerWithErrorLevel(ErrorMessageListener,
                                               v8::Isolate::kMessageError);
 
