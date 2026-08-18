@@ -2454,7 +2454,11 @@ added:
 
 A `boolean` property that determines whether caret browsing is enabled for this page.
 
-When enabled, a movable cursor is placed in the page's text, allowing the user to navigate and select content with the keyboard. Changes take effect immediately without reloading the page.
+When enabled, a movable cursor is placed in the page's text, allowing the user to navigate and select content with the keyboard. Changes apply to the live page without reloading it.
+
+A `<webview>` guest inherits this value from its embedder when it is created and
+then tracks it independently, so disabling caret browsing on the embedder leaves
+an existing guest enabled.
 
 While any `WebContents` in the process has caret browsing enabled, assistive
 technology is notified process-wide that caret browsing is active, so that screen
