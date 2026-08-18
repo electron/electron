@@ -96,8 +96,8 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('successfully applies the background color', async () => {
@@ -116,8 +116,8 @@ describe('BrowserView module', () => {
       w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(VIEW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(VIEW_BACKGROUND_COLOR);
     });
   });
 
