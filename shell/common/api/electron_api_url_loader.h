@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,9 +16,14 @@
 #include "base/sequence_checker.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
+#include "mojo/public/cpp/bindings/remote.h"
+#include "mojo/public/cpp/system/data_pipe.h"
+#include "mojo/public/cpp/system/simple_watcher.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -55,12 +61,24 @@ class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       private network::SimpleURLLoaderStreamConsumer,
-      private network::mojom::URLLoaderNetworkServiceObserver {
+      private network::mojom::URLLoaderNetworkServiceObserver,
+      private network::mojom::URLLoader {
  public:
   ~SimpleURLLoaderWrapper() override;
   static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
 
   void Cancel();
+
+  // Relay mode, for protocol.handle handlers that return a net.fetch response
+  // untouched: Hold() stops handing body chunks to JS; RelayTo() then writes
+  // |prefix| (the bytes JS had already pulled) and the rest of the body into
+  // |producer| and completes |client|, with no further JS involvement.
+  void Hold();
+  void RelayTo(mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+               mojo::PendingReceiver<network::mojom::URLLoader> loader,
+               mojo::ScopedDataPipeProducerHandle producer,
+               std::string prefix);
+  int64_t content_length() const { return content_length_; }
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
@@ -148,6 +166,18 @@ class SimpleURLLoaderWrapper final
 
   void Start();
 
+  // Relay mode helpers.
+  size_t RelaySome(std::string_view bytes);
+  void RelayWrite();
+  void OnRelayWritable(MojoResult result);
+  void FinishRelay(int net_error);
+  // network::mojom::URLLoader (relay mode; the client end is a renderer):
+  void FollowRedirect(
+      network::HttpRequestHeadersUpdateParams headers_update_params,
+      const std::optional<GURL>& new_url) override {}
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {}
+
   SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
@@ -160,6 +190,19 @@ class SimpleURLLoaderWrapper final
   mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver>
       url_loader_network_observer_receivers_;
   cppgc::Member<JSChunkedDataPipeGetter> chunk_pipe_getter_;
+
+  int64_t content_length_ = -1;
+  bool holding_ = false;
+  std::string relay_pending_;
+  size_t relay_written_ = 0;
+  base::OnceClosure relay_resume_;
+  std::optional<int> finished_;  // net error, once the request completed
+  mojo::ScopedDataPipeProducerHandle relay_producer_;
+  std::unique_ptr<mojo::SimpleWatcher> relay_watcher_;
+  GC_PLUGIN_IGNORE("Browser-process mojo endpoints, no context tracking.")
+  mojo::Remote<network::mojom::URLLoaderClient> relay_client_;
+  GC_PLUGIN_IGNORE("Browser-process mojo endpoints, no context tracking.")
+  mojo::Receiver<network::mojom::URLLoader> relay_receiver_{this};
   gin_helper::SelfKeepAlive<SimpleURLLoaderWrapper> keep_alive_{this};
   gin::WeakCellFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
