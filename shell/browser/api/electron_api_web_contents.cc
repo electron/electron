@@ -901,6 +901,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     }
   }
 
+  // Wake lock disabling
+  bool disable_wake_locks = false;
+  options.Get(options::kDisableWakeLocks, &disable_wake_locks);
+
   // Init embedder earlier
   options.Get("embedder", &embedder_);
 
@@ -940,6 +944,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_ =
         std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
+    params.enable_wake_locks = !disable_wake_locks;
 
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
@@ -972,6 +977,7 @@ WebContents::WebContents(v8::Isolate* isolate,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
+    params.enable_wake_locks = !disable_wake_locks;
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
@@ -979,6 +985,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params{browser_context};
     params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
+    params.enable_wake_locks = !disable_wake_locks;
     web_contents = content::WebContents::Create(params);
   }
 
@@ -1430,6 +1437,10 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
       create_params->delegate_view = view;
     }
   }
+
+  bool disable_wake_locks = false;
+  dict.Get(options::kDisableWakeLocks, &disable_wake_locks);
+  create_params->enable_wake_locks = !disable_wake_locks;
 }
 
 content::WebContents* WebContents::AddNewContents(
