@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Fri, 14 Aug 2026 16:36:03 -0700
+Subject: [M150] [dawn][vulkan] Disallow NPOT mipmapped depth/stencil textures
+ on ImgTec
+
+Original change's description:
+> [dawn][vulkan] Disallow NPOT mipmapped depth/stencil textures on ImgTec
+>
+> Can't think of a way to work around this, so just disable it.
+>
+> Fixes: 540087398
+> Cq-Include-Trybots: luci.chromium.try:android-dawn-arm64-p10-rel
+> Change-Id: I22ce9c18564d338c9ee15e18cfe4598bc34cda95
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/328455
+> Reviewed-by: Brandon Jones <bajones@chromium.org>
+> Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+
+(cherry picked from commit 178fb7048ad322e4ff797210358ed05254289e0c)
+
+Bug: 540087398
+Fixed: 541496474
+Change-Id: I22ce9c18564d338c9ee15e18cfe4598bc34cda95
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/332696
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+
+diff --git a/src/dawn/native/Texture.cpp b/src/dawn/native/Texture.cpp
+index ca235578c42599e53ffca9d1c7e57273200b1f69..a329ad5981f2370a0c8238f77fdc6f38aa8bedd8 100644
+--- a/src/dawn/native/Texture.cpp
++++ b/src/dawn/native/Texture.cpp
+@@ -873,6 +873,15 @@ MaybeError ValidateTextureDescriptor(
+                         (format->aspects & (Aspect::Depth | Aspect::Stencil)),
+                     "The dimension (%s) of a texture with a depth/stencil format (%s) is not 2D.",
+                     descriptor->dimension, format->format);
++    if (device->IsToggleEnabled(Toggle::VulkanDisallowNPOTDepthStencilMipmaps)) {
++        DAWN_INVALID_IF(
++            (format->aspects & (Aspect::Depth | Aspect::Stencil)) &&
++                descriptor->mipLevelCount > 1 &&
++                (!IsPowerOfTwo(descriptor->size.width) || !IsPowerOfTwo(descriptor->size.height)),
++            "Non-power-of-two depth/stencil texture (%s) with mipLevelCount (%u) > 1 is "
++            "disallowed on this device due to a driver bug.",
++            descriptor->size, descriptor->mipLevelCount);
++    }
+ 
+     DAWN_TRY(ValidateTextureSize(device, *descriptor, format));
+     return {};
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 23026c92fbf920dda1fb4f94b89e71ead012fa5f..6c1f9387e9350bd0ca736b85d9de31514afae0f4 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -800,6 +800,11 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+      {"metal_fix_u32_div_mod",
+       "Workaround a driver bug on Apple Silicon with u32 div and mod operations.",
+       "https://crbug.com/517225032", ToggleStage::Device}},
++    {Toggle::VulkanDisallowNPOTDepthStencilMipmaps,
++     {"vulkan_disallow_npot_depth_stencil_mipmaps",
++      "Reject NPOT depth/stencil textures with mipLevelCount > 1. Workaround for mip level "
++      "miscomputation in PowerVR proprietary driver.",
++      "https://crbug.com/540087398", ToggleStage::Device}},
+     {Toggle::WaitIsThreadSafe,
+      {"wait_is_thread_safe",
+       "WaitFor* functions are thread-safe and can be called without the device-lock if implicit "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 5ee76926b0a898c6c387270331004580fc5c885c..6110f00c4d6616cb51b441b79002fe9ff23d31a0 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -191,6 +191,7 @@ enum class Toggle {
+     VulkanForceStaticSamplersForExternalTextures,
+     D3D12UseHLSL2021,
+     MetalFixU32DivMod,
++    VulkanDisallowNPOTDepthStencilMipmaps,
+ 
+     // Once all backends have been updated to be thread safe for waiting, we can remove this toggle.
+     WaitIsThreadSafe,
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 4ec250e7bd3a747e375edfc79b552a52585ea386..02c5f50fc65699332c492707327b78cac128b04e 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1046,8 +1046,12 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+     }
+ 
+     if (MayBeImaginationProprietary()) {
+-        // crbug.com/443906252: Polyfill for case switch with large ranges.
++        // crbug.com/443906252 - Polyfill for case switch with large ranges.
+         deviceToggles->Default(Toggle::VulkanPolyfillSwitchWithIf, true);
++
++        // crbug.com/540087398 - Driver bug miscomputes mip sizes for NPOT depth/stencil textures.
++        // TODO(https://crbug.com/540087398): Limit this to old drivers once there's a driver fix.
++        deviceToggles->Default(Toggle::VulkanDisallowNPOTDepthStencilMipmaps, true);
+     }
+ 
+     // AMD Mesa front end optimizer bug for unary negation and abs.
+diff --git a/src/dawn/tests/end2end/QueueTests.cpp b/src/dawn/tests/end2end/QueueTests.cpp
+index 1073a566ac422f71e9603cf2243b7b86da6db5be..358656e84c0e5d06940befbdde7cf8baceea0e04 100644
+--- a/src/dawn/tests/end2end/QueueTests.cpp
++++ b/src/dawn/tests/end2end/QueueTests.cpp
+@@ -546,6 +546,9 @@ TEST_P(QueueWriteTextureTests, VaryingArrayWriteSize) {
+ 
+ // Test writing to varying mips
+ TEST_P(QueueWriteTextureTests, TextureWriteToMip) {
++    // TODO(crbug.com/540087398): NPOT mipmapped depth/stencil textures disallowed due to driver bug
++    DAWN_SUPPRESS_TEST_IF(IsImgTec());
++
+     constexpr uint32_t kWidth = 259;
+     constexpr uint32_t kHeight = 127;
+ 
+diff --git a/webgpu-cts/expectations.txt b/webgpu-cts/expectations.txt
+index 14be93f2fe9c70b0461cb19efd50161fa73b9d9f..676469cf83ded8b1951fae9f665b2be13647a379 100644
+--- a/webgpu-cts/expectations.txt
++++ b/webgpu-cts/expectations.txt
+@@ -1432,6 +1432,11 @@ crbug.com/0000 [ android-pixel-4 ] webgpu:shader,execution,expression,call,built
+ crbug.com/0000 [ android-pixel-4 ] webgpu:shader,execution,expression,call,builtin,textureSampleCompare:arrayed_2d_coords:format="depth* [ Failure ]
+ crbug.com/0000 [ android-pixel-4 ] webgpu:shader,execution,expression,call,builtin,textureSampleCompareLevel:arrayed_2d_coords:stage="*";format="depth* [ Failure ]
+ 
++crbug.com/540087398 [ android-pixel-10 ] webgpu:api,validation,createTexture:mipLevelCount,format:dimension="*";format="depth*" [ Failure ]
++crbug.com/540087398 [ android-pixel-10 ] webgpu:api,validation,createTexture:mipLevelCount,format:dimension="*";format="stencil*" [ Failure ]
++crbug.com/540087398 [ android-pixel-10 ] webgpu:shader,execution,expression,call,builtin,texture_utils:createTextureWithRandomDataAndGetTexels_with_generator:format="depth*";viewDimension="*" [ Failure ]
++crbug.com/540087398 [ android-pixel-10 ] webgpu:shader,execution,expression,call,builtin,texture_utils:createTextureWithRandomDataAndGetTexels_with_generator:format="stencil*";viewDimension="*" [ Failure ]
++
+ ################################################################################
+ # Autogenerated Failure expectations. Please triage.
+ # ##ROLLER_AUTOGENERATED_FAILURES##

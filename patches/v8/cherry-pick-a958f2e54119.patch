@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Vitale <mrcvtl@chromium.org>
+Date: Fri, 7 Aug 2026 10:18:05 +0200
+Subject: [M150] [compiler] Ensure dictionary load fast-path only target
+ JSObjects
+
+Original change's description:
+> [compiler] Ensure dictionary load fast-path only target JSObjects
+>
+> AccessInfoFactory::ComputePropertyAccessInfo previously returned a
+> DictionaryDataField for any receiver map with is_dictionary_map() set.
+> This assumption is invalid for JSProxy objects as all non-callable proxies
+> share the context-wide proxy_map, but their properties_or_hash_ field
+> may hold a raw Smi identity hash rather than a NameDictionary.
+>
+> This CL restricts the dictionary load fast-path to genuine JSObject
+> maps (excluding global objects, access checks, and interceptors).
+>
+> Fixed: 541251902
+> Change-Id: Ic2077e96c152091139c72447b6aa351e52497c43
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8214019
+> Reviewed-by: Arash Kazemi <arashk@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Auto-Submit: Marco Vitale <mrcvtl@chromium.org>
+> Commit-Queue: Marco Vitale <mrcvtl@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109121}
+
+(cherry picked from commit c69bace374926ba465a755787cdefaf2c6785e29)
+
+Bug: 546214833,541251902
+Change-Id: Ic2077e96c152091139c72447b6aa351e52497c43
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8256287
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#59}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
+index e3da8b02ce2679a4057f45825f9ee85e6f2a9541..631395ce50c4ba59c8995b17c1bcc709b9ebf253 100644
+--- a/src/compiler/access-info.cc
++++ b/src/compiler/access-info.cc
+@@ -979,6 +979,43 @@ bool AccessInfoFactory::TryLoadPropertyDetails(
+   return true;
+ }
+ 
++namespace {
++
++PropertyAccessInfo TryComputeDictionaryDataFieldAccessInfo(
++    Zone* zone, MapRef map, NameRef name, OptionalObjectRef handler) {
++  if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
++    return PropertyAccessInfo::Invalid(zone);
++  }
++  if (!handler.has_value() || !handler->IsSmi()) {
++    return PropertyAccessInfo::Invalid(zone);
++  }
++
++  // Receiver map must be a standard JSObject without access checks or
++  // interceptors.
++  if (!map.is_dictionary_map() || !map.IsJSObjectMap() ||
++      IsJSGlobalObjectMap(*map.object()) || map.is_access_check_needed() ||
++      map.has_named_interceptor()) {
++    return PropertyAccessInfo::Invalid(zone);
++  }
++
++  const auto smi_handler = Cast<Smi>(*handler->object());
++  const int smi_value = smi_handler.value();
++  if (LoadHandler::GetHandlerKind(smi_handler) != LoadHandler::Kind::kNormal ||
++      !LoadHandler::IsDataPropertyBits::decode(smi_value)) {
++    return PropertyAccessInfo::Invalid(zone);
++  }
++
++  uint32_t index = LoadHandler::DictionaryIndexBits::decode(smi_value);
++  if (index == LoadHandler::DictionaryIndexBits::kMax) {
++    return PropertyAccessInfo::Invalid(zone);
++  }
++
++  return PropertyAccessInfo::DictionaryDataField(
++      zone, map, OptionalJSObjectRef(), InternalIndex(index), name);
++}
++
++}  // namespace
++
+ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
+     MapRef map, NameRef name, AccessMode access_mode,
+     OptionalObjectRef handler) const {
+@@ -989,22 +1026,11 @@ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
+ 
+   JSHeapBroker::MapUpdaterGuardIfNeeded mumd_scope(broker());
+ 
+-  if (map.is_dictionary_map() && access_mode == AccessMode::kLoad &&
+-      handler.has_value() && handler->IsSmi()) {
+-    if constexpr (V8_ENABLE_SWISS_NAME_DICTIONARY_BOOL) {
+-      return Invalid();
+-    }
+-    auto smi_handler = Cast<Smi>(*handler->object());
+-    if (LoadHandler::GetHandlerKind(smi_handler) ==
+-        LoadHandler::Kind::kNormal) {
+-      if (LoadHandler::IsDataPropertyBits::decode(smi_handler.value())) {
+-        uint32_t index =
+-            LoadHandler::DictionaryIndexBits::decode(smi_handler.value());
+-        if (index != LoadHandler::DictionaryIndexBits::kMax) {
+-          return PropertyAccessInfo::DictionaryDataField(
+-              zone(), map, OptionalJSObjectRef(), InternalIndex(index), name);
+-        }
+-      }
++  if (access_mode == AccessMode::kLoad) {
++    PropertyAccessInfo access_info =
++        TryComputeDictionaryDataFieldAccessInfo(zone(), map, name, handler);
++    if (!access_info.IsInvalid()) {
++      return access_info;
+     }
+   }
+ 
+diff --git a/src/compiler/access-info.h b/src/compiler/access-info.h
+index d51bebad2534b682b2a91579ceab4a9da4f52656..74029290fd75fc2b9c1825047d70e38546922a8b 100644
+--- a/src/compiler/access-info.h
++++ b/src/compiler/access-info.h
+@@ -314,6 +314,8 @@ class AccessInfoFactory final {
+   PropertyAccessInfo ComputeAccessorDescriptorAccessInfo(
+       MapRef receiver_map, NameRef name, MapRef map, OptionalJSObjectRef holder,
+       InternalIndex descriptor, AccessMode access_mode) const;
++  PropertyAccessInfo ComputeDictionaryDataFieldAccessInfo(
++      MapRef map, NameRef name, OptionalObjectRef handler) const;
+ 
+   PropertyAccessInfo Invalid() const {
+     return PropertyAccessInfo::Invalid(zone());
+diff --git a/test/mjsunit/compiler/regress-541251902.js b/test/mjsunit/compiler/regress-541251902.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6d53ebc369f65757760f9019e6a34712d3bd72c2
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-541251902.js
+@@ -0,0 +1,42 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax
++
++class Base {
++  constructor(x) { return x; }
++}
++
++class P extends Base {
++  #t = 42;
++  static get_t(o) {
++    return o.#t;
++  }
++}
++
++const warm = new Proxy({}, {});
++new P(warm);
++
++%PrepareFunctionForOptimization(P.get_t);
++assertEquals(42, P.get_t(warm));
++assertEquals(42, P.get_t(warm));
++
++%OptimizeFunctionOnNextCall(P.get_t);
++assertEquals(42, P.get_t(warm));
++
++// Non-callable proxies share the context-wide proxy_map. When an identity hash
++// is assigned (e.g. via Map/Set), properties_or_hash_ contains a Smi hash instead
++// of a NameDictionary. Accessing private fields on such a proxy must safely throw
++// a TypeError instead of assuming all objects with proxy_map have a dictionary.
++const map = new Map();
++const victims = [];
++for (let i = 0; i < 25; i++) {
++  const victim = new Proxy({}, {});
++  map.set(victim, 1);
++  victims.push(victim);
++}
++
++for (const victim of victims) {
++  assertThrows(() => P.get_t(victim), TypeError);
++}
