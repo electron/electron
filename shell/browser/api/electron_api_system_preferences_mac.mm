@@ -486,8 +486,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                       reply:^(BOOL success, NSError* error) {
                         // NOLINTBEGIN(bugprone-use-after-move)
                         if (!success) {
-                          std::string err_msg = std::string(
-                              [error.localizedDescription UTF8String]);
+                          std::string err_msg = base::SysNSStringToUTF8(
+                              error.localizedDescription);
                           runner->PostTask(
                               FROM_HERE,
                               base::BindOnce(
