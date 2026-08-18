@@ -796,12 +796,12 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: ws.WebSocket;
+        socket: InstanceType<typeof ws>;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new ws.WebSocket(browserWsUrl);
+        const socket = new ws(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
