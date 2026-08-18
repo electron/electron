@@ -6,6 +6,7 @@
 
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "components/embedder_support/user_agent_utils.h"

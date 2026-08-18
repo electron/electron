@@ -22,6 +22,7 @@
 #include "electron/fuses.h"
 #include "electron/snapshot_checksum.h"
 #include "gin/array_buffer.h"
+#include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
@@ -220,6 +221,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
   g_isolate = isolate;
 
   return isolate;
+}
+
+v8::Isolate* JavascriptEnvironment::isolate() const {
+  return isolate_holder_->isolate();
 }
 
 // static
