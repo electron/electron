@@ -165,21 +165,12 @@ Before submitting your changes in a pull request, always run the full
 test suite. To run the tests:
 
 ```sh
-yarn test
+npm run lint
+npm run test
 ```
 
 Make sure the linter does not report any issues and that all tests pass.
 Please do not submit patches that fail either check.
-
-If you are updating tests and want to run a single spec to check it:
-
-```sh
-yarn test -match=menu
-```
-
-The above would only run spec modules matching `menu`, which is useful for
-anyone who's working on tests that would otherwise be at the very end of
-the testing cycle.
 
 ### Step 8: Push
 
