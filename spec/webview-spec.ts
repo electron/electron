@@ -894,8 +894,8 @@ describe('<webview> tag', function () {
         src: 'data:text/html,foo'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('remains transparent when set', async () => {
@@ -904,8 +904,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=yes'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('can disable transparency', async () => {
@@ -914,8 +914,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=no'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
 
