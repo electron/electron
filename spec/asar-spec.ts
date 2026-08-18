@@ -1729,6 +1729,44 @@ describe('asar package', function () {
       });
     });
 
+    describe('splitPath', function () {
+      itremote('splits at the deepest .asar file component and normalizes the relative part', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        const archive = path.join(asarDir, 'a.asar');
+        expect(splitPath(path.join(archive, 'dir1', 'file1'))).to.deep.equal({
+          isAsar: true,
+          asarPath: archive,
+          filePath: ['dir1', 'file1'].join(path.sep)
+        });
+        expect(
+          splitPath(archive + path.sep + path.sep + 'dir1' + path.sep + path.sep + 'file1' + path.sep)
+        ).to.deep.equal({ isAsar: true, asarPath: archive, filePath: ['dir1', 'file1'].join(path.sep) });
+        expect(splitPath(path.join(archive, 'nested.asar', 'x'))).to.deep.equal({
+          isAsar: true,
+          asarPath: path.join(archive, 'nested.asar'),
+          filePath: 'x'
+        });
+        expect(splitPath(archive)).to.deep.equal({ isAsar: true, asarPath: archive, filePath: '' });
+      });
+
+      itremote('does not treat a real directory named like an archive as an archive', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        expect(splitPath(path.join(asarDir, 'file'))).to.deep.equal({ isAsar: false });
+        expect(splitPath(asarDir)).to.deep.equal({ isAsar: false });
+        expect(splitPath(path.join(fixtures, 'module', 'noop.js'))).to.deep.equal({ isAsar: false });
+      });
+
+      itremote('matches the archive extension the same way base::FilePath does', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        const dir = path.join(fixtures, 'module');
+        expect(splitPath(path.join(dir, 'X.ASAR', 'y')).isAsar).to.equal(true);
+        expect(splitPath(path.join(dir, '.asar', 'y')).isAsar).to.equal(true);
+        expect(splitPath(path.join(dir, 'x.asar.gz', 'y')).isAsar).to.equal(false);
+        expect(splitPath(path.join(dir, 'x.asarx', 'y')).isAsar).to.equal(false);
+        expect(splitPath(path.join(dir, 'asar', 'y')).isAsar).to.equal(false);
+      });
+    });
+
     describe('process.noAsar', function () {
       const errorName = process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR';
 

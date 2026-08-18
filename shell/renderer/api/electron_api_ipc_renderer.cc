@@ -12,6 +12,7 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -21,6 +22,7 @@
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/serialized_value.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/service_worker_data.h"
@@ -72,7 +74,7 @@ class IPCBase : public gin_helper::DeprecatedWrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
@@ -88,18 +90,18 @@ class IPCBase : public gin_helper::DeprecatedWrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return {};
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return {};
     }
-    gin_helper::Promise<blink::CloneableMessage> p(isolate);
+    gin_helper::Promise<electron::SerializedValue> p(isolate);
     auto handle = p.GetHandle();
 
     electron_ipc_remote_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
-            [](gin_helper::Promise<blink::CloneableMessage> p,
-               blink::CloneableMessage result) { p.Resolve(result); },
+            [](gin_helper::Promise<electron::SerializedValue> p,
+               electron::SerializedValue result) { p.Resolve(result); },
             std::move(p)));
 
     return handle;
@@ -154,7 +156,7 @@ class IPCBase : public gin_helper::DeprecatedWrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
@@ -170,12 +172,12 @@ class IPCBase : public gin_helper::DeprecatedWrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return {};
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return {};
     }
 
-    blink::CloneableMessage result;
+    electron::SerializedValue result;
     electron_ipc_remote_->MessageSync(internal, channel, std::move(message),
                                       &result);
     return electron::DeserializeV8Value(isolate, result);
