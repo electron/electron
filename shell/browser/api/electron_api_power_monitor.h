@@ -84,6 +84,9 @@ class PowerMonitor final : public gin_helper::DeprecatedWrappable<PowerMonitor>,
 
   // The window used for processing events.
   HWND window_;
+
+  // Handle returned by RegisterSuspendResumeNotification.
+  HPOWERNOTIFY power_notify_handle_ = nullptr;
 #endif
 
 #if BUILDFLAG(IS_LINUX)
