@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 19 Aug 2026 09:32:12 +0000
+Subject: editing: Hoist UpdateStyleAndLayout out of SelectionHasFocus()
+
+SelectionHasFocus() ran Document::UpdateStyleAndLayout() before reading
+the selection, and IsHidden() calls it. Two of their callers run inside
+a lifecycle update, where the tree must already be clean and a forced
+update is not allowed: LayoutSelection::Commit() from the compositing
+inputs phase, and FrameCaret::UpdateAppearance()/paint. Crash reports
+show the compositing-inputs case reached from a drag-over hit test
+(DragController::DragEnteredOrUpdated -> LocalFrame::DocumentAtPoint ->
+LayoutView::HitTest -> UpdateAllLifecyclePhasesExceptPaint ->
+LayoutView::CommitPendingSelection -> LayoutSelection::Commit ->
+FrameSelection::IsHidden -> SelectionHasFocus ->
+Document::UpdateStyleAndLayout), ending in the
+StateAllowsTreeMutations() CHECK in
+UpdateStyleAndLayoutTreeForThisDocument().
+
+Hoist the update to the callers that run outside a lifecycle update (the
+crbug.com/590369 TODO): MoveCommands, EditorKeyBindings,
+DragController::DragIsMove and the clipboard commands now update first;
+editor commands, SelectionController and EventHandler already did. The
+lifecycle-time callers read the current tree, as their own DCHECKs
+already require.
+
+The test reproduces the crash state: a pending selection commit and
+style dirtied after layout, then the hit-test lifecycle update. It is
+release-only because LayoutSelection::Commit() DCHECKs the tree clean
+first; how the tree gets dirty at that point in the field is not
+identified, and that DCHECK keeps flagging it in debug builds.
+
+Bug: 541952000
+Test: blink_unittests --gtest_filter=LocalFrameViewTest.CompositingInputsCommitsPendingSelectionWithoutUpdatingDirtyStyle
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/8252692
+
+diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+index 501ad4512ec551fcafae98d2d9f77161d68e9215..afd832057585fdfdcf33fd3e93ee10d46cde8eb2 100644
+--- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
++++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+@@ -181,6 +181,7 @@ Element* ClipboardCommands::FindEventTargetForClipboardEvent(
+   // We treat hidden selections as "no selection or cursor".
+   //  "if the context is not editable, then set target to the focused node,
+   //   or the body element if no node has focus."
++  frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+   if (source == EditorCommandSource::kMenuOrKeyBinding &&
+       frame.Selection().IsHidden()) {
+     Element* focusedElement = frame.GetDocument()->FocusedElement();
+@@ -307,6 +308,7 @@ bool ClipboardCommands::EnabledCut(LocalFrame& frame,
+                                    EditorCommandSource source) {
+   if (!CanWriteClipboard(frame, source))
+     return false;
++  frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+   if (source == EditorCommandSource::kMenuOrKeyBinding &&
+       !frame.Selection().SelectionHasFocus())
+     return false;
+@@ -319,6 +321,7 @@ bool ClipboardCommands::EnabledPaste(LocalFrame& frame,
+                                      EditorCommandSource source) {
+   if (!CanReadClipboard(frame, source))
+     return false;
++  frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+   if (source == EditorCommandSource::kMenuOrKeyBinding &&
+       !frame.Selection().SelectionHasFocus())
+     return false;
+@@ -389,6 +392,7 @@ bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
+   // Since copy is a read-only operation it succeeds anytime a selection
+   // is *visible*. In contrast to cut or paste, the selection does not
+   // need to be focused - being visible is enough.
++  frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+   if (source == EditorCommandSource::kMenuOrKeyBinding &&
+       frame.Selection().IsHidden())
+     return true;
+@@ -665,6 +669,7 @@ class CORE_EXPORT PasteImageResourceObserver final
+       return;
+     }
+ 
++    frame_->GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+     if (source_ == EditorCommandSource::kMenuOrKeyBinding &&
+         !frame_->Selection().SelectionHasFocus()) {
+       return;
+@@ -694,6 +699,7 @@ class CORE_EXPORT PasteImageResourceObserver final
+   // operations are triggered by user action on a specific element, so the
+   // existing AnchorNode() behavior via FindEventTargetFrom() is appropriate.
+   Element* FindEventTargetForClipboardEvent() const {
++    frame_->GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+     if (source_ == EditorCommandSource::kMenuOrKeyBinding &&
+         frame_->Selection().IsHidden()) {
+       return frame_->Selection().GetDocument().body();
+diff --git a/third_party/blink/renderer/core/editing/commands/editor_command.cc b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+index 9ed26d028560ae4559bbf63a69869f88f71e7723..a5f4b53ce81d0b224f0c5fabeb1dc81d9be8ef16 100644
+--- a/third_party/blink/renderer/core/editing/commands/editor_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+@@ -1228,6 +1228,7 @@ static bool EnabledDelete(LocalFrame& frame,
+                           EditorCommandSource source) {
+   switch (source) {
+     case EditorCommandSource::kMenuOrKeyBinding:
++      frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+       return frame.Selection().SelectionHasFocus() &&
+              frame.GetEditor().CanDelete();
+     case EditorCommandSource::kDom:
+diff --git a/third_party/blink/renderer/core/editing/commands/move_commands.cc b/third_party/blink/renderer/core/editing/commands/move_commands.cc
+index d5b4ac4c3b76839ed5cf5c2593bb7e0aee444715..83f86cf2c854b789efd6148d89b1481ca7a60991 100644
+--- a/third_party/blink/renderer/core/editing/commands/move_commands.cc
++++ b/third_party/blink/renderer/core/editing/commands/move_commands.cc
+@@ -169,6 +169,7 @@ void MoveCommands::UpdateSelectionForCaretBrowsing(LocalFrame& frame) {
+   if (!frame.IsCaretBrowsingEnabled())
+     return;
+ 
++  frame.GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
+   if (frame.Selection().SelectionHasFocus())
+     return;
+ 
+diff --git a/third_party/blink/renderer/core/editing/editor_key_bindings.cc b/third_party/blink/renderer/core/editing/editor_key_bindings.cc
+index 7980a6f4cd100b5a580a64959db97ad4a6d3b027..8e10cd98dd8da048d28142a42589e0caf82f2b61 100644
+--- a/third_party/blink/renderer/core/editing/editor_key_bindings.cc
++++ b/third_party/blink/renderer/core/editing/editor_key_bindings.cc
+@@ -104,6 +104,7 @@ bool Editor::HandleEditingKeyboardEvent(KeyboardEvent* evt) {
+   }
+   // We should not insert text at selection start if selection doesn't have
+   // focus.
++  frame_->GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
+   if (!frame_->Selection().SelectionHasFocus())
+     return false;
+ 
+diff --git a/third_party/blink/renderer/core/editing/frame_selection.cc b/third_party/blink/renderer/core/editing/frame_selection.cc
+index 67b7f8281917f8efcdb6e68f467e103bb90f9bee..8db7c9cfa418afec89d1c2578ab3e514e75ee967 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection.cc
++++ b/third_party/blink/renderer/core/editing/frame_selection.cc
+@@ -725,9 +725,6 @@ void FrameSelection::Clear() {
+ }
+ 
+ bool FrameSelection::SelectionHasFocus() const {
+-  // TODO(editing-dev): Hoist UpdateStyleAndLayout
+-  // to caller. See http://crbug.com/590369 for more details.
+-  GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
+   if (ComputeVisibleSelectionInFlatTree().IsNone())
+     return false;
+   const Node* current =
+diff --git a/third_party/blink/renderer/core/editing/frame_selection.h b/third_party/blink/renderer/core/editing/frame_selection.h
+index 686262c609011fc202bb83f57d4d8f69e2f3568e..2ac459d78011f0837d2ffd99686b52355bfb109e 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection.h
++++ b/third_party/blink/renderer/core/editing/frame_selection.h
+@@ -257,6 +257,8 @@ class CORE_EXPORT FrameSelection final
+   bool IsCaretBlinkingSuspended() const;
+ 
+   // Focus
++  // Reads the current style and layout without updating them; callers that
++  // run outside a lifecycle update do UpdateStyleAndLayout() first.
+   bool SelectionHasFocus() const;
+   void SetFrameIsFocused(bool);
+   bool FrameIsFocused() const { return focused_; }
+diff --git a/third_party/blink/renderer/core/page/drag_controller.cc b/third_party/blink/renderer/core/page/drag_controller.cc
+index cdeab8c10de1ed99139df5e4e35d861ba68a60bd..54890791417fb60243db536b164f1200a34e3b42 100644
+--- a/third_party/blink/renderer/core/page/drag_controller.cc
++++ b/third_party/blink/renderer/core/page/drag_controller.cc
+@@ -222,8 +222,12 @@ static DocumentFragment* DocumentFragmentFromDragData(
+ bool DragController::DragIsMove(FrameSelection& selection,
+                                 DragData* drag_data) {
+   if (document_under_mouse_ !=
+-          (drag_initiator_ ? drag_initiator_->document() : nullptr) ||
+-      !selection.SelectionHasFocus()) {
++      (drag_initiator_ ? drag_initiator_->document() : nullptr)) {
++    return false;
++  }
++  selection.GetDocument().UpdateStyleAndLayout(
++      DocumentUpdateReason::kSelection);
++  if (!selection.SelectionHasFocus()) {
+     return false;
+   }
+   auto visible_selection =
