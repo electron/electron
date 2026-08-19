@@ -66,28 +66,77 @@ def download(text, url, path):
   return path
 
 
+# Deflate level 6 is ~1.7x faster than level 9 on the multi-GB debug info
+# archives this is used for (pdb.zip, dsym-snapshot.zip, debug.zip), and the
+# output is only ~0.4% larger.
+ZIP_COMPRESSION_LEVEL = 6
+
 def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     allfiles = files + dirs
-    execute(['zip', '-r', '-y', '-9', zip_file_path] + allfiles)
+    execute(['zip', '-r', '-y', f'-{ZIP_COMPRESSION_LEVEL}', zip_file_path]
+            + allfiles)
   else:
     with zipfile.ZipFile(zip_file_path, "w",
                          zipfile.ZIP_DEFLATED,
-                         allowZip64=True) as zip_file:
+                         allowZip64=True,
+                         compresslevel=ZIP_COMPRESSION_LEVEL) as zip_file:
       for filename in files:
-        zip_file.write(filename, filename, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+        zip_file.write(filename, filename)
       for dirname in dirs:
         for root, _, filenames in os.walk(dirname):
           for f in filenames:
-            zip_file.write(os.path.join(root, f), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
+            zip_file.write(os.path.join(root, f))
       zip_file.close()
+
+
+# xz preset for dsym.tar.xz. The default preset (-6) is ~5x slower than -3
+# for ~12% smaller output on DWARF; on the 5-core macOS CI runners that is
+# the difference between a ~6 minute and a ~30 minute "Zip Symbols" step.
+XZ_PRESET = '-3'
 
 
 def make_tar_xz(tar_file_path, files, dirs):
   safe_unlink(tar_file_path)
   allfiles = files + dirs
-  execute(['tar', '-cJf', tar_file_path] + allfiles)
+  # xz is single threaded by default, which takes 30+ minutes for the ~7GB of
+  # dSYMs this is used for. Multi-threaded xz splits the input into
+  # independently compressed blocks (~1% larger, still a standard .xz stream
+  # that any xz decoder can read) and scales ~linearly with core count.
+  #
+  # Prefer piping an uncompressed tar stream through the xz binary: it is the
+  # only path that reliably multi-threads. macOS's bsdtar accepts
+  # --options xz:threads=0 but its liblzma still emits a single block (i.e.
+  # one thread), and GNU tar only threads via XZ_OPT.
+  xz = shutil.which('xz')
+  if xz:
+    with open(tar_file_path, 'wb') as out, \
+         subprocess.Popen(['tar', '-cf', '-'] + allfiles,
+                          stdout=subprocess.PIPE) as tar, \
+         subprocess.Popen([xz, '-T0', XZ_PRESET, '-c'],
+                          stdin=tar.stdout, stdout=out) as xz_proc:
+      tar.stdout.close()
+      xz_rc = xz_proc.wait()
+      tar_rc = tar.wait()
+    if tar_rc != 0 or xz_rc != 0:
+      raise RuntimeError(
+          f'tar | xz failed (tar={tar_rc}, xz={xz_rc}) for {tar_file_path}')
+    return
+  tar_version = subprocess.run(['tar', '--version'], capture_output=True,
+                               text=True, check=False).stdout
+  if 'bsdtar' in tar_version:
+    # bsdtar's xz filter is configured via --options; a thread count of 0
+    # means "one per CPU" (where liblzma supports it).
+    args = ['tar', '--options',
+            f'xz:threads=0,xz:compression-level={XZ_PRESET[1:]}',
+            '-cJf', tar_file_path]
+    env = None
+  else:
+    # GNU tar shells out to the xz binary, which reads XZ_OPT.
+    args = ['tar', '-cJf', tar_file_path]
+    env = dict(os.environ, XZ_OPT=f'-T0 {XZ_PRESET}')
+  execute(args + allfiles, env=env)
 
 
 def rm_rf(path):
