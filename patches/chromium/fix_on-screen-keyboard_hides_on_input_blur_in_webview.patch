@@ -39,10 +39,10 @@ index 345d1c40972ddecfd5668004ce4f12da36a7b4a6..658e7250fb083f26e69c196c212404a2
    // Detaches |this| from the input method object.
    // is_removed flag is true if this is called while the window is
 diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
-index 65be78be7080129f776fc16122b9c97f1d03f438..19d369cd0b778f47e21770ad16ad4fd288d4c235 100644
+index c1100b4f152202e95552d929f4cafcf3487da0fd..0af1be25982f4a87b1509e166b87b13ca23ba1d5 100644
 --- a/content/browser/renderer_host/text_input_manager.cc
 +++ b/content/browser/renderer_host/text_input_manager.cc
-@@ -214,6 +214,7 @@ void TextInputManager::UpdateTextInputState(
+@@ -231,6 +231,7 @@ void TextInputManager::UpdateTextInputState(
  
    if (text_input_state.type == ui::TEXT_INPUT_TYPE_NONE &&
        active_view_ != view) {
@@ -50,7 +50,7 @@ index 65be78be7080129f776fc16122b9c97f1d03f438..19d369cd0b778f47e21770ad16ad4fd2
      // We reached here because an IPC is received to reset the TextInputState
      // for |view|. But |view| != |active_view_|, which suggests that at least
      // one other view has become active and we have received the corresponding
-@@ -517,6 +518,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
+@@ -534,6 +535,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
      observer.OnUpdateTextInputStateCalled(this, updated_view, did_update_state);
  }
  

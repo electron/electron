@@ -8,7 +8,7 @@ v8::ReturnValue<void>::Set(Local<S>) is now deprecated.
 See http://crbug.com/348660658 for details.
 
 diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index e40383c095ab329b2e20b7e68ade507788a79fb6..24979fb0d66595f5e80f493c78291d6600bfc34a 100644
+index ff3b654de5bcc7a187c4361b9eec26ea4b62a1eb..3abd7475c659dfda55c5efda7ee20a9efd4ec4be 100644
 --- a/nan_callbacks_12_inl.h
 +++ b/nan_callbacks_12_inl.h
 @@ -26,7 +26,24 @@ class ReturnValue {
