@@ -190,3 +190,4 @@ cherry-pick-e480c72d3627.patch
 cherry-pick-4e17fa56c471.patch
 cherry-pick-7cf589757eab.patch
 cherry-pick-0c2b2640e6fb.patch
+remove_cr_xcode_build_define_from_build_gn.patch
