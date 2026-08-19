@@ -1239,6 +1239,40 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
+    // Regression test for https://github.com/electron/electron/issues/52158.
+    // The api::WebContents wrapping the DevTools WebContents is created as soon
+    // as openDevTools() is called but only referenced again once the frontend
+    // has finished loading. A GC in between used to collect its wrapper, after
+    // which `devtools-opened` would either crash the main process (if the
+    // collected object had not been freed yet) or create a second
+    // api::WebContents for the same DevTools WebContents.
+    it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
+      const gc = require('node:vm').runInNewContext('gc');
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const created: number[] = [];
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
+      app.on('web-contents-created', onCreated);
+      try {
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach', activate: false });
+        gc({ type: 'major', execution: 'sync' });
+        await devtoolsOpened;
+      } finally {
+        app.removeListener('web-contents-created', onCreated);
+      }
+
+      const devtools = w.webContents.devToolsWebContents;
+      expect(devtools).to.not.be.null();
+      expect(devtools!.isDestroyed()).to.be.false();
+      // Exactly one WebContents (the DevTools one) was created, and it is the
+      // one we ended up with.
+      expect(created).to.deep.equal([devtools!.id]);
+    });
+
     it('can show a DevTools window with custom title', async () => {
       const w = new BrowserWindow({ show: false });
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
