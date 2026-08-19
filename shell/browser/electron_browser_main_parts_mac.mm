@@ -8,6 +8,7 @@
 
 #include "base/apple/bundle_locations.h"
 #include "base/apple/foundation_util.h"
+#include "base/strings/sys_string_conversions.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_apple.h"
 #include "shell/browser/browser_process_impl.h"
@@ -92,11 +93,9 @@ std::string ElectronBrowserMainParts::GetCurrentSystemLocale() {
       [[NSLocale currentLocale] localeIdentifier];
 
   // Mac OS X uses "_" instead of "-", so swap to get a real locale value.
-  std::string locale_value = [[systemLocaleIdentifier
+  return base::SysNSStringToUTF8([systemLocaleIdentifier
       stringByReplacingOccurrencesOfString:@"_"
-                                withString:@"-"] UTF8String];
-
-  return locale_value;
+                                withString:@"-"]);
 }
 
 }  // namespace electron
