@@ -71,7 +71,7 @@ jobs:
           echo "Free space after: ${FREE_AFTER_GB}GB"
           echo "Space freed: ${SPACE_FREED_GB}GB"
 
-          curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+          if curl -sS -X POST "https://api.datadoghq.com/api/v2/series" \
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${DD_API_KEY}" \
             -d @- << EOF
@@ -101,5 +101,8 @@ jobs:
             ]
           }
           EOF
-
-          echo "Disk space metrics logged to Datadog"
+          then
+            echo "Disk space metrics logged to Datadog"
+          else
+            echo "::warning::Datadog metrics upload failed"
+          fi
