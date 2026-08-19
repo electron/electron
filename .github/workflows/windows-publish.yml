@@ -88,6 +88,8 @@ jobs:
       target-platform: win
       target-arch: x64
       is-release: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -107,6 +109,8 @@ jobs:
       target-platform: win
       target-arch: arm64
       is-release: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -126,6 +130,8 @@ jobs:
       target-platform: win
       target-arch: x86
       is-release: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
