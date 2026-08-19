@@ -60,8 +60,10 @@
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/common/extension_id.h"
 #include "ipc/constants.mojom.h"
+#include "media/mojo/mojom/speech_recognizer.mojom.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
@@ -260,6 +262,30 @@ void BindNetworkHintsHandler(
     mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
   NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
 }
+
+// On-device speech recognition is not supported; bind a stub that says so, as
+// an unbound frame interface is a bad message that kills the renderer.
+class OnDeviceSpeechRecognitionStub final
+    : public media::mojom::OnDeviceSpeechRecognition {
+ public:
+  static void Bind(
+      content::RenderFrameHost* frame_host,
+      mojo::PendingReceiver<media::mojom::OnDeviceSpeechRecognition> receiver) {
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<OnDeviceSpeechRecognitionStub>(), std::move(receiver));
+  }
+
+  void Available(const std::vector<std::string>& languages,
+                 media::mojom::SpeechRecognitionQuality quality,
+                 AvailableCallback callback) override {
+    std::move(callback).Run(media::mojom::AvailabilityStatus::kUnavailable);
+  }
+  void Install(const std::vector<std::string>& languages,
+               media::mojom::SpeechRecognitionQuality quality,
+               InstallCallback callback) override {
+    std::move(callback).Run(false);
+  }
+};
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
@@ -1791,6 +1817,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+  map->Add<media::mojom::OnDeviceSpeechRecognition>(
+      &OnDeviceSpeechRecognitionStub::Bind);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
       [](content::RenderFrameHost* frame_host,
