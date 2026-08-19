@@ -29,11 +29,12 @@
 namespace electron {
 
 struct ElectronRendererClient::FrameEnvironment {
-  // |primary| integrates uv_default_loop() and is borrowed while no other
-  // environment occupies it; otherwise this frame gets a loop of its own.
-  FrameEnvironment(NodeBindings* primary,
+  // A main frame borrows |primary|, which integrates uv_default_loop(), while
+  // no other environment occupies it; every other frame gets its own loop.
+  FrameEnvironment(bool is_main_frame,
+                   NodeBindings* primary,
                    ElectronBindings* primary_electron_bindings) {
-    if (primary->uv_env() == nullptr) {
+    if (is_main_frame && primary->uv_env() == nullptr) {
       node_bindings = primary;
       electron_bindings = primary_electron_bindings;
       return;
@@ -136,8 +137,9 @@ void ElectronRendererClient::DidCreateScriptContext(
   }
 
   CHECK(!environments_.contains(render_frame));
-  auto frame_env = std::make_unique<FrameEnvironment>(node_bindings_.get(),
-                                                      electron_bindings_.get());
+  auto frame_env = std::make_unique<FrameEnvironment>(
+      render_frame->IsMainFrame(), node_bindings_.get(),
+      electron_bindings_.get());
   NodeBindings* node_bindings = frame_env->node_bindings;
 
   // Setup node tracing controller.

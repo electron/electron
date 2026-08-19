@@ -61,8 +61,8 @@ class ElectronRendererClient : public RendererClientBase {
   // Whether the node integration has been initialized.
   bool node_integration_initialized_ = false;
 
-  // Integrates uv_default_loop() for the whole process; hosts whichever
-  // environment is created while it is free (normally the main frame's).
+  // Integrates uv_default_loop() for the whole process and hosts a main
+  // frame's environment while one exists; subframes never borrow it.
   const std::unique_ptr<NodeBindings> node_bindings_;
   const std::unique_ptr<ElectronBindings> electron_bindings_;
 
