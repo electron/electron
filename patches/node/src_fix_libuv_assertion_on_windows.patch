@@ -23,7 +23,7 @@ This patch can be removed when Electron updates to a version of Node.js
 that contains the above commit.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 4a345d6cc321d4f5969a76a1a800f3e517528fcb..47cafc6634c14ea3d656e8819ca8351356d09254 100644
+index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..142cb4a13becacae680feb25050506a3671b4b1b 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -117,6 +117,8 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
@@ -43,9 +43,9 @@ index 4a345d6cc321d4f5969a76a1a800f3e517528fcb..47cafc6634c14ea3d656e8819ca83513
      locked.Push(std::make_unique<StopTask>(this));
      uv_async_send(&flush_tasks_);
    }
-@@ -255,6 +258,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
-   // Set on the scheduler thread by StopTask; read there by ScheduleTask.
-   bool stopped_ = false;
+@@ -241,6 +244,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+   uv_loop_t loop_;
+   uv_async_t flush_tasks_;
    std::unordered_set<uv_timer_t*> timers_;
 +  bool has_shut_down_ = false;
  };
