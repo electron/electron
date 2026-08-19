@@ -15,6 +15,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -202,7 +203,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   node::Environment* env = GetEnvironment(render_frame);
-  if (!env)
+  if (!env || env->context() != context)
     return;
   gin_helper::EmitEvent(isolate, env->process_object(), "exit");
 
@@ -214,6 +215,8 @@ void ElectronRendererClient::WillReleaseScriptContext(
   frame_env->node_bindings->set_uv_env(nullptr);
   frame_env->node_bindings->StopPolling();
   frame_env->electron_bindings->EnvironmentDestroyed(env);
+  // Freeing the environment runs its loop, i.e. enters Node.js.
+  util::ExplicitMicrotasksScope microtasks_scope(context->GetMicrotaskQueue());
   frame_env->environment.reset();
 }
 
