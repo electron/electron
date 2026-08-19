@@ -260,7 +260,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c603e431cd 100644
+index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfffb79f2e33 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -277,7 +277,7 @@ index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c6
        defines += [ "NODE_USE_V8_PLATFORM=1" ]
      } else {
        defines += [ "NODE_USE_V8_PLATFORM=0" ]
-@@ -184,7 +189,10 @@ template("node_gn_build") {
+@@ -186,7 +191,10 @@ template("node_gn_build") {
      ]
  
      sources = [
@@ -289,7 +289,7 @@ index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c6
        "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
-@@ -274,20 +282,12 @@ template("node_gn_build") {
+@@ -276,20 +284,12 @@ template("node_gn_build") {
      sources = [ "src/node_main.cc" ]
      deps = [
        ":libnode",
@@ -314,7 +314,7 @@ index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c6
      output_name = "node"
  
      if (is_apple) {
-@@ -303,12 +303,36 @@ template("node_gn_build") {
+@@ -305,12 +305,36 @@ template("node_gn_build") {
    if (node_use_node_snapshot) {
      if (current_toolchain == v8_snapshot_toolchain) {
        executable("node_mksnapshot") {
@@ -356,7 +356,7 @@ index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c6
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -323,14 +347,19 @@ template("node_gn_build") {
+@@ -325,14 +349,19 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -378,7 +378,7 @@ index 15bd82cad8c6927362f4e852bed49c7d10b71c61..71e8ac54bae3d1f272070aaf97ceb2c6
        script = "$node_v8_path/tools/run.py"
        sources = []
        data = []
-@@ -342,10 +371,89 @@ template("node_gn_build") {
+@@ -344,10 +373,89 @@ template("node_gn_build") {
        args = [
          "./" + rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),

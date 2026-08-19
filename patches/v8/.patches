@@ -14,3 +14,4 @@ cherry-pick-c3ea7757b190.patch
 cherry-pick-b80a7539b736.patch
 cherry-pick-2a21c7560310.patch
 cherry-pick-d6a92ca48587.patch
+src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
