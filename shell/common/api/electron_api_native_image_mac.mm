@@ -46,7 +46,7 @@ void ReceivedThumbnailResult(CGSize size,
                              QLThumbnailRepresentation* thumbnail,
                              NSError* error) {
   if (error || !thumbnail) {
-    std::string err_msg([error.localizedDescription UTF8String]);
+    std::string err_msg = base::SysNSStringToUTF8(error.localizedDescription);
     p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
                              "image for the given path: " +
                              err_msg);
