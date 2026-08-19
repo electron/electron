@@ -1,8 +1,8 @@
 module electron.mojom;
 
+import "mojo/public/mojom/base/big_buffer.mojom";
 import "mojo/public/mojom/base/string16.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
-import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
 
 // A preload script and its contents, pushed to the renderer ahead of the
@@ -32,6 +32,13 @@ struct RendererStartupData {
   string helper_exec_path;
 };
 
+// A value serialized with electron::SerializeV8Value(), in the buffer it is
+// sent in. |buffer| may be larger than the |size| bytes that were written.
+struct SerializedValue {
+  mojo_base.mojom.BigBuffer buffer;
+  uint64 size;
+};
+
 // Per-frame associated interface ordered against content.mojom.Frame, so
 // SetStartupData() arrives before the CommitNavigation that follows it.
 interface ElectronFrameStartup {
@@ -42,7 +49,7 @@ interface ElectronRenderer {
   Message(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments);
+      SerializedValue arguments);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
@@ -64,14 +71,14 @@ interface ElectronApiIPC {
   Message(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments);
+      SerializedValue arguments);
 
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process, and returns the response.
   Invoke(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
+      SerializedValue arguments) => (SerializedValue result);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
@@ -81,9 +88,9 @@ interface ElectronApiIPC {
   MessageSync(
     bool internal,
     string channel,
-    blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
+    SerializedValue arguments) => (SerializedValue result);
 
   MessageHost(
     string channel,
-    blink.mojom.CloneableMessage arguments);
+    SerializedValue arguments);
 };

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -30,6 +31,7 @@
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/cors/cors.h"
 #include "services/network/public/cpp/cors/cors_error_status.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -263,9 +265,18 @@ class URLPipeLoader : public network::mojom::URLLoader,
 
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head) {
+    // The network service feeds this response through a 2 MB pipe; match it
+    // when the body is known to be that large instead of re-slicing to 64 KB.
+    const uint32_t pipe_size =
+        response_head.content_length > 0
+            ? base::saturated_cast<uint32_t>(std::min<int64_t>(
+                  response_head.content_length,
+                  network::GetDataPipeDefaultAllocationSize(
+                      network::DataPipeAllocationSize::kLargerSizeIfPossible)))
+            : 0;
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
-    MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+    MojoResult rv = mojo::CreateDataPipe(pipe_size, producer, consumer);
     if (rv != MOJO_RESULT_OK) {
       NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
       return;
@@ -890,10 +901,13 @@ void ElectronURLLoaderFactory::SendContents(
   // Add header to ignore CORS.
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
 
-  // Code below follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc, with the
+  // pipe sized to the body (up to the network service's default).
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
+  const uint32_t pipe_size = base::saturated_cast<uint32_t>(std::clamp<size_t>(
+      data.size(), 1u, network::GetDataPipeDefaultAllocationSize()));
+  if (mojo::CreateDataPipe(pipe_size, producer, consumer) != MOJO_RESULT_OK) {
     client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
     return;
