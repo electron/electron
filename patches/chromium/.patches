@@ -260,3 +260,4 @@ cherry-pick-278468608392.patch
 cherry-pick-e09d67f7844c.patch
 cherry-pick-01036c1aead2.patch
 chore_register_node_as_a_dynamic_trace_category_prefix.patch
+remove_cr_xcode_build_define_from_build_gn.patch
