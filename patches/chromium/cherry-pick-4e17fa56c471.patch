@@ -1,0 +1,178 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 13 Aug 2026 17:10:16 -0700
+Subject: [M150] media: Validate av1C box and track bit depth & frame size in
+ VT AV1 accelerator
+
+Original change's description:
+> media: Validate av1C box and track bit depth & frame size in VT AV1 accelerator
+>
+> VideoToolboxAV1Accelerator::ProcessFormat() previously failed to
+> validate the output of
+> libgav1::ObuParser::GetAV1CodecConfigurationBox(), allowing empty/null
+> av1C spans to construct malformed CoreMedia format descriptions.
+> Additionally, bit depth and sequence max frame dimensions were omitted
+> from format change detection keys, preventing format description updates
+> on stream parameter transitions. transitions.
+>
+> Bug: 536439844
+> Change-Id: I6d3ff4086a4e8ac9470ca0816344dd6e00490b5e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8179644
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1672762}
+
+(cherry picked from commit 8d7b91ee781c387a36d9fe0472f3210c3da6a3f7)
+
+Bug: 546215624,536439844
+Change-Id: I6d3ff4086a4e8ac9470ca0816344dd6e00490b5e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8257177
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4283}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/media/gpu/mac/video_toolbox_av1_accelerator.cc b/media/gpu/mac/video_toolbox_av1_accelerator.cc
+index 62dd23e3ac6523233441806c5e71daa28927a0e8..689306ac573c52001e2387da198c56546c1dd389 100644
+--- a/media/gpu/mac/video_toolbox_av1_accelerator.cc
++++ b/media/gpu/mac/video_toolbox_av1_accelerator.cc
+@@ -188,14 +188,18 @@ bool VideoToolboxAV1Accelerator::ProcessFormat(
+       break;
+   }
+ 
+-  // TODO(crbug.com/40936765): Should this be the current frame size, or the
+-  // sequence max frame size?
+   gfx::Size coded_size(base::strict_cast<int>(pic.frame_header.width),
+                        base::strict_cast<int>(pic.frame_header.height));
++  gfx::Size max_coded_size(
++      base::strict_cast<int>(sequence_header.max_frame_width),
++      base::strict_cast<int>(sequence_header.max_frame_height));
++
++  int bit_depth = sequence_header.color_config.bitdepth;
+ 
+   // If the parameters have changed, generate a new format.
+   if (color_space != active_color_space_ || profile != active_profile_ ||
+-      coded_size != active_coded_size_) {
++      coded_size != active_coded_size_ || bit_depth != active_bit_depth_ ||
++      max_coded_size != active_max_coded_size_) {
+     active_format_.reset();
+ 
+     // Generate the av1c.
+@@ -203,13 +207,17 @@ bool VideoToolboxAV1Accelerator::ProcessFormat(
+     std::unique_ptr<uint8_t[]> av1c =
+         libgav1::ObuParser::GetAV1CodecConfigurationBox(
+             data.data(), data.size(), &av1c_size);
++    if (!av1c || av1c_size < 4) {
++      MEDIA_LOG(ERROR, media_log_.get())
++          << "Failed to extract valid AV1CodecConfigurationBox";
++      return false;
++    }
+     auto av1c_span =
+         UNSAFE_TODO(base::span<const uint8_t>(av1c.get(), av1c_size));
+ 
+     // Build a format configuration with AV1 extensions.
+     base::apple::ScopedCFTypeRef<CFDictionaryRef> format_config =
+-        CreateFormatExtensions(kCMVideoCodecType_AV1, profile,
+-                               sequence_header.color_config.bitdepth,
++        CreateFormatExtensions(kCMVideoCodecType_AV1, profile, bit_depth,
+                                color_space, av1c_span);
+     if (!format_config) {
+       MEDIA_LOG(ERROR, media_log_.get())
+@@ -235,6 +243,8 @@ bool VideoToolboxAV1Accelerator::ProcessFormat(
+     active_color_space_ = color_space;
+     active_profile_ = profile;
+     active_coded_size_ = coded_size;
++    active_max_coded_size_ = max_coded_size;
++    active_bit_depth_ = bit_depth;
+ 
+     // Update session configuration.
+     session_metadata_ = VideoToolboxDecompressionSessionMetadata{
+diff --git a/media/gpu/mac/video_toolbox_av1_accelerator.h b/media/gpu/mac/video_toolbox_av1_accelerator.h
+index 2f38bdb6d49f0d67fba3b1ddab2822b676219f9b..2f6b183768259585679063194cca5d4add2f0df7 100644
+--- a/media/gpu/mac/video_toolbox_av1_accelerator.h
++++ b/media/gpu/mac/video_toolbox_av1_accelerator.h
+@@ -66,6 +66,8 @@ class MEDIA_GPU_EXPORT VideoToolboxAV1Accelerator
+   VideoColorSpace active_color_space_;
+   VideoCodecProfile active_profile_ = VIDEO_CODEC_PROFILE_UNKNOWN;
+   gfx::Size active_coded_size_;
++  gfx::Size active_max_coded_size_;
++  int active_bit_depth_ = 0;
+ 
+   base::apple::ScopedCFTypeRef<CMFormatDescriptionRef> active_format_;
+   VideoToolboxDecompressionSessionMetadata session_metadata_;
+diff --git a/media/gpu/mac/video_toolbox_av1_accelerator_unittest.cc b/media/gpu/mac/video_toolbox_av1_accelerator_unittest.cc
+index 0679898fede0f543d44c41b7a52fc715adae1517..afef753b753d1f60064fd1d9fc7785f7904141d7 100644
+--- a/media/gpu/mac/video_toolbox_av1_accelerator_unittest.cc
++++ b/media/gpu/mac/video_toolbox_av1_accelerator_unittest.cc
+@@ -133,4 +133,70 @@ TEST_F(VideoToolboxAV1AcceleratorTest, DecodeSuperframe) {
+   EXPECT_THAT(data2, ElementsAreArray(show_existing_frame_data));
+ }
+ 
++TEST_F(VideoToolboxAV1AcceleratorTest, InvalidAV1CBox) {
++  // Data without sequence header OBU will fail to yield valid av1C.
++  constexpr uint8_t invalid_data[] = {0x01, 0x02, 0x03, 0x04};
++
++  libgav1::ObuSequenceHeader sequence_header = {};
++  sequence_header.profile = libgav1::kProfile0;
++  sequence_header.color_config.bitdepth = 8;
++
++  const AV1ReferenceFrameVector ref_frames;
++  const libgav1::Vector<libgav1::TileBuffer> tile_buffers;
++
++  scoped_refptr<AV1Picture> pic = accelerator_->CreateAV1Picture(false);
++  pic->frame_header.width = 320;
++  pic->frame_header.height = 240;
++
++  accelerator_->SetStream(base::span(invalid_data), nullptr);
++  EXPECT_EQ(accelerator_->SubmitDecode(*pic, sequence_header, ref_frames,
++                                       tile_buffers, base::span(invalid_data)),
++            AV1Decoder::AV1Accelerator::Status::kFail);
++}
++
++TEST_F(VideoToolboxAV1AcceleratorTest,
++       BitDepthChangeTriggersFormatRegeneration) {
++  constexpr uint8_t frame_data[] = {0x0a, 0x0b, 0x00, 0x00, 0x00, 0x04, 0x3c,
++                                    0xff, 0xbc, 0xfb, 0xf9, 0x80, 0x40};
++
++  const AV1ReferenceFrameVector ref_frames;
++  const libgav1::Vector<libgav1::TileBuffer> tile_buffers;
++
++  scoped_refptr<AV1Picture> pic = accelerator_->CreateAV1Picture(false);
++  pic->frame_header.width = 320;
++  pic->frame_header.height = 240;
++  pic->set_visible_rect(gfx::Rect(320, 240));
++
++  VideoToolboxDecompressionSessionMetadata metadata_8bit;
++  VideoToolboxDecompressionSessionMetadata metadata_10bit;
++
++  // First decode: 8-bit.
++  libgav1::ObuSequenceHeader sequence_header_8bit = {};
++  sequence_header_8bit.profile = libgav1::kProfile0;
++  sequence_header_8bit.color_config.bitdepth = 8;
++
++  EXPECT_CALL(*this, OnDecode(_, _, _)).WillOnce(SaveArg<1>(&metadata_8bit));
++  EXPECT_CALL(*this, OnOutput(_));
++  accelerator_->SetStream(base::span(frame_data), nullptr);
++  EXPECT_EQ(accelerator_->SubmitDecode(*pic, sequence_header_8bit, ref_frames,
++                                       tile_buffers, base::span(frame_data)),
++            AV1Decoder::AV1Accelerator::Status::kOk);
++  accelerator_->OutputPicture(*pic);
++  EXPECT_EQ(metadata_8bit.bit_depth, 8);
++
++  // Second decode: Bit depth changes to 10-bit with frame dimensions unchanged.
++  libgav1::ObuSequenceHeader sequence_header_10bit = {};
++  sequence_header_10bit.profile = libgav1::kProfile0;
++  sequence_header_10bit.color_config.bitdepth = 10;
++
++  EXPECT_CALL(*this, OnDecode(_, _, _)).WillOnce(SaveArg<1>(&metadata_10bit));
++  EXPECT_CALL(*this, OnOutput(_));
++  accelerator_->SetStream(base::span(frame_data), nullptr);
++  EXPECT_EQ(accelerator_->SubmitDecode(*pic, sequence_header_10bit, ref_frames,
++                                       tile_buffers, base::span(frame_data)),
++            AV1Decoder::AV1Accelerator::Status::kOk);
++  accelerator_->OutputPicture(*pic);
++  EXPECT_EQ(metadata_10bit.bit_depth, 10);
++}
++
+ }  // namespace media
