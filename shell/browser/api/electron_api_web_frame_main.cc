@@ -28,6 +28,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -333,7 +334,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
                         bool internal,
                         const std::string& channel,
                         v8::Local<v8::Value> args) {
-  blink::CloneableMessage message;
+  electron::SerializedValue message;
   if (!gin::ConvertFromV8(isolate, args, &message)) {
     isolate->ThrowException(v8::Exception::Error(
         gin::StringToV8(isolate, "Failed to serialize arguments")));
