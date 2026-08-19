@@ -9,12 +9,12 @@ Xcode, which causes pointless cache misses in development.
 There's an open Chromium issue to fix this: https://issues.chromium.org/issues/514632432
 
 diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
-index b21e766931b19a5cb1f785acfb7f8df47e56e276..edffd0f3b3450f6875054f580b2fe65ec74d2a66 100644
+index 765f91d8837c82ee54ade3c3dc9152cb113f3272..9f65d782ba827f5fed172ef82a0e000e8e214355 100644
 --- a/build/config/mac/BUILD.gn
 +++ b/build/config/mac/BUILD.gn
-@@ -26,11 +26,6 @@ config("compiler") {
-     }
+@@ -27,11 +27,6 @@ config("compiler") {
    }
+   common_mac_flags += [ "--target=$clang_arch-apple-macos" ]
  
 -  # This is here so that all files get recompiled after an Xcode update.
 -  # (defines are passed via the command line, and build system rebuild things
