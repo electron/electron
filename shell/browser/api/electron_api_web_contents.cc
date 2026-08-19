@@ -1208,7 +1208,7 @@ WebContents::~WebContents() {
   // Release this instance's contribution to the process-wide caret browsing
   // refcount. Runs before any of the early returns below so a WebContents
   // destroyed with caret browsing on cannot leak a count and pin the platform
-  // state on forever. Note theat WebContentsDestroyed() releases it too and
+  // state on forever. Note that WebContentsDestroyed() releases it too and
   // normally gets there first.
   ReconcileCaretBrowsingCount(false);
 
