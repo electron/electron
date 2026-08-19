@@ -262,6 +262,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   if (context.IsEmpty()) {
     node_env_->context()->Enter();
   }
+  node_bindings_->SetUpIsolate(isolate);
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 

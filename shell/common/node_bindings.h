@@ -137,6 +137,10 @@ class NodeBindings {
   // Setup V8, libuv.
   void Initialize(v8::Isolate* isolate, v8::Local<v8::Context> context);
 
+  // Installs the isolate-wide callbacks Node.js needs. Once per isolate; where
+  // the environment comes from the Node snapshot, after CreateEnvironment().
+  void SetUpIsolate(v8::Isolate* isolate);
+
   std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.

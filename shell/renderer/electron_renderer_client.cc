@@ -129,6 +129,10 @@ void ElectronRendererClient::DidCreateScriptContext(
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize(isolate, renderer_context);
+    node_bindings_->SetUpIsolate(isolate);
+    // SetUpIsolate registers Node's WebAssembly streaming callback, whose JS
+    // side kNoBrowserGlobals never installs; put Blink's back.
+    blink::WasmResponseExtensions::Initialize(isolate);
   }
 
   CHECK(!environments_.contains(render_frame));
@@ -159,13 +163,6 @@ void ElectronRendererClient::DidCreateScriptContext(
                           base::Unretained(this), render_frame));
   frame_env->environment = env;
   node_bindings->set_uv_env(env.get());
-
-  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
-  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
-  // the JS side of that callback is never installed, so it would crash on
-  // use; restore Blink's implementation so WebAssembly.compileStreaming
-  // keeps working with Blink's fetch.
-  blink::WasmResponseExtensions::Initialize(isolate);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -264,7 +261,7 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 
   auto* current = WebWorkerObserver::GetCurrent();
   if (!current)
-    current = WebWorkerObserver::Create();
+    current = WebWorkerObserver::Create(v8::Isolate::GetCurrent());
   current->WorkerScriptReadyForEvaluation(context);
 }
 

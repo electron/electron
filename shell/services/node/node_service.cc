@@ -187,6 +187,7 @@ void NodeService::Initialize(
       params->exec_args);
   if (context.IsEmpty())
     node_env_->context()->Enter();
+  node_bindings_->SetUpIsolate(isolate);
 
   // Override the default handler set by NodeBindings.
   node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
