@@ -72,10 +72,10 @@ index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/env.cc b/src/env.cc
-index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..168b6a812a87cf2d700afc71c205493c968fc540 100644
+index 9b67143ce4707b175d607237bdea137149a9935a..325fbb0c727bb41cb163ce0384b378aa4c285cd7 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -666,13 +666,16 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+@@ -665,13 +665,16 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
  void Environment::AssignToContext(Local<v8::Context> context,
                                    Realm* realm,
                                    const ContextInfo& info) {
@@ -96,7 +96,7 @@ index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..168b6a812a87cf2d700afc71c205493c
  
    // This must not be done before other context fields are initialized.
    ContextEmbedderTag::TagNodeContext(context);
-@@ -687,12 +690,16 @@ void Environment::AssignToContext(Local<v8::Context> context,
+@@ -686,12 +689,16 @@ void Environment::AssignToContext(Local<v8::Context> context,
  
  void Environment::UnassignFromContext(Local<v8::Context> context) {
    if (!context.IsEmpty()) {
@@ -213,7 +213,7 @@ index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7
        return false;
      }
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index c69ff16bd85427d3c26d8b42029c8ebb618dea41..4aa790405fcdb028146c6e24baeedb9cf822ed50 100644
+index 469c85642e995024b354abaa67dd865933867fc7..1caa202e7c4a957e0ab58e5012ae424a5ff701a9 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -157,9 +157,12 @@ ContextifyContext::ContextifyContext(Environment* env,
