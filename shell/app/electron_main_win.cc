@@ -42,6 +42,8 @@ namespace {
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
 const char kUtilityProcess[] = "utility";
+const char kUtilitySubType[] = "utility-sub-type";
+const char kNodeService[] = "node.mojom.NodeService";
 
 [[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
   size_t required_size = 0;
@@ -232,7 +234,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   int rc = content::ContentMain(std::move(params));
   // System DLLs loaded into utility processes crash in their DLL_PROCESS_DETACH
   // handlers during CRT exit, so leave the way Chrome does: without running it.
-  if (process_type == kUtilityProcess)
+  // Node utility processes keep the normal exit for their addons' handlers.
+  if (process_type == kUtilityProcess &&
+      command_line->GetSwitchValueASCII(kUtilitySubType) != kNodeService) {
     base::Process::TerminateCurrentProcessImmediately(rc);
+  }
   return rc;
 }
