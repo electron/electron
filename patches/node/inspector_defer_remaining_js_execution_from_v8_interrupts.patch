@@ -6,16 +6,17 @@ Subject: inspector: defer remaining JS execution from V8 interrupts
 Inspector messages for a main thread connection are dispatched from a
 V8 interrupt handler. Queue these messages and deliver them from
 microtasks. Keep later messages queued until the backlog is drained to
-preserve protocol ordering.
+preserve protocol ordering. Message queuing logic is ported from
+https://github.com/nodejs/node/commit/4f844f4380a143d0c24b39d1df34b187b06619ae
+to be aligned with upstream.
 
 Starting the inspector I/O thread and toggling network tracking can also
 call into JS from an interrupt.
 
-Followup to  https://github.com/nodejs/node/pull/65028, will be
-upstreamed.
+Upstreamed at https://github.com/nodejs/node/pull/65397.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d79d9e0ddb 100644
+index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d45b56c60b 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -54,6 +54,7 @@ using crdtp::UberDispatcher;
@@ -80,27 +81,23 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d7
  // Called on the main thread.
  void StartIoThreadAsyncCallback(uv_async_t* handle) {
    static_cast<Agent*>(handle->data)->StartIoThread();
-@@ -455,6 +503,19 @@ class SameThreadInspectorSession : public InspectorSession {
+@@ -455,6 +503,15 @@ class SameThreadInspectorSession : public InspectorSession {
  
  void NotifyClusterWorkersDebugEnabled(Environment* env) {
    Isolate* isolate = env->isolate();
 +  // Starting the inspector from an interrupt is safe, but emitting the cluster
 +  // notification calls into JS.
 +  if (env->is_processing_v8_interrupt()) {
-+    env->context()->GetMicrotaskQueue()->EnqueueMicrotask(
-+        isolate,
-+        [](Local<Data> data) {
-+          Environment* env = Environment::GetCurrent(data.As<Context>());
-+          if (env != nullptr) NotifyClusterWorkersDebugEnabled(env);
-+        },
-+        env->context());
++    env->SetImmediate(
++        [](Environment* env) { NotifyClusterWorkersDebugEnabled(env); },
++        CallbackFlags::kUnrefed);
 +    return;
 +  }
 +
    HandleScope handle_scope(isolate);
  
    // Send message to enable debug in cluster workers
-@@ -959,54 +1020,43 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
+@@ -959,54 +1016,40 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
                                   Local<Function> disable_function) {
    parent_env_->set_inspector_enable_network_tracking(enable_function);
    parent_env_->set_inspector_disable_network_tracking(disable_function);
@@ -166,16 +163,13 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d7
 +      parent_env_->inspector_enable_network_tracking(),
 +      parent_env_->inspector_disable_network_tracking(),
 +      false,
-+      [this, isolate]() {
-+        parent_env_->context()->GetMicrotaskQueue()->EnqueueMicrotask(
-+            isolate,
-+            [](Local<Data> data) {
-+              Environment* env = Environment::GetCurrent(data.As<Context>());
-+              if (env == nullptr) return;
++      [this]() {
++        parent_env_->SetImmediate(
++            [](Environment* env) {
 +              Agent* agent = env->inspector_agent();
 +              if (agent != nullptr) agent->SyncNetworkTrackingState();
 +            },
-+            parent_env_->context());
++            CallbackFlags::kUnrefed);
 +      },
 +      []() {
 +        UNREACHABLE("Cannot toggle network tracking, please report this.");
@@ -183,7 +177,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d7
  }
  
  void Agent::WaitForDisconnect() {
-@@ -1057,7 +1107,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
+@@ -1057,7 +1100,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
  }
  
  void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
@@ -192,7 +186,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d7
    SyncAsyncHookState();
  }
  
-@@ -1071,52 +1121,26 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
+@@ -1071,52 +1114,25 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
  // When it's not safe to call into JS, this is a no-op and we'll try again in
  // RegisterAsyncHook() (for 1) or from a scheduled immediate (for 2).
  void Agent::SyncAsyncHookState() {
@@ -257,8 +251,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..604ae57b5136363a6f9370c985b7d7d7
 +            CallbackFlags::kUnrefed);
 +      },
 +      []() {
-+        UNREACHABLE(
-+            "Cannot toggle Inspector's AsyncHook, please report this.");
++        UNREACHABLE("Cannot toggle Inspector's AsyncHook, please report this.");
 +      });
  }
  
@@ -308,18 +301,19 @@ index 932e4e8dce899101a17d978dfc5065de5eb06758..6e1a622aa6d95be198165f521f82513c
  };
  
 diff --git a/src/inspector_js_api.cc b/src/inspector_js_api.cc
-index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..f9de70df20cebe8f8ee2ff963985ff8004908979 100644
+index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..fce28f4463d512eb3199108f298789b380e0a6a4 100644
 --- a/src/inspector_js_api.cc
 +++ b/src/inspector_js_api.cc
-@@ -9,6 +9,7 @@
- #include "v8-inspector.h"
+@@ -10,15 +10,21 @@
  #include "v8.h"
  
-+#include <deque>
  #include <memory>
++#include <string>
++#include <string_view>
++#include <vector>
  
  namespace node {
-@@ -16,6 +17,7 @@ namespace inspector {
+ namespace inspector {
  namespace {
  
  using v8::Context;
@@ -327,7 +321,12 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..f9de70df20cebe8f8ee2ff963985ff80
  using v8::Function;
  using v8::FunctionCallbackInfo;
  using v8::FunctionTemplate;
-@@ -57,25 +59,16 @@ class JSBindingsConnection : public BaseObject {
++using v8::GCCallbackFlags;
++using v8::GCType;
+ using v8::Global;
+ using v8::HandleScope;
+ using v8::Isolate;
+@@ -57,25 +63,16 @@ class JSBindingsConnection : public BaseObject {
   public:
    class JSBindingsSessionDelegate : public InspectorSessionDelegate {
     public:
@@ -348,7 +347,7 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..f9de70df20cebe8f8ee2ff963985ff80
 -      if (!ToV8Value(env_->context(), message, isolate).ToLocal(&argument))
 -        return;
 -      connection_->OnMessage(argument);
-+      connection_->OnMessage(message);
++      connection_->SendMessageToFrontend(message);
      }
  
     private:
@@ -356,85 +355,118 @@ index 54a91765ac6b1ff1b7e6bb33598cb43d25da3512..f9de70df20cebe8f8ee2ff963985ff80
      BaseObjectPtr<JSBindingsConnection> connection_;
    };
  
-@@ -85,13 +78,64 @@ class JSBindingsConnection : public BaseObject {
+@@ -85,7 +82,38 @@ class JSBindingsConnection : public BaseObject {
        : BaseObject(env, wrap), callback_(env->isolate(), callback) {
      Agent* inspector = env->inspector_agent();
      session_ = ConnectionType::Connect(
 -        inspector, std::make_unique<JSBindingsSessionDelegate>(env, this));
 +        inspector, std::make_unique<JSBindingsSessionDelegate>(this));
++    // Inspector responses may be produced from a GC weak callback, where
++    // invoking the JavaScript session callback is forbidden. Defer delivery
++    // until the GC has completed.
++    env->isolate()->AddGCPrologueCallback(GCPrologueCallback, this);
++    env->isolate()->AddGCEpilogueCallback(GCEpilogueCallback, this);
 +  }
 +
-+  void OnMessage(const StringView& message) {
-+    if (env()->is_processing_v8_interrupt() || draining_messages_ ||
++  ~JSBindingsConnection() override {
++    env()->isolate()->RemoveGCPrologueCallback(GCPrologueCallback, this);
++    env()->isolate()->RemoveGCEpilogueCallback(GCEpilogueCallback, this);
++  }
++
++  void SendMessageToFrontend(const v8_inspector::StringView& message) {
++    if (in_gc_ || env()->is_processing_v8_interrupt() || delivering_ ||
 +        !pending_messages_.empty()) {
-+      pending_messages_.push_back(v8_inspector::StringBuffer::create(message));
-+      if (!message_delivery_scheduled_ && !draining_messages_) {
-+        ScheduleMessageDelivery();
-+      }
++      pending_messages_.emplace_back(
++          message.is8Bit()
++              ? std::u16string(message.characters8(),
++                               message.characters8() + message.length())
++              : std::u16string(message.characters16(),
++                               message.characters16() + message.length()));
++      ScheduleFlush();
 +      return;
 +    }
-+    USE(DeliverMessage(message));
-+  }
-+
-+  bool DeliverMessage(const StringView& message) {
 +    Isolate* isolate = env()->isolate();
 +    HandleScope handle_scope(isolate);
 +    Context::Scope context_scope(env()->context());
 +    Local<Value> argument;
-+    if (!ToV8Value(env()->context(), message, isolate).ToLocal(&argument)) {
-+      return false;
-+    }
-+
-+    return !callback_.Get(env()->isolate())
-+                ->Call(env()->context(), object(), 1, &argument)
-+                .IsEmpty();
-+  }
-+
-+  void ScheduleMessageDelivery() {
-+    CHECK(!message_delivery_scheduled_);
-+    message_delivery_scheduled_ = true;
-+    env()->context()->GetMicrotaskQueue()->EnqueueMicrotask(
-+        env()->isolate(), DrainMessagesMicrotask, object());
-+  }
-+
-+  void DrainMessages() {
-+    CHECK(message_delivery_scheduled_);
-+    CHECK(!pending_messages_.empty());
-+    message_delivery_scheduled_ = false;
-+    draining_messages_ = true;
-+    auto on_exit = OnScopeLeave([this]() { draining_messages_ = false; });
-+    while (!pending_messages_.empty()) {
-+      auto message = std::move(pending_messages_.front());
-+      pending_messages_.pop_front();
-+      if (!DeliverMessage(message->string())) {
-+        pending_messages_.clear();
-+        return;
-+      }
-+    }
++    if (!ToV8Value(env()->context(), message, isolate).ToLocal(&argument))
++      return;
++    OnMessage(argument);
    }
  
--  void OnMessage(Local<Value> value) {
--    auto result = callback_.Get(env()->isolate())
--                      ->Call(env()->context(), object(), 1, &value);
--    (void)result;
+   void OnMessage(Local<Value> value) {
+@@ -94,6 +122,63 @@ class JSBindingsConnection : public BaseObject {
+     (void)result;
+   }
+ 
++  void ScheduleFlush() {
++    if (flush_scheduled_ || delivering_) return;
++    flush_scheduled_ = true;
++    if (!in_gc_ && env()->is_processing_v8_interrupt()) {
++      env()->context()->GetMicrotaskQueue()->EnqueueMicrotask(
++          env()->isolate(), DrainMessagesMicrotask, object());
++      return;
++    }
++    BaseObjectPtr<JSBindingsConnection> strong_ref{this};
++    env()->SetImmediate(
++        [strong_ref](Environment*) { strong_ref->FlushPendingMessages(); },
++        CallbackFlags::kUnrefed);
++  }
++
++  void FlushPendingMessages() {
++    flush_scheduled_ = false;
++    if (pending_messages_.empty()) return;
++    Isolate* isolate = env()->isolate();
++    HandleScope handle_scope(isolate);
++    Context::Scope context_scope(env()->context());
++    delivering_ = true;
++    while (!pending_messages_.empty()) {
++      std::u16string message = std::move(pending_messages_.front());
++      pending_messages_.erase(pending_messages_.begin());
++      Local<Value> argument;
++      if (ToV8Value(env()->context(), std::u16string_view(message), isolate)
++              .ToLocal(&argument)) {
++        OnMessage(argument);
++      }
++    }
++    delivering_ = false;
++  }
++
++  static void GCPrologueCallback(Isolate*,
++                                 GCType,
++                                 GCCallbackFlags,
++                                 void* data) {
++    static_cast<JSBindingsConnection*>(data)->in_gc_ = true;
++  }
++
++  static void GCEpilogueCallback(Isolate*,
++                                 GCType,
++                                 GCCallbackFlags,
++                                 void* data) {
++    auto* connection = static_cast<JSBindingsConnection*>(data);
++    connection->in_gc_ = false;
++    if (!connection->pending_messages_.empty()) connection->ScheduleFlush();
++  }
++
 +  static void DrainMessagesMicrotask(Local<Data> data) {
 +    JSBindingsConnection* connection =
 +        BaseObject::FromJSObject<JSBindingsConnection>(data.As<Object>());
 +    if (connection == nullptr) return;
 +    BaseObjectPtr<JSBindingsConnection> strong_ref{connection};
-+    connection->DrainMessages();
-   }
- 
++    connection->FlushPendingMessages();
++  }
++
    static void Bind(Environment* env, Local<Object> target) {
-@@ -154,6 +198,11 @@ class JSBindingsConnection : public BaseObject {
+     Isolate* isolate = env->isolate();
+     Local<FunctionTemplate> tmpl =
+@@ -154,6 +239,10 @@ class JSBindingsConnection : public BaseObject {
   private:
    std::unique_ptr<InspectorSession> session_;
    Global<Function> callback_;
-+  // Once a message is deferred from an interrupt, queue subsequent messages
-+  // until the backlog drains to preserve protocol order.
-+  std::deque<std::unique_ptr<v8_inspector::StringBuffer>> pending_messages_;
-+  bool message_delivery_scheduled_ = false;
-+  bool draining_messages_ = false;
++  std::vector<std::u16string> pending_messages_;
++  bool in_gc_ = false;
++  bool delivering_ = false;
++  bool flush_scheduled_ = false;
  };
  
  static bool InspectorEnabled(Environment* env) {
