@@ -23,7 +23,6 @@
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
-#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
@@ -172,11 +171,6 @@ class OffScreenRenderWidgetHostView
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
   display::ScreenInfos GetNewScreenInfosForUpdate() override;
-
-  content::RenderWidgetHostViewBase* CreateViewForWidget(
-      content::RenderWidgetHost*,
-      content::RenderWidgetHost*,
-      content::WebContentsView*);
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;

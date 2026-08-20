@@ -62,6 +62,30 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
           "Expected options object to contain a 'url' string property in setFeedUrl call"
         );
       });
+
+      ifit(process.platform === 'darwin')('throws if the url is not valid UTF-8', () => {
+        const url = 'http://feedurl.local';
+        try {
+          autoUpdater.setFeedURL({ url });
+        } catch {
+          /* ignore */
+        }
+        expect(() => autoUpdater.setFeedURL({ url: '\uD800' })).to.throw("Expected 'url' to be a valid URL");
+        expect(autoUpdater.getFeedURL()).to.equal(url);
+      });
+
+      ifit(process.platform === 'darwin')('throws if the url is not parseable', () => {
+        const url = 'http://feedurl.local';
+        try {
+          autoUpdater.setFeedURL({ url });
+        } catch {
+          /* ignore */
+        }
+        expect(() => autoUpdater.setFeedURL({ url: 'http://feed url.local' })).to.throw(
+          "Expected 'url' to be a valid URL"
+        );
+        expect(autoUpdater.getFeedURL()).to.equal(url);
+      });
     });
   });
 

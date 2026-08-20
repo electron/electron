@@ -65,7 +65,6 @@ class App final : public gin::Wrappable<App>,
                   private content::GpuDataManagerObserver,
                   private content::BrowserChildProcessObserver {
  public:
-  static App* Create(v8::Isolate* isolate);
   static App* Get();
 
   // gin::Wrappable

@@ -36,7 +36,7 @@ class Handle {
 
   void Clear() {
     wrapper_.Clear();
-    object_ = NULL;
+    object_ = nullptr;
   }
 
   T* operator->() const { return object_; }
