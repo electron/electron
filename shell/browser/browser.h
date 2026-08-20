@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -28,6 +29,10 @@
 
 class GURL;
 
+namespace dbus {
+class Bus;
+}  // namespace dbus
+
 namespace gin {
 class Arguments;
 }
@@ -36,6 +41,10 @@ namespace gin_helper {
 template <typename T>
 class Promise;
 }  // namespace gin_helper
+
+namespace dbus_xdg {
+class Request;
+}  // namespace dbus_xdg
 
 namespace v8 {
 template <typename T>
@@ -388,6 +397,13 @@ class Browser : private WindowListObserver {
   std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
   base::Time last_dock_show_;
   bool was_launched_at_login_;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  void ResetLoginItemPortalRequest(bool release_request);
+
+  scoped_refptr<dbus::Bus> login_item_bus_;
+  std::unique_ptr<dbus_xdg::Request> login_item_request_;
 #endif
 
   base::DictValue about_panel_options_;
