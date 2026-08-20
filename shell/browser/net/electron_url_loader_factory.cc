@@ -485,7 +485,7 @@ ElectronURLLoaderFactory::Create(
   new ElectronURLLoaderFactory(type, handler, std::move(browser_context),
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
-  return pending_remote;
+  return pending_remote;  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 ElectronURLLoaderFactory::ElectronURLLoaderFactory(

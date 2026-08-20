@@ -19,7 +19,7 @@ AsarURLLoaderFactory::Create() {
   // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
   new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
 
-  return pending_remote;
+  return pending_remote;  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
 }
 
 AsarURLLoaderFactory::AsarURLLoaderFactory(

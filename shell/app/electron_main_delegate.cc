@@ -342,9 +342,12 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   if (!base::FieldTrialList::GetInstance()) {
-    base::FieldTrialList* leaked_field_trial_list = new base::FieldTrialList();
+    // Intentionally never destroyed: the FieldTrialList has to outlive
+    // everything that reads field trials. Storing it in a static keeps the
+    // allocation reachable, both for static analysis and for LeakSanitizer.
+    [[maybe_unused]] static base::FieldTrialList* leaked_field_trial_list =
+        new base::FieldTrialList();
     ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
-    std::ignore = leaked_field_trial_list;
   }
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
