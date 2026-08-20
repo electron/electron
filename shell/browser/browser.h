@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/memory/scoped_refptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -28,10 +28,6 @@
 #endif
 
 class GURL;
-
-namespace dbus {
-class Bus;
-}  // namespace dbus
 
 namespace gin {
 class Arguments;
@@ -400,9 +396,10 @@ class Browser : private WindowListObserver {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  void ResetLoginItemPortalRequest(bool release_request);
+  void FinishLoginItemPortalRequest();
 
-  scoped_refptr<dbus::Bus> login_item_bus_;
+  bool login_item_request_in_flight_ = false;
+  std::optional<LoginItemSettings> pending_login_item_settings_;
   std::unique_ptr<dbus_xdg::Request> login_item_request_;
 #endif
 
@@ -415,6 +412,10 @@ class Browser : private WindowListObserver {
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  base::WeakPtrFactory<Browser> login_item_weak_factory_{this};
 #endif
 };
 

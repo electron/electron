@@ -1211,11 +1211,17 @@ describe('app module', () => {
         expect(options.commandline).to.deep.equal(['"/tmp/electron app"', '"--flag=value with spaces"', '100%%', '""']);
       });
 
-      it('requests autostart to be disabled', async () => {
+      it('applies the latest setting after an in-flight request', async () => {
+        app.setLoginItemSettings({ openAtLogin: true });
         app.setLoginItemSettings({ openAtLogin: false });
 
-        const call = await waitForPortalCall('RequestBackground');
-        const options = unmarshalOptions(call);
+        await waitUntil(async () => {
+          const calls = await getCalls();
+          return calls.filter((call) => call[1] === 'RequestBackground').length === 2;
+        });
+        const calls = await getCalls();
+        const requestCalls = calls.filter((call) => call[1] === 'RequestBackground');
+        const options = unmarshalOptions(requestCalls[1]);
 
         expect(options.autostart).to.equal(false);
         expect(options).to.not.have.property('commandline');
