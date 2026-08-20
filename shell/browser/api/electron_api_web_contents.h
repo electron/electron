@@ -232,6 +232,8 @@ class WebContents final : public ExclusiveAccessContext,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  bool IsCaretBrowsingEnabled() const;
+  void SetCaretBrowsingEnabled(bool enabled);
   v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
   void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
@@ -518,6 +520,8 @@ class WebContents final : public ExclusiveAccessContext,
                              content::WebContents* web_contents,
                              extensions::mojom::ViewType view_type);
 #endif
+
+  void ReconcileCaretBrowsingCount(bool enabled);
 
   // content::WebContentsDelegate:
   void WebContentsCreatedWithFullParams(
@@ -834,6 +838,10 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  // Whether this WebContents currently contributes to the process-wide caret
+  // browsing refcount.
+  bool caret_browsing_counted_ = false;
 
   // Whether to enable devtools.
   bool enable_devtools_ = true;
