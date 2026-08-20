@@ -23,7 +23,7 @@ import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
-import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
+import { ifdescribe, defer, waitUntil, listen, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -2412,6 +2412,273 @@ describe('webContents module', () => {
 
       w.webContents.audioMuted = false;
       expect(w.webContents.audioMuted).to.be.false();
+    });
+  });
+
+  describe('caretBrowsingEnabled', () => {
+    afterEach(closeAllWindows);
+
+    const platformCaretBrowsing = () =>
+      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
+    it('defaults to false', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be toggled via the property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('stays enabled when set to the same value repeatedly', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    // Test that repeated calls aren't incorrectly incrementing the underlying refcount
+    it('can be enabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // Test that repeated calls aren't incorrectly decrementing the underlying refcount
+    it('can be disabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('persists across navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.caretBrowsingEnabled = true;
+
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('tracks each WebContents independently', () => {
+      const w1 = new BrowserWindow({ show: false });
+      const w2 = new BrowserWindow({ show: false });
+
+      w1.webContents.caretBrowsingEnabled = true;
+      w2.webContents.caretBrowsingEnabled = true;
+
+      w1.webContents.caretBrowsingEnabled = false;
+
+      expect(w1.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be enabled again after a WebContents is destroyed with it enabled', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.webContents.caretBrowsingEnabled = true;
+
+      const destroyed = once(w1.webContents, 'destroyed');
+      w1.close();
+      await destroyed;
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.webContents.caretBrowsingEnabled = true;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // These depend on a binding that is only available when DCHECK_IS_ON.
+    ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      it('stays on while another WebContents still has caret browsing enabled', () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w1.webContents.caretBrowsingEnabled = true;
+        w2.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w1.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w2.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('takes at most one reference per WebContents however often it is set', () => {
+        const w = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('is withdrawn once an enabled WebContents is destroyed', async () => {
+        const w = new BrowserWindow({ show: false });
+        const contents = w.webContents;
+        contents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        const destroyed = once(contents, 'destroyed');
+        w.close();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('is not left on by a will-destroy listener that re-enables caret browsing', async () => {
+        const contents = (webContents as typeof ElectronInternal.WebContents).create();
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        // will-destroy is emitted from the destructor, after it has released
+        // this WebContents' reference, while the wrapper is still dispatchable.
+        (contents as any).on('will-destroy', () => {
+          contents.caretBrowsingEnabled = true;
+        });
+
+        const destroyed = once(contents, 'destroyed');
+        contents.destroy();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+    });
+
+    describe('renderer-side caret movement', () => {
+      const pressRight = (w: BrowserWindow, times: number) => {
+        for (let i = 0; i < times; i++) {
+          w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+          w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+        }
+      };
+
+      // Blink needs a starting selection to move away from
+      const collapseSelectionToStart = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(`
+        {
+          const textNode = document.getElementById('prose').firstChild;
+          getSelection().collapse(textNode, 0);
+        }
+      `);
+
+      it('moves the caret through non-editable text only while enabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        // Initialize to something neither phase expects so an unrun poll can't pass
+        let offset = -1;
+        // Renderer preferences propagate asynchronously, so poll for each state
+        const pollForOffset = (expected: number) =>
+          waitUntil(
+            async () => {
+              await collapseSelectionToStart(w);
+              pressRight(w, 3);
+              offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+              return offset === expected;
+            },
+            { rate: 100, timeout: 3000 }
+          );
+
+        w.webContents.caretBrowsingEnabled = true;
+        await pollForOffset(3);
+        expect(offset).to.equal(3);
+
+        // Now that the input pipeline is known to reach the page, a caret that
+        // stays put is attributable to the preference
+        w.webContents.caretBrowsingEnabled = false;
+        await pollForOffset(0);
+        expect(offset).to.equal(0);
+      });
+    });
+
+    describe('guest preference inheritance', () => {
+      it('inherits caretBrowsingEnabled in a guest webview', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.getType()).to.equal('webview');
+        expect(guest.caretBrowsingEnabled).to.be.true();
+      });
+
+      ifit(isTestingBindingAvailable())(
+        'releases exactly one reference when an inherited preference is disabled',
+        async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).to.be.true();
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.true();
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.false();
+        }
+      );
+
+      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.caretBrowsingEnabled).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true();
+
+        // An attached guest's WebContents is owned by its embedder frame, so the
+        // wrapper holding the reference is only deleted at garbage collection.
+        const destroyed = once(guest, 'destroyed');
+        w.close();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
     });
   });
 
