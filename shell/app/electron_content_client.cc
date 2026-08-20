@@ -43,6 +43,7 @@
 #include "media/base/cdm_capability.h"
 #include "media/base/video_codecs.h"
 #include "media/cdm/cdm_paths.h"
+#include "shell/browser/api/electron_api_app.h"
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -184,7 +185,11 @@ bool IsWidevineAvailable(
 
   if (widevine_cdm_file_check == WidevineCdmFileCheck::kNotChecked) {
     base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-    *cdm_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
+    // Packaged apps must load a CDM bundled beside the executable rather than
+    // library code from an arbitrary command-line path.
+    if (!api::App::IsPackaged()) {
+      *cdm_path = command_line->GetSwitchValuePath(switches::kWidevineCdmPath);
+    }
     if (cdm_path->empty()) {
       if (TryGetBundledWidevineCdm(cdm_path, cached_capability.get())) {
         widevine_cdm_file_check = WidevineCdmFileCheck::kFound;

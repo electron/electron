@@ -27,7 +27,17 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
+import { withTempDirectory } from './lib/fs-helpers';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  itremote,
+  listen,
+  spawnAndWait,
+  startRemoteControlApp,
+  waitUntil
+} from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
 
@@ -2852,6 +2862,37 @@ describe('chromium features', () => {
 
   describe('Encrypted Media Extensions', () => {
     afterEach(closeAllWindows);
+
+    it('ignores --widevine-cdm-path in packaged apps', async () => {
+      await withTempDirectory(async (cdmPath) => {
+        const libraryName =
+          process.platform === 'win32'
+            ? 'widevinecdm.dll'
+            : process.platform === 'darwin'
+              ? 'libwidevinecdm.dylib'
+              : 'libwidevinecdm.so';
+        await fs.promises.writeFile(path.join(cdmPath, libraryName), '');
+
+        const appPath = path.join(fixturesPath, 'api', 'widevine-cdm-path');
+        const result = await spawnAndWait(
+          process.execPath,
+          [`--widevine-cdm-path=${cdmPath}`, '--widevine-cdm-version=1.0.0.0', appPath],
+          {
+            env: {
+              ...process.env,
+              ELECTRON_FORCE_IS_PACKAGED: 'true'
+            },
+            timeout: 30000
+          }
+        );
+
+        expect(result.code, result.stderr).to.equal(0);
+        expect(JSON.parse(result.stdout)).to.deep.equal({
+          isPackaged: true,
+          widevineAvailable: false
+        });
+      });
+    });
 
     it('does not expose Widevine without a configured CDM', async () => {
       const w = new BrowserWindow({ show: false });
