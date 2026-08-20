@@ -40,10 +40,10 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8180899
 Commit-Queue: Zhenyao Mo <zmo@chromium.org>
 
 diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
-index 6647c3f1025cdd5eb57fc9c6d1f272e38a5baac9..b1aa9d283704c617244a8d2745ebe04df0d12bab 100644
+index 8204f5c0b2748a87a6db1cd1092d915c93b66c8e..75a04f842a654904a19ca66c17f8bfcb08571dd6 100644
 --- a/include/platform/autogen/FeaturesGL_autogen.h
 +++ b/include/platform/autogen/FeaturesGL_autogen.h
-@@ -734,6 +734,12 @@ struct FeaturesGL : FeatureSetBase
+@@ -740,6 +740,12 @@ struct FeaturesGL : FeatureSetBase
          &members,
      };
  
@@ -57,10 +57,10 @@ index 6647c3f1025cdd5eb57fc9c6d1f272e38a5baac9..b1aa9d283704c617244a8d2745ebe04d
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 12f5ca17828c55f66dec0a14185f70e1171afcd4..ee6635e0b839bf55f4507f438d24ce8799176d87 100644
+index 3cdfd9398331d9da581df0e3275ac1c453ec0364..c3b422edc9039c830b39a03574f2ef99eb89848c 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
-@@ -960,6 +960,14 @@
+@@ -969,6 +969,14 @@
                  "Disable the EXT_clear_texture extension due to driver bugs."
              ],
              "issue": "http://crbug.com/475877320"
@@ -241,7 +241,7 @@ index 7b4059b51853c86e36452f90ec29abe010f9e29e..1caa6b3e97e22aff895f29ee3f84ee59
  
  bool IsEmulatedAlphaChannelTextureAttachment(const gl::FramebufferAttachment *attachment);
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index d5953da0eb25822251bd6ae0bfa1107a50aa03e2..94135be2c6557f45c2c1e0a3770e1cd684ba3ae1 100644
+index 1b8eb64fb04b6085e6b207a6ce0d4d231729fd3a..66117a4f398d1b17b906dba3fe7eb0798316ed67 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -279,6 +279,16 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
@@ -262,10 +262,10 @@ index d5953da0eb25822251bd6ae0bfa1107a50aa03e2..94135be2c6557f45c2c1e0a3770e1cd6
          gl::GetInternalFormatInfo(internalFormat, type);
      nativegl::TexImageFormat texImageFormat =
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 316d86708eecdd64b40526617fda5de71a502534..de19ba991a7abd97508982e087df50587a9c5a0e 100644
+index 64ad52b6af815eab33ee67f6499d001d37eace94..7f0432ea4e2582ec9dc2aaad93c2cb641a9f32c7 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-@@ -2792,6 +2792,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+@@ -2795,6 +2795,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
      ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
                              IsPowerVR(vendor));
  
@@ -288,7 +288,7 @@ index 8a6a8a7c59420a7a4f22e1f6015913132201190d..95cfa57393df8e1cbcd2e908ba766682
 +# Fails on win and linux trace bots
 +499602793 : Texture2DArrayTestES3_ReattachTextureToFbo.IncreaseLayersWithFramebufferAttachedMultiContext/* = SKIP_FOR_CAPTURE
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index d361c9beaf592354d97e64795899727984bdcec3..e3143e052b6d4774e942180e0464306b490f1935 100644
+index b9d1aa56eb8dfa43a46d2cac336f36d923879c64..f1e10f8e2525959cc7c99a4d27fbd692643c702f 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
 @@ -8726,6 +8726,135 @@ TEST_P(Texture2DArrayTestES3, RedefineLevelData)
@@ -427,9 +427,9 @@ index d361c9beaf592354d97e64795899727984bdcec3..e3143e052b6d4774e942180e0464306b
  // Create a 3D texture, use it, then redefine one level without changing dimensions.
  TEST_P(Texture3DTestES3, RedefineLevelData)
  {
-@@ -21425,6 +21554,16 @@ TEST_P(Texture2DTestES3, ClearMidRenderPassThenSample)
-     ASSERT_GL_NO_ERROR();
- }
+@@ -21560,6 +21689,16 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     ES3_OPENGL().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData),
+     ES3_OPENGLES().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData));
  
 +GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DArrayTestES3_ReattachTextureToFbo);
 +ANGLE_INSTANTIATE_TEST_ES3_AND(
@@ -445,7 +445,7 @@ index d361c9beaf592354d97e64795899727984bdcec3..e3143e052b6d4774e942180e0464306b
  ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
                         ES2_D3D11().enable(Feature::LimitMaxTextureBytesTo1MB),
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index 283a8f7e0fe8be73ea57d079d82bd2a6f775b9ed..3b4ae8563e4c4268f8f896d1d0eceb2209000a35 100644
+index 02b10778a578fdc21515b460ddb6f9c661a0ec71..017df844b801fa314ea60c019a6eb44e71bcc7f7 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
 @@ -294,6 +294,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
@@ -457,7 +457,7 @@ index 283a8f7e0fe8be73ea57d079d82bd2a6f775b9ed..3b4ae8563e4c4268f8f896d1d0eceb22
      {Feature::RecreateImmutableTextureOnBaseLevelIncrease, "recreateImmutableTextureOnBaseLevelIncrease"},
      {Feature::RecreateMipmapLevelsBeforeGenerate, "recreateMipmapLevelsBeforeGenerate"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index a63beed511a7cc7cbd2ae3fc8a818bf31e13e062..1b632c052d473c3437b0f09d0750df9e3c5a10ca 100644
+index 0463852e9f843936a2ff4a4a65299c5ffa0fb1ed..1a32c5a6392f29ea063c41934eaa78c164d473ab 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
 @@ -294,6 +294,7 @@ enum class Feature
