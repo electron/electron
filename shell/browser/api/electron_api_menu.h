@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "gin/wrappable.h"
@@ -128,6 +129,9 @@ class Menu : public gin::Wrappable<Menu>,
   void SetToolTip(int index, const std::u16string& toolTip);
   void SetRole(int index, const std::u16string& role);
   void SetCustomType(int index, const std::u16string& customType);
+#if BUILDFLAG(IS_MAC)
+  void SetBadge(int index, std::optional<ElectronMenuModel::Badge> badge);
+#endif
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
