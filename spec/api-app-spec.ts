@@ -199,6 +199,39 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux' && fs.existsSync('/usr/bin/dbus-daemon'))(
+    'when a D-Bus bus goes away',
+    () => {
+      it('exits cleanly instead of crashing', async () => {
+        const daemon = cp.spawn('dbus-daemon', ['--session', '--nofork', '--print-address']);
+        defer(() => daemon.kill());
+        const [address] = await once(daemon.stdout, 'data');
+        const bus = address.toString().trim();
+        const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: bus, DBUS_SYSTEM_BUS_ADDRESS: bus };
+
+        const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'session-bus-lost')], { env });
+        defer(() => appProcess.kill());
+        const exited = once(appProcess, 'exit');
+        await once(appProcess.stdout, 'data');
+        await waitUntil(() => {
+          const names = cp
+            .spawnSync(
+              'dbus-send',
+              ['--session', '--dest=org.freedesktop.DBus', '--print-reply', '/', 'org.freedesktop.DBus.ListNames'],
+              { env }
+            )
+            .stdout.toString();
+          return (names.match(/string ":1\./g) ?? []).length >= 2;
+        });
+
+        daemon.kill();
+        const [code, signal] = await exited;
+        expect(signal).to.be.null();
+        expect(code).to.equal(0);
+      });
+    }
+  );
+
   describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
