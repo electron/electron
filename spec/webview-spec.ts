@@ -540,7 +540,7 @@ describe('<webview> tag', function () {
       // Specifically this is async on macOS but can be on other platforms too
       await setTimeout(1000);
 
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     ifit(process.platform !== 'darwin')('should make parent frame element fullscreen too (non-macOS)', async () => {
