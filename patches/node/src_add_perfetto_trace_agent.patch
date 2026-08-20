@@ -96,7 +96,7 @@ index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41e
 +  ],
  }
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..3a7fe419cac1d5cec60596ef10a507611a5da9ee 100644
+index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17937167af 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -14,7 +14,9 @@
@@ -109,7 +109,7 @@ index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..3a7fe419cac1d5cec60596ef10a50761
  #include "inspector/worker_agent.h"
  #include "inspector/worker_inspector.h"
  #include "inspector_io.h"
-@@ -238,9 +240,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -286,9 +288,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
                                    StringView(),
                                    V8Inspector::ClientTrustLevel::kFullyTrusted);
      node_dispatcher_ = std::make_unique<UberDispatcher>(this);
@@ -121,7 +121,7 @@ index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..3a7fe419cac1d5cec60596ef10a50761
      if (worker_manager) {
        worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
        worker_agent_->Wire(node_dispatcher_.get());
-@@ -274,8 +278,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -322,8 +326,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    ~ChannelImpl() override {
@@ -132,7 +132,7 @@ index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..3a7fe419cac1d5cec60596ef10a50761
      if (worker_agent_) {
        worker_agent_->disable();
        worker_agent_.reset();  // Dispose before the dispatchers
-@@ -424,7 +430,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -472,7 +478,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
@@ -179,10 +179,10 @@ index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9f
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..946bfe4328c94affad99c0d5f4072835856a955d 100644
+index 47cafc6634c14ea3d656e8819ca8351356d09254..668046e56b25465d8ffae85ccb0c42a49b107243 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -459,7 +459,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
+@@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
    if (tracing_controller != nullptr) {
      tracing_controller_ = tracing_controller;
    } else {
@@ -192,7 +192,7 @@ index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..946bfe4328c94affad99c0d5f4072835
    }
  
    // V8 will default to its built in allocator if none is provided.
-@@ -478,6 +479,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
+@@ -496,6 +497,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
  
  NodePlatform::~NodePlatform() {
    Shutdown();
@@ -1110,7 +1110,7 @@ index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa
 +  assert(stat.size > 0);
 +}));
 diff --git a/unofficial.gni b/unofficial.gni
-index 6af570a3b9742533903438b71b74cf34cfd5179f..f54840a3cf67c9fe3c016ac830deb21c6880e7c9 100644
+index 92f1c9379ee87734e279e33e39241aad3771db44..21290af4119ebe9cef1ab193dfb852daa5d4ad8c 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -156,6 +156,7 @@ template("node_gn_build") {
@@ -1121,7 +1121,7 @@ index 6af570a3b9742533903438b71b74cf34cfd5179f..f54840a3cf67c9fe3c016ac830deb21c
        "//build/config/compiler:no_exit_time_destructors"
      ]
      public_configs = [
-@@ -187,6 +188,7 @@ template("node_gn_build") {
+@@ -192,6 +193,7 @@ template("node_gn_build") {
        "//third_party/zstd:headers",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
