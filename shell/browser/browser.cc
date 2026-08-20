@@ -28,7 +28,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "components/dbus/xdg/request.h"
-#include "dbus/bus.h"
 #endif
 
 namespace electron {
@@ -64,9 +63,6 @@ Browser::Browser() {
 }
 
 Browser::~Browser() {
-#if BUILDFLAG(IS_LINUX)
-  ResetLoginItemPortalRequest(/*release_request=*/true);
-#endif
   WindowList::RemoveObserver(this);
 }
 
