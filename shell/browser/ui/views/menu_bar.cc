@@ -129,12 +129,9 @@ bool MenuBar::GetSiblingMenuButtonByDirection(int current_id,
       break;
     if (menu_model_->GetTypeAt(index) != ElectronMenuModel::TYPE_SUBMENU)
       continue;
-    for (views::View* child : children()) {
-      auto* candidate = static_cast<views::MenuButton*>(child);
-      if (candidate->GetID() == index) {
-        *button = candidate;
-        return true;
-      }
+    if (views::View* candidate = GetViewByID(index)) {
+      *button = static_cast<views::MenuButton*>(candidate);
+      return true;
     }
   }
 
