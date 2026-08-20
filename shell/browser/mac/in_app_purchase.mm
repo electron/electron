@@ -168,9 +168,11 @@ void FinishTransactionByDate(const std::string& date) {
 
   for (SKPaymentTransaction* transaction in SKPaymentQueue.defaultQueue
            .transactions) {
+    NSDate* purchaseDate = transaction.transactionDate;
+    if (!purchaseDate)
+      continue;
     if ([transactionDate
-            isEqualToString:[dateFormatter
-                                stringFromDate:transaction.transactionDate]]) {
+            isEqualToString:[dateFormatter stringFromDate:purchaseDate]]) {
       [[SKPaymentQueue defaultQueue] finishTransaction:transaction];
     }
   }

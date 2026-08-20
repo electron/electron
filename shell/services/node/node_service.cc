@@ -53,7 +53,7 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 #endif
 
   volatile int* zero = nullptr;
-  *zero = 0;
+  *zero = 0;  // NOLINT(clang-analyzer-core.NullDereference)
 }
 
 URLLoaderBundle::URLLoaderBundle() = default;

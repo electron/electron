@@ -415,8 +415,8 @@ void NativeWindowMac::Close() {
   // even after the user has ended the sheet.
   // Ensure it's closed before calling [window_ performClose:nil].
   // If multiple sheets are open, they must all be closed.
-  while ([window_ attachedSheet]) {
-    [window_ endSheet:[window_ attachedSheet]];
+  while (NSWindow* sheet = [window_ attachedSheet]) {
+    [window_ endSheet:sheet];
   }
   DCHECK_EQ([[window_ sheets] count], 0UL);
 
@@ -512,8 +512,8 @@ void NativeWindowMac::Hide() {
   // If a sheet is attached to the window when we call [window_ orderOut:nil],
   // the sheet won't be able to show again on the same window.
   // Ensure it's closed before calling [window_ orderOut:nil].
-  if ([window_ attachedSheet])
-    [window_ endSheet:[window_ attachedSheet]];
+  if (NSWindow* sheet = [window_ attachedSheet])
+    [window_ endSheet:sheet];
 
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
@@ -559,8 +559,8 @@ void NativeWindowMac::SetEnabled(bool enable) {
           NSLog(@"main window disabled");
           return;
         }];
-  } else if ([window_ attachedSheet]) {
-    [window_ endSheet:[window_ attachedSheet]];
+  } else if (NSWindow* sheet = [window_ attachedSheet]) {
+    [window_ endSheet:sheet];
   }
 }
 
