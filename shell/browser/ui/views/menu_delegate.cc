@@ -139,7 +139,7 @@ void MenuDelegate::CancelSelf() {
     menu_runner_->Cancel();
 }
 
-bool MenuDelegate::GetSiblingMenuByDirection(bool next) {
+bool MenuDelegate::SwitchToSiblingMenu(bool next) {
   views::MenuButton* button = nullptr;
   if (!menu_bar_->GetSiblingMenuButtonByDirection(id_, next, &button)) {
     return false;
