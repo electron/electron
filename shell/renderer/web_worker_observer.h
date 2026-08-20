@@ -24,13 +24,13 @@ class NodeBindings;
 // Watches for WebWorker and insert node integration to it.
 class WebWorkerObserver {
  public:
-  WebWorkerObserver();
+  explicit WebWorkerObserver(v8::Isolate* isolate);
   ~WebWorkerObserver();
 
   // Returns the WebWorkerObserver for current worker thread.
   static WebWorkerObserver* GetCurrent();
-  // Creates a new WebWorkerObserver for a given context.
-  static WebWorkerObserver* Create();
+  // Creates the WebWorkerObserver for the current worker thread's isolate.
+  static WebWorkerObserver* Create(v8::Isolate* isolate);
 
   // disable copy
   WebWorkerObserver(const WebWorkerObserver&) = delete;
