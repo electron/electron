@@ -8,10 +8,10 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84449d1336 100644
+index 87965fc92f3128c3b8973a3a9361f429d8c1a86b..4781cc8cbb3c9865046873ea8b6e23b4f224db4b 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -88,11 +88,13 @@
+@@ -89,11 +89,13 @@
  #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
@@ -25,7 +25,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -332,216 +334,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -333,216 +335,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -246,7 +246,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
  
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
-@@ -1540,16 +1336,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1541,16 +1337,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -263,7 +263,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1568,7 +1354,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1569,7 +1355,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -272,7 +272,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -3031,7 +2817,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3026,7 +2812,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -281,7 +281,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3389,11 +3175,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3384,11 +3170,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -294,7 +294,7 @@ index f07c02ec0696ec9143b238e3b28a952be221ee6e..300926438f552b5f2e7a8b5c9522ad84
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3444,6 +3226,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3439,6 +3221,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
