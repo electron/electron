@@ -194,16 +194,12 @@ v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate) {
 
 ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
     : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
-  // In browser-like processes, some nested run loops (macOS usually) may
-  // re-enter. This is safe because we expect the policy was explicit in the
-  // first place for those processes. However, in renderer processes, there may
-  // be unexpected behavior if this code is triggered within a pending microtask
-  // scope.
-  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
+  // Browser-like processes already run with kExplicit, nested run loops
+  // included. Renderers can get here from inside script (a frame's environment
+  // freed by element.remove()); explicit checkpoints are then no-ops until the
+  // enclosing scope unwinds.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
     DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
-  } else {
-    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
-  }
 
   microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 }

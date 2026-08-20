@@ -534,19 +534,25 @@ base::FilePath GetResourcesPath() {
 }
 }  // namespace
 
-NodeBindings::NodeBindings(BrowserEnvironment browser_env)
+NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
-      uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
+      uv_loop_{loop ? loop : &owned_loop_.emplace()} {
+  if (owned_loop_)
+    CHECK_EQ(0, uv_loop_init(uv_loop_));
+
+  // Interrupt embed polling when a handle is started.
+  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
+}
 
 NodeBindings::~NodeBindings() {
   StopPolling();
 
-  // Clear uv.
-  uv_sem_destroy(&embed_sem_);
-  dummy_uv_handle_.reset();
+  if (embed_thread_prepared_) {
+    uv_sem_destroy(&embed_sem_);
+    dummy_uv_handle_.reset();
+  }
 
-  // Clean up worker loop
-  if (in_worker_loop())
+  if (owned_loop_)
     stop_and_close_uv_loop(uv_loop_);
 
   if (initialized_node_per_process_)
@@ -589,38 +595,6 @@ void NodeBindings::StopPolling() {
   // Allow PrepareEmbedThread + StartPolling to restart.
   embed_closed_ = false;
   initialized_ = false;
-}
-
-node::IsolateData* NodeBindings::isolate_data(
-    v8::Local<v8::Context> context) const {
-  if (context->GetNumberOfEmbedderDataFields() <=
-      kElectronContextEmbedderDataIndex) {
-    return nullptr;
-  }
-  auto* isolate_data = static_cast<node::IsolateData*>(
-      context->GetAlignedPointerFromEmbedderData(
-          kElectronContextEmbedderDataIndex, v8::kEmbedderDataTypeTagDefault));
-  CHECK(isolate_data);
-  CHECK(isolate_data->event_loop());
-  return isolate_data;
-}
-
-// static
-uv_loop_t* NodeBindings::InitEventLoop(BrowserEnvironment browser_env,
-                                       uv_loop_t* worker_loop) {
-  uv_loop_t* event_loop = nullptr;
-
-  if (browser_env == BrowserEnvironment::kWorker) {
-    uv_loop_init(worker_loop);
-    event_loop = worker_loop;
-  } else {
-    event_loop = uv_default_loop();
-  }
-
-  // Interrupt embed polling when a handle is started.
-  uv_loop_configure(event_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
-
-  return event_loop;
 }
 
 void NodeBindings::RegisterBuiltinBindings() {
@@ -775,6 +749,78 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   initialized_node_per_process_ = true;
 }
 
+void NodeBindings::SetUpIsolate(v8::Isolate* const isolate) {
+  node::IsolateSettings is;
+
+  // Use a custom fatal error callback to allow us to add
+  // crash message and location to CrashReports.
+  is.fatal_error_callback = V8FatalErrorCallback;
+  is.oom_error_callback = V8OOMErrorCallback;
+
+  // We don't want to abort either in the renderer or browser processes.
+  // We already listen for uncaught exceptions and handle them there.
+  // For utility process we expect the process to behave as standard
+  // Node.js runtime and abort the process with appropriate exit
+  // code depending on a handler being set for `uncaughtException` event.
+  if (browser_env_ != BrowserEnvironment::kUtility) {
+    is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+      return false;
+    };
+  }
+
+  // Use a custom callback here to allow us to leverage Blink's logic in the
+  // renderer process.
+  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+  is.flags |= node::IsolateSettingsFlags::
+      ALLOW_MODIFY_CODE_GENERATION_FROM_STRINGS_CALLBACK;
+  is.modify_code_generation_from_strings_callback =
+      ModifyCodeGenerationFromStrings;
+
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
+      browser_env_ == BrowserEnvironment::kUtility) {
+    // Node.js requires that microtask checkpoints be explicitly invoked.
+    is.policy = v8::MicrotasksPolicy::kExplicit;
+    // node::CreateEnvironment already added Node's listener if it built the
+    // environment from the Node snapshot; keep exactly one.
+    isolate->RemoveMessageListeners(node::errors::PerIsolateMessageListener);
+  } else {
+    // Blink expects the microtasks policy to be kScoped, but Node.js expects it
+    // to be kExplicit. In the renderer, there can be many contexts within the
+    // same isolate, so we don't want to change the existing policy here, which
+    // could be either kExplicit or kScoped depending on whether we're executing
+    // from within a Node.js or a Blink entrypoint. Instead, the policy is
+    // toggled to kExplicit when entering Node.js through UvRunOnce.
+    is.policy = isolate->GetMicrotasksPolicy();
+
+    // We do not want to use Node.js' message listener as it interferes with
+    // Blink's. Instead we add our own to ensure that the async hook stack is
+    // properly cleared when errors are thrown.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+    isolate->AddMessageListenerWithErrorLevel(ErrorMessageListener,
+                                              v8::Isolate::kMessageError);
+
+    // We do not want to use the promise rejection callback that Node.js uses,
+    // because it does not send PromiseRejectionEvents to the global script
+    // context. We need to use the one Blink already provides.
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
+
+    // We do not want to use the stack trace callback that Node.js uses,
+    // because it relies on Node.js being aware of the current Context and
+    // that's not always the case. We need to use the one Blink already
+    // provides.
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
+  }
+
+  node::SetIsolateUpForNode(isolate, is);
+  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
+  isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
+      HostImportModuleWithPhaseDynamically);
+  isolate->SetHostInitializeImportMetaObjectCallback(
+      HostInitializeImportMetaObject);
+}
+
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Isolate* isolate,
     v8::Local<v8::Context> context,
@@ -905,88 +951,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     gin_helper::internal::Event::GetConstructor(
         isolate, context, &gin_helper::internal::Event::kWrapperInfo);
   }
-
-  node::IsolateSettings is;
-
-  // Use a custom fatal error callback to allow us to add
-  // crash message and location to CrashReports.
-  is.fatal_error_callback = V8FatalErrorCallback;
-  is.oom_error_callback = V8OOMErrorCallback;
-
-  // We don't want to abort either in the renderer or browser processes.
-  // We already listen for uncaught exceptions and handle them there.
-  // For utility process we expect the process to behave as standard
-  // Node.js runtime and abort the process with appropriate exit
-  // code depending on a handler being set for `uncaughtException` event.
-  if (browser_env_ != BrowserEnvironment::kUtility) {
-    is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
-      return false;
-    };
-  }
-
-  // Use a custom callback here to allow us to leverage Blink's logic in the
-  // renderer process.
-  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
-  is.flags |= node::IsolateSettingsFlags::
-      ALLOW_MODIFY_CODE_GENERATION_FROM_STRINGS_CALLBACK;
-  is.modify_code_generation_from_strings_callback =
-      ModifyCodeGenerationFromStrings;
-
-  if (browser_env_ == BrowserEnvironment::kBrowser ||
-      browser_env_ == BrowserEnvironment::kUtility) {
-    // Node.js requires that microtask checkpoints be explicitly invoked.
-    is.policy = v8::MicrotasksPolicy::kExplicit;
-  } else {
-    // Blink expects the microtasks policy to be kScoped, but Node.js expects it
-    // to be kExplicit. In the renderer, there can be many contexts within the
-    // same isolate, so we don't want to change the existing policy here, which
-    // could be either kExplicit or kScoped depending on whether we're executing
-    // from within a Node.js or a Blink entrypoint. Instead, the policy is
-    // toggled to kExplicit when entering Node.js through UvRunOnce.
-    is.policy = isolate->GetMicrotasksPolicy();
-
-    // We do not want to use Node.js' message listener as it interferes with
-    // Blink's.
-    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
-
-    // Isolate message listeners are additive (you can add multiple), so instead
-    // we add an extra one here to ensure that the async hook stack is properly
-    // cleared when errors are thrown.
-    isolate->AddMessageListenerWithErrorLevel(ErrorMessageListener,
-                                              v8::Isolate::kMessageError);
-
-    // We do not want to use the promise rejection callback that Node.js uses,
-    // because it does not send PromiseRejectionEvents to the global script
-    // context. We need to use the one Blink already provides.
-    is.flags |=
-        node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
-
-    // We do not want to use the stack trace callback that Node.js uses,
-    // because it relies on Node.js being aware of the current Context and
-    // that's not always the case. We need to use the one Blink already
-    // provides.
-    is.flags |=
-        node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
-  }
-
-  if (from_snapshot) {
-    // node::CreateEnvironment already registered the per-isolate message
-    // listener while deserializing the snapshot (SetIsolateErrorHandlers in
-    // node's src/api/environment.cc, taken only on the snapshot path).
-    // Message listeners are additive, so letting SetIsolateUpForNode add it
-    // again would deliver every uncaught error -- and the resulting
-    // uncaughtException -- twice. Keep the snapshot's listener and skip the
-    // duplicate; the custom fatal/OOM handlers above are setters and still
-    // take effect.
-    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
-  }
-
-  node::SetIsolateUpForNode(isolate, is);
-  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
-  isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
-      HostImportModuleWithPhaseDynamically);
-  isolate->SetHostInitializeImportMetaObjectCallback(
-      HostInitializeImportMetaObject);
 
   gin_helper::Dictionary process(isolate, env->process_object());
   process.SetReadOnly("type", process_type);
