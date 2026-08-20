@@ -3414,8 +3414,8 @@ describe('webContents module', () => {
       });
     });
 
-    afterEach(() => {
-      closeAllWindows();
+    afterEach(async () => {
+      await closeAllWindows();
       if (server) {
         server.close();
       }

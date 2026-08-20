@@ -22,7 +22,7 @@ describe('nativeTheme module', () => {
       // Wait for any pending events to emit
       await setTimeout(20);
 
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('is system by default', () => {
