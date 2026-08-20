@@ -17,6 +17,7 @@
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
+#include "base/process/process.h"
 #include "base/strings/cstring_view.h"
 #include "base/win/atl.h"  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include "base/win/dark_mode_support.h"
@@ -40,6 +41,7 @@ namespace {
 // from //electron:electron_app
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
+const char kUtilityProcess[] = "utility";
 
 [[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
   size_t required_size = 0;
@@ -227,5 +229,10 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  return content::ContentMain(std::move(params));
+  int rc = content::ContentMain(std::move(params));
+  // System DLLs loaded into utility processes crash in their DLL_PROCESS_DETACH
+  // handlers during CRT exit, so leave the way Chrome does: without running it.
+  if (process_type == kUtilityProcess)
+    base::Process::TerminateCurrentProcessImmediately(rc);
+  return rc;
 }
