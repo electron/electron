@@ -84,10 +84,10 @@ index 99532a4237e5f1235863fb0c10ecfbb0e84436f8..310095288cb09e8d09cd6080e64d5e31
  {
      if (node->variable().symbolType() == SymbolType::BuiltIn)
 diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
-index d2443ae2d9e920491681b04dcbb38f92944499bb..fab05d4b07e263511949eed503ddab12df14a7e3 100644
+index 03168aa6fd50a0fb278712b3990a66c775bcadaa..6b28148bedd3cf330b9d43b903dcdf9c81c07ab4 100644
 --- a/src/tests/angle_end2end_tests_expectations.txt
 +++ b/src/tests/angle_end2end_tests_expectations.txt
-@@ -502,6 +502,8 @@
+@@ -507,6 +507,8 @@
  494341324 MAC OPENGL : MipmapTestES3.MismatchingLevelFormats/* = SKIP
  496604559 MAC METAL : RobustResourceInitTestES3.DrawThenInvalidateThenVerifyDepthStencil/* = SKIP
  515709506 MAC METAL : DrawBaseVertexBaseInstanceTest_ES3.BaseInstanceSmallDivisorClientMemory/* = SKIP
