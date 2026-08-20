@@ -64,7 +64,7 @@ See [`Menu`](menu.md) for examples.
     the placement of their containing group after the containing group of the item
     with the specified id.
   * `badge` Object (optional) _macOS_ - Only available on macOS 14 and up.
-    * `type` string (optional) - Can be `alerts`, `updates`, `new-items` or `none`. Default is `none`.
+    * `type` string (optional) - Can be `alerts`, `updates`, `new-items` or `none`. Default is `none`.  See https://developer.apple.com/documentation/appkit/nsmenuitembadge#Creating-badges-of-a-specific-type for further explanation of these types.
     * `count` number (optional) - The number of items the badge displays. Cannot be used with `type: 'none'`.
     * `content` string (optional) - A custom string to display in the badge. Only usable with `type: 'none'`.
 
