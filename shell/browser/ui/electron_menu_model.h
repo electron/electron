@@ -42,7 +42,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     Badge& operator=(Badge&&);
     ~Badge();
 
-    std::u16string type;  // "alerts", "updates", "new-items", or "none"
+    std::string type;  // "alerts", "updates", "new-items" or "none"
     std::optional<int> count;
     std::optional<std::string> content;
   };
@@ -118,8 +118,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     return sharing_item_;
   }
 
-  // Set/Get the Badge of a menu item.
-  void SetBadge(size_t index, Badge badge);
+  // Set/Get the badge of a menu item; std::nullopt removes it.
+  void SetBadge(size_t index, std::optional<Badge> badge);
   bool GetBadgeAt(size_t index, Badge* badge) const;
 #endif
 

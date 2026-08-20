@@ -63,16 +63,12 @@ See [`Menu`](menu.md) for examples.
   * `afterGroupContaining` string[] (optional) - Provides a means for a single context menu to declare
     the placement of their containing group after the containing group of the item
     with the specified id.
-  * `badge` Object (optional) _macOS_ - Only available on macOS 14 and up.
-    * `type` string (optional) - Can be `alerts`, `updates`, `new-items` or `none`. Default is `none`.  See https://developer.apple.com/documentation/appkit/nsmenuitembadge#Creating-badges-of-a-specific-type for further explanation of these types.
-    * `count` number (optional) - The number of items the badge displays. Cannot be used with `type: 'none'`.
-    * `content` string (optional) - A custom string to display in the badge. Only usable with `type: 'none'`.
+  * `badge` [MenuItemBadge](structures/menu-item-badge.md) (optional) _macOS_ - A badge shown alongside
+    the label, either a system-styled count (`alerts`, `updates`, `new-items`) or a custom string.
+    Only available on macOS 14 and up.
 
 > [!NOTE]
 > `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
-
-> [!NOTE]
-> If you use one of the predefined badge types on macOS (not 'none'), the system localizes and pluralizes the string for you. If you create your own custom badge string, you need to localize and pluralize that string yourself.
 
 ### Instance Properties
 
@@ -191,6 +187,7 @@ A [`Menu`](menu.md) that the item is a part of.
 
 #### `menuItem.badge` _macOS_
 
-An [`MenuItemBadge`](structures/menu-item-badge.md) (optional) indicating the badge for the menu item.
+A [`MenuItemBadge`](structures/menu-item-badge.md) (optional) indicating the badge for the menu item.
 
-This property can be dynamically changed. Only available on macOS 14 and up.
+This property can be dynamically changed; setting it to `undefined` removes the badge. Only available on
+macOS 14 and up.
