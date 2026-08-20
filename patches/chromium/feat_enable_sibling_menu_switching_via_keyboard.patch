@@ -5,7 +5,7 @@ Subject: feat: enable sibling menu switching via keyboard
 
 Allow Left/Right arrow keys to move between adjacent top-level menus (e.g. an application menu bar)
 while a menu is open, matching native platform behavior on Windows and Linux.
-Adds MenuDelegate::GetSiblingMenuByDirection, invoked from MenuController when the user presses
+Adds MenuDelegate::SwitchToSiblingMenu, invoked from MenuController when the user presses
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
@@ -54,7 +54,7 @@ index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c0
 +      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
 +      !selected->GetParentMenuItem()->GetParentMenuItem();
 +  if (is_top_level_child && selected->GetDelegate() &&
-+      selected->GetDelegate()->GetSiblingMenuByDirection(/*next=*/true)) {
++      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/true)) {
 +    return;
 +  }
 +  OpenSubmenuChangeSelectionIfCan();
@@ -80,7 +80,7 @@ index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c0
 +      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
 +      !selected->GetParentMenuItem()->GetParentMenuItem();
 +  if (is_top_level_child && selected->GetDelegate() &&
-+      selected->GetDelegate()->GetSiblingMenuByDirection(/*next=*/false)) {
++      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/false)) {
 +    return;
 +  }
 +  CloseSubmenu();
@@ -117,7 +117,7 @@ index 2cee3df99c5d62e00262eb2267871bcd033d3fd4..ef0945f3b5acf4b2a98f03b84d4a1070
    return nullptr;
  }
  
-+bool MenuDelegate::GetSiblingMenuByDirection(bool next) {
++bool MenuDelegate::SwitchToSiblingMenu(bool next) {
 +  return false;
 +}
 +
@@ -137,7 +137,7 @@ index 93b78fd05676badc4f459f2100155747c85fbdb2..eecad3f755783f01932b4a6402ff3276
 +  // open or close in that direction. |next| is true to switch to the next
 +  // sibling menu and false for the previous one. Returns true if the delegate
 +  // handled the request by switching menus.
-+  virtual bool GetSiblingMenuByDirection(bool next);
++  virtual bool SwitchToSiblingMenu(bool next);
 +
    // Returns the max width menus can grow to be.
    virtual int GetMaxWidthForMenu(MenuItemView* menu);
