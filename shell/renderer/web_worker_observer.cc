@@ -49,18 +49,24 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 }
 
 // static
-WebWorkerObserver* WebWorkerObserver::Create() {
-  auto obs = std::make_unique<WebWorkerObserver>();
+WebWorkerObserver* WebWorkerObserver::Create(v8::Isolate* isolate) {
+  auto obs = std::make_unique<WebWorkerObserver>(isolate);
   auto* obs_raw = obs.get();
   lazy_tls->Set(std::move(obs));
   return obs_raw;
 }
 
-WebWorkerObserver::WebWorkerObserver()
+WebWorkerObserver::WebWorkerObserver(v8::Isolate* isolate)
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker,
+                               nullptr)),
       electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+  node_bindings_->SetUpIsolate(isolate);
+  // SetUpIsolate registers Node's WebAssembly streaming callback, whose JS
+  // side kNoBrowserGlobals never installs; put Blink's back.
+  blink::WasmResponseExtensions::Initialize(isolate);
+}
 
 WebWorkerObserver::~WebWorkerObserver() = default;
 
@@ -105,13 +111,6 @@ void WebWorkerObserver::InitializeNewEnvironment(
   CHECK(!initialized.IsNothing() && initialized.FromJust());
   std::shared_ptr<node::Environment> env =
       node_bindings_->CreateEnvironment(isolate, worker_context, nullptr);
-
-  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
-  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
-  // the JS side of that callback is never installed, so it would crash on
-  // use; restore Blink's implementation so WebAssembly.compileStreaming
-  // keeps working with Blink's fetch.
-  blink::WasmResponseExtensions::Initialize(isolate);
 
   // We do not want to crash Web Workers on unhandled rejections.
   env->options()->unhandled_rejections = "warn-with-error-code";

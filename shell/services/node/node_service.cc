@@ -104,7 +104,8 @@ bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
 NodeService::NodeService(
     mojo::PendingReceiver<node::mojom::NodeService> receiver)
     : node_bindings_{
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kUtility)},
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kUtility,
+                               uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {
   if (receiver.is_valid())
@@ -186,6 +187,7 @@ void NodeService::Initialize(
       params->exec_args);
   if (context.IsEmpty())
     node_env_->context()->Enter();
+  node_bindings_->SetUpIsolate(isolate);
 
   // Override the default handler set by NodeBindings.
   node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
