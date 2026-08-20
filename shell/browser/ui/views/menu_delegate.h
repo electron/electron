@@ -70,7 +70,7 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuAnchorPosition* anchor,
                                       bool* has_mnemonics,
                                       views::MenuButton** button) override;
-  bool GetSiblingMenuByDirection(bool next) override;
+  bool SwitchToSiblingMenu(bool next) override;
 
  private:
   void CancelSelf();
