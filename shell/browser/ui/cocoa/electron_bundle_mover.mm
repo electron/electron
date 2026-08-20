@@ -51,15 +51,16 @@ NSString* ContainingDiskImageDevice(NSString* bundlePath) {
       stringWithFileSystemRepresentation:fs.f_mntfromname
                                   length:strlen(fs.f_mntfromname)];
 
+  NSPipe* stdoutPipe = [NSPipe pipe];
+
   NSTask* hdiutil = [[NSTask alloc] init];
   [hdiutil setLaunchPath:@"/usr/bin/hdiutil"];
   [hdiutil setArguments:[NSArray arrayWithObjects:@"info", @"-plist", nil]];
-  [hdiutil setStandardOutput:[NSPipe pipe]];
+  [hdiutil setStandardOutput:stdoutPipe];
   [hdiutil launch];
   [hdiutil waitUntilExit];
 
-  NSData* data =
-      [[[hdiutil standardOutput] fileHandleForReading] readDataToEndOfFile];
+  NSData* data = [[stdoutPipe fileHandleForReading] readDataToEndOfFile];
 
   NSDictionary* info =
       [NSPropertyListSerialization propertyListWithData:data

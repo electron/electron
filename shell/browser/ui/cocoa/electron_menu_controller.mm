@@ -260,6 +260,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   const NSInteger count = source.numberOfItems;
   for (NSInteger index = 0; index < count; index++) {
     NSMenuItem* removedItem = [source itemAtIndex:0];
+    if (!removedItem)
+      return;
     [source removeItemAtIndex:0];
     [destination addItem:removedItem];
   }

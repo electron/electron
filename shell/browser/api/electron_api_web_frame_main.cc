@@ -244,7 +244,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Optional userGesture parameter
-  bool user_gesture;
+  bool user_gesture = false;
   if (!args->PeekNext().IsEmpty()) {
     if (args->PeekNext()->IsBoolean()) {
       args->GetNext(&user_gesture);
@@ -252,8 +252,6 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
       args->ThrowTypeError("userGesture must be a boolean");
       return handle;
     }
-  } else {
-    user_gesture = false;
   }
 
   if (render_frame_disposed_) {

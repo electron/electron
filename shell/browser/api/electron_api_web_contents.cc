@@ -1519,7 +1519,12 @@ content::WebContents* WebContents::AddNewContents(
            window_features.bounds.width(), window_features.bounds.height(),
            tracker->url, tracker->frame_name, tracker->referrer,
            tracker->raw_features, tracker->body)) {
-    api_web_contents->Destroy();
+    // Destroy() may synchronously `delete this`, so drop the handle's
+    // reference first. Otherwise it is left dangling until the handle goes
+    // out of scope below.
+    auto* contents = api_web_contents.get();
+    api_web_contents.Clear();
+    contents->Destroy();
   }
 
   return nullptr;
