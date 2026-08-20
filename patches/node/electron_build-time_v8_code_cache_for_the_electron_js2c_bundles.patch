@@ -213,10 +213,10 @@ index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..bea6aa2e57e4961edc273c742ef4caa4
  
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index 59bb1eddde665a4cd2086c632109d0112daf33a3..3ee9dafd548df94b442903ed4eabf84ee1aa45b6 100644
+index 76ed323dbc47da0fd3da5df271b58649630d8a51..504dd46249425a8e8396332bf061f1f75cdd9401 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -159,6 +159,11 @@ template("node_gn_build") {
+@@ -158,6 +158,11 @@ template("node_gn_build") {
        "//electron:electron_js2c",
        "deps/simdjson",
        "$node_v8_path",
