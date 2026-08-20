@@ -26,6 +26,11 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/thread_restrictions.h"
 
+#if BUILDFLAG(IS_LINUX)
+#include "components/dbus/xdg/request.h"
+#include "dbus/bus.h"
+#endif
+
 namespace electron {
 
 LoginItemSettings::LoginItemSettings() = default;
@@ -59,6 +64,9 @@ Browser::Browser() {
 }
 
 Browser::~Browser() {
+#if BUILDFLAG(IS_LINUX)
+  ResetLoginItemPortalRequest(/*release_request=*/true);
+#endif
   WindowList::RemoveObserver(this);
 }
 
