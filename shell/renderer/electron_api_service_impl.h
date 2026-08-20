@@ -42,7 +42,7 @@ class ElectronApiServiceImpl
   // mojom::ElectronRenderer
   void Message(bool internal,
                const std::string& channel,
-               blink::CloneableMessage arguments) override;
+               electron::SerializedValue arguments) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
