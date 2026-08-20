@@ -3,11 +3,9 @@ From: Jung-Kwang Lee <jungkwang.lee@softcamp.co.kr>
 Date: Mon, 9 Feb 2026 17:45:53 +0900
 Subject: Allow Electron visibility for CDM renderer
 
-patch-reason: 2
-
-electron needs //electron visibility on components/cdm/renderer to
-
-build cdm renderer integration; this is electron-specific.
+Electron's renderer clients use components/cdm/renderer to register Widevine
+key-system support. Allow //electron visibility for this embedder-specific
+integration.
 
 diff --git a/components/cdm/renderer/BUILD.gn b/components/cdm/renderer/BUILD.gn
 index fbe2ec2264cd170fe9c5ec9bcedf9fdd4732a2a0..614bb127acc01f119077f98858bd74e4d8489da8 100644
