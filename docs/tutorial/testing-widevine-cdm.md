@@ -86,16 +86,16 @@ The value can be found in `manifest.json` under the `WidevineCdm` directory.
 
 ## Using the library
 
-After getting the library files, you should pass the path to the directory that
+When developing an unpackaged application, pass the path to the directory that
 contains `manifest.json` with the `--widevine-cdm-path` command line switch.
 Electron reads the CDM version from `manifest.json` when possible. If the
 manifest does not contain the version, pass the library's version with
 `--widevine-cdm-version`.
 
-On Linux, these switches must be present on Electron's process command line.
-The zygote loads library CDMs before Electron runs the app's main script, so
-calling `app.commandLine.appendSwitch` from that script is too late for
-sandboxed renderers:
+On Linux, these switches must be present on Electron's process command line
+for an unpackaged application. The zygote loads library CDMs before Electron
+runs the app's main script, so calling `app.commandLine.appendSwitch` from that
+script is too late for sandboxed renderers:
 
 ```sh
 electron \
@@ -105,11 +105,9 @@ electron \
 ```
 
 The version switch is optional when `manifest.json` contains a valid version.
-Bundling the `WidevineCdm` directory beside the Electron executable also makes
-it available early enough on Linux.
 
-On Windows and macOS, the switches can be appended from the app's main script
-before the `ready` event is emitted.
+On Windows and macOS, an unpackaged application can append the switches from
+its main script before the `ready` event is emitted.
 
 Example code for Windows and macOS:
 
@@ -128,8 +126,10 @@ app.whenReady().then(() => {
 })
 ```
 
-On all platforms, if `--widevine-cdm-path` is not provided, Electron checks for
-bundled CDM files at `<Electron executable directory>/WidevineCdm`.
+Packaged applications ignore `--widevine-cdm-path` to prevent loading library
+code from an arbitrary command-line path. On all platforms, packaged
+applications must bundle the `WidevineCdm` directory beside the Electron
+executable.
 
 ## Verifying Widevine CDM support
 
