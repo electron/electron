@@ -117,27 +117,22 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return result;
 }
 
-// Convert a Badge to an NSMenuItemBadge.
+// Convert a Badge to an NSMenuItemBadge, or nil if it has nothing to show.
 NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     API_AVAILABLE(macos(14.0)) {
-  NSString* badgeType = base::SysUTF16ToNSString(badge.type);
-
-  if ([badgeType isEqualToString:@"alerts"]) {
-    if (badge.count.has_value())
-      return [NSMenuItemBadge alertsWithCount:badge.count.value()];
-  } else if ([badgeType isEqualToString:@"updates"]) {
-    if (badge.count.has_value())
-      return [NSMenuItemBadge updatesWithCount:badge.count.value()];
-  } else if ([badgeType isEqualToString:@"new-items"]) {
-    if (badge.count.has_value())
-      return [NSMenuItemBadge newItemsWithCount:badge.count.value()];
-  } else if ([badgeType isEqualToString:@"none"]) {
-    if (badge.content.has_value()) {
-      NSString* content = base::SysUTF8ToNSString(badge.content.value());
-      return [[NSMenuItemBadge alloc] initWithString:content];
-    }
+  if (badge.type == "none") {
+    if (!badge.content)
+      return nil;
+    return [[NSMenuItemBadge alloc]
+        initWithString:base::SysUTF8ToNSString(*badge.content)];
   }
-
+  const NSInteger count = badge.count.value_or(0);
+  if (badge.type == "alerts")
+    return [NSMenuItemBadge alertsWithCount:count];
+  if (badge.type == "updates")
+    return [NSMenuItemBadge updatesWithCount:count];
+  if (badge.type == "new-items")
+    return [NSMenuItemBadge newItemsWithCount:count];
   return nil;
 }
 
@@ -379,12 +374,14 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
   std::u16string customType = model->GetCustomTypeAt(index);
 
+  // The sectionHeaderWithTitle menu item is only available in macOS 14.0+.
   if (@available(macOS 14, *)) {
     if (customType == u"header") {
       item = [NSMenuItem sectionHeaderWithTitle:label];
     }
   }
 
+  // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
     item.image = icon.GetImage().ToNSImage();
@@ -394,11 +391,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
   if (@available(macOS 14, *)) {
     electron::ElectronMenuModel::Badge badge;
-    if (model->GetBadgeAt(index, &badge)) {
-      NSMenuItemBadge* nsBadge = CreateBadge(badge);
-      if (nsBadge)
-        item.badge = nsBadge;
-    }
+    if (model->GetBadgeAt(index, &badge))
+      item.badge = CreateBadge(badge);
   }
 
   if (role == u"services") {
@@ -587,11 +581,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
   if (@available(macOS 14, *)) {
     electron::ElectronMenuModel::Badge badge;
-    if (model->GetBadgeAt(index, &badge)) {
-      item.badge = CreateBadge(badge);
-    } else {
-      item.badge = nil;
-    }
+    item.badge = model->GetBadgeAt(index, &badge) ? CreateBadge(badge) : nil;
   }
 }
 
