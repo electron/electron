@@ -191,6 +191,6 @@ A [`Menu`](menu.md) that the item is a part of.
 
 #### `menuItem.badge` _macOS_
 
-An [`MenuItemBadge`](structures/menu-item-badge.md) indicating the badge for the menu item.
+An [`MenuItemBadge`](structures/menu-item-badge.md) (optional) indicating the badge for the menu item.
 
 This property can be dynamically changed. Only available on macOS 14 and up.
