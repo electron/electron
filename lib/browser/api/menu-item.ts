@@ -33,6 +33,7 @@ const MenuItem = function (this: any, options: any) {
   this.overrideProperty('accessibilityLabel', '');
   this.overrideProperty('sublabel', '');
   this.overrideProperty('toolTip', '');
+  this.overrideProperty('fontType', '');
   this.overrideProperty('enabled', true);
   this.overrideProperty('visible', true);
   this.overrideProperty('checked', false);

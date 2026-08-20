@@ -69,8 +69,17 @@ describe('MenuItems', () => {
       expect(item).to.have.property('type').that.is.a('string').equal('normal');
       expect(item).to.have.property('commandId').that.is.a('number');
       expect(item).to.have.property('toolTip').that.is.a('string');
+      expect(item).to.have.property('fontType').that.is.a('string');
       expect(item).to.have.property('role').that.is.a('string');
       expect(item).to.have.property('icon');
+    });
+
+    it('should throw when fontType is invalid without modifying the menu', () => {
+      const menu = new Menu();
+      expect(() => {
+        menu.append(new MenuItem({ label: '09:45', fontType: 'bold' as any }));
+      }).to.throw("fontType must be one of 'monospaced' or 'monospacedDigit'");
+      expect(menu.getItemCount()).to.equal(0);
     });
 
     it('should have a default accelerator for certain roles', () => {
