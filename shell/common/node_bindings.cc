@@ -30,6 +30,7 @@
 #include "electron/electron_version.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
+#include "gin/per_context_data.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -737,14 +738,6 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  // When consuming the embedded Node startup snapshot, the context is empty
-  // here (it comes from Context::FromSnapshot inside CreateEnvironment); the
-  // Event constructor cache is populated lazily on first use in that path.
-  if (!context.IsEmpty()) {
-    gin_helper::internal::Event::GetConstructor(
-        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
-  }
-
   g_is_initialized = true;
   initialized_node_per_process_ = true;
 }
@@ -853,6 +846,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   // Context-dependent setup that must wait until the snapshot main context
   // exists when from_snapshot is true.
+  std::unique_ptr<gin::ContextHolder> gin_context_holder;
   auto set_up_context = [&](v8::Local<v8::Context> ctx,
                             node::IsolateData* iso_data) {
     if (browser_env_ == BrowserEnvironment::kBrowser) {
@@ -879,6 +873,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                          static_cast<void*>(iso_data),
                                          v8::kEmbedderDataTypeTagDefault);
+    if (!gin::PerContextData::From(ctx)) {
+      gin_context_holder = std::make_unique<gin::ContextHolder>(isolate);
+      gin_context_holder->SetContext(ctx);
+    }
   };
 
   std::string init_script = "electron/js2c/" + process_type + "_init";
@@ -943,14 +941,13 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     DCHECK(!context.IsEmpty());
     snapshot_context_scope.emplace(context);
     set_up_context(context, isolate_data);
-    // The eager Event-constructor cache warm-up in Initialize() was skipped in
-    // the snapshot path because no context existed yet. Do it now that the
-    // snapshot's main context is available -- the Event ObjectTemplate (which
-    // carries preventDefault/defaultPrevented) is only ever populated by
-    // GetConstructor, so without this every native gin event is missing them.
-    gin_helper::internal::Event::GetConstructor(
-        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
   }
+
+  // The Event ObjectTemplate (which carries preventDefault/defaultPrevented)
+  // is only populated by GetConstructor. Warm it after the context has Gin
+  // per-context data, including when the context came from a Node snapshot.
+  gin_helper::internal::Event::GetConstructor(
+      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
 
   gin_helper::Dictionary process(isolate, env->process_object());
   process.SetReadOnly("type", process_type);
@@ -967,12 +964,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   }
 
   auto env_deleter = [isolate, isolate_data,
+                      gin_context_holder = std::move(gin_context_holder),
                       context = v8::Global<v8::Context>{isolate, context}](
                          node::Environment* nenv) mutable {
     // When `isolate_data` was created above, a pointer to it was kept
     // in context's embedder_data[kElectronContextEmbedderDataIndex].
     // Since we're about to free `isolate_data`, clear that entry
     v8::HandleScope handle_scope{isolate};
+    gin_context_holder.reset();
     context.Get(isolate)->SetAlignedPointerInEmbedderData(
         kElectronContextEmbedderDataIndex, nullptr,
         v8::kEmbedderDataTypeTagDefault);
