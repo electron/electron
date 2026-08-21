@@ -197,7 +197,8 @@ function locateBinary(bin) {
 // Provisions a silent virtual printer used by the webContents.print() specs
 // "Microsoft Print To PDF" on a file port on Windows, an ippeveprinter-backed
 // driverless CUPS queue on Linux/macOS. Exposes it to the test process via
-// ELECTRON_TEST_PRINTER_NAME and returns a synchronous teardown function (safe
+// ELECTRON_TEST_PRINTER_NAME (and, for ippeveprinter, its spool directory via
+// ELECTRON_TEST_PRINTER_OUTPUT) and returns a synchronous teardown function (safe
 // to register on 'exit'). Best-effort: on any failure the spec self-skips, so
 // this never blocks the test run.
 async function setupVirtualPrinter() {
@@ -304,6 +305,7 @@ async function setupVirtualPrinter() {
     await spawnCapture(lpadmin, ['-d', printerName]);
 
     process.env.ELECTRON_TEST_PRINTER_NAME = printerName;
+    process.env.ELECTRON_TEST_PRINTER_OUTPUT = spoolDir;
     console.log(`${pass} Provisioned virtual printer: ${printerName}`);
     return teardown;
   } catch (err) {

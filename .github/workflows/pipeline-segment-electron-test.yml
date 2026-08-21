@@ -234,7 +234,8 @@ jobs:
           # Provisions the silent virtual printer as ROOT here, rather than letting
           # script/spec-runner.js do it, because the runner executes as builduser
           # (via runuser) which cannot administer CUPS or keep ippeveprinter alive.
-          # The printer name is handed to the runner via ELECTRON_TEST_PRINTER_NAME;
+          # The printer name and spool directory are handed to the runner via
+          # ELECTRON_TEST_PRINTER_NAME and ELECTRON_TEST_PRINTER_OUTPUT;
           # setupVirtualPrinter() honors that and skips its own provisioning.
           #
           # Best-effort: the spec self-skips when ELECTRON_TEST_PRINTER_NAME is unset
@@ -244,10 +245,13 @@ jobs:
           run: |
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y || true
-            # cups-daemon: cupsd | cups-client: lpadmin/lpstat | cups-ipp-utils: ippeveprinter
-            apt-get install -y --no-install-recommends cups cups-daemon cups-client cups-ipp-utils || true
-            # No systemd in the container, so start the scheduler directly.
-            mkdir -p /var/run/cups
+            # cups-daemon: cupsd | cups-client: lpadmin/lpstat | cups-ipp-utils: ippeveprinter,
+            # which refuses to start without a DNS-SD responder (avahi over the system bus).
+            apt-get install -y --no-install-recommends cups cups-daemon cups-client cups-ipp-utils dbus avahi-daemon || true
+            # No systemd in the container, so start the daemons directly.
+            mkdir -p /var/run/cups /run/dbus
+            pgrep -x dbus-daemon >/dev/null || dbus-daemon --system --fork || true
+            pgrep -x avahi-daemon >/dev/null || avahi-daemon -D --no-drop-root || true
             (cupsd || /usr/sbin/cupsd) || true
             for _ in $(seq 1 10); do lpstat -r >/dev/null 2>&1 && break; sleep 1; done
             lpstat -r || true
@@ -274,6 +278,11 @@ jobs:
             # Only hand the printer to the runner if it actually registered.
             if lpstat -p "$PRINTER_NAME" >/dev/null 2>&1; then
               echo "ELECTRON_TEST_PRINTER_NAME=$PRINTER_NAME" >> "$GITHUB_ENV"
+              if (exec 3<>/dev/tcp/127.0.0.1/$IPP_PORT) 2>/dev/null; then
+                exec 3>&- 3<&-
+                chmod a+rwx "$SPOOL_DIR"
+                echo "ELECTRON_TEST_PRINTER_OUTPUT=$SPOOL_DIR" >> "$GITHUB_ENV"
+              fi
               echo "Provisioned CUPS printer: $PRINTER_NAME"
             else
               echo "Failed to provision CUPS printer; the print settings test will self-skip."
