@@ -865,8 +865,9 @@ void OverrideGlobalValueFromIsolatedWorld(
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
         isolate, source_context, main_context, value, source_context->Global(),
         support_dynamic_properties, BridgeErrorTarget::kSource);
-    DCHECK(!maybe_proxy.IsEmpty());
-    auto proxy = maybe_proxy.ToLocalChecked();
+    v8::Local<v8::Value> proxy;
+    if (!maybe_proxy.ToLocal(&proxy))
+      return;
 
     target_object.Set(final_key, proxy);
   }
@@ -902,8 +903,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
           isolate, source_context, main_context, getter,
           source_context->Global(), false, BridgeErrorTarget::kSource);
-      DCHECK(!maybe_getter_proxy.IsEmpty());
-      getter_proxy = maybe_getter_proxy.ToLocalChecked();
+      if (!maybe_getter_proxy.ToLocal(&getter_proxy))
+        return false;
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
@@ -911,8 +912,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           isolate, source_context, main_context, setter,
           source_context->Global(), false, BridgeErrorTarget::kSource);
-      DCHECK(!maybe_setter_proxy.IsEmpty());
-      setter_proxy = maybe_setter_proxy.ToLocalChecked();
+      if (!maybe_setter_proxy.ToLocal(&setter_proxy))
+        return false;
     }
 
     v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
