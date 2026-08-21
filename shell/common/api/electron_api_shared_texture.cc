@@ -669,8 +669,12 @@ struct Converter<ImportSharedTextureInfo> {
       if (v8_native_pixmap.Get("planes", &v8_planes)) {
         out->planes.clear();
         for (uint32_t i = 0; i < v8_planes->Length(); ++i) {
-          v8::Local<v8::Value> v8_item =
-              v8_planes->Get(isolate->GetCurrentContext(), i).ToLocalChecked();
+          v8::Local<v8::Value> v8_item;
+          if (!v8_planes->Get(isolate->GetCurrentContext(), i)
+                   .ToLocal(&v8_item) ||
+              !v8_item->IsObject()) {
+            return false;
+          }
           gin::Dictionary v8_plane(isolate, v8_item.As<v8::Object>());
           ImportSharedTextureInfoPlane plane;
           v8_plane.Get("stride", &plane.stride);

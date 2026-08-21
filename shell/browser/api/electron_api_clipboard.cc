@@ -314,7 +314,7 @@ v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
                       return;
                     }
                     v8::Local<v8::Array> array = v8::Array::New(iso, 1);
-                    array->Set(ctx, 0, wrapper).Check();
+                    array->CreateDataProperty(ctx, 0, wrapper).Check();
                     promise.Resolve(array);
                   },
                   std::move(promise), buffer));

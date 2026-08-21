@@ -566,7 +566,7 @@ class WebFrameRenderer final
                              v8::Local<v8::Object> provider) {
     auto context = isolate->GetCurrentContext();
     if (!provider->Has(context, gin::StringToV8(isolate, "spellCheck"))
-             .ToChecked()) {
+             .FromMaybe(false)) {
       thrower.ThrowError("\"spellCheck\" has to be defined");
       return;
     }
