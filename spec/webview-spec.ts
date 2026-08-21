@@ -1,6 +1,5 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
@@ -10,6 +9,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers';
+import { parseBasicAuth } from './lib/net-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -2413,7 +2413,7 @@ describe('<webview> tag', function () {
     it('should authenticate with correct credentials', async () => {
       const message = 'Authenticated';
       const server = http.createServer((req, res) => {
-        const credentials = auth(req)!;
+        const credentials = parseBasicAuth(req)!;
         if (credentials.name === 'test' && credentials.pass === 'test') {
           res.end(message);
         } else {

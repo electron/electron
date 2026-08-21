@@ -26,6 +26,19 @@ export function randomString(length: number) {
   return buffer.toString();
 }
 
+/**
+ * Parses the credentials out of an HTTP Basic `Authorization` header, or
+ * returns null if the request does not carry one.
+ */
+export function parseBasicAuth(request: http.IncomingMessage): { name: string; pass: string } | null {
+  const match = /^Basic (.+)$/i.exec(request.headers.authorization ?? '');
+  if (!match) return null;
+  const decoded = Buffer.from(match[1], 'base64').toString();
+  const separator = decoded.indexOf(':');
+  if (separator === -1) return null;
+  return { name: decoded.slice(0, separator), pass: decoded.slice(separator + 1) };
+}
+
 export async function getResponse(urlRequest: Electron.ClientRequest) {
   return new Promise<Electron.IncomingMessage>((resolve, reject) => {
     urlRequest.on('error', reject);

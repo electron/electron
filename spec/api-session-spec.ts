@@ -10,7 +10,6 @@ import {
   WebFrameMain
 } from 'electron/main';
 
-import auth from 'basic-auth';
 import { expect } from 'chai';
 import send from 'send';
 
@@ -22,6 +21,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { parseBasicAuth } from './lib/net-helpers';
 import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -1260,7 +1260,7 @@ describe('session module', () => {
     it('can clear http auth info from cache', async () => {
       const ses = session.fromPartition('auth-cache');
       const server = http.createServer((req, res) => {
-        const credentials = auth(req);
+        const credentials = parseBasicAuth(req);
         if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
           res.statusCode = 401;
           res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');

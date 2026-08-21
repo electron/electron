@@ -1,8 +1,8 @@
 import { getRawHeader } from '@electron/asar';
 import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
-import { resedit } from '@electron/packager/resedit';
 
 import { expect } from 'chai';
+import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -27,6 +27,35 @@ const bufferReplace = (haystack: Buffer, needle: string, replacement: string, th
   const len = idx + replacement.length + after.length;
   return Buffer.concat([before, Buffer.from(replacement), after], len);
 };
+
+// Embeds the asar integrity config into a Windows executable's resources in
+// the same shape @electron/packager produces (and shell/common/asar/archive_win.cc
+// reads): an "Integrity"/"ElectronAsar" resource containing a JSON list of
+// { file, alg, value } entries.
+async function embedAsarIntegrity(exePath: string, integrity: Record<string, { algorithm: 'SHA256'; hash: string }>) {
+  const exe = NtExecutable.from(await fs.promises.readFile(exePath));
+  const resources = NtExecutableResource.from(exe);
+
+  // Attach the resource to the same language as the existing version info.
+  const [versionInfo] = Resource.VersionInfo.fromEntries(resources.entries);
+  const [{ lang, codepage }] = versionInfo.getAllLanguagesForStringValues();
+
+  const payload = Buffer.from(
+    JSON.stringify(
+      Object.entries(integrity).map(([file, { algorithm, hash }]) => ({ file, alg: algorithm, value: hash }))
+    )
+  );
+  resources.entries.push({
+    type: 'INTEGRITY',
+    id: 'ELECTRONASAR',
+    bin: payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength),
+    lang,
+    codepage
+  });
+
+  resources.outputResource(exe);
+  await fs.promises.writeFile(exePath, Buffer.from(exe.generate()));
+}
 
 type SpawnResult = { code: number | null; out: string; signal: NodeJS.Signals | null };
 function spawn(cmd: string, args: string[], opts: any = {}) {
@@ -114,12 +143,10 @@ describe('fuses', function () {
         }
 
         if (process.platform === 'win32') {
-          await resedit(appPath, {
-            asarIntegrity: {
-              'resources\\default_app.asar': {
-                algorithm: 'SHA256',
-                hash: nodeCrypto.createHash('sha256').update(getRawHeader(pathToAsar).headerString).digest('hex')
-              }
+          await embedAsarIntegrity(appPath, {
+            'resources\\default_app.asar': {
+              algorithm: 'SHA256',
+              hash: nodeCrypto.createHash('sha256').update(getRawHeader(pathToAsar).headerString).digest('hex')
             }
           });
         }

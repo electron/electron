@@ -15,6 +15,7 @@ import { expect } from 'chai';
 import * as WebSocket from 'ws';
 
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
@@ -24,8 +25,6 @@ import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { expectWarningMessages } from './lib/warning-helpers';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
-
-const uuid = require('uuid');
 
 const fixtures = path.join(__dirname, 'fixtures');
 
@@ -69,7 +68,7 @@ describe('chrome extensions', () => {
   });
 
   it('does not crash when using chrome.management', async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     await w.loadURL('about:blank');
 
@@ -95,7 +94,7 @@ describe('chrome extensions', () => {
     let w: BrowserWindow;
 
     beforeEach(() => {
-      customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      customSession = session.fromPartition(`persist:${randomUUID()}`);
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -151,7 +150,7 @@ describe('chrome extensions', () => {
   });
 
   it('supports minimum_chrome_version manifest key', async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -174,7 +173,7 @@ describe('chrome extensions', () => {
   }
 
   it('bypasses CORS in requests made from extensions', async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     const extension = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
     await w.loadURL(`${extension.url}bare-page.html`);
@@ -186,7 +185,7 @@ describe('chrome extensions', () => {
     // extension registry is redirected to the main session. so installing an
     // extension in an in-memory session results in it being installed in the
     // default session.
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
     await w.loadURL(url);
@@ -195,13 +194,13 @@ describe('chrome extensions', () => {
   });
 
   it('does not crash when loading an extension with missing manifest', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
     await expect(promise).to.eventually.be.rejectedWith(/Manifest file is missing or unreadable/);
   });
 
   it('does not crash when failing to load an extension', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'load-error'));
     await expect(promise).to.eventually.be.rejected();
   });
@@ -209,7 +208,7 @@ describe('chrome extensions', () => {
   it('serializes a loaded extension', async () => {
     const extensionPath = path.join(fixtures, 'extensions', 'red-bg');
     const manifest = JSON.parse(await fs.readFile(path.join(extensionPath, 'manifest.json'), 'utf-8'));
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const extension = await customSession.extensions.loadExtension(extensionPath);
     expect(extension.id).to.be.a('string');
     expect(extension.name).to.be.a('string');
@@ -220,7 +219,7 @@ describe('chrome extensions', () => {
   });
 
   it('removes an extension', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const { id } = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
@@ -238,7 +237,7 @@ describe('chrome extensions', () => {
   });
 
   it('emits extension lifecycle events', async () => {
-    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
 
     const loadedPromise = once(customSession.extensions, 'extension-loaded');
     const readyPromise = emittedUntil(
@@ -262,7 +261,7 @@ describe('chrome extensions', () => {
   });
 
   it('lists loaded extensions in getAllExtensions', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const e = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     expect(customSession.extensions.getAllExtensions()).to.deep.equal([e]);
     customSession.extensions.removeExtension(e.id);
@@ -270,13 +269,13 @@ describe('chrome extensions', () => {
   });
 
   it('gets an extension by id', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const e = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     expect(customSession.extensions.getExtension(e.id)).to.deep.equal(e);
   });
 
   it('confines an extension to the session it was loaded in', async () => {
-    const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    const customSession = session.fromPartition(`persist:${randomUUID()}`);
     await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const w = new BrowserWindow({ show: false }); // not in the session
     await w.loadURL(url);
@@ -285,7 +284,7 @@ describe('chrome extensions', () => {
   });
 
   it('loading an extension in a temporary session throws an error', async () => {
-    const customSession = session.fromPartition(uuid.v4());
+    const customSession = session.fromPartition(randomUUID());
     await expect(
       customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
     ).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session');
@@ -301,7 +300,7 @@ describe('chrome extensions', () => {
       return result;
     };
     beforeEach(async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       extension = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v2'));
       w = new BrowserWindow({
         show: false,
@@ -333,7 +332,7 @@ describe('chrome extensions', () => {
       return result;
     };
     beforeEach(async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-runtime'));
       w = new BrowserWindow({
         show: false,
@@ -369,7 +368,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.storage', () => {
     it('stores and retrieves a key', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'));
       const w = new BrowserWindow({
         show: false,
@@ -395,7 +394,7 @@ describe('chrome extensions', () => {
     let w: BrowserWindow;
 
     beforeEach(() => {
-      customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      customSession = session.fromPartition(`persist:${randomUUID()}`);
       w = new BrowserWindow({
         show: false,
         webPreferences: { session: customSession, sandbox: true, contextIsolation: true }
@@ -472,7 +471,7 @@ describe('chrome extensions', () => {
   describe('chrome.tabs', () => {
     let customSession: Session;
     before(async () => {
-      customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
     afterEach(closeAllWindows);
@@ -494,7 +493,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
-      const portName = uuid.v4();
+      const portName = randomUUID();
       const message = { method: 'connectTab', args: [portName] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
@@ -544,7 +543,7 @@ describe('chrome extensions', () => {
   describe('background pages', () => {
     afterEach(closeAllWindows);
     it('loads a lazy background page when sending a message', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'lazy-background-page'));
       const w = new BrowserWindow({
         show: false,
@@ -563,7 +562,7 @@ describe('chrome extensions', () => {
     });
 
     it('can use extension.getBackgroundPage from a ui page', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const { id } = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'lazy-background-page')
       );
@@ -574,7 +573,7 @@ describe('chrome extensions', () => {
     });
 
     it('can use extension.getBackgroundPage from a ui page', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const { id } = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'lazy-background-page')
       );
@@ -585,7 +584,7 @@ describe('chrome extensions', () => {
     });
 
     it('can use runtime.getBackgroundPage from a ui page', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const { id } = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'lazy-background-page')
       );
@@ -596,7 +595,7 @@ describe('chrome extensions', () => {
     });
 
     it('has session in background page', async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       const { id } = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'persistent-background-page')
@@ -609,7 +608,7 @@ describe('chrome extensions', () => {
     });
 
     it('can open devtools of background page', async () => {
-      const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
@@ -652,7 +651,7 @@ describe('chrome extensions', () => {
 
     // TODO(jkleinsc) fix this flaky test on WOA
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
       const winningMessage = once(ipcMain, 'winning');
       const w = new BrowserWindow({
@@ -927,7 +926,7 @@ describe('chrome extensions', () => {
   describe('manifest v3', () => {
     afterEach(closeAllWindows);
     it('registers background service worker', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const registrationPromise = new Promise<string>((resolve) => {
         customSession.serviceWorkers.once('registration-completed', (event, { scope }) => resolve(scope));
       });
@@ -939,7 +938,7 @@ describe('chrome extensions', () => {
     });
 
     it('launches background service worker', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const launchPromise = new Promise<void>((resolve) => {
         customSession.serviceWorkers.on('running-status-changed', ({ runningStatus }) => {
           if (runningStatus === 'running') resolve();
@@ -954,7 +953,7 @@ describe('chrome extensions', () => {
     });
 
     it('launches background service worker when the extension is loaded again without restarting the app', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const extensionPath = path.join(fixtures, 'extensions', 'mv3-service-worker');
 
       const isWorkerRunning = (extension: Extension) => {
@@ -989,7 +988,7 @@ describe('chrome extensions', () => {
 
     // Regression test for https://github.com/electron/electron/issues/41613
     it('launches background service worker after restarting the app', async () => {
-      const partition = `persist:${uuid.v4()}`;
+      const partition = `persist:${randomUUID()}`;
       const extensionPath = path.join(fixtures, 'extensions', 'mv3-service-worker');
 
       const runRemoteControlApp = async () => {
@@ -1041,7 +1040,7 @@ describe('chrome extensions', () => {
     });
 
     it('can run chrome extension APIs', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
 
@@ -1060,7 +1059,7 @@ describe('chrome extensions', () => {
       let w = null as unknown as BrowserWindow;
 
       before(async () => {
-        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
       });
 
@@ -1152,7 +1151,7 @@ describe('chrome extensions', () => {
       let w = null as unknown as BrowserWindow;
 
       before(async () => {
-        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
       });
 
@@ -1209,7 +1208,7 @@ describe('chrome extensions', () => {
       let w = null as unknown as BrowserWindow;
 
       before(async () => {
-        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'api-async'));
       });
 
@@ -1307,7 +1306,7 @@ describe('chrome extensions', () => {
         });
 
         it('does not return privileged properties without tabs permission', async () => {
-          const noPrivilegeSes = session.fromPartition(`persist:${uuid.v4()}`);
+          const noPrivilegeSes = session.fromPartition(`persist:${randomUUID()}`);
           await noPrivilegeSes.extensions.loadExtension(
             path.join(fixtures, 'extensions', 'chrome-tabs', 'no-privileges')
           );
@@ -1461,7 +1460,7 @@ describe('chrome extensions', () => {
 
           sameSessionWin.webContents.setAudioMuted(true);
 
-          const newSession = session.fromPartition(`persist:${uuid.v4()}`);
+          const newSession = session.fromPartition(`persist:${randomUUID()}`);
           const differentSessionWin = new BrowserWindow({
             show: false,
             webPreferences: {
@@ -1492,7 +1491,7 @@ describe('chrome extensions', () => {
       let w = null as unknown as BrowserWindow;
 
       before(async () => {
-        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-scripting'));
       });
 
@@ -1576,8 +1575,8 @@ describe('chrome extensions', () => {
       let victim: BrowserWindow;
 
       before(async () => {
-        extSession = session.fromPartition(`persist:${uuid.v4()}`);
-        otherSession = session.fromPartition(`persist:${uuid.v4()}`);
+        extSession = session.fromPartition(`persist:${randomUUID()}`);
+        otherSession = session.fromPartition(`persist:${randomUUID()}`);
         await extSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'tabs-cross-session'));
       });
 
