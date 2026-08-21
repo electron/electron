@@ -12,6 +12,7 @@
 #include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
@@ -634,6 +635,12 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
       // RFH is in the process of being swapped. Need to lookup by FTN to avoid
       // creating dangling WebFrameMain.
       web_frame = FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+      if (!web_frame) {
+        // A WebFrameMain cannot be created for a transient RFH, so initialize
+        // it with the current active RFH and update it when the swap completes.
+        auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+        rfh = rfh_impl->frame_tree_node()->current_frame_host();
+      }
       break;
     case LifecycleState::kPrerendering:
     case LifecycleState::kActive:

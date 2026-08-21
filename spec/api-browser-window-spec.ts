@@ -15,6 +15,7 @@ import {
   session,
   systemPreferences,
   WebContents,
+  WebContentsView,
   WebFrameMain
 } from 'electron/main';
 
@@ -1167,6 +1168,52 @@ describe('BrowserWindow module', () => {
         after(() => {
           server.close();
         });
+        it('exposes a cross-origin iframe during navigation', async () => {
+          const port = (server.address() as AddressInfo).port;
+          const fixture = path.join(os.tmpdir(), `web-frame-main-navigation-${crypto.randomUUID()}.html`);
+          fs.writeFileSync(fixture, `<iframe src="${url}/iframe"></iframe>`);
+          defer(() => fs.unlinkSync(fixture));
+
+          const view = new WebContentsView({
+            webPreferences: { partition: `wfm-navigation-${crypto.randomUUID()}`, sandbox }
+          });
+          defer(() => view.webContents.destroy());
+          w.contentView.addChildView(view);
+          defer(() => w.contentView.removeChildView(view));
+
+          const { webContents } = view;
+          const didStartNavigation = new Promise<number>((resolve) => {
+            webContents.on('did-start-navigation', (details) => {
+              if (!details.isMainFrame) resolve(details.frame!.frameTreeNodeId);
+            });
+          });
+          const headersReceived = new Promise<number>((resolve) => {
+            webContents.session.webRequest.onHeadersReceived((details, callback) => {
+              const frameTreeNodeId = details.frame?.frameTreeNodeId;
+              callback({ responseHeaders: details.responseHeaders });
+              if (details.resourceType === 'subFrame' && frameTreeNodeId) resolve(frameTreeNodeId);
+            });
+          });
+          defer(() => webContents.session.webRequest.onHeadersReceived(null));
+
+          await webContents.loadFile(fixture);
+          const frameTreeNodeId = await didStartNavigation;
+          expect(await headersReceived).to.equal(frameTreeNodeId);
+
+          const iframe = webContents.mainFrame.frames[0];
+          expect(iframe.frameTreeNodeId).to.equal(frameTreeNodeId);
+          const navigated = emittedUntil(
+            webContents,
+            'did-frame-navigate',
+            (_event: Electron.Event, _url: string, _code: number, _status: string, isMainFrame: boolean) => !isMainFrame
+          );
+          iframe.executeJavaScript(`location.href = 'http://localhost:${port}/navigated'`);
+          const [, , , , , processId, routingId] = await navigated;
+          const navigatedIframe = webFrameMain.fromId(processId, routingId);
+          expect(navigatedIframe).to.equal(iframe);
+          expect(navigatedIframe!.frameTreeNodeId).to.equal(frameTreeNodeId);
+        });
+
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = ['did-start-navigation', 'did-frame-navigate', 'did-navigate'];
