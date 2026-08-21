@@ -75,12 +75,18 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
     return true;
   frozen.insert(hash);
 
-  v8::Local<v8::Array> property_names =
-      object->GetOwnPropertyNames(context).ToLocalChecked();
+  v8::Local<v8::Array> property_names;
+  if (!object->GetOwnPropertyNames(context).ToLocal(&property_names))
+    return false;
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
-    v8::Local<v8::Value> child =
-        object->Get(context, property_names->Get(context, i).ToLocalChecked())
-            .ToLocalChecked();
+    v8::Local<v8::Value> name;
+    if (!property_names->Get(context, i).ToLocal(&name))
+      return false;
+    // The property may be an accessor that throws (e.g. a DOM element the page
+    // has decorated), so the read must be checked.
+    v8::Local<v8::Value> child;
+    if (!object->Get(context, name).ToLocal(&child))
+      return false;
     if (child->IsObject() && !child->IsTypedArray()) {
       if (!DeepFreeze(child.As<v8::Object>(), context, frozen))
         return false;
