@@ -1845,10 +1845,10 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
   * `pagesPerSheet` number (optional) - The number of pages to print per page sheet.
   * `collate` boolean (optional) - Whether the web page should be collated.
   * `copies` number (optional) - The number of copies of the web page to print.
-  * `pageRanges` Object[]  (optional) - The page range to print. On macOS, only one range is honored.
+  * `pageRanges` Object[]  (optional) - The page range to print.
     * `from` number - Index of the first page to print (0-based).
     * `to` number - Index of the last page to print (inclusive) (0-based).
-  * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`.
+  * `duplexMode` string (optional) - Set the duplex mode of the printed web page. Can be `simplex`, `shortEdge`, or `longEdge`. Defaults to the printer's setting.
   * `dpi` Record\<string, number\> (optional)
     * `horizontal` number (optional) - The horizontal dpi.
     * `vertical` number (optional) - The vertical dpi.
@@ -1865,6 +1865,15 @@ When a custom `pageSize` is passed, Chromium attempts to validate platform speci
 
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
+
+When `silent` is `false` the system print dialog is shown first. On macOS and
+Linux it opens with `options` applied; on Windows it opens on the default
+printer with its defaults, and `printBackground`, `header`, `footer`,
+`scaleFactor`, `margins` and `pageRanges` are applied to whatever the user
+picks. Because the page is laid out only after the dialog is confirmed, the
+dialog does not offer printing the current selection, and on Windows its page
+range field is unavailable; pass `pageRanges` instead. Use `window.print()` in
+the page for a dialog with those controls.
 
 Some possible `failureReason`s for print failure include:
 
