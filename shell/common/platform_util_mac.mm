@@ -266,6 +266,7 @@ bool SetLoginItemEnabled(const std::string& type,
     return result;
   } else {
     NSString* identifier = GetLoginHelperBundleIdentifier();
+    // NOLINTNEXTLINE(clang-analyzer-nullability.NullableDereferenced)
     return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
   }
 }

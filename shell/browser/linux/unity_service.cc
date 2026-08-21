@@ -74,6 +74,7 @@ void EnsureLibUnityLoaded() {
       reinterpret_cast<unity_launcher_entry_get_for_desktop_id_func>(
           dlsym(unity_lib, "unity_launcher_entry_get_for_desktop_id"));
   if (entry_get_for_desktop_id) {
+    // NOLINTNEXTLINE(clang-analyzer-nullability.NullPassedToNonnull)
     std::string desktop_id = getenv("CHROME_DESKTOP");
     chrome_entry = entry_get_for_desktop_id(desktop_id.c_str());
 

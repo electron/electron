@@ -229,10 +229,11 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
         if (res == ERROR_SUCCESS) {
           DWORD type, size;
           wchar_t startup_binary[12];
-          LONG result =
-              RegQueryValueEx(hkey, it->Name(), nullptr, &type,
-                              reinterpret_cast<BYTE*>(&startup_binary),
-                              &(size = sizeof(startup_binary)));
+          LONG result = RegQueryValueEx(
+              hkey, it->Name(), nullptr, &type,
+              reinterpret_cast<BYTE*>(&startup_binary),
+              &(size = sizeof(  // NOLINT(clang-analyzer-deadcode.DeadStores)
+                    startup_binary)));
           if (result == ERROR_SUCCESS) {
             if (type == REG_BINARY) {
               // any other binary other than this indicates that the program is
