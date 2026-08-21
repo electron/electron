@@ -145,9 +145,11 @@ struct Converter<std::set<T>> {
     v8::Local<v8::Array> array = val.As<v8::Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
+      v8::Local<v8::Value> v8_item;
+      if (!array->Get(context, i).ToLocal(&v8_item))
+        return false;
       T item;
-      if (!Converter<T>::FromV8(isolate,
-                                array->Get(context, i).ToLocalChecked(), &item))
+      if (!Converter<T>::FromV8(isolate, v8_item, &item))
         return false;
       result.insert(std::move(item));
     }
@@ -167,7 +169,9 @@ struct Converter<std::map<K, V, Compare>> {
     out->clear();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> obj = value.As<v8::Object>();
-    v8::Local<v8::Array> keys = obj->GetPropertyNames(context).ToLocalChecked();
+    v8::Local<v8::Array> keys;
+    if (!obj->GetPropertyNames(context).ToLocal(&keys))
+      return false;
     const uint32_t length = keys->Length();
     for (uint32_t i = 0; i < length; ++i) {
       v8::MaybeLocal<v8::Value> maybe_v8key = keys->Get(context, i);
