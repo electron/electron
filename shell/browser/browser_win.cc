@@ -226,12 +226,12 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
         LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.c_str(), 0,
                                 KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
-          DWORD type, size;
+          DWORD type;
           wchar_t startup_binary[12];
+          DWORD size = sizeof(startup_binary);
           LONG result =
               RegQueryValueEx(hkey, it->Name(), nullptr, &type,
-                              reinterpret_cast<BYTE*>(&startup_binary),
-                              &(size = sizeof(startup_binary)));
+                              reinterpret_cast<BYTE*>(&startup_binary), &size);
           if (result == ERROR_SUCCESS) {
             if (type == REG_BINARY) {
               // any other binary other than this indicates that the program is
