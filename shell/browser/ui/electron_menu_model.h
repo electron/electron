@@ -33,6 +33,19 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     std::optional<std::vector<GURL>> urls;
     std::optional<std::vector<base::FilePath>> file_paths;
   };
+
+  struct Badge {
+    Badge();
+    Badge(Badge&&);
+    Badge(const Badge&);
+    Badge& operator=(const Badge&);
+    Badge& operator=(Badge&&);
+    ~Badge();
+
+    std::string type;  // "alerts", "updates", "new-items" or "none"
+    std::optional<int> count;
+    std::optional<std::string> content;
+  };
 #endif
 
   class Delegate : public ui::SimpleMenuModel::Delegate {
@@ -109,6 +122,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     return sharing_item_;
   }
 
+  // Set/Get the badge of a menu item; std::nullopt removes it.
+  void SetBadge(size_t index, std::optional<Badge> badge);
+  bool GetBadgeAt(size_t index, Badge* badge) const;
 #endif
 
   // ui::SimpleMenuModel:
@@ -127,6 +143,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
 #if BUILDFLAG(IS_MAC)
   std::optional<SharingItem> sharing_item_;
+  base::flat_map<int, Badge> badges_;  // command id -> badge
 #endif
 
   base::flat_map<int, std::u16string> toolTips_;  // command id -> tooltip

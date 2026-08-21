@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 19 Aug 2026 10:48:38 +0000
+Subject: dbus: Let embedders exit cleanly when the bus connection is lost
+
+Since https://crrev.com/307419 (https://crbug.com/432980) Bus aborts
+with LOG(FATAL) when libdbus delivers the local Disconnected signal.
+That fits Chrome OS, where a dbus-daemon crash takes the device down
+anyway, but on desktop Linux the session bus routinely goes away under
+a running browser: at logout, on `systemctl --user restart dbus`, or
+when dbus-broker is restarted by a package upgrade. Each of those
+currently ends in a browser crash report rather than an exit.
+
+Add Bus::Options::disconnected_callback, posted to the origin thread
+when the connection is lost. When it is unset the behaviour is
+unchanged (FATAL, same message), so Chrome OS and every existing
+caller keep today's semantics. dbus_thread_linux sets it for the
+shared session and system buses and exposes SetDisconnectedCallback()
+so the embedder can treat a lost bus like a lost display server
+connection (compare the Ozone shutdown callback that
+chrome_browser_main_extra_parts_ozone.cc wires to
+chrome::SessionEnding()). Chrome's wiring follows separately.
+
+The process still cannot keep using the bus after a disconnect; the
+callback exists so it can exit without a crash report, not so it can
+carry on.
+
+Bug: none
+Test: dbus_unittests.BusTest.DisconnectedCallback
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/8261571
+
+diff --git a/dbus/bus.cc b/dbus/bus.cc
+index 06ce79c788f786880eeddce3cca53c2564f3eb82..64ab2caf4ece3070e69ee032ef58aa9f1289b644 100644
+--- a/dbus/bus.cc
++++ b/dbus/bus.cc
+@@ -177,7 +177,8 @@ Bus::Bus(Options options)
+       shutdown_completed_(false),
+       num_pending_watches_(0),
+       num_pending_timeouts_(0),
+-      address_(options.address) {
++      address_(options.address),
++      on_disconnected_(std::move(options.disconnected_callback)) {
+   // This is safe to call multiple times.
+   dbus_threads_init_default();
+   // The origin message loop is unnecessary if the client uses synchronous
+@@ -1151,6 +1152,14 @@ void Bus::OnDispatchStatusChanged(DBusConnection* connection,
+       FROM_HERE, base::BindOnce(&Bus::ProcessAllIncomingDataIfAny, this));
+ }
+ 
++void Bus::OnConnectionDisconnected() {
++  AssertOnDBusThread();
++  if (!on_disconnected_) {
++    LOG(FATAL) << "D-Bus connection was disconnected. Aborting.";
++  }
++  GetOriginTaskRunner()->PostTask(FROM_HERE, std::move(on_disconnected_));
++}
++
+ void Bus::OnServiceOwnerChanged(DBusMessage* message) {
+   DCHECK(message);
+   AssertOnDBusThread();
+@@ -1238,11 +1247,9 @@ DBusHandlerResult Bus::OnConnectionDisconnectedFilter(
+     DBusConnection* connection,
+     DBusMessage* message,
+     void* data) {
+-  if (dbus_message_is_signal(message,
+-                             DBUS_INTERFACE_LOCAL,
++  if (dbus_message_is_signal(message, DBUS_INTERFACE_LOCAL,
+                              kDisconnectedSignal)) {
+-    // Abort when the connection is lost.
+-    LOG(FATAL) << "D-Bus connection was disconnected. Aborting.";
++    static_cast<Bus*>(data)->OnConnectionDisconnected();
+   }
+   return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+ }
+diff --git a/dbus/bus.h b/dbus/bus.h
+index a3f4fdcb0db87c9502e5d31ea680fda5edd1319e..d3160b2d916ef5fcbebf153e725d4561fe3cd811 100644
+--- a/dbus/bus.h
++++ b/dbus/bus.h
+@@ -222,6 +222,11 @@ class CHROME_DBUS_EXPORT Bus : public base::RefCountedThreadSafe<Bus> {
+     //   // Do something.
+     //
+     std::string address;
++
++    // Called on the origin thread when the connection to the bus is lost. The
++    // process cannot meaningfully use this Bus afterwards, so the callback is
++    // expected to shut down; when it is null, losing the connection is fatal.
++    base::OnceClosure disconnected_callback;
+   };
+ 
+   // Creates a Bus object. The actual connection will be established when
+@@ -715,6 +720,9 @@ class CHROME_DBUS_EXPORT Bus : public base::RefCountedThreadSafe<Bus> {
+   void OnDispatchStatusChanged(DBusConnection* connection,
+                                DBusDispatchStatus status);
+ 
++  // Called when the connection to the bus is lost.
++  void OnConnectionDisconnected();
++
+   // Called when a service owner change occurs.
+   void OnServiceOwnerChanged(DBusMessage* message);
+ 
+@@ -802,6 +810,7 @@ class CHROME_DBUS_EXPORT Bus : public base::RefCountedThreadSafe<Bus> {
+   int num_pending_timeouts_;
+ 
+   std::string address_;
++  base::OnceClosure on_disconnected_;
+ };
+ 
+ }  // namespace dbus

@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 19 Aug 2026 10:50:09 +0000
+Subject: chore: let the embedder handle shared D-Bus disconnects
+
+The shared session and system buses from dbus_thread_linux are created
+with fixed Bus::Options, so an embedder cannot pass
+Bus::Options::disconnected_callback to them. Add
+dbus_thread_linux::SetDisconnectedCallback() for the embedder to install
+one process-wide handler; when none is set the buses keep their FATAL.
+
+Downstream only: upstream is replacing these lazy statics
+(https://chromium-review.googlesource.com/c/chromium/src/+/8009126) and
+the callback will be passed at creation once that lands.
+
+diff --git a/components/dbus/thread_linux/dbus_thread_linux.cc b/components/dbus/thread_linux/dbus_thread_linux.cc
+index 40385642ae3bee53df29142ef600443d68486391..fc83a4b0261bcbc2e9f06b8ada344c3176932955 100644
+--- a/components/dbus/thread_linux/dbus_thread_linux.cc
++++ b/components/dbus/thread_linux/dbus_thread_linux.cc
+@@ -6,6 +6,9 @@
+ 
+ #include <utility>
+ 
++#include "base/functional/bind.h"
++#include "base/functional/callback.h"
++#include "base/logging.h"
+ #include "base/no_destructor.h"
+ #include "base/synchronization/lock.h"
+ #include "base/task/lazy_thread_pool_task_runner.h"
+@@ -32,6 +35,19 @@ scoped_refptr<dbus::Bus>& GetSharedSystemBusRefPtrInstance() {
+   return *bus;
+ }
+ 
++base::RepeatingClosure& GetDisconnectedCallbackInstance() {
++  static base::NoDestructor<base::RepeatingClosure> callback;
++  return *callback;
++}
++
++void OnSharedBusDisconnected() {
++  auto& callback = GetDisconnectedCallbackInstance();
++  if (!callback) {
++    LOG(FATAL) << "D-Bus connection was disconnected. Aborting.";
++  }
++  callback.Run();
++}
++
+ // Use TaskPriority::USER_BLOCKING, because there is a client
+ // (NotificationPlatformBridgeLinuxImpl) which needs to run user-blocking tasks
+ // on this thread. Use SingleThreadTaskRunnerThreadMode::SHARED, because DBus
+@@ -47,6 +63,7 @@ scoped_refptr<dbus::Bus> CreateSharedBus(dbus::Bus::BusType bus_type) {
+   options.bus_type = bus_type;
+   options.connection_type = dbus::Bus::PRIVATE;
+   options.dbus_task_runner = g_dbus_thread_task_runner.Get();
++  options.disconnected_callback = base::BindOnce(&OnSharedBusDisconnected);
+   return base::MakeRefCounted<dbus::Bus>(std::move(options));
+ }
+ 
+@@ -72,6 +89,10 @@ scoped_refptr<dbus::Bus> GetSharedSystemBus() {
+   return system_bus;
+ }
+ 
++void SetDisconnectedCallback(base::RepeatingClosure callback) {
++  GetDisconnectedCallbackInstance() = std::move(callback);
++}
++
+ void ShutdownOnDBusThreadAndBlock() {
+   if (auto& session_bus = GetSharedSessionBusRefPtrInstance()) {
+     session_bus->ShutdownOnDBusThreadAndBlock();
+diff --git a/components/dbus/thread_linux/dbus_thread_linux.h b/components/dbus/thread_linux/dbus_thread_linux.h
+index 9edf96b4a5399b20cf9f2f9343d81a900c20ea5d..bf7465ad705279e5af234d51c549c0a06051085a 100644
+--- a/components/dbus/thread_linux/dbus_thread_linux.h
++++ b/components/dbus/thread_linux/dbus_thread_linux.h
+@@ -6,6 +6,7 @@
+ #define COMPONENTS_DBUS_THREAD_LINUX_DBUS_THREAD_LINUX_H_
+ 
+ #include "base/component_export.h"
++#include "base/functional/callback_forward.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "build/build_config.h"
+ 
+@@ -29,6 +30,13 @@ scoped_refptr<dbus::Bus> GetSharedSessionBus();
+ COMPONENT_EXPORT(COMPONENTS_DBUS)
+ scoped_refptr<dbus::Bus> GetSharedSystemBus();
+ 
++// Sets |callback| to run on the UI thread when a shared bus loses its
++// connection, e.g. because the desktop session is ending. The process cannot
++// keep using the bus after that, so |callback| should exit; if none is set,
++// losing the connection is fatal. Must be called on the UI thread.
++COMPONENT_EXPORT(COMPONENTS_DBUS)
++void SetDisconnectedCallback(base::RepeatingClosure callback);
++
+ // Shuts down the shared session and system buses. Must be called on the UI
+ // thread. This is intended to be called late in browser shutdown, or
+ // in tests before task environments are destroyed.
