@@ -26,6 +26,10 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/thread_restrictions.h"
 
+#if BUILDFLAG(IS_LINUX)
+#include "components/dbus/xdg/request.h"
+#endif
+
 namespace electron {
 
 LoginItemSettings::LoginItemSettings() = default;

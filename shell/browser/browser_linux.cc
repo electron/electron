@@ -6,7 +6,10 @@
 
 #include <fcntl.h>
 
+#include <optional>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #if BUILDFLAG(IS_LINUX)
 #include <gio/gdesktopappinfo.h>
@@ -16,8 +19,17 @@
 
 #include "base/environment.h"
 #include "base/files/file_path.h"
+#include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "components/dbus/utils/variant.h"
+#include "components/dbus/xdg/portal.h"
+#include "components/dbus/xdg/request.h"
+#include "dbus/bus.h"
+#include "dbus/object_path.h"
+#include "dbus/object_proxy.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/linux/launcher_entry.h"
@@ -40,6 +52,16 @@
 namespace electron {
 
 namespace {
+
+const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
+const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
+const char kFreedesktopPortalBackground[] =
+    "org.freedesktop.portal.Background";
+const char kMethodRequestBackground[] = "RequestBackground";
+
+const char kAutostartKey[] = "autostart";
+const char kBackgroundKey[] = "background";
+const char kCommandlineKey[] = "commandline";
 
 bool SetDefaultWebClient(const std::string& protocol) {
   const auto env = base::Environment::Create();
@@ -158,6 +180,96 @@ bool SetDefaultWebClient(const std::string& protocol) {
   return gfx::Image(image_skia);
 }
 
+std::string QuoteLoginItemCommandLineArg(std::string_view arg) {
+  const bool needs_quotes = arg.empty() || arg.front() == '-' ||
+                            arg.find_first_of(" \t\n\"'\\><~|&;$*?#()`") !=
+                                std::string_view::npos;
+  std::string quoted;
+  quoted.reserve(arg.size() + (needs_quotes ? 2 : 0));
+  if (needs_quotes) {
+    quoted += '"';
+  }
+
+  for (const char c : arg) {
+    if (c == '%') {
+      quoted += "%%";
+      continue;
+    }
+    if (needs_quotes && (c == '"' || c == '`' || c == '$' || c == '\\')) {
+      quoted += '\\';
+    }
+    quoted += c;
+  }
+
+  if (needs_quotes) {
+    quoted += '"';
+  }
+  return quoted;
+}
+
+std::vector<std::string> BuildLoginItemCommandLine(
+    const LoginItemSettings& settings) {
+  std::vector<std::string> commandline;
+  if (settings.path.empty()) {
+    base::FilePath executable_path;
+    if (!base::PathService::Get(base::FILE_EXE, &executable_path)) {
+      return commandline;
+    }
+    commandline.push_back(
+        QuoteLoginItemCommandLineArg(executable_path.value()));
+  } else {
+    commandline.push_back(
+        QuoteLoginItemCommandLineArg(base::UTF16ToUTF8(settings.path)));
+  }
+
+  for (const auto& arg : settings.args) {
+    commandline.push_back(QuoteLoginItemCommandLineArg(base::UTF16ToUTF8(arg)));
+  }
+
+  return commandline;
+}
+
+std::optional<bool> TakeLoginItemPortalResponseBool(
+    dbus_xdg::Dictionary& results,
+    const std::string& key) {
+  auto iter = results.find(key);
+  if (iter == results.end()) {
+    return std::nullopt;
+  }
+
+  return std::move(iter->second).Take<bool>();
+}
+
+void LogLoginItemPortalResponse(bool open_at_login,
+                                dbus_xdg::Results results) {
+  if (!results.has_value()) {
+    VLOG(1) << "Failed to set login item with XDG Background portal: "
+            << static_cast<int>(results.error());
+    return;
+  }
+
+  dbus_xdg::Dictionary response = std::move(results).value();
+  std::optional<bool> background =
+      TakeLoginItemPortalResponseBool(response, kBackgroundKey);
+  std::optional<bool> autostart =
+      TakeLoginItemPortalResponseBool(response, kAutostartKey);
+
+  if (!background || !autostart) {
+    VLOG(1) << "XDG Background portal response was missing login item state.";
+    return;
+  }
+
+  if (*autostart != open_at_login) {
+    VLOG(1) << "XDG Background portal reported autostart=" << *autostart
+            << " after Electron requested autostart=" << open_at_login << ".";
+  }
+
+  if (open_at_login && !*background) {
+    VLOG(1) << "XDG Background portal allowed autostart without background "
+               "activity.";
+  }
+}
+
 }  // namespace
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
@@ -261,7 +373,83 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   return true;
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
+void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  if (login_item_request_in_flight_) {
+    pending_login_item_settings_ = std::move(settings);
+    return;
+  }
+
+  dbus_xdg::Dictionary options;
+  options[kAutostartKey] =
+      dbus_utils::Variant::Wrap<"b">(settings.open_at_login);
+
+  if (settings.open_at_login) {
+    auto commandline = BuildLoginItemCommandLine(settings);
+    if (commandline.empty() || commandline.front().empty()) {
+      VLOG(1) << "Failed to determine executable path for XDG Background "
+                 "portal login item.";
+      return;
+    }
+
+    options[kCommandlineKey] =
+        dbus_utils::Variant::Wrap<"as">(std::move(commandline));
+  }
+
+  auto bus = dbus_thread_linux::GetSharedSessionBus();
+  if (!bus) {
+    VLOG(1) << "Failed to get session D-Bus for XDG Background portal login "
+               "item.";
+    return;
+  }
+
+  login_item_request_in_flight_ = true;
+  dbus_xdg::RequestXdgDesktopPortal(
+      bus.get(),
+      base::BindOnce(
+          [](base::WeakPtr<Browser> browser, scoped_refptr<dbus::Bus> bus,
+             dbus_xdg::Dictionary options, bool open_at_login,
+             uint32_t portal_version) {
+            if (!browser) {
+              return;
+            }
+            if (portal_version == 0) {
+              VLOG(1) << "Failed to initialize XDG portal for login item.";
+              browser->FinishLoginItemPortalRequest();
+              return;
+            }
+
+            auto* object_proxy = bus->GetObjectProxy(
+                kFreedesktopPortalName,
+                dbus::ObjectPath(kFreedesktopPortalPath));
+            browser->login_item_request_ =
+                std::make_unique<dbus_xdg::Request>(
+                    bus, object_proxy, kFreedesktopPortalBackground,
+                    kMethodRequestBackground, std::move(options),
+                    base::BindOnce(
+                        [](base::WeakPtr<Browser> browser, bool open_at_login,
+                           dbus_xdg::Results results) {
+                          LogLoginItemPortalResponse(open_at_login,
+                                                     std::move(results));
+                          if (browser) {
+                            browser->FinishLoginItemPortalRequest();
+                          }
+                        },
+                        browser, open_at_login),
+                    std::string());
+          },
+          login_item_weak_factory_.GetWeakPtr(), std::move(bus),
+          std::move(options), settings.open_at_login));
+}
+
+void Browser::FinishLoginItemPortalRequest() {
+  login_item_request_.reset();
+  login_item_request_in_flight_ = false;
+  if (pending_login_item_settings_) {
+    LoginItemSettings settings = std::move(*pending_login_item_settings_);
+    pending_login_item_settings_.reset();
+    SetLoginItemSettings(std::move(settings));
+  }
+}
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {

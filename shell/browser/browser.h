@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -37,6 +38,10 @@ class Arguments;
 template <typename T>
 class Promise;
 }  // namespace gin_helper
+
+namespace dbus_xdg {
+class Request;
+}  // namespace dbus_xdg
 
 namespace v8 {
 template <typename T>
@@ -391,6 +396,14 @@ class Browser : private WindowListObserver {
   bool was_launched_at_login_;
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+  void FinishLoginItemPortalRequest();
+
+  bool login_item_request_in_flight_ = false;
+  std::optional<LoginItemSettings> pending_login_item_settings_;
+  std::unique_ptr<dbus_xdg::Request> login_item_request_;
+#endif
+
   base::DictValue about_panel_options_;
 
 #if BUILDFLAG(IS_WIN)
@@ -400,6 +413,10 @@ class Browser : private WindowListObserver {
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  base::WeakPtrFactory<Browser> login_item_weak_factory_{this};
 #endif
 };
 

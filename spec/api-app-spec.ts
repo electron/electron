@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
+import * as dbus from 'dbus-native';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -1104,6 +1105,129 @@ describe('app module', () => {
       expect(app.getLoginItemSettings()).to.deep.equal(expectation);
     });
   });
+
+  ifdescribe(process.platform === 'linux' && !!process.env.DBUS_SESSION_BUS_ADDRESS)(
+    'app.setLoginItemSettings API (Linux portal)',
+    () => {
+      const serviceName = 'org.freedesktop.portal.Desktop';
+      const portalPath = '/org/freedesktop/portal/desktop';
+      const mockInterfaceName = 'org.freedesktop.DBus.Mock';
+
+      let getCalls: () => Promise<any[]>;
+      let clearCalls: () => Promise<void>;
+      let originalDesktopName: string | undefined;
+
+      before(async () => {
+        originalDesktopName = process.env.CHROME_DESKTOP;
+        app.setDesktopName('electron-api-app-spec.desktop');
+
+        const bus = dbus.sessionBus();
+        const service = bus.getService(serviceName);
+        const getInterface = promisify(service.getInterface.bind(service));
+        const mock: any = await getInterface(portalPath, mockInterfaceName);
+        getCalls = promisify(mock.GetCalls.bind(mock));
+        clearCalls = promisify(mock.ClearCalls.bind(mock));
+      });
+
+      after(() => {
+        if (originalDesktopName === undefined) {
+          delete process.env.CHROME_DESKTOP;
+        } else {
+          process.env.CHROME_DESKTOP = originalDesktopName;
+        }
+      });
+
+      beforeEach(async () => {
+        await clearCalls();
+      });
+
+      async function waitForPortalCall(methodName: string) {
+        await waitUntil(async () => {
+          const calls = await getCalls();
+          return calls.some((call) => call[1] === methodName);
+        });
+
+        const calls = await getCalls();
+        const matchingCalls = calls.filter((call) => call[1] === methodName);
+        // Let the mock response complete so the next test starts without an
+        // in-flight request.
+        await setTimeout(100);
+        return matchingCalls[matchingCalls.length - 1];
+      }
+
+      function unmarshalDBusValue(value: any): any {
+        if (
+          Array.isArray(value) &&
+          value.length === 2 &&
+          typeof value[0] !== 'string' &&
+          Array.isArray(value[1]) &&
+          value[1].length === 1
+        ) {
+          return unmarshalDBusValue(value[1][0]);
+        }
+
+        if (Array.isArray(value)) {
+          const isDictionary =
+            value.length > 0 &&
+            value.every((entry) => {
+              return Array.isArray(entry) && entry.length === 2 && typeof entry[0] === 'string';
+            });
+          if (isDictionary) {
+            return Object.fromEntries(
+              value.map(([key, entryValue]: [string, any]) => [key, unmarshalDBusValue(entryValue)])
+            );
+          }
+
+          return value.map(unmarshalDBusValue);
+        }
+
+        return value;
+      }
+
+      function unmarshalOptions(call: any) {
+        return unmarshalDBusValue(call[2][1]);
+      }
+
+      it('defaults the commandline to process.execPath', async () => {
+        app.setLoginItemSettings({ openAtLogin: true });
+
+        const call = await waitForPortalCall('RequestBackground');
+        const options = unmarshalOptions(call);
+
+        expect(options.autostart).to.equal(true);
+        expect(options.commandline).to.deep.equal([process.execPath]);
+      });
+
+      it('escapes a custom commandline for a desktop Exec entry', async () => {
+        const executable = '/tmp/electron app';
+        const args = ['--flag=value with spaces', '100%', ''];
+
+        app.setLoginItemSettings({ openAtLogin: true, path: executable, args });
+
+        const call = await waitForPortalCall('RequestBackground');
+        const options = unmarshalOptions(call);
+
+        expect(options.autostart).to.equal(true);
+        expect(options.commandline).to.deep.equal(['"/tmp/electron app"', '"--flag=value with spaces"', '100%%', '""']);
+      });
+
+      it('applies the latest setting after an in-flight request', async () => {
+        app.setLoginItemSettings({ openAtLogin: true });
+        app.setLoginItemSettings({ openAtLogin: false });
+
+        await waitUntil(async () => {
+          const calls = await getCalls();
+          return calls.filter((call) => call[1] === 'RequestBackground').length === 2;
+        });
+        const calls = await getCalls();
+        const requestCalls = calls.filter((call) => call[1] === 'RequestBackground');
+        const options = unmarshalOptions(requestCalls[1]);
+
+        expect(options.autostart).to.equal(false);
+        expect(options).to.not.have.property('commandline');
+      });
+    }
+  );
 
   ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
     it('is mutable', () => {
