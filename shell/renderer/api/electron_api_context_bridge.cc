@@ -374,11 +374,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::LocalVector<v8::Value> cloned(isolate);
     cloned.reserve(length);
     for (size_t i = 0; i < length; i++) {
+      // Reading an index can run a user-defined accessor which may throw, so
+      // this must not be ToLocalChecked(). If it throws, bail out and let the
+      // pending exception propagate to the caller like any other conversion
+      // failure.
+      v8::Local<v8::Value> element;
+      if (!arr->Get(source_context, i).ToLocal(&element))
+        return {};
       auto value_for_array = PassValueToOtherContextInner(
           isolate, source_context, source_execution_context,
-          destination_context, arr->Get(source_context, i).ToLocalChecked(),
-          value, object_cache, support_dynamic_properties, recursion_depth + 1,
-          error_target);
+          destination_context, element, value, object_cache,
+          support_dynamic_properties, recursion_depth + 1, error_target);
       if (value_for_array.IsEmpty())
         return {};
       cloned.push_back(value_for_array.ToLocalChecked());
