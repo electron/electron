@@ -8,12 +8,15 @@
 #include <string>
 #include <utility>
 
+#include "base/clang_profiling_buildflags.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
+#include "base/run_loop.h"
 #include "base/strings/string_util.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_restrictions.h"
+#include "build/config/compiler/compiler_buildflags.h"
 #include "chrome/common/chrome_paths.h"
 #include "gin/arguments.h"
 #include "shell/browser/browser_observer.h"
@@ -24,6 +27,10 @@
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/thread_restrictions.h"
+
+#if BUILDFLAG(CLANG_PROFILING_INSIDE_SANDBOX) && BUILDFLAG(CLANG_PGO_PROFILING)
+#include "content/public/browser/profiling_utils.h"
+#endif
 
 namespace electron {
 
@@ -163,6 +170,21 @@ void Browser::Shutdown() {
   is_quitting_ = true;
 
   observers_.Notify(&BrowserObserver::OnQuit);
+
+#if BUILDFLAG(CLANG_PROFILING_INSIDE_SANDBOX) && BUILDFLAG(CLANG_PGO_PROFILING)
+  // In PGO-instrumented builds, sandboxed child processes write their
+  // profile counters through a file handle the browser gave them, and they
+  // only do so when asked or when they exit cleanly. Once the browser quits
+  // its message loop the sandbox job object kills any child still writing,
+  // which truncates the profraw and loses the renderer's counters. Mirror
+  // chrome/browser/lifetime/browser_shutdown.cc: ask every child to dump now
+  // and wait for all of them before continuing with shutdown.
+  if (base::SingleThreadTaskRunner::HasCurrentDefault()) {
+    base::RunLoop nested_run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    content::AskAllChildrenToDumpProfilingData(nested_run_loop.QuitClosure());
+    nested_run_loop.Run();
+  }
+#endif
 
   if (quit_main_message_loop_) {
     RunQuitClosure(std::move(quit_main_message_loop_));
