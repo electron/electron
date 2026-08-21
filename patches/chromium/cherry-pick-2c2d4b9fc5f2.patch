@@ -1,0 +1,531 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Mon, 17 Aug 2026 18:56:57 -0700
+Subject: [M150] Consolidate and pass file_url_support to WorkerScriptFetcher
+
+Original change's description:
+> Consolidate and pass file_url_support to WorkerScriptFetcher
+>
+> This CL cleans up and consolidates the file URL support handling for
+> dedicated and shared worker script and subresource loading:
+>
+> 1. Introduce DoesCreatorAllowFileUrlSupport helper in worker_util to
+>    centralize file URL support checks across creator contexts (handling
+>    command line switches, WebPreferences, and nested worker inheritance).
+> 2. Update WorkerScriptFetcher::CreateAndStart to take file_url_support
+>    directly from callers (DedicatedWorkerHost and
+>    SharedWorkerServiceImpl), removing redundant recalculations.
+> 3. Add unit tests in WorkerUtilTest and DedicatedWorkerServiceImplTest
+>    to verify file URL support behavior.
+>
+> TAG=agy
+> CONV=6a5aeada-8c83-4b37-8615-53f25113df32
+>
+> Bug: 539032888
+> Change-Id: I403e96584b67fb6f0a240ac4ef51de7577c4c793
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8182027
+> Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+> Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+> Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1673207}
+
+(cherry picked from commit a14280eb93e574171c55abe6e7c4470a1b221f02)
+
+Bug: 546215880,539032888
+Change-Id: I403e96584b67fb6f0a240ac4ef51de7577c4c793
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8253620
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4308}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
+index 59aa1081af9e40a869209f4bd4f8dc13ba843f43..de55e15b6addb1f0301fdbc411b2ce856177dc15 100644
+--- a/content/browser/worker_host/dedicated_worker_host.cc
++++ b/content/browser/worker_host/dedicated_worker_host.cc
+@@ -9,6 +9,7 @@
+ #include <utility>
+ #include <variant>
+ 
++#include "base/command_line.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/safety_checks.h"
+@@ -38,6 +39,7 @@
+ #include "content/browser/worker_host/dedicated_worker_hosts_for_document.h"
+ #include "content/browser/worker_host/dedicated_worker_service_impl.h"
+ #include "content/browser/worker_host/worker_script_fetcher.h"
++#include "content/browser/worker_host/worker_util.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/network_service_util.h"
+@@ -47,6 +49,7 @@
+ #include "content/public/browser/site_isolation_policy.h"
+ #include "content/public/common/child_process_id_util.h"
+ #include "content/public/common/content_client.h"
++#include "content/public/common/content_switches.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+ #include "net/base/isolation_info.h"
+@@ -63,6 +66,7 @@
+ #include "third_party/blink/public/common/service_worker/service_worker_scope_match.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/common/tokens/tokens.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/back_forward_cache_not_restored_reasons.mojom.h"
+ #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+ #include "third_party/blink/public/mojom/loader/fetch_client_settings_object.mojom.h"
+@@ -356,7 +360,13 @@ void DedicatedWorkerHost::StartScriptLoad(
+   // initiator origin to keep consistency with WorkerScriptFetcher, but probably
+   // this should be calculated based on the worker origin as the factories be
+   // used for subresource loading on the worker.
+-  file_url_support_ = creator_origin_.scheme() == url::kFileScheme;
++  std::optional<blink::web_pref::WebPreferences> web_preferences;
++  if (creator_render_frame_host) {
++    web_preferences = creator_render_frame_host->GetOrCreateWebPreferences();
++  }
++  file_url_support_ = DoesCreatorAllowFileUrlSupport(
++      creator_origin_, web_preferences ? &*web_preferences : nullptr,
++      creator_worker ? creator_worker->file_url_support() : false);
+ 
+   // For blob URL workers, inherit the controller from the worker's parent.
+   // See https://w3c.github.io/ServiceWorker/#control-and-use-worker-client
+@@ -404,7 +414,7 @@ void DedicatedWorkerHost::StartScriptLoad(
+       nearest_ancestor_render_frame_host->GetIsolationInfoForSubresources(),
+       std::move(client_security_state), credentials_mode,
+       std::move(outside_fetch_client_settings_object),
+-      network::mojom::RequestDestination::kWorker,
++      network::mojom::RequestDestination::kWorker, file_url_support_,
+       storage_partition_impl->GetServiceWorkerContext(),
+       service_worker_handle_.get(), std::move(blob_url_loader_factory), nullptr,
+       storage_partition_impl, partition_domain,
+diff --git a/content/browser/worker_host/dedicated_worker_host.h b/content/browser/worker_host/dedicated_worker_host.h
+index c085b9e4521838e7f4599f5f832d799cbcb0753c..d91cd535d5eac671e938e1cc572ec1c4d18177ca 100644
+--- a/content/browser/worker_host/dedicated_worker_host.h
++++ b/content/browser/worker_host/dedicated_worker_host.h
+@@ -246,6 +246,8 @@ class CONTENT_EXPORT DedicatedWorkerHost final
+     return service_worker_handle_.get();
+   }
+ 
++  bool file_url_support() const { return file_url_support_; }
++
+ #if BUILDFLAG(ENABLE_COMPUTE_PRESSURE)
+   PressureServiceForDedicatedWorker* pressure_service() {
+     return pressure_service_.get();
+diff --git a/content/browser/worker_host/dedicated_worker_service_impl_unittest.cc b/content/browser/worker_host/dedicated_worker_service_impl_unittest.cc
+index 31aeccb0c2f0e0ed0266ca532f4b7eb2840b95c7..855af920629d1332e8b267d021fff56c2af17d44 100644
+--- a/content/browser/worker_host/dedicated_worker_service_impl_unittest.cc
++++ b/content/browser/worker_host/dedicated_worker_service_impl_unittest.cc
+@@ -7,9 +7,11 @@
+ #include <memory>
+ #include <utility>
+ 
++#include "base/command_line.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/run_loop.h"
+ #include "base/scoped_observation.h"
++#include "base/test/scoped_command_line.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "content/browser/site_instance_impl.h"
+ #include "content/browser/storage_partition_impl.h"
+@@ -17,6 +19,7 @@
+ #include "content/browser/worker_host/dedicated_worker_host_factory_impl.h"
+ #include "content/public/browser/storage_partition.h"
+ #include "content/public/common/content_features.h"
++#include "content/public/common/content_switches.h"
+ #include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/test_browser_context.h"
+ #include "content/test/test_render_view_host.h"
+@@ -30,6 +33,7 @@
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/common/tokens/tokens.h"
+ #include "third_party/blink/public/common/tokens/tokens_mojom_traits.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/loader/fetch_client_settings_object.mojom.h"
+ #include "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom.h"
+ #include "third_party/blink/public/mojom/service_worker/service_worker_container.mojom.h"
+@@ -158,6 +162,12 @@ class DedicatedWorkerServiceImplTest
+         ->GetDedicatedWorkerService();
+   }
+ 
++  DedicatedWorkerServiceImpl* GetDedicatedWorkerServiceImpl() const {
++    return static_cast<DedicatedWorkerServiceImpl*>(
++        browser_context_->GetDefaultStoragePartition()
++            ->GetDedicatedWorkerService());
++  }
++
+  private:
+   std::unique_ptr<TestBrowserContext> browser_context_;
+ };
+@@ -288,6 +298,118 @@ TEST_F(DedicatedWorkerServiceImplTest, DedicatedWorkerServiceObserver) {
+   EXPECT_TRUE(observer.dedicated_worker_infos().empty());
+ }
+ 
++TEST_F(DedicatedWorkerServiceImplTest, FileUrlSupportInheritance) {
++  TestDedicatedWorkerServiceObserver observer;
++  base::ScopedObservation<DedicatedWorkerService,
++                          DedicatedWorkerService::Observer>
++      scoped_observation(&observer);
++  scoped_observation.Observe(GetDedicatedWorkerService());
++
++  const GURL kFileUrl("file:///path/to/page.html");
++  const auto origin = url::Origin::Create(kFileUrl);
++  std::unique_ptr<TestWebContents> web_contents = CreateWebContents(kFileUrl);
++  TestRenderFrameHost* rfh = web_contents->GetPrimaryMainFrame();
++
++  // 1. Without switch or web preferences, file_url_support should be false.
++  {
++    auto mock_worker = std::make_unique<MockDedicatedWorker>(
++        rfh->GetProcess()->GetID(), rfh->GetGlobalId(), origin);
++    observer.RunUntilWorkerEvent();
++
++    ASSERT_EQ(observer.dedicated_worker_infos().size(), 1u);
++    blink::DedicatedWorkerToken token =
++        observer.dedicated_worker_infos().begin()->first;
++    DedicatedWorkerHost* host =
++        GetDedicatedWorkerServiceImpl()->GetDedicatedWorkerHostFromToken(token);
++    ASSERT_TRUE(host);
++    EXPECT_FALSE(host->file_url_support());
++
++    mock_worker = nullptr;
++    observer.RunUntilWorkerEvent();
++    EXPECT_TRUE(observer.dedicated_worker_infos().empty());
++  }
++
++  // 2. With WebPreferences::allow_file_access_from_file_urls, file_url_support
++  // should be true.
++  {
++    blink::web_pref::WebPreferences prefs =
++        web_contents->GetOrCreateWebPreferences();
++    prefs.allow_file_access_from_file_urls = true;
++    web_contents->SetWebPreferences(prefs);
++
++    auto mock_worker = std::make_unique<MockDedicatedWorker>(
++        rfh->GetProcess()->GetID(), rfh->GetGlobalId(), origin);
++    observer.RunUntilWorkerEvent();
++
++    ASSERT_EQ(observer.dedicated_worker_infos().size(), 1u);
++    blink::DedicatedWorkerToken token =
++        observer.dedicated_worker_infos().begin()->first;
++    DedicatedWorkerHost* host =
++        GetDedicatedWorkerServiceImpl()->GetDedicatedWorkerHostFromToken(token);
++    ASSERT_TRUE(host);
++    EXPECT_TRUE(host->file_url_support());
++
++    mock_worker = nullptr;
++    observer.RunUntilWorkerEvent();
++    EXPECT_TRUE(observer.dedicated_worker_infos().empty());
++
++    prefs.allow_file_access_from_file_urls = false;
++    web_contents->SetWebPreferences(prefs);
++  }
++
++  // 3. With WebPreferences::allow_universal_access_from_file_urls,
++  // file_url_support should be true.
++  {
++    blink::web_pref::WebPreferences prefs =
++        web_contents->GetOrCreateWebPreferences();
++    prefs.allow_universal_access_from_file_urls = true;
++    web_contents->SetWebPreferences(prefs);
++
++    auto mock_worker = std::make_unique<MockDedicatedWorker>(
++        rfh->GetProcess()->GetID(), rfh->GetGlobalId(), origin);
++    observer.RunUntilWorkerEvent();
++
++    ASSERT_EQ(observer.dedicated_worker_infos().size(), 1u);
++    blink::DedicatedWorkerToken token =
++        observer.dedicated_worker_infos().begin()->first;
++    DedicatedWorkerHost* host =
++        GetDedicatedWorkerServiceImpl()->GetDedicatedWorkerHostFromToken(token);
++    ASSERT_TRUE(host);
++    EXPECT_TRUE(host->file_url_support());
++
++    mock_worker = nullptr;
++    observer.RunUntilWorkerEvent();
++    EXPECT_TRUE(observer.dedicated_worker_infos().empty());
++
++    prefs.allow_universal_access_from_file_urls = false;
++    web_contents->SetWebPreferences(prefs);
++  }
++
++  // 4. With switches::kAllowFileAccessFromFiles, file_url_support should be
++  // true.
++  {
++    base::test::ScopedCommandLine scoped_command_line;
++    scoped_command_line.GetProcessCommandLine()->AppendSwitch(
++        switches::kAllowFileAccessFromFiles);
++
++    auto mock_worker = std::make_unique<MockDedicatedWorker>(
++        rfh->GetProcess()->GetID(), rfh->GetGlobalId(), origin);
++    observer.RunUntilWorkerEvent();
++
++    ASSERT_EQ(observer.dedicated_worker_infos().size(), 1u);
++    blink::DedicatedWorkerToken token =
++        observer.dedicated_worker_infos().begin()->first;
++    DedicatedWorkerHost* host =
++        GetDedicatedWorkerServiceImpl()->GetDedicatedWorkerHostFromToken(token);
++    ASSERT_TRUE(host);
++    EXPECT_TRUE(host->file_url_support());
++
++    mock_worker = nullptr;
++    observer.RunUntilWorkerEvent();
++    EXPECT_TRUE(observer.dedicated_worker_infos().empty());
++  }
++}
++
+ class DedicatedWorkerHostFactoryImplTest
+     : public RenderViewHostImplTestHarness {
+  public:
+diff --git a/content/browser/worker_host/shared_worker_service_impl.cc b/content/browser/worker_host/shared_worker_service_impl.cc
+index c518099a9943da000968894b9f1df4c8c5eb163a..f816336bf836917fc483fa53e3652f5c6c965917 100644
+--- a/content/browser/worker_host/shared_worker_service_impl.cc
++++ b/content/browser/worker_host/shared_worker_service_impl.cc
+@@ -11,6 +11,7 @@
+ #include <string>
+ 
+ #include "base/check_op.h"
++#include "base/command_line.h"
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+@@ -48,6 +49,7 @@
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/messaging/message_port_channel.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/loader/fetch_client_settings_object.mojom.h"
+ #include "third_party/blink/public/mojom/script/script_type.mojom.h"
+ #include "third_party/blink/public/mojom/worker/shared_worker_client.mojom.h"
+@@ -507,6 +509,12 @@ SharedWorkerHost* SharedWorkerServiceImpl::CreateWorker(
+       << host->instance().creator_storage_key().origin()
+       << " should be the same.";
+ 
++  const blink::web_pref::WebPreferences& prefs =
++      creator.GetOrCreateWebPreferences();
++  bool file_url_support = DoesCreatorAllowFileUrlSupport(
++      host->instance().creator_storage_key().origin(), &prefs,
++      /*creator_worker_has_file_url_support=*/false);
++
+   WorkerScriptFetcher::CreateAndStart(
+       worker_process_host->GetDeprecatedID(), host->token(),
+       host->instance().url(), creator, &creator, /*creator_worker=*/nullptr,
+@@ -518,7 +526,7 @@ SharedWorkerHost* SharedWorkerServiceImpl::CreateWorker(
+       host->instance().worker_storage_key().ToPartialNetIsolationInfo(),
+       creator.BuildClientSecurityStateForWorkers(), credentials_mode,
+       std::move(outside_fetch_client_settings_object),
+-      network::mojom::RequestDestination::kSharedWorker,
++      network::mojom::RequestDestination::kSharedWorker, file_url_support,
+       service_worker_context_, service_worker_handle_raw,
+       std::move(blob_url_loader_factory), url_loader_factory_override_,
+       storage_partition_, storage_domain,
+diff --git a/content/browser/worker_host/worker_script_fetcher.cc b/content/browser/worker_host/worker_script_fetcher.cc
+index 8221dd0d67c81cedde1435487f80a8da83201ae4..16393bea76f134e8203b48b089f6c3999bdab30a 100644
+--- a/content/browser/worker_host/worker_script_fetcher.cc
++++ b/content/browser/worker_host/worker_script_fetcher.cc
+@@ -268,6 +268,7 @@ void WorkerScriptFetcher::CreateAndStart(
+     blink::mojom::FetchClientSettingsObjectPtr
+         outside_fetch_client_settings_object,
+     network::mojom::RequestDestination request_destination,
++    bool file_url_support,
+     scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
+     ServiceWorkerMainResourceHandle* service_worker_handle,
+     scoped_refptr<network::SharedURLLoaderFactory> blob_url_loader_factory,
+@@ -298,9 +299,6 @@ void WorkerScriptFetcher::CreateAndStart(
+     return;
+   }
+ 
+-  bool constructor_uses_file_url =
+-      request_initiator.scheme() == url::kFileScheme;
+-
+   // TODO(crbug.com/41472712): Filesystem URL support on shared workers
+   // are now broken.
+   bool filesystem_url_support =
+@@ -313,13 +311,13 @@ void WorkerScriptFetcher::CreateAndStart(
+   std::unique_ptr<blink::PendingURLLoaderFactoryBundle>
+       factory_bundle_for_browser = CreateFactoryBundle(
+           LoaderType::kMainResource, worker_process_id, storage_partition,
+-          storage_domain, constructor_uses_file_url, filesystem_url_support,
++          storage_domain, file_url_support, filesystem_url_support,
+           creator_render_frame_host, request_initiator_storage_key,
+           request_destination);
+   std::unique_ptr<blink::PendingURLLoaderFactoryBundle>
+       subresource_loader_factories = CreateFactoryBundle(
+           LoaderType::kSubResource, worker_process_id, storage_partition,
+-          storage_domain, constructor_uses_file_url, filesystem_url_support,
++          storage_domain, file_url_support, filesystem_url_support,
+           creator_render_frame_host, request_initiator_storage_key,
+           request_destination);
+ 
+diff --git a/content/browser/worker_host/worker_script_fetcher.h b/content/browser/worker_host/worker_script_fetcher.h
+index 2490ed3a4d714152a2011102e4a83c838ee18a00..b56ac491dd5c6ebce57dc75db6bb47ecb2ac7984 100644
+--- a/content/browser/worker_host/worker_script_fetcher.h
++++ b/content/browser/worker_host/worker_script_fetcher.h
+@@ -137,6 +137,7 @@ class WorkerScriptFetcher : public network::mojom::URLLoaderClient {
+       blink::mojom::FetchClientSettingsObjectPtr
+           outside_fetch_client_settings_object,
+       network::mojom::RequestDestination request_destination,
++      bool file_url_support,
+       scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
+       ServiceWorkerMainResourceHandle* service_worker_handle,
+       scoped_refptr<network::SharedURLLoaderFactory> blob_url_loader_factory,
+diff --git a/content/browser/worker_host/worker_util.cc b/content/browser/worker_host/worker_util.cc
+index 4cd7ae7e6fc740d1022ee6c8cca153ec54146f6b..2ee4e8686d3370df5b6e886dfb5dfcc3d8c7a231 100644
+--- a/content/browser/worker_host/worker_util.cc
++++ b/content/browser/worker_host/worker_util.cc
+@@ -4,9 +4,12 @@
+ 
+ #include "content/browser/worker_host/worker_util.h"
+ 
++#include "base/command_line.h"
+ #include "base/feature_list.h"
++#include "content/public/common/content_switches.h"
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/storage_key/ancestor_chain_bit.mojom.h"
+ #include "url/gurl.h"
+ #include "url/origin.h"
+@@ -42,4 +45,22 @@ url::Origin CalculateWorkerRendererOrigin(
+   return worker_storage_key.origin();
+ }
+ 
++bool DoesCreatorAllowFileUrlSupport(
++    const url::Origin& creator_origin,
++    const blink::web_pref::WebPreferences* web_preferences,
++    bool creator_worker_has_file_url_support) {
++  if (creator_origin.scheme() != url::kFileScheme) {
++    return false;
++  }
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
++          switches::kAllowFileAccessFromFiles)) {
++    return true;
++  }
++  if (web_preferences) {
++    return web_preferences->allow_file_access_from_file_urls ||
++           web_preferences->allow_universal_access_from_file_urls;
++  }
++  return creator_worker_has_file_url_support;
++}
++
+ }  // namespace content
+diff --git a/content/browser/worker_host/worker_util.h b/content/browser/worker_host/worker_util.h
+index 6e37519cc224dbd25517d0e9905f2a6f32b34881..d62f3d1461fbcb7a9221214c6c82a345cbf85dfe 100644
+--- a/content/browser/worker_host/worker_util.h
++++ b/content/browser/worker_host/worker_util.h
+@@ -7,6 +7,11 @@
+ #include "content/common/content_export.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "url/gurl.h"
++#include "url/origin.h"
++
++namespace blink::web_pref {
++struct WebPreferences;
++}  // namespace blink::web_pref
+ 
+ namespace content {
+ 
+@@ -39,6 +44,18 @@ CONTENT_EXPORT url::Origin CalculateWorkerRendererOrigin(
+     const blink::StorageKey& worker_storage_key,
+     bool is_opaque_origin_enabled);
+ 
++// Returns whether the worker should be allowed to load file URLs.
++// This is allowed only when `creator_origin` is a file URL and at least one of
++// the following conditions is met:
++// - The --allow-file-access-from-files command-line switch is present.
++// - `web_preferences` allows file access from file URLs or universal access
++//   from file URLs.
++// - `creator_worker_has_file_url_support` is true.
++CONTENT_EXPORT bool DoesCreatorAllowFileUrlSupport(
++    const url::Origin& creator_origin,
++    const blink::web_pref::WebPreferences* web_preferences,
++    bool creator_worker_has_file_url_support = false);
++
+ }  // namespace content
+ 
+ #endif  // CONTENT_BROWSER_WORKER_HOST_WORKER_UTIL_H_
+diff --git a/content/browser/worker_host/worker_util_unittest.cc b/content/browser/worker_host/worker_util_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1de76cb810e2dc995e9af7fd25e851938c7dced
+--- /dev/null
++++ b/content/browser/worker_host/worker_util_unittest.cc
+@@ -0,0 +1,68 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/worker_host/worker_util.h"
++
++#include "base/command_line.h"
++#include "base/test/scoped_command_line.h"
++#include "content/public/common/content_switches.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
++#include "url/gurl.h"
++#include "url/origin.h"
++
++namespace content {
++
++TEST(WorkerUtilTest, DoesCreatorAllowFileUrlSupport) {
++  const url::Origin kHttpOrigin =
++      url::Origin::Create(GURL("http://example.com"));
++  const url::Origin kFileOrigin =
++      url::Origin::Create(GURL("file:///path/to/page.html"));
++
++  blink::web_pref::WebPreferences default_prefs;
++  blink::web_pref::WebPreferences allow_file_prefs;
++  allow_file_prefs.allow_file_access_from_file_urls = true;
++  blink::web_pref::WebPreferences allow_universal_prefs;
++  allow_universal_prefs.allow_universal_access_from_file_urls = true;
++
++  // 1. Non-file origin should never allow file URL support.
++  EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(kHttpOrigin, &default_prefs));
++  EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(kHttpOrigin, &allow_file_prefs));
++  EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(
++      kHttpOrigin, /*web_preferences=*/nullptr,
++      /*creator_worker_has_file_url_support=*/true));
++
++  // 2. File origin without flags/preferences or parent support should be false.
++  EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(kFileOrigin, &default_prefs));
++  EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(
++      kFileOrigin, /*web_preferences=*/nullptr,
++      /*creator_worker_has_file_url_support=*/false));
++
++  // 3. File origin with WebPreferences::allow_file_access_from_file_urls.
++  EXPECT_TRUE(DoesCreatorAllowFileUrlSupport(kFileOrigin, &allow_file_prefs));
++
++  // 4. File origin with WebPreferences::allow_universal_access_from_file_urls.
++  EXPECT_TRUE(
++      DoesCreatorAllowFileUrlSupport(kFileOrigin, &allow_universal_prefs));
++
++  // 5. File origin inheriting from creator worker with file URL support.
++  EXPECT_TRUE(DoesCreatorAllowFileUrlSupport(
++      kFileOrigin, /*web_preferences=*/nullptr,
++      /*creator_worker_has_file_url_support=*/true));
++
++  // 6. File origin with switches::kAllowFileAccessFromFiles.
++  {
++    base::test::ScopedCommandLine scoped_command_line;
++    scoped_command_line.GetProcessCommandLine()->AppendSwitch(
++        switches::kAllowFileAccessFromFiles);
++    EXPECT_TRUE(DoesCreatorAllowFileUrlSupport(kFileOrigin, &default_prefs));
++    EXPECT_TRUE(DoesCreatorAllowFileUrlSupport(
++        kFileOrigin, /*web_preferences=*/nullptr,
++        /*creator_worker_has_file_url_support=*/false));
++    // Even with the switch, non-file origins should still be rejected.
++    EXPECT_FALSE(DoesCreatorAllowFileUrlSupport(kHttpOrigin, &default_prefs));
++  }
++}
++
++}  // namespace content
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index a343523ea2de0d6fc952022c3c5a73b9ec52f26a..101b329d6b5af6743a9f6ab8dd095ac8fe8fe2cf 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -3115,6 +3115,7 @@ test("content_unittests") {
+     "../browser/worker_host/shared_worker_service_impl_unittest.cc",
+     "../browser/worker_host/worker_script_fetcher_unittest.cc",
+     "../browser/worker_host/worker_script_loader_factory_unittest.cc",
++    "../browser/worker_host/worker_util_unittest.cc",
+     "../browser/xr/metrics/session_tracker_unittest.cc",
+     "../child/blink_platform_impl_unittest.cc",
+     "../child/child_performance_coordinator_unittest.cc",
