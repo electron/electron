@@ -274,10 +274,14 @@ int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 
 // Create bookmark data and serialise it into a base64 string.
 std::string GetBookmarkDataFromNSURL(NSURL* url) {
+  NSString* path = [url path];
+  if (!path)
+    return "";
+
   // Create the file if it doesn't exist (necessary for NSSavePanel options).
   NSFileManager* defaultManager = [NSFileManager defaultManager];
-  if (![defaultManager fileExistsAtPath:[url path]]) {
-    [defaultManager createFileAtPath:[url path] contents:nil attributes:nil];
+  if (![defaultManager fileExistsAtPath:path]) {
+    [defaultManager createFileAtPath:path contents:nil attributes:nil];
   }
 
   NSError* error = nil;
@@ -307,6 +311,8 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
       continue;
 
     NSString* path = [url path];
+    if (!path)
+      continue;
 
     // There's a bug in macOS where despite a request to disallow file
     // selection, files/packages can be selected. If file selection

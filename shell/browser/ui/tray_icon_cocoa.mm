@@ -203,15 +203,19 @@
   // arrived here from VoiceOver, which does not pass an event.
   // Create a synthetic event to pass to the click handler.
   if (![event respondsToSelector:@selector(locationInWindow)]) {
-    event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                               location:NSMakePoint(0, 0)
-                          modifierFlags:0
-                              timestamp:NSApp.currentEvent.timestamp
-                           windowNumber:0
-                                context:nil
-                            eventNumber:0
-                             clickCount:1
-                               pressure:1.0];
+    NSEvent* synthetic_event =
+        [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                           location:NSMakePoint(0, 0)
+                      modifierFlags:0
+                          timestamp:NSApp.currentEvent.timestamp
+                       windowNumber:0
+                            context:nil
+                        eventNumber:0
+                         clickCount:1
+                           pressure:1.0];
+    if (!synthetic_event)
+      return;
+    event = synthetic_event;
 
     // We also need to explicitly call the click handler here, since
     // VoiceOver won't trigger mouseUp.
