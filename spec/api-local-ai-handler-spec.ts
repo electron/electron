@@ -76,9 +76,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     w.webContents.session.registerLocalAIHandler(null);
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   describe('LanguageModel.availability()', () => {

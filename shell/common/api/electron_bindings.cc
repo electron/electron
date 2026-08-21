@@ -113,7 +113,7 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 // static
 void ElectronBindings::Crash() {
   volatile int* zero = nullptr;
-  *zero = 0;
+  *zero = 0;  // NOLINT(clang-analyzer-core.NullDereference)
 }
 
 // static

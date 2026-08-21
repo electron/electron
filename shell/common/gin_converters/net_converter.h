@@ -160,7 +160,9 @@ struct Converter<std::vector<std::pair<K, V>>> {
     out->clear();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> obj = value.As<v8::Object>();
-    v8::Local<v8::Array> keys = obj->GetPropertyNames(context).ToLocalChecked();
+    v8::Local<v8::Array> keys;
+    if (!obj->GetPropertyNames(context).ToLocal(&keys))
+      return false;
     const uint32_t length = keys->Length();
     out->reserve(length);
     for (uint32_t i = 0; i < length; ++i) {

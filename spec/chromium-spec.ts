@@ -1350,12 +1350,12 @@ describe('chromium features', () => {
   describe('File System API,', () => {
     let w: BrowserWindow | null = null;
 
-    afterEach(() => {
+    afterEach(async () => {
       ipcMain.removeAllListeners('did-create-file-handle');
       ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionCheckHandler(null);
       session.defaultSession.setPermissionRequestHandler(null);
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('allows access by default to reading an OPFS file', async () => {
@@ -3908,6 +3908,14 @@ describe('chromium features', () => {
     });
   });
 
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
+    });
+  });
+
   // FIXME(nornagon): this is broken on CI, it triggers:
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
@@ -4480,9 +4488,9 @@ describe('paste execCommand', () => {
     ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     ses.setPermissionCheckHandler(null);
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   it('is disabled by default', async () => {
@@ -4627,9 +4635,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     });
 
-    after(() => {
+    after(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can set a numerical value', async () => {
@@ -4666,9 +4674,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can be called in a ServiceWorker', (done) => {
@@ -4782,9 +4790,9 @@ describe('navigator.hid', () => {
   const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
     deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {
@@ -4994,9 +5002,9 @@ describe('navigator.usb', () => {
 
   const notFoundError = "NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.";
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {

@@ -12,8 +12,9 @@
 
 namespace electron {
 
-NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
-    : NodeBindings(browser_env) {}
+NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env,
+                                 uv_loop_t* loop)
+    : NodeBindings(browser_env, loop) {}
 
 void NodeBindingsMac::PollEvents() {
   auto* const event_loop = uv_loop();
@@ -33,8 +34,9 @@ void NodeBindingsMac::PollEvents() {
 }
 
 // static
-std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env) {
-  return std::make_unique<NodeBindingsMac>(env);
+std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env,
+                                                   uv_loop_t* loop) {
+  return std::make_unique<NodeBindingsMac>(env, loop);
 }
 
 }  // namespace electron

@@ -243,6 +243,9 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 // Whether to focus the webContents on navigation.
 inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
 
+// Whether to disable the wake lock for this WebContents
+inline constexpr std::string_view kDisableWakeLocks = "disableWakeLocks";
+
 inline constexpr std::string_view kModal = "modal";
 
 }  // namespace options

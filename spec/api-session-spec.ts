@@ -2372,9 +2372,9 @@ describe('session module', () => {
       });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       w.webContents.session.registerLocalAIHandler(null);
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('registers a utility process as the AI handler', async () => {

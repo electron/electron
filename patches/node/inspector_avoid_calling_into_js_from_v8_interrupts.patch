@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyeec9h3@gmail.com>
+Date: Fri, 14 Aug 2026 18:14:48 +0200
+Subject: inspector: avoid calling into JS from V8 interrupts
+
+Our inspector implementation dispatches inspector messages from
+a V8 interrupt handler, so they could be handled during an arbitrary
+point of JS execution where re-calling into another irrelevant JS
+code is not safe.
+
+This patch tracks V8 interrupt state in this case and rewrite the
+async hook toggling as state reconciliation, so requests only record
+the desired state, which is applied once calling into JS is possible
+and safe, and the actual invocation is deferred to an immediate when
+inside an interrupt. This simplifies the previous mechanism and
+makes re-entracy and early termination safer.
+
+Drive-by: skip installing command line API extensions during
+teardown when calling into JS is no longer safe.
+
+Signed-off-by: Joyee Cheung <joyeec9h3@gmail.com>
+PR-URL: https://github.com/nodejs/node/pull/65028
+Refs: https://issues.chromium.org/u/1/issues/42212250
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/8173727
+Refs: https://github.com/nodejs/node/pull/26935
+Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
+
+diff --git a/src/env-inl.h b/src/env-inl.h
+index a4b3a1c0907c9d50baf6c8cd473cb4c7369d0a5c..bc42b512af065cb1f1b848dc296612766375df77 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -616,6 +616,10 @@ inline void Environment::set_can_call_into_js(bool can_call_into_js) {
+   can_call_into_js_ = can_call_into_js;
+ }
+ 
++inline bool Environment::is_processing_v8_interrupt() const {
++  return is_processing_v8_interrupt_;
++}
++
+ inline bool Environment::has_run_bootstrapping_code() const {
+   return principal_realm_->has_run_bootstrapping_code();
+ }
+diff --git a/src/env.cc b/src/env.cc
+index 17fb7dcbbf5838b7448ea29a82c2dcbab532b4ea..728db1810aedb6cde4c5166c208a51fe726fbde6 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -1481,7 +1481,9 @@ void Environment::RequestInterruptFromV8() {
+       return;
+     }
+     env->interrupt_data_.store(nullptr);
++    env->is_processing_v8_interrupt_ = true;
+     env->RunAndClearInterrupts();
++    env->is_processing_v8_interrupt_ = false;
+   }, interrupt_data);
+ }
+ 
+diff --git a/src/env.h b/src/env.h
+index bccc76d4ab5832b0de951971e7a2bda62beca6a2..b4c04397c49d9276b0e8ebf857a1bfcaef107b55 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -780,6 +780,12 @@ class Environment final : public MemoryRetainer {
+   inline bool can_call_into_js() const;
+   inline void set_can_call_into_js(bool can_call_into_js);
+ 
++  // True while RequestInterrupt() callbacks are being invoked from the
++  // v8::Isolate::RequestInterrupt() handler, i.e. potentially at an
++  // arbitrary point during JS execution. Calling into JS must be avoided
++  // in that case.
++  inline bool is_processing_v8_interrupt() const;
++
+   // Increase or decrease a counter that manages whether this Environment
+   // keeps the event loop alive on its own or not. The counter starts out at 0,
+   // meaning it does not, and any positive value will make it keep the event
+@@ -1231,6 +1237,7 @@ class Environment final : public MemoryRetainer {
+   bool task_queues_async_initialized_ = false;
+ 
+   std::atomic<Environment**> interrupt_data_ {nullptr};
++  bool is_processing_v8_interrupt_ = false;
+   void RequestInterruptFromV8();
+   static void CheckImmediate(uv_check_t* handle);
+ 
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..55fe49c1e3058c366ede37a7698aefae82ea3f75 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -535,11 +535,7 @@ class NodeInspectorClient : public V8InspectorClient {
+       return;
+     }
+     if (auto agent = env_->inspector_agent()) {
+-      if (depth == 0) {
+-        agent->DisableAsyncHook();
+-      } else {
+-        agent->EnableAsyncHook();
+-      }
++      agent->SetAsyncHookTrackingEnabled(depth != 0);
+     }
+   }
+ 
+@@ -635,6 +631,7 @@ class NodeInspectorClient : public V8InspectorClient {
+ 
+   void installAdditionalCommandLineAPI(Local<Context> context,
+                                        Local<Object> target) override {
++    if (!env_->can_call_into_js()) return;
+     Local<Function> installer = env_->inspector_console_extension_installer();
+     if (!installer.IsEmpty()) {
+       Local<Value> argv[] = {target};
+@@ -1056,58 +1053,69 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
+                               Local<Function> disable_function) {
+   parent_env_->set_inspector_enable_async_hooks(enable_function);
+   parent_env_->set_inspector_disable_async_hooks(disable_function);
+-  if (pending_enable_async_hook_) {
+-    CHECK(!pending_disable_async_hook_);
+-    pending_enable_async_hook_ = false;
+-    EnableAsyncHook();
+-  } else if (pending_disable_async_hook_) {
+-    CHECK(!pending_enable_async_hook_);
+-    pending_disable_async_hook_ = false;
+-    DisableAsyncHook();
+-  }
++  SyncAsyncHookState();
+ }
+ 
+-void Agent::EnableAsyncHook() {
+-  HandleScope scope(parent_env_->isolate());
+-  Local<Function> enable = parent_env_->inspector_enable_async_hooks();
+-  if (!enable.IsEmpty()) {
+-    ToggleAsyncHook(parent_env_->isolate(), enable);
+-  } else if (pending_disable_async_hook_) {
+-    CHECK(!pending_enable_async_hook_);
+-    pending_disable_async_hook_ = false;
+-  } else {
+-    pending_enable_async_hook_ = true;
+-  }
++void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
++  async_hook_wanted_ = enabled;
++  SyncAsyncHookState();
+ }
+ 
+-void Agent::DisableAsyncHook() {
+-  HandleScope scope(parent_env_->isolate());
+-  Local<Function> disable = parent_env_->inspector_disable_async_hooks();
+-  if (!disable.IsEmpty()) {
+-    ToggleAsyncHook(parent_env_->isolate(), disable);
+-  } else if (pending_enable_async_hook_) {
+-    CHECK(!pending_disable_async_hook_);
+-    pending_enable_async_hook_ = false;
+-  } else {
+-    pending_disable_async_hook_ = true;
+-  }
+-}
++// Reconcile the state of the async hook used for async stack traces with the
++// state last requested by the protocol. The hook is set up in JS land,
++// (see inspector_async_hooks.js), which isn't safe to do when:
++// 1. We are in early bootstrap and the setup functions aren't registered in
++//    C++ yet.
++// 2. We are in a V8 interrupt requested by inspector protocol message
++//    dispatch e.g. from maxAsyncCallStackDepthChanged() notifications.
++// When it's not safe to call into JS, this is a no-op and we'll try again in
++// RegisterAsyncHook() (for 1) or from a scheduled immediate (for 2).
++void Agent::SyncAsyncHookState() {
++  // The debugger can request an interrupt within the toggle JS function itself,
++  // A nested call only records the new requested state, the outermost call sees
++  // it when re-checking the loop condition after each toggle.
++  if (syncing_async_hook_state_) return;
++  syncing_async_hook_state_ = true;
++  auto on_exit = OnScopeLeave([this]() { syncing_async_hook_state_ = false; });
++
++  Isolate* isolate = parent_env_->isolate();
++  HandleScope scope(isolate);
++  while (async_hook_wanted_ != async_hook_enabled_) {
++    // Guard against running this during cleanup -- no async events will be
++    // emitted anyway at that point anymore, and calling into JS is not
++    // possible. This should probably not be something we're attempting in the
++    // first place,
++    // Refs: https://github.com/nodejs/node/pull/34362#discussion_r456006039
++    if (!parent_env_->can_call_into_js()) return;
++
++    bool enable = async_hook_wanted_;
++    Local<Function> fn = enable ? parent_env_->inspector_enable_async_hooks()
++                                : parent_env_->inspector_disable_async_hooks();
++    if (fn.IsEmpty()) return;
++
++    if (parent_env_->is_processing_v8_interrupt()) {
++      parent_env_->SetImmediate(
++          [](Environment* env) {
++            Agent* agent = env->inspector_agent();
++            if (agent != nullptr) agent->SyncAsyncHookState();
++          },
++          CallbackFlags::kUnrefed);
++      return;
++    }
+ 
+-void Agent::ToggleAsyncHook(Isolate* isolate, Local<Function> fn) {
+-  // Guard against running this during cleanup -- no async events will be
+-  // emitted anyway at that point anymore, and calling into JS is not possible.
+-  // This should probably not be something we're attempting in the first place,
+-  // Refs: https://github.com/nodejs/node/pull/34362#discussion_r456006039
+-  if (!parent_env_->can_call_into_js()) return;
+-  CHECK(parent_env_->has_run_bootstrapping_code());
+-  HandleScope handle_scope(isolate);
+-  CHECK(!fn.IsEmpty());
+-  auto context = parent_env_->context();
+-  v8::TryCatch try_catch(isolate);
+-  USE(fn->Call(context, Undefined(isolate), 0, nullptr));
+-  if (try_catch.HasCaught() && !try_catch.HasTerminated()) {
+-    PrintCaughtException(isolate, context, try_catch);
+-    UNREACHABLE("Cannot toggle Inspector's AsyncHook, please report this.");
++    CHECK(parent_env_->has_run_bootstrapping_code());
++    Local<Context> context = parent_env_->context();
++    v8::TryCatch try_catch(isolate);
++    USE(fn->Call(context, Undefined(isolate), 0, nullptr));
++    if (try_catch.HasCaught()) {
++      // Termination may abort the toggle invocation, retrying now would just
++      // be terminated again. Instead of recording the toggle that may not have
++      // taken effect, leave the states as-is so that a later sync retries.
++      if (try_catch.HasTerminated()) return;
++      PrintCaughtException(isolate, context, try_catch);
++      UNREACHABLE("Cannot toggle Inspector's AsyncHook, please report this.");
++    }
++    async_hook_enabled_ = enable;
+   }
+ }
+ 
+diff --git a/src/inspector_agent.h b/src/inspector_agent.h
+index 5ace72a64012a0accb39015a8759f260cccd3fdb..932e4e8dce899101a17d978dfc5065de5eb06758 100644
+--- a/src/inspector_agent.h
++++ b/src/inspector_agent.h
+@@ -90,8 +90,7 @@ class Agent {
+   void RegisterAsyncHook(v8::Isolate* isolate,
+     v8::Local<v8::Function> enable_function,
+     v8::Local<v8::Function> disable_function);
+-  void EnableAsyncHook();
+-  void DisableAsyncHook();
++  void SetAsyncHookTrackingEnabled(bool enabled);
+ 
+   void SetParentHandle(std::unique_ptr<ParentInspectorHandle> parent_handle);
+   std::unique_ptr<ParentInspectorHandle> GetParentHandle(uint64_t thread_id,
+@@ -132,7 +131,7 @@ class Agent {
+   std::shared_ptr<NetworkResourceManager> GetNetworkResourceManager();
+ 
+  private:
+-  void ToggleAsyncHook(v8::Isolate* isolate, v8::Local<v8::Function> fn);
++  void SyncAsyncHookState();
+   void ToggleNetworkTracking(v8::Isolate* isolate, v8::Local<v8::Function> fn);
+ 
+   node::Environment* parent_env_;
+@@ -150,8 +149,12 @@ class Agent {
+   DebugOptions debug_options_;
+   std::shared_ptr<ExclusiveAccess<HostPort>> host_port_;
+ 
+-  bool pending_enable_async_hook_ = false;
+-  bool pending_disable_async_hook_ = false;
++  // The state of the async hook used for async stack traces that the protocol
++  // last requested, and the state JS currently has. SyncAsyncHookState()
++  // reconciles the two when it is possible and safe to call into JS.
++  bool async_hook_wanted_ = false;
++  bool async_hook_enabled_ = false;
++  bool syncing_async_hook_state_ = false;
+ 
+   bool network_tracking_enabled_ = false;
+   bool pending_enable_network_tracking = false;
+diff --git a/test/parallel/test-inspector-async-hook-after-done.js b/test/parallel/test-inspector-async-hook-after-done.js
+index f9cd7b4913604277d20f00d932d3129a7a8e7688..b4eff0467ecdeec6c59808405b5e90048eba0a0b 100644
+--- a/test/parallel/test-inspector-async-hook-after-done.js
++++ b/test/parallel/test-inspector-async-hook-after-done.js
+@@ -34,8 +34,8 @@ function onAttachToWorker({ params: { sessionId } }) {
+       session.once('NodeWorker.receivedMessageFromWorker', onMessageReceived);
+       return;
+     }
+-    // Force a call to node::inspector::Agent::ToggleAsyncHook by changing the
+-    // async call stack depth
++    // Force a call to node::inspector::Agent::SyncAsyncHookState by changing
++    // the async call stack depth
+     postToWorkerInspector('Debugger.setAsyncCallStackDepth', { maxDepth: 1 });
+     // This is were the original crash happened
+     session.post('NodeWorker.detach', { sessionId }, () => {

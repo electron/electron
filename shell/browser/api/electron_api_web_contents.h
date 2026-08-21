@@ -25,6 +25,7 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
+#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -231,6 +232,8 @@ class WebContents final : public ExclusiveAccessContext,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  bool IsCaretBrowsingEnabled() const;
+  void SetCaretBrowsingEnabled(bool enabled);
   v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
   void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
@@ -518,6 +521,8 @@ class WebContents final : public ExclusiveAccessContext,
                              extensions::mojom::ViewType view_type);
 #endif
 
+  void ReconcileCaretBrowsingCount(bool enabled);
+
   // content::WebContentsDelegate:
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
@@ -656,6 +661,8 @@ class WebContents final : public ExclusiveAccessContext,
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
                            blink::mojom::FaviconUpdateReason reason) override;
+  void NotifyPageTitleUpdated(content::NavigationEntry* entry,
+                              bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(
@@ -831,6 +838,10 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  // Whether this WebContents currently contributes to the process-wide caret
+  // browsing refcount.
+  bool caret_browsing_counted_ = false;
 
   // Whether to enable devtools.
   bool enable_devtools_ = true;

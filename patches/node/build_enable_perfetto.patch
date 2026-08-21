@@ -799,7 +799,7 @@ index 0bc9df81d87562243817a6618641a49b602654e3..b6dd8b9a9c21051f3d385d5ecea9c50c
  namespace tracing {
  
 diff --git a/unofficial.gni b/unofficial.gni
-index df0ae804a5338d8f2ec4d331a1e2ed053c3c3955..eeffbafa4023ed68f56410c858e459f569ed6344 100644
+index 7265e09bf7601afe76463f528ffb385db796e093..dce99416375f18e9d5ce9f4d992023990f44878d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -143,7 +143,10 @@ template("node_gn_build") {
