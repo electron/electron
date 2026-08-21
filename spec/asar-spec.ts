@@ -1575,6 +1575,25 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
+      itremote('hands out a descriptor that is not usable outside of fs', function () {
+        // The number identifies the entry to fs only; it must never expose the
+        // archive's bytes to code that reads the raw descriptor, and that code
+        // should fail loudly rather than get data from the wrong offset.
+        const originalFs = require('node:original-fs');
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        const fd = fs.openSync(p, 'r');
+        const buffer = Buffer.alloc(16);
+        expect(() => originalFs.readSync(fd, buffer, 0, 16, 0)).to.throw(/EBADF|EPERM|EACCES/);
+        expect(() => originalFs.readSync(fd, buffer, 0, 16, null)).to.throw(/EBADF|EPERM|EACCES/);
+        expect(originalFs.fstatSync(fd).isFile()).to.be.false();
+        expect(originalFs.fstatSync(fd).size).to.not.equal(fs.fstatSync(fd).size);
+        expect(buffer.equals(Buffer.alloc(16))).to.be.true();
+        // ...while fs itself still serves the entry.
+        expect(fs.readSync(fd, buffer, 0, 6, 0)).to.equal(6);
+        expect(buffer.subarray(0, 6).toString()).to.equal('file1\n');
+        fs.closeSync(fd);
+      });
+
       itremote('does not leak file descriptors', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const first = fs.openSync(p, 'r');
@@ -2009,9 +2028,15 @@ describe('asar package', function () {
         }
         const err = await new Promise<any>((resolve) => fs.fchmod(fd, 0o777, resolve));
         expect(err.code).to.equal('EACCES');
-        // Writes fail because the descriptor is read-only.
-        expect(() => fs.writeSync(fd, 'x')).to.throw(/EBADF|EACCES|EPERM/);
-        expect(() => fs.ftruncateSync(fd, 0)).to.throw(/EBADF|EACCES|EPERM|EINVAL/);
+        // Every mutation through the descriptor is refused.
+        expect(() => fs.writeSync(fd, 'x')).to.throw(/EACCES/);
+        expect(() => fs.writeSync(fd, Buffer.from('x'))).to.throw(/EACCES/);
+        expect(() => fs.writevSync(fd, [Buffer.from('x')])).to.throw(/EACCES/);
+        expect(() => fs.ftruncateSync(fd, 0)).to.throw(/EACCES/);
+        const werr = await new Promise<any>((resolve) => fs.write(fd, 'x', resolve));
+        expect(werr.code).to.equal('EACCES');
+        const terr = await new Promise<any>((resolve) => fs.ftruncate(fd, 0, resolve));
+        expect(terr.code).to.equal('EACCES');
         fs.closeSync(fd);
         // The archive is intact.
         expect(fs.readFileSync(p).toString().trim()).to.equal('file1');
@@ -2359,20 +2384,12 @@ describe('asar package', function () {
         if (process.platform !== 'win32') {
           await expectToThrowErrorWithCode(() => handle.chown(process.getuid!(), process.getgid!()), 'EACCES');
         }
-        let error: any;
-        try {
-          await handle.write('x');
-        } catch (e) {
-          error = e;
-        }
-        expect(error).to.have.property('code').that.is.oneOf(['EBADF', 'EACCES', 'EPERM']);
-        error = undefined;
-        try {
-          await handle.truncate(0);
-        } catch (e) {
-          error = e;
-        }
-        expect(error).to.have.property('code').that.is.oneOf(['EBADF', 'EACCES', 'EPERM', 'EINVAL']);
+        await expectToThrowErrorWithCode(() => handle.write('x'), 'EACCES');
+        await expectToThrowErrorWithCode(() => handle.write(Buffer.from('x')), 'EACCES');
+        await expectToThrowErrorWithCode(() => handle.writev([Buffer.from('x')]), 'EACCES');
+        await expectToThrowErrorWithCode(() => handle.writeFile('x'), 'EACCES');
+        await expectToThrowErrorWithCode(() => handle.appendFile('x'), 'EACCES');
+        await expectToThrowErrorWithCode(() => handle.truncate(0), 'EACCES');
         await handle.close();
         expect(fs.readFileSync(p).toString().trim()).to.equal('file1');
       });

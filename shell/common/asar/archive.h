@@ -111,13 +111,6 @@ class Archive {
   // for integrity validation after this fd is handed over.
   int GetUnsafeFD() const;
 
-  // Returns a new, caller-owned, read-only, non-inheritable file descriptor
-  // that refers to the same open archive as |file_| (a dup of the retained
-  // handle, so it is unaffected by the on-disk file being replaced). Returns
-  // -1 on failure. As with GetUnsafeFD(), reads through this fd are not
-  // integrity-validated; the caller must validate what it reads.
-  int DuplicateFd();
-
  private:
   // Resolves |path|, following at most a bounded number of chained "link"
   // entries so that a cyclic link in the header cannot recurse forever.

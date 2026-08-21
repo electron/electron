@@ -313,6 +313,9 @@ const originalBinding = {
   copyFile: binding.copyFile,
   readlink: binding.readlink,
   writeBuffer: binding.writeBuffer,
+  writeBuffers: binding.writeBuffers,
+  writeString: binding.writeString,
+  ftruncate: binding.ftruncate,
   cpSyncCheckPaths: binding.cpSyncCheckPaths,
   cpSyncOverrideFile: binding.cpSyncOverrideFile,
   cpSyncCopyDir: binding.cpSyncCopyDir
@@ -469,9 +472,13 @@ const makePromiseFunction = function (orig: Function, pathArgumentIndex: number)
 //
 // Direct, integrity-validated reads of packed entries.
 //
-// An AsarEntryReader owns a read-only file descriptor duplicated from the
-// archive's retained handle and serves reads of a single packed entry from
-// it: positions are translated to archive offsets and clamped to the entry.
+// An AsarEntryReader serves reads of a single packed entry straight from the
+// archive's retained file handle: positions are translated to archive offsets
+// and clamped to the entry.  The descriptor number the caller gets back from
+// open() is a separate sentinel (a write-only handle on the null device) that
+// only identifies the reader within this module: reading it directly fails
+// with EBADF, so code that bypasses fs fails loudly rather than being handed
+// archive bytes, and no handle to the archive itself is ever exposed.
 // When the archive carries integrity information, bytes are only ever handed
 // out from a buffer whose block hash has just been verified - the reader
 // keeps the most recently validated block so that sequential consumers such
@@ -516,7 +523,11 @@ async function readFully(fd: number, buffer: Uint8Array, offset: number, length:
 }
 
 class AsarEntryReader {
+  // The sentinel descriptor handed to the caller; owned by whoever owns the
+  // open (fs.close / FileHandle), never read or written by this module.
   readonly fd: number;
+  // The archive's retained handle; all reads go through it, positionally.
+  readonly archiveFd: number;
   readonly size: number;
   readonly offset: number;
   readonly executable: boolean;
@@ -529,8 +540,9 @@ class AsarEntryReader {
   private validatedBlock: ValidatedBlock | null = null;
   private closed = false;
 
-  constructor(fd: number, info: NodeJS.AsarFileInfo) {
+  constructor(fd: number, archiveFd: number, info: NodeJS.AsarFileInfo) {
     this.fd = fd;
+    this.archiveFd = archiveFd;
     this.size = info.size;
     this.offset = info.offset;
     this.executable = info.executable;
@@ -583,14 +595,14 @@ class AsarEntryReader {
   private validateBlockSync(index: number): ValidatedBlock {
     const { start, length } = this.blockRange(index);
     const buffer = Buffer.allocUnsafeSlow(length);
-    readFullySync(this.fd, buffer, 0, length, this.offset + start);
+    readFullySync(this.archiveFd, buffer, 0, length, this.offset + start);
     return this.checkBlock(index, buffer, sha256HexSync(buffer));
   }
 
   private async validateBlock(index: number): Promise<ValidatedBlock> {
     const { start, length } = this.blockRange(index);
     const buffer = Buffer.allocUnsafeSlow(length);
-    await readFully(this.fd, buffer, 0, length, this.offset + start);
+    await readFully(this.archiveFd, buffer, 0, length, this.offset + start);
     return this.checkBlock(index, buffer, await sha256HexAsync(buffer));
   }
 
@@ -620,14 +632,14 @@ class AsarEntryReader {
   readSync(buffer: Uint8Array, bufferOffset: number, length: number, position: number): number {
     const { start, count } = this.resolveRange(length, position);
     if (count === 0) return 0;
-    if (!this.integrity) return readFullySync(this.fd, buffer, bufferOffset, count, this.offset + start);
+    if (!this.integrity) return readFullySync(this.archiveFd, buffer, bufferOffset, count, this.offset + start);
     return this.copyFromBlocks(buffer, bufferOffset, start, count, (i) => this.validateBlockSync(i));
   }
 
   async read(buffer: Uint8Array, bufferOffset: number, length: number, position: number): Promise<number> {
     const { start, count } = this.resolveRange(length, position);
     if (count === 0) return 0;
-    if (!this.integrity) return readFully(this.fd, buffer, bufferOffset, count, this.offset + start);
+    if (!this.integrity) return readFully(this.archiveFd, buffer, bufferOffset, count, this.offset + start);
 
     // Validate every block the read touches up front (asynchronously), then
     // copy out synchronously.
@@ -758,11 +770,15 @@ const kWriteFlags = constants.O_WRONLY | constants.O_RDWR | constants.O_APPEND |
 
 // Resolves an asar path for open()-like calls.  Returns either a reader for
 // a packed entry, the real path of an unpacked entry, or throws.
+// `withSentinel: false` is for internal consumers (copyFile) that read the
+// entry themselves and never hand a descriptor number to anyone; the reader's
+// `fd` is -1 then.
 function openAsarEntry(
   asarPath: string,
   filePath: string,
   flags: number,
-  syscall: string
+  syscall: string,
+  withSentinel = true
 ): { unpackedPath: string } | { reader: AsarEntryReader } {
   const archive = getOrCreateArchive(asarPath);
   if (!archive) throw createError(AsarError.INVALID_ARCHIVE, { asarPath, syscall });
@@ -785,9 +801,12 @@ function openAsarEntry(
     throw createError(AsarError.EXISTS, { asarPath, filePath, syscall });
   }
 
-  const fd = archive.dupFd();
+  const archiveFd = archive.getFdAndValidateIntegrityLater();
+  if (!(archiveFd >= 0)) throw createError(AsarError.INVALID_ARCHIVE, { asarPath, syscall });
+  if (!withSentinel) return { reader: new AsarEntryReader(-1, archiveFd, info) };
+  const fd = asar.createSentinelFd();
   if (!(fd >= 0)) throw createError(AsarError.TOO_MANY_OPEN, { asarPath, filePath, syscall });
-  return { reader: new AsarEntryReader(fd, info) };
+  return { reader: new AsarEntryReader(fd, archiveFd, info) };
 }
 
 // Override fs APIs.
@@ -1876,6 +1895,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       // the native binding with the caller's own request object.
       const { start, count } = reader.resolveRange(length, pos);
       if (count === 0) return completeRequest(req, null, 0);
+      args[0] = reader.archiveFd;
       args[3] = count;
       args[4] = reader.offset + start;
       return originalBinding.read.apply(undefined, args);
@@ -1901,6 +1921,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const { start, count } = reader.resolveRange(wanted, pos);
       if (count === 0) return completeRequest(req, null, 0);
       if (count === wanted) {
+        args[0] = reader.archiveFd;
         args[2] = reader.offset + start;
         return originalBinding.readBuffers.apply(undefined, args);
       }
@@ -1919,14 +1940,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const readAllClamped = async () => {
         let total = 0;
         for (let i = 0; i < buffers.length; i++) {
-          total += await readFully(reader.fd, buffers[i], 0, filled[i], reader.offset + start + total);
+          total += await readFully(reader.archiveFd, buffers[i], 0, filled[i], reader.offset + start + total);
         }
         return total;
       };
       if (req === undefined) {
         let total = 0;
         for (let i = 0; i < buffers.length; i++) {
-          total += readFullySync(reader.fd, buffers[i], 0, filled[i], reader.offset + start + total);
+          total += readFullySync(reader.archiveFd, buffers[i], 0, filled[i], reader.offset + start + total);
         }
         return total;
       }
@@ -1987,34 +2008,54 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (!pathInfo.isAsar) return originalBinding.writeFileUtf8.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
 
-    const opened = openAsarEntry(asarPath, filePath, flags, 'open');
+    const opened = openAsarEntry(asarPath, filePath, flags, 'open', false);
     if ('unpackedPath' in opened) {
       args[0] = opened.unpackedPath;
       return originalBinding.writeFileUtf8.apply(undefined, args);
     }
     // Only reachable with read-only flags, which writeFile never uses.
-    originalBinding.close(opened.reader.fd);
     opened.reader.dispose();
     throw createError(AsarError.NO_ACCESS, { asarPath, filePath, syscall: 'open' });
   };
 
-  // A dup'd archive fd is O_RDONLY, so writes and truncation already fail
-  // natively (EBADF); metadata changes would go through to the archive file
-  // itself though, so refuse them explicitly.
-  const refuseMetadataChange = (name: 'fchmod' | 'fchown' | 'futimes') => {
-    const original = originalBinding[name];
+  // The sentinel descriptor is a write-only null device: reads through
+  // anything but fs fail (EBADF), but writes, truncation and metadata changes
+  // would quietly succeed against the null device.  Archives are read-only,
+  // so refuse all of those explicitly with EACCES.  The sync write bindings
+  // still use the legacy (..., undefined, ctx) convention where errors are
+  // reported through `ctx` instead of being thrown.
+  const refuseMutation = (name: keyof typeof originalBinding) => {
+    const original = originalBinding[name] as Function;
     binding[name] = function (...args: any[]) {
       const fd = args[0];
       if (lookupAsarFd(fd) === undefined) return original.apply(undefined, args);
-      const req = args[args.length - 1];
-      const hasReq = req !== undefined && (req === kUsePromises || typeof req === 'object');
       const error = createError(AsarError.NO_ACCESS, { filePath: `fd ${fd}`, syscall: name });
-      return completeRequest(hasReq ? req : undefined, error);
+      const last = args[args.length - 1];
+      const isObject = last !== null && typeof last === 'object';
+      if (last === kUsePromises || (isObject && 'oncomplete' in last)) {
+        return completeRequest(last, error);
+      }
+      if (args.length >= 2 && args[args.length - 2] === undefined && isObject) {
+        // (…, undefined, ctx): report through ctx like the native sync path.
+        last.errno = error.errno;
+        last.code = error.code;
+        last.syscall = name;
+        return;
+      }
+      throw error;
     };
   };
-  refuseMetadataChange('fchmod');
-  refuseMetadataChange('fchown');
-  refuseMetadataChange('futimes');
+  for (const name of [
+    'fchmod',
+    'fchown',
+    'futimes',
+    'ftruncate',
+    'writeBuffer',
+    'writeBuffers',
+    'writeString'
+  ] as const) {
+    refuseMutation(name);
+  }
 
   //
   // fs.copyFile / fs.copyFileSync / fs.promises.copyFile from a packed entry:
@@ -2096,7 +2137,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (modeFlags < 0 || modeFlags > kMaxCopyFileMode) {
         throw new (errorCodes as any).ERR_OUT_OF_RANGE('mode', `>= 0 && <= ${kMaxCopyFileMode}`, mode);
       }
-      opened = openAsarEntry(asarPath, filePath, constants.O_RDONLY, 'copyfile');
+      opened = openAsarEntry(asarPath, filePath, constants.O_RDONLY, 'copyfile', false);
     } catch (error) {
       return completeRequest(req, error as Error);
     }
@@ -2108,22 +2149,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     const { reader } = opened;
-    const closeSourceFd = () => originalBinding.close(reader.fd);
     if ((modeFlags & constants.COPYFILE_FICLONE_FORCE) !== 0) {
       // A packed entry can never be reflinked.
-      closeSourceFd();
       reader.dispose();
       return completeRequest(req, createError(AsarError.NOT_SUPPORTED, { asarPath, filePath, syscall: 'copyfile' }));
     }
     if (req === undefined) {
-      try {
-        copyPackedFileSync(reader, dest, mode ?? 0);
-      } finally {
-        closeSourceFd();
-      }
+      copyPackedFileSync(reader, dest, mode ?? 0);
       return;
     }
-    return completeRequestWithPromise(req, copyPackedFile(reader, dest, mode ?? 0).finally(closeSourceFd));
+    return completeRequestWithPromise(req, copyPackedFile(reader, dest, mode ?? 0));
   };
 
   //

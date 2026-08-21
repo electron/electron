@@ -4,11 +4,22 @@
 
 #include <vector>
 
+#include "build/build_config.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+
+#if BUILDFLAG(IS_WIN)
+#include <fcntl.h>
+#include <io.h>
+#include <windows.h>
+#else
+#include <fcntl.h>
+
+#include "base/posix/eintr_wrapper.h"
+#endif
 
 namespace {
 
@@ -27,7 +38,6 @@ class Archive : public node::ObjectWrap {
     NODE_SET_PROTOTYPE_METHOD(tpl, "copyFileOut", &Archive::CopyFileOut);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getFdAndValidateIntegrityLater",
                               &Archive::GetFD);
-    NODE_SET_PROTOTYPE_METHOD(tpl, "dupFd", &Archive::DupFd);
 
     return tpl;
   }
@@ -189,17 +199,44 @@ class Archive : public node::ObjectWrap {
         isolate, wrap->archive_ ? wrap->archive_->GetUnsafeFD() : -1));
   }
 
-  // Return a new caller-owned read-only file descriptor for the archive.
-  static void DupFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
-    auto* isolate = args.GetIsolate();
-    auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
-
-    args.GetReturnValue().Set(gin::ConvertToV8(
-        isolate, wrap->archive_ ? wrap->archive_->DuplicateFd() : -1));
-  }
-
   std::shared_ptr<asar::Archive> archive_;
 };
+
+// Returns a new, caller-owned, non-inheritable file descriptor that refers
+// to the null device opened write-only, or -1 on failure.
+//
+// The fs wrapper hands one of these out for every open() of a packed entry
+// and keeps the mapping from it to the entry on the JavaScript side, so the
+// descriptor a caller sees is only meaningful through Node's fs module. Code
+// that reads the raw descriptor itself (a native addon, a child's stdio, a
+// socket, ...) fails with EBADF instead of being handed bytes of the archive
+// at the wrong offset, and no handle to the archive itself ever escapes.
+static void CreateSentinelFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  auto* isolate = args.GetIsolate();
+#if BUILDFLAG(IS_WIN)
+  static const HANDLE null_device = ::CreateFileW(
+      L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
+      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  int fd = -1;
+  if (null_device != INVALID_HANDLE_VALUE) {
+    HANDLE handle = nullptr;
+    if (::DuplicateHandle(::GetCurrentProcess(), null_device,
+                          ::GetCurrentProcess(), &handle, 0,
+                          /*bInheritHandle=*/FALSE, DUPLICATE_SAME_ACCESS)) {
+      fd = _open_osfhandle(reinterpret_cast<intptr_t>(handle), _O_WRONLY);
+      if (fd == -1)
+        ::CloseHandle(handle);
+    }
+  }
+#else
+  static const int null_device =
+      HANDLE_EINTR(open("/dev/null", O_WRONLY | O_CLOEXEC));
+  int fd = -1;
+  if (null_device >= 0)
+    fd = HANDLE_EINTR(fcntl(null_device, F_DUPFD_CLOEXEC, 0));
+#endif
+  args.GetReturnValue().Set(gin::ConvertToV8(isolate, fd));
+}
 
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
@@ -237,6 +274,7 @@ void Initialize(v8::Local<v8::Object> exports,
   exports->Set(context, node::FIXED_ONE_BYTE_STRING(isolate, "Archive"), cons)
       .Check();
   NODE_SET_METHOD(exports, "splitPath", &SplitPath);
+  NODE_SET_METHOD(exports, "createSentinelFd", &CreateSentinelFd);
 }
 
 }  // namespace

@@ -96,11 +96,11 @@ declare namespace NodeJS {
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
-    dupFd(): number | -1;
   }
 
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
+    createSentinelFd(): number | -1;
     splitPath(path: string):
       | {
           isAsar: false;
