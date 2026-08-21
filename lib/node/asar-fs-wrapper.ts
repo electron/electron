@@ -24,6 +24,10 @@ const nextTick = (functionToCall: Function, args: any[] = []) => {
 
 const binding = internalBinding('fs');
 const dirBinding = internalBinding('fs_dir');
+// libuv's error numbers differ from POSIX errno on Windows (UV_EACCES is
+// -4092 there, not -13); Node decodes `errno` through libuv's table, so the
+// errors created here must carry libuv's values.
+const uvBinding = internalBinding('uv');
 const { kUsePromises } = binding;
 
 // Cache asar archive objects.
@@ -195,22 +199,22 @@ const createError = (
     case AsarError.NOT_FOUND:
       error = new Error(`ENOENT, ${filePath} not found in ${asarPath}`);
       error.code = 'ENOENT';
-      error.errno = -2;
+      error.errno = uvBinding.UV_ENOENT;
       break;
     case AsarError.NOT_DIR:
       error = new Error('ENOTDIR, not a directory');
       error.code = 'ENOTDIR';
-      error.errno = -20;
+      error.errno = uvBinding.UV_ENOTDIR;
       break;
     case AsarError.IS_DIR:
       error = new Error(`EISDIR: illegal operation on a directory, ${filePath} in ${asarPath}`);
       error.code = 'EISDIR';
-      error.errno = -21;
+      error.errno = uvBinding.UV_EISDIR;
       break;
     case AsarError.NO_ACCESS:
       error = new Error(`EACCES: permission denied, access '${filePath}'`);
       error.code = 'EACCES';
-      error.errno = -13;
+      error.errno = uvBinding.UV_EACCES;
       break;
     case AsarError.INVALID_ARCHIVE:
       error = new Error(`Invalid package ${asarPath}`);
@@ -218,22 +222,22 @@ const createError = (
     case AsarError.NOT_LINK:
       error = new Error(`EINVAL: invalid argument, ${filePath} in ${asarPath} is not a symbolic link`);
       error.code = 'EINVAL';
-      error.errno = -22;
+      error.errno = uvBinding.UV_EINVAL;
       break;
     case AsarError.EXISTS:
       error = new Error(`EEXIST: file already exists, ${filePath}`);
       error.code = 'EEXIST';
-      error.errno = -17;
+      error.errno = uvBinding.UV_EEXIST;
       break;
     case AsarError.NOT_SUPPORTED:
       error = new Error(`ENOTSUP: operation not supported on asar archive entry ${filePath}`);
       error.code = 'ENOTSUP';
-      error.errno = -45;
+      error.errno = uvBinding.UV_ENOTSUP;
       break;
     case AsarError.TOO_MANY_OPEN:
       error = new Error(`EMFILE: too many open files, could not open ${filePath} in ${asarPath}`);
       error.code = 'EMFILE';
-      error.errno = -24;
+      error.errno = uvBinding.UV_EMFILE;
       break;
     default:
       throw new Error(`Invalid error type "${errorType}" passed to createError.`);
@@ -2004,6 +2008,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   binding.writeFileUtf8 = function (...args: any[]) {
     const pathOrFd = args[0];
     const flags = args[2];
+    // The fast path also accepts a descriptor.
+    if (lookupAsarFd(pathOrFd) !== undefined) {
+      throw createError(AsarError.NO_ACCESS, { filePath: `fd ${pathOrFd}`, syscall: 'write' });
+    }
     const pathInfo = splitPath(pathOrFd);
     if (!pathInfo.isAsar) return originalBinding.writeFileUtf8.apply(undefined, args);
     const { asarPath, filePath } = pathInfo;
