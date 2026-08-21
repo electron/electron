@@ -23,10 +23,10 @@ index 6c0fd73921478e9e7af176d19af047bde6cce4c3..9a1cb493e3ae704e8611c937eaeb373b
    MicrotaskQueue& operator=(const MicrotaskQueue&) = delete;
  
 diff --git a/src/execution/microtask-queue.h b/src/execution/microtask-queue.h
-index ef643a9a3c6e79763962058d7f0f75eab44392d5..b9ddea8c29d94d9795c5adf0a5dc0982da6aeea3 100644
+index becdf0e0d51ff4d7fdcce24d2fba0fc2171ef1ce..d458a80ccfd327b749d3378009a3129831d143da 100644
 --- a/src/execution/microtask-queue.h
 +++ b/src/execution/microtask-queue.h
-@@ -115,10 +115,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
+@@ -112,10 +112,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
    }
  #endif
  

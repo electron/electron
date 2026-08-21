@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index f2400b75fd0ecdef4e32719684e57ed8d727e588..85e3f9c124c66a8d0414438adc4d800ccbea4d1a 100644
+index 4b3de4a1bc12f1ade351f29f9301220ec6d5b3ad..6247bedb1e49d8b76978363ae8d6b82b08872ae4 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -90,11 +90,13 @@
@@ -272,7 +272,7 @@ index f2400b75fd0ecdef4e32719684e57ed8d727e588..85e3f9c124c66a8d0414438adc4d800c
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -3046,7 +2832,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3047,7 +2833,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -281,7 +281,7 @@ index f2400b75fd0ecdef4e32719684e57ed8d727e588..85e3f9c124c66a8d0414438adc4d800c
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3404,11 +3190,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3405,11 +3191,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -294,7 +294,7 @@ index f2400b75fd0ecdef4e32719684e57ed8d727e588..85e3f9c124c66a8d0414438adc4d800c
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3459,6 +3241,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3460,6 +3242,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)

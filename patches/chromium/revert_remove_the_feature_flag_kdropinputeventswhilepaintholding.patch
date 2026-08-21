@@ -41,7 +41,7 @@ index 461a128e6151b3f61da330c48dcf63dff0fe30e3..a75ddffded2d5d60c685c009241b2909
      // If we filter a GSB for paint holding, we'd like to receive a new one -
      // see IsWheelScrollInProgress. Note that we leave is_in_gesture_scroll_ set
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index a241e17a9e8cb25178458b151cb538bed003f8ea..980f5632d2e288bf94883b5995446552f9f98cf1 100644
+index 778bfd8ea1e5b9996f07a43873216c595a11ba9a..5fe846131c154307f309a1a9ece5e27156b0ebad 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
 @@ -567,6 +567,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
@@ -57,7 +57,7 @@ index a241e17a9e8cb25178458b151cb538bed003f8ea..980f5632d2e288bf94883b5995446552
  // Performance Panel, which (when clicked) call into a DevTools extension.
  BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index e57db0b7116ef9a7359217c8591c449baa088d11..51fbf7219550547521b579a904dce551556fd47d 100644
+index 2218c0dab1605ba31e7e3bb9cb9895ff7d1346fe..90b70319623e84ffab5f8f230a9edd8c1411216a 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
 @@ -404,6 +404,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(

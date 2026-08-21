@@ -61,7 +61,7 @@ index 0ae84efaeaf664857afa280ababf28f271291b48..d0957ced725eac4795a1948a5f0820f8
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 00fc19ee3d5ec887c445afe5439e7b6d1308b484..4f3601421a7a4174122864ff63690609756e50cc 100644
+index 2c6b978631affb4ced4189af52001f84346b2d4b..66c9cfa97030123eafcb6287ed66fdeef8d58de5 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -108,6 +108,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -90,7 +90,7 @@ index b3ea7e70d7436238448f6f41ca8865a844290e69..9d7fe063c87a9c76a9ff655fa272c008
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index a0f6bd4328e08b30c116c28c0ef2b9c3792088de..a0fecd2546072194a696b47c17fe484932bc339a 100644
+index d810e8a44795404c0c4d9c30c74eda18ba52f336..b22205572bf0375eaac4d9a7e1f73ca1638d7e77 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -15,6 +15,7 @@ import "services/network/public/mojom/fetch_api.mojom";
