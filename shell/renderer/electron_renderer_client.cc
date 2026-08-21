@@ -4,8 +4,9 @@
 
 #include "shell/renderer/electron_renderer_client.h"
 
-#include <algorithm>
-
+#include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/fuses.h"
 #include "net/http/http_request_headers.h"
@@ -30,9 +31,37 @@
 
 namespace electron {
 
+struct ElectronRendererClient::FrameEnvironment {
+  // A main frame borrows |primary|, which integrates uv_default_loop(), while
+  // no other environment occupies it; every other frame gets its own loop.
+  FrameEnvironment(bool is_main_frame,
+                   NodeBindings* primary,
+                   ElectronBindings* primary_electron_bindings) {
+    if (is_main_frame && primary->uv_env() == nullptr) {
+      node_bindings = primary;
+      electron_bindings = primary_electron_bindings;
+      return;
+    }
+    own_node_bindings = NodeBindings::Create(
+        NodeBindings::BrowserEnvironment::kRenderer, nullptr);
+    own_electron_bindings =
+        std::make_unique<ElectronBindings>(own_node_bindings->uv_loop());
+    node_bindings = own_node_bindings.get();
+    electron_bindings = own_electron_bindings.get();
+  }
+
+  std::unique_ptr<NodeBindings> own_node_bindings;
+  std::unique_ptr<ElectronBindings> own_electron_bindings;
+  raw_ptr<NodeBindings> node_bindings;
+  raw_ptr<ElectronBindings> electron_bindings;
+  std::shared_ptr<node::Environment> environment;
+  base::WeakPtrFactory<FrameEnvironment> weak_factory{this};
+};
+
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_{NodeBindings::Create(
-          NodeBindings::BrowserEnvironment::kRenderer)},
+          NodeBindings::BrowserEnvironment::kRenderer,
+          uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
@@ -101,13 +130,20 @@ void ElectronRendererClient::DidCreateScriptContext(
   if (!ShouldLoadPreload(isolate, renderer_context, render_frame))
     return;
 
-  injected_frames_.insert(render_frame);
-
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize(isolate, renderer_context);
-    node_bindings_->PrepareEmbedThread();
+    node_bindings_->SetUpIsolate(isolate);
+    // SetUpIsolate registers Node's WebAssembly streaming callback, whose JS
+    // side kNoBrowserGlobals never installs; put Blink's back.
+    blink::WasmResponseExtensions::Initialize(isolate);
   }
+
+  CHECK(!environments_.contains(render_frame));
+  auto frame_env = std::make_unique<FrameEnvironment>(
+      render_frame->IsMainFrame(), node_bindings_.get(),
+      electron_bindings_.get());
+  NodeBindings* node_bindings = frame_env->node_bindings;
 
   // Setup node tracing controller.
   if (!node::tracing::TraceEventHelper::GetAgent()) {
@@ -126,17 +162,12 @@ void ElectronRendererClient::DidCreateScriptContext(
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kStrict);
 
-  std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
+  std::shared_ptr<node::Environment> env = node_bindings->CreateEnvironment(
       isolate, renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
-
-  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
-  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
-  // the JS side of that callback is never installed, so it would crash on
-  // use; restore Blink's implementation so WebAssembly.compileStreaming
-  // keeps working with Blink's fetch.
-  blink::WasmResponseExtensions::Initialize(isolate);
+  frame_env->environment = env;
+  node_bindings->set_uv_env(env.get());
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -145,53 +176,50 @@ void ElectronRendererClient::DidCreateScriptContext(
   // We do not want to crash the renderer process on unhandled rejections.
   env->options()->unhandled_rejections = "warn-with-error-code";
 
-  environments_.insert(env);
-
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(env->isolate(), env->process_object());
+  frame_env->electron_bindings->BindTo(env->isolate(), env->process_object());
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
   BindProcess(env->isolate(), &process_dict, render_frame);
 
-  // Load everything.
-  node_bindings_->LoadEnvironment(env.get());
+  base::WeakPtr<FrameEnvironment> weak_frame_env =
+      frame_env->weak_factory.GetWeakPtr();
+  environments_[render_frame] = std::move(frame_env);
 
-  if (node_bindings_->uv_env() == nullptr) {
-    // Make uv loop being wrapped by window context.
-    node_bindings_->set_uv_env(env.get());
+  node_bindings->LoadEnvironment(env.get());
 
-    // Give the node loop a run to make sure everything is ready.
-    node_bindings_->StartPolling();
-  }
+  // This context may have been created from inside a script (e.g. the opener's
+  // window.open() call), so give the loop its first run from a fresh task.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(
+                     [](base::WeakPtr<FrameEnvironment> frame_env) {
+                       if (!frame_env)
+                         return;
+                       frame_env->node_bindings->PrepareEmbedThread();
+                       frame_env->node_bindings->StartPolling();
+                     },
+                     weak_frame_env));
 }
 
 void ElectronRendererClient::WillReleaseScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
-  if (injected_frames_.erase(render_frame) == 0)
+  node::Environment* env = GetEnvironment(render_frame);
+  if (!env || env->context() != context)
     return;
-
-  node::Environment* env = node::Environment::GetCurrent(context);
-  const auto iter = std::ranges::find_if(
-      environments_, [env](auto& item) { return env == item.get(); });
-  if (iter == environments_.end())
-    return;
-
   gin_helper::EmitEvent(isolate, env->process_object(), "exit");
 
-  // The main frame may be replaced.
-  if (env == node_bindings_->uv_env())
-    node_bindings_->set_uv_env(nullptr);
+  auto iter = environments_.find(render_frame);
+  std::unique_ptr<FrameEnvironment> frame_env = std::move(iter->second);
+  environments_.erase(iter);
 
-  // Destroying the node environment will also run the uv loop.
-  {
-    util::ExplicitMicrotasksScope microtasks_scope(
-        context->GetMicrotaskQueue());
-    environments_.erase(iter);
-  }
-
-  // ElectronBindings is tracking node environments.
-  electron_bindings_->EnvironmentDestroyed(env);
+  // Park the embed thread so FreeEnvironment's uv_run is the loop's only user.
+  frame_env->node_bindings->set_uv_env(nullptr);
+  frame_env->node_bindings->StopPolling();
+  frame_env->electron_bindings->EnvironmentDestroyed(env);
+  // Freeing the environment runs its loop, i.e. enters Node.js.
+  util::ExplicitMicrotasksScope microtasks_scope(context->GetMicrotaskQueue());
+  frame_env->environment.reset();
 }
 
 namespace {
@@ -240,7 +268,7 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 
   auto* current = WebWorkerObserver::GetCurrent();
   if (!current)
-    current = WebWorkerObserver::Create();
+    current = WebWorkerObserver::Create(v8::Isolate::GetCurrent());
   current->WorkerScriptReadyForEvaluation(context);
 }
 
@@ -270,17 +298,9 @@ void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
 
 node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
-  if (!injected_frames_.contains(render_frame))
-    return nullptr;
-  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
-  auto context =
-      GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
-  node::Environment* env = node::Environment::GetCurrent(context);
-
-  return std::ranges::contains(environments_, env,
-                               [](auto const& item) { return item.get(); })
-             ? env
-             : nullptr;
+  auto iter = environments_.find(render_frame);
+  return iter == environments_.end() ? nullptr
+                                     : iter->second->environment.get();
 }
 
 }  // namespace electron
