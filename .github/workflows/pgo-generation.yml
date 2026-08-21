@@ -604,8 +604,12 @@ jobs:
           fi
           out="profiles/electron-${target}-${TIMESTAMP}-${SHORT_SHA}.profdata"
           echo "Merging $count profraw files for $target"
-          # Tolerate truncated profraw from children killed at shutdown.
-          "$PROFDATA" merge --failure-mode=all -o "$out" "$dir"*.profraw
+          # A truncated or corrupt profraw means a child process was killed
+          # mid-dump, and that child is usually the benchmark renderer - the
+          # merged profile would silently lose most of its Blink counters and
+          # pessimize the renderer in release builds. Fail the run instead so
+          # the branch keeps its last good state files.
+          "$PROFDATA" merge --failure-mode=any -o "$out" "$dir"*.profraw
           merged=$((merged+1))
         done
         if [ "$merged" -eq 0 ]; then
