@@ -58,9 +58,9 @@ struct ElectronRendererClient::FrameEnvironment {
 };
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_{
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer,
-                               uv_default_loop())},
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kRenderer,
+          uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
