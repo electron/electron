@@ -214,9 +214,9 @@ class Archive : public node::ObjectWrap {
 static void CreateSentinelFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
 #if BUILDFLAG(IS_WIN)
-  static const HANDLE null_device = ::CreateFileW(
-      L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr,
-      OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+  static const HANDLE null_device =
+      ::CreateFileW(L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
   int fd = -1;
   if (null_device != INVALID_HANDLE_VALUE) {
     HANDLE handle = nullptr;
