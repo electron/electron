@@ -386,3 +386,6 @@ cherry-pick-4e17fa56c471.patch
 cherry-pick-0c2b2640e6fb.patch
 cherry-pick-7cf589757eab.patch
 remove_cr_xcode_build_define_from_build_gn.patch
+m144_httpcachetransaction_fix_confusion_around_range_request.patch
+ui_gtk_pin_gtk-modules_to_an_empty_string_during_initialization.patch
+consolidate_and_pass_file_url_support_to_workerscriptfetcher.patch
