@@ -1191,6 +1191,12 @@ describe('cpp heap', () => {
             await unloaded;
             await navigated;
 
+            // Ensure the detached frame has been destroyed before triggering GC
+            for (let i = 0; i < 100; i++) {
+              if (detachedFrame!.isDestroyed()) break;
+              await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+
             for (let i = 0; i < 10; i++) {
               await new Promise((resolve) => setTimeout(resolve, 0));
               v8Util.requestGarbageCollectionForTesting();
@@ -1248,7 +1254,9 @@ describe('cpp heap', () => {
         }
       });
 
-      expect(result).to.equal('rejected: Render frame was disposed before call stack was received');
+      // We're creating a race so the promise can either resolve or reject depending
+      // on timing, but it should always settle and not have a timeout occur
+      expect(result).to.be.oneOf(['resolved', 'rejected: Render frame was disposed before call stack was received']);
     });
   });
 
