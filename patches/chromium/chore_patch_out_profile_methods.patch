@@ -161,18 +161,3 @@ index 921d315735606b8b4c39ede9c96285ad6b448148..c739fa151c8e79ed725e4e4755449808
  
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
  
-diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
-index 65b591832e02d3b41d0768bb250e548386878a87..3e97329c584e9d28d5d73e9cb43590ce8568c19b 100644
---- a/chrome/browser/win/titlebar_config.cc
-+++ b/chrome/browser/win/titlebar_config.cc
-@@ -13,8 +13,10 @@
- bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
-   const BrowserWindowInterface::Type type = browser_view->browser()->GetType();
-   return !ShouldDefaultThemeUseMicaTitlebar() ||
-+#if 0
-          !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
-               ->UsingSystemTheme() ||
-+#endif
-          (type != BrowserWindowInterface::Type::TYPE_NORMAL &&
-           type != BrowserWindowInterface::Type::TYPE_POPUP &&
-           type != BrowserWindowInterface::Type::TYPE_DEVTOOLS);
