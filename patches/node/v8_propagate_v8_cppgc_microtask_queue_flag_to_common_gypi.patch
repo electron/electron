@@ -18,10 +18,10 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/common.gypi b/common.gypi
-index f2c4ef54cec9c43afb391382801432455498290c..01cb9a085d4e8f903a8e365ac9d1c044148e4c46 100644
+index 378fd847ef9783a63292d1dcc265e9a08ad86fbc..4878d23eeddcc569146a225a4a3163b421e64404 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -90,6 +90,7 @@
+@@ -91,6 +91,7 @@
      'v8_enable_zone_compression%': 0,
      'v8_use_perfetto': 0,
      'tsan%': 0,
@@ -29,7 +29,7 @@ index f2c4ef54cec9c43afb391382801432455498290c..01cb9a085d4e8f903a8e365ac9d1c044
  
      'using_electron_config_gypi%': 0,
  
-@@ -575,6 +576,9 @@
+@@ -576,6 +577,9 @@
        ['v8_enable_direct_local == 1', {
          'defines': ['V8_ENABLE_DIRECT_LOCAL',],
        }],
@@ -40,10 +40,10 @@ index f2c4ef54cec9c43afb391382801432455498290c..01cb9a085d4e8f903a8e365ac9d1c044
          'defines': [
            'WIN32',
 diff --git a/configure.py b/configure.py
-index ab80d6b9b8cf336bdb4d65ecb982a041c5967856..5efe7ac298adfd712483c44ce018cf5b9ea2150f 100755
+index 90acb7a92e0b2f10afb9adff15d0e3f090760009..72dde5271c2bc923c0f538115f9f36d6b846c819 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -756,6 +756,14 @@ parser.add_argument('--experimental-pointer-compression-shared-cage',
+@@ -762,6 +762,14 @@ parser.add_argument('--experimental-pointer-compression-shared-cage',
      default=None,
      help='[Experimental] Use V8 pointer compression with shared cage (requires --experimental-enable-pointer-compression)')
  
@@ -58,7 +58,7 @@ index ab80d6b9b8cf336bdb4d65ecb982a041c5967856..5efe7ac298adfd712483c44ce018cf5b
  parser.add_argument('--v8-options',
      action='store',
      dest='v8_options',
-@@ -1955,6 +1963,7 @@ def configure_v8(o, configs):
+@@ -1966,6 +1974,7 @@ def configure_v8(o, configs):
    o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.pointer_compression_shared_cage else 0
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0

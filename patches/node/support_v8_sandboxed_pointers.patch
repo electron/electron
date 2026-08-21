@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e5c1c2541790332d677d0714be4903509d60e783..4ed5211abe843899b4a471a5ef24000446f9fe03 100644
+index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe266f828d1 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -349,24 +349,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -373,24 +373,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -57,7 +57,7 @@ index e5c1c2541790332d677d0714be4903509d60e783..4ed5211abe843899b4a471a5ef240004
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -739,19 +745,13 @@ namespace {
+@@ -763,19 +769,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -83,10 +83,10 @@ index e5c1c2541790332d677d0714be4903509d60e783..4ed5211abe843899b4a471a5ef240004
  
    auto data = DataPointer::SecureAlloc(len);
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index cb1ad6bcfa7ea421642d097d6a9a8a5e04d5cf7c..6b7e4211a8969351168fc982fe3466a2096bed3a 100644
+index 711316f92918c7beeb067d0b3c356801dabde60c..49a022204773219f97bda25268f7e49c2a297da7 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -142,19 +142,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
    if (!mem) [[unlikely]]
      return {};
  #ifdef V8_ENABLE_SANDBOX
@@ -117,10 +117,10 @@ index cb1ad6bcfa7ea421642d097d6a9a8a5e04d5cf7c..6b7e4211a8969351168fc982fe3466a2
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6c1be2637 100644
+index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b8568ace6 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1489,7 +1489,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1545,7 +1545,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -129,7 +129,7 @@ index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6
  #endif
    return size;
  }
-@@ -1512,6 +1512,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1568,6 +1568,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -156,7 +156,7 @@ index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1522,6 +1542,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1578,6 +1598,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }
@@ -204,6 +204,27 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  constexpr const char* EncodingName(const enum encoding encoding) {
+diff --git a/src/node_ipc_serdes.cc b/src/node_ipc_serdes.cc
+index 05d5ae7ccffeb2fa7e9b4bb79c6d397186e264fd..00a8bcddd37cd10812ad8ddc8345912c813e47ee 100644
+--- a/src/node_ipc_serdes.cc
++++ b/src/node_ipc_serdes.cc
+@@ -333,8 +333,14 @@ static void Serialize(const FunctionCallbackInfo<Value>& args) {
+   buf[2] = (payload_length >> 8) & 0xFF;
+   buf[3] = payload_length & 0xFF;
+ 
+-  Local<Object> out;
+-  if (Buffer::New(env, reinterpret_cast<char*>(buf), size).ToLocal(&out)) {
++  std::shared_ptr<BackingStore> backing_store =
++      ArrayBuffer::NewBackingStore(isolate, size);
++  memcpy(backing_store->Data(), buf, size);
++  free(buf);
++  Local<ArrayBuffer> array_buffer =
++      ArrayBuffer::New(isolate, std::move(backing_store));
++  Local<Uint8Array> out;
++  if (Buffer::New(env, array_buffer, 0, size).ToLocal(&out)) {
+     args.GetReturnValue().Set(out);
+   }
+ }
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc
@@ -307,10 +328,10 @@ index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d
  }
  
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 5f1abfe9b34a227221c9a851e79fd6ad9d628833..f1a0a87f760da50d11ef9fa14d6157589a584ce9 100644
+index 5e01f64a5039235447101d0d8cfbdba3da4ddbc1..49c457cae2b3da603a548874f63dbdf9f50580d9 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
-@@ -137,12 +137,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -141,12 +141,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
    const uint8_t* enabled_pointer =
        TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
    uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);
