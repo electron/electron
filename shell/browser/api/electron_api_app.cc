@@ -1227,7 +1227,8 @@ v8::Local<v8::Value> App::GetAccessibilitySupportFeatures() {
 
   v8::Local<v8::Array> arr = v8::Array::New(isolate, features.size());
   for (uint32_t i = 0; i < features.size(); ++i) {
-    arr->Set(isolate->GetCurrentContext(), i, features[i]).Check();
+    arr->CreateDataProperty(isolate->GetCurrentContext(), i, features[i])
+        .Check();
   }
   return handle_scope.Escape(arr);
 }

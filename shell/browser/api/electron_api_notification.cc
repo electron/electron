@@ -452,8 +452,8 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
 
           auto handle = gin_helper::CreateHandle(isolate, notif);
           result
-              ->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
-                    handle.ToV8())
+              ->CreateDataProperty(isolate->GetCurrentContext(),
+                                   static_cast<uint32_t>(i), handle.ToV8())
               .Check();
         }
 
