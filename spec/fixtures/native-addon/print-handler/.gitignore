@@ -1,0 +1,7 @@
+/node_modules
+/build
+*.swp
+*.log
+*~
+.node-version
+package-lock.json

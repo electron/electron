@@ -360,6 +360,7 @@ static_library("chrome") {
       "//components/services/print_compositor",
       "//components/services/print_compositor/public/cpp",
       "//components/services/print_compositor/public/mojom",
+      "//components/user_prefs",
       "//printing/backend",
     ]
 
@@ -373,7 +374,10 @@ static_library("chrome") {
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
       ]
-      deps += [ "//printing:printing_base" ]
+      deps += [
+        "//chrome/browser/pdf:pdf_pref_names",
+        "//printing:printing_base",
+      ]
     }
   }
 
