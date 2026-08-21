@@ -605,6 +605,7 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
+    "//build/config/compiler:compiler_buildflags",
     "//content/public/app",
     "//ui/base/unowned_user_data",
   ]
