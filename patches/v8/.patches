@@ -15,3 +15,5 @@ cherry-pick-b80a7539b736.patch
 cherry-pick-2a21c7560310.patch
 cherry-pick-d6a92ca48587.patch
 src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
+m150_compiler_avoid_race_condition_when_reading_scopeinfo_during.patch
+m150_compiler_avoid_data_race_when_reading_outer_scopeinfo_in_bg.patch
