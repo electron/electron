@@ -33,7 +33,7 @@ index 397a23dd7d79f0c56d24dee57333757e510cf80e..8839579b994b84ebd2817df8b001bf1b
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 5fc6a328ee5e16967cd100f704c692984f4d2c81..3e4c3082fb13c5728c2085f28365ea14bdc1f8e5 100644
+index 29a5a21b06aed299fa3430f99a369c4a91a35e5f..dc99234cfcf36ce68158a00b7bd82f51049e5f00 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -819,6 +819,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,7 +51,7 @@ index 5fc6a328ee5e16967cd100f704c692984f4d2c81..3e4c3082fb13c5728c2085f28365ea14
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 623da2befac1f1c85abfd72e488ac8b3608b1201..9eab7439995854821ef61f20c2ef7c7f49f17447 100644
+index 515c65a0f50e7c4a959f9f7da8eda0e46d2eca60..8302794d9a86387447bb3d4dd34cc41c5b052c57 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1288,6 +1288,17 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -169,18 +169,18 @@ index a3bfdd9c15d3cfc5053c2a36767ea7964f2740fd..d9d608ea5b01cff08654b11e455fd7af
        WebFetchClientSettingsObject outside_fetch_client_settings_object)
        : wait_for_debugger_mode(kDontWaitForDebugger),
 diff --git a/third_party/blink/renderer/core/workers/global_scope_creation_params.h b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50c151ffa4 100644
+index 51515477321e5e010c264a2bd523e2d2c3c9f3bf..3a3631e135cb74747b49b20e22ad9537baadede3 100644
 --- a/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 +++ b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-@@ -10,6 +10,7 @@
- 
+@@ -11,6 +11,7 @@
+ #include "base/memory/raw_ptr.h"
  #include "base/task/single_thread_task_runner.h"
  #include "base/unguessable_token.h"
 +#include "mojo/public/cpp/base/big_buffer.h"
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "net/storage_access_api/status.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
-@@ -261,6 +262,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
+@@ -263,6 +264,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
    // i.e. when DedicatedWorkerStart() was called.
    std::optional<base::TimeTicks> dedicated_worker_start_time;
  
@@ -207,18 +207,18 @@ index 275a8e94fdf401e7430a28d0f741866ab29f814f..552038ee43382703af3ef4f538ffa4cd
    TRACE_EVENT_BEGIN(
        "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index 44d8d345f15cc54c509e965757819dc0ee9f841d..719b4b3833dc202745d8591e40cea7b9e7b677fc 100644
+index 73e55fabee962da3831c992d7715de65a454fcd3..a53844ec36ca27a7f60ba56d6f962e4bfef66e1b 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
-@@ -31,6 +31,7 @@
- 
+@@ -32,6 +32,7 @@
+ #include "base/memory/raw_ptr.h"
  #include "base/task/single_thread_task_runner.h"
  #include "base/time/time.h"
 +#include "mojo/public/cpp/base/big_buffer.h"
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -292,6 +293,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -293,6 +294,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index 44d8d345f15cc54c509e965757819dc0ee9f841d..719b4b3833dc202745d8591e40cea7b9
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -406,6 +413,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -407,6 +414,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  
