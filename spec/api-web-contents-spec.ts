@@ -496,6 +496,64 @@ describe('webContents module', () => {
       expect(success).to.be.true();
     });
 
+    ifdescribe(process.platform !== 'linux' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+      'through the system dialog',
+      () => {
+        let printHandler: {
+          startWatching(action: 'print' | 'cancel', timeoutMs?: number): void;
+          stopWatching(): boolean;
+        };
+
+        before(function () {
+          printHandler = require('@electron-ci/print-handler');
+        });
+        beforeEach(() => w.show());
+        afterEach(() => printHandler.stopWatching());
+
+        const printWithDialog = (options: Electron.WebContentsPrintOptions, action: 'print' | 'cancel') => {
+          printHandler.startWatching(action, 20000);
+          return print({ ...options, silent: false });
+        };
+
+        it('reports cancellation when the dialog is cancelled', async () => {
+          const [success, reason] = await printWithDialog({}, 'cancel');
+          expect(printHandler.stopWatching()).to.be.true();
+          expect(success).to.be.false();
+          expect(reason).to.equal('Print job canceled');
+        });
+
+        it('reports cancellation when the dialog for a print with options is cancelled', async () => {
+          const [success, reason] = await printWithDialog({ copies: 2, landscape: true }, 'cancel');
+          expect(printHandler.stopWatching()).to.be.true();
+          expect(success).to.be.false();
+          expect(reason).to.equal('Print job canceled');
+        });
+
+        it('prints when the dialog is confirmed', async () => {
+          const [success, reason] = await printWithDialog({}, 'print');
+          expect(printHandler.stopWatching()).to.be.true();
+          expect(reason).to.equal('');
+          expect(success).to.be.true();
+        });
+
+        ifit(canReadOutput())('keeps the requested settings when the dialog is confirmed', async () => {
+          const [success, reason] = await printWithDialog({ pageRanges: [{ from: 2, to: 3 }] }, 'print');
+          expect(printHandler.stopWatching()).to.be.true();
+          expect(reason).to.equal('');
+          expect(success).to.be.true();
+          const doc = await printedDocument();
+          expect(doc.numPages).to.equal(2);
+          expect(containsText(doc.textContent, /page 3/)).to.be.true();
+        });
+
+        it('lets window.print() be cancelled', async () => {
+          printHandler.startWatching('cancel', 20000);
+          await w.webContents.executeJavaScript('window.print()', true);
+          expect(printHandler.stopWatching()).to.be.true();
+        });
+      }
+    );
+
     it('runs overlapping print() and printToPDF() calls one after another', async () => {
       const first = print({});
       const second = print({});
