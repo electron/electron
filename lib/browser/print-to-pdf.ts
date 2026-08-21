@@ -1,5 +1,5 @@
-// Option translation and job queueing for printToPDF, shared between
-// webContents.printToPDF and webFrameMain.printToPDF.
+// printToPDF option handling shared by webContents and webFrameMain, plus the
+// per-frame-tree queue used by print() and printToPDF().
 
 let nextRequestId = 0;
 
@@ -47,7 +47,7 @@ function parsePageSize(pageSize: string | ElectronInternal.PageSize) {
 
 type PrintToPDFOptions = Parameters<Electron.WebContents['printToPDF']>[0];
 
-interface PrintToPDFTarget {
+export interface PrintTarget {
   _printToPDF?: (settings: any) => Promise<Buffer>;
   // WebFrameMain#top; used to serialize jobs within a frame tree.
   top?: Electron.WebFrameMain | null;
@@ -57,14 +57,25 @@ interface PrintToPDFTarget {
   frameTreeNodeId?: number;
 }
 
-// Concurrent PDF print jobs within the same frame tree conflict in the
-// renderer, so queue them per frame tree. Frames in other webContents can
-// print concurrently. Keyed by the top frame's frameTreeNodeId, which unlike
-// WebFrameMain object identity is stable across navigations; settled entries
-// are deleted, so the map only holds in-flight frame trees.
-const printToPDFQueues = new Map<number, Promise<unknown>>();
+// print()/printToPDF() jobs in one frame tree share the renderer's print
+// helper, so run them one at a time; keyed by the top frameTreeNodeId.
+const printQueues = new Map<number, Promise<unknown>>();
 
-export async function printToPDF(target: PrintToPDFTarget, options: PrintToPDFOptions): Promise<Buffer> {
+export function enqueuePrintJob<T>(target: PrintTarget, job: () => Promise<T>): Promise<T> {
+  // mainFrame/top can be null mid-teardown; those jobs share one bucket.
+  const queueKey = (target.mainFrame ?? target.top ?? target).frameTreeNodeId ?? -1;
+  const prev = printQueues.get(queueKey) ?? Promise.resolve();
+  const next = prev.catch(() => {}).then(job);
+  printQueues.set(queueKey, next);
+  next
+    .finally(() => {
+      if (printQueues.get(queueKey) === next) printQueues.delete(queueKey);
+    })
+    .catch(() => {});
+  return next;
+}
+
+export async function printToPDF(target: PrintTarget, options: PrintToPDFOptions): Promise<Buffer> {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
   const pageSize = parsePageSize(options.pageSize ?? 'letter');
 
@@ -99,15 +110,5 @@ export async function printToPDF(target: PrintToPDFTarget, options: PrintToPDFOp
     throw new Error('Printing feature is disabled');
   }
 
-  // mainFrame/top can be null mid-teardown; those jobs share one bucket.
-  const queueKey = (target.mainFrame ?? target.top ?? target).frameTreeNodeId ?? -1;
-  const prev = printToPDFQueues.get(queueKey) ?? Promise.resolve();
-  const next = prev.catch(() => {}).then(() => target._printToPDF!(printSettings));
-  printToPDFQueues.set(queueKey, next);
-  next
-    .finally(() => {
-      if (printToPDFQueues.get(queueKey) === next) printToPDFQueues.delete(queueKey);
-    })
-    .catch(() => {});
-  return next;
+  return enqueuePrintJob(target, () => target._printToPDF!(printSettings));
 }
