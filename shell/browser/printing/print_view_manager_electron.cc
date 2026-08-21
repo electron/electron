@@ -4,32 +4,36 @@
 
 #include "shell/browser/printing/print_view_manager_electron.h"
 
-#include <algorithm>
-#include <memory>
-#include <optional>
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/logging.h"
+#include "base/memory/ref_counted_memory.h"
+#include "base/task/sequenced_task_runner.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/browser/printing/print_job_manager.h"
 #include "chrome/browser/printing/printer_query.h"
+#include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "components/printing/common/print_params.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
+#include "content/public/browser/web_contents.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+#include "printing/metafile_skia.h"
 #include "printing/mojom/print.mojom.h"
-#include "printing/page_range.h"
+#include "printing/page_number.h"
 #include "printing/print_job_constants.h"
 #include "printing/print_settings.h"
 #include "printing/print_settings_conversion.h"
+#include "printing/printed_document.h"
+#include "printing/printing_utils.h"
 
 #if BUILDFLAG(ENABLE_OOP_PRINTING)
 #include "chrome/browser/printing/oop_features.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-#include "components/printing/browser/print_composite_client.h"
 #include "mojo/public/cpp/bindings/message.h"
 #endif
 
@@ -37,27 +41,24 @@ namespace electron {
 
 namespace {
 
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
-    "Invalid SetupScriptedPrintPreview Call";
-constexpr char kInvalidShowScriptedPrintPreviewCall[] =
-    "Invalid ShowScriptedPrintPreview Call";
-constexpr char kInvalidRequestPrintPreviewCall[] =
-    "Invalid RequestPrintPreview Call";
-#endif
+constexpr std::string_view kInvalidSettings = "Invalid printer settings";
+constexpr std::string_view kCanceled = "Print job canceled";
+constexpr std::string_view kFailed = "Print job failed";
 
 }  // namespace
 
-// This file subclasses printing::PrintViewManagerBase
-// but the implementations are duplicated from
-// components/printing/browser/print_to_pdf/pdf_print_manager.cc.
+PrintViewManagerElectron::Job::Job() = default;
+PrintViewManagerElectron::Job::Job(Job&&) = default;
+PrintViewManagerElectron::Job::~Job() = default;
 
 PrintViewManagerElectron::PrintViewManagerElectron(
     content::WebContents* web_contents)
     : printing::PrintViewManagerBase(web_contents),
       content::WebContentsUserData<PrintViewManagerElectron>(*web_contents) {}
 
-PrintViewManagerElectron::~PrintViewManagerElectron() = default;
+PrintViewManagerElectron::~PrintViewManagerElectron() {
+  Finish(false, kFailed);
+}
 
 // static
 void PrintViewManagerElectron::BindPrintManagerHost(
@@ -74,55 +75,394 @@ void PrintViewManagerElectron::BindPrintManagerHost(
   print_manager->BindReceiver(std::move(receiver), rfh);
 }
 
-void PrintViewManagerElectron::DidPrintToPdf(
-    int cookie,
-    PrintToPdfCallback callback,
-    print_to_pdf::PdfPrintResult result,
-    scoped_refptr<base::RefCountedMemory> memory) {
-  std::erase(pdf_jobs_, cookie);
-  std::move(callback).Run(result, memory);
+void PrintViewManagerElectron::Print(content::RenderFrameHost* rfh,
+                                     std::optional<base::DictValue> settings,
+                                     printing::PageRanges ranges,
+                                     bool silent,
+                                     PrintCallback callback) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (job_ || !rfh->IsRenderFrameLive()) {
+    std::move(callback).Run(false, std::string(kFailed));
+    return;
+  }
+  job_.emplace();
+  job_->id = ++next_job_id_;
+  job_->rfh_id = rfh->GetGlobalId();
+  job_->callback = std::move(callback);
+  job_->silent = silent;
+  printing::PageRange::Normalize(ranges);
+  job_->ranges = std::move(ranges);
+  std::unique_ptr<printing::PrinterQuery> query =
+      printing::PrinterQuery::Create(rfh->GetGlobalId());
+  printing::PrinterQuery* const query_ptr = query.get();
+
+  // The PDF plugin prints its own document; it must not go to the compositor.
+  const bool is_modifiable = !rfh->GetProcess()->IsPdf();
+  bool resolve_from_settings = settings.has_value();
+  if (settings) {
+    settings->Set(printing::kSettingPreviewModifiable, is_modifiable);
+    job_->requested = printing::PrintSettingsFromJobSettings(*settings);
+#if BUILDFLAG(ENABLE_OOP_BASIC_PRINT_DIALOG)
+    // A service-hosted dialog can't start from a SetSettings() query (that
+    // takes PrinterQueryOop's Print Preview branch), so it opens on the
+    // defaults and only the page-content options are applied afterwards.
+    if (!silent && printing::ShouldPrintJobOop())
+      resolve_from_settings = false;
+#endif
+  }
+  if (resolve_from_settings) {
+    query_ptr->SetSettings(
+        std::move(*settings),
+        base::BindOnce(&PrintViewManagerElectron::OnSettingsResolved,
+                       weak_factory_.GetWeakPtr(), job_->id, std::move(query)));
+    return;
+  }
+  job_->query = std::move(query);
+  if (!RegisterDialogClient(/*assign_to_query=*/true))
+    return;
+  query = std::move(job_->query);
+  query_ptr->GetDefaultSettings(
+      base::BindOnce(&PrintViewManagerElectron::OnSettingsResolved,
+                     weak_factory_.GetWeakPtr(), job_->id, std::move(query)),
+      is_modifiable, /*want_pdf_settings=*/false);
 }
 
-void PrintViewManagerElectron::PrintToPdf(
-    content::RenderFrameHost* rfh,
-    const std::string& page_ranges,
-    printing::mojom::PrintPagesParamsPtr print_pages_params,
-    PrintToPdfCallback callback) {
-  // Store cookie in order to track job uniqueness and differentiate
-  // between regular and headless print jobs.
-  int cookie = print_pages_params->params->document_cookie;
-  pdf_jobs_.emplace_back(cookie);
-
-  print_to_pdf::PdfPrintJob::StartJob(
-      web_contents(), rfh, GetPrintRenderFrame(rfh), page_ranges,
-      std::move(print_pages_params),
-      base::BindOnce(&PrintViewManagerElectron::DidPrintToPdf,
-                     weak_factory_.GetWeakPtr(), cookie, std::move(callback)));
+bool PrintViewManagerElectron::IsCurrentJob(int id) const {
+  return job_ && job_->id == id;
 }
 
+bool PrintViewManagerElectron::RegisterDialogClient(bool assign_to_query) {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (printing::ShouldPrintJobOop() && !job_->dialog_client_id) {
+    job_->dialog_client_id = printing::PrintBackendServiceManager::GetInstance()
+                                 .RegisterQueryWithUiClient();
+    if (!job_->dialog_client_id) {
+      Finish(false, kFailed);
+      return false;
+    }
+    if (assign_to_query)
+      job_->query->SetClientId(*job_->dialog_client_id);
+  }
+#endif
+  return true;
+}
+
+void PrintViewManagerElectron::UnregisterDialogClient() {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (job_->dialog_client_id) {
+    printing::PrintBackendServiceManager::GetInstance().UnregisterClient(
+        *job_->dialog_client_id);
+    job_->dialog_client_id.reset();
+  }
+#endif
+}
+
+void PrintViewManagerElectron::OnSettingsResolved(
+    int id,
+    std::unique_ptr<printing::PrinterQuery> query) {
+  if (!IsCurrentJob(id))
+    return;
+  job_->query = std::move(query);
+  if (job_->query->last_status() != printing::mojom::ResultCode::kSuccess ||
+      !job_->query->settings().dpi()) {
+    Finish(false, kInvalidSettings);
+    return;
+  }
+  if (job_->silent) {
+    UnregisterDialogClient();
+    RenderDocument();
+  } else {
+    ShowDialog();
+  }
+}
+
+void PrintViewManagerElectron::ShowDialog() {
+  auto* rfh = content::RenderFrameHost::FromID(job_->rfh_id);
+  if (!rfh || !rfh->IsActive()) {
+    Finish(false, kFailed);
+    return;
+  }
+  // A query resolved through SetSettings() already holds its print document
+  // client, so the UI client is registered (one dialog at a time) but not
+  // assigned to it.
+  if (!RegisterDialogClient(/*assign_to_query=*/false))
+    return;
+  std::unique_ptr<printing::PrinterQuery> query = std::move(job_->query);
+  printing::PrinterQuery* const query_ptr = query.get();
+  const printing::PrintSettings& settings = query_ptr->settings();
+  // The page count isn't known until the frame has rendered with the dialog's
+  // settings, so the dialog can't offer a bounded page range or Selection.
+  // PrintingContext refuses kCustomMargins here; RenderDocument() re-applies
+  // the requested margins after the dialog either way.
+  const printing::mojom::MarginType margin_type =
+      settings.margin_type() == printing::mojom::MarginType::kCustomMargins
+          ? printing::mojom::MarginType::kDefaultMargins
+          : settings.margin_type();
+  query_ptr->GetSettingsFromUser(
+      /*expected_page_count=*/0, /*has_selection=*/false, margin_type,
+      /*is_scripted=*/false, settings.is_modifiable(),
+      base::BindOnce(&PrintViewManagerElectron::OnDialogDone,
+                     weak_factory_.GetWeakPtr(), job_->id, std::move(query)));
+}
+
+void PrintViewManagerElectron::OnDialogDone(
+    int id,
+    std::unique_ptr<printing::PrinterQuery> query) {
+  if (!IsCurrentJob(id))
+    return;
+  job_->query = std::move(query);
+  UnregisterDialogClient();
+  switch (job_->query->last_status()) {
+    case printing::mojom::ResultCode::kSuccess:
+      RenderDocument();
+      return;
+    case printing::mojom::ResultCode::kCanceled:
+      Finish(false, kCanceled);
+      return;
+    default:
+      Finish(false, kFailed);
+      return;
+  }
+}
+
+void PrintViewManagerElectron::RenderDocument() {
+  auto* rfh = content::RenderFrameHost::FromID(job_->rfh_id);
+  if (!rfh || !rfh->IsRenderFrameLive()) {
+    Finish(false, kFailed);
+    return;
+  }
+  if (web_contents()->IsLoading() && !job_->waited_for_load) {
+    job_->waiting_for_load = job_->waited_for_load = true;
+    base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
+        FROM_HERE,
+        base::BindOnce(&PrintViewManagerElectron::ResumeAfterLoad,
+                       weak_factory_.GetWeakPtr(), job_->id),
+        base::Seconds(2));
+    return;
+  }
+
+  printing::PrintSettings settings = job_->query->settings();
+  if (const printing::PrintSettings* requested = job_->requested.get()) {
+    // The system dialogs rebuild PrintSettings from the driver, dropping what
+    // only the renderer uses.
+    settings.set_should_print_backgrounds(
+        requested->should_print_backgrounds());
+    settings.set_display_header_footer(requested->display_header_footer());
+    settings.set_title(requested->title());
+    settings.set_url(requested->url());
+    settings.set_scale_factor(requested->scale_factor());
+    if (requested->margin_type() != settings.margin_type()) {
+      if (requested->margin_type() ==
+          printing::mojom::MarginType::kCustomMargins) {
+        settings.SetCustomMargins(
+            requested->requested_custom_margins_in_microns());
+      } else {
+        settings.set_margin_type(requested->margin_type());
+      }
+      const printing::PageSetup& page_setup =
+          settings.page_setup_device_units();
+      settings.SetPrinterPrintableArea(page_setup.physical_size(),
+                                       page_setup.printable_area(),
+                                       /*landscape_needs_flip=*/false);
+    }
+  }
+
+  auto params = printing::mojom::PrintPagesParams::New();
+  params->params = printing::mojom::PrintParams::New();
+  printing::RenderParamsFromPrintSettings(settings, params->params.get());
+  params->params->document_cookie = job_->query->cookie();
+  // Ranges picked in the dialog win over the ones print() was called with.
+  params->pages = settings.ranges().empty() ? job_->ranges : settings.ranges();
+  if (!printing::PrintMsgPrintParamsIsValid(*params->params)) {
+    Finish(false, kInvalidSettings);
+    return;
+  }
+  GetPrintRenderFrame(rfh)->PrintWithParams(
+      std::move(params),
+      base::BindOnce(&PrintViewManagerElectron::OnDocumentRendered,
+                     weak_factory_.GetWeakPtr(), job_->id));
+}
+
+void PrintViewManagerElectron::OnDocumentRendered(
+    int id,
+    printing::mojom::PrintRenderFrame::PrintWithParamsResult result) {
+  if (!IsCurrentJob(id))
+    return;
+  auto* rfh = content::RenderFrameHost::FromID(job_->rfh_id);
+  if (!result.has_value() || !rfh) {
+    Finish(false, kFailed);
+    return;
+  }
+  const uint32_t page_count = (*result)->page_count;
+  printing::mojom::DidPrintDocumentParamsPtr params =
+      std::move((*result)->params);
+  const printing::mojom::DidPrintContentParams& content = *params->content;
+  if (!content.metafile_data_region.IsValid() ||
+      params->document_cookie != job_->query->cookie()) {
+    Finish(false, kFailed);
+    return;
+  }
+  if (printing::LooksLikePdf(content.metafile_data_region.Map()
+                                 .GetMemoryAsSpan<const uint8_t>())) {
+    base::ReadOnlySharedMemoryRegion pdf =
+        std::move(params->content->metafile_data_region);
+    SpoolDocument(page_count, std::move(params), std::move(pdf));
+    return;
+  }
+  auto* compositor =
+      printing::PrintCompositeClient::FromWebContents(web_contents());
+  if (!compositor) {
+    Finish(false, kFailed);
+    return;
+  }
+  const int cookie = params->document_cookie;
+  // The client keeps one request per WebContents; if ours is displaced the
+  // callback is dropped, so make that a failure rather than a hang.
+  auto composited = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+      base::BindOnce(&PrintViewManagerElectron::OnDocumentComposited,
+                     weak_factory_.GetWeakPtr(), id, page_count,
+                     std::move(params)),
+      printing::mojom::PrintCompositor::Status::kCompositingFailure,
+      base::ReadOnlySharedMemoryRegion());
+  // `content` stays owned by `params` inside the callback for this call.
+  compositor->CompositeDocument(
+      cookie, *rfh, content, /*is_pdf=*/false, (*result)->accessibility_tree,
+      (*result)->generate_document_outline, std::move(composited));
+}
+
+void PrintViewManagerElectron::OnDocumentComposited(
+    int id,
+    uint32_t page_count,
+    printing::mojom::DidPrintDocumentParamsPtr params,
+    printing::mojom::PrintCompositor::Status status,
+    base::ReadOnlySharedMemoryRegion pdf) {
+  if (!IsCurrentJob(id))
+    return;
+  if (status != printing::mojom::PrintCompositor::Status::kSuccess) {
+    Finish(false, kFailed);
+    return;
+  }
+  SpoolDocument(page_count, std::move(params), std::move(pdf));
+}
+
+void PrintViewManagerElectron::SpoolDocument(
+    uint32_t page_count,
+    printing::mojom::DidPrintDocumentParamsPtr params,
+    base::ReadOnlySharedMemoryRegion pdf) {
+  auto data = base::RefCountedSharedMemoryMapping::CreateFromWholeRegion(pdf);
+  auto* print_job_manager = g_browser_process->print_job_manager();
+  if (!data || !page_count || !print_job_manager) {
+    Finish(false, kFailed);
+    return;
+  }
+  // Ranges passed to print() never enter PrintSettings, so the document only
+  // has the pages the renderer produced for them; dialog ranges follow
+  // upstream and count against the full document.
+  if (job_->query->settings().ranges().empty() && !job_->ranges.empty()) {
+    page_count =
+        printing::PageNumber::GetPages(job_->ranges, page_count).size();
+  }
+  job_->print_job = base::MakeRefCounted<printing::PrintJob>(print_job_manager);
+  job_->print_job->Initialize(std::move(job_->query), RenderSourceName(),
+                              page_count);
+  job_->print_job->AddObserver(job_observer_);
+  job_->print_job->StartPrinting();
+#if BUILDFLAG(IS_WIN)
+  job_->print_job->StartConversionToNativeFormat(
+      data, params->page_size, params->content_area, params->physical_offsets,
+      web_contents()->GetLastCommittedURL());
+#else
+  auto metafile = std::make_unique<printing::MetafileSkia>();
+  CHECK(metafile->InitFromData(*data));
+  job_->print_job->document()->SetDocument(std::move(metafile));
+#endif
+}
+
+void PrintViewManagerElectron::Finish(bool success, std::string_view reason) {
+  if (!job_)
+    return;
+  Job job = std::move(*job_);
+  job_.reset();
+  if (job.print_job) {
+    job.print_job->RemoveObserver(job_observer_);
+    printing::PrintedDocument* document = job.print_job->document();
+    if (!success && job.print_job->is_job_pending()) {
+      if (document && document->IsComplete()) {
+        // Fully rendered; PrintJobManager finishes spooling it.
+        success = true;
+      } else {
+        job.print_job->Cancel();
+      }
+    }
+  }
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (job.dialog_client_id) {
+    printing::PrintBackendServiceManager::GetInstance().UnregisterClient(
+        *job.dialog_client_id);
+  }
+#endif
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(job.callback), success,
+                                std::string(success ? "" : reason)));
+}
+
+void PrintViewManagerElectron::JobObserver::OnJobDone() {
+  owner_->Finish(true, "");
+}
+
+void PrintViewManagerElectron::JobObserver::OnCanceling() {
+  owner_->Finish(false, kCanceled);
+}
+
+void PrintViewManagerElectron::JobObserver::OnFailed() {
+  owner_->Finish(false, kFailed);
+}
+
+void PrintViewManagerElectron::DidStopLoading() {
+  if (job_)
+    ResumeAfterLoad(job_->id);
+}
+
+void PrintViewManagerElectron::ResumeAfterLoad(int id) {
+  if (IsCurrentJob(id) && job_->waiting_for_load) {
+    job_->waiting_for_load = false;
+    RenderDocument();
+  }
+}
+
+void PrintViewManagerElectron::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  PrintViewManagerBase::RenderFrameDeleted(render_frame_host);
+  // Once spooling has started the frame is no longer needed.
+  if (job_ && !job_->print_job &&
+      job_->rfh_id == render_frame_host->GetGlobalId()) {
+    Finish(false, kFailed);
+  }
+}
+
+// One print per WebContents at a time: the renderer's print helper and the
+// compositor request are shared with window.print().
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  // This isn't ideal, but we're not able to access the document cookie here.
-  if (pdf_jobs_.size() > 0) {
-    LOG(ERROR) << "Scripted print is not supported";
-    std::move(callback).Run(printing::mojom::PrintParams::New());
-  } else {
-    PrintViewManagerBase::GetDefaultPrintSettings(std::move(callback));
+  if (job_) {
+    std::move(callback).Run(nullptr);
+    return;
   }
+  PrintViewManagerBase::GetDefaultPrintSettings(std::move(callback));
 }
 
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
-  if (!std::ranges::contains(pdf_jobs_, params->cookie)) {
-    PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
+  if (job_) {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+    if (printing::ShouldPrintJobOop())
+      UnregisterSystemPrintClient();
+#endif
+    std::move(callback).Run(nullptr);
     return;
   }
-
-  auto default_param = printing::mojom::PrintPagesParams::New();
-  default_param->params = printing::mojom::PrintParams::New();
-  LOG(ERROR) << "Scripted print is not supported";
-  std::move(callback).Run(std::move(default_param));
+  PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -138,141 +478,22 @@ void PrintViewManagerElectron::SetAccessibilityTree(
 
 void PrintViewManagerElectron::GetPrintPreviewParams(
     GetPrintPreviewParamsCallback callback) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  if (!GetPrintingEnabledBooleanPref()) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  if (print_preview_settings_.empty()) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  base::DictValue job_settings = std::move(print_preview_settings_.front());
-  print_preview_settings_.pop();
-  CHECK(!job_settings.empty());
-
-  std::optional<int> printer_type_value =
-      job_settings.FindInt(printing::kSettingPrinterType);
-  if (!printer_type_value) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  auto printer_type =
-      static_cast<printing::mojom::PrinterType>(*printer_type_value);
-  if (printer_type != printing::mojom::PrinterType::kExtension &&
-      printer_type != printing::mojom::PrinterType::kPdf &&
-      printer_type != printing::mojom::PrinterType::kLocal) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  std::unique_ptr<printing::PrintSettings> print_settings =
-      printing::PrintSettingsFromJobSettings(job_settings);
-  if (!print_settings) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  bool open_in_external_preview =
-      job_settings.contains(printing::kSettingOpenPDFInPreview);
-  if (!open_in_external_preview &&
-      (printer_type == printing::mojom::PrinterType::kPdf ||
-       printer_type == printing::mojom::PrinterType::kExtension)) {
-    if (print_settings->page_setup_device_units().printable_area().IsEmpty()) {
-      printing::PrinterQuery::
-          ApplyDefaultPrintableAreaToVirtualPrinterPrintSettings(
-              *print_settings);
-    }
-  }
-
-#if BUILDFLAG(ENABLE_OOP_PRINTING)
-  if (printing::ShouldPrintJobOop() && !query_with_ui_client_id().has_value()) {
-    RegisterSystemPrintClient();
-  }
-#endif
-
-  std::unique_ptr<printing::PrinterQuery> query =
-      queue()->CreatePrinterQuery(CurrentTargetFrame().GetGlobalId());
-  auto* query_ptr = query.get();
-  // We need to clone this before calling SetSettings because some environments
-  // evaluate job_settings.Clone() first, and some std::move(job_settings)
-  // first; for the former things work correctly but for the latter the cloned
-  // value is null.
-  auto job_settings_copy = job_settings.Clone();
-  query_ptr->SetSettings(
-      std::move(job_settings_copy),
-      base::BindOnce(&PrintViewManagerElectron::CompleteGetPrintPreviewParams,
-                     weak_factory_.GetWeakPtr(), std::move(query),
-                     std::move(job_settings), std::move(print_settings),
-                     std::move(callback)));
-}
-
-void PrintViewManagerElectron::CompleteGetPrintPreviewParams(
-    std::unique_ptr<printing::PrinterQuery> printer_query,
-    base::DictValue job_settings,
-    std::unique_ptr<printing::PrintSettings> print_settings,
-    GetPrintPreviewParamsCallback callback) {
-  auto settings = printing::mojom::PrintPagesParams::New();
-  settings->pages = printing::GetPageRangesFromJobSettings(job_settings);
-  settings->params = printing::mojom::PrintParams::New();
-  printing::RenderParamsFromPrintSettings(*print_settings,
-                                          settings->params.get());
-  settings->params->document_cookie =
-      printer_query ? printer_query->cookie()
-                    : printing::PrintSettings::NewCookie();
-  if (!printing::PrintMsgPrintParamsIsValid(*settings->params)) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-
-  if (printer_query && printer_query->cookie() &&
-      printer_query->settings().dpi()) {
-    queue()->QueuePrinterQuery(std::move(printer_query));
-  }
-
-  set_cookie(settings->params->document_cookie);
-  std::move(callback).Run(std::move(settings));
-}
-
-void PrintViewManagerElectron::UpdatePrintSettings(
-    base::DictValue job_settings,
-    UpdatePrintSettingsCallback callback) {
-  if (job_settings.empty()) {
-    std::move(callback).Run(nullptr);
-    return;
-  }
-  AppendPrintPreviewSettings(std::move(job_settings), /*is_pdf=*/false);
-  GetPrintPreviewParams(std::move(callback));
-}
-
-void PrintViewManagerElectron::AppendPrintPreviewSettings(
-    base::DictValue settings,
-    bool is_pdf) {
-  CHECK(!settings.empty());
-  if (is_pdf) {
-    settings.Set(printing::kSettingHeaderFooterEnabled, false);
-    settings.Set(printing::kSettingMarginsType,
-                 static_cast<int>(printing::mojom::MarginType::kNoMargins));
-  }
-  print_preview_settings_.push(std::move(settings));
+  mojo::ReportBadMessage("Invalid GetPrintPreviewParams Call");
+  std::move(callback).Run(nullptr);
 }
 
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
-  mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
+  mojo::ReportBadMessage("Invalid SetupScriptedPrintPreview Call");
 }
 
 void PrintViewManagerElectron::ShowScriptedPrintPreview() {
-  mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
+  mojo::ReportBadMessage("Invalid ShowScriptedPrintPreview Call");
 }
 
 void PrintViewManagerElectron::RequestPrintPreview(
     printing::mojom::RequestPrintPreviewParamsPtr params) {
-  mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
+  mojo::ReportBadMessage("Invalid RequestPrintPreview Call");
 }
 
 void PrintViewManagerElectron::CheckForCancel(
@@ -282,13 +503,6 @@ void PrintViewManagerElectron::CheckForCancel(
   std::move(callback).Run(false);
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
-
-void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
-                                                       uint32_t number_pages) {
-  if (!std::ranges::contains(pdf_jobs_, cookie)) {
-    PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
-  }
-}
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(PrintViewManagerElectron);
 

@@ -4,20 +4,28 @@
 
 #include "shell/browser/printing/printing_utils.h"
 
-#include "base/apple/scoped_typeref.h"
-#include "base/strings/sys_string_conversions.h"
-#include "base/strings/utf_string_conversions.h"
+#include <algorithm>
+#include <utility>
+
+#include "base/functional/bind.h"
+#include "base/no_destructor.h"
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
+#include "base/types/expected.h"
 #include "chrome/browser/browser_process.h"
 #include "components/pdf/browser/pdf_frame_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
-#include "printing/backend/print_backend.h"  // nogncheck
-#include "printing/units.h"
-#include "shell/common/thread_restrictions.h"
+#include "printing/backend/print_backend.h"
+#include "printing/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+#include "chrome/browser/printing/oop_features.h"
+#include "chrome/browser/printing/print_backend_service_manager.h"
+#include "chrome/services/printing/public/mojom/print_backend_service.mojom.h"
+#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "pdf/pdf_features.h"
@@ -27,59 +35,11 @@
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #endif
 
-#if BUILDFLAG(IS_MAC)
-#include <ApplicationServices/ApplicationServices.h>
-#endif
-
-#if BUILDFLAG(IS_LINUX)
-#include <gtk/gtk.h>
-#endif
-
 #if BUILDFLAG(IS_WIN)
-#include <windows.h>
+#include "shell/common/thread_restrictions.h"
 #endif
 
 namespace electron {
-
-gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name) {
-#if BUILDFLAG(IS_MAC)
-  return gfx::Size(printing::kDefaultMacDpi, printing::kDefaultMacDpi);
-#elif BUILDFLAG(IS_WIN)
-  HDC hdc =
-      CreateDC(L"WINSPOOL", base::as_wcstr(device_name), nullptr, nullptr);
-  if (hdc == nullptr)
-    return gfx::Size(printing::kDefaultPdfDpi, printing::kDefaultPdfDpi);
-
-  int dpi_x = GetDeviceCaps(hdc, LOGPIXELSX);
-  int dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
-  DeleteDC(hdc);
-
-  return gfx::Size(dpi_x, dpi_y);
-#else
-  GtkPrintSettings* print_settings = gtk_print_settings_new();
-  int dpi = gtk_print_settings_get_resolution(print_settings);
-  g_object_unref(print_settings);
-  if (dpi <= 0)
-    dpi = printing::kDefaultPdfDpi;
-  return {dpi, dpi};
-#endif
-}
-
-bool IsDeviceNameValid(const std::u16string& device_name) {
-#if BUILDFLAG(IS_MAC)
-  base::apple::ScopedCFTypeRef<CFStringRef> new_printer_id(
-      base::SysUTF16ToCFStringRef(device_name));
-  PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
-  bool printer_exists = new_printer != nullptr;
-  PMRelease(new_printer);
-  return printer_exists;
-#else
-  scoped_refptr<printing::PrintBackend> print_backend =
-      printing::PrintBackend::CreateInstance(
-          g_browser_process->GetApplicationLocale());
-  return print_backend->IsValidPrinter(base::UTF16ToUTF8(device_name));
-#endif
-}
 
 namespace {
 
@@ -130,96 +90,252 @@ content::RenderFrameHost* GetRenderFrameHostToUse(
              : contents->GetPrimaryMainFrame();
 }
 
-std::pair<std::string, std::u16string> GetDeviceNameToUse(
-    const std::u16string& device_name) {
+namespace {
+
+// As in Chrome's LocalPrinterHandlerDefault: CUPS is thread safe, Windows
+// drivers must be used from the UI thread.
+scoped_refptr<base::TaskRunner> PrintBackendTaskRunner() {
 #if BUILDFLAG(IS_WIN)
-  // Blocking is needed here because Windows printer drivers are oftentimes
-  // not thread-safe and have to be accessed on the UI thread.
-  ScopedAllowBlockingForElectron allow_blocking;
-#endif
-
-  if (!device_name.empty()) {
-    if (!IsDeviceNameValid(device_name))
-      return std::make_pair("Invalid deviceName provided", std::u16string());
-    return std::make_pair(std::string(), device_name);
-  }
-
-  scoped_refptr<printing::PrintBackend> print_backend =
-      printing::PrintBackend::CreateInstance(
-          g_browser_process->GetApplicationLocale());
-  std::string printer_name;
-  printing::mojom::ResultCode code =
-      print_backend->GetDefaultPrinterName(printer_name);
-
-  // We don't want to return if this fails since some devices won't have a
-  // default printer.
-  if (code != printing::mojom::ResultCode::kSuccess)
-    LOG(ERROR) << "Failed to get default printer name";
-
-  if (printer_name.empty()) {
-    printing::PrinterList printers;
-    if (print_backend->EnumeratePrinters(printers) !=
-        printing::mojom::ResultCode::kSuccess)
-      return std::make_pair("Failed to enumerate printers", std::u16string());
-    if (printers.empty())
-      return std::make_pair("No printers available on the network",
-                            std::u16string());
-
-    printer_name = printers.front().printer_name;
-  }
-
-  return std::make_pair(std::string(), base::UTF8ToUTF16(printer_name));
-}
-
-// Copied from
-// chrome/browser/ui/webui/print_preview/local_printer_handler_default.cc:L36-L54
-scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
-  // USER_VISIBLE because the result is displayed in the print preview dialog.
-#if !BUILDFLAG(IS_WIN)
-  static constexpr base::TaskTraits kTraits = {
-      base::MayBlock(), base::TaskPriority::USER_VISIBLE};
-#endif
-
-#if defined(USE_CUPS)
-  // CUPS is thread safe.
-  return base::ThreadPool::CreateTaskRunner(kTraits);
-#elif BUILDFLAG(IS_WIN)
-  // Windows drivers are likely not thread-safe and need to be accessed on the
-  // UI thread.
   return content::GetUIThreadTaskRunner({base::TaskPriority::USER_VISIBLE});
 #else
-  // Be conservative on unsupported platforms.
-  return base::ThreadPool::CreateSingleThreadTaskRunner(kTraits);
+  static base::NoDestructor<scoped_refptr<base::TaskRunner>> runner(
+      base::ThreadPool::CreateTaskRunner(
+          {base::MayBlock(), base::TaskPriority::USER_VISIBLE}));
+  return *runner;
 #endif
 }
 
-std::optional<gfx::Size> GetPrinterDefaultPaperSize(
-    const std::string& printer_name) {
+scoped_refptr<printing::PrintBackend> CreateBackend() {
+  return printing::PrintBackend::CreateInstance(
+      g_browser_process->GetApplicationLocale());
+}
+
+printing::PrinterList EnumeratePrintersBlocking() {
 #if BUILDFLAG(IS_WIN)
-  // Blocking is needed here because Windows printer drivers are oftentimes
-  // not thread-safe and have to be accessed on the UI thread.
   ScopedAllowBlockingForElectron allow_blocking;
 #endif
+  printing::PrinterList printers;
+  CreateBackend()->EnumeratePrinters(printers);
+  return printers;
+}
 
-  if (printer_name.empty())
-    return std::nullopt;
+std::string GetDefaultPrinterNameBlocking() {
+#if BUILDFLAG(IS_WIN)
+  ScopedAllowBlockingForElectron allow_blocking;
+#endif
+  std::string name;
+  CreateBackend()->GetDefaultPrinterName(name);
+  return name;
+}
 
-  scoped_refptr<printing::PrintBackend> print_backend =
-      printing::PrintBackend::CreateInstance(
-          g_browser_process->GetApplicationLocale());
+struct PrinterLookup {
+  bool exists = false;
+  std::optional<printing::PrinterSemanticCapsAndDefaults> caps;
+};
 
-  if (!print_backend)
-    return std::nullopt;
-
+PrinterLookup LookUpPrinterBlocking(std::string name, bool want_caps) {
+#if BUILDFLAG(IS_WIN)
+  ScopedAllowBlockingForElectron allow_blocking;
+#endif
+  scoped_refptr<printing::PrintBackend> backend = CreateBackend();
+  PrinterLookup result;
+  result.exists = backend->IsValidPrinter(name);
   printing::PrinterSemanticCapsAndDefaults caps;
-  printing::mojom::ResultCode result =
-      print_backend->GetPrinterSemanticCapsAndDefaults(printer_name, &caps);
-  if (result != printing::mojom::ResultCode::kSuccess)
-    return std::nullopt;
+  if (result.exists && want_caps &&
+      backend->GetPrinterSemanticCapsAndDefaults(name, &caps) ==
+          printing::mojom::ResultCode::kSuccess) {
+    result.caps = std::move(caps);
+  }
+  return result;
+}
 
-  if (!caps.default_paper.size_um().IsEmpty())
-    return caps.default_paper.size_um();
-  return std::nullopt;
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+// Holds a query-client registration for the lifetime of one service call.
+class ScopedQueryClient {
+ public:
+  ScopedQueryClient()
+      : id_(printing::PrintBackendServiceManager::GetInstance()
+                .RegisterQueryClient()) {}
+  ScopedQueryClient(ScopedQueryClient&& other)
+      : id_(std::exchange(other.id_, std::nullopt)) {}
+  ~ScopedQueryClient() {
+    if (id_) {
+      printing::PrintBackendServiceManager::GetInstance().UnregisterClient(
+          *id_);
+    }
+  }
+
+ private:
+  std::optional<printing::PrintBackendServiceManager::ClientId> id_;
+};
+#endif
+
+void GetDefaultPrinterName(base::OnceCallback<void(std::string)> callback) {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (printing::IsOopPrintingEnabled()) {
+    ScopedQueryClient client;
+    printing::PrintBackendServiceManager::GetInstance().GetDefaultPrinterName(
+        base::BindOnce(
+            [](ScopedQueryClient,
+               base::OnceCallback<void(std::string)> callback,
+               base::expected<std::string, printing::mojom::ResultCode> name) {
+              std::move(callback).Run(name.value_or(""));
+            },
+            std::move(client), std::move(callback)));
+    return;
+  }
+#endif
+  PrintBackendTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&GetDefaultPrinterNameBlocking),
+      std::move(callback));
+}
+
+using LookupCallback = base::OnceCallback<void(PrinterLookup)>;
+
+void LookUpPrinter(const std::string& name,
+                   bool want_caps,
+                   LookupCallback callback) {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (printing::IsOopPrintingEnabled()) {
+    // FetchCapabilities fails for queues without a PPD, so learn whether the
+    // printer exists from the list and treat capabilities as optional.
+    GetPrinterList(base::BindOnce(
+        [](std::string name, bool want_caps, LookupCallback callback,
+           printing::PrinterList printers) {
+          if (!std::ranges::contains(
+                  printers, name, &printing::PrinterBasicInfo::printer_name)) {
+            std::move(callback).Run(PrinterLookup());
+            return;
+          }
+          if (!want_caps) {
+            PrinterLookup lookup;
+            lookup.exists = true;
+            std::move(callback).Run(std::move(lookup));
+            return;
+          }
+          ScopedQueryClient client;
+          printing::PrintBackendServiceManager::GetInstance().FetchCapabilities(
+              name,
+              base::BindOnce(
+                  [](ScopedQueryClient, LookupCallback callback,
+                     base::expected<printing::mojom::PrinterCapsAndInfoPtr,
+                                    printing::mojom::ResultCode> result) {
+                    PrinterLookup lookup;
+                    lookup.exists = true;
+                    if (result.has_value())
+                      lookup.caps = std::move((*result)->printer_caps);
+                    std::move(callback).Run(std::move(lookup));
+                  },
+                  std::move(client), std::move(callback)));
+        },
+        name, want_caps, std::move(callback)));
+    return;
+  }
+#endif
+  PrintBackendTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&LookUpPrinterBlocking, name, want_caps),
+      std::move(callback));
+}
+
+void OnPrinterLookup(std::string name,
+                     ResolvePrinterCallback callback,
+                     PrinterLookup lookup) {
+  if (!lookup.exists) {
+    std::move(callback).Run(base::unexpected("Invalid deviceName provided"));
+    return;
+  }
+  ResolvedPrinter printer;
+  printer.name = std::move(name);
+  if (lookup.caps) {
+    printer.dpi = !lookup.caps->default_dpi.IsEmpty() ? lookup.caps->default_dpi
+                  : !lookup.caps->dpis.empty() ? lookup.caps->dpis.front()
+                                               : gfx::Size();
+    printer.default_paper_um = lookup.caps->default_paper.size_um();
+  }
+  std::move(callback).Run(std::move(printer));
+}
+
+void OnPrinterList(bool want_caps,
+                   ResolvePrinterCallback callback,
+                   printing::PrinterList printers) {
+  if (printers.empty()) {
+    std::move(callback).Run(
+        base::unexpected("No printers available on the network"));
+    return;
+  }
+  std::string name = printers.front().printer_name;
+  LookUpPrinter(name, want_caps,
+                base::BindOnce(&OnPrinterLookup, name, std::move(callback)));
+}
+
+void OnDefaultPrinterLookup(std::string name,
+                            bool want_caps,
+                            ResolvePrinterCallback callback,
+                            PrinterLookup lookup) {
+  // A stale system default is as good as none; use the first listed printer.
+  if (!lookup.exists) {
+    GetPrinterList(
+        base::BindOnce(&OnPrinterList, want_caps, std::move(callback)));
+    return;
+  }
+  OnPrinterLookup(std::move(name), std::move(callback), std::move(lookup));
+}
+
+void OnDefaultPrinterName(bool want_caps,
+                          ResolvePrinterCallback callback,
+                          std::string name) {
+  if (name.empty()) {
+    GetPrinterList(
+        base::BindOnce(&OnPrinterList, want_caps, std::move(callback)));
+    return;
+  }
+  LookUpPrinter(name, want_caps,
+                base::BindOnce(&OnDefaultPrinterLookup, name, want_caps,
+                               std::move(callback)));
+}
+
+}  // namespace
+
+ResolvedPrinter::ResolvedPrinter() = default;
+ResolvedPrinter::ResolvedPrinter(ResolvedPrinter&&) = default;
+ResolvedPrinter& ResolvedPrinter::operator=(ResolvedPrinter&&) = default;
+ResolvedPrinter::~ResolvedPrinter() = default;
+
+void GetPrinterList(base::OnceCallback<void(printing::PrinterList)> callback) {
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  if (printing::IsOopPrintingEnabled()) {
+    ScopedQueryClient client;
+    printing::PrintBackendServiceManager::GetInstance().EnumeratePrinters(
+        base::BindOnce(
+            [](ScopedQueryClient,
+               base::OnceCallback<void(printing::PrinterList)> callback,
+               base::expected<printing::PrinterList,
+                              printing::mojom::ResultCode> printers) {
+              std::move(callback).Run(
+                  std::move(printers).value_or(printing::PrinterList()));
+            },
+            std::move(client), std::move(callback)));
+    return;
+  }
+#endif
+  // Enumeration alone has always run off the UI thread, Windows included.
+  base::ThreadPool::PostTaskAndReplyWithResult(
+      FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+      base::BindOnce(&EnumeratePrintersBlocking), std::move(callback));
+}
+
+void ResolvePrinter(const std::string& device_name,
+                    bool want_caps,
+                    ResolvePrinterCallback callback) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  if (!device_name.empty()) {
+    LookUpPrinter(
+        device_name, want_caps,
+        base::BindOnce(&OnPrinterLookup, device_name, std::move(callback)));
+    return;
+  }
+  GetDefaultPrinterName(
+      base::BindOnce(&OnDefaultPrinterName, want_caps, std::move(callback)));
 }
 
 }  // namespace electron

@@ -120,7 +120,10 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
-    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _print(
+      options: ElectronInternal.NormalizedPrintOptions | null,
+      callback: (success: boolean, failureReason: string) => void
+    ): void;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -404,8 +407,25 @@ declare namespace ElectronInternal {
     reloadIgnoringCache?: boolean;
   }
 
-  interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
-    mediaSize?: MediaSize;
+  interface NormalizedPrintOptions {
+    silent: boolean;
+    printBackground: boolean;
+    deviceName: string;
+    color: boolean;
+    marginType: 'default' | 'none' | 'printableArea' | 'custom';
+    margins: { top: number; bottom: number; left: number; right: number } | null;
+    landscape: boolean;
+    scaleFactor: number;
+    pagesPerSheet: number;
+    collate: boolean;
+    copies: number;
+    pageRanges: { from: number; to: number }[];
+    duplexMode: 'simplex' | 'shortEdge' | 'longEdge' | null;
+    dpi: { horizontal: number; vertical: number } | null;
+    header: string;
+    footer: string;
+    mediaSize: MediaSize | null;
+    usePrinterDefaultPageSize: boolean;
   }
 
   type MediaSize = {
