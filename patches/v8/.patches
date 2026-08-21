@@ -20,3 +20,5 @@ cherry-pick-db2af0867f43.patch
 cherry-pick-e12f567ec105.patch
 cherry-pick-383120c3acd3.patch
 cherry-pick-b611400736ba.patch
+m150_compiler_avoid_race_condition_when_reading_scopeinfo_during.patch
+m150_compiler_avoid_data_race_when_reading_outer_scopeinfo_in_bg.patch
