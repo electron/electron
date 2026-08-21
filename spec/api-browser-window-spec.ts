@@ -1214,6 +1214,48 @@ describe('BrowserWindow module', () => {
           expect(navigatedIframe!.frameTreeNodeId).to.equal(frameTreeNodeId);
         });
 
+        it('recovers a frame when its renderer crashes during navigation', async () => {
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const view = new WebContentsView({
+            webPreferences: { partition: `wfm-crash-navigation-${crypto.randomUUID()}`, sandbox }
+          });
+          defer(() => view.webContents.destroy());
+          w.contentView.addChildView(view);
+          defer(() => w.contentView.removeChildView(view));
+
+          const { webContents } = view;
+          await webContents.loadURL(`${url}/initial`);
+
+          let resumeNavigation: (() => void) | undefined;
+          const frameReceived = new Promise<WebFrameMain>((resolve) => {
+            webContents.session.webRequest.onHeadersReceived((details, callback) => {
+              if (details.resourceType === 'mainFrame' && details.frame) {
+                resumeNavigation = () => callback({ responseHeaders: details.responseHeaders });
+                resolve(details.frame);
+              } else {
+                callback({ responseHeaders: details.responseHeaders });
+              }
+            });
+          });
+          defer(() => {
+            resumeNavigation?.();
+            webContents.session.webRequest.onHeadersReceived(null);
+          });
+
+          const navigation = webContents.loadURL(`${crossOriginUrl}/navigated`);
+          const frame = await frameReceived;
+          const renderProcessGone = once(webContents, 'render-process-gone');
+          webContents.forcefullyCrashRenderer();
+          await renderProcessGone;
+          expect(frame.detached).to.be.true();
+
+          resumeNavigation!();
+          resumeNavigation = undefined;
+          await navigation;
+
+          expect(webContents.mainFrame).to.equal(frame);
+          expect(frame.detached).to.be.false();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = ['did-start-navigation', 'did-frame-navigate', 'did-navigate'];
