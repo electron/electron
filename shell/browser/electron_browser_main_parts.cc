@@ -84,6 +84,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
 #include "chrome/browser/ui/views/dark_mode_manager_linux.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
@@ -139,6 +140,23 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(IS_LINUX)
+// The display server connection or the session bus is gone: exit like
+// Chrome's SessionEnding(), with an off-thread watchdog that crashes us if
+// exiting hangs on the dead connection.
+void ExitOnSessionLoss() {
+  class ShutdownWatchdogDelegate : public base::Watchdog::Delegate {
+   public:
+    void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
+  };
+  static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
+  static base::NoDestructor<base::Watchdog> watchdog(
+      base::Seconds(10), "SessionLossShutdown", /*enabled=*/true,
+      delegate.get());
+  watchdog->Arm();
+  if (Browser* browser = Browser::Get())
+    browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
+}
+
 class LinuxUiGetterImpl : public ui::LinuxUiGetter {
  public:
   LinuxUiGetterImpl() = default;
@@ -528,24 +546,11 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   std::string app_name = electron::Browser::Get()->GetName();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  // The display server connection is gone (X IO error / compositor lost):
-  // exit like Chrome's SessionEnding(), with an off-thread watchdog that
-  // crashes us if exiting hangs on the dead display connection.
-  auto shutdown_cb = base::BindOnce([] {
-    class ShutdownWatchdogDelegate : public base::Watchdog::Delegate {
-     public:
-      void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
-    };
-    static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
-    static base::NoDestructor<base::Watchdog> watchdog(
-        base::Seconds(10), "OzoneShutdown", /*enabled=*/true, delegate.get());
-    watchdog->Arm();
-    if (Browser* browser = Browser::Get())
-      browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
-  });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
-      std::move(shutdown_cb),
+      base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
+  dbus_thread_linux::SetDisconnectedCallback(
+      base::BindRepeating(&ExitOnSessionLoss));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
