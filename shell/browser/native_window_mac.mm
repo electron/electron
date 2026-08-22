@@ -487,7 +487,7 @@ void NativeWindowMac::Show() {
   [window_ makeKeyAndOrderFront:nil];
 }
 
-void NativeWindowMac::ShowInactive() {
+void NativeWindowMac::ShowInactive(bool bring_to_front) {
   FlushPendingDisplayMode();
 
   set_wants_to_be_visible(true);
@@ -498,8 +498,15 @@ void NativeWindowMac::ShowInactive() {
 
   // Triggers `NativeWidgetMacNSWindowHost::OnVisibilityChanged`.
   widget()->ShowInactive();
-  // `Widget::ShowInactive` is not sufficient to bring window to front.
-  [window_ orderFrontRegardless];
+
+  if (bring_to_front) {
+    // `Widget::ShowInactive` is not sufficient to bring window to front.
+    [window_ orderFrontRegardless];
+  } else {
+    // Show window at the back of the window stack.
+    [window_ orderBack:nil];
+  }
+
   // Above calls do not trigger `orderWindow: relativeTo:` in which headless
   // mode is being disabled.
   [window_ disableHeadlessMode];
@@ -566,7 +573,7 @@ void NativeWindowMac::Maximize() {
 
   if (IsMaximized()) {
     if (!is_visible)
-      ShowInactive();
+      ShowInactive(true);
     return;
   }
 
@@ -576,7 +583,7 @@ void NativeWindowMac::Maximize() {
   [window_ zoom:nil];
 
   if (!is_visible) {
-    ShowInactive();
+    ShowInactive(true);
     NotifyWindowMaximize();
   }
 }
