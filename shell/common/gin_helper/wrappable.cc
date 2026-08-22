@@ -249,11 +249,11 @@ namespace gin {
 DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
     v8::Local<v8::Object> object) {
   if (object->InternalFieldCount() != kNumberOfInternalFields)
-    return NULL;
+    return nullptr;
   DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
       object->GetAlignedPointerFromInternalField(
           kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
-  return info->embedder == kEmbedderNativeGin ? info : NULL;
+  return info->embedder == kEmbedderNativeGin ? info : nullptr;
 }
 
 }  // namespace gin
