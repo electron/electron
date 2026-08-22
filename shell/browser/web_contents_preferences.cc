@@ -383,6 +383,32 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   SaveLastPreferences();
 }
 
+bool WebContentsPreferences::CanUseSpareRenderer() const {
+  return IsSandboxed() && !offscreen_ && !experimental_features_ &&
+#if BUILDFLAG(IS_MAC)
+         !scroll_bounce_ &&
+#endif
+         custom_args_.empty() && !enable_blink_features_ &&
+         !disable_blink_features_;
+}
+
+// static
+bool WebContentsPreferences::CanUseSpareRenderer(
+    const gin_helper::Dictionary& web_preferences) {
+  bool experimental_features = false, scroll_bounce = false;
+  std::vector<std::string> custom_args;
+  std::string blink_features;
+  web_preferences.Get(options::kExperimentalFeatures, &experimental_features);
+#if BUILDFLAG(IS_MAC)
+  web_preferences.Get(options::kScrollBounce, &scroll_bounce);
+#endif
+  web_preferences.Get(options::kCustomArgs, &custom_args);
+  return IsSandboxed(web_preferences) && !experimental_features &&
+         !scroll_bounce && custom_args.empty() &&
+         !web_preferences.Get(options::kEnableBlinkFeatures, &blink_features) &&
+         !web_preferences.Get(options::kDisableBlinkFeatures, &blink_features);
+}
+
 void WebContentsPreferences::SaveLastPreferences() {
   base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);

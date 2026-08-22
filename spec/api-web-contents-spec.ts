@@ -2156,10 +2156,25 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.getOSProcessId()).to.equal(0);
-
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+
+    it('returns 0 before a renderer has been assigned', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: false } });
+      expect(w.webContents.getOSProcessId()).to.equal(0);
+    });
+
+    it('can be a warm spare renderer before the first navigation of a sandboxed window', async () => {
+      const first = new BrowserWindow({ show: false });
+      await first.loadURL('about:blank');
+      const sparePids = app
+        .getAppMetrics()
+        .filter((m) => m.type === 'Tab')
+        .map((m) => m.pid);
+      const w = new BrowserWindow({ show: false });
+      const pid = w.webContents.getOSProcessId();
+      if (pid !== 0) expect(sparePids).to.include(pid);
     });
   });
 
