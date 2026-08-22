@@ -8,5 +8,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadURL: (url) => ipcRenderer.invoke('nav:loadURL', url),
   getCurrentURL: () => ipcRenderer.invoke('nav:getCurrentURL'),
   getHistory: () => ipcRenderer.invoke('nav:getHistory'),
-  onNavigationUpdate: (callback) => ipcRenderer.on('nav:updated', callback)
+  onNavigationUpdate: (callback) => ipcRenderer.on('nav:updated', () => callback())
 })
