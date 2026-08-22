@@ -15,8 +15,6 @@
 
 namespace electron {
 
-class NotificationPresenterWin;
-
 class NotificationActivator
     : public Microsoft::WRL::RuntimeClass<
           Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
