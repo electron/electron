@@ -7544,28 +7544,32 @@ describe('BrowserWindow module', () => {
     w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
   });
 
-  // TODO(codebytere): fix on Windows and Linux too
-  ifdescribe(process.platform === 'darwin')('window.webContents initial paint', () => {
+  describe('window.webContents initial paint', () => {
     afterEach(closeAllWindows);
-    it('paints when a window is initially hidden', async () => {
-      const w = new BrowserWindow({ show: false });
+    it('paints when a window is initially hidden with paintWhenInitiallyHidden', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        paintWhenInitiallyHidden: true
+      });
       await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      expect(w.isVisible()).to.be.false('window is visible');
 
+      // first-contentful-paint is only reported once the frame carrying the
+      // content has actually been presented.
       const entries = await w.webContents.executeJavaScript(`
         new Promise((resolve) => {
-          const observer = new PerformanceObserver((performance) => {
-            observer.disconnect();
-            resolve(performance.getEntries());
-          });
-          observer.observe({ entryTypes: ['paint'] });
+          new PerformanceObserver((list, observer) => {
+            const names = list.getEntries().map(e => e.name);
+            if (names.includes('first-contentful-paint')) {
+              observer.disconnect();
+              resolve(names);
+            }
+          }).observe({ type: 'paint', buffered: true });
         });
-
-        const header = document.createElement('h1');
-        header.innerText = 'Paint me!!';
-        document.getElementById('div').appendChild(header);
       `);
 
-      expect(JSON.stringify(entries)).to.eq('{}');
+      expect(entries).to.be.an('array').that.includes('first-contentful-paint');
+      expect(w.isVisible()).to.be.false('window is visible');
     });
   });
 

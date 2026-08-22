@@ -35,6 +35,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
+#include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
@@ -341,6 +342,21 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
   widget()->OnSizeConstraintsChanged();
+
+  // A widget that starts hidden keeps its content window hidden (and may keep
+  // its compositor invisible) until the first Show(), so nothing the renderer
+  // submits is ever drawn or presented even though the WebContents is created
+  // visible - e.g. PerformanceObserver never reports first-paint and there is
+  // no frame for capturePage() to copy. When painting while initially hidden
+  // is requested, bring up everything except the platform window itself so
+  // frames are produced and presented off-screen; the platform window stays
+  // unmapped, so IsVisible() is unaffected. The first Show()/Hide() takes
+  // over from there.
+  if (options.ValueOrDefault(options::kPaintWhenInitiallyHidden, true) &&
+      !options.ValueOrDefault(options::kShow, true)) {
+    widget()->GetCompositor()->SetVisible(true);
+    widget()->GetNativeWindow()->Show();
+  }
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
