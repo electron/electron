@@ -748,6 +748,61 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.getTitle()).to.equal(title);
       });
+
+      it('should update the title when navigating back or forward without browserWindow.setTitle()', async () => {
+        const page = `
+<html>
+<head><meta charset="UTF-8"><title>Document</title></head>
+<body>
+<script>
+  const setTitle = () => document.title = location.hash.slice(1) || 'Document';
+  addEventListener('popstate', setTitle);
+  setTitle(location.hash);
+  window.navigate = name => {
+        history.pushState(null, '', '#' + name);
+        setTitle();
+  };
+</script>
+<button id="btn1" onclick="navigate('path1')">Link 1</button>
+<button id="btn2" onclick="navigate('path2')">Link 2</button>
+
+</body>
+</html>`.trim();
+
+        w = new BrowserWindow({ show: false });
+
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+
+        const nav1 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn1").click()', true);
+        await nav1;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const nav2 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn2").click()', true);
+        await nav2;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+
+        const back = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const forward = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goForward();
+        await forward;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        w.setTitle('My own Title');
+        const back2 = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back2;
+        expect(w.getTitle()).to.equal('My own Title');
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
