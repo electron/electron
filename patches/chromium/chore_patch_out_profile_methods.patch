@@ -122,21 +122,21 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..eb92410b15a3828f60d1c0c94edf7a62b5871a97 100644
+index 2293255c75cd5d246f929c45e90bfa8f1280740a..d47c9adff7b4c7cbeacb050119eb7c5d1acf34c2 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -21,8 +21,10 @@
- #include "base/synchronization/waitable_event.h"
+@@ -23,8 +23,10 @@
+ #include "base/task/thread_pool.h"
  #include "base/values.h"
  #include "build/build_config.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/profiles/profiles_state.h"
 +#endif
- #include "chrome/common/chrome_features.h"
  #include "chrome/browser/search/search.h"
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
-@@ -71,7 +73,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+@@ -73,7 +75,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
@@ -147,15 +147,15 @@ index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..eb92410b15a3828f60d1c0c94edf7a62
  }
  
  }  // namespace
-@@ -402,11 +407,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
-       return;
-     }
+@@ -504,11 +509,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+       features::kInitialWebUIWithoutSpellCheck.Get()) {
+     return;
    }
 +#if 0
-   if (base::FeatureList::IsEnabled(features::kInitialWebUIWithoutSpellCheckForNtp)) {
-     if (host->GetUserData(search::kIsNTPProcessKey)) {
-       return;
-     }
+   if (base::FeatureList::IsEnabled(
+           features::kInitialWebUIWithoutSpellCheckForNtp) &&
+       host->GetUserData(search::kIsNTPProcessKey)) {
+     return;
    }
 +#endif
  

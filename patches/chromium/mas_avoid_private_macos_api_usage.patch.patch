@@ -940,7 +940,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index dfca22d9d67637b6cfab1a6c7d8ac763a427ade7..9c84e407e5b12daab6f969e5aa437a5d3792d876 100644
+index 03afcd37eb3248a46b1d8931dfb0421c1e358448..f77f83ee06cc05313941caec4e769e9584a14ddf 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -33,6 +33,7 @@
@@ -951,7 +951,7 @@ index dfca22d9d67637b6cfab1a6c7d8ac763a427ade7..9c84e407e5b12daab6f969e5aa437a5d
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2372,15 +2373,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2373,15 +2374,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 834a842a36fd83cfaacdd72956a0c3fd0b8f81a5..e950333ec3b694a280e8b3abea63e0fe7b5d4175 100644
+index 7ecab4f4fd9f5a6bc1d7311e5193e285043fbe1f..7ad0e5a6920b091a72ccea62027a99e6269676d0 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -661,6 +661,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index 834a842a36fd83cfaacdd72956a0c3fd0b8f81a5..e950333ec3b694a280e8b3abea63e0fe
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3383,6 +3387,7 @@ test("content_unittests") {
+@@ -3384,6 +3388,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2154,7 +2154,7 @@ index 51e3ede6ca99e04664d1818cfeb96d72a19617da..bd2ccf8900db4ebc692680f33b102228
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 20b2070af5013194a672c733b28f03407ac98758..dfff8365a3aa379730c927a57067d786aa99928e 100644
+index 1e5942a2c6abe5517de6380c076cdfea4b045841..3a4acddcaa160edb9bf00e57d546820ae06215f8 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -356,6 +356,13 @@ component("base") {
