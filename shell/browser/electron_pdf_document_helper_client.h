@@ -7,10 +7,6 @@
 #include "components/pdf/browser/pdf_document_helper_client.h"
 #include "services/screen_ai/buildflags/buildflags.h"
 
-namespace content {
-class WebContents;
-}
-
 class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
  public:
   ElectronPDFDocumentHelperClient();

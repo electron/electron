@@ -11,8 +11,7 @@
 #include "services/network/public/mojom/cookie_manager.mojom.h"
 
 namespace net {
-class CoookieChangeInfo;
-class CookieChangeNotifier;
+class CookieChangeInfo;
 }  // namespace net
 
 namespace electron {
