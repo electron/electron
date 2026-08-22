@@ -11,6 +11,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
@@ -75,6 +76,8 @@ class InspectableWebContentsView : public views::View {
   views::View* GetContentsView() const;
 
  private:
+  void SetContentsViewBounds(const gfx::Rect& bounds);
+
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
