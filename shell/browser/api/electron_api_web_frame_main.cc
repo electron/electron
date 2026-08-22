@@ -223,6 +223,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   DCHECK(inserted);
 
   render_frame_disposed_ = false;
+  render_frame_detached_ = false;
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
