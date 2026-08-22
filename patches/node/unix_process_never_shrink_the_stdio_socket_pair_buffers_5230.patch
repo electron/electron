@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Aug 2026 11:27:27 +0200
+Subject: unix,process: never shrink the stdio socket pair buffers (#5230)
+
+Commit 78940725 ("macos: increase child process stdio buffer size") set
+SO_SNDBUF and SO_RCVBUF to 64 KiB on the socket pairs created for
+UV_CREATE_PIPE stdio, to lift macOS' 8 KiB default. It did so
+unconditionally though, and on Linux, where AF_UNIX stream sockets get
+net.core.wmem_default (212992 bytes unless tuned), that shrinks the
+buffers to 128 KiB and spends four setsockopt() calls per pipe on it.
+
+Read the current size first and only ever raise it. macOS and the BSDs
+(8 KiB defaults) get exactly what they got before; Linux keeps its
+larger default and trades the four setsockopt() calls for four cheaper
+getsockopt() calls.
+
+The smaller buffer mostly shows when parent and child exchange large
+messages over stdio, i.e. a bulk write phase immediately followed by
+reading a bulk reply (language servers, MCP-style tool servers,
+formatters fed through stdin). Round trip of a length-prefixed message
+echoed by a plain read()/write() child, parent using uv_write() and
+64 KiB reads, 30 interleaved runs per side on Linux 6.12 / x86-64:
+
+  256 KiB: 160us -> 112us   1 MiB: 456us -> 305us   4 MiB: 1120us -> 984us
+  (p50; all p < 1e-30; parent CPU time -31%/-24%/-7%)
+
+64 KiB messages, one-directional bulk transfers and uv_spawn() latency
+itself are unchanged within noise. Through Node.js' child_process (same
+libuv in deps/uv) the 1 MiB exchange improves by 8% (p < 1e-5).
+
+The new spawn_stdio_socket_buffer_size test checks both halves of the
+contract: at least 64 KiB everywhere, and never less than what a fresh
+socketpair() gets on the running system.
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index b87e1f40495f192235b9d36bc0dc3c6992473981..8f8703595dffb882ca19e736ac80b1921668909c 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -205,6 +205,23 @@ void uv__wait_children(uv_loop_t* loop) {
+  * avoided. Since this isn't called on those targets, the function
+  * doesn't even need to be defined for them.
+  */
++/* Raise a socket buffer to at least `size` bytes but never shrink it: the
++ * defaults differ wildly between platforms (8 KiB on macOS, ~208 KiB on Linux)
++ * and a smaller buffer means more wake-ups per bulk transfer over stdio.
++ */
++static void uv__process_stdio_bufsize(int fd, int opt, int size) {
++  socklen_t len;
++  int cur;
++
++  len = sizeof(cur);
++  if (getsockopt(fd, SOL_SOCKET, opt, &cur, &len))
++    cur = 0;
++
++  if (cur < size)
++    setsockopt(fd, SOL_SOCKET, opt, &size, sizeof(size));
++}
++
++
+ static int uv__process_init_stdio(uv_stdio_container_t* container, int fds[2]) {
+   int mask;
+   int fd;
+@@ -228,8 +245,8 @@ static int uv__process_init_stdio(uv_stdio_container_t* container, int fds[2]) {
+ 
+       if (ret == 0)
+         for (i = 0; i < 2; i++) {
+-          setsockopt(fds[i], SOL_SOCKET, SO_RCVBUF, &size, sizeof(size));
+-          setsockopt(fds[i], SOL_SOCKET, SO_SNDBUF, &size, sizeof(size));
++          uv__process_stdio_bufsize(fds[i], SO_RCVBUF, size);
++          uv__process_stdio_bufsize(fds[i], SO_SNDBUF, size);
+         }
+     }
+ 

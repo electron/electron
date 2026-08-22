@@ -1,0 +1,587 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sat, 22 Aug 2026 14:20:39 +0000
+Subject: deps: use posix_spawn for child processes on Linux (libuv backport)
+
+libuv only took its posix_spawn() path on Apple platforms, so on Linux
+every uv_spawn() forked the calling process. In an Electron main process
+(1.5 TB of address space reserved for the V8 sandbox and pointer cages)
+that fork costs 2-3 ms of main-thread time per child_process.spawn() /
+execFile() for the page-table copy alone; with posix_spawn
+(clone(CLONE_VM|CLONE_VFORK)) it is ~0.6 ms and independent of the
+parent's size.
+
+This is the series that landed on libuv's v1.x branch after 1.52.1 and
+will ship in libuv 1.53; drop this patch once Electron's Node carries a
+libuv that has it:
+  58418d53 process: better validation for process->pid usage (#3539) (Jameson Nash)
+  1f56978a unix: check return value of fcntl call (#5089) (Ben Noordhuis)
+  40d45efe unix: use posix_spawn instead of fork (#3520) (Jameson Nash)
+  79b923ea aix,ibmi: fix undeclared identifiers (#5123) (Sravani Gundepalli, Korinne Adler)
+  4522bfb9 process,unix: avoid off-by-one in uv__spawn_resolve_and_spawn (#5150) (Jameson Nash)
+
+diff --git a/deps/uv/src/unix/process.c b/deps/uv/src/unix/process.c
+index 539e7d9417d3bf9b8e73bc416e1165b0d6d59d65..b87e1f40495f192235b9d36bc0dc3c6992473981 100644
+--- a/deps/uv/src/unix/process.c
++++ b/deps/uv/src/unix/process.c
+@@ -33,15 +33,22 @@
+ #include <sys/wait.h>
+ #include <unistd.h>
+ #include <fcntl.h>
+-#include <poll.h>
++#include <spawn.h>
++#include <paths.h>
++#include <dlfcn.h>
++
++#if defined(__PASE__)
++#define _PATH_DEFPATH "/QOpenSys/pkgs/bin:/QOpenSys/usr/bin:/usr/bin"
++#elif defined(_AIX)
++#define _PATH_DEFPATH "/opt/freeware/bin:/usr/bin:/bin"
++#endif
++#ifndef NAME_MAX
++#define NAME_MAX 255
++#endif
+ 
+ #if defined(__APPLE__)
+-# include <spawn.h>
+-# include <paths.h>
+ # include <sys/kauth.h>
+-# include <sys/types.h>
+ # include <sys/sysctl.h>
+-# include <dlfcn.h>
+ # include <crt_externs.h>
+ # include <xlocale.h>
+ # define environ (*_NSGetEnviron())
+@@ -53,6 +60,9 @@
+ 
+ #else
+ extern char **environ;
++#ifndef POSIX_SPAWN_SETSID
++# define POSIX_SPAWN_SETSID 0
++#endif
+ #endif
+ 
+ #if defined(__linux__) || \
+@@ -70,6 +80,15 @@ extern char **environ;
+ #define UV_USE_SIGCHLD
+ #endif
+ 
++static uv_once_t posix_spawn_init_once = UV_ONCE_INIT;
++static int posix_spawn_can_use_setsid;
++static volatile int posix_spawn_works;
++
++static struct uv__posix_spawn_fncs_s {
++  struct {
++    int (*addchdir)(posix_spawn_file_actions_t *, const char *);
++  } file_actions;
++} posix_spawn_fncs;
+ 
+ #ifdef UV_USE_SIGCHLD
+ static void uv__chld(uv_signal_t* handle, int signum) {
+@@ -145,6 +164,7 @@ void uv__wait_children(uv_loop_t* loop) {
+     }
+ 
+     assert(pid == process->pid);
++    process->flags |= UV_HANDLE_ESRCH; /* pid is no longer valid (or unique) */
+     process->status = status;
+     uv__queue_remove(&process->queue);
+     uv__queue_insert_tail(&pending, &process->queue);
+@@ -291,6 +311,7 @@ static void uv__process_child_init(const uv_process_options_t* options,
+   sigset_t signewset;
+   int close_fd;
+   int use_fd;
++  int err;
+   int fd;
+   int n;
+ 
+@@ -333,9 +354,9 @@ static void uv__process_child_init(const uv_process_options_t* options,
+     if (pipes[fd][1] == -1)
+       uv__write_errno(error_fd);
+ #ifndef F_DUPFD_CLOEXEC /* POSIX 2008 */
+-    n = uv__cloexec(pipes[fd][1], 1);
+-    if (n)
+-      uv__write_int(error_fd, n);
++    err = uv__cloexec(pipes[fd][1], 1);
++    if (err)
++      uv__write_int(error_fd, err);
+ #endif
+   }
+ 
+@@ -360,9 +381,9 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+     if (fd == use_fd) {
+       if (close_fd == -1) {
+-        n = uv__cloexec(use_fd, 0);
+-        if (n)
+-          uv__write_int(error_fd, n);
++        err = uv__cloexec(use_fd, 0);
++        if (err)
++          uv__write_int(error_fd, err);
+       }
+     }
+     else {
+@@ -372,8 +393,11 @@ static void uv__process_child_init(const uv_process_options_t* options,
+     if (fd == -1)
+       uv__write_errno(error_fd);
+ 
+-    if (fd <= 2 && close_fd == -1)
+-      uv__nonblock_fcntl(fd, 0);
++    if (fd <= 2 && close_fd == -1) {
++      err = uv__nonblock_fcntl(fd, 0);
++      if (err)
++        uv__write_int(error_fd, err);
++    }
+ 
+     if (close_fd >= stdio_count)
+       uv__close(close_fd);
+@@ -418,25 +442,6 @@ static void uv__process_child_init(const uv_process_options_t* options,
+ 
+ 
+ #if defined(__APPLE__)
+-typedef struct uv__posix_spawn_fncs_tag {
+-  struct {
+-    int (*addchdir_np)(const posix_spawn_file_actions_t *, const char *);
+-  } file_actions;
+-} uv__posix_spawn_fncs_t;
+-
+-
+-static uv_once_t posix_spawn_init_once = UV_ONCE_INIT;
+-static uv__posix_spawn_fncs_t posix_spawn_fncs;
+-static int posix_spawn_can_use_setsid;
+-
+-
+-static void uv__spawn_init_posix_spawn_fncs(void) {
+-  /* Try to locate all non-portable functions at runtime */
+-  posix_spawn_fncs.file_actions.addchdir_np =
+-    dlsym(RTLD_DEFAULT, "posix_spawn_file_actions_addchdir_np");
+-}
+-
+-
+ static void uv__spawn_init_can_use_setsid(void) {
+   int which[] = {CTL_KERN, KERN_OSRELEASE};
+   unsigned major;
+@@ -455,20 +460,52 @@ static void uv__spawn_init_can_use_setsid(void) {
+ 
+   posix_spawn_can_use_setsid = (major >= 19);  /* macOS Catalina */
+ }
++#endif
+ 
+ 
+ static void uv__spawn_init_posix_spawn(void) {
+-  /* Init handles to all potentially non-defined functions */
+-  uv__spawn_init_posix_spawn_fncs();
++#if !defined(__linux__) && !defined(_AIX) && !defined(__PASE__)
++  posix_spawn_works = 1;
++#elif !defined(__ANDROID__)
++  pid_t pid;
++  int status;
++
++  /* Probe whether vfork()/clone(CLONE_VM) correctly shares the address space,
++   * i.e. a write by the child before _exit() is visible to the parent once it
++   * resumes.  On Linux vfork() is equivalent to
++   * clone(CLONE_VM|CLONE_VFORK|SIGCHLD). On QEMU and WSL1, CLONE_VM is broken,
++   * resulting in glibc errors if we try to use posix_spawn(). */
++  posix_spawn_works = 0;
++  pid = vfork();
++  if (pid == 0) {
++    posix_spawn_works = 1;
++    _exit(0);
++  }
++  if (pid > 0)
++    waitpid(pid, &status, 0);
++#endif
+ 
+-  /* Init feature detection for POSIX_SPAWN_SETSID flag */
++  /* Try to locate all new functions at runtime.
++   * Expected on macOS, glibc, and musl. */
++  posix_spawn_fncs.file_actions.addchdir =
++    dlsym(RTLD_DEFAULT, "posix_spawn_file_actions_addchdir");
++  if (posix_spawn_fncs.file_actions.addchdir == NULL)
++    posix_spawn_fncs.file_actions.addchdir =
++      dlsym(RTLD_DEFAULT, "posix_spawn_file_actions_addchdir_np");
++
++#ifdef __APPLE__
++  /* Init feature detection for POSIX_SPAWN_SETSID flag. */
+   uv__spawn_init_can_use_setsid();
++#elif POSIX_SPAWN_SETSID != 0
++  /* Otherwise, if SETSID is defined, we can use it
++   * (added in glibc 2.26 circa 2017). */
++  posix_spawn_can_use_setsid = 1;
++#endif
+ }
+ 
+ 
+ static int uv__spawn_set_posix_spawn_attrs(
+     posix_spawnattr_t* attrs,
+-    const uv__posix_spawn_fncs_t* posix_spawn_fncs,
+     const uv_process_options_t* options) {
+   int err;
+   unsigned int flags;
+@@ -490,18 +527,17 @@ static int uv__spawn_set_posix_spawn_attrs(
+   }
+ 
+   /* Set flags for spawn behavior
+-   * 1) POSIX_SPAWN_CLOEXEC_DEFAULT: (Apple Extension) All descriptors in the
+-   *    parent will be treated as if they had been created with O_CLOEXEC. The
+-   *    only fds that will be passed on to the child are those manipulated by
+-   *    the file actions
+-   * 2) POSIX_SPAWN_SETSIGDEF: Signals mentioned in spawn-sigdefault in the
++   * 1) POSIX_SPAWN_SETSIGDEF: Signals mentioned in spawn-sigdefault in the
+    *    spawn attributes will be reset to behave as their default
+-   * 3) POSIX_SPAWN_SETSIGMASK: Signal mask will be set to the value of
++   * 2) POSIX_SPAWN_SETSIGMASK: Signal mask will be set to the value of
+    *    spawn-sigmask in attributes
+-   * 4) POSIX_SPAWN_SETSID: Make the process a new session leader if a detached
+-   *    session was requested. */
+-  flags = POSIX_SPAWN_CLOEXEC_DEFAULT |
+-          POSIX_SPAWN_SETSIGDEF |
++   * 3) POSIX_SPAWN_SETSID: Make the process a new session leader if a detached
++   *    session was requested.
++   * 4) POSIX_SPAWN_CLOEXEC_DEFAULT: (Apple Extension) All descriptors in the
++   *    parent will be treated as if they had been created with O_CLOEXEC. The
++   *    only fds that will be passed on to the child are those manipulated by
++   *    the file actions */
++  flags = POSIX_SPAWN_SETSIGDEF |
+           POSIX_SPAWN_SETSIGMASK;
+   if (options->flags & UV_PROCESS_DETACHED) {
+     /* If running on a version of macOS where this flag is not supported,
+@@ -514,6 +550,9 @@ static int uv__spawn_set_posix_spawn_attrs(
+ 
+     flags |= POSIX_SPAWN_SETSID;
+   }
++#ifdef __APPLE__
++  flags |= POSIX_SPAWN_CLOEXEC_DEFAULT;
++#endif
+   err = posix_spawnattr_setflags(attrs, flags);
+   if (err != 0)
+     goto error;
+@@ -540,7 +579,6 @@ error:
+ 
+ static int uv__spawn_set_posix_spawn_file_actions(
+     posix_spawn_file_actions_t* actions,
+-    const uv__posix_spawn_fncs_t* posix_spawn_fncs,
+     const uv_process_options_t* options,
+     int stdio_count,
+     int (*pipes)[2]) {
+@@ -557,12 +595,12 @@ static int uv__spawn_set_posix_spawn_file_actions(
+ 
+   /* Set the current working directory if requested */
+   if (options->cwd != NULL) {
+-    if (posix_spawn_fncs->file_actions.addchdir_np == NULL) {
++    if (posix_spawn_fncs.file_actions.addchdir == NULL) {
+       err = ENOSYS;
+       goto error;
+     }
+ 
+-    err = posix_spawn_fncs->file_actions.addchdir_np(actions, options->cwd);
++    err = posix_spawn_fncs.file_actions.addchdir(actions, options->cwd);
+     if (err != 0)
+       goto error;
+   }
+@@ -575,8 +613,16 @@ static int uv__spawn_set_posix_spawn_file_actions(
+    * stdout and stderr go to the same fd, which was not the intention. */
+   for (fd = 0; fd < stdio_count; fd++) {
+     use_fd = pipes[fd][1];
++#if defined(__APPLE__) || defined(__linux__)
+     if (use_fd < 0 || use_fd >= fd)
+       continue;
++#else
++    /* The behavior of posix_spawn_file_actions_adddup2 may be undefined if
++     * use_fd==fd, so we do this extra little dance to copy it up and back, on
++     * platforms where we aren't sure if it works. */
++    if (use_fd < 0 || use_fd > fd)
++      continue;
++#endif
+     use_fd = stdio_count;
+     for (fd2 = 0; fd2 < stdio_count; fd2++) {
+       /* If we were not setting POSIX_SPAWN_CLOEXEC_DEFAULT, we would need to
+@@ -618,9 +664,11 @@ static int uv__spawn_set_posix_spawn_file_actions(
+       }
+     }
+ 
++#ifdef __APPLE__
+     if (fd == use_fd)
+         err = posix_spawn_file_actions_addinherit_np(actions, fd);
+     else
++#endif
+         err = posix_spawn_file_actions_adddup2(actions, use_fd, fd);
+     assert(err != ENOSYS);
+     if (err != 0)
+@@ -682,7 +730,6 @@ static int uv__spawn_resolve_and_spawn(const uv_process_options_t* options,
+   const char *p;
+   const char *z;
+   const char *path;
+-  size_t l;
+   size_t k;
+   int err;
+   int seen_eacces;
+@@ -728,19 +775,16 @@ static int uv__spawn_resolve_and_spawn(const uv_process_options_t* options,
+   if (k > NAME_MAX)
+     return ENAMETOOLONG;
+ 
+-  l = strnlen(path, PATH_MAX - 1) + 1;
+-
+-  for (p = path;; p = z) {
++  p = path;
++  do {
+     /* Compose the new process file from the entry in the PATH
+      * environment variable and the actual file name */
+-    char b[PATH_MAX + NAME_MAX];
++    char b[PATH_MAX + NAME_MAX + 1];
+     z = strchr(p, ':');
+     if (!z)
+       z = p + strlen(p);
+-    if ((size_t)(z - p) >= l) {
+-      if (!*z++)
+-        break;
+-
++    if ((size_t)(z - p) >= PATH_MAX) {
++      p = z + 1;
+       continue;
+     }
+     memcpy(b, p, z - p);
+@@ -764,10 +808,8 @@ static int uv__spawn_resolve_and_spawn(const uv_process_options_t* options,
+     default:
+       return err;
+     }
+-
+-    if (!*z++)
+-      break;
+-  }
++    p = z + 1;
++  } while (*z == ':');
+ 
+   if (seen_eacces)
+     return EACCES;
+@@ -776,22 +818,24 @@ static int uv__spawn_resolve_and_spawn(const uv_process_options_t* options,
+ 
+ 
+ static int uv__spawn_and_init_child_posix_spawn(
++    uv_loop_t* loop,
+     const uv_process_options_t* options,
+     int stdio_count,
+     int (*pipes)[2],
+-    pid_t* pid,
+-    const uv__posix_spawn_fncs_t* posix_spawn_fncs) {
++    pid_t* pid) {
+   int err;
+   posix_spawnattr_t attrs;
+   posix_spawn_file_actions_t actions;
+ 
+-  err = uv__spawn_set_posix_spawn_attrs(&attrs, posix_spawn_fncs, options);
++  if (!posix_spawn_works)
++    return UV_ENOSYS;
++
++  err = uv__spawn_set_posix_spawn_attrs(&attrs, options);
+   if (err != 0)
+     goto error;
+ 
+   /* This may mutate pipes. */
+   err = uv__spawn_set_posix_spawn_file_actions(&actions,
+-                                               posix_spawn_fncs,
+                                                options,
+                                                stdio_count,
+                                                pipes);
+@@ -800,12 +844,23 @@ static int uv__spawn_and_init_child_posix_spawn(
+     goto error;
+   }
+ 
++#ifndef __APPLE__
++  /* Acquire write lock to prevent opening new fds in worker threads.
++   * Unnecessary on Apple, since we set POSIX_SPAWN_CLOEXEC_DEFAULT. */
++  uv_rwlock_wrlock(&loop->cloexec_lock);
++#endif
++
+   /* Try to spawn options->file resolving in the provided environment
+-   * if any */
++   * if any. */
+   err = uv__spawn_resolve_and_spawn(options, &attrs, &actions, pid);
+   assert(err != ENOSYS);
+ 
+-  /* Destroy the actions/attributes */
++#ifndef __APPLE__
++  /* Release lock in parent process. */
++  uv_rwlock_wrunlock(&loop->cloexec_lock);
++#endif
++
++  /* Destroy the actions/attributes. */
+   (void) posix_spawn_file_actions_destroy(&actions);
+   (void) posix_spawnattr_destroy(&attrs);
+ 
+@@ -814,7 +869,7 @@ error:
+    * already destroyed, only the happy path requires cleanup */
+   return UV__ERR(err);
+ }
+-#endif
++
+ 
+ static int uv__spawn_and_init_child_fork(const uv_process_options_t* options,
+                                          int stdio_count,
+@@ -869,36 +924,21 @@ static int uv__spawn_and_init_child(
+   int exec_errorno;
+   ssize_t r;
+ 
+-#if defined(__APPLE__)
+   uv_once(&posix_spawn_init_once, uv__spawn_init_posix_spawn);
+ 
+-  /* Special child process spawn case for macOS Big Sur (11.0) onwards
+-   *
+-   * Big Sur introduced a significant performance degradation on a call to
+-   * fork/exec when the process has many pages mmaped in with MAP_JIT, like, say
+-   * a javascript interpreter. Electron-based applications, for example,
+-   * are impacted; though the magnitude of the impact depends on how much the
+-   * app relies on subprocesses.
+-   *
+-   * On macOS, though, posix_spawn is implemented in a way that does not
+-   * exhibit the problem. This block implements the forking and preparation
+-   * logic with posix_spawn and its related primitives. It also takes advantage of
+-   * the macOS extension POSIX_SPAWN_CLOEXEC_DEFAULT that makes impossible to
+-   * leak descriptors to the child process. */
+-  err = uv__spawn_and_init_child_posix_spawn(options,
++  /* Calling posix_spawn is considerably faster, if it supports the given
++   * options. The posix_spawn flow will return UV_ENOSYS if any of the
++   * posix_spawn_x_np non-standard functions is both _needed_ and _undefined_.
++   * In those cases, default back to the fork/execve strategy. For all other
++   * errors, just fail. */
++  err = uv__spawn_and_init_child_posix_spawn(loop,
++                                             options,
+                                              stdio_count,
+                                              pipes,
+-                                             pid,
+-                                             &posix_spawn_fncs);
+-
+-  /* The posix_spawn flow will return UV_ENOSYS if any of the posix_spawn_x_np
+-   * non-standard functions is both _needed_ and _undefined_. In those cases,
+-   * default back to the fork/execve strategy. For all other errors, just fail. */
++                                             pid);
+   if (err != UV_ENOSYS)
+     return err;
+ 
+-#endif
+-
+   /* This pipe is used by the parent to wait until
+    * the child has called `execve()`. We need this
+    * to avoid the following race condition:
+@@ -923,12 +963,12 @@ static int uv__spawn_and_init_child(
+   if (err)
+     return err;
+ 
+-  /* Acquire write lock to prevent opening new fds in worker threads */
++  /* Acquire write lock to prevent opening new fds in worker threads. */
+   uv_rwlock_wrlock(&loop->cloexec_lock);
+ 
+   err = uv__spawn_and_init_child_fork(options, stdio_count, pipes, signal_pipe[1], pid);
+ 
+-  /* Release lock in parent process */
++  /* Release lock in parent process. */
+   uv_rwlock_wrunlock(&loop->cloexec_lock);
+ 
+   uv__close(signal_pipe[1]);
+@@ -963,11 +1003,16 @@ static int uv__spawn_and_init_child(
+ }
+ #endif /* ISN'T TARGET_OS_TV || TARGET_OS_WATCH */
+ 
++
+ int uv_spawn(uv_loop_t* loop,
+              uv_process_t* process,
+              const uv_process_options_t* options) {
+ #if defined(__APPLE__) && (TARGET_OS_TV || TARGET_OS_WATCH)
+   /* fork is marked __WATCHOS_PROHIBITED __TVOS_PROHIBITED. */
++  uv__handle_init(loop, (uv_handle_t*)process, UV_PROCESS);
++  QUEUE_INIT(&process->queue);
++  process->status = 0;
++  process->pid = 0;
+   return UV_ENOSYS;
+ #else
+   int pipes_storage[8][2];
+@@ -991,6 +1036,7 @@ int uv_spawn(uv_loop_t* loop,
+   uv__handle_init(loop, (uv_handle_t*)process, UV_PROCESS);
+   uv__queue_init(&process->queue);
+   process->status = 0;
++  process->pid = 0;
+ 
+   stdio_count = options->stdio_count;
+   if (stdio_count < 3)
+@@ -1095,6 +1141,8 @@ error:
+ 
+ 
+ int uv_process_kill(uv_process_t* process, int signum) {
++  if (process->flags & UV_HANDLE_ESRCH)
++    return UV_ESRCH;
+   return uv_kill(process->pid, signum);
+ }
+ 
+@@ -1115,6 +1163,9 @@ int uv_kill(int pid, int signum) {
+ 
+ 
+ void uv__process_close(uv_process_t* handle) {
++  /* Warning: if UV_HANDLE_ESRCH is not set, the caller is creating a zombie
++   * that we cannot reap. We assume here that it is intentional, and that the
++   * user will be wise and cleanup later. */
+   uv__queue_remove(&handle->queue);
+   uv__handle_stop(handle);
+ #ifdef UV_USE_SIGCHLD
+diff --git a/deps/uv/src/uv-common.h b/deps/uv/src/uv-common.h
+index 203f53d58d3cd0b057539cf76bbc170f1e7c7ad1..f0ca3a8fdc7de380df116343757f601aedc5c43d 100644
+--- a/deps/uv/src/uv-common.h
++++ b/deps/uv/src/uv-common.h
+@@ -137,6 +137,7 @@ enum {
+   UV_HANDLE_POLL_SLOW                   = 0x01000000,
+ 
+   /* Only used by uv_process_t handles. */
++  UV_HANDLE_ESRCH                       = 0x01000000,
+   UV_HANDLE_REAP                        = 0x10000000
+ };
+ 
+diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
+index 45e85ed9613900c67600c0f9e8a470b797c61e0e..c4471cd4546e92bde1bb1b38175430c6a561b742 100644
+--- a/deps/uv/src/win/process.c
++++ b/deps/uv/src/win/process.c
+@@ -836,10 +836,6 @@ void uv__process_proc_exit(uv_loop_t* loop, uv_process_t* handle) {
+     handle->wait_handle = INVALID_HANDLE_VALUE;
+   }
+ 
+-  /* Set the handle to inactive: no callbacks will be made after the exit
+-   * callback. */
+-  uv__handle_stop(handle);
+-
+   if (GetExitCodeProcess(handle->process_handle, &status)) {
+     exit_code = status;
+   } else {
+@@ -847,6 +843,15 @@ void uv__process_proc_exit(uv_loop_t* loop, uv_process_t* handle) {
+     exit_code = uv_translate_sys_error(GetLastError());
+   }
+ 
++  /* Clean-up the process handle eagerly. */
++  CloseHandle(handle->process_handle);
++  handle->process_handle = INVALID_HANDLE_VALUE;
++  handle->flags |= UV_HANDLE_ESRCH;
++
++  /* Set the handle to inactive: no callbacks will be made after the exit
++   * callback. */
++  uv__handle_stop(handle);
++
+   /* Fire the exit callback. */
+   if (handle->exit_cb) {
+     handle->exit_cb(handle, exit_code, handle->exit_signal);
+@@ -881,7 +886,8 @@ void uv__process_endgame(uv_loop_t* loop, uv_process_t* handle) {
+   assert(!(handle->flags & UV_HANDLE_CLOSED));
+ 
+   /* Clean-up the process handle. */
+-  CloseHandle(handle->process_handle);
++  if (handle->process_handle != INVALID_HANDLE_VALUE)
++    CloseHandle(handle->process_handle);
+ 
+   uv__handle_close(handle);
+ }
+@@ -1364,8 +1370,8 @@ static int uv__kill(HANDLE process_handle, int signum) {
+ int uv_process_kill(uv_process_t* process, int signum) {
+   int err;
+ 
+-  if (process->process_handle == INVALID_HANDLE_VALUE) {
+-    return UV_EINVAL;
++  if (process->flags & UV_HANDLE_ESRCH) {
++    return UV_ESRCH;
+   }
+ 
+   err = uv__kill(process->process_handle, signum);
