@@ -382,6 +382,15 @@ describe('BrowserWindow module', () => {
         contents.getProcessId();
       }).to.throw('Object has been destroyed');
     });
+
+    it('makes the webContents property read as null instead of throwing', async () => {
+      expect(w.webContents).to.not.be.null();
+      w.destroy();
+      await new Promise(setImmediate);
+      expect(() => w.webContents).to.not.throw();
+      expect(w.webContents).to.be.null();
+    });
+
     it('should not crash when destroying windows with pending events', () => {
       const focusListener = () => {};
       app.on('browser-window-focus', focusListener);
