@@ -1420,6 +1420,11 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
+> [!NOTE]
+> On Windows, if the current foreground window has higher privileges, the mouse forwarding will stop working temporary due to UIPI.
+>
+> To workaround it, your app must be ran with Administrator privileges or configured with UIAccess privileges (see Background section in [this page](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852244(v=ws.11)#reference))
+
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
 * `enable` boolean
