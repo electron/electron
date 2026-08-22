@@ -92,6 +92,12 @@ class WebContentsPreferences
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
   bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
   bool IsSandboxed() const;
+  // True when a renderer launched ahead of time with just --enable-sandbox
+  // matches what AppendCommandLineSwitches() would produce for a main frame.
+  bool CanUseSpareRenderer() const;
+  // Same, for webPreferences that have not been attached to a WebContents yet.
+  static bool CanUseSpareRenderer(
+      const gin_helper::Dictionary& web_preferences);
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;

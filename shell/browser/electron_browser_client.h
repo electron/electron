@@ -84,7 +84,17 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
+  bool* creating_spare_compatible_web_contents() {
+    return &creating_spare_compatible_web_contents_;
+  }
+
   bool ShouldEnableStrictSiteIsolation() override;
+  bool ShouldUseSpareRenderProcessHost(
+      content::BrowserContext* browser_context,
+      const GURL& site_url,
+      std::optional<
+          content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason>&
+          refused_reason) override;
   bool ShouldEnableSubframeZoom() override;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::optional<network::CrossOriginEmbedderPolicy>
@@ -378,6 +388,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* rfh) const;
 
   bool IsRendererSubFrame(content::ChildProcessId process_id) const;
+
+  // What ShouldUseSpareRenderProcessHost() decides on: the WebContents being
+  // given a process, or (inside WebContents::Create) its webPreferences.
+  raw_ptr<content::WebContents> web_contents_getting_process_ = nullptr;
+  bool creating_spare_compatible_web_contents_ = false;
 
   // pending_render_process => web contents.
   base::flat_map<content::ChildProcessId, content::WebContents*>
