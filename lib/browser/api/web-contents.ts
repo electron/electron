@@ -887,6 +887,11 @@ WebContents.prototype._init = function () {
     get: () => this.getBackgroundThrottling(),
     set: (allowed) => this.setBackgroundThrottling(allowed)
   });
+
+  Object.defineProperty(this, 'caretBrowsingEnabled', {
+    get: () => this.isCaretBrowsingEnabled(),
+    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
+  });
 };
 
 // Public APIs.
