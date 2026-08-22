@@ -7,11 +7,13 @@
 @implementation ElectronNSPanel
 
 @synthesize originalStyleMask;
+@synthesize disableMainWindow;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
   if (self = [super initWithShell:shell styleMask:styleMask]) {
     originalStyleMask = styleMask;
+    disableMainWindow = YES;
   }
   return self;
 }
@@ -29,11 +31,8 @@
   [super setStyleMask:styleMask];
 }
 
-- (void)setCollectionBehavior:(NSWindowCollectionBehavior)collectionBehavior {
-  NSWindowCollectionBehavior panelBehavior =
-      (NSWindowCollectionBehaviorCanJoinAllSpaces |
-       NSWindowCollectionBehaviorFullScreenAuxiliary);
-  [super setCollectionBehavior:collectionBehavior | panelBehavior];
+- (BOOL)canBecomeMainWindow {
+  return !self.disableMainWindow && [super canBecomeMainWindow];
 }
 
 @end

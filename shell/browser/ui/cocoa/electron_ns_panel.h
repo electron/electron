@@ -10,6 +10,8 @@
 @interface ElectronNSPanel : ElectronNSWindow
 @property NSWindowStyleMask styleMask;
 @property NSWindowStyleMask originalStyleMask;
+// Whether this panel is prevented from becoming the main window.
+@property BOOL disableMainWindow;
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
 @end
