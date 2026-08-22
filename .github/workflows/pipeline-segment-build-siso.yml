@@ -52,6 +52,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
+        persist-credentials: false
         fetch-depth: 1
         ref: ${{ github.event.pull_request.head.sha }}
         sparse-checkout: |
@@ -130,9 +131,10 @@ jobs:
         CGO_ENABLED: '0'
         GOOS: ${{ steps.host.outputs.goos }}
         GOARCH: ${{ steps.host.outputs.goarch }}
+        BINARY: ${{ steps.host.outputs.binary }}
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/siso-out"
-        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ steps.host.outputs.binary }}" .
+        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${BINARY}" .
     - name: Upload siso artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:

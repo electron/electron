@@ -8,8 +8,10 @@ runs:
   steps:
   - name: Restore and Ensure Src Cache
     shell: bash
+    env:
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     run: |
-      if [ "${{ inputs.target-platform }}" = "win" ]; then
+      if [ "$TARGET_PLATFORM" = "win" ]; then
         cache_path=/mnt/win-cache/$DEPSHASH.tar
       else
         cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar

@@ -30,11 +30,12 @@ jobs:
     permissions:
       contents: read
     timeout-minutes: 20
-    container: ${{ fromJSON(inputs.container) }}
+    container: ${{ fromJSON(inputs.container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}

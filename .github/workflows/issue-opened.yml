@@ -40,6 +40,7 @@ jobs:
       - name: Sparse checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: |
             .
             .github
@@ -150,11 +151,12 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           GH_REPO: electron/electron
           ISSUE_NUMBER: ${{ github.event.issue.number }}
+          AUTHOR: ${{ github.event.issue.user.login }}
         run: |
-          gh issue comment "$ISSUE_NUMBER" --body-file - <<'EOF'
+          gh issue comment "$ISSUE_NUMBER" --body-file - <<EOF
           <!-- end-of-life -->
 
-          Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
+          Hello @${AUTHOR}. Thanks for reporting this and helping to make Electron better!
 
           The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://releases.electronjs.org/) of Electron, please update this issue to reflect that version of Electron.
 

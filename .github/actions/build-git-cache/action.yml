@@ -8,7 +8,7 @@ runs:
   steps:
   - name: Set GIT_CACHE_PATH to make gclient to use the cache
     shell: bash
-    run: |
+    run: | # zizmor: ignore[github-env] writes a local path constant in trusted pipeline runs
       echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
   - name: Set Chromium Git Cookie
     uses: ./src/electron/.github/actions/set-chromium-cookie
@@ -16,8 +16,10 @@ runs:
     uses: ./src/electron/.github/actions/install-build-tools
   - name: Set up cache drive
     shell: bash
+    env:
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     run: |
-      if [ "${{ inputs.target-platform }}" = "win" ]; then
+      if [ "$TARGET_PLATFORM" = "win" ]; then
         echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
       else
         echo "CACHE_DRIVE=/mnt/cross-instance-cache" >> $GITHUB_ENV

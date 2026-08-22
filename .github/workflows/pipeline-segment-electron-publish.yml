@@ -112,7 +112,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    container: ${{ fromJSON(inputs.build-container) }}
+    container: ${{ fromJSON(inputs.build-container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -124,6 +124,7 @@ jobs:
       - name: Checkout Electron
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           path: src/electron
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -154,10 +155,13 @@ jobs:
         uses: ./src/electron/.github/actions/install-dependencies
       - name: Set GN_EXTRA_ARGS for Linux
         if: ${{ inputs.target-platform == 'linux' }}
+        env:
+          TARGET_ARCH: ${{ inputs.target-arch }}
+          IS_ASAN: ${{ inputs.is-asan }}
         run: >
-          if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          if [ "$TARGET_ARCH" = "arm64" ]; then
             GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
-          elif [ "${{ inputs.is-asan }}" = true ]; then
+          elif [ "$IS_ASAN" = true ]; then
             GN_EXTRA_ARGS='is_asan=true is_lsan=true v8_enable_verify_heap=true'
           fi
 
@@ -191,6 +195,7 @@ jobs:
       - name: Checkout Electron
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          persist-credentials: false
           path: src/electron
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
@@ -202,10 +207,12 @@ jobs:
         env:
           ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
       - name: Init Build Tools
+        env:
+          GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
+          TARGET_ARCH: ${{ inputs.target-arch }}
         run: >
-          e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
-          --import ${{ inputs.gn-build-type }} --target-cpu ${{
-          inputs.target-arch }} --remote-build siso
+          e init -f --root=$(pwd) --out=Default $GN_BUILD_TYPE --import
+          $GN_BUILD_TYPE --target-cpu $TARGET_ARCH --remote-build siso
       - name: Run Electron Only Hooks
         run: |
           e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"

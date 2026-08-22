@@ -49,11 +49,12 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
@@ -62,8 +63,11 @@ jobs:
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE" --import "$GN_BUILD_TYPE" --target-cpu "$TARGET_ARCH"
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
@@ -105,11 +109,12 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
@@ -118,8 +123,10 @@ jobs:
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE"
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts

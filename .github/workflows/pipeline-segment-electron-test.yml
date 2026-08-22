@@ -61,7 +61,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     strategy:
       fail-fast: false
       matrix:
@@ -139,6 +139,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
@@ -164,7 +165,7 @@ jobs:
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
       run: |
-        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     # Safe to parallelize: each step writes a disjoint location (src/electron
@@ -294,12 +295,16 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        DISPLAY_SERVER: ${{ inputs.display-server }}
+        SHARD: ${{ matrix.shard }}
+        NUM_SHARDS: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
-        if [ "${{ inputs.display-server }}" = "wayland" ]; then
+        tests_files=$(node script/split-tests $SHARD $NUM_SHARDS)
+        if [ "$DISPLAY_SERVER" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
           for test_file in $tests_files; do
@@ -316,10 +321,10 @@ jobs:
         fi
 
         # Run tests
-        if [ "${{ inputs.target-platform }}" != "linux" ]; then
+        if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "win" ]; then
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            if [ "$TARGET_ARCH" = "arm64" ]; then
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
@@ -347,7 +352,7 @@ jobs:
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
-            if [ "${{ inputs.display-server }}" = "wayland" ]; then
+            if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             else
               runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
@@ -370,13 +375,15 @@ jobs:
     - name: Take screenshot on timeout or cancellation
       if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         screenshot_dir="src/electron/spec/artifacts"
         mkdir -p "$screenshot_dir"
         screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           screencapture -x "$screenshot_file" || true
-        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+        elif [ "$TARGET_PLATFORM" = "win" ]; then
           powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
         fi
 

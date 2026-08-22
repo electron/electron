@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ inputs.clang-tidy-runs-on }}
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.clang-tidy-container) }}
+    container: ${{ fromJSON(inputs.clang-tidy-container) }} # zizmor: ignore[unpinned-images] caller passes a ghcr.io/electron/build image tagged by content sha
     env:
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -49,6 +49,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
@@ -94,16 +95,18 @@ jobs:
       with:
         target-platform: ${{ inputs.target-platform }}
     - name: Run Electron Only Hooks
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
           echo "target_os=['win']" >> tmpgclient
         fi
         e d gclient runhooks --gclientfile=tmpgclient
 
         # Fix VS Toolchain
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           rm -rf src/third_party/depot_tools/win_toolchain/vs_files
           e d python3 src/build/vs_toolchain.py update --force
         fi
@@ -114,6 +117,7 @@ jobs:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
+        persist-credentials: false
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
@@ -135,12 +139,13 @@ jobs:
       env:
         # macOS runners have fewer CPU cores, so use fewer jobs for better results
         CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
         # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
         export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
 
@@ -149,7 +154,7 @@ jobs:
         # Copy macOS framework headers so clang-tidy can find them via -F.
         # This must happen after e build since e init -f may
         # recreate the output directory.
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           OUT=src/out/${ELECTRON_OUT_DIR}
           SQRL=src/third_party/squirrel.mac
 
