@@ -1379,7 +1379,8 @@ api::ServiceWorkerContext* Session::ServiceWorkerContext() {
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
   if (!web_request_)
-    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{});
+    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{},
+                                      browser_context()->GetWeakPtr());
   return web_request_;
 }
 
