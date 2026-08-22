@@ -9,6 +9,7 @@
 #include <set>
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "base/types/pass_key.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -34,6 +35,10 @@ namespace gin_helper {
 template <typename T>
 class Handle;
 }  // namespace gin_helper
+
+namespace electron {
+class ElectronBrowserContext;
+}  // namespace electron
 
 namespace electron::api {
 
@@ -70,10 +75,14 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
                                   content::BrowserContext* browser_context);
 
   // Return a new WebRequest object. This can only be called by api::Session.
-  static WebRequest* Create(v8::Isolate* isolate, base::PassKey<Session>);
+  static WebRequest* Create(
+      v8::Isolate* isolate,
+      base::PassKey<Session>,
+      base::WeakPtr<ElectronBrowserContext> browser_context);
 
   // Make public for cppgc::MakeGarbageCollected.
-  explicit WebRequest(base::PassKey<Session>);
+  WebRequest(base::PassKey<Session>,
+             base::WeakPtr<ElectronBrowserContext> browser_context);
   ~WebRequest() override;
 
   // disable copy
@@ -91,6 +100,7 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
       v8::Isolate* isolate) override;
 
   bool HasListener() const;
+  bool HasListenerFor(const extensions::WebRequestInfo* info) const;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
                       net::CompletionOnceCallback callback,
@@ -127,6 +137,8 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
+  base::WeakPtr<ElectronBrowserContext> browser_context_;
+
   // Contains info about requests that are blocked waiting for a response from
   // the user.
   struct BlockedRequest;

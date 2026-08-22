@@ -83,11 +83,7 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       traffic_annotation_(traffic_annotation),
       proxied_loader_receiver_(this, std::move(loader_receiver)),
       target_client_(std::move(client)),
-      current_response_(network::mojom::URLResponseHead::New()),
-      // Always use "extraHeaders" mode to be compatible with old APIs.
-      // A non-zero request ID is required to use the TrustedHeaderClient path
-      // which allows webRequest to modify headers like Proxy-Authorization.
-      has_any_extra_headers_listeners_(network_service_request_id != 0) {
+      current_response_(network::mojom::URLResponseHead::New()) {
   // If there is a client error, clean up the request.
   target_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -111,7 +107,8 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       frame_routing_id_(frame_routing_id),
       proxied_loader_receiver_(this),
       for_cors_preflight_(true),
-      has_any_extra_headers_listeners_(true) {}
+      has_any_extra_headers_listeners_(true),
+      extra_headers_decided_(true) {}
 
 ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
   // This is important to ensure that no outstanding blocking requests continue
@@ -152,6 +149,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_));
 
+  // "extraHeaders" mode costs two round trips per request and is what lets
+  // listeners see network-owned headers (Cookie, Set-Cookie); decided once.
+  if (!extra_headers_decided_) {
+    extra_headers_decided_ = true;
+    has_any_extra_headers_listeners_ =
+        network_service_request_id_ != 0 && factory_->web_request_ &&
+        factory_->web_request_->HasListenerFor(&info_.value());
+  }
   current_request_uses_header_client_ =
       factory_->url_loader_header_client_receiver_.is_bound() &&
       (for_cors_preflight_ || network_service_request_id_ != 0) &&

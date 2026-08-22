@@ -169,10 +169,10 @@ class ProxyingURLLoaderFactory
     // If |has_any_extra_headers_listeners_| is set to true, the request will be
     // sent with the network::mojom::kURLLoadOptionUseHeaderClient option, and
     // we expect events to come through the
-    // network::mojom::TrustedURLLoaderHeaderClient binding on the factory. This
-    // is only set to true if there is a listener that needs to view or modify
-    // headers set in the network process.
+    // network::mojom::TrustedURLLoaderHeaderClient binding on the factory. Set
+    // by the first UpdateRequestInfo() when a listener's filter matches.
     bool has_any_extra_headers_listeners_ = false;
+    bool extra_headers_decided_ = false;
     bool current_request_uses_header_client_ = false;
     OnBeforeSendHeadersCallback on_before_send_headers_callback_;
     OnHeadersReceivedCallback on_headers_received_callback_;
