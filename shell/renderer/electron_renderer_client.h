@@ -50,6 +50,9 @@ class ElectronRendererClient : public RendererClientBase {
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void SetUpWebAssemblyTrapHandler() override;
+  std::unique_ptr<media::KeySystemSupportRegistration> GetSupportedKeySystems(
+      content::RenderFrame* render_frame,
+      media::GetSupportedKeySystemsCB cb) override;
 
   // A frame's node::Environment and the uv loop integration driving it. Every
   // environment gets its own loop so that freeing one, which runs its loop

@@ -27,7 +27,17 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
+import { withTempDirectory } from './lib/fs-helpers';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  itremote,
+  listen,
+  spawnAndWait,
+  startRemoteControlApp,
+  waitUntil
+} from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
 
@@ -2847,6 +2857,78 @@ describe('chromium features', () => {
       );
 
       expect(result).to.eq('Idle detection permission denied');
+    });
+  });
+
+  describe('Encrypted Media Extensions', () => {
+    afterEach(closeAllWindows);
+
+    it('ignores --widevine-cdm-path in packaged apps', async () => {
+      await withTempDirectory(async (cdmPath) => {
+        const libraryName =
+          process.platform === 'win32'
+            ? 'widevinecdm.dll'
+            : process.platform === 'darwin'
+              ? 'libwidevinecdm.dylib'
+              : 'libwidevinecdm.so';
+        await fs.promises.writeFile(path.join(cdmPath, libraryName), '');
+
+        const appPath = path.join(fixturesPath, 'api', 'widevine-cdm-path');
+        const result = await spawnAndWait(
+          process.execPath,
+          [`--widevine-cdm-path=${cdmPath}`, '--widevine-cdm-version=1.0.0.0', appPath],
+          {
+            env: {
+              ...process.env,
+              ELECTRON_FORCE_IS_PACKAGED: 'true'
+            },
+            timeout: 30000
+          }
+        );
+
+        expect(result.code, result.stderr).to.equal(0);
+        expect(JSON.parse(result.stdout)).to.deep.equal({
+          isPackaged: true,
+          widevineAvailable: false
+        });
+      });
+    });
+
+    it('does not expose Widevine without a configured CDM', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          const config = [{
+            initDataTypes: ['cenc'],
+            videoCapabilities: [{
+              contentType: 'video/webm; codecs="vp8"'
+            }],
+            audioCapabilities: [{
+              contentType: 'audio/webm; codecs="opus"'
+            }]
+          }];
+          try {
+            await navigator.requestMediaKeySystemAccess(
+              'com.widevine.alpha',
+              config
+            );
+            return { ok: true };
+          } catch (error) {
+            return {
+              ok: false,
+              name: error.name,
+              message: error.message
+            };
+          }
+        })()
+      `,
+        true
+      );
+
+      expect(result.ok).to.be.false();
+      expect(result.name).to.equal('NotSupportedError');
     });
   });
 
