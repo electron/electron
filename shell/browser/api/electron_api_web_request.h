@@ -100,6 +100,7 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
       v8::Isolate* isolate) override;
 
   bool HasListener() const;
+  bool HasListenerFor(const extensions::WebRequestInfo* info) const;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
                       net::CompletionOnceCallback callback,

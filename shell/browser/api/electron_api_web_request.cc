@@ -361,6 +361,16 @@ bool WebRequest::HasListener() const {
   return !(simple_listeners_.empty() && response_listeners_.empty());
 }
 
+bool WebRequest::HasListenerFor(const extensions::WebRequestInfo* info) const {
+  for (const auto& [event, listener] : simple_listeners_)
+    if (listener.filter.MatchesRequest(info))
+      return true;
+  for (const auto& [event, listener] : response_listeners_)
+    if (listener.filter.MatchesRequest(info))
+      return true;
+  return false;
+}
+
 int WebRequest::OnBeforeRequest(extensions::WebRequestInfo* info,
                                 const network::ResourceRequest& request,
                                 net::CompletionOnceCallback callback,
