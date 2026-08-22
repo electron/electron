@@ -259,6 +259,11 @@ bool IsScreenReaderActive() {
   return false;
 }
 
+// wParam value used to mark WM_MOUSELEAVE messages posted by MouseHookProc.
+// SubclassProc uses it to distinguish our synthetic leave from the
+// OS-generated one, which always arrives with wParam == 0.
+constexpr WPARAM kForwardedMouseLeave = 1;
+
 }  // namespace
 
 HHOOK NativeWindowViews::mouse_hook_ = nullptr;
@@ -680,6 +685,11 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     forwarding_mouse_messages_ = true;
     forwarding_windows_->insert(this);
 
+    POINT p;
+    GetCursorPos(&p);
+    was_forwarded_mouse_in_legacy_window_ =
+        GetPointInRectAndToClient(legacy_window_, &p);
+
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
     SetWindowSubclass(legacy_window_, SubclassProc, 1,
@@ -693,6 +703,17 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     forwarding_windows_->erase(this);
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
+
+    // Manually re-enables mouse tracking to avoid
+    // `LegacyRenderWidgetHostHWND->mouse_tracking_enabled_` stuck at `true`
+    // forever (which causes the `:hover` state stuck issue after
+    // `setIgnoreMouseEvents(false)`)
+    TRACKMOUSEEVENT tme;
+    tme.cbSize = sizeof(tme);
+    tme.dwFlags = TME_LEAVE;
+    tme.hwndTrack = legacy_window_;
+    tme.dwHoverTime = 0;
+    TrackMouseEvent(&tme);
 
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
@@ -714,6 +735,15 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   }
 }
 
+// This function converts the `pt` to window's client point, and returns whether
+// the point is inside the window.
+BOOL NativeWindowViews::GetPointInRectAndToClient(HWND hwnd, POINT* pt) {
+  RECT client_rect;
+  GetClientRect(hwnd, &client_rect);
+  ScreenToClient(hwnd, pt);
+  return PtInRect(&client_rect, *pt);
+}
+
 LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  UINT msg,
                                                  WPARAM w_param,
@@ -733,6 +763,16 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       // the messages. As to why this is caught for the legacy window and not
       // the actual browser window is simply that the legacy window somehow
       // makes use of these events; posting to the main window didn't work.
+      //
+      // kForwardedMouseLeave is carried in wParam by the leave messages our
+      // hook posts. Everything else — notably the OS-generated leave (always
+      // wParam == 0) produced by Chromium's own TrackMouseEvent — is
+      // suppressed while forwarding so hover state is driven by the hook.
+      if (w_param == kForwardedMouseLeave) {
+        // This message is from our mouse hook, reset w_param and allow through.
+        w_param = 0;
+        break;
+      }
       if (window->forwarding_mouse_messages_) {
         return 0;
       }
@@ -759,14 +799,37 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
       // was directly above the window, but since nothing bad seems to happen
       // if we post the message even if some other window occludes it I have
       // just left it as is.
-      RECT client_rect;
-      GetClientRect(window->legacy_window_, &client_rect);
+      HWND window_hwnd = window->GetNativeWindowHandle();
       POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
-      ScreenToClient(window->legacy_window_, &p);
-      if (PtInRect(&client_rect, p)) {
+      // This is where we decide where should the `WM_MOUSEMOVE` goes to, and
+      // whether should we dispatch a `WM_MOUSELEAVE` to legacy window.
+      //
+      // We will also need to forward the message to parent window, the Chromium
+      // ignores the child window (legacy window)'s `WM_MOUSELEAVE` if the mouse
+      // is still inside the parent window (and in this case, the hover state is
+      // determined by mouse moves in parent window).
+      //
+      // Note that the parent window also receives `WM_MOUSELEAVE` when the
+      // mouse enters the legacy window, but not when the mouse actually leaves
+      // it. From what I observed, not sending it for forwarding has no side
+      // effects, so it's not implemented for simplicity.
+      if (GetPointInRectAndToClient(window_hwnd, &p)) {
+        POINT child_p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
+        if (GetPointInRectAndToClient(window->legacy_window_, &child_p)) {
+          window->was_forwarded_mouse_in_legacy_window_ = true;
+        }
         WPARAM w = 0;  // No virtual keys pressed for our purposes
-        LPARAM l = MAKELPARAM(p.x, p.y);
+        LPARAM l = MAKELPARAM(child_p.x, child_p.y);
         PostMessage(window->legacy_window_, WM_MOUSEMOVE, w, l);
+      } else if (window->was_forwarded_mouse_in_legacy_window_) {
+        // Sometimes mouse can left both parent window and child window at the
+        // same time, ensure legacy window receives the `WM_MOUSELEAVE` too
+        // here.
+        window->was_forwarded_mouse_in_legacy_window_ = false;
+        // wParam marks this message as sent from us (kForwardedMouseLeave);
+        // SubclassProc will let it through.
+        PostMessage(window->legacy_window_, WM_MOUSELEAVE, kForwardedMouseLeave,
+                    0);
       }
     }
   }
