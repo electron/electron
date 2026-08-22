@@ -28,8 +28,6 @@ class PendingRemote;
 
 namespace electron::api {
 
-class WebContents;
-
 class FrameSubscriber : private content::WebContentsObserver,
                         private viz::mojom::FrameSinkVideoConsumer {
  public:
