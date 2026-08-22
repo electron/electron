@@ -101,7 +101,7 @@ void DebugLog(std::string_view log_msg) {
 // Check if the process has a package identity
 bool HasPackageIdentity() {
   UINT32 length = 0;
-  LONG rc = GetCurrentPackageFullName(&length, NULL);
+  LONG rc = GetCurrentPackageFullName(&length, nullptr);
   return rc != APPMODEL_ERROR_NO_PACKAGE;
 }
 

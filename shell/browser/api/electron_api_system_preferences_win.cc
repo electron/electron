@@ -178,8 +178,8 @@ void SystemPreferences::InitializeWindow() {
   // colorization color.  Create a hidden WS_POPUP window instead of an
   // HWND_MESSAGE window, because only top-level windows such as popups can
   // receive broadcast messages like "WM_DWMCOLORIZATIONCOLORCHANGED".
-  window_ = CreateWindow(MAKEINTATOM(atom_), 0, WS_POPUP, 0, 0, 0, 0, 0, 0,
-                         instance_, 0);
+  window_ = CreateWindow(MAKEINTATOM(atom_), nullptr, WS_POPUP, 0, 0, 0, 0,
+                         nullptr, nullptr, instance_, nullptr);
   gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 }
