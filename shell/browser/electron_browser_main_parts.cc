@@ -202,7 +202,8 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       node_bindings_{
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser,
+                               uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
       browser_{std::make_unique<Browser>()} {
@@ -291,6 +292,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   if (context.IsEmpty()) {
     node_env_->context()->Enter();
   }
+  node_bindings_->SetUpIsolate(isolate);
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
