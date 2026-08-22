@@ -237,7 +237,9 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
           // Collect heap dumps
           // - We wait for a long time because sometimes processes take a few seconds to start sending heap dumps.
           // - CI machines are slower, so we wait longer there than when running locally.
-          await setTimeout(isCI ? 10000 : 4000);
+          // - Sanitizer builds are slower still: a process is silently dropped from a dump unless both its
+          //   Chrome dump and its OS memory maps arrive before stopRecording().
+          await setTimeout(isCI ? (process.env.IS_UBSAN ? 20000 : 10000) : 4000);
 
           const path = await contentTracing.stopRecording();
           const data = fs.readFileSync(path, 'utf8');

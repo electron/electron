@@ -11,6 +11,11 @@ on:
         type: string
         description: 'Arch to build for, can be x64 or arm64'
         required: true
+      target-variant:
+        type: string
+        description: 'Variant to build for, no effect on non-macOS target platforms. Can be darwin, mas or all.'
+        required: false
+        default: all
       build-runs-on:
         type: string
         description: 'What host to run the build'
@@ -54,6 +59,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -61,7 +71,7 @@ on:
         default: false
 
 concurrency:
-  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -76,11 +86,13 @@ jobs:
       build-container: ${{ inputs.build-container }}
       target-platform: ${{ inputs.target-platform }}
       target-arch: ${{ inputs.target-arch }}
+      target-variant: ${{ inputs.target-variant }}
       is-release: ${{ inputs.is-release }}
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
       is-asan: ${{ inputs.is-asan }}
+      is-ubsan: ${{ inputs.is-ubsan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
   test:
@@ -96,5 +108,6 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
       is-asan: ${{ inputs.is-asan }}
+      is-ubsan: ${{ inputs.is-ubsan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
