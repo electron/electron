@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/auto_reset.h"
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
@@ -1005,6 +1006,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     params.enable_wake_locks = !disable_wake_locks;
+    base::AutoReset<bool> reset(
+        ElectronBrowserClient::Get()->spare_renderer_compatible(),
+        RendererProcessPreferences::From(options).CanUseSpareRenderer());
     web_contents = content::WebContents::Create(params);
   }
 
