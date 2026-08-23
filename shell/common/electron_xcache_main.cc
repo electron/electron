@@ -20,10 +20,14 @@
 #pragma allow_unsafe_buffers
 #endif
 
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 #include <cstdint>
 #include <cstdio>
@@ -86,6 +90,22 @@ std::string Hex(uint32_t v) {
 class MappedFile {
  public:
   bool Open(const std::string& path) {
+#if defined(_WIN32)
+    file_ = CreateFileA(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr,
+                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file_ == INVALID_HANDLE_VALUE)
+      return false;
+    LARGE_INTEGER size;
+    if (!GetFileSizeEx(file_, &size) || size.QuadPart == 0)
+      return false;
+    size_ = static_cast<size_t>(size.QuadPart);
+    mapping_ = CreateFileMappingA(file_, nullptr, PAGE_READONLY, 0, 0, nullptr);
+    if (!mapping_)
+      return false;
+    data_ = static_cast<const char*>(
+        MapViewOfFile(mapping_, FILE_MAP_READ, 0, 0, 0));
+    return data_ != nullptr;
+#else
     fd_ = open(path.c_str(), O_RDONLY);
     if (fd_ < 0)
       return false;
@@ -98,17 +118,32 @@ class MappedFile {
       return false;
     data_ = static_cast<const char*>(m);
     return true;
+#endif
   }
   ~MappedFile() {
+#if defined(_WIN32)
+    if (data_)
+      UnmapViewOfFile(data_);
+    if (mapping_)
+      CloseHandle(mapping_);
+    if (file_ != INVALID_HANDLE_VALUE)
+      CloseHandle(file_);
+#else
     if (data_)
       munmap(const_cast<char*>(data_), size_);
     if (fd_ >= 0)
       close(fd_);
+#endif
   }
   std::string_view view() const { return {data_, size_}; }
 
  private:
+#if defined(_WIN32)
+  HANDLE file_ = INVALID_HANDLE_VALUE;
+  HANDLE mapping_ = nullptr;
+#else
   int fd_ = -1;
+#endif
   const char* data_ = nullptr;
   size_t size_ = 0;
 };

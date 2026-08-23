@@ -258,6 +258,7 @@ jobs:
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
+        if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
