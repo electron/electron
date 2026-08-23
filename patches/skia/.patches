@@ -17,3 +17,4 @@ cherry-pick-5269247b7a9a.patch
 ganesh_if_a_resolve_task_fails_to_execute_unwind_the_dirty.patch
 graphite_use_stable_collection_for_static_bindings.patch
 resolved_a_data_race_on_fstream_in_sktypeface_mac.patch
+cherry-pick-93458b5faf9c.patch

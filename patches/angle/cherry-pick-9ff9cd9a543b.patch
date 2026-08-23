@@ -1,0 +1,270 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Wed, 5 Aug 2026 13:59:45 -0700
+Subject: [M151] Fix pixel size of RGBA10X6
+
+Original change's description:
+> Fix pixel size of RGBA10X6
+>
+>   The format R10X6G10X6B10X6A10X6 is a 64-bit format with four 10-bit
+> components, each followed by 6 bits of padding. However, in the current
+> initialization in the internal format map, this format does not take
+> the padding spaces into account, resulting in the pixel size becoming
+> 5 bytes (when inquired from a vk::Format object).
+>
+> This change will apply the change to make sure the size of this format
+> is correctly set to 8 bytes.
+>
+> * Updated the internal format map for the following format:
+>   GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX
+>   * (Corresponds to VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
+>   * The padding is taken into account for all components, making the
+>     size of this format 8 bytes.
+>
+> * Updated the script that generates the format table to fix the size
+>   of R10X6G10X6B10X6A10X6_UNORM.
+>   * (The size of format G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 was
+>     also fixed from 5 to 6 as a result.)
+>
+> Bug: angleproject:409355677
+> Bug: chromium:536581050
+> Change-Id: I537522bb528ac6ded913ea44ece918dcd7fb13b8
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8199952
+> Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+> Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+> Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+(cherry picked from commit 8bbfb03f8fce362af0893d83bcf362b2cd08ac2a)
+
+Bug: chromium:546660312,angleproject:409355677,chromium:536581050
+Change-Id: I537522bb528ac6ded913ea44ece918dcd7fb13b8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8259532
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/scripts/code_generation_hashes/ANGLE_format.json b/scripts/code_generation_hashes/ANGLE_format.json
+index 50616083eca60cb0029f7849c01b95d7aa901347..ffa4cf4f7ab4bcffc29d09e6b4348b716b09e662 100644
+--- a/scripts/code_generation_hashes/ANGLE_format.json
++++ b/scripts/code_generation_hashes/ANGLE_format.json
+@@ -2,9 +2,9 @@
+   "src/libANGLE/renderer/FormatID_autogen.h":
+     "2b5ac80521dc3ea477b9c748d48da95d",
+   "src/libANGLE/renderer/Format_table_autogen.cpp":
+-    "21e0b0aa9ce772d528e7063ee94cede7",
++    "358efe1d376e6da67481cca5afd2917a",
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_data.json":
+     "f82d30f65cebd8c787ac0d29fa4c0221",
+   "src/libANGLE/renderer/angle_format_map.json":
+diff --git a/scripts/code_generation_hashes/ANGLE_load_functions_table.json b/scripts/code_generation_hashes/ANGLE_load_functions_table.json
+index ec85f681d32fd2c1a13f7e1b7c9d1f3693a3584b..a5961f6a800d919f4dd6f79d265ab1ba9cd015b6 100644
+--- a/scripts/code_generation_hashes/ANGLE_load_functions_table.json
++++ b/scripts/code_generation_hashes/ANGLE_load_functions_table.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/gen_load_functions_table.py":
+     "73e96775a0bd1a424f3f8585b1c5175f",
+   "src/libANGLE/renderer/load_functions_data.json":
+diff --git a/scripts/code_generation_hashes/D3D11_format.json b/scripts/code_generation_hashes/D3D11_format.json
+index 90fadc663293b413de4cb2003ce974a4374d394e..13ccc25ce1bb1e448237a1bcb26ed07f75acb2bb 100644
+--- a/scripts/code_generation_hashes/D3D11_format.json
++++ b/scripts/code_generation_hashes/D3D11_format.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/d3d/d3d11/gen_texture_format_table.py":
+     "70dcd2607cd481f450233c7c2b5c7ac0",
+   "src/libANGLE/renderer/d3d/d3d11/texture_format_data.json":
+diff --git a/scripts/code_generation_hashes/DXGI_format.json b/scripts/code_generation_hashes/DXGI_format.json
+index 648d43d8075b8c08f0e602b384f27254af050977..0d2f58ec4afb68e347013a57462601efe09a0aa8 100644
+--- a/scripts/code_generation_hashes/DXGI_format.json
++++ b/scripts/code_generation_hashes/DXGI_format.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_map.json":
+     "abad08e462a0839d1600d83f83bcad8b",
+   "src/libANGLE/renderer/dxgi_format_data.json":
+diff --git a/scripts/code_generation_hashes/GL_copy_conversion_table.json b/scripts/code_generation_hashes/GL_copy_conversion_table.json
+index 341b8b87af6caed26af15d274c36261f982e6f78..4541057445e24bd79666e7e00c48880a4681eaaf 100644
+--- a/scripts/code_generation_hashes/GL_copy_conversion_table.json
++++ b/scripts/code_generation_hashes/GL_copy_conversion_table.json
+@@ -6,5 +6,5 @@
+   "src/libANGLE/gen_copy_conversion_table.py":
+     "3b1f0182a41af78b44930fb415ff0fb6",
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30"
++    "39cf52e929e903dc0462f3b28848ec3f"
+ }
+diff --git a/scripts/code_generation_hashes/GL_format_map.json b/scripts/code_generation_hashes/GL_format_map.json
+index eda4f5c861ed9fd9266e1d448cfcb45c9a0dd0f7..ed440c23333bbd32a39cf653e85967f645df4ff4 100644
+--- a/scripts/code_generation_hashes/GL_format_map.json
++++ b/scripts/code_generation_hashes/GL_format_map.json
+@@ -8,5 +8,5 @@
+   "src/libANGLE/gen_format_map.py":
+     "32b43aedcbad2aa5eaa47052cc8573ac",
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30"
++    "39cf52e929e903dc0462f3b28848ec3f"
+ }
+diff --git a/scripts/code_generation_hashes/Metal_default_shaders.json b/scripts/code_generation_hashes/Metal_default_shaders.json
+index 79e6c2a0b40e01a58950bab29ecd3d3835b75e20..bb868f3b7450e79eb210e46fe50ed9f8449a5f74 100644
+--- a/scripts/code_generation_hashes/Metal_default_shaders.json
++++ b/scripts/code_generation_hashes/Metal_default_shaders.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_map.json":
+     "abad08e462a0839d1600d83f83bcad8b",
+   "src/libANGLE/renderer/gen_angle_format_table.py":
+diff --git a/scripts/code_generation_hashes/Metal_format_table.json b/scripts/code_generation_hashes/Metal_format_table.json
+index 98e348fb9b8606d4b47ca5cde4861fe86bde5206..36fb793e192feecba706112373071cfa4579d6a8 100644
+--- a/scripts/code_generation_hashes/Metal_format_table.json
++++ b/scripts/code_generation_hashes/Metal_format_table.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_map.json":
+     "abad08e462a0839d1600d83f83bcad8b",
+   "src/libANGLE/renderer/metal/gen_mtl_format_table.py":
+@@ -8,5 +8,5 @@
+   "src/libANGLE/renderer/metal/mtl_format_map.json":
+     "4be758ae631e802863d77c9ad61f4374",
+   "src/libANGLE/renderer/metal/mtl_format_table_autogen.mm":
+-    "1a12246bfe7ef8e00c5fa02a4d8c8a5f"
++    "7e5c1659261b22b44bfb48946972a41d"
+ }
+diff --git a/scripts/code_generation_hashes/OpenGL_dispatch_table.json b/scripts/code_generation_hashes/OpenGL_dispatch_table.json
+index a5431592247e84a90dce56801d98f8a591f23302..58f9b275026d8de79b55418518cf4f927de99bef 100644
+--- a/scripts/code_generation_hashes/OpenGL_dispatch_table.json
++++ b/scripts/code_generation_hashes/OpenGL_dispatch_table.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/gl/DispatchTableGL_autogen.cpp":
+     "31c088a9f24d58dc3b440412ff1410b1",
+   "src/libANGLE/renderer/gl/DispatchTableGL_autogen.h":
+diff --git a/scripts/code_generation_hashes/Vulkan_format.json b/scripts/code_generation_hashes/Vulkan_format.json
+index b81d75ca657625e94a6fac02d74b23c6a97b930e..0f1eea1db3f14bfe0f50772d2823a8589ee5d6a3 100644
+--- a/scripts/code_generation_hashes/Vulkan_format.json
++++ b/scripts/code_generation_hashes/Vulkan_format.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_map.json":
+     "abad08e462a0839d1600d83f83bcad8b",
+   "src/libANGLE/renderer/vulkan/gen_vk_format_table.py":
+diff --git a/scripts/code_generation_hashes/Vulkan_mandatory_format_support_table.json b/scripts/code_generation_hashes/Vulkan_mandatory_format_support_table.json
+index 429cd3a4ea2e442d7e8fc13670ba97251185a787..4908030728165d50090e7e6448256d920e583e78 100644
+--- a/scripts/code_generation_hashes/Vulkan_mandatory_format_support_table.json
++++ b/scripts/code_generation_hashes/Vulkan_mandatory_format_support_table.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/vulkan/gen_vk_mandatory_format_support_table.py":
+     "a9fd6f3ff2b584aff382364489146c76",
+   "src/libANGLE/renderer/vulkan/vk_format_map.json":
+diff --git a/scripts/code_generation_hashes/WebGPU_format.json b/scripts/code_generation_hashes/WebGPU_format.json
+index 68bae1f7142c67f18ca95940faca2015ea08da41..767129a6a2dc2e05e702f9a6d698b77fd19dbeb4 100644
+--- a/scripts/code_generation_hashes/WebGPU_format.json
++++ b/scripts/code_generation_hashes/WebGPU_format.json
+@@ -1,6 +1,6 @@
+ {
+   "src/libANGLE/renderer/angle_format.py":
+-    "45ffbde9a8edc7cec1c6c3afc5517b30",
++    "39cf52e929e903dc0462f3b28848ec3f",
+   "src/libANGLE/renderer/angle_format_map.json":
+     "abad08e462a0839d1600d83f83bcad8b",
+   "src/libANGLE/renderer/wgpu/gen_wgpu_format_table.py":
+diff --git a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp
+index 6246aa2a8d69d729a4f63ebf201b69233f061356..e9c488a6e0de030594271b4e3515a535fa2cd84f 100644
+--- a/src/libANGLE/formatutils.cpp
++++ b/src/libANGLE/formatutils.cpp
+@@ -1145,7 +1145,10 @@ static InternalFormatInfoMap BuildInternalFormatInfoMap()
+     // Special format which is not really supported, so always false for all supports.
+     AddRGBAFormat(&map, GL_BGR565_ANGLEX,     true,  5,  6,  5,  0, 0, GL_BGRA_EXT,     GL_UNSIGNED_SHORT_5_6_5,           GL_UNSIGNED_NORMALIZED, false, NeverSupported,                                    NeverSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
+     AddRGBAFormat(&map, GL_BGR10_A2_ANGLEX,   true, 10, 10, 10,  2, 0, GL_BGRA_EXT,     GL_UNSIGNED_INT_2_10_10_10_REV,    GL_UNSIGNED_NORMALIZED, false, NeverSupported,                                    NeverSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
+-    AddRGBAFormat(&map, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX,   true, 10, 10, 10,  10, 0, GL_RGBA,    GL_UNSIGNED_SHORT,   GL_UNSIGNED_NORMALIZED, false, RequireES<3, 0>,                                    NeverSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
++
++    // R10X6G10X6B10X6A10X6 has no explicit support on GL. Each component has 10 bits of data and
++    // 6 bits of padding (24 bits of padding in total).
++    AddRGBAXFormat(&map, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX,   true, FB< 10,  10,  10,  10, 24, 0>(), GL_RGBA,    GL_UNSIGNED_SHORT,   GL_UNSIGNED_NORMALIZED, false, RequireES<3, 0>,                                    NeverSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
+ 
+     // Special format to emulate RGB8 with RGBA8 within ANGLE.
+     AddRGBAXFormat(&map, GL_RGBX8_ANGLE,      true,   FB< 8,  8,  8,  0, 8, 0>(), GL_RGB,          GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, false, AlwaysSupported,                                   AlwaysSupported, AlwaysSupported,                                   AlwaysSupported,                               NeverSupported);
+diff --git a/src/libANGLE/renderer/Format_table_autogen.cpp b/src/libANGLE/renderer/Format_table_autogen.cpp
+index 2f40149800da53b9012e5669d378bde936cf3f28..115ec0820c0f66b4d1a25d89fcb78df6b65210fa 100644
+--- a/src/libANGLE/renderer/Format_table_autogen.cpp
++++ b/src/libANGLE/renderer/Format_table_autogen.cpp
+@@ -132,7 +132,7 @@ const Format gFormatInfoTable[] = {
+     { FormatID::ETC2_R8G8B8A8_UNORM_BLOCK, GL_COMPRESSED_RGBA8_ETC2_EAC, GL_COMPRESSED_RGBA8_ETC2_EAC, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 8, 0, 0, 0, 16, 0, true, false, false, false, false, gl::VertexAttribType::UnsignedByte },
+     { FormatID::ETC2_R8G8B8_SRGB_BLOCK, GL_COMPRESSED_SRGB8_ETC2, GL_COMPRESSED_SRGB8_ETC2, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 8, 0, true, false, false, true, false, gl::VertexAttribType::Byte },
+     { FormatID::ETC2_R8G8B8_UNORM_BLOCK, GL_COMPRESSED_RGB8_ETC2, GL_COMPRESSED_RGB8_ETC2, nullptr, NoCopyFunctions, nullptr, nullptr, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 8, 0, true, false, false, false, false, gl::VertexAttribType::UnsignedByte },
+-    { FormatID::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16, GL_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_ANGLE, GL_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_ANGLE, GenerateMip<R8G8B8>, NoCopyFunctions, ReadColor<R8G8B8, GLfloat>, WriteColor<R8G8B8, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 0, 0, 0, 0, 5, std::numeric_limits<GLuint>::max(), false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
++    { FormatID::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16, GL_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_ANGLE, GL_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_ANGLE, GenerateMip<R8G8B8>, NoCopyFunctions, ReadColor<R8G8B8, GLfloat>, WriteColor<R8G8B8, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 0, 0, 0, 0, 6, std::numeric_limits<GLuint>::max(), false, false, false, false, true, gl::VertexAttribType::InvalidEnum },
+     { FormatID::G8_B8R8_2PLANE_420_UNORM, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE, GenerateMip<R8G8B8>, NoCopyFunctions, ReadColor<R8G8B8, GLfloat>, WriteColor<R8G8B8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 3, 0, false, false, false, false, true, gl::VertexAttribType::UnsignedByte },
+     { FormatID::G8_B8_R8_3PLANE_420_UNORM, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE, GenerateMip<R8G8B8>, NoCopyFunctions, ReadColor<R8G8B8, GLfloat>, WriteColor<R8G8B8, GLfloat>, GL_UNSIGNED_NORMALIZED, 8, 8, 8, 0, 0, 0, 0, 3, 0, false, false, false, false, true, gl::VertexAttribType::UnsignedByte },
+     { FormatID::L16A16_FLOAT, GL_LUMINANCE_ALPHA16F_EXT, GL_LUMINANCE_ALPHA16F_EXT, GenerateMip<L16A16F>, NoCopyFunctions, ReadColor<L16A16F, GLfloat>, WriteColor<L16A16F, GLfloat>, GL_FLOAT, 0, 0, 0, 16, 16, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::Float },
+@@ -167,7 +167,7 @@ const Format gFormatInfoTable[] = {
+     { FormatID::R10G10B10A2_UNORM, GL_RGB10_A2, GL_RGB10_A2, GenerateMip<R10G10B10A2>, NoCopyFunctions, ReadColor<R10G10B10A2, GLfloat>, WriteColor<R10G10B10A2, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 2, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedInt2101010 },
+     { FormatID::R10G10B10A2_USCALED, GL_RGB10_A2_USCALED_ANGLEX, GL_RGB10_A2_USCALED_ANGLEX, GenerateMip<R10G10B10A2>, NoCopyFunctions, ReadColor<R10G10B10A2, GLuint>, WriteColor<R10G10B10A2, GLuint>, GL_UNSIGNED_INT, 10, 10, 10, 2, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, true, false, false, gl::VertexAttribType::UnsignedInt2101010 },
+     { FormatID::R10G10B10X2_UNORM, GL_RGB10_EXT, GL_RGB10_EXT, GenerateMip<R10G10B10X2>, NoCopyFunctions, ReadColor<R10G10B10X2, GLfloat>, WriteColor<R10G10B10X2, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::UnsignedInt2101010 },
+-    { FormatID::R10X6G10X6B10X6A10X6_UNORM, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX, GenerateMip<R10X6G10X6B10X6A10X6>, NoCopyFunctions, ReadColor<R10X6G10X6B10X6A10X6, GLfloat>, WriteColor<R10X6G10X6B10X6A10X6, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 10, 0, 0, 0, 6, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::InvalidEnum },
++    { FormatID::R10X6G10X6B10X6A10X6_UNORM, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX, GL_R10X6G10X6B10X6A10X6_UNORM_ANGLEX, GenerateMip<R10X6G10X6B10X6A10X6>, NoCopyFunctions, ReadColor<R10X6G10X6B10X6A10X6, GLfloat>, WriteColor<R10X6G10X6B10X6A10X6, GLfloat>, GL_UNSIGNED_NORMALIZED, 10, 10, 10, 10, 0, 0, 0, 8, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::InvalidEnum },
+     { FormatID::R11G11B10_FLOAT, GL_R11F_G11F_B10F, GL_R11F_G11F_B10F, GenerateMip<R11G11B10F>, NoCopyFunctions, ReadColor<R11G11B10F, GLfloat>, WriteColor<R11G11B10F, GLfloat>, GL_FLOAT, 11, 11, 10, 0, 0, 0, 0, 4, std::numeric_limits<GLuint>::max(), false, false, false, false, false, gl::VertexAttribType::Float },
+     { FormatID::R16G16B16A16_FLOAT, GL_RGBA16F, GL_RGBA16F, GenerateMip<R16G16B16A16F>, NoCopyFunctions, ReadColor<R16G16B16A16F, GLfloat>, WriteColor<R16G16B16A16F, GLfloat>, GL_FLOAT, 16, 16, 16, 16, 0, 0, 0, 8, 1, false, false, false, false, false, gl::VertexAttribType::HalfFloat },
+     { FormatID::R16G16B16A16_SINT, GL_RGBA16I, GL_RGBA16I, GenerateMip<R16G16B16A16S>, NoCopyFunctions, ReadColor<R16G16B16A16S, GLint>, WriteColor<R16G16B16A16S, GLint>, GL_INT, 16, 16, 16, 16, 0, 0, 0, 8, 1, false, false, false, false, false, gl::VertexAttribType::Short },
+diff --git a/src/libANGLE/renderer/angle_format.py b/src/libANGLE/renderer/angle_format.py
+index 8dbf48a57ec827070c09472bd7ec087b3e117da0..a711ae0db764b8c38c27cf1413f8eddb5799ea21 100644
+--- a/src/libANGLE/renderer/angle_format.py
++++ b/src/libANGLE/renderer/angle_format.py
+@@ -134,7 +134,10 @@ def get_bits(format_id):
+     else:
+         tokens = get_channel_tokens(format_id)
+         for token in tokens:
+-            bits[token[0]] = int(token[1:])
++            # Some padding tokens can appear multiple times in a format name
++            # (e.g. R10X6G10X6B10X6A10X6 has four X6 tokens). They should be
++            # accumulated for the correct pixelBytes value.
++            bits[token[0]] = bits.get(token[0], 0) + int(token[1:])
+     return bits
+ 
+ 
+diff --git a/src/libANGLE/renderer/metal/mtl_format_table_autogen.mm b/src/libANGLE/renderer/metal/mtl_format_table_autogen.mm
+index 0bddc39a28aa9b642bea282f8ed08df87988a5c6..dcbbdfdbe3916803646c40a31f559d504dec34ee 100644
+--- a/src/libANGLE/renderer/metal/mtl_format_table_autogen.mm
++++ b/src/libANGLE/renderer/metal/mtl_format_table_autogen.mm
+@@ -3834,10 +3834,10 @@
+     const angle::FeaturesMtl &featuresMtl = display->getFeatures();
+     // Skip auto resolve if either hasDepth/StencilAutoResolve or allowMultisampleStoreAndResolve
+     // feature are disabled.
+-    bool supportDepthAutoResolve = featuresMtl.hasDepthAutoResolve.enabled &&
+-                                   featuresMtl.allowMultisampleStoreAndResolve.enabled;
+-    bool supportStencilAutoResolve = featuresMtl.hasStencilAutoResolve.enabled &&
+-                                     featuresMtl.allowMultisampleStoreAndResolve.enabled;
++    bool supportDepthAutoResolve        = featuresMtl.hasDepthAutoResolve.enabled &&
++                                          featuresMtl.allowMultisampleStoreAndResolve.enabled;
++    bool supportStencilAutoResolve      = featuresMtl.hasStencilAutoResolve.enabled &&
++                                          featuresMtl.allowMultisampleStoreAndResolve.enabled;
+     bool supportDepthStencilAutoResolve = supportDepthAutoResolve && supportStencilAutoResolve;
+ 
+     // Source: https://developer.apple.com/metal/Metal-Feature-Set-Tables.pdf

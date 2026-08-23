@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Thu, 20 Aug 2026 15:46:05 -0700
+Subject: [M144] HttpCacheTransaction: fix confusion around range request
+ w/Vary:Range
+
+Original change's description:
+> HttpCacheTransaction: fix confusion around range request w/Vary:Range
+>
+> Bug: 543798025
+> Change-Id: Idaceab5116fe9fedccc97fdd13333b0cd9fc9f0b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8243730
+> Reviewed-by: Adam Rice <ricea@chromium.org>
+> Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1679626}
+
+(cherry picked from commit f0171e077fe31182c571370f49f8959369e7cb8d)
+
+Bug: 548758548,543798025
+Change-Id: Idaceab5116fe9fedccc97fdd13333b0cd9fc9f0b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8268471
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#5266}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/net/http/http_cache_transaction.cc b/net/http/http_cache_transaction.cc
+index bb4477f7703335a295c7a2fc8cd48324d5785a96..fb12e44e5760200b16aa033f11a3a915707072a4 100644
+--- a/net/http/http_cache_transaction.cc
++++ b/net/http/http_cache_transaction.cc
+@@ -1633,18 +1633,18 @@ int HttpCache::Transaction::DoCacheReadResponse() {
+   TransitionToState(STATE_CACHE_READ_RESPONSE_COMPLETE);
+ 
+   io_buf_len_ = entry_->GetEntry()->GetDataSize(kResponseInfoIndex);
+-  read_buf_ = base::MakeRefCounted<IOBufferWithSize>(io_buf_len_);
++  cache_buf_ = base::MakeRefCounted<IOBufferWithSize>(io_buf_len_);
+ 
+   net_log_.BeginEvent(NetLogEventType::HTTP_CACHE_READ_INFO);
+   BeginDiskCacheAccessTimeCount();
+-  return entry_->GetEntry()->ReadData(kResponseInfoIndex, 0, read_buf_.get(),
++  return entry_->GetEntry()->ReadData(kResponseInfoIndex, 0, cache_buf_.get(),
+                                       io_buf_len_, io_callback_);
+ }
+ 
+ int HttpCache::Transaction::DoCacheReadResponseComplete(int result) {
+   TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("net"),
+                       "DoCacheReadResponseComplete", track_for_state_change_,
+-                      "result", result, "io_buf_len", read_buf_->size());
++                      "result", result, "io_buf_len", cache_buf_->size());
+   net_log_.EndEventWithNetErrorCode(NetLogEventType::HTTP_CACHE_READ_INFO,
+                                     result);
+   EndDiskCacheAccessTimeCount(DiskCacheAccessType::kRead);
+@@ -1652,8 +1652,8 @@ int HttpCache::Transaction::DoCacheReadResponseComplete(int result) {
+   // Record the time immediately before the cached response is parsed.
+   read_headers_since_ = TimeTicks::Now();
+ 
+-  if (result != read_buf_->size() ||
+-      !HttpCache::ParseResponseInfo(read_buf_->span(), &response_,
++  if (result != cache_buf_->size() ||
++      !HttpCache::ParseResponseInfo(cache_buf_->span(), &response_,
+                                     &truncated_)) {
+     return OnCacheReadError(result, true);
+   }
+diff --git a/net/http/http_cache_transaction.h b/net/http/http_cache_transaction.h
+index 1352ccdbc1d102c3c98ccf4f96a7df5a78b82610..f1a28265d1b727f7d3e2bd2cd48dc15401d14a5e 100644
+--- a/net/http/http_cache_transaction.h
++++ b/net/http/http_cache_transaction.h
+@@ -757,6 +757,7 @@ class NET_EXPORT_PRIVATE HttpCache::Transaction : public HttpTransaction {
+   // Length of the buffer passed in Read().
+   int read_buf_len_ = 0;
+ 
++  scoped_refptr<IOBuffer> cache_buf_;
+   int io_buf_len_ = 0;
+   int read_offset_ = 0;
+   int effective_load_flags_ = 0;
+diff --git a/net/http/http_cache_unittest.cc b/net/http/http_cache_unittest.cc
+index 2aa749168a73046c16b63b7fe873406be16284b4..23dc8cab3748e2dfb733e2f05a6c166f4f4a8e53 100644
+--- a/net/http/http_cache_unittest.cc
++++ b/net/http/http_cache_unittest.cc
+@@ -553,7 +553,9 @@ void RangeTransactionServer::RangeHandler(const HttpRequestInfo* request,
+                                                  start, end, length_);
+   response_headers->append(content_range);
+ 
+-  if (!request->extra_headers.HasHeader("If-None-Match") || modified_) {
++  if ((!request->extra_headers.HasHeader("If-None-Match") &&
++       !request->extra_headers.HasHeader("If-Modified-Since")) ||
++      modified_) {
+     std::string data;
+     if (end == start) {
+       EXPECT_EQ(0, end % 10);
+@@ -572,8 +574,14 @@ void RangeTransactionServer::RangeHandler(const HttpRequestInfo* request,
+       int64_t len = end - start + 1;
+       std::string content_length =
+           base::StringPrintf("Content-Length: %" PRId64 "\n", len);
+-      response_headers->replace(response_headers->find("Content-Length:"),
+-                                content_length.size(), content_length);
++      size_t length_start = response_headers->find("Content-Length:");
++      CHECK_NE(length_start, std::string::npos);
++      size_t length_end = response_headers->find('\n', length_start);
++      if (length_end == std::string::npos) {
++        length_end = response_headers->length();
++      }
++      response_headers->replace(length_start, length_end - length_start,
++                                content_length);
+     }
+   } else {
+     response_status->assign("HTTP/1.1 304 Not Modified");
+@@ -3822,6 +3830,74 @@ TEST_F(HttpCacheRangeGetTest, ParallelValidationRestartDoneHeaders) {
+   EXPECT_EQ(1, cache.disk_cache()->create_count());
+ }
+ 
++TEST_F(HttpCacheRangeGetTest, VaryRange) {
++  MockHttpCache cache;
++  cache.disk_cache()->set_double_create_check(false);
++
++  ScopedMockTransaction transaction(kRangeGET_TransactionOK);
++  transaction.response_headers =
++      "Last-Modified: Sat, 18 Apr 2007 01:10:43 GMT\n"
++      "Date: Sat, 18 Apr 2007 02:10:43 GMT\n"
++      "Accept-Ranges: bytes\n"
++      "Vary: range\n"
++      "Content-Length: 10\n";
++
++  RangeTransactionServer range_support;
++  range_support.set_length(60000);
++
++  // Request the transaction's 40-49 range, and get it cached.
++  {
++    std::string headers;
++    RunTransactionTestWithResponse(cache.http_cache(), transaction, &headers);
++    Verify206Response(headers, 40, 49);
++  }
++
++  // Now request an extension.
++  transaction.request_headers = "Range: bytes = 40-59009\r\n" EXTRA_HEADER;
++  MockHttpRequest request(transaction);
++  Context c;
++
++  c.trans = cache.CreateTransaction();
++  ASSERT_TRUE(c.trans);
++
++  int rv = c.callback.GetResult(
++      c.trans->Start(&request, c.callback.callback(), NetLogWithSource()));
++  ASSERT_THAT(rv, IsOk());
++
++  // First read the 40-49 portion.
++  scoped_refptr<IOBufferWithSize> buf =
++      base::MakeRefCounted<IOBufferWithSize>(10);
++  rv = c.callback.GetResult(
++      c.trans->Read(buf.get(), buf->size(), c.callback.callback()));
++  EXPECT_EQ(10, rv);
++  EXPECT_EQ(buf->first(10), base::byte_span_from_cstring("rg: 40-49 "));
++
++  // Replace with an in-progress different entry, with a different range, that's
++  // in-flight.
++  Context c2;
++  ScopedMockTransaction transaction2(transaction);
++  transaction2.request_headers = "Range: bytes = 30-39\r\n" EXTRA_HEADER;
++  transaction2.load_flags = LOAD_BYPASS_CACHE;
++  transaction2.data = "rg: 30-39 ";
++  MockHttpRequest request2(transaction2);
++
++  c2.trans = cache.CreateTransaction();
++  ASSERT_TRUE(c2.trans);
++
++  rv = c2.callback.GetResult(
++      c2.trans->Start(&request2, c2.callback.callback(), NetLogWithSource()));
++  ASSERT_THAT(rv, IsOk());
++
++  // Try to read the 50-5059 portion. The right bits should come in.
++  scoped_refptr<IOBufferWithSize> buf2 =
++      base::MakeRefCounted<IOBufferWithSize>(6000);
++  std::ranges::fill(buf2->span(), 'A');
++  rv = c.callback.GetResult(
++      c.trans->Read(buf2.get(), buf2->size(), c.callback.callback()));
++  EXPECT_LE(10, rv);
++  EXPECT_EQ(buf2->first(10), base::byte_span_from_cstring("rg: 50-59 "));
++}
++
+ // A test of doing a range request to a cached 301 response
+ TEST_F(HttpCacheRangeGetTest, CachedRedirect) {
+   RangeTransactionServer handler;
+@@ -9593,7 +9669,6 @@ TEST_F(HttpCacheRangeGetTest, Previous200) {
+   std::string headers;
+   MockTransaction transaction2(kRangeGET_TransactionOK);
+   RangeTransactionServer handler;
+-  handler.set_not_modified(true);
+   RunTransactionTestWithResponse(cache.http_cache(), transaction2, &headers);
+ 
+   // We are expecting a 206.
+@@ -9627,7 +9702,7 @@ TEST_F(HttpCacheRangeGetTest, Previous200) {
+   base::RunLoop().RunUntilIdle();
+ 
+   // Now we should receive a range from the server and drop the stored entry.
+-  handler.set_not_modified(false);
++  handler.set_modified(true);
+   transaction2.request_headers = kRangeGET_TransactionOK.request_headers;
+   RunTransactionTestWithResponse(cache.http_cache(), transaction2, &headers);
+   Verify206Response(headers, 40, 49);
+diff --git a/net/http/partial_data.cc b/net/http/partial_data.cc
+index eeef3456b4edccad351afcc6d0a08711f084d80e..ab82ed9a98793dd954d8a6d369b508dd4b471fb7 100644
+--- a/net/http/partial_data.cc
++++ b/net/http/partial_data.cc
+@@ -183,6 +183,17 @@ bool PartialData::UpdateFromStoredHeaders(const HttpResponseHeaders* headers,
+                                           disk_cache::Entry* entry,
+                                           bool truncated,
+                                           bool writing_in_progress) {
++  // Vary: range is a very confusing for us when we're gluing things
++  // together, so just give up on it.
++  size_t iter = 0;
++  constexpr std::string_view name = "vary";
++  std::optional<std::string_view> vary_entry;
++  while ((vary_entry = headers->EnumerateHeader(&iter, name))) {
++    if (base::EqualsCaseInsensitiveASCII(vary_entry.value(), "range")) {
++      return false;
++    }
++  }
++
+   resource_size_ = 0;
+   if (truncated) {
+     DCHECK_EQ(headers->response_code(), 200);
