@@ -14,7 +14,7 @@ import {
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as ws from 'ws';
+import WebSocketClient, * as ws from 'ws';
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
@@ -796,12 +796,12 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: InstanceType<typeof ws>;
+        socket: WebSocketClient;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new ws(browserWsUrl);
+        const socket = new WebSocketClient(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
