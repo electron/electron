@@ -41,6 +41,10 @@ const preloadProcess = createPreloadProcessObject();
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
 
+if (preloadProcess.argv.includes('--unsafely-expose-electron-internals-for-testing')) {
+  preloadProcess._linkedBinding = process._linkedBinding;
+}
+
 Object.assign(process, processProps);
 
 require('@electron/internal/renderer/ipc-native-setup');

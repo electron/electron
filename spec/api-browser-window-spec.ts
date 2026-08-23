@@ -4165,6 +4165,25 @@ describe('BrowserWindow module', () => {
         const [, argv] = await once(ipcMain, 'answer');
         expect(argv).to.include('--my-magic-arg=foo');
       });
+
+      it('adds extra args to process.argv of a sandboxed preload, per window', async () => {
+        const preload = path.join(fixtures, 'module', 'check-arguments.js');
+        const open = async (args: string[]) => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: { sandbox: true, preload, additionalArguments: args }
+          });
+          const answer = once(ipcMain, 'answer');
+          w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          const [, argv] = await answer;
+          return argv as string[];
+        };
+        const first = await open(['--first-window', 'plain value']);
+        const second = await open(['--second-window']);
+        expect(first.slice(-2)).to.deep.equal(['--first-window', 'plain value']);
+        expect(second[second.length - 1]).to.equal('--second-window');
+        expect(second).to.not.include('--first-window');
+      });
     });
 
     describe('preload code cache', () => {

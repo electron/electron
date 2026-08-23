@@ -90,6 +90,9 @@ class WebContentsPreferences
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
+  const std::vector<std::string>& additional_arguments() const {
+    return custom_args_;
+  }
   bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
   bool IsSandboxed() const;
 

@@ -133,8 +133,10 @@ mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_prefs = WebContentsPreferences::From(web_contents);
   std::optional<base::FilePath> preload;
-  if (web_prefs)
+  if (web_prefs) {
     preload = web_prefs->GetPreloadPath();
+    data->additional_arguments = web_prefs->additional_arguments();
+  }
   if (preload && preload->IsAbsolute()) {
     data->preload_scripts.push_back(ReadPreloadScript(
         preload_code_cache::IdForWebPreferencesPreload(*preload), *preload,

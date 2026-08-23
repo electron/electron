@@ -7,7 +7,9 @@
 #include <iterator>
 
 #include "base/command_line.h"
+#include "base/containers/to_vector.h"
 #include "base/process/process_metrics.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -88,7 +90,6 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   BindProcess(isolate, &process, render_frame);
 
   process.SetMethod("uptime", preload_utils::Uptime);
-  process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
@@ -100,12 +101,23 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   // ShouldLoadPreload() filters out (initial empty doc, webview frames), so
   // the bundle never observes a null startupData in practice.
   auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  const auto& process_argv = base::CommandLine::ForCurrentProcess()->argv();
+#if BUILDFLAG(IS_WIN)
+  std::vector<std::string> argv = base::ToVector(
+      process_argv, [](const auto& arg) { return base::WideToUTF8(arg); });
+#else
+  std::vector<std::string> argv = process_argv;
+#endif
   v8::Local<v8::Value> startup_data;
   if (!api_service ||
       !preload_utils::BuildStartupData(isolate, api_service->startup_data())
            .ToLocal(&startup_data)) {
     startup_data = v8::Null(isolate);
+  } else {
+    const auto& extra = api_service->startup_data()->additional_arguments;
+    argv.insert(argv.end(), extra.begin(), extra.end());
   }
+  process.Set("argv", argv);
   b.Set("startupData", startup_data);
 }
 

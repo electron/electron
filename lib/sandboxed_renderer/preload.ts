@@ -41,14 +41,6 @@ export function createPreloadProcessObject(): NodeJS.Process {
     }
   });
 
-  const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-
-  // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
-  // that tests can call it to get access to some test only bindings
-  if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
-    preloadProcess._linkedBinding = process._linkedBinding;
-  }
-
   return preloadProcess;
 }
 

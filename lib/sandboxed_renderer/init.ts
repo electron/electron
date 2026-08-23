@@ -50,6 +50,12 @@ v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
 
+// Similar to nodes --expose-internals flag, this exposes _linkedBinding so
+// that tests can call it to get access to some test only bindings
+if (preloadProcess.argv.includes('--unsafely-expose-electron-internals-for-testing')) {
+  preloadProcess._linkedBinding = process._linkedBinding;
+}
+
 // Test-only (DCHECK builds): expose the js2c code-cache status on the
 // sandboxed preload's process shim for the code-cache spec.
 if ((v8Util as any).getJs2cCodeCacheStatus) {

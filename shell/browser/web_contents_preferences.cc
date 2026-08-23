@@ -205,6 +205,7 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
   web_preferences.Get(options::kCustomArgs, &custom_args_);
+  std::erase(custom_args_, std::string());
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
@@ -364,10 +365,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitch(switches::kScrollBounce);
 #endif
 
-  // Custom args for renderer process
-  for (const auto& arg : custom_args_)
-    if (!arg.empty())
+  // Sandboxed renderers get these with the preload data instead, see
+  // renderer_startup_data::BuildForFrame().
+  if (!command_line->HasSwitch(switches::kEnableSandbox)) {
+    for (const auto& arg : custom_args_)
       command_line->AppendArg(arg);
+  }
 
   if (enable_blink_features_)
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
