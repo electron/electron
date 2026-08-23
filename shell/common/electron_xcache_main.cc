@@ -11,9 +11,10 @@
 // read-only-snapshot checksum) and ReadOnlyHeapRef back-references into the
 // read-only heap, all of which are properties of the snapshot blob the
 // consuming isolate was created from. The tool therefore creates its isolate
-// from the target's blob, with JavaScript execution disallowed (the blob's
-// builtin metadata does not describe this binary's builtins), and serializes.
-// Build it from the target version's checkout in a release configuration.
+// from the target's blob, runs no JavaScript in it beyond context setup (the
+// blob's builtin metadata does not describe this binary's builtins), and
+// serializes. Build it from the target version's checkout in a release
+// configuration.
 
 #ifdef UNSAFE_BUFFERS_BUILD
 #pragma allow_unsafe_buffers
@@ -296,6 +297,7 @@ int main(int argc, char* argv[]) {
   std::string snapshot_path, in_path, out_path, filename, icu_data;
   std::string mode = "script";
   std::string v8_flags = kDefaultV8Flags;
+  std::string extra_v8_flags;
   std::string params_csv = "exports,require,module,__filename,__dirname";
   int blob_index = -1;
   bool list = false, eager = false, json = false;
@@ -325,6 +327,8 @@ int main(int argc, char* argv[]) {
       value(&filename);
     } else if (a == "--v8-flags") {
       value(&v8_flags);
+    } else if (a == "--extra-v8-flags") {
+      value(&extra_v8_flags);
     } else if (a == "--icu-data") {
       value(&icu_data);
     } else if (a == "--blob-index") {
@@ -436,6 +440,8 @@ int main(int argc, char* argv[]) {
     std::cerr << "warning: ICU data not loaded; pass --icu-data <icudtl.dat> "
                  "if non-ASCII identifiers fail to parse\n";
   }
+  if (!extra_v8_flags.empty())
+    v8_flags += " " + extra_v8_flags;
   if (!v8_flags.empty())
     v8::V8::SetFlagsFromString(v8_flags.c_str(), v8_flags.size());
   // Deterministic output; --random-seed is excluded from FlagList::Hash().
@@ -458,13 +464,14 @@ int main(int argc, char* argv[]) {
   {
     v8::Isolate::Scope isolate_scope(isolate);
     v8::HandleScope handle_scope(isolate);
+    // Index 0 is a plain Context::New() in both the Node startup snapshot and
+    // Blink's v8_context_snapshot. Flags that install extensions (--expose-gc)
+    // run their setup script here; nothing may run after this point.
+    v8::Local<v8::Context> context = v8::Context::New(isolate);
+    v8::Context::Scope context_scope(context);
     v8::Isolate::DisallowJavascriptExecutionScope no_js(
         isolate,
         v8::Isolate::DisallowJavascriptExecutionScope::CRASH_ON_FAILURE);
-    // Index 0 is a plain Context::New() in both the Node startup snapshot and
-    // Blink's v8_context_snapshot.
-    v8::Local<v8::Context> context = v8::Context::New(isolate);
-    v8::Context::Scope context_scope(context);
     v8::TryCatch try_catch(isolate);
 
     v8::Local<v8::String> code;

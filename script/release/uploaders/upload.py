@@ -111,6 +111,10 @@ def main():
         libcxx_objects_zip)
     upload_electron(release, libcxx_objects_zip, args)
 
+    xcache_zip = os.path.join(OUT_DIR, get_zip_name('xcache', ELECTRON_VERSION))
+    shutil.copy2(os.path.join(OUT_DIR, 'xcache.zip'), xcache_zip)
+    upload_electron(release, xcache_zip, args)
+
     # Upload headers.zip and abi_headers.zip as non-platform specific
     if get_target_arch() == "x64":
       cxx_headers_zip = os.path.join(OUT_DIR, 'libcxx_headers.zip')

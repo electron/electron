@@ -263,6 +263,7 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
+        if [ -f xcache.zip ]; then unzip -:o xcache.zip electron_xcache; fi
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
