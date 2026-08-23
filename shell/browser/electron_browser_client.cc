@@ -674,18 +674,6 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
     renderer_process_sandboxed_[unsafe_process_id] =
         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
-
-    // Service worker processes should only run preloads if one has been
-    // registered prior to startup.
-    auto* render_process_host = content::RenderProcessHost::FromID(process_id);
-    if (render_process_host) {
-      auto* browser_context = render_process_host->GetBrowserContext();
-      auto* session_prefs =
-          SessionPreferences::FromBrowserContext(browser_context);
-      if (session_prefs->HasServiceWorkerPreloadScript()) {
-        command_line->AppendSwitch(switches::kServiceWorkerPreload);
-      }
-    }
   }
 }
 
