@@ -37,6 +37,10 @@
 
 #include "electron/pop_node_defines.h"
 
+// Undefine these defines from libuv which conflict with other headers
+#undef RB_BLACK
+#undef RB_RED
+
 // Alternative to NODE_BINDING_CONTEXT_AWARE_X.
 // Allows to explicitly register builtin bindings instead of using
 // __attribute__((constructor)).

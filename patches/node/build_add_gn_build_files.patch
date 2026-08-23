@@ -305,9 +305,18 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..df0ae804a5338d8f2ec4d331a1e2ed053c3c3955 100644
+index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..7265e09bf7601afe76463f528ffb385db796e093 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
+@@ -94,7 +94,7 @@ template("node_gn_build") {
+       "-Wno-unused-function",
+     ]
+ 
+-    if (current_cpu == "x86") {
++    if (target_cpu == "x86") {
+       node_arch = "ia32"
+     } else {
+       node_arch = target_cpu
 @@ -147,32 +147,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",

@@ -89,7 +89,7 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index bbb30dd8a50f7b8550caf1967de8547cc7d8af47..82aee7e38bbd859e1a76eedcc3a51278a1b3a793 100644
+index ef6e14245fa668d04d0e9b1f71fcce48ec267f4e..dd8be35de7c447c9a77f8b9849a6a3de19bc55af 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -610,7 +610,7 @@ IsolateData::~IsolateData() {}

@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/path_service.h"
+#include "base/strings/sys_string_conversions.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
@@ -24,7 +25,7 @@ base::FilePath App::GetDefaultAppLogPath() {
       [NSString stringWithFormat:@"Library/Logs/%@", bundle_name];
   NSString* library_path =
       [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
-  return base::FilePath{[library_path UTF8String]};
+  return base::FilePath{base::SysNSStringToUTF8(library_path)};
 }
 
 void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,

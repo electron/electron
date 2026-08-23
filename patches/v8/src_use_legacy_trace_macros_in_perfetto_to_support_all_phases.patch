@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 31 Mar 2026 07:05:17 +0900
+Subject: src: use legacy trace macros in perfetto to support all phases
+
+Replace the phase-specific SDK macros with the INTERNAL_TRACE_EVENT_ADD
+and INTERNAL_TRACE_EVENT_ADD_WITH_ID legacy shim macros, which accept an
+arbitrary phase character and forward it through Perfetto's legacy
+compatibility layer. This supports nestable async ('b'/'e'/'n')
+and counter ('C') trace event phases needed for Node.js.
+
+Additionally:
+
+1. Clear TRACE_EVENT_FLAG_COPY before calling Perfetto macros. Perfetto
+   manages string lifetimes internally via DynamicString and
+   TRACE_STR_COPY; passing FLAG_COPY triggers a CHECK failure in
+   Perfetto's legacy shim.
+
+2. Default instant events (phase 'I') with GLOBAL scope to THREAD scope.
+   Under Perfetto, global-scope instant events land on Track::Global(0),
+   producing pid:0/tid:0 in the trace output, making them effectively
+   invisible in trace viewers.
+
+diff --git a/src/builtins/builtins-trace.cc b/src/builtins/builtins-trace.cc
+index c17d72d477d4c28d25e3f385d8af3c5b7024f7f7..5990e6cee1d08ba0e86059cb7f3affc878dcc632 100644
+--- a/src/builtins/builtins-trace.cc
++++ b/src/builtins/builtins-trace.cc
+@@ -181,37 +181,44 @@ BUILTIN(Trace) {
+   }
+ 
+ #if defined(V8_USE_PERFETTO)
+-  // TODO(skyostil): Use interned names to reduce trace size.
+-  auto trace_args = [&](perfetto::EventContext ctx) {
++  // Perfetto handles string lifetimes internally (via DynamicString and
++  // TRACE_STR_COPY), so TRACE_EVENT_FLAG_COPY must not be set — Perfetto's
++  // legacy shim CHECKs against it.
++  flags &= ~TRACE_EVENT_FLAG_COPY;
++
++  // Default instant events to thread scope under Perfetto. Without this,
++  // scope bits are 0 (GLOBAL), which puts events on Track::Global(0)
++  // resulting in pid:0/tid:0 in the trace output.
++  if (phase == TRACE_EVENT_PHASE_INSTANT) {
++    auto scope = flags & TRACE_EVENT_FLAG_SCOPE_MASK;
++    if (scope == TRACE_EVENT_SCOPE_GLOBAL) {
++      flags = (flags & ~TRACE_EVENT_FLAG_SCOPE_MASK) | TRACE_EVENT_SCOPE_THREAD;
++    }
++  }
++
++  // Use the legacy trace event macros which support all phase types
++  // (including nestable async 'b'/'e'/'n' and counter 'C' used by Node.js)
++  if (flags & TRACE_EVENT_FLAG_HAS_ID) {
+     if (num_args) {
+       MaybeUtf8 arg_contents(isolate, Cast<String>(arg_json));
+-      auto annotation = ctx.event()->add_debug_annotations();
+-      annotation->set_name(arg_name);
+-      annotation->set_legacy_json_value(*arg_contents);
++      INTERNAL_TRACE_EVENT_ADD_WITH_ID(
++          phase, dynamic_category, perfetto::DynamicString(*name), id, flags,
++          arg_name, TRACE_STR_COPY(*arg_contents));
++    } else {
++      INTERNAL_TRACE_EVENT_ADD_WITH_ID(
++          phase, dynamic_category, perfetto::DynamicString(*name), id, flags);
+     }
+-    if (flags & TRACE_EVENT_FLAG_HAS_ID) {
+-      auto legacy_event = ctx.event()->set_legacy_event();
+-      legacy_event->set_global_id(id);
++  } else {
++    if (num_args) {
++      MaybeUtf8 arg_contents(isolate, Cast<String>(arg_json));
++      INTERNAL_TRACE_EVENT_ADD(
++          phase, dynamic_category, perfetto::DynamicString(*name), flags,
++          arg_name, TRACE_STR_COPY(*arg_contents));
++    } else {
++      INTERNAL_TRACE_EVENT_ADD(phase, dynamic_category,
++                               perfetto::DynamicString(*name), flags);
+     }
+-  };
+-
+-  switch (phase) {
+-    case TRACE_EVENT_PHASE_BEGIN:
+-      TRACE_EVENT_BEGIN(dynamic_category, perfetto::DynamicString(*name),
+-                        trace_args);
+-      break;
+-    case TRACE_EVENT_PHASE_END:
+-      TRACE_EVENT_END(dynamic_category, trace_args);
+-      break;
+-    case TRACE_EVENT_PHASE_INSTANT:
+-      TRACE_EVENT_INSTANT(dynamic_category, perfetto::DynamicString(*name),
+-                          trace_args);
+-      break;
+-    default:
+-      THROW_NEW_ERROR_RETURN_FAILURE(
+-          isolate, NewTypeError(MessageTemplate::kTraceEventPhaseError));
+   }
+-
+ #else   // !defined(V8_USE_PERFETTO)
+   uint8_t arg_type;
+   uint64_t arg_value;

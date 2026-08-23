@@ -748,6 +748,61 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.getTitle()).to.equal(title);
       });
+
+      it('should update the title when navigating back or forward without browserWindow.setTitle()', async () => {
+        const page = `
+<html>
+<head><meta charset="UTF-8"><title>Document</title></head>
+<body>
+<script>
+  const setTitle = () => document.title = location.hash.slice(1) || 'Document';
+  addEventListener('popstate', setTitle);
+  setTitle(location.hash);
+  window.navigate = name => {
+        history.pushState(null, '', '#' + name);
+        setTitle();
+  };
+</script>
+<button id="btn1" onclick="navigate('path1')">Link 1</button>
+<button id="btn2" onclick="navigate('path2')">Link 2</button>
+
+</body>
+</html>`.trim();
+
+        w = new BrowserWindow({ show: false });
+
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+
+        const nav1 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn1").click()', true);
+        await nav1;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const nav2 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn2").click()', true);
+        await nav2;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+
+        const back = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const forward = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goForward();
+        await forward;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        w.setTitle('My own Title');
+        const back2 = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back2;
+        expect(w.getTitle()).to.equal('My own Title');
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
@@ -1239,6 +1294,40 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
+    // Regression test for https://github.com/electron/electron/issues/52158.
+    // The api::WebContents wrapping the DevTools WebContents is created as soon
+    // as openDevTools() is called but only referenced again once the frontend
+    // has finished loading. A GC in between used to collect its wrapper, after
+    // which `devtools-opened` would either crash the main process (if the
+    // collected object had not been freed yet) or create a second
+    // api::WebContents for the same DevTools WebContents.
+    it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
+      const gc = require('node:vm').runInNewContext('gc');
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const created: number[] = [];
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
+      app.on('web-contents-created', onCreated);
+      try {
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach', activate: false });
+        gc({ type: 'major', execution: 'sync' });
+        await devtoolsOpened;
+      } finally {
+        app.removeListener('web-contents-created', onCreated);
+      }
+
+      const devtools = w.webContents.devToolsWebContents;
+      expect(devtools).to.not.be.null();
+      expect(devtools!.isDestroyed()).to.be.false();
+      // Exactly one WebContents (the DevTools one) was created, and it is the
+      // one we ended up with.
+      expect(created).to.deep.equal([devtools!.id]);
+    });
+
     it('can show a DevTools window with custom title', async () => {
       const w = new BrowserWindow({ show: false });
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
@@ -1368,16 +1457,38 @@ describe('webContents module', () => {
       await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
     }
 
+    // The DevTools frontend should route context menus through the native
+    // DevToolsHost binding rather than a JS override injected by Electron.
+    function usesNativeShowContextMenu(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+    }
+
+    // Triggers InspectorFrontendHost.showContextMenuAtPoint with an empty
+    // item list at a non-editable point. No menu UI is shown, but a correctly
+    // routed request still round-trips through the browser, which reports
+    // the menu closed back to the frontend as DevToolsAPI.contextMenuCleared.
+    // A request swallowed by the generic context-menu path never resolves.
+    function devToolsMenuRequestRoundTrips(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(`new Promise(resolve => {
+        const timeout = setTimeout(() => resolve(false), 5000);
+        const original = DevToolsAPI.contextMenuCleared.bind(DevToolsAPI);
+        DevToolsAPI.contextMenuCleared = () => {
+          clearTimeout(timeout);
+          DevToolsAPI.contextMenuCleared = original;
+          resolve(true);
+          original();
+        };
+        InspectorFrontendHost.showContextMenuAtPoint(10, 10, [], document);
+      })`);
+    }
+
     it('uses the native showContextMenuAtPoint implementation', async () => {
       const w = new BrowserWindow({ show: false });
       await openDevTools(w);
 
-      // The DevTools frontend should route context menus through the native
-      // DevToolsHost binding rather than a JS override injected by Electron.
-      const usesNativeContextMenu = await w.webContents.devToolsWebContents!.executeJavaScript(
-        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
-      );
-      expect(usesNativeContextMenu).to.be.true();
+      expect(await usesNativeShowContextMenu(w.webContents.devToolsWebContents!)).to.be.true();
     });
 
     it('uses the native window.confirm implementation', async () => {
@@ -1390,6 +1501,58 @@ describe('webContents module', () => {
         'window.confirm.toString().includes("[native code]")'
       );
       expect(confirmIsNative).to.be.true();
+    });
+
+    // Baseline for the setDevToolsWebContents() regression test below: the
+    // managed (built-in) DevTools route via InspectableWebContents.
+    it('routes context menu requests through the native menu path', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      const roundTripped = await devToolsMenuRequestRoundTrips(w.webContents.devToolsWebContents!);
+      expect(roundTripped).to.be.true();
+    });
+
+    describe('with setDevToolsWebContents()', () => {
+      async function openCustomDevTools(w: BrowserWindow, devtools: BrowserWindow) {
+        await w.loadURL('about:blank');
+        w.webContents.setDevToolsWebContents(devtools.webContents);
+        const devtoolsReady = once(devtools.webContents, 'dom-ready');
+        w.webContents.openDevTools();
+        await devtoolsReady;
+        await waitUntil(() => devtools.webContents.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+        // The browser only delivers context-menu-closed notifications to a
+        // focused frame; focus the frontend like a user interacting with it.
+        devtools.webContents.focus();
+        await waitUntil(() => devtools.webContents.executeJavaScript('document.hasFocus()'));
+      }
+
+      it('uses the native showContextMenuAtPoint implementation', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        expect(await usesNativeShowContextMenu(devtools.webContents)).to.be.true();
+      });
+
+      // Regression test for https://github.com/electron/electron/issues/51962:
+      // a DevTools frontend hosted in a user-provided WebContents must show
+      // its popup menus via the native DevTools menu path rather than having
+      // the request swallowed by the generic 'context-menu' event plumbing.
+      it('routes context menu requests through the native menu path', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        let emittedContextMenu = false;
+        devtools.webContents.once('context-menu', () => {
+          emittedContextMenu = true;
+        });
+
+        const roundTripped = await devToolsMenuRequestRoundTrips(devtools.webContents);
+        expect(roundTripped).to.be.true();
+        expect(emittedContextMenu).to.be.false();
+      });
     });
   });
 

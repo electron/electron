@@ -13,9 +13,12 @@ namespace electron {
 // Electron-specific WrappablePointerTag values that extend gin's tag range.
 enum ElectronWrappablePointerTag : uint16_t {
   kElectronApp = gin::kLastPointerTag + 1,  // electron::api::App
+  kElectronAutoUpdater,                     // electron::api::AutoUpdater
+  kElectronCookies,                         // electron::api::Cookies
   kElectronDataPipeHolder,                  // electron::api::DataPipeHolder
   kElectronDebugger,                        // electron::api::Debugger
   kElectronEvent,                           // gin_helper::internal::Event
+  kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
   kElectronExtensions,                      // electron::api::Extensions
   kElectronMenu,                            // electron::api::Menu
   kElectronNetLog,                          // electron::api::NetLog
