@@ -173,8 +173,8 @@ You can add a `click` function for additional behavior.
 
 #### `menuItem.registerAccelerator`
 
-A `boolean` indicating if the accelerator should be registered with the
-system or just displayed.
+A `boolean` indicating if the accelerator should be registered with the 
+system or just displayed. This property is available on Linux and Windows.
 
 This property can be dynamically changed.
 
