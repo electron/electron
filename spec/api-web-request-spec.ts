@@ -20,7 +20,12 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 describe('webRequest module', () => {
   const ses = session.defaultSession;
   const server = http.createServer((req, res) => {
-    if (req.url === '/serverRedirect') {
+    if (req.url === '/corsPreflight') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'x-trigger');
+      res.setHeader('Access-Control-Allow-Methods', 'POST');
+      res.end('ok');
+    } else if (req.url === '/serverRedirect') {
       res.statusCode = 301;
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
@@ -365,6 +370,36 @@ describe('webRequest module', () => {
       });
       await ajax(defaultURL + 'serverRedirect');
       await ajax(defaultURL + 'serverRedirect');
+    });
+
+    it('does not crash when redirecting a CORS preflight request', async () => {
+      const sourceServer = http.createServer((_req, res) => res.end('<html></html>'));
+      const sourceURL = (await listen(sourceServer)).url;
+      const corsContents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
+      let redirectedPreflight = false;
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        if (details.method === 'OPTIONS' && details.url === `${defaultURL}corsPreflight`) {
+          redirectedPreflight = true;
+          callback({ redirectURL: `${defaultURL}redirectedPreflight` });
+          return;
+        }
+        callback({});
+      });
+
+      try {
+        await corsContents.loadURL(sourceURL);
+        await expect(
+          corsContents.executeJavaScript(`fetch("${defaultURL}corsPreflight", {
+            method: "POST",
+            headers: { "X-Trigger": "1" },
+            body: "trigger"
+          })`)
+        ).to.eventually.be.rejected();
+        expect(redirectedPreflight).to.be.true();
+      } finally {
+        corsContents.destroy();
+        sourceServer.close();
+      }
     });
 
     it('works with file:// protocol', async () => {
