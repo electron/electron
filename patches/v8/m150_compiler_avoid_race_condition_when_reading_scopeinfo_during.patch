@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 7 Aug 2026 13:30:03 +0200
+Subject: [M150] [compiler] Avoid race condition when reading ScopeInfo during
+ background merge
+
+Original change's description:
+> [compiler] Avoid race condition when reading ScopeInfo during background merge
+>
+> RecordScopeInfos(Tagged<HeapObject> info) has a potential race condition
+> on accesses to both scope_info and OuterScopeInfo, which can both be
+> mutated if the function is concurrently compiled with a background merge.
+>
+> Fix this by introducing SharedFunctionInfo::TryGetScopeInfoForMerge(),
+> which performs a single acquire load pass on name_or_scope_info and
+> raw_outer_scope_info_or_feedback_metadata, returning empty scope info
+> if neither contains a ScopeInfo.
+>
+> TAG=agy
+> CONV=b92d625a-0a50-4a77-88a9-f6a53902a539
+>
+> Bug: 541837151
+> Change-Id: Id342ee00ec85c8dc33475ea484e74ea243c5b5ec
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8219869
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Reviewed-by: Patrick Thier <pthier@chromium.org>
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109131}
+
+(cherry picked from commit 81b2acf3bbfecea934d5daed87c27da6347b3182)
+
+Bug: 546660081,541837151
+Change-Id: Id342ee00ec85c8dc33475ea484e74ea243c5b5ec
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8266882
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Owners-Override: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.0@{#63}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index 254b34d650aed385a3edf7e902b4235c4144f5e6..06e56e474ae2b4c0405a21437fc98b9f43b73985 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -2066,16 +2066,11 @@ class ConstantPoolPointerForwarder {
+     if (!v8_flags.reuse_scope_infos) return;
+     Tagged<ScopeInfo> scope_info;
+     if (Is<SharedFunctionInfo>(info)) {
+-      Tagged<SharedFunctionInfo> old_sfi = Cast<SharedFunctionInfo>(info);
+-      // Also record context-having own scope infos for SFIs.
+-      if (!old_sfi->scope_info()->IsEmpty() &&
+-          old_sfi->scope_info()->HasContext()) {
+-        scope_info = old_sfi->scope_info();
+-      } else if (old_sfi->HasOuterScopeInfo()) {
+-        scope_info = old_sfi->GetOuterScopeInfo();
+-      } else {
+-        return;
+-      }
++      // We can get an empty scope info here for a function that is racily
++      // getting compiled, which is ok because we will revisit it during
++      // foreground merging.
++      scope_info = Cast<SharedFunctionInfo>(info)->TryGetScopeInfoForMerge();
++      if (scope_info->IsEmpty()) return;
+     } else {
+       scope_info = Cast<ScopeInfo>(info);
+     }
+diff --git a/src/objects/shared-function-info-inl.h b/src/objects/shared-function-info-inl.h
+index 0c00de2514ac536cab1f188e277152461850456c..7e404e3d4e8b17c6b8b984380094ecdb2af0ad11 100644
+--- a/src/objects/shared-function-info-inl.h
++++ b/src/objects/shared-function-info-inl.h
+@@ -656,6 +656,19 @@ Tagged<ScopeInfo> SharedFunctionInfo::GetOuterScopeInfo() const {
+   return info->OuterScopeInfo();
+ }
+ 
++Tagged<ScopeInfo> SharedFunctionInfo::TryGetScopeInfoForMerge() const {
++  Tagged<Object> maybe_scope_info = name_or_scope_info(kAcquireLoad);
++  if (IsScopeInfo(maybe_scope_info)) {
++    return Cast<ScopeInfo>(maybe_scope_info);
++  }
++  Tagged<Object> maybe_outer_scope_info_or_feedback =
++      raw_outer_scope_info_or_feedback_metadata(kAcquireLoad);
++  if (IsScopeInfo(maybe_outer_scope_info_or_feedback)) {
++    return Cast<ScopeInfo>(maybe_outer_scope_info_or_feedback);
++  }
++  return GetReadOnlyRoots().empty_scope_info();
++}
++
+ void SharedFunctionInfo::set_outer_scope_info(
+     Tagged<UnionOf<ScopeInfo, TheHole>> value, WriteBarrierMode mode) {
+   DCHECK(!is_compiled());
+diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
+index fb0c93fcb7af5186e66734ddb610f80e8f99a1ff..aaa837155bd8462a97b4884e59aeee94bc465212 100644
+--- a/src/objects/shared-function-info.h
++++ b/src/objects/shared-function-info.h
+@@ -352,6 +352,7 @@ class SharedFunctionInfo
+   // Get the outer scope info whether this function is compiled or not.
+   inline bool HasOuterScopeInfo() const;
+   inline Tagged<ScopeInfo> GetOuterScopeInfo() const;
++  inline Tagged<ScopeInfo> TryGetScopeInfoForMerge() const;
+ 
+   // [feedback metadata] Metadata template for feedback vectors of instances of
+   // this function.

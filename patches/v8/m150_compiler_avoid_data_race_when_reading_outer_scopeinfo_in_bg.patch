@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Wed, 12 Aug 2026 16:47:26 +0200
+Subject: [M150] [compiler] Avoid data race when reading outer ScopeInfo in bg
+ merge
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [compiler] Avoid data race when reading outer ScopeInfo in bg merge
+>
+> When background deserialization merges with an existing script in the
+> compilation cache, it checks if an existing SharedFunctionInfo has an
+> outer ScopeInfo that needs to be shared with the deserialized SFI.
+>
+> Previously, this was done via separate HasOuterScopeInfo() and
+> GetOuterScopeInfo() calls. If the main thread concurrently compiled the
+> SFI between these two calls, the SFI transitioned from uncompiled to
+> compiled, updating raw_outer_scope_info_or_feedback_metadata to contain
+> FeedbackMetadata instead of an outer ScopeInfo.
+>
+> This CL introduces SharedFunctionInfo::TryGetOuterScopeInfo(), which
+> safely loads and type-checks the tagged fields using acquire semantics
+> in a single step, avoiding TOCTOU data races.
+>
+> TAG=agy
+>
+> Bug: 541837151
+> Change-Id: I6f8a98c06d5134cc42bd5a708d252fc51a89897b
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8249119
+> Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109224}
+
+(cherry picked from commit 7fd662da8a5fc156ba3e7d04b75ec4c7b2f744b9)
+
+Bug: 546660081,541837151
+Change-Id: I6f8a98c06d5134cc42bd5a708d252fc51a89897b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8258175
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Owners-Override: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.0@{#65}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index 06e56e474ae2b4c0405a21437fc98b9f43b73985..4d291023d1866440d9554efc22e514ab71390945 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -2454,9 +2454,11 @@ void BackgroundMergeTask::BeginMergeInBackground(
+           Tagged<ScopeInfo> info = old_sfi->scope_info();
+           if (!info->IsEmpty()) {
+             new_sfi->SetScopeInfo(info);
+-          } else if (old_sfi->HasOuterScopeInfo()) {
+-            new_sfi->scope_info()->set_outer_scope_info(
+-                old_sfi->GetOuterScopeInfo());
++          } else {
++            Tagged<ScopeInfo> outer_info = old_sfi->TryGetOuterScopeInfo();
++            if (!outer_info->IsEmpty()) {
++              new_sfi->scope_info()->set_outer_scope_info(outer_info);
++            }
+           }
+           forwarder.AddBytecodeArray(new_sfi->GetBytecodeArray(isolate));
+         }
+diff --git a/src/objects/shared-function-info-inl.h b/src/objects/shared-function-info-inl.h
+index 7e404e3d4e8b17c6b8b984380094ecdb2af0ad11..678f9c2d8572e7ac1e9e12024b87c7004964a188 100644
+--- a/src/objects/shared-function-info-inl.h
++++ b/src/objects/shared-function-info-inl.h
+@@ -669,6 +669,22 @@ Tagged<ScopeInfo> SharedFunctionInfo::TryGetScopeInfoForMerge() const {
+   return GetReadOnlyRoots().empty_scope_info();
+ }
+ 
++Tagged<ScopeInfo> SharedFunctionInfo::TryGetOuterScopeInfo() const {
++  if (Tagged<ScopeInfo> scope_info;
++      TryCast(name_or_scope_info(kAcquireLoad), &scope_info)) {
++    if (scope_info->HasOuterScopeInfo()) {
++      return scope_info->OuterScopeInfo();
++    }
++    return GetReadOnlyRoots().empty_scope_info();
++  }
++  if (Tagged<ScopeInfo> outer_scope_info;
++      TryCast(raw_outer_scope_info_or_feedback_metadata(kAcquireLoad),
++              &outer_scope_info)) {
++    return outer_scope_info;
++  }
++  return GetReadOnlyRoots().empty_scope_info();
++}
++
+ void SharedFunctionInfo::set_outer_scope_info(
+     Tagged<UnionOf<ScopeInfo, TheHole>> value, WriteBarrierMode mode) {
+   DCHECK(!is_compiled());
+diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
+index aaa837155bd8462a97b4884e59aeee94bc465212..6928a484ec681dccb7ea4ea8af9c926a52a63fdf 100644
+--- a/src/objects/shared-function-info.h
++++ b/src/objects/shared-function-info.h
+@@ -353,6 +353,7 @@ class SharedFunctionInfo
+   inline bool HasOuterScopeInfo() const;
+   inline Tagged<ScopeInfo> GetOuterScopeInfo() const;
+   inline Tagged<ScopeInfo> TryGetScopeInfoForMerge() const;
++  inline Tagged<ScopeInfo> TryGetOuterScopeInfo() const;
+ 
+   // [feedback metadata] Metadata template for feedback vectors of instances of
+   // this function.

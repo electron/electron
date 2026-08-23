@@ -1,0 +1,292 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Fri, 21 Aug 2026 04:06:02 +0000
+Subject: Consolidate and pass file_url_support to WorkerScriptFetcher
+
+This CL cleans up and consolidates the file URL support handling for
+dedicated and shared worker script and subresource loading:
+
+1. Introduce DoesCreatorAllowFileUrlSupport helper in worker_util to
+   centralize file URL support checks across creator contexts (handling
+   command line switches, WebPreferences, and nested worker inheritance).
+2. Update WorkerScriptFetcher::CreateAndStart to take file_url_support
+   directly from callers (DedicatedWorkerHost and
+   SharedWorkerServiceImpl), removing redundant recalculations.
+
+Bug: 539032888
+Change-Id: I403e96584b67fb6f0a240ac4ef51de7577c4c793
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8182027
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1673207}
+
+(cherry picked from commit a14280eb93e574171c55abe6e7c4470a1b221f02)
+
+Backport adapted for this branch: worker_util.{h,cc} do not exist here
+(they were introduced upstream later), so they are added containing only
+the DoesCreatorAllowFileUrlSupport helper and registered in
+content/browser/BUILD.gn. Upstream's new unit tests are omitted.
+
+diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
+index e2f3ce4ee3cbbb3c10110981a4bccd12c9b2400c..11e01585aa15fb7a9ce350138fb9a2b82a744351 100644
+--- a/content/browser/BUILD.gn
++++ b/content/browser/BUILD.gn
+@@ -2537,6 +2537,8 @@ source_set("browser") {
+     "worker_host/worker_script_loader.h",
+     "worker_host/worker_script_loader_factory.cc",
+     "worker_host/worker_script_loader_factory.h",
++    "worker_host/worker_util.cc",
++    "worker_host/worker_util.h",
+   ]
+ 
+   if (is_android) {
+diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
+index c5f7aab77b680c0cf0f71d9025bc53971a7addd1..46d7941e786985a4ad718b9c5f5b30dfef947f5e 100644
+--- a/content/browser/worker_host/dedicated_worker_host.cc
++++ b/content/browser/worker_host/dedicated_worker_host.cc
+@@ -9,6 +9,7 @@
+ #include <utility>
+ #include <variant>
+ 
++#include "base/command_line.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/safety_checks.h"
+@@ -38,6 +39,7 @@
+ #include "content/browser/worker_host/dedicated_worker_hosts_for_document.h"
+ #include "content/browser/worker_host/dedicated_worker_service_impl.h"
+ #include "content/browser/worker_host/worker_script_fetcher.h"
++#include "content/browser/worker_host/worker_util.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/network_service_util.h"
+@@ -46,6 +48,7 @@
+ #include "content/public/browser/service_worker_context.h"
+ #include "content/public/common/child_process_id_util.h"
+ #include "content/public/common/content_client.h"
++#include "content/public/common/content_switches.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+ #include "net/base/isolation_info.h"
+@@ -62,6 +65,7 @@
+ #include "third_party/blink/public/common/service_worker/service_worker_scope_match.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/common/tokens/tokens.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/back_forward_cache_not_restored_reasons.mojom.h"
+ #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+ #include "third_party/blink/public/mojom/loader/fetch_client_settings_object.mojom.h"
+@@ -345,7 +349,13 @@ void DedicatedWorkerHost::StartScriptLoad(
+   // initiator origin to keep consistency with WorkerScriptFetcher, but probably
+   // this should be calculated based on the worker origin as the factories be
+   // used for subresource loading on the worker.
+-  file_url_support_ = creator_origin_.scheme() == url::kFileScheme;
++  std::optional<blink::web_pref::WebPreferences> web_preferences;
++  if (creator_render_frame_host) {
++    web_preferences = creator_render_frame_host->GetOrCreateWebPreferences();
++  }
++  file_url_support_ = DoesCreatorAllowFileUrlSupport(
++      creator_origin_, web_preferences ? &*web_preferences : nullptr,
++      creator_worker ? creator_worker->file_url_support() : false);
+ 
+   // For blob URL workers, inherit the controller from the worker's parent.
+   // See https://w3c.github.io/ServiceWorker/#control-and-use-worker-client
+@@ -392,7 +402,7 @@ void DedicatedWorkerHost::StartScriptLoad(
+       nearest_ancestor_render_frame_host->GetIsolationInfoForSubresources(),
+       std::move(client_security_state), credentials_mode,
+       std::move(outside_fetch_client_settings_object),
+-      network::mojom::RequestDestination::kWorker,
++      network::mojom::RequestDestination::kWorker, file_url_support_,
+       storage_partition_impl->GetServiceWorkerContext(),
+       service_worker_handle_.get(), std::move(blob_url_loader_factory), nullptr,
+       storage_partition_impl, partition_domain,
+diff --git a/content/browser/worker_host/dedicated_worker_host.h b/content/browser/worker_host/dedicated_worker_host.h
+index 0ab4d19d45c4a20ae51e3b5f6f5667421bb506ba..07b7a194618811bc6687987bf9429dfa2ce9aae4 100644
+--- a/content/browser/worker_host/dedicated_worker_host.h
++++ b/content/browser/worker_host/dedicated_worker_host.h
+@@ -222,6 +222,8 @@ class CONTENT_EXPORT DedicatedWorkerHost final
+     return service_worker_handle_.get();
+   }
+ 
++  bool file_url_support() const { return file_url_support_; }
++
+ #if BUILDFLAG(ENABLE_COMPUTE_PRESSURE)
+   PressureServiceForDedicatedWorker* pressure_service() {
+     return pressure_service_.get();
+diff --git a/content/browser/worker_host/shared_worker_service_impl.cc b/content/browser/worker_host/shared_worker_service_impl.cc
+index 78cfbc493cf1600a4d7aa26f76b67ccab90ec629..cf1bc218f74ddd0610195d1a4ac0e38034cfee02 100644
+--- a/content/browser/worker_host/shared_worker_service_impl.cc
++++ b/content/browser/worker_host/shared_worker_service_impl.cc
+@@ -11,6 +11,7 @@
+ #include <string>
+ 
+ #include "base/check_op.h"
++#include "base/command_line.h"
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+@@ -26,6 +27,7 @@
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/browser/worker_host/shared_worker_host.h"
+ #include "content/browser/worker_host/worker_script_fetcher.h"
++#include "content/browser/worker_host/worker_util.h"
+ #include "content/common/content_constants_internal.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
+@@ -45,6 +47,7 @@
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/messaging/message_port_channel.h"
+ #include "third_party/blink/public/common/storage_key/storage_key.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/loader/fetch_client_settings_object.mojom.h"
+ #include "third_party/blink/public/mojom/script/script_type.mojom.h"
+ #include "third_party/blink/public/mojom/worker/shared_worker_client.mojom.h"
+@@ -428,6 +431,13 @@ SharedWorkerHost* SharedWorkerServiceImpl::CreateWorker(
+          worker_origin == host->instance().storage_key().origin())
+       << worker_origin << " and " << host->instance().storage_key().origin()
+       << " should be the same.";
++
++  const blink::web_pref::WebPreferences& prefs =
++      creator.GetOrCreateWebPreferences();
++  bool file_url_support = DoesCreatorAllowFileUrlSupport(
++      host->instance().storage_key().origin(), &prefs,
++      /*creator_worker_has_file_url_support=*/false);
++
+   WorkerScriptFetcher::CreateAndStart(
+       worker_process_host->GetDeprecatedID(), host->token(),
+       host->instance().url(), creator, &creator,
+@@ -438,7 +448,7 @@ SharedWorkerHost* SharedWorkerServiceImpl::CreateWorker(
+       host->instance().storage_key().ToPartialNetIsolationInfo(),
+       creator.BuildClientSecurityStateForWorkers(), credentials_mode,
+       std::move(outside_fetch_client_settings_object),
+-      network::mojom::RequestDestination::kSharedWorker,
++      network::mojom::RequestDestination::kSharedWorker, file_url_support,
+       service_worker_context_, service_worker_handle_raw,
+       std::move(blob_url_loader_factory), url_loader_factory_override_,
+       storage_partition_, storage_domain,
+diff --git a/content/browser/worker_host/worker_script_fetcher.cc b/content/browser/worker_host/worker_script_fetcher.cc
+index 6e9b4c79a8bb3096c4f61bf05fc82d838642d304..5d92ea241105de8efd491b3c983f3d80d2657503 100644
+--- a/content/browser/worker_host/worker_script_fetcher.cc
++++ b/content/browser/worker_host/worker_script_fetcher.cc
+@@ -235,6 +235,7 @@ void WorkerScriptFetcher::CreateAndStart(
+     blink::mojom::FetchClientSettingsObjectPtr
+         outside_fetch_client_settings_object,
+     network::mojom::RequestDestination request_destination,
++    bool file_url_support,
+     scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
+     ServiceWorkerMainResourceHandle* service_worker_handle,
+     scoped_refptr<network::SharedURLLoaderFactory> blob_url_loader_factory,
+@@ -261,9 +262,6 @@ void WorkerScriptFetcher::CreateAndStart(
+     return;
+   }
+ 
+-  bool constructor_uses_file_url =
+-      request_initiator.scheme() == url::kFileScheme;
+-
+   // TODO(crbug.com/41472712): Filesystem URL support on shared workers
+   // are now broken.
+   bool filesystem_url_support =
+@@ -276,12 +274,12 @@ void WorkerScriptFetcher::CreateAndStart(
+   std::unique_ptr<blink::PendingURLLoaderFactoryBundle>
+       factory_bundle_for_browser = CreateFactoryBundle(
+           LoaderType::kMainResource, worker_process_id, storage_partition,
+-          storage_domain, constructor_uses_file_url, filesystem_url_support,
++          storage_domain, file_url_support, filesystem_url_support,
+           creator_render_frame_host, request_initiator_storage_key);
+   std::unique_ptr<blink::PendingURLLoaderFactoryBundle>
+       subresource_loader_factories = CreateFactoryBundle(
+           LoaderType::kSubResource, worker_process_id, storage_partition,
+-          storage_domain, constructor_uses_file_url, filesystem_url_support,
++          storage_domain, file_url_support, filesystem_url_support,
+           creator_render_frame_host, request_initiator_storage_key);
+ 
+   // Create a resource request for initiating worker script fetch from the
+diff --git a/content/browser/worker_host/worker_script_fetcher.h b/content/browser/worker_host/worker_script_fetcher.h
+index 900e08c0f89837d76ca33904514b6622b85424cc..1af33213030005aa58642cce65b87b0e99404374 100644
+--- a/content/browser/worker_host/worker_script_fetcher.h
++++ b/content/browser/worker_host/worker_script_fetcher.h
+@@ -135,6 +135,7 @@ class WorkerScriptFetcher : public network::mojom::URLLoaderClient {
+       blink::mojom::FetchClientSettingsObjectPtr
+           outside_fetch_client_settings_object,
+       network::mojom::RequestDestination request_destination,
++      bool file_url_support,
+       scoped_refptr<ServiceWorkerContextWrapper> service_worker_context,
+       ServiceWorkerMainResourceHandle* service_worker_handle,
+       scoped_refptr<network::SharedURLLoaderFactory> blob_url_loader_factory,
+diff --git a/content/browser/worker_host/worker_util.cc b/content/browser/worker_host/worker_util.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..fadef8e92541ab3eb9c317cd345fe0d993dbd410
+--- /dev/null
++++ b/content/browser/worker_host/worker_util.cc
+@@ -0,0 +1,33 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/worker_host/worker_util.h"
++
++#include "base/command_line.h"
++#include "content/public/common/content_switches.h"
++#include "third_party/blink/public/common/web_preferences/web_preferences.h"
++#include "url/gurl.h"
++#include "url/origin.h"
++
++namespace content {
++
++bool DoesCreatorAllowFileUrlSupport(
++    const url::Origin& creator_origin,
++    const blink::web_pref::WebPreferences* web_preferences,
++    bool creator_worker_has_file_url_support) {
++  if (creator_origin.scheme() != url::kFileScheme) {
++    return false;
++  }
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
++          switches::kAllowFileAccessFromFiles)) {
++    return true;
++  }
++  if (web_preferences) {
++    return web_preferences->allow_file_access_from_file_urls ||
++           web_preferences->allow_universal_access_from_file_urls;
++  }
++  return creator_worker_has_file_url_support;
++}
++
++}  // namespace content
+diff --git a/content/browser/worker_host/worker_util.h b/content/browser/worker_host/worker_util.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..b363d022c85802fc0027688ac77bb969b041c8d0
+--- /dev/null
++++ b/content/browser/worker_host/worker_util.h
+@@ -0,0 +1,31 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef CONTENT_BROWSER_WORKER_HOST_WORKER_UTIL_H_
++#define CONTENT_BROWSER_WORKER_HOST_WORKER_UTIL_H_
++
++#include "content/common/content_export.h"
++#include "url/origin.h"
++
++namespace blink::web_pref {
++struct WebPreferences;
++}  // namespace blink::web_pref
++
++namespace content {
++
++// Returns whether the worker should be allowed to load file URLs.
++// This is allowed only when `creator_origin` is a file URL and at least one of
++// the following conditions is met:
++// - The --allow-file-access-from-files command-line switch is present.
++// - `web_preferences` allows file access from file URLs or universal access
++//   from file URLs.
++// - `creator_worker_has_file_url_support` is true.
++CONTENT_EXPORT bool DoesCreatorAllowFileUrlSupport(
++    const url::Origin& creator_origin,
++    const blink::web_pref::WebPreferences* web_preferences,
++    bool creator_worker_has_file_url_support = false);
++
++}  // namespace content
++
++#endif  // CONTENT_BROWSER_WORKER_HOST_WORKER_UTIL_H_

@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: vikas soni <vikassoni@chromium.org>
+Date: Thu, 13 Aug 2026 11:11:16 -0700
+Subject: [M151] [GPU Security] Fail CompoundImageBacking access when no latest
+ element.
+
+Original change's description:
+> [GPU Security] Fail CompoundImageBacking access when no latest element.
+>
+> CompoundImageBacking::NotifyBeginAccess synchronizes the target backing
+> from the permanent element holding the latest content. If a transient
+> backing was written but its proactive copy-back in NotifyEndAccess
+> failed, no permanent element carries the latest content id and
+> GetElementWithLatestContent() returns nullptr. The sync block was
+> silently skipped and the access was allowed to proceed against an
+> unsynchronized backing.
+>
+> Return false in this case, matching the existing handling for
+> CopyImage() failure, so the caller aborts the access. Content versioning
+> is left untouched so a later Update() can restore access. Note that if
+> there is no SHM backing (e.g. GPU-only backings) or no Update() occurs,
+> subsequent access calls (including writes) will continue to fail,
+> requiring client-level context/resource re-creation.
+>
+> Add a regression test that drives a transient write without a successful
+> copy-back and verifies read access is refused.
+>
+> Bug: 536460270
+> Change-Id: I826b4a872bab19d9532db5f51ca17f137432e4a1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8128128
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Commit-Queue: vikas soni <vikassoni@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1666517}
+
+(cherry picked from commit a73a143f694c18300b9d87d3d489cddec4124f73)
+
+Bug: 538009802,536460270
+Change-Id: I826b4a872bab19d9532db5f51ca17f137432e4a1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8162202
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: vikas soni <vikassoni@chromium.org>
+Commit-Queue: vikas soni <vikassoni@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7922@{#3031}
+Cr-Branched-From: 059c884787b1bc15faa5afe5250f7d3a7e0ef64a-refs/heads/main@{#1654411}
+
+diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.cc b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
+index 171c5f23f56378bb38682f8adbeb048f0737f21f..2d94590950d041fcab91d50dd1b21954261de1a2 100644
+--- a/gpu/command_buffer/service/shared_image/compound_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
+@@ -1002,6 +1002,20 @@ void CompoundImageBacking::NotifyBeginAccess(SharedImageBacking* backing,
+   // This backing is stale. We need to find the element which has the latest
+   // content and copy from it.
+   ElementHolder* latest_content_element = GetElementWithLatestContent();
++  if (!latest_content_element) {
++    // No permanent element holds the most recent content, so the destination
++    // backing cannot be synchronized. This can happen if a transient backing
++    // was written to but its content could not be copied back to a permanent
++    // element on end access. Do not advance versioning so access can recover if
++    // an element re-establishes the latest content (e.g. via Update() for SHM
++    // backings). Note that if there is no SHM backing (e.g. GPU-only backings)
++    // or no Update() occurs, subsequent access calls (including writes) will
++    // continue to fail, requiring client-level context/resource re-creation.
++    LOG(ERROR) << "No element with latest content available for sync to "
++               << backing->GetName();
++    return;
++  }
++
+   bool updated_backing = false;
+   if (latest_content_element &&
+       copy_manager_->CopyImage(
