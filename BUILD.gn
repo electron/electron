@@ -906,6 +906,23 @@ source_set("electron_lib") {
   }
 }
 
+# Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
+# startup snapshot blob it is given -- including one from another OS/CPU's
+# build of the same Electron version. See shell/common/electron_xcache_main.cc.
+if (current_toolchain == default_toolchain) {
+  executable("electron_xcache") {
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    include_dirs = [ "//" ]
+    sources = [ "shell/common/electron_xcache_main.cc" ]
+    deps = [
+      "//third_party/zlib",
+      "//v8",
+      "//v8:v8_libplatform",
+    ]
+  }
+}
+
 # Build-time host tool emitting V8 code caches for the electron/js2c/* framework
 # bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
 # with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
