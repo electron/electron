@@ -101,6 +101,11 @@ void WebWorkerObserver::InitializeNewEnvironment(
     node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   }
 
+  // The renderer main thread normally installed the process-wide builtin code
+  // cache already (NodeBindings::Initialize); make sure before this thread's
+  // per-context BuiltinLoader is constructed by InitializeContext. Idempotent.
+  electron::util::InstallProcessCodeCache();
+
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());

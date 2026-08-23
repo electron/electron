@@ -663,6 +663,13 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   // Explicitly register electron's builtin bindings.
   RegisterBuiltinBindings();
 
+  // Seed every BuiltinLoader created from here on (the Environment's, and the
+  // one node uses for the per-context scripts) with this process's build-time
+  // code cache, so the bootstrap inside CreateEnvironment consumes it rather
+  // than compiling ~100 builtins from source. JavascriptEnvironment already
+  // did this in processes that have one; renderers get it here.
+  electron::util::InstallProcessCodeCache();
+
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
@@ -982,12 +989,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  // Feed Electron's build-time js2c cache for the electron/js2c/* framework
-  // bundles (browser_init etc.). When booting from the Node startup snapshot
-  // these ids may already be present (Environment::Deserialize loads the
-  // caches node_mksnapshot embedded for the same bundles); RefreshCodeCache
-  // uses insert_or_assign, so the build-time entries supersede them while the
-  // node-internal entries are kept. Harmless when bootstrapped from scratch.
+  // Re-assert Electron's build-time cache for the electron/js2c/* framework
+  // bundles (browser_init etc.). Every BuiltinLoader already starts from it
+  // (InstallProcessCodeCache), but when booting from the Node startup snapshot
+  // Environment's constructor then merges the caches node_mksnapshot embedded
+  // for the same bundle ids over it; RefreshCodeCache uses insert_or_assign, so
+  // this puts the build-time (eagerly compiled) entries back on top while the
+  // node-internal entries are kept. A no-op merge when bootstrapped from
+  // scratch.
   electron::util::FeedEnvironmentCodeCache(env);
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");

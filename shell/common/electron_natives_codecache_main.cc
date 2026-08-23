@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 //
 // Build-time host tool that emits the V8 code cache for the embedded
-// electron/js2c/* bundles for one process flavor, as a generated .cc
-// defining electron::internal::Js2cCache<Flavor>(). Run once per flavor with
-// that flavor's V8 flag set and snapshot blob (both feed V8's code-cache
-// key), compiling each bundle through the same BuiltinLoader path its
-// runtime consumer uses so the source/params hash matches by construction.
+// electron/js2c/* bundles -- and, for flavors whose processes host a Node.js
+// environment that is not deserialized from the embedded Node startup
+// snapshot, Node's own lib/**/*.js builtins -- for one process flavor, as a
+// generated .cc defining electron::internal::Js2cCache<Flavor>(). Run once per
+// flavor with that flavor's V8 flag set and snapshot blob (both feed V8's
+// code-cache key), compiling each bundle through the same BuiltinLoader path
+// its runtime consumer uses so the source/params hash matches by construction.
 
 // Host build tool, not shipped code.
 #ifdef UNSAFE_BUFFERS_BUILD
@@ -42,8 +44,12 @@ struct Bundle {
   std::span<const std::string_view> params;
 };
 
-// Only the bundles each flavor's processes actually compile.
-std::vector<Bundle> BundlesForFlavor(std::string_view flavor) {
+// Only the bundles each flavor's processes actually compile. On builds that
+// embed a Node startup snapshot the browser flavor is keyed to the isolate that
+// snapshot produces and serves every process created from it, which includes
+// the node service's utility process.
+std::vector<Bundle> BundlesForFlavor(std::string_view flavor,
+                                     bool from_node_snapshot) {
   const Bundle kSandbox{js2c::kSandboxBundleId, true,
                         js2c::kSandboxBundleParams};
   const Bundle kIsolated{js2c::kIsolatedBundleId, true,
@@ -60,6 +66,8 @@ std::vector<Bundle> BundlesForFlavor(std::string_view flavor) {
     return {kSandbox, kIsolated, kPreloadRealm};
   if (flavor == "renderer")
     return {kRendererInit, kNodeInit, kIsolated};
+  if (flavor == "browser" && from_node_snapshot)
+    return {kBrowserInit, kUtilityInit, kNodeInit};
   if (flavor == "browser")
     return {kBrowserInit, kNodeInit};
   if (flavor == "utility")
@@ -83,6 +91,18 @@ const char* FlavorFn(std::string_view flavor) {
   return nullptr;
 }
 
+// Node builtins left out of the cache: internal/deps/* are large bundled
+// third-party libraries (undici, acorn, amaro, minimatch, ...) that no
+// process type loads during bootstrap -- only on demand from specific APIs --
+// and would roughly double the per-flavor cache (~5.5 of ~12 MB) for no
+// startup benefit. They keep compiling from source on first use, as before.
+bool ShouldCacheNodeBuiltin(std::string_view id) {
+  constexpr std::string_view kJs2cPrefix = "electron/js2c/";
+  constexpr std::string_view kDepsPrefix = "internal/deps/";
+  return id.substr(0, kJs2cPrefix.size()) != kJs2cPrefix &&
+         id.substr(0, kDepsPrefix.size()) != kDepsPrefix;
+}
+
 void EmitBytes(std::ofstream& out,
                const std::string& name,
                std::string_view bytes) {
@@ -103,15 +123,24 @@ int main(int argc, char* argv[]) {
   args.reserve(static_cast<std::size_t>(argc));
   for (int i = 0; i < argc; ++i)
     args.emplace_back(argv[i]);
-  if (args.size() < 5) {
+  if (args.size() < 6) {
     std::cerr << "usage: electron_natives_codecache <out.cc> <snapshot_blob> "
-                 "<flavor> <v8_flags>\n";
+                 "<flavor> <v8_flags> <node_builtins:0|1>\n";
     return 1;
   }
   const std::string out_path = args[1];
   const std::string snapshot_blob_path = args[2];
   const std::string flavor = args[3];
   const std::string v8_flags = args[4];
+  // Whether processes of this flavor bootstrap a node::Environment from
+  // scratch on this build, and so compile Node's internal builtins
+  // (internal/bootstrap/*, everything the bootstrap and the flavor's init
+  // bundle require, and whatever app code requires later) rather than
+  // deserialize them from the embedded Node startup snapshot. Decided in GN:
+  // always for the renderer flavor (Node-enabled web workers live in renderer
+  // processes and consume it too), for utility/browser only on builds without
+  // a Node snapshot, never for sandbox (no Node environment) or worker.
+  const bool with_node_builtins = args[5] == "1";
 
   const char* flavor_fn = FlavorFn(flavor);
   if (!flavor_fn) {
@@ -172,7 +201,7 @@ int main(int argc, char* argv[]) {
     // lazily compiles. The framework bundles run in full at startup, so the
     // lazy compiles happen anyway -- this just front-loads them.
     loader.SetEagerCompile();
-    for (const auto& b : BundlesForFlavor(flavor)) {
+    for (const auto& b : BundlesForFlavor(flavor, from_node_snapshot)) {
       v8::Local<v8::Function> fn;
       if (b.four_arg) {
         v8::LocalVector<v8::String> params(isolate);
@@ -207,6 +236,43 @@ int main(int argc, char* argv[]) {
       }
       caches.emplace_back(
           b.id, std::vector<uint8_t>(cd->data, cd->data + cd->length));
+    }
+
+    // Node's own builtins. A node::Environment deserialized from the embedded
+    // Node startup snapshot gets a code cache for every builtin from the
+    // snapshot blob (Environment's constructor feeds it), but an Environment
+    // bootstrapped from scratch -- every renderer / web worker environment,
+    // and utility / ELECTRON_RUN_AS_NODE / browser environments on builds
+    // without a Node snapshot -- otherwise compiles the ~120-140 builtins its
+    // bootstrap loads from source on every start (and then serializes a fresh
+    // cache for each that nothing consumes). Emit a cache for them here, keyed
+    // to this flavor's isolate, so the process-wide default cache
+    // (util::InstallProcessCodeCache) covers the whole bootstrap.
+    //
+    // Uses a second loader without SetEagerCompile so the eagerness policy is
+    // node_mksnapshot's: per_context/bootstrap/main scripts eagerly, the rest
+    // top-level only (inner functions compile lazily on first call). The blob
+    // is still ~2.4x the snapshot's cache for the same ids (~6.5 MB per
+    // flavor): a cache built against a SnapshotCreator-produced isolate encodes
+    // Node's internalized strings as read-only-heap references, one built
+    // against the plain v8 context snapshot has to carry them.
+    if (with_node_builtins && !from_node_snapshot) {
+      node::builtins::BuiltinLoader node_loader;
+      std::vector<node::builtins::CodeCacheInfo> node_caches;
+      if (!node_loader.CompileAllBuiltinsAndCopyCodeCache(
+              context, /*eager_builtins=*/{}, &node_caches)) {
+        std::cerr << "compiling Node builtins failed\n";
+        return 1;
+      }
+      for (const auto& info : node_caches) {
+        // (The electron/js2c/* ids are registered as builtins too; the ones
+        // this flavor needs were compiled above with their real parameters.)
+        if (!ShouldCacheNodeBuiltin(info.id))
+          continue;
+        caches.emplace_back(
+            info.id, std::vector<uint8_t>(info.data.data,
+                                          info.data.data + info.data.length));
+      }
     }
   }
   isolate->Dispose();
@@ -253,7 +319,11 @@ int main(int argc, char* argv[]) {
       << "}  // namespace electron::internal\n";
   out.close();
 
+  std::size_t total_bytes = 0;
+  for (const auto& c : caches)
+    total_bytes += c.second.size();
   std::cerr << "electron_natives_codecache[" << flavor << "]: wrote "
-            << caches.size() << " bundles to " << out_path << "\n";
+            << caches.size() << " entries (" << total_bytes << " bytes) to "
+            << out_path << "\n";
   return 0;
 }
