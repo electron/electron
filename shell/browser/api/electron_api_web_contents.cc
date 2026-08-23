@@ -78,6 +78,7 @@
 #include "content/public/common/page_visibility_state.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
@@ -114,10 +115,10 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -172,8 +173,10 @@
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -817,6 +820,18 @@ WebContents::WebContents(v8::Isolate* isolate,
       web_contents);
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
+
+  // Nothing owns a remote api::WebContents on the JS side, so its wrapper is
+  // only kept alive by whoever happens to hold a reference to it. Some callers
+  // create it and only pick it back up later (e.g. the DevTools WebContents is
+  // created in InspectableWebContents::ShowDevTools and next looked up in
+  // DevToolsOpened once the frontend has loaded); if a GC runs in between the
+  // wrapper is collected while the C++ object is still reachable via
+  // From(), and FromOrCreate() then hands back an empty handle. Pin the
+  // wrapper for as long as the underlying content::WebContents is alive, see
+  // WebContentsDestroyed().
+  if (type_ == Type::kRemote)
+    Pin(isolate);
 
   // TODO: This works for main frames, but does not work for child frames.
   // See: https://github.com/electron/electron/issues/49256
@@ -1726,6 +1741,28 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
+  // A WebContents hosting a DevTools frontend directly (e.g. one passed to
+  // webContents.setDevToolsWebContents()) keeps its own delegate, so menu
+  // requests from InspectorFrontendHost.showContextMenuAtPoint() arrive here
+  // instead of at InspectableWebContents. Such requests are recognizable by
+  // carrying menu items in |params.custom_items| or by the kNone source type
+  // (the request is programmatic, not a user gesture). Show them as a native
+  // menu anchored to whichever widget hosts this WebContents; emitting
+  // 'context-menu' would drop the items and leave the frontend waiting for a
+  // selection forever. Ordinary right-clicks in the frontend still emit
+  // 'context-menu' below.
+  if (render_frame_host.GetMainFrame()->GetLastCommittedURL().SchemeIs(
+          content::kChromeDevToolsScheme) &&
+      (!params.custom_items.empty() ||
+       params.source_type == ui::mojom::MenuSourceType::kNone)) {
+    devtools_context_menu_ =
+        std::make_unique<DevToolsContextMenu>(web_contents(), params);
+    devtools_context_menu_->RunMenuAt(
+        views::Widget::GetTopLevelWidgetForNativeView(
+            web_contents()->GetNativeView()));
+    return true;
+  }
+
   ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
       ui::ClipboardBuffer::kCopyPaste, std::nullopt,
       base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,
@@ -2278,10 +2315,6 @@ void WebContents::MaybeSendRendererStartupData(
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
-  // Build the ordered preload list: session-registered preloads of type
-  // 'frame' first (in registration order), then the per-WebContents
-  // webPreferences.preload last — same order as the legacy
-  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2289,29 +2322,7 @@ void WebContents::MaybeSendRendererStartupData(
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(rfh->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(rfh);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
@@ -2389,18 +2400,20 @@ void WebContents::DidFinishNavigation(
       if (is_main_frame) {
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
-
-      content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
-
-      // This check is needed due to an issue in Chromium
-      // Upstream is open to patching:
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
-      // If a history entry has been made and the forward/back call has been
-      // made, proceed with setting the new title
-      if (entry &&
-          (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
-        WebContents::TitleWasSet(entry);
     }
+
+    content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+    // This check is needed due to an issue in Chromium
+    // Upstream is open to patching:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+    // If a history entry has been made and the forward/back call has been
+    // made, proceed with setting the new title
+    if (is_main_frame && entry &&
+        (navigation_handle->GetPageTransition() &
+         ui::PAGE_TRANSITION_FORWARD_BACK))
+      NotifyPageTitleUpdated(entry, is_same_document);
+
     if (is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
@@ -2422,7 +2435,9 @@ void WebContents::DidFinishNavigation(
   }
 }
 
-void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+void WebContents::NotifyPageTitleUpdated(
+    content::NavigationEntry* entry,
+    bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
@@ -2438,8 +2453,13 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     final_title = web_contents()->GetTitle();
   }
   observers_.Notify(&ExtendedWebContentsObserver::OnPageTitleUpdated,
-                    final_title, explicit_set);
+                    final_title, explicit_set,
+                    from_same_document_history_navigation);
   Emit("page-title-updated", final_title, explicit_set);
+}
+
+void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+  NotifyPageTitleUpdated(entry, false);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -2553,6 +2573,9 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
 }
 
 void WebContents::WebContentsDestroyed() {
+  // The underlying content::WebContents is gone, let the wrapper be collected.
+  Unpin();
+
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);

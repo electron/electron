@@ -22,7 +22,8 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   virtual void OnSetContentBounds(const gfx::Rect& rect) {}
   virtual void OnActivateContents() {}
   virtual void OnPageTitleUpdated(const std::u16string& title,
-                                  bool explicit_set) {}
+                                  bool explicit_set,
+                                  bool from_same_document_history_navigation) {}
   virtual void OnDevToolsResized() {}
 
  protected:

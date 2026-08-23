@@ -1,9 +1,11 @@
-import { dialog, BaseWindow, BrowserWindow } from 'electron/main';
+import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import * as dbus from 'dbus-native';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import { promisify } from 'node:util';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -1036,4 +1038,101 @@ describe('dialog module', () => {
       });
     }
   );
+
+  // Asserts on the D-Bus requests received by the mock xdg-desktop-portal
+  // FileChooser that script/dbus_mock.py hosts on the fake session bus. The
+  // mock records each request and auto-cancels the dialog.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('file dialogs (Linux portal)', () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+
+    before(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+    });
+
+    after(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    function getLoggedOptions(call: any) {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    }
+
+    // current_folder is an 'ay' (null-terminated byte array).
+    function getCurrentFolder(options: Record<string, any>) {
+      const bytes = Buffer.from(options.current_folder);
+      const nul = bytes.indexOf(0);
+      return bytes.toString('utf8', 0, nul === -1 ? bytes.length : nul);
+    }
+
+    async function getSingleCall(method: string) {
+      const calls = (await getCalls()).filter((call) => call[1] === method);
+      expect(calls).to.have.lengthOf(1);
+      return calls[0];
+    }
+
+    describe('showSaveDialog', () => {
+      it('sends the defaultPath as current_folder and current_name', async () => {
+        const defaultDir = path.join(__dirname, 'fixtures');
+        const { canceled } = await dialog.showSaveDialog({
+          defaultPath: path.join(defaultDir, 'save-target.txt')
+        });
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('SaveFile'));
+        expect(options.current_name).to.equal('save-target.txt');
+        expect(getCurrentFolder(options)).to.equal(defaultDir);
+      });
+
+      // https://github.com/electron/electron/issues/52051
+      it('sends an absolute current_folder for a directory-less defaultPath', async () => {
+        const { canceled } = await dialog.showSaveDialog({
+          defaultPath: 'test.jpeg'
+        });
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('SaveFile'));
+        expect(options.current_name).to.equal('test.jpeg');
+        const currentFolder = getCurrentFolder(options);
+        expect(currentFolder).to.satisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
+      });
+    });
+
+    describe('showOpenDialog', () => {
+      it('sends an absolute current_folder for a directory-less defaultPath', async () => {
+        const { canceled } = await dialog.showOpenDialog({
+          defaultPath: 'test.jpeg',
+          properties: ['openFile']
+        });
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('OpenFile'));
+        const currentFolder = getCurrentFolder(options);
+        expect(currentFolder).to.satisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
+      });
+    });
+  });
 });

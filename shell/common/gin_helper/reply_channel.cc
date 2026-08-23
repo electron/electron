@@ -7,7 +7,7 @@
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -46,7 +46,7 @@ bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
   if (!callback)
     return false;
 
-  blink::CloneableMessage msg;
+  electron::SerializedValue msg;
   if (!gin::ConvertFromV8(isolate, arg, &msg))
     return false;
 

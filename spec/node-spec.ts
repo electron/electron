@@ -1,4 +1,4 @@
-import { webContents } from 'electron/main';
+import { BrowserWindow, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -19,6 +19,7 @@ import {
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -466,6 +467,112 @@ describe('node feature', () => {
           }, 10);
         });
       });
+    });
+  });
+
+  describe('environments sharing a renderer', () => {
+    afterEach(closeAllWindows);
+
+    const nodePreferences = { nodeIntegration: true, contextIsolation: false, sandbox: false };
+
+    const churnDuring = (teardown: string) => `new Promise((resolve) => {
+      const fs = require('node:fs');
+      let immediates = 0;
+      const spin = () => { if (++immediates < 200) setImmediate(spin); };
+      setImmediate(spin);
+      let read = false;
+      fs.readFile(__filename, () => { read = true; });
+      let echoed = false;
+      require('@electron-ci/echo').async(true, (value) => { echoed = value; });
+      let closed = 0;
+      const watchers = Array.from({ length: 5 }, () => fs.watch(__filename));
+      for (const w of watchers) w.on('close', () => closed++);
+      for (const w of watchers) w.close();
+      ${teardown};
+      const done = () => immediates < 200 || !read || !echoed ? setTimeout(done, 10) : resolve({ immediates, read, echoed, closed });
+      setTimeout(done, 10);
+    })`;
+
+    const loopWork = ['immediate', 'fs', 'napi async work', 'napi threadsafe function'];
+    const exerciseLoop = (wc: Electron.WebContents) =>
+      wc.executeJavaScript(`Promise.all([
+        new Promise((resolve) => setImmediate(() => resolve('immediate'))),
+        new Promise((resolve) => require('node:fs').readFile(__filename, () => resolve('fs'))),
+        new Promise((resolve) => require('@electron-ci/echo').async('napi async work', resolve)),
+        new Promise((resolve) => require('@electron-ci/echo').threadsafe('napi threadsafe function', resolve))
+      ])`);
+
+    const openWindow = async (webPreferences = {}) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { ...nodePreferences, ...webPreferences } });
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: nodePreferences }
+      }));
+      const errors: string[] = [];
+      w.webContents.on('console-message', ({ level, message }) => {
+        if (level === 'error') errors.push(message);
+      });
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      return { w, errors };
+    };
+
+    const openChild = async (w: BrowserWindow, url: string) => {
+      const childCreated = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+      await w.webContents.executeJavaScript(`window.child = window.open(${JSON.stringify(url)}); undefined`);
+      const [child] = await childCreated;
+      if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+      expect(child.webContents.getOSProcessId()).to.equal(w.webContents.getOSProcessId());
+      return child;
+    };
+
+    it('runs each same-process child window on a working loop of its own', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      const blankChild = await openChild(w, 'about:blank');
+      await expect(exerciseLoop(blankChild.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps a child window working while its opener reloads', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      for (let i = 0; i < 2; i++) {
+        const pending = exerciseLoop(child.webContents);
+        w.webContents.reload();
+        await once(w.webContents, 'did-finish-load');
+        await expect(pending).to.eventually.deep.equal(loopWork);
+        await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      }
+      await expect(exerciseLoop(w.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps the opener working when a same-process child window closes', async () => {
+      const { w, errors } = await openWindow();
+      for (let i = 0; i < 3; i++) {
+        const child = await openChild(w, 'base-page.html');
+        const closed = once(child, 'closed');
+        const result = await w.webContents.executeJavaScript(churnDuring('window.child.close()'));
+        await closed;
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps the parent frame working when a node-integrated iframe is removed', async () => {
+      const { w, errors } = await openWindow({ nodeIntegrationInSubFrames: true });
+      for (let i = 0; i < 3; i++) {
+        await w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          frame.onload = () => resolve();
+          document.body.appendChild(window.frame = frame);
+        })`);
+        const result = await w.webContents.executeJavaScript(churnDuring('window.frame.remove()'));
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
     });
   });
 

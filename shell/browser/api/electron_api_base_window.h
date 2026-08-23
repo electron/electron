@@ -157,6 +157,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetPosition(int x, int y, gin::Arguments* args);
   std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
+  void SetTitleFromPage(const std::string& title);
+  bool SetTitleFromPageIfNotSetFromApi(const std::string& title);
   std::string GetTitle() const;
   void SetAccessibleTitle(const std::string& title);
   std::string GetAccessibleTitle() const;
@@ -293,6 +295,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
+
+  bool title_set_from_api_ = false;
 
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };

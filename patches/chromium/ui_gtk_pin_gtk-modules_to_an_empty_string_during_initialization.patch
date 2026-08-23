@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 12 Aug 2026 14:40:10 -0700
+Subject: [ui/gtk] Pin gtk-modules to an empty string during initialization
+
+Setting `gtk-modules` to `""` in GtkUi::Initialize() assigns
+GTK_SETTINGS_SOURCE_APPLICATION priority to the setting, preventing
+lower-priority XSETTINGS updates from overriding `gtk-modules` and
+executing untrusted GTK modules in the unsandboxed browser process via a
+retained X11 connection.
+
+Fixed: 545124048
+Change-Id: I91e1c3df94c0567c69eec676da26ee1bb46eca2f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8243490
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1678319}
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index c52700e0e49edee6c46dd0aa56260d5d13850025..bec18ed2d345ff0f54f54360b7c71a8e3b44cda0 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -365,6 +365,9 @@ bool GtkUi::Initialize() {
+   };
+ 
+   GtkSettings* settings = gtk_settings_get_default();
++  // Pin `gtk-modules` to an empty string with APPLICATION source priority
++  // to prevent XSETTINGS updates from loading GTK modules.
++  g_object_set(settings, "gtk-modules", "", nullptr);
+   SanitizeIconThemeName();
+   SanitizeCursorThemeName();
+   SanitizeCursorThemeSize();

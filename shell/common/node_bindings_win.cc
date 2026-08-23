@@ -10,8 +10,9 @@
 
 namespace electron {
 
-NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
-    : NodeBindings(browser_env) {
+NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env,
+                                 uv_loop_t* loop)
+    : NodeBindings(browser_env, loop) {
   auto* const event_loop = uv_loop();
 
   // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
@@ -49,8 +50,9 @@ void NodeBindingsWin::PollEvents() {
 }
 
 // static
-std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env) {
-  return std::make_unique<NodeBindingsWin>(env);
+std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env,
+                                                   uv_loop_t* loop) {
+  return std::make_unique<NodeBindingsWin>(env, loop);
 }
 
 }  // namespace electron

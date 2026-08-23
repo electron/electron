@@ -96,7 +96,8 @@ bool ElectronExtensionsBrowserClient::IsValidContext(void* context) {
 
 bool ElectronExtensionsBrowserClient::IsSameContext(BrowserContext* first,
                                                     BrowserContext* second) {
-  return first == second;
+  // In-memory sessions are off-the-record contexts of the default one.
+  return GetOriginalContext(first) == GetOriginalContext(second);
 }
 
 bool ElectronExtensionsBrowserClient::HasOffTheRecordContext(
