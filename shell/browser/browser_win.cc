@@ -2,35 +2,32 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "base/functional/bind.h"
-#include "shell/browser/browser.h"
+#include <windows.h>
 
-// must come before other includes. fixes bad #defines from <shlwapi.h>.
-#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
-
-#include <windows.h>  // NOLINT(build/include_order)
-
-#include <atlbase.h>   // NOLINT(build/include_order)
-#include <shlobj.h>    // NOLINT(build/include_order)
-#include <shobjidl.h>  // NOLINT(build/include_order)
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/file_version_info.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
+#include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/atl.h"
 #include "base/win/registry.h"
+#include "base/win/shlwapi.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
 #include "shell/browser/badging/badge_manager.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/message_box.h"
@@ -229,12 +226,12 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
         LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.c_str(), 0,
                                 KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
-          DWORD type, size;
+          DWORD type;
           wchar_t startup_binary[12];
+          DWORD size = sizeof(startup_binary);
           LONG result =
               RegQueryValueEx(hkey, it->Name(), nullptr, &type,
-                              reinterpret_cast<BYTE*>(&startup_binary),
-                              &(size = sizeof(startup_binary)));
+                              reinterpret_cast<BYTE*>(&startup_binary), &size);
           if (result == ERROR_SUCCESS) {
             if (type == REG_BINARY) {
               // any other binary other than this indicates that the program is

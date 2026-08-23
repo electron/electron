@@ -199,6 +199,39 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux' && fs.existsSync('/usr/bin/dbus-daemon'))(
+    'when a D-Bus bus goes away',
+    () => {
+      it('exits cleanly instead of crashing', async () => {
+        const daemon = cp.spawn('dbus-daemon', ['--session', '--nofork', '--print-address']);
+        defer(() => daemon.kill());
+        const [address] = await once(daemon.stdout, 'data');
+        const bus = address.toString().trim();
+        const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: bus, DBUS_SYSTEM_BUS_ADDRESS: bus };
+
+        const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'session-bus-lost')], { env });
+        defer(() => appProcess.kill());
+        const exited = once(appProcess, 'exit');
+        await once(appProcess.stdout, 'data');
+        await waitUntil(() => {
+          const names = cp
+            .spawnSync(
+              'dbus-send',
+              ['--session', '--dest=org.freedesktop.DBus', '--print-reply', '/', 'org.freedesktop.DBus.ListNames'],
+              { env }
+            )
+            .stdout.toString();
+          return (names.match(/string ":1\./g) ?? []).length >= 2;
+        });
+
+        daemon.kill();
+        const [code, signal] = await exited;
+        expect(signal).to.be.null();
+        expect(code).to.equal(0);
+      });
+    }
+  );
+
   describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
@@ -234,6 +267,27 @@ describe('app module', () => {
 
       expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound');
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
+    });
+
+    // Exiting before 'ready' leaves browser start-up state unfreed by design,
+    // which LeakSanitizer reports and turns into exit code 1.
+    ifit(!process.env.IS_ASAN)('exits cleanly when called before ready right after loading tls', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
+      // This guards against a shutdown race that was lost roughly one run in
+      // five, so go a few rounds.
+      for (let i = 0; i < 15; i++) {
+        appProcess = cp.spawn(process.execPath, [appPath]);
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(123, message);
+        expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
+      }
     });
 
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
@@ -356,6 +410,19 @@ describe('app module', () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content="data"'],
         expectedAdditionalData: 'data'
+      });
+    });
+
+    it('preserves NUL followed by whitespace in additional data', async () => {
+      // The real invariant here is the V8-serialized format of the data. Using
+      // a string here is just a convenient way to test the invariant.
+      const expectedAdditionalData = {
+        value: 'foo\0\tbar'
+      };
+
+      await testArgumentPassing({
+        args: ['--send-data', `--data-content=${JSON.stringify(expectedAdditionalData)}`],
+        expectedAdditionalData
       });
     });
 
@@ -877,6 +944,16 @@ describe('app module', () => {
             type: 'daemonService'
           });
         }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
+      ifit(isVenturaOrHigher)('does not crash when the service name is not valid UTF-8', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: false,
+            type: 'daemonService',
+            serviceName: '\uD800'
+          });
+        }).to.not.throw();
       });
 
       ifit(isVenturaOrHigher)('can unset a login item', () => {

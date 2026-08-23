@@ -3193,6 +3193,13 @@ describe('chromium features', () => {
       expect(w.getURL()).to.equal(pdfSource);
     });
 
+    it('loads a PDF resource in an in-memory session', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'pdf-viewer-in-memory' } });
+      await w.loadURL(pdfSource);
+      // The viewer hosts the document in a frame of its own once its plugin is up.
+      await waitUntil(() => w.webContents.mainFrame.framesInSubtree.filter((f) => f.url === pdfSource).length === 2);
+    });
+
     it('successfully loads a PDF resource in a iframe', async () => {
       const w = new BrowserWindow({ show: false });
 
@@ -3762,6 +3769,14 @@ describe('chromium features', () => {
       expect(console.trace, 'trace').to.be.a('function');
       expect(console.time, 'time').to.be.a('function');
       expect(console.timeEnd, 'timeEnd').to.be.a('function');
+    });
+  });
+
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
     });
   });
 

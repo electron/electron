@@ -164,42 +164,47 @@ jobs:
         CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git config --global core.filemode false
-        git config --global core.autocrlf false
-        git config --global branch.autosetuprebase always
-        git config --global core.fscache true
-        git config --global core.longpaths true
-        git config --global core.preloadindex true
-        git config --global core.longpaths true
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
       run: |
         echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
-    - name: Download Generated Artifacts
-      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-      with:
-        name: generated_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
-    - name: Download Src Artifacts
-      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
-      with:
-        name: src_artifacts_${{ env.ARTIFACT_KEY }}
-        path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+    # Safe to parallelize: each step writes a disjoint location (src/electron
+    # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*)
+    # and none reads another's output; the env/PATH changes they make are only
+    # consumed after the group's implicit wait.
+    - parallel:
+        - name: Install Dependencies
+          uses: ./src/electron/.github/actions/install-dependencies
+        - name: Get Depot Tools
+          timeout-minutes: 5
+          run: |
+            git config --global core.filemode false
+            git config --global core.autocrlf false
+            git config --global branch.autosetuprebase always
+            git config --global core.fscache true
+            git config --global core.longpaths true
+            git config --global core.preloadindex true
+            git config --global core.longpaths true
+            git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+            # Ensure depot_tools does not update.
+            test -d depot_tools && cd depot_tools
+            touch .disable_auto_update
+        - name: Download Generated Artifacts
+          uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+          with:
+            name: generated_artifacts_${{ env.ARTIFACT_KEY }}
+            path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+        - name: Download Src Artifacts
+          uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+          with:
+            name: src_artifacts_${{ env.ARTIFACT_KEY }}
+            path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+    - name: Add Depot Tools to PATH
+      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist (win)
