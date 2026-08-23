@@ -1,0 +1,225 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Kocielinski <daniel.koc@gmail.com>
+Date: Thu, 6 Aug 2026 17:27:57 -0400
+Subject: [sandbox] Restore ExternalString resource_data_ after serialization
+
+Serializer::ObjectSerializer::SerializeExternalString() replaces an
+external string's resource_ field with an encoded external reference
+index for the duration of serialization, and restores it afterwards
+because the string stays live in the serializing isolate (that is the
+case for CodeSerializer, i.e. ScriptCompiler::CreateCodeCache()).
+
+Under V8_ENABLE_SANDBOX the restore was done by calling
+SetResourceRefForSerialization() a second time, with the saved handle.
+That method however also nulls out the resource_data_ handle - which is
+what the serialized form needs, but not what a restore should do - so
+the live string was left with a null cached data pointer handle. The
+non-sandbox path does not have this problem, it restores through
+set_address_as_resource(), which updates both fields.
+
+Any later read of the cached data pointer from generated code then loads
+external pointer table entry 0, whose tag does not match
+kExternalStringResourceDataTag, and fails the CSA_SBXCHECK in
+CodeStubAssembler::LoadExternalPointerFromObject(). Embedders that
+externalize strings they also pass to the compiler - e.g. builtin module
+sources that are subsequently turned into a code cache - hit this as a
+process abort on the next String.prototype.startsWith()/indexOf() (or
+any other builtin going through ToDirectStringAssembler) on such a
+string.
+
+Save and restore both handles instead. The external pointer table
+entries are not freed while the string is serialized, only the in-object
+handle fields are overwritten, so re-storing the saved handles re-links
+the string with its existing entries.
+
+Introduced in commit 8137040c3a7 ("[sandbox] Sandboxify ExternalString
+external pointers").
+
+R=jgruber@chromium.org
+
+Bug: 542023495
+Change-Id: Ifdedd1010f83e9b8dea92176c94802406ce99cd6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8188320
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109115}
+
+diff --git a/AUTHORS b/AUTHORS
+index 331de3a3923df0382d890c68eb84ee8ee6a5f529..c5978b3eab054efbe1c357769006261a2bc19a34 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -110,6 +110,7 @@ Daniel Andersson <kodandersson@gmail.com>
+ Daniel Bevenius <daniel.bevenius@gmail.com>
+ Daniel Dromboski <dandromb@gmail.com>
+ Daniel James <dnljms@gmail.com>
++Daniel Kocielinski <daniel.koc@gmail.com>
+ Daniel Shelton <d1.shelton@samsung.com>
+ Daniil Bakin <bd.bakin@gmail.com>
+ Danylo Boiko <danielboyko02@gmail.com>
+diff --git a/src/objects/string-inl.h b/src/objects/string-inl.h
+index 63318153d533a575ae5ad8697cdc332135c76f26..a88c8af3033685a66b0658e3ad8b727f99cfd02d 100644
+--- a/src/objects/string-inl.h
++++ b/src/objects/string-inl.h
+@@ -1499,10 +1499,27 @@ uint32_t ExternalString::GetResourceRefForDeserialization() {
+   return static_cast<uint32_t>(resource_.load_encoded());
+ }
+ 
+-void ExternalString::SetResourceRefForSerialization(uint32_t ref) {
++ExternalString::ResourceRefs ExternalString::SetResourceRefForSerialization(
++    uint32_t ref) {
++  ResourceRefs refs{resource_.load_encoded(), kNullExternalPointer};
+   resource_.store_encoded(static_cast<ExternalPointer_t>(ref));
+-  if (is_uncached()) return;
++  if (is_uncached()) return refs;
++  refs.resource_data = resource_data_.load_encoded();
+   resource_data_.store_encoded(kNullExternalPointer);
++  return refs;
++}
++
++void ExternalString::RestoreResourceRefs(Isolate* isolate, ResourceRefs refs) {
++#ifdef V8_ENABLE_SANDBOX
++  // The external pointer table entries are not freed while the string is
++  // serialized, only the in-object handle fields are overwritten, so re-storing
++  // the saved handles re-links the string with its existing entries.
++  resource_.store_encoded(refs.resource);
++  if (is_uncached()) return;
++  resource_data_.store_encoded(refs.resource_data);
++#else
++  set_address_as_resource(isolate, static_cast<Address>(refs.resource));
++#endif
+ }
+ 
+ void ExternalString::DisposeResource(Isolate* isolate) {
+diff --git a/src/objects/string.h b/src/objects/string.h
+index 0348debcd0f539d78d56110ce350586291719482..c54c972de6d6060bb7cfa2fe9b72a0c6123e972a 100644
+--- a/src/objects/string.h
++++ b/src/objects/string.h
+@@ -1246,7 +1246,14 @@ V8_OBJECT class ExternalString : public UncachedExternalString {
+   inline Address resource_as_address() const;
+   inline void set_address_as_resource(Isolate* isolate, Address address);
+   inline uint32_t GetResourceRefForDeserialization();
+-  inline void SetResourceRefForSerialization(uint32_t ref);
++  // The previous contents of the external pointer fields, as returned by
++  // SetResourceRefForSerialization() and put back by RestoreResourceRefs().
++  struct ResourceRefs {
++    ExternalPointer_t resource;
++    ExternalPointer_t resource_data;
++  };
++  inline ResourceRefs SetResourceRefForSerialization(uint32_t ref);
++  inline void RestoreResourceRefs(Isolate* isolate, ResourceRefs refs);
+ 
+   // Disposes string's resource object if it has not already been disposed.
+   inline void DisposeResource(Isolate* isolate);
+diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
+index 7673cbcb5ded6831f054688a22aa5aea2c211e06..50b021c3b2bac4bbffdb9d0e5c2956bd99b8603c 100644
+--- a/src/snapshot/serializer.cc
++++ b/src/snapshot/serializer.cc
+@@ -712,17 +712,11 @@ void Serializer::ObjectSerializer::SerializeExternalString() {
+   if (serializer_->external_reference_encoder_.TryEncode(resource).To(
+           &reference)) {
+     DCHECK(reference.is_from_api());
+-#ifdef V8_ENABLE_SANDBOX
+-    uint32_t external_pointer_entry =
+-        string->GetResourceRefForDeserialization();
+-#endif
+-    string->SetResourceRefForSerialization(reference.index());
++    // The string stays live in this isolate, so both external pointer fields
++    // have to be put back once it has been serialized.
++    auto refs = string->SetResourceRefForSerialization(reference.index());
+     SerializeObject();
+-#ifdef V8_ENABLE_SANDBOX
+-    string->SetResourceRefForSerialization(external_pointer_entry);
+-#else
+-    string->set_address_as_resource(isolate(), resource);
+-#endif
++    string->RestoreResourceRefs(isolate(), refs);
+   } else {
+     SerializeExternalStringAsSequentialString();
+   }
+diff --git a/test/cctest/test-serialize.cc b/test/cctest/test-serialize.cc
+index c5fbaf92752007bd7824b05fad9b0f43a69b1727..993a07f45ed242b3a0ce2a97a2e02797721ad9a8 100644
+--- a/test/cctest/test-serialize.cc
++++ b/test/cctest/test-serialize.cc
+@@ -2905,6 +2905,81 @@ TEST(CodeSerializerExternalString) {
+   delete cache;
+ }
+ 
++namespace {
++
++// The addresses of these resources are registered as API external references
++// below, so that ObjectSerializer::SerializeExternalString() takes the "known
++// resource" path for the strings backed by them. This is the state an embedder
++// ends up in when it externalizes strings it also hands to the compiler, e.g.
++// builtin module sources that are later turned into a code cache.
++constexpr char kExternalCodeCacheSource[] =
++    "function f() { return 'abc'; }; f() + 'def';";
++constexpr char kExternalCodeCacheName[] = "external-script-name";
++
++SerializerOneByteResource external_code_cache_source_resource(
++    kExternalCodeCacheSource, sizeof(kExternalCodeCacheSource) - 1);
++SerializerOneByteResource external_code_cache_name_resource(
++    kExternalCodeCacheName, sizeof(kExternalCodeCacheName) - 1);
++
++const intptr_t external_code_cache_references[] = {
++    reinterpret_cast<intptr_t>(&external_code_cache_source_resource),
++    reinterpret_cast<intptr_t>(&external_code_cache_name_resource), 0};
++
++}  // namespace
++
++// Serializing a live cached ExternalString must leave its resource_data_
++// (cached data pointer) external pointer handle intact, so that reads of the
++// string's characters from generated code keep working afterwards.
++UNINITIALIZED_TEST(CodeSerializerExternalStringResourceDataRestored) {
++  v8::Isolate::CreateParams create_params;
++  create_params.array_buffer_allocator = CcTest::array_buffer_allocator();
++  create_params.external_references = external_code_cache_references;
++  v8::Isolate* isolate = v8::Isolate::New(create_params);
++  {
++    v8::Isolate::Scope isolate_scope(isolate);
++    v8::HandleScope scope(isolate);
++    v8::Local<v8::Context> context = v8::Context::New(isolate);
++    v8::Context::Scope context_scope(context);
++
++    v8::Local<v8::String> source_string =
++        v8::String::NewExternalOneByte(isolate,
++                                       &external_code_cache_source_resource)
++            .ToLocalChecked();
++    v8::Local<v8::String> name_string =
++        v8::String::NewExternalOneByte(isolate,
++                                       &external_code_cache_name_resource)
++            .ToLocalChecked();
++    // Only cached external strings have a resource_data_ field.
++    CHECK(!Cast<ExternalString>(*Utils::OpenDirectHandle(*source_string))
++               ->is_uncached());
++    CHECK(!Cast<ExternalString>(*Utils::OpenDirectHandle(*name_string))
++               ->is_uncached());
++
++    v8::ScriptCompiler::Source source(source_string, {name_string});
++    v8::Local<v8::UnboundScript> script =
++        v8::ScriptCompiler::CompileUnboundScript(
++            isolate, &source, v8::ScriptCompiler::kEagerCompile)
++            .ToLocalChecked();
++
++    // Serializes the script name in every build, and additionally the script
++    // source in DEBUG builds - CodeSerializer::Serialize() only attaches the
++    // source instead of serializing it when DEBUG is not defined. Both strings
++    // stay live in this isolate afterwards.
++    std::unique_ptr<v8::ScriptCompiler::CachedData> cache(
++        v8::ScriptCompiler::CreateCodeCache(script));
++    CHECK(cache);
++
++    // Read the character data of both strings from generated code.
++    v8::Local<v8::Object> global = context->Global();
++    CHECK(global->Set(context, v8_str("source"), source_string).FromJust());
++    CHECK(global->Set(context, v8_str("name"), name_string).FromJust());
++    ExpectTrue("source.startsWith('function f()')");
++    ExpectTrue("source.indexOf('def') > 0");
++    ExpectTrue("name.startsWith('external-script')");
++  }
++  isolate->Dispose();
++}
++
+ TEST(CodeSerializerLargeExternalString) {
+   LocalContext context;
+   Isolate* isolate = CcTest::i_isolate();
