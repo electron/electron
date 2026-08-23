@@ -13,6 +13,7 @@
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
 #include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-context.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-microtask-queue.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.

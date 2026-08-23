@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/task/sequenced_task_runner.h"
+#include "content/public/browser/browser_thread.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_app.h"
