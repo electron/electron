@@ -139,7 +139,13 @@ void NodeService::Initialize(
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope{isolate};
 
-  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+  // Empty when the isolate was created from the embedded Node startup
+  // snapshot: the main context is then materialized (with the whole
+  // bootstrapped environment) inside CreateEnvironment and entered below --
+  // the same path the browser process takes.
+  const v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+  node_bindings_->Initialize(isolate, context);
 
   // ParentPort is a cppgc-managed wrappable, so it must be created after the
   // V8 isolate (and its cppgc heap) exists. The connector is created paused and
@@ -162,9 +168,11 @@ void NodeService::Initialize(
 
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      isolate, isolate->GetCurrentContext(), js_env_->platform(),
+      isolate, context, js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes(), params->args,
       params->exec_args);
+  if (context.IsEmpty())
+    node_env_->context()->Enter();
 
   // Override the default handler set by NodeBindings.
   node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);

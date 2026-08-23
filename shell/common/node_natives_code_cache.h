@@ -19,7 +19,13 @@ namespace electron {
 enum class Js2cCacheFlavor {
   kSandbox,   // sandboxed renderer (no Node env)
   kRenderer,  // normal renderer
+  // Every process whose isolate is created from the embedded Node startup
+  // snapshot (browser, node-service utility, ELECTRON_RUN_AS_NODE), or the
+  // browser process / ELECTRON_RUN_AS_NODE on builds without one.
   kBrowser,
+  // The node-service utility process when bootstrapped from scratch, and
+  // --type-less processes that boot from the v8 context snapshot although the
+  // build embeds a Node snapshot (custom V8 snapshot loaded).
   kUtility,
   kWorker,
 };
@@ -28,10 +34,13 @@ enum class Js2cCacheFlavor {
 // one (true): pass `node::Environment::GetCurrent(context) != nullptr`.
 Js2cCacheFlavor CurrentProcessJs2cCacheFlavor(bool has_node_env = true);
 
-// Build-time V8 code cache for the embedded electron/js2c/* bundles, fed to
-// the BuiltinLoader so they are deserialized rather than parsed + compiled
-// from source on startup. Empty when no generated cache was built; V8 also
-// gracefully falls back to compiling from source on a stale/mismatched blob.
+// Build-time V8 code cache for the embedded electron/js2c/* bundles -- plus,
+// for flavors whose Node environment is bootstrapped from scratch rather than
+// deserialized from the embedded Node startup snapshot, Node's own builtins --
+// fed to the BuiltinLoader so they are deserialized rather than parsed +
+// compiled from source on startup. Empty when no generated cache was built; V8
+// also gracefully falls back to compiling from source on a stale/mismatched
+// blob.
 const std::vector<node::builtins::CodeCacheInfo>& GetNativesCodeCache(
     Js2cCacheFlavor flavor);
 
