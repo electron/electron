@@ -18,3 +18,4 @@ src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
 m150_compiler_avoid_race_condition_when_reading_scopeinfo_during.patch
 m150_compiler_avoid_data_race_when_reading_outer_scopeinfo_in_bg.patch
 cherry-pick-b74028b55c.patch
+cherry-pick-00f6e83402.patch

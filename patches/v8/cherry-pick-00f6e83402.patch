@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyee@igalia.com>
+Date: Thu, 2 Apr 2026 01:20:12 +0200
+Subject: [runtime] always sort transition arrays during rehashing
+
+After rehashing, the arrays are no longer in hash-sorted order.
+In this case, we need to force a re-sort even for small arrays,
+so that subsequent linear searches can find the correct transition
+and avoid inserting duplicates.
+
+Refs: https://github.com/nodejs/node/pull/61898#issuecomment-4168690640
+Change-Id: Ia813d1fb9d23e08012811d672052d235c0e0bf4d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7723678
+Commit-Queue: Joyee Cheung <joyee@igalia.com>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106255}
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index ce4beebce1db30e934dede7cc889013a690d1340..ab5f6d65ba63ff8295e689557d2b10cef0d76a8d 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -2284,7 +2284,7 @@ void HeapObject::RehashBasedOnMap(IsolateT* isolate) {
+       Cast<DescriptorArray>(*this)->Sort();
+       break;
+     case TRANSITION_ARRAY_TYPE:
+-      Cast<TransitionArray>(*this)->Sort();
++      Cast<TransitionArray>(*this)->Sort(true);
+       break;
+     case SMALL_ORDERED_HASH_MAP_TYPE:
+       DCHECK_EQ(0, Cast<SmallOrderedHashMap>(*this)->NumberOfElements());
+diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
+index caefba13599021e037a880871628b5a5e04bf33d..29b91a5af970df1805b3be7a0d9bfbb1ede8196c 100644
+--- a/src/objects/transitions.cc
++++ b/src/objects/transitions.cc
+@@ -799,12 +799,15 @@ void TransitionArray::ForEachTransitionTo(
+   }
+ }
+ 
+-void TransitionArray::Sort() {
++void TransitionArray::Sort(bool force) {
+   DisallowGarbageCollection no_gc;
+   // In-place insertion sort.
+   int length = number_of_transitions();
+-  // Sorting matters only for binary search.
+-  if (length <= kMaxElementsForLinearSearch) return;
++  // After rehashing, the arrays are no longer in hash-sorted order.
++  // In this case, we need to force a re-sort even for small arrays,
++  // so that subsequent linear searches can find the correct transition
++  // and avoid inserting duplicates.
++  if (!force && length <= kMaxElementsForLinearSearch) return;
+ 
+   ReadOnlyRoots roots = GetReadOnlyRoots();
+   for (int i = 1; i < length; i++) {
+diff --git a/src/objects/transitions.h b/src/objects/transitions.h
+index 886b866db468e46a84b3f601158a4bfd757bef30..a4853ffa2c1a43c81cc55ce5dbebe49863e91ad8 100644
+--- a/src/objects/transitions.h
++++ b/src/objects/transitions.h
+@@ -341,7 +341,7 @@ class TransitionArray : public WeakFixedArray {
+   V8_EXPORT_PRIVATE bool IsSortedNoDuplicates();
+ #endif
+ 
+-  V8_EXPORT_PRIVATE void Sort();
++  V8_EXPORT_PRIVATE void Sort(bool force = false);
+ 
+   void PrintInternal(std::ostream& os);
+ 
+diff --git a/test/cctest/test-transitions.cc b/test/cctest/test-transitions.cc
+index 043d3d1ded503e9c9951b58b7afce0a9b2286b13..f6ed75f8b98f729f9d69016f9863e661486fadda 100644
+--- a/test/cctest/test-transitions.cc
++++ b/test/cctest/test-transitions.cc
+@@ -464,5 +464,116 @@ UNINITIALIZED_TEST(TransitionArray_InsertToBinarySearchSizeAfterRehashing) {
+   FreeCurrentEmbeddedBlob();
+ }
+ 
++UNINITIALIZED_TEST(TransitionArray_RehashNoDuplicatesWithinLinearSearchSize) {
++  v8_flags.rehash_snapshot = true;
++  v8_flags.hash_seed = 42;
++  v8_flags.allow_natives_syntax = true;
++  DisableEmbeddedBlobRefcounting();
++  v8::StartupData blob;
++  // Stay within linear search size.
++  constexpr int initial_size = TransitionArray::kMaxElementsForLinearSearch / 2;
++
++  {
++    v8::Isolate::CreateParams testing_params;
++    testing_params.array_buffer_allocator = CcTest::array_buffer_allocator();
++    v8::SnapshotCreator creator(testing_params);
++    v8::Isolate* isolate = creator.GetIsolate();
++    {
++      v8::HandleScope handle_scope(isolate);
++      v8::Local<v8::Context> context = v8::Context::New(isolate);
++      v8::Context::Scope context_scope(context);
++      Isolate* i_isolate = reinterpret_cast<Isolate*>(isolate);
++      v8::Local<v8::Object> obj = v8::Object::New(isolate);
++      DirectHandle<Map> first_map =
++          direct_handle(v8::Utils::OpenDirectHandle(*obj)->map(), i_isolate);
++
++      {
++        TestTransitionsAccessor transitions(i_isolate, first_map);
++        CHECK_EQ(0, transitions.NumberOfTransitions());
++      }
++
++      // Insert transitions that will be rehashed on deserialization.
++      v8::Local<v8::Value> null_value = v8::Null(isolate);
++      v8::LocalVector<v8::Value> objects(isolate);
++      for (int i = 0; i < initial_size; i++) {
++        std::string prop_name = "prop_" + std::to_string(i);
++        v8::Local<v8::String> name =
++            v8::String::NewFromUtf8(isolate, prop_name.c_str(),
++                                    v8::NewStringType::kNormal)
++                .ToLocalChecked();
++        v8::Local<v8::Object> new_obj = v8::Object::New(isolate);
++        new_obj->Set(context, name, null_value).Check();
++        objects.push_back(new_obj);
++      }
++      context->Global()
++          ->Set(context, v8_str("objects_for_transitions"),
++                v8::Array::New(isolate, objects.data(), objects.size()))
++          .Check();
++
++      creator.SetDefaultContext(context);
++
++      TestTransitionsAccessor transitions(i_isolate, first_map);
++      CHECK_EQ(initial_size, transitions.NumberOfTransitions());
++    }
++    blob =
++        creator.CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kClear);
++    CHECK(blob.CanBeRehashed());
++  }
++
++  // Deserialize with a different hash seed to trigger rehashing.
++  v8_flags.hash_seed = 1337;
++  v8::Isolate::CreateParams testing_params;
++  testing_params.array_buffer_allocator = CcTest::array_buffer_allocator();
++  testing_params.snapshot_blob = &blob;
++  v8::Isolate* isolate = v8::Isolate::New(testing_params);
++  {
++    v8::Isolate::Scope isolate_scope(isolate);
++    CHECK_EQ(static_cast<uint64_t>(1337),
++             HashSeed(reinterpret_cast<Isolate*>(isolate)).seed());
++    v8::HandleScope handle_scope(isolate);
++    v8::Local<v8::Context> context = v8::Context::New(isolate);
++    CHECK(!context.IsEmpty());
++    v8::Context::Scope context_scope(context);
++
++    Isolate* i_isolate = reinterpret_cast<Isolate*>(isolate);
++    v8::Local<v8::Object> obj = v8::Object::New(isolate);
++    DirectHandle<Map> first_map =
++        direct_handle(v8::Utils::OpenDirectHandle(*obj)->map(), i_isolate);
++
++    // Collect existing transition keys from the rehashed array.
++    Handle<String> keys[initial_size];
++    {
++      TestTransitionsAccessor transitions(i_isolate, first_map);
++      CHECK_EQ(initial_size, transitions.NumberOfTransitions());
++      for (int i = 0; i < initial_size; i++) {
++        keys[i] = handle(Cast<String>(transitions.GetKey(i)), i_isolate);
++      }
++    }
++
++    // For each existing transition, create a fresh map and re-insert it with
++    // the same field name.
++    for (int i = 0; i < initial_size; i++) {
++      Handle<Map> new_map =
++          Map::CopyWithField(i_isolate, first_map, keys[i],
++                             FieldType::Any(i_isolate), NONE,
++                             PropertyConstness::kMutable,
++                             Representation::Tagged(), OMIT_TRANSITION)
++              .ToHandleChecked();
++      TransitionsAccessor::Insert(i_isolate, first_map, keys[i], new_map,
++                                  PROPERTY_TRANSITION);
++    }
++
++    // Verify no duplicates were created.
++    {
++      TestTransitionsAccessor transitions(i_isolate, first_map);
++      CHECK_EQ(initial_size, transitions.NumberOfTransitions());
++    }
++  }
++
++  isolate->Dispose();
++  delete[] blob.data;
++  FreeCurrentEmbeddedBlob();
++}
++
+ }  // namespace internal
+ }  // namespace v8
