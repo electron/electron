@@ -65,6 +65,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "ui/gfx/linux/fontconfig_util.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -350,6 +351,11 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
   content::InitializeMojoCore();
+#if BUILDFLAG(IS_LINUX)
+  // Queued before the browser ThreadPool starts, so FontConfig loads in
+  // parallel with toolkit initialization instead of on first use.
+  gfx::InitializeGlobalFontConfigAsync();
+#endif
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif

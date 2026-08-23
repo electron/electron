@@ -75,12 +75,18 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
     return true;
   frozen.insert(hash);
 
-  v8::Local<v8::Array> property_names =
-      object->GetOwnPropertyNames(context).ToLocalChecked();
+  v8::Local<v8::Array> property_names;
+  if (!object->GetOwnPropertyNames(context).ToLocal(&property_names))
+    return false;
   for (uint32_t i = 0; i < property_names->Length(); ++i) {
-    v8::Local<v8::Value> child =
-        object->Get(context, property_names->Get(context, i).ToLocalChecked())
-            .ToLocalChecked();
+    v8::Local<v8::Value> name;
+    if (!property_names->Get(context, i).ToLocal(&name))
+      return false;
+    // The property may be an accessor that throws (e.g. a DOM element the page
+    // has decorated), so the read must be checked.
+    v8::Local<v8::Value> child;
+    if (!object->Get(context, name).ToLocal(&child))
+      return false;
     if (child->IsObject() && !child->IsTypedArray()) {
       if (!DeepFreeze(child.As<v8::Object>(), context, frozen))
         return false;
@@ -374,11 +380,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::LocalVector<v8::Value> cloned(isolate);
     cloned.reserve(length);
     for (size_t i = 0; i < length; i++) {
+      // Reading an index can run a user-defined accessor which may throw, so
+      // this must not be ToLocalChecked(). If it throws, bail out and let the
+      // pending exception propagate to the caller like any other conversion
+      // failure.
+      v8::Local<v8::Value> element;
+      if (!arr->Get(source_context, i).ToLocal(&element))
+        return {};
       auto value_for_array = PassValueToOtherContextInner(
           isolate, source_context, source_execution_context,
-          destination_context, arr->Get(source_context, i).ToLocalChecked(),
-          value, object_cache, support_dynamic_properties, recursion_depth + 1,
-          error_target);
+          destination_context, element, value, object_cache,
+          support_dynamic_properties, recursion_depth + 1, error_target);
       if (value_for_array.IsEmpty())
         return {};
       cloned.push_back(value_for_array.ToLocalChecked());
@@ -853,8 +865,9 @@ void OverrideGlobalValueFromIsolatedWorld(
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
         isolate, source_context, main_context, value, source_context->Global(),
         support_dynamic_properties, BridgeErrorTarget::kSource);
-    DCHECK(!maybe_proxy.IsEmpty());
-    auto proxy = maybe_proxy.ToLocalChecked();
+    v8::Local<v8::Value> proxy;
+    if (!maybe_proxy.ToLocal(&proxy))
+      return;
 
     target_object.Set(final_key, proxy);
   }
@@ -890,8 +903,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
           isolate, source_context, main_context, getter,
           source_context->Global(), false, BridgeErrorTarget::kSource);
-      DCHECK(!maybe_getter_proxy.IsEmpty());
-      getter_proxy = maybe_getter_proxy.ToLocalChecked();
+      if (!maybe_getter_proxy.ToLocal(&getter_proxy))
+        return false;
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
@@ -899,8 +912,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           isolate, source_context, main_context, setter,
           source_context->Global(), false, BridgeErrorTarget::kSource);
-      DCHECK(!maybe_setter_proxy.IsEmpty());
-      setter_proxy = maybe_setter_proxy.ToLocalChecked();
+      if (!maybe_setter_proxy.ToLocal(&setter_proxy))
+        return false;
     }
 
     v8::PropertyDescriptor desc(getter_proxy, setter_proxy);

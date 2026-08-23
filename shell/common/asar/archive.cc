@@ -407,9 +407,13 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return false;
 
 #if BUILDFLAG(IS_POSIX)
-  if (info.executable) {
-    // chmod a+x temp_file;
-    base::SetPosixFilePermissions(temp_file->path(), 0755);
+  {
+    // The temporary file is a cached, integrity-validated copy that may be
+    // handed out again for the lifetime of this process, so make it read-only
+    // to keep it from being modified out from under later consumers.
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    base::SetPosixFilePermissions(temp_file->path(),
+                                  info.executable ? 0555 : 0444);
   }
 #endif
 

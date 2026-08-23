@@ -428,7 +428,17 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
+  // GTK3's gtk_init() probes the display for OpenGL and loads the GL driver
+  // into this process; nothing here uses GdkGLContext. GDK_GL is read once at
+  // init and only by GTK3 (GTK4 renders with GL itself and ignores it).
+  auto env = base::Environment::Create();
+  constexpr char kGdkGl[] = "GDK_GL";
+  const bool restore_gdk_gl = !env->HasVar(kGdkGl);
+  if (restore_gdk_gl)
+    env->SetVar(kGdkGl, "disable");
   auto* linux_ui = ui::GetDefaultLinuxUi();
+  if (restore_gdk_gl)
+    env->UnSetVar(kGdkGl);
   CHECK(linux_ui);
   linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
 

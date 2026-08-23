@@ -1,6 +1,5 @@
 ---
-Checks: '-modernize-use-nullptr,
-         clang-analyzer-core.*,
+Checks: 'clang-analyzer-core.*,
          clang-analyzer-cplusplus.*,
          clang-analyzer-deadcode.*,
          clang-analyzer-nullability.*,

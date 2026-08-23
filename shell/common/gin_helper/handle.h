@@ -71,7 +71,7 @@ struct Converter<gin_helper::Handle<T>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gin_helper::Handle<T>* out) {
-    T* object = NULL;
+    T* object = nullptr;
     if (!Converter<T*>::FromV8(isolate, val, &object)) {
       return false;
     }

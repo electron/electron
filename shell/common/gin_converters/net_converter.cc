@@ -223,7 +223,10 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
 
   auto context = isolate->GetCurrentContext();
   auto headers = val.As<v8::Object>();
-  auto keys = headers->GetOwnPropertyNames(context).ToLocalChecked();
+  v8::Local<v8::Array> keys;
+  if (!headers->GetOwnPropertyNames(context).ToLocal(&keys)) {
+    return false;
+  }
   for (uint32_t i = 0; i < keys->Length(); i++) {
     v8::Local<v8::Value> keyVal;
     if (!keys->Get(context, i).ToLocal(&keyVal)) {
@@ -232,12 +235,16 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     std::string key;
     gin::ConvertFromV8(isolate, keyVal, &key);
 
-    auto localVal = headers->Get(context, keyVal).ToLocalChecked();
+    v8::Local<v8::Value> localVal;
+    if (!headers->Get(context, keyVal).ToLocal(&localVal)) {
+      return false;
+    }
     if (localVal->IsArray()) {
       auto values = localVal.As<v8::Array>();
       for (uint32_t j = 0; j < values->Length(); j++) {
-        if (!addHeaderFromValue(key,
-                                values->Get(context, j).ToLocalChecked())) {
+        v8::Local<v8::Value> item;
+        if (!values->Get(context, j).ToLocal(&item) ||
+            !addHeaderFromValue(key, item)) {
           return false;
         }
       }
