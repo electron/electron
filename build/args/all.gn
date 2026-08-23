@@ -72,3 +72,13 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
+
+# Blink's crowdsourced V8 compile hints producer randomly selects 0.5% of
+# renderer processes (Windows only) to compile every http(s) script from
+# source -- deliberately not consuming an existing code cache, and neither
+# consuming nor producing local compile hints -- so that it can record which
+# functions were compiled to UKM. The consumer half lives in chrome/browser
+# and needs OptimizationGuide, and there is no UKM backend here, so this only
+# ever costs a cold-cache page load. Build the stub producer (as Android
+# does) instead.
+produce_v8_compile_hints = false

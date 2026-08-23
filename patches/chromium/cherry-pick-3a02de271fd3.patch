@@ -1,0 +1,244 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 5 Aug 2026 21:13:26 -0700
+Subject: Support org.freedesktop.StatusNotifierItem for Linux status icons
+
+crrev.com/1658383 updated status icons to use well-known service
+names formatted as org.freedesktop.StatusNotifierItem-PID-ID.
+However, status_icon_linux_dbus.cc exported methods and checked property
+queries only against org.kde.StatusNotifierItem.
+
+Desktop environments such as XFCE request property GetAll with interface
+org.freedesktop.StatusNotifierItem, which caused Chromium's property
+handler to return a D-Bus error and led to status icons missing in XFCE.
+
+This change exports methods, handles property requests, and emits
+signals on both org.kde.StatusNotifierItem and
+org.freedesktop.StatusNotifierItem interfaces for StatusIconLinuxDbus.
+
+Fixed: 542402912
+Change-Id: Ifff3013c4b49c39a29431a18439277e269b6383c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8189930
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1674712}
+
+Electron backport note: the upstream unittest and BUILD.gn test-target
+changes are omitted here since Electron does not build Chromium unit
+tests; only the production status_icon_linux_dbus.{cc,h} changes are
+carried. This patch can be removed once this branch is on a Chromium
+revision that includes crrev.com/c/8189930 (>= 153.0.7994.0).
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 951ee684c6b02ddc4cae65b2997722457c1ec9dd..384c92b90429961a1bc8a116477b254457c631ce 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -63,9 +63,9 @@ namespace {
+ const char kServiceStatusNotifierWatcher[] = "org.kde.StatusNotifierWatcher";
+ 
+ // Interfaces.
+-// If/when the StatusNotifierItem spec gets accepted AND widely used, replace
+-// "kde" with "freedesktop".
+ const char kInterfaceStatusNotifierItem[] = "org.kde.StatusNotifierItem";
++const char kInterfaceStatusNotifierItemFreedesktop[] =
++    "org.freedesktop.StatusNotifierItem";
+ const char kInterfaceStatusNotifierWatcher[] = "org.kde.StatusNotifierWatcher";
+ 
+ // Object paths.
+@@ -270,24 +270,29 @@ class StatusIconLinuxDbus::Multiplexer {
+ 
+  private:
+   friend class base::NoDestructor<Multiplexer>;
++  friend class StatusIconLinuxDbus;
+   Multiplexer() = default;
+   ~Multiplexer() = default;
+ 
+   void ExportMethods(dbus::Bus* bus) {
+     item_ = bus->GetExportedObject(dbus::ObjectPath(kPathStatusNotifierItem));
+ 
+-    item_->ExportMethod(kInterfaceStatusNotifierItem, kMethodActivate,
+-                        base::BindRepeating(&Multiplexer::OnActivate),
+-                        base::DoNothing());
+-    item_->ExportMethod(kInterfaceStatusNotifierItem, kMethodContextMenu,
+-                        base::BindRepeating(&Multiplexer::OnContextMenu),
+-                        base::DoNothing());
+-    item_->ExportMethod(kInterfaceStatusNotifierItem, kMethodScroll,
+-                        base::BindRepeating(&Multiplexer::OnScroll),
+-                        base::DoNothing());
+-    item_->ExportMethod(kInterfaceStatusNotifierItem, kMethodSecondaryActivate,
+-                        base::BindRepeating(&Multiplexer::OnSecondaryActivate),
+-                        base::DoNothing());
++    for (const char* interface : {kInterfaceStatusNotifierItem,
++                                  kInterfaceStatusNotifierItemFreedesktop}) {
++      item_->ExportMethod(interface, kMethodActivate,
++                          base::BindRepeating(&Multiplexer::OnActivate),
++                          base::DoNothing());
++      item_->ExportMethod(interface, kMethodContextMenu,
++                          base::BindRepeating(&Multiplexer::OnContextMenu),
++                          base::DoNothing());
++      item_->ExportMethod(interface, kMethodScroll,
++                          base::BindRepeating(&Multiplexer::OnScroll),
++                          base::DoNothing());
++      item_->ExportMethod(
++          interface, kMethodSecondaryActivate,
++          base::BindRepeating(&Multiplexer::OnSecondaryActivate),
++          base::DoNothing());
++    }
+     item_->ExportMethod(DBUS_INTERFACE_PROPERTIES, "Get",
+                         base::BindRepeating(&Multiplexer::OnGetProperty),
+                         base::DoNothing());
+@@ -383,7 +388,8 @@ class StatusIconLinuxDbus::Multiplexer {
+       return;
+     }
+ 
+-    if (interface != kInterfaceStatusNotifierItem) {
++    if (interface != kInterfaceStatusNotifierItem &&
++        interface != kInterfaceStatusNotifierItemFreedesktop) {
+       std::move(response_sender).Run(nullptr);
+       return;
+     }
+@@ -418,7 +424,11 @@ class StatusIconLinuxDbus::Multiplexer {
+       return;
+     }
+ 
+-    if (interface != kInterfaceStatusNotifierItem) {
++    // The D-Bus specification allows an empty interface_name in GetAll to
++    // request properties across all interfaces.
++    if (interface != kInterfaceStatusNotifierItem &&
++        interface != kInterfaceStatusNotifierItemFreedesktop &&
++        !interface.empty()) {
+       std::move(response_sender).Run(nullptr);
+       return;
+     }
+@@ -436,6 +446,16 @@ class StatusIconLinuxDbus::Multiplexer {
+   scoped_refptr<dbus::ExportedObject> item_;
+ };
+ 
++// static
++void StatusIconLinuxDbus::ExportMultiplexerMethodsForTesting(dbus::Bus* bus) {
++  Multiplexer::Get()->ExportMethods(bus);
++}
++
++// static
++void StatusIconLinuxDbus::UnexportMultiplexerMethodsForTesting(dbus::Bus* bus) {
++  Multiplexer::Get()->UnexportMethods(bus);
++}
++
+ StatusIconLinuxDbus::StatusIconLinuxDbus()
+     : bus_(dbus_thread_linux::GetSharedSessionBus()),
+       should_write_icon_to_file_(ShouldWriteIconToFile()),
+@@ -489,8 +509,11 @@ void StatusIconLinuxDbus::SetToolTip(const std::u16string& tool_tip) {
+       kPropertyToolTip,
+       MakeDbusToolTip(base::UTF16ToUTF8(delegate_->GetToolTip())));
+   if (auto* multiplexer_item = Multiplexer::GetMultiplexerItem()) {
+-    dbus::Signal signal(kInterfaceStatusNotifierItem, kSignalNewToolTip);
+-    multiplexer_item->SendSignal(&signal);
++    for (const char* interface : {kInterfaceStatusNotifierItem,
++                                  kInterfaceStatusNotifierItemFreedesktop}) {
++      dbus::Signal signal(interface, kSignalNewToolTip);
++      multiplexer_item->SendSignal(&signal);
++    }
+   }
+ }
+ 
+@@ -765,8 +788,12 @@ void StatusIconLinuxDbus::SetImageImpl(const gfx::ImageSkia& image,
+                            send_signals);
+     if (send_signals) {
+       if (auto* multiplexer_item = Multiplexer::GetMultiplexerItem()) {
+-        dbus::Signal signal(kInterfaceStatusNotifierItem, kSignalNewIcon);
+-        multiplexer_item->SendSignal(&signal);
++        for (const char* interface :
++             {kInterfaceStatusNotifierItem,
++              kInterfaceStatusNotifierItemFreedesktop}) {
++          dbus::Signal signal(interface, kSignalNewIcon);
++          multiplexer_item->SendSignal(&signal);
++        }
+       }
+     }
+   }
+@@ -785,13 +812,16 @@ void StatusIconLinuxDbus::OnIconFileWritten(const base::FilePath& icon_file) {
+                    icon_file_.BaseName().RemoveExtension().value(), false);
+ 
+   if (auto* multiplexer_item = Multiplexer::GetMultiplexerItem()) {
+-    dbus::Signal new_icon_theme_path_signal(kInterfaceStatusNotifierItem,
+-                                            kSignalNewIconThemePath);
+-    dbus::MessageWriter writer(&new_icon_theme_path_signal);
+-    writer.AppendString(icon_file_.DirName().value());
+-    multiplexer_item->SendSignal(&new_icon_theme_path_signal);
+-    dbus::Signal new_icon_signal(kInterfaceStatusNotifierItem, kSignalNewIcon);
+-    multiplexer_item->SendSignal(&new_icon_signal);
++    for (const char* interface : {kInterfaceStatusNotifierItem,
++                                  kInterfaceStatusNotifierItemFreedesktop}) {
++      dbus::Signal new_icon_theme_path_signal(interface,
++                                              kSignalNewIconThemePath);
++      dbus::MessageWriter writer(&new_icon_theme_path_signal);
++      writer.AppendString(icon_file_.DirName().value());
++      multiplexer_item->SendSignal(&new_icon_theme_path_signal);
++      dbus::Signal new_icon_signal(interface, kSignalNewIcon);
++      multiplexer_item->SendSignal(&new_icon_signal);
++    }
+   }
+ }
+ 
+@@ -805,24 +835,30 @@ void StatusIconLinuxDbus::CleanupIconFile() {
+ }
+ 
+ void StatusIconLinuxDbus::PropertyUpdated(const std::string& property_name) {
+-  dbus::Signal signal(DBUS_INTERFACE_PROPERTIES, "PropertiesChanged");
+-  dbus::MessageWriter writer(&signal);
+-  writer.AppendString(kInterfaceStatusNotifierItem);
+-
+-  // Changed properties.
+-  dbus::MessageWriter array_writer(nullptr);
+-  writer.OpenArray("{sv}", &array_writer);
+-  dbus::MessageWriter dict_entry_writer(nullptr);
+-  array_writer.OpenDictEntry(&dict_entry_writer);
+-  dict_entry_writer.AppendString(property_name);
+-  properties_[property_name].Write(dict_entry_writer);
+-  array_writer.CloseContainer(&dict_entry_writer);
+-  writer.CloseContainer(&array_writer);
+-
+-  // Invalidated properties.
+-  writer.AppendArrayOfStrings({});
++  auto* multiplexer_item = Multiplexer::GetMultiplexerItem();
++  if (!multiplexer_item) {
++    return;
++  }
++
++  for (const char* interface : {kInterfaceStatusNotifierItem,
++                                kInterfaceStatusNotifierItemFreedesktop}) {
++    dbus::Signal signal(DBUS_INTERFACE_PROPERTIES, "PropertiesChanged");
++    dbus::MessageWriter writer(&signal);
++    writer.AppendString(interface);
++
++    // Changed properties.
++    dbus::MessageWriter array_writer(nullptr);
++    writer.OpenArray("{sv}", &array_writer);
++    dbus::MessageWriter dict_entry_writer(nullptr);
++    array_writer.OpenDictEntry(&dict_entry_writer);
++    dict_entry_writer.AppendString(property_name);
++    properties_[property_name].Write(dict_entry_writer);
++    array_writer.CloseContainer(&dict_entry_writer);
++    writer.CloseContainer(&array_writer);
++
++    // Invalidated properties.
++    writer.AppendArrayOfStrings({});
+ 
+-  if (auto* multiplexer_item = Multiplexer::GetMultiplexerItem()) {
+     multiplexer_item->SendSignal(&signal);
+   }
+ }
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+index b692109cb926c1ac9de533587436b57897fbb533..36adc9ff0926fc136355e34f3c95261f4b8ac4cc 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+@@ -53,6 +53,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+   // ui::SimpleMenuModel::Delegate:
+   void ExecuteCommand(int command_id, int event_flags) override;
+ 
++  static void ExportMultiplexerMethodsForTesting(dbus::Bus* bus);
++  static void UnexportMultiplexerMethodsForTesting(dbus::Bus* bus);
++
+  private:
+   friend class base::RefCounted<StatusIconLinuxDbus>;
+ 

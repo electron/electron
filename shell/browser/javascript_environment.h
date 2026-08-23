@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "uv.h"  // NOLINT(build/include_directory)
+#include "shell/common/uv_includes.h"
 
 namespace gin {
 class IsolateHolder;

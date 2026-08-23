@@ -141,8 +141,8 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 #endif
               restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
-  NSURL* url = userActivity.webpageURL;
-  NSDictionary* details = url ? @{@"webpageURL" : url.absoluteString} : @{};
+  NSString* webpage_url = userActivity.webpageURL.absoluteString;
+  NSDictionary* details = webpage_url ? @{@"webpageURL" : webpage_url} : @{};
   NSDictionary* user_info = userActivity.userInfo ?: @{};
 
   electron::Browser* browser = electron::Browser::Get();

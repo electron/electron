@@ -141,7 +141,7 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   ::SetWindowLong(handle, GWL_STYLE, style);
   // Window's frame styles are cached so we need to call SetWindowPos
   // with the SWP_FRAMECHANGED flag to update cache properly.
-  ::SetWindowPos(handle, 0, 0, 0, 0, 0,  // ignored
+  ::SetWindowPos(handle, nullptr, 0, 0, 0, 0,  // ignored
                  SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                      SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 }

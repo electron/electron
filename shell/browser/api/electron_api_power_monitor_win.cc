@@ -52,8 +52,8 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // Create an offscreen window for receiving broadcast messages for the
   // session lock and unlock events.
-  window_ = CreateWindow(MAKEINTATOM(atom_), 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0,
-                         instance_, 0);
+  window_ = CreateWindow(MAKEINTATOM(atom_), nullptr, 0, 0, 0, 0, 0,
+                         HWND_MESSAGE, nullptr, instance_, nullptr);
   gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 

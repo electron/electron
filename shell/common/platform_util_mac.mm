@@ -75,6 +75,10 @@ SMAppService* GetServiceForType(const std::string& type,
                                 const std::string& name)
     API_AVAILABLE(macosx(13.0)) {
   NSString* service_name = [NSString stringWithUTF8String:name.c_str()];
+  if (!service_name) {
+    LOG(ERROR) << "Login item service name is not valid UTF-8";
+    return nullptr;
+  }
   if (type == "mainAppService") {
     return [SMAppService mainAppService];
   } else if (type == "agentService") {
@@ -262,6 +266,7 @@ bool SetLoginItemEnabled(const std::string& type,
     return result;
   } else {
     NSString* identifier = GetLoginHelperBundleIdentifier();
+    // NOLINTNEXTLINE(clang-analyzer-nullability.NullableDereferenced)
     return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
   }
 }

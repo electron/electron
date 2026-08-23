@@ -32,6 +32,8 @@ namespace electron::api {
 
 NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
+  if (!ref)
+    return nil;
   NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithCGImage:ref];
   [rep setSize:[image size]];
   return [rep representationUsingType:NSBitmapImageFileTypePNG
@@ -49,7 +51,7 @@ void ReceivedThumbnailResult(CGSize size,
                              QLThumbnailRepresentation* thumbnail,
                              NSError* error) {
   if (error || !thumbnail) {
-    std::string err_msg([error.localizedDescription UTF8String]);
+    std::string err_msg = base::SysNSStringToUTF8(error.localizedDescription);
     p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
                              "image for the given path: " +
                              err_msg);
@@ -77,11 +79,12 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   CGSize cg_size = size.ToCGSize();
 
   NSURL* nsurl = base::apple::FilePathToNSURL(path);
+  NSString* ns_path = [nsurl path];
 
   // We need to explicitly check if the user has passed an invalid path
   // because QLThumbnailGenerationRequest will generate a stock file icon
   // and pass silently if we do not.
-  if (![[NSFileManager defaultManager] fileExistsAtPath:[nsurl path]]) {
+  if (!ns_path || ![[NSFileManager defaultManager] fileExistsAtPath:ns_path]) {
     promise.RejectWithErrorMessage(
         "unable to retrieve thumbnail preview image for the given path");
     return handle;

@@ -1,4 +1,12 @@
 ---
-Checks: '-modernize-use-nullptr'
+Checks: 'clang-analyzer-core.*,
+         clang-analyzer-cplusplus.*,
+         clang-analyzer-deadcode.*,
+         clang-analyzer-nullability.*,
+         clang-analyzer-osx.*,
+         clang-analyzer-security.*,
+         clang-analyzer-unix.*,
+         -clang-analyzer-core.CallAndMessage,
+         -clang-analyzer-security.PointerSub'
 InheritParentConfig: true
 ...

@@ -4,3 +4,7 @@ src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
 cppgc_support_stackstartmarker_on_msvc.patch
 cherry-pick-2ef100a053c5.patch
 cherry-pick-90606760f9cc.patch
+cherry-pick-b611400736ba.patch
+cherry-pick-a958f2e54119.patch
+cherry-pick-405d68e2150b.patch
+cherry-pick-2fdb23f19b0b.patch

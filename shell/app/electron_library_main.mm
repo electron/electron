@@ -19,7 +19,7 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
-#include "uv.h"
+#include "shell/common/uv_includes.h"
 
 int ElectronMain(int argc, char* argv[]) {
   argv = uv_setup_args(argc, argv);

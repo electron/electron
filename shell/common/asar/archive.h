@@ -10,13 +10,12 @@
 #include <string>
 #include <vector>
 
-#include <uv.h>
-
 #include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "base/values.h"
+#include "shell/common/uv_includes.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {

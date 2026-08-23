@@ -605,6 +605,7 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
+    "//build/config/compiler:compiler_buildflags",
     "//content/public/app",
     "//ui/base/unowned_user_data",
   ]
@@ -1784,6 +1785,14 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+
+  # When the snapshot tools are built in a secondary toolchain (see
+  # //electron/build/toolchain/mac) their runtime deps live under
+  # $root_out_dir/<toolchain>/; flatten so mksnapshot.zip keeps the layout
+  # consumers (@electron/mksnapshot) expect on macOS: everything at the root.
+  if (is_mac && v8_snapshot_toolchain != default_toolchain) {
+    flatten = true
+  }
   if (is_linux && is_official_build) {
     data_deps += [
       ":strip_libEGL_shlib",

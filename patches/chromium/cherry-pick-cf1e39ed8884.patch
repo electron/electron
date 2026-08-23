@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Vogelheim <vogelheim@chromium.org>
+Date: Wed, 19 Aug 2026 04:28:00 -0700
+Subject: [M150] Expose TrustedTypesPolicy.createParserOptions only on Window.
+
+Original change's description:
+> Expose TrustedTypesPolicy.createParserOptions only on Window.
+>
+> createParserOptions uses infrastructure that is main-thread only.
+> Do not expose it in workers.
+>
+> Bug: 541854084
+> Change-Id: I24bb46376db864646b717b8f5fd5d7de3bf7d4b9
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8183808
+> Commit-Queue: Daniel Vogelheim <vogelheim@chromium.org>
+> Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1674274}
+
+(cherry picked from commit ff42ae11308e4112049e830e69840619eee72f6d)
+
+Bug: 546215561,541854084
+Change-Id: I24bb46376db864646b717b8f5fd5d7de3bf7d4b9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8257426
+Commit-Queue: Daniel Vogelheim <vogelheim@chromium.org>
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4315}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/trustedtypes/trusted_type_policy.idl b/third_party/blink/renderer/core/trustedtypes/trusted_type_policy.idl
+index fb52e404beb615eba89145c495bc590335edcfc7..5298e887b879496d5bfef116bb755ec5246ef244 100644
+--- a/third_party/blink/renderer/core/trustedtypes/trusted_type_policy.idl
++++ b/third_party/blink/renderer/core/trustedtypes/trusted_type_policy.idl
+@@ -12,5 +12,5 @@ typedef (TrustedHTML or TrustedScript or TrustedScriptURL) TrustedType;
+     [CallWith=Isolate, RaisesException] TrustedHTML createHTML(DOMString input, any... args);
+     [CallWith=Isolate, RaisesException] TrustedScript createScript(DOMString input, any... args);
+     [CallWith=Isolate, RaisesException] TrustedScriptURL createScriptURL(DOMString input, any... args);
+-    [RaisesException, RuntimeEnabled=TrustedTypesCreateParserOptions] TrustedParserOptions createParserOptions(SetHTMLUnsafeOptions input);
++    [RaisesException, RuntimeEnabled=TrustedTypesCreateParserOptions, Exposed=Window] TrustedParserOptions createParserOptions(SetHTMLUnsafeOptions input);
+ };
+diff --git a/third_party/blink/web_tests/http/tests/serviceworker/webexposed/global-interface-listing-service-worker-expected.txt b/third_party/blink/web_tests/http/tests/serviceworker/webexposed/global-interface-listing-service-worker-expected.txt
+index 462d0bffc5fb7a2b88ac804d831400f46943a93f..6242a6f4a8efd2f505044a42c6e4113ebacf6a94 100644
+--- a/third_party/blink/web_tests/http/tests/serviceworker/webexposed/global-interface-listing-service-worker-expected.txt
++++ b/third_party/blink/web_tests/http/tests/serviceworker/webexposed/global-interface-listing-service-worker-expected.txt
+@@ -2083,7 +2083,6 @@ interface TrustedTypePolicy
+     getter name
+     method constructor
+     method createHTML
+-    method createParserOptions
+     method createScript
+     method createScriptURL
+ interface TrustedTypePolicyFactory
+diff --git a/third_party/blink/web_tests/webexposed/global-interface-listing-dedicated-worker-expected.txt b/third_party/blink/web_tests/webexposed/global-interface-listing-dedicated-worker-expected.txt
+index ca64be611bf11d29b8eaba804ccd84353dfc6ffd..5de92575eb6ded93303cedb61b20c50c2fcf8e69 100644
+--- a/third_party/blink/web_tests/webexposed/global-interface-listing-dedicated-worker-expected.txt
++++ b/third_party/blink/web_tests/webexposed/global-interface-listing-dedicated-worker-expected.txt
+@@ -2277,7 +2277,6 @@ Starting worker: resources/global-interface-listing-worker.js
+ [Worker]     getter name
+ [Worker]     method constructor
+ [Worker]     method createHTML
+-[Worker]     method createParserOptions
+ [Worker]     method createScript
+ [Worker]     method createScriptURL
+ [Worker] interface TrustedTypePolicyFactory
+diff --git a/third_party/blink/web_tests/webexposed/global-interface-listing-shared-worker-expected.txt b/third_party/blink/web_tests/webexposed/global-interface-listing-shared-worker-expected.txt
+index 3a41642958fbace878bd7434bd1ab6a34d8675b2..802fad762c2b1b470502b89eafbe49b76e55d50a 100644
+--- a/third_party/blink/web_tests/webexposed/global-interface-listing-shared-worker-expected.txt
++++ b/third_party/blink/web_tests/webexposed/global-interface-listing-shared-worker-expected.txt
+@@ -1984,7 +1984,6 @@ Starting worker: resources/global-interface-listing-worker.js
+ [Worker]     getter name
+ [Worker]     method constructor
+ [Worker]     method createHTML
+-[Worker]     method createParserOptions
+ [Worker]     method createScript
+ [Worker]     method createScriptURL
+ [Worker] interface TrustedTypePolicyFactory

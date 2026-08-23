@@ -34,29 +34,52 @@ inputs:
     required: false
     default: 'true'
   generate-test-artifacts:
-    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
+    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots; mksnapshot fixup on non-release builds). Only disable when no test job consumes this build.'
     required: false
     default: 'true'
 runs:
   using: "composite"
   steps:
+    # The shipped mksnapshot.zip must contain an x64 mksnapshot for x64
+    # releases, so the snapshot tools are built in an x64 toolchain (and run
+    # under Rosetta on the arm64 build hosts). Release builds use Electron's
+    # non-LTO variant of it (see //electron/build/toolchain/mac).
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
+        if [ "${{ inputs.is-release }}" = "true" ]; then
+          SNAPSHOT_TOOLCHAIN="//electron/build/toolchain/mac:clang_x64_snapshot"
+        else
+          SNAPSHOT_TOOLCHAIN="//build/toolchain/mac:clang_x64"
+        fi
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"$SNAPSHOT_TOOLCHAIN\""
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    # CI builds start from a fresh out dir, so the ThinLTO cache
+    # (-Wl,-cache_path_lto) is written (~100 GB across a release build's
+    # links) and never read; on the 5-core / 14 GB macOS runners that IO
+    # competes with links that are already swapping. Local builds keep the
+    # default so incremental relinks stay fast.
+    - name: Set GN_EXTRA_ARGS for MacOS Release Builds
+      shell: bash
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'macos' }}
+      run: |
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS thin_lto_enable_cache=false"
+        # Build mksnapshot, node_mksnapshot, v8_context_snapshot_generator
+        # and the natives code-cache generator without ThinLTO/PGO/dsyms
+        # (see //electron/build/toolchain/mac); with the default toolchain
+        # they are four serialized ThinLTO links of V8/Blink/Node (~40 min
+        # of link-pool time) whose outputs are optimization-independent
+        # data. x64 is handled in the x64 step above.
+        if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          GN_APPENDED_ARGS="$GN_APPENDED_ARGS v8_snapshot_toolchain=\"//electron/build/toolchain/mac:clang_arm64_snapshot\""
+        fi
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Windows
       shell: bash
-      if: ${{ inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
       run: |
-        # Resolve .obj paths to absolute in linker response files to work
-        # around BindFlt concurrency bug in Windows containers.
-        # https://github.com/microsoft/Windows-Containers/issues/635
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS win_abs_link_wrapper=\"//electron/build/win/abs_link_wrapper.py\""
-        if [ "${{ inputs.target-arch }}" != "x64" ]; then
-          GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"${{ inputs.target-arch }}\""
-        fi
+        GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"${{ inputs.target-arch }}\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
@@ -160,9 +183,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    # mksnapshot_args is consumed by both the mksnapshot tests and by
+    # @electron/mksnapshot from the released mksnapshot.zip, so this is needed
+    # whenever either tests or a release consume this build.
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.generate-test-artifacts == 'true' || inputs.is-release == 'true' }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
@@ -243,8 +269,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    # symbols.zip / pdb.zip / dsym archives are only consumed by the release
+    # uploader; every testing/PGO build passes generate-symbols: false and this
+    # was still spending 8-13 minutes per Windows build zipping PDBs nobody reads.
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-symbols == 'true' }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
@@ -257,20 +287,9 @@ runs:
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
       run: |
-        cd src
-        # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
-        # out/ffmpeg builds against the same SDK instead of the runner's system Xcode.
-        # The path has to live under root_build_dir, so copy the symlink tree and
-        # rewrite Default -> ffmpeg.
-        MAC_SDK_ARG=""
-        if [ "$(uname)" = "Darwin" ]; then
-          mkdir -p out/ffmpeg
-          cp -a out/Default/xcode_links out/ffmpeg/
-          MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
-        fi
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
+        e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu ${{ inputs.target-arch }} --remote-build siso
         QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
+        e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
