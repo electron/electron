@@ -139,36 +139,49 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
 // This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
 // Objective-C object, which allows it to be stored in the representedObject
-// field of an NSMenuItem.
+// field of an NSMenuItem. It also stores the identity of the original menu item
+// so copies created by AppKit can be distinguished from ones created by us.
 @interface WeakPtrToElectronMenuModelAsNSObject : NSObject
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model;
-+ (electron::ElectronMenuModel*)getFrom:(id)instance;
-- (instancetype)initWithModel:(electron::ElectronMenuModel*)model;
++ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model
+                       menuItem:(NSMenuItem*)menuItem;
++ (instancetype)metadataFromRepresentedObject:(id)representedObject;
+- (instancetype)initWithModel:(electron::ElectronMenuModel*)model
+                     menuItem:(NSMenuItem*)menuItem;
 - (electron::ElectronMenuModel*)menuModel;
+- (BOOL)isSourceMenuItem:(NSMenuItem*)menuItem;
 @end
 
 @implementation WeakPtrToElectronMenuModelAsNSObject {
   base::WeakPtr<electron::ElectronMenuModel> _model;
+  NSMenuItem* __weak _menuItem;
 }
 
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model {
-  return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model];
++ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model
+                       menuItem:(NSMenuItem*)menuItem {
+  return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model
+                                                            menuItem:menuItem];
 }
 
-+ (electron::ElectronMenuModel*)getFrom:(id)instance {
-  return [base::apple::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(
-      instance) menuModel];
++ (instancetype)metadataFromRepresentedObject:(id)representedObject {
+  return base::apple::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(
+      representedObject);
 }
 
-- (instancetype)initWithModel:(electron::ElectronMenuModel*)model {
+- (instancetype)initWithModel:(electron::ElectronMenuModel*)model
+                     menuItem:(NSMenuItem*)menuItem {
   if ((self = [super init])) {
     _model = model->GetWeakPtr();
+    _menuItem = menuItem;
   }
   return self;
 }
 
 - (electron::ElectronMenuModel*)menuModel {
   return _model.get();
+}
+
+- (BOOL)isSourceMenuItem:(NSMenuItem*)menuItem {
+  return _menuItem == menuItem;
 }
 
 @end
@@ -434,7 +447,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     item.submenu = submenu;
     item.tag = index;
     item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
+        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model
+                                                     menuItem:item];
     submenu.delegate = self;
 
     // Set submenu's role.
@@ -452,7 +466,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     // in validation of the menu items.
     item.tag = index;
     item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
+        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model
+                                                     menuItem:item];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -521,8 +536,9 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     return;
   }
 
-  electron::ElectronMenuModel* model =
-      [WeakPtrToElectronMenuModelAsNSObject getFrom:represented];
+  auto* metadata = [WeakPtrToElectronMenuModelAsNSObject
+      metadataFromRepresentedObject:represented];
+  electron::ElectronMenuModel* model = [metadata menuModel];
   if (!model)
     return;
 
@@ -535,6 +551,17 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   // if the menu item is disabled. So we only disable the menu item when the
   // menu is open. This matches behavior of |validateUserInterfaceItem|.
   item.enabled = model->IsEnabledAt(index);
+
+  // AppKit changes the source full screen item's shortcut to Function+F and
+  // creates a hidden copy to preserve Control+Command+F. The copy has the same
+  // representedObject and tag, but its presentation state is owned by AppKit.
+  // representedObject points to the same menuItem, so we can simply skip the
+  // menu item created by AppKit and not by ourselves.
+  if (![metadata isSourceMenuItem:item] &&
+      model->GetRoleAt(index) == u"togglefullscreen") {
+    return;
+  }
+
   item.hidden = !model->IsVisibleAt(index);
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
@@ -607,8 +634,9 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 // item chosen.
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
-  electron::ElectronMenuModel* model =
-      [WeakPtrToElectronMenuModelAsNSObject getFrom:[sender representedObject]];
+  auto* metadata = [WeakPtrToElectronMenuModelAsNSObject
+      metadataFromRepresentedObject:[sender representedObject]];
+  electron::ElectronMenuModel* model = [metadata menuModel];
   DCHECK(model);
   if (model) {
     NSEvent* event = [NSApp currentEvent];
@@ -651,13 +679,6 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
 - (void)menuWillOpen:(NSMenu*)menu {
   isMenuOpen_ = YES;
-
-  // macOS automatically injects a duplicate "Toggle Full Screen" menu item
-  // when we set menu.delegate on submenus. Remove hidden duplicates.
-  for (NSMenuItem* item in menu.itemArray) {
-    if (item.isHidden && item.action == @selector(toggleFullScreenMode:))
-      [menu removeItem:item];
-  }
 
   if (model_)
     model_->MenuWillShow();
