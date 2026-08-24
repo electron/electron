@@ -18,6 +18,7 @@
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
@@ -53,6 +54,7 @@
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/special_storage_policy.h"
@@ -392,6 +394,11 @@ ElectronBrowserContext::ElectronBrowserContext(
   }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+  intercept_state_ = base::MakeRefCounted<InterceptState>();
+  intercept_state_->SetIgnoreConnectionsLimitDomains(base::SplitString(
+      base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+          switches::kIgnoreConnectionsLimit),
+      ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
 
   // Initialize Pref Registry.
   InitPrefs();
@@ -630,6 +637,13 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       std::move(factory_builder)
           .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
+}
+
+void ElectronBrowserContext::InterceptedProtocolsChanged() {
+  std::vector<std::string> schemes;
+  for (const auto& [scheme, handler] : protocol_registry_->intercept_handlers())
+    schemes.push_back(scheme);
+  intercept_state_->SetInterceptedSchemes(std::move(schemes));
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
