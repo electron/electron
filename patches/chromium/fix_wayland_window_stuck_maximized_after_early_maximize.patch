@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Fri, 21 Aug 2026 06:54:03 +0000
+Subject: fix: wayland window stuck maximized after early maximize
+
+A toplevel that calls Maximize() before the first xdg_toplevel.configure has
+been received could get stuck maximized: the compositor's state-less reply
+to the initial commit is compared against the optimistically applied
+kMaximized state and latches previously_maximized_ = true, after which
+Restore() re-requests kMaximized, is deduplicated, and unset_maximized is
+never sent.
+
+Make Restore() honour previously_maximized_ only when leaving the minimized
+or fullscreen state, and make TriggerStateChanges() also consult
+applied_state() so the unset request is not skipped while older bounds
+requests are still in flight.
+
+This should be upstreamed; the patch can be removed once that lands.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index d22aa063f67ffacedd88a1264dc58ee1028a05fd..77bfc42bb211d138dd9c88fbf7627a8146ffa847 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -282,8 +282,19 @@ void WaylandToplevelWindow::Restore() {
+     return;
+   }
+ 
+-  SetWindowState(previously_maximized_ ? PlatformWindowState::kMaximized
+-                                       : PlatformWindowState::kNormal,
++  // Restore() takes a maximized (or normal) window back to normal. Only when
++  // leaving the minimized or fullscreen state do we return to the state that
++  // preceded it, which may be maximized. `previously_maximized_` must not be
++  // consulted otherwise: it can legitimately be true while the window is
++  // maximized (e.g. if a state-less configure raced with a client-initiated
++  // maximize), and honouring it here would turn Restore() into a no-op.
++  const PlatformWindowState current_state = applied_state().window_state;
++  const bool restore_to_maximized =
++      previously_maximized_ &&
++      (current_state == PlatformWindowState::kMinimized ||
++       current_state == PlatformWindowState::kFullScreen);
++  SetWindowState(restore_to_maximized ? PlatformWindowState::kMaximized
++                                      : PlatformWindowState::kNormal,
+                  display::kInvalidDisplayId);
+ }
+ 
+@@ -812,6 +823,17 @@ void WaylandToplevelWindow::SetWorkspaceExtensionDelegate(
+ void WaylandToplevelWindow::TriggerStateChanges(
+     PlatformWindowState window_state) {
+   if (xdg_toplevel_) {
++    // The state the compositor is being asked to leave. Until window state
++    // changes become asynchronous (crbug.com/40276379), a client-initiated
++    // change is force-applied to `applied_state()` right away (see below),
++    // while any in-flight requests keep the window state they were created
++    // with, so `GetLatestRequestedState()` alone can miss a maximize/fullscreen
++    // that has been requested but not yet configured. Consider both so the
++    // matching unset request is always emitted.
++    const auto is_leaving = [&](PlatformWindowState state) {
++      return applied_state().window_state == state ||
++             GetLatestRequestedState().window_state == state;
++    };
+     // Call UnSetMaximized only if current state is normal. Otherwise, if the
+     // current state is fullscreen and the previous is maximized, calling
+     // UnSetMaximized may result in wrong restored window position that clients
+@@ -822,17 +844,14 @@ void WaylandToplevelWindow::TriggerStateChanges(
+       xdg_toplevel_->SetFullscreen(
+           GetWaylandOutputForDisplayId(fullscreen_display_id_));
+     } else if (window_state == PlatformWindowState::kMaximized) {
+-      if (GetLatestRequestedState().window_state ==
+-          PlatformWindowState::kFullScreen) {
++      if (is_leaving(PlatformWindowState::kFullScreen)) {
+         xdg_toplevel_->UnSetFullscreen();
+       }
+       xdg_toplevel_->SetMaximized();
+     } else if (window_state == PlatformWindowState::kNormal) {
+-      if (GetLatestRequestedState().window_state ==
+-          PlatformWindowState::kFullScreen) {
++      if (is_leaving(PlatformWindowState::kFullScreen)) {
+         xdg_toplevel_->UnSetFullscreen();
+-      } else if (GetLatestRequestedState().window_state ==
+-                 PlatformWindowState::kMaximized) {
++      } else if (is_leaving(PlatformWindowState::kMaximized)) {
+         xdg_toplevel_->UnSetMaximized();
+       }
+     }
