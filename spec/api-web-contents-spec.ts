@@ -23,7 +23,15 @@ import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
-import { ifdescribe, defer, waitUntil, listen, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  defer,
+  waitUntil,
+  listen,
+  ifit,
+  isTestingBindingAvailable,
+  startRemoteControlApp
+} from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -2118,10 +2126,81 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.getOSProcessId()).to.equal(0);
-
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+
+    it('returns 0 before a renderer has been assigned', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: false } });
+      expect(w.webContents.getOSProcessId()).to.equal(0);
+    });
+
+    describe('pre-warmed renderer', () => {
+      const tabPidsAroundFirstWindow = (
+        rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
+        firstPrefs: Electron.WebPreferences
+      ) => {
+        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+          const { app, BrowserWindow, session } = require('electron');
+          const tabPids = () =>
+            app
+              .getAppMetrics()
+              .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
+              .map((m: Electron.ProcessMetric) => m.pid);
+          session.defaultSession.getUserAgent();
+          const deadline = Date.now() + 10000;
+          while (tabPids().length === 0 && Date.now() < deadline) {
+            await new Promise((resolve) => global.setTimeout(resolve, 20));
+          }
+          const warmed = tabPids();
+          const first = new BrowserWindow({ show: false, webPreferences: prefs });
+          const firstPidBeforeLoad = first.webContents.getOSProcessId();
+          await first.loadURL('about:blank');
+          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          const second = new BrowserWindow({ show: false });
+          const secondPidBeforeLoad = second.webContents.getOSProcessId();
+          await second.loadURL('about:blank');
+          const result = {
+            warmed,
+            firstPidBeforeLoad,
+            firstPid: first.webContents.getOSProcessId(),
+            secondPidBeforeLoad,
+            secondPid: second.webContents.getOSProcessId(),
+            tabsAfter: tabPids()
+          };
+          first.destroy();
+          second.destroy();
+          return result;
+        }, firstPrefs);
+      };
+
+      it('is handed to the first sandboxed window only', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.firstPid).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('is discarded when the first window cannot use it', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(0);
+        expect(r.firstPid).to.not.equal(r.warmed[0]);
+        expect(r.tabsAfter).to.not.include(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
+        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.not.equal(0);
+        expect(r.secondPidBeforeLoad).to.not.equal(r.firstPid);
+        expect(r.secondPid).to.equal(r.secondPidBeforeLoad);
+      });
     });
   });
 
