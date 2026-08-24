@@ -45,6 +45,7 @@
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/spare_render_process_host_manager.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
@@ -1747,7 +1748,15 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return FromOrCreate(isolate, browser_context);
+  const bool creating = !FromBrowserContext(browser_context);
+  Session* session = FromOrCreate(isolate, browser_context);
+  // One renderer started ahead of the first window; the first sandboxed
+  // WebContents takes it (ElectronBrowserClient::ShouldUseSpareRenderProcess-
+  // Host), anything else lets content discard it.
+  if (creating && partition.empty()) {
+    content::SpareRenderProcessHostManager::Get().WarmupSpare(browser_context);
+  }
+  return session;
 }
 
 // static
