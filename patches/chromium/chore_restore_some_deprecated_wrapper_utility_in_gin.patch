@@ -196,7 +196,7 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 3cefd1e777608ec6a084c9f8dee956f80e98bf21..41febbab4fd7bd952dd0a839919953ed72920899 100644
+index 109e60f47987d306067f37363e0f9f58bffc11bc..f8774d369a37750e864f658e231cff13db401ff5 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
 @@ -23,9 +23,13 @@ enum GinEmbedder : uint16_t {

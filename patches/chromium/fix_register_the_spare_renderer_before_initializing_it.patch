@@ -15,7 +15,7 @@ Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8283216;
 remove once it lands and rolls in.
 
 diff --git a/content/browser/renderer_host/spare_render_process_host_manager_impl.cc b/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
-index b1b0e04561e4ffa3a126b7599c0afb0ce2e385d8..861215e2254e1d19018df0a898fc153be9d1b435 100644
+index 6895fdd5d7f8b165f4a0ab603b14400b87a5c24d..81b0abeb04d2497e468fa2b92b6c2d69b234ac49 100644
 --- a/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
 +++ b/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
 @@ -558,8 +558,8 @@ RenderProcessHost* SpareRenderProcessHostManagerImpl::WarmupSpare(
