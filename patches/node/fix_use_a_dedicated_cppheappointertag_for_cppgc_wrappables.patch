@@ -63,10 +63,10 @@ index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3
   * This is a helper mixin with a BaseObject-like interface to help
   * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
 diff --git a/src/env.cc b/src/env.cc
-index 10266fd1233d9b117eefbbbb4f455289b002785a..ce6dd5b7394c63e50cbc250a7eca7048a873a8b9 100644
+index e67efbe92e1ab53346c659ed918dade2a073887b..0d55a07a01519718098ac1b041ff984f68a6087b 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -611,8 +611,7 @@ IsolateData::~IsolateData() {}
+@@ -610,8 +610,7 @@ IsolateData::~IsolateData() {}
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
                         v8::Object::Wrappable* wrappable) {
@@ -77,7 +77,7 @@ index 10266fd1233d9b117eefbbbb4f455289b002785a..ce6dd5b7394c63e50cbc250a7eca7048
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/unofficial.gni b/unofficial.gni
-index a44a7f4f9cbc51efd8e022729bfcebdd99d6593b..21290af4119ebe9cef1ab193dfb852daa5d4ad8c 100644
+index b5a9ed2cc2a9576178effb93102b09592844963b..92f1c9379ee87734e279e33e39241aad3771db44 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -63,6 +63,12 @@ template("node_gn_build") {

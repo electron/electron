@@ -49,7 +49,7 @@ index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a2
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0e678e9dc 100644
+index 0d55a07a01519718098ac1b041ff984f68a6087b..4494eea9c108b96e1edb7352c88417751cc960ce 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -647,8 +647,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
@@ -63,7 +63,7 @@ index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0
  
    Isolate* isolate = env_->isolate();
    HandleScope handle_scope(isolate);
-@@ -896,8 +896,7 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -889,8 +889,7 @@ Environment::Environment(IsolateData* isolate_data,
        time_origin_timestamp_,
        MAYBE_FIELD_PTR(env_info, performance_state));
  
@@ -74,10 +74,10 @@ index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index af7cf14a6b153626fb9c7ba8647f68c46975f642..bf7a41c149e89d3cd913eb010450124d3c3a8911 100644
+index b34026bb088ca966cf4a0752ed4dbd80d13f016a..ef4075729539cb0c53f7f2cabfcf435c4f76f4e2 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -1054,8 +1054,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -1050,8 +1050,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
  
    ContextifyScript* contextify_script = New(env, args.This());
  
@@ -102,7 +102,7 @@ index 952161d9e2cf1c92c3600fc2da0af594cc3f53bd..17976d01e4f4f2bf87a38a4fdb36fc70
    if (GET_TRACE_ENABLED) {                                                     \
      TRACE_EVENT0(TRACING_CATEGORY_NODE2(fs_dir, sync), TRACE_NAME(syscall));   \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 7f9ed234f3bc94973e358fe8cf96821e2dc3b73f..ecd5af293ed6fc4cc1780b363f07c192fe53deb3 100644
+index 396654cef717c5c1cb67fb290b570ea9e015ff6f..854c7396d97c94cf6655f8a19e75065e8541e82f 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -147,8 +147,7 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
