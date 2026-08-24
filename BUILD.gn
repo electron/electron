@@ -895,6 +895,23 @@ source_set("electron_lib") {
   }
 }
 
+# Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
+# startup snapshot blob it is given -- including one from another OS/CPU's
+# build of the same Electron version. See shell/common/electron_xcache_main.cc.
+if (current_toolchain == default_toolchain) {
+  executable("electron_xcache") {
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    include_dirs = [ "//" ]
+    sources = [ "shell/common/electron_xcache_main.cc" ]
+    deps = [
+      "//third_party/zlib",
+      "//v8",
+      "//v8:v8_libplatform",
+    ]
+  }
+}
+
 # Build-time host tool emitting V8 code caches for the electron/js2c/* framework
 # bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
 # with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
@@ -1897,6 +1914,18 @@ dist_zip("hunspell_dictionaries_zip") {
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
 }
 
+dist_zip("electron_xcache_zip") {
+  data_deps = [
+    ":electron_xcache",
+    ":licenses",
+  ]
+  if (is_linux && is_official_build) {
+    data_deps += [ ":strip_electron_xcache_binary" ]
+  }
+  deps = data_deps
+  outputs = [ "$root_build_dir/xcache.zip" ]
+}
+
 copy("libcxx_headers") {
   sources = libcxx_headers + libcxx_licenses + [
               "//buildtools/third_party/libc++/__assertion_handler",
@@ -2013,6 +2042,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (!is_mas_build) {
+    public_deps += [ ":electron_xcache_zip" ]
+  }
 }
 
 group("release_build") {
@@ -2050,6 +2082,13 @@ if (is_linux && is_official_build) {
     symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
     compress_debug_sections = true
     deps = [ "//sandbox/linux:chrome_sandbox" ]
+  }
+
+  strip_binary("strip_electron_xcache_binary") {
+    binary_input = "$root_out_dir/electron_xcache"
+    symbol_output = "$root_out_dir/debug/electron_xcache.debug"
+    compress_debug_sections = true
+    deps = [ ":electron_xcache" ]
   }
 
   strip_binary("strip_libffmpeg_shlib") {
