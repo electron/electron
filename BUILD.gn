@@ -898,7 +898,7 @@ source_set("electron_lib") {
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
 # startup snapshot blob it is given -- including one from another OS/CPU's
 # build of the same Electron version. See shell/common/electron_xcache_main.cc.
-if (!is_win && current_toolchain == default_toolchain) {
+if (current_toolchain == default_toolchain) {
   executable("electron_xcache") {
     configs += [ "//build/config/compiler:no_chromium_code" ]
     configs -= [ "//build/config/compiler:chromium_code" ]
@@ -1914,18 +1914,16 @@ dist_zip("hunspell_dictionaries_zip") {
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
 }
 
-if (is_linux) {
-  dist_zip("electron_xcache_zip") {
-    data_deps = [
-      ":electron_xcache",
-      ":licenses",
-    ]
-    if (is_official_build) {
-      data_deps += [ ":strip_electron_xcache_binary" ]
-    }
-    deps = data_deps
-    outputs = [ "$root_build_dir/xcache.zip" ]
+dist_zip("electron_xcache_zip") {
+  data_deps = [
+    ":electron_xcache",
+    ":licenses",
+  ]
+  if (is_linux && is_official_build) {
+    data_deps += [ ":strip_electron_xcache_binary" ]
   }
+  deps = data_deps
+  outputs = [ "$root_build_dir/xcache.zip" ]
 }
 
 copy("libcxx_headers") {
@@ -2044,7 +2042,7 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
-  if (is_linux) {
+  if (!is_mas_build) {
     public_deps += [ ":electron_xcache_zip" ]
   }
 }

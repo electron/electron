@@ -10,11 +10,18 @@ import * as vm from 'node:vm';
 
 import { ifdescribe } from './lib/spec-helpers';
 
-// electron_xcache ships in xcache.zip next to dist.zip on Linux; CI unzips it
-// beside the electron binary.
-const xcache = path.resolve(process.execPath, '..', 'electron_xcache');
+// electron_xcache ships in xcache.zip next to dist.zip; CI unzips it into the
+// same directory (on macOS that is the directory holding Electron.app).
+const outDir =
+  process.platform === 'darwin' ? path.resolve(process.execPath, '../../../..') : path.dirname(process.execPath);
+const xcache = path.join(outDir, process.platform === 'win32' ? 'electron_xcache.exe' : 'electron_xcache');
+// The binary that embeds this process's Node startup snapshot.
+const snapshotHolder =
+  process.platform === 'darwin'
+    ? path.resolve(process.execPath, '../../Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
+    : process.execPath;
 
-ifdescribe(process.platform === 'linux' && fs.existsSync(xcache))('electron_xcache', () => {
+ifdescribe(fs.existsSync(xcache))('electron_xcache', () => {
   let tmp: string;
   before(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xcache-'));
@@ -33,7 +40,7 @@ ifdescribe(process.platform === 'linux' && fs.existsSync(xcache))('electron_xcac
       xcache,
       [
         '--snapshot',
-        process.execPath,
+        snapshotHolder,
         '--in',
         input,
         '--out',
