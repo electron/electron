@@ -107,6 +107,7 @@
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
@@ -1495,6 +1496,25 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 #endif
 
   auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
+
+  // Renderer-facing factories get an IO-thread gate in front of the proxy, so
+  // requests only detour through this thread while something observes them.
+  if (frame_host && type != URLLoaderFactoryType::kNavigation) {
+    mojo::Remote<network::mojom::URLLoaderFactory> target(
+        std::move(target_factory_remote));
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_network;
+    target->Clone(gate_to_network.InitWithNewPipeAndPassReceiver());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_proxy;
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
+        gate_to_proxy.InitWithNewPipeAndPassReceiver();
+    CreateURLLoaderFactoryGate(
+        static_cast<ElectronBrowserContext*>(browser_context)
+            ->intercept_state(),
+        std::move(proxied_receiver), std::move(gate_to_network),
+        std::move(gate_to_proxy));
+    proxied_receiver = std::move(proxy_receiver);
+    target_factory_remote = target.Unbind();
+  }
 
   // Required by WebRequestInfoInitParams.
   //
