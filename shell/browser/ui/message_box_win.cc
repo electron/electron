@@ -12,6 +12,7 @@
 
 #include "base/containers/flat_map.h"
 #include "base/logging.h"
+#include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -292,6 +293,14 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
                 ->GetAcceleratedWidget()
           : nullptr;
   DialogResult result = ShowTaskDialogUTF8(settings, parent_widget, nullptr);
+
+  // When a native TaskDialog closes, the owner window's renderer does not get
+  // keyboard focus back automatically, so re-focus the parent here. This
+  // mirrors how a closing modal child window re-focuses its parent in
+  // NativeWindowViews::OnWidgetDestroying (native_window_views.cc).
+  if (settings.parent_window)
+    settings.parent_window->Focus(true);
+
   return result.button_id;
 }
 
@@ -313,18 +322,31 @@ void ShowMessageBox(const MessageBoxSettings& settings,
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
           : nullptr;
-  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings,
-                                    parent_widget, base::Unretained(hwnd)),
-                     base::BindOnce(
-                         [](MessageBoxCallback callback, std::optional<int> id,
-                            DialogResult result) {
-                           if (id)
-                             GetDialogsMap().erase(*id);
-                           std::move(callback).Run(
-                               result.button_id,
-                               result.verification_flag_checked);
-                         },
-                         std::move(callback), settings.id));
+  // Capture a weak reference to the parent window so we can restore its focus
+  // once the dialog closes. The dialog runs on a dedicated thread and the
+  // parent may be destroyed before it returns, so the re-focus happens in the
+  // UI-thread completion callback below, guarded by the weak pointer.
+  base::WeakPtr<NativeWindow> parent_window =
+      settings.parent_window ? settings.parent_window->GetWeakPtr() : nullptr;
+  dialog_thread::Run(
+      base::BindOnce(&ShowTaskDialogUTF8, settings, parent_widget,
+                     base::Unretained(hwnd)),
+      base::BindOnce(
+          [](MessageBoxCallback callback, std::optional<int> id,
+             base::WeakPtr<NativeWindow> parent_window, DialogResult result) {
+            if (id)
+              GetDialogsMap().erase(*id);
+            // When a native TaskDialog closes, the owner window's renderer does
+            // not get keyboard focus back automatically, so re-focus the parent
+            // here. This mirrors how a closing modal child window re-focuses
+            // its parent in NativeWindowViews::OnWidgetDestroying
+            // (native_window_views.cc).
+            if (parent_window)
+              parent_window->Focus(true);
+            std::move(callback).Run(result.button_id,
+                                    result.verification_flag_checked);
+          },
+          std::move(callback), settings.id, std::move(parent_window)));
 }
 
 void CloseMessageBox(int id) {
