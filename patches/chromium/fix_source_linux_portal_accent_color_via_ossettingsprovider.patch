@@ -51,10 +51,10 @@ index 01e5f00d3387966963c3b4619a3039556fadd43a..759902dcb37122c467f80326dc205ba6
  
  }  // namespace ui
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index cc4f52e46c2fb2d3d66b1a860debf8c025e71971..0bc31770336d43e41cd8d783fa77835019573ef4 100644
+index c5195f47fe302120922e076b336cf3ac35325c18..7a18d6a7279c00b093d343a16eb6a406fda6833a 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -696,7 +696,11 @@ void GtkUi::SetDarkTheme(bool dark) {
+@@ -699,7 +699,11 @@ void GtkUi::SetDarkTheme(bool dark) {
  
  void GtkUi::SetAccentColor(std::optional<SkColor> accent_color) {
    accent_color_ = accent_color;
