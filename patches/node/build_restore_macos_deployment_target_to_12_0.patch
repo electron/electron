@@ -10,10 +10,10 @@ M151, and so we should allow for building until then.
 This patch can be removed at the M151 branch point.
 
 diff --git a/common.gypi b/common.gypi
-index 0ab7c63ab9bdac67b799d04ebb57afe8e013e020..48323a70b71ac3f01cf9715c227efec01df20469 100644
+index 5a82e460cef87134b3df29dcef6564139f0f197c..c8c7170c4308e855d3edf7765bf264612f72c34c 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -741,7 +741,7 @@
+@@ -742,7 +742,7 @@
            'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
            'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
            'PREBINDING': 'NO',                       # No -Wl,-prebind
