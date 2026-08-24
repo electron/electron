@@ -87,6 +87,39 @@ std::string Hex(uint32_t v) {
   return buf;
 }
 
+// JSON string literal, quotes included.
+std::string Json(std::string_view v) {
+  std::string out = "\"";
+  for (char c : v) {
+    switch (c) {
+      case '"':
+        out += "\\\"";
+        break;
+      case '\\':
+        out += "\\\\";
+        break;
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        if (static_cast<unsigned char>(c) < 0x20) {
+          char buf[8];
+          std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+          out += buf;
+        } else {
+          out += c;
+        }
+    }
+  }
+  return out + '"';
+}
+
 class MappedFile {
  public:
   bool Open(const std::string& path) {
@@ -599,9 +632,9 @@ int main(int argc, char* argv[]) {
     }
   }
   if (json) {
-    std::cout << "{\"v8\":\"" << version << "\",\"mode\":\"" << mode
-              << "\",\"eager\":" << (eager ? "true" : "false")
-              << ",\"flags\":\"" << v8_flags << "\",\"size\":" << cache.size()
+    std::cout << "{\"v8\":" << Json(version) << ",\"mode\":" << Json(mode)
+              << ",\"eager\":" << (eager ? "true" : "false")
+              << ",\"flags\":" << Json(v8_flags) << ",\"size\":" << cache.size()
               << ",\"header\":{\"magic\":\""
               << Hex(ReadU32(h + kCacheMagicOffset)) << "\",\"versionHash\":\""
               << Hex(ReadU32(h + kCacheVersionHashOffset))
@@ -611,11 +644,12 @@ int main(int argc, char* argv[]) {
               << "\",\"roSnapshotChecksum\":\"" << Hex(ro_checksum)
               << "\",\"payloadLength\":"
               << ReadU32(h + kCachePayloadLengthOffset)
-              << "},\"snapshot\":{\"file\":\"" << snapshot_path
-              << "\",\"offset\":" << chosen_info.offset
+              << "},\"snapshot\":{\"file\":" << Json(snapshot_path)
+              << ",\"offset\":" << chosen_info.offset
               << ",\"size\":" << chosen_info.size
-              << ",\"contexts\":" << chosen_info.num_contexts << ",\"kind\":\""
-              << KindOf(chosen_info) << "\"},\"out\":\"" << out_path << "\"}\n";
+              << ",\"contexts\":" << chosen_info.num_contexts
+              << ",\"kind\":" << Json(KindOf(chosen_info))
+              << "},\"out\":" << Json(out_path) << "}\n";
   } else {
     std::cerr << "electron_xcache: " << out_path << " (" << cache.size()
               << " B, " << mode << (eager ? ", eager" : "")
