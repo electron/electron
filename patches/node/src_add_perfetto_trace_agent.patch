@@ -41,10 +41,10 @@ index 54ee17622bc979af7c55336206a272852a13ebdd..8fbb5a6a0986584390d086454a2e3e56
        'src/timer_wrap.h',
        'src/timer_wrap-inl.h',
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index c81ef82c5a23d30ec7430b8726bd28e1be2f225e..75fc97a581b79c87a51adcbe999b937262b422db 100644
+index 95ba63653ceae16754071701fcd99a98f84c8f4c..5f012087f6cba6daeb896ae3eb9a5209462a6914 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -759,14 +759,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+@@ -763,14 +763,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
    return env->platform();
  }
  
@@ -96,7 +96,7 @@ index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41e
 +  ],
  }
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17937167af 100644
+index 5e1d9149dc755a9dc3eb1fcce4e4161c978ff859..fe749e908d73b7b5a095ee69a5beabaf6f99f733 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -14,7 +14,9 @@
@@ -109,7 +109,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
  #include "inspector/worker_agent.h"
  #include "inspector/worker_inspector.h"
  #include "inspector_io.h"
-@@ -286,9 +288,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -238,9 +240,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
                                    StringView(),
                                    V8Inspector::ClientTrustLevel::kFullyTrusted);
      node_dispatcher_ = std::make_unique<UberDispatcher>(this);
@@ -121,7 +121,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
      if (worker_manager) {
        worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
        worker_agent_->Wire(node_dispatcher_.get());
-@@ -322,8 +326,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -274,8 +278,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    ~ChannelImpl() override {
@@ -132,7 +132,7 @@ index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17
      if (worker_agent_) {
        worker_agent_->disable();
        worker_agent_.reset();  // Dispose before the dispatchers
-@@ -472,7 +478,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -436,7 +442,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
@@ -163,10 +163,10 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9ff90e0960 100644
+index 546fd8060fe0abfb902ac75162b02d2dbf1bb52b..897a3e8a41550ce024f98ebb29473ee2b4352601 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -328,7 +328,11 @@ class PerProcessOptions : public Options {
+@@ -329,7 +329,11 @@ class PerProcessOptions : public Options {
  
    std::string title;
    std::string trace_event_categories;
@@ -1110,10 +1110,10 @@ index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa
 +  assert(stat.size > 0);
 +}));
 diff --git a/unofficial.gni b/unofficial.gni
-index 92f1c9379ee87734e279e33e39241aad3771db44..21290af4119ebe9cef1ab193dfb852daa5d4ad8c 100644
+index 714e9937fb9eef33b6fead8d3a4aa3b85f718903..31565559059954112d4311239e420d1ffdf0421d 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -156,6 +156,7 @@ template("node_gn_build") {
+@@ -150,6 +150,7 @@ template("node_gn_build") {
    source_set("libnode") {
      configs += [
        ":node_internal_config",
@@ -1121,7 +1121,7 @@ index 92f1c9379ee87734e279e33e39241aad3771db44..21290af4119ebe9cef1ab193dfb852da
        "//build/config/compiler:no_exit_time_destructors"
      ]
      public_configs = [
-@@ -192,6 +193,7 @@ template("node_gn_build") {
+@@ -186,6 +187,7 @@ template("node_gn_build") {
        "//third_party/zstd:headers",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",

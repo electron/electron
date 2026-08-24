@@ -25,7 +25,7 @@ index 4b19d71794400cc07ca47487ac79bfb1f9338bc6..81baf4e04f58dac7893bbf796df68e6c
  const crypto = require('crypto');
  const fixtures = require('../common/fixtures');
 diff --git a/test/parallel/test-crypto-key-objects-raw.js b/test/parallel/test-crypto-key-objects-raw.js
-index e0871c2f0cd3fdc45e2b610497f10d9ffe7c6530..90f55fb34addae1b7f030d72c0f447f95a72338f 100644
+index e8d5aced4e22cbe42fe53ee871423091cd3ef9c8..b9d8f500f441cd7dd2e1da0278d26e900e9290fb 100644
 --- a/test/parallel/test-crypto-key-objects-raw.js
 +++ b/test/parallel/test-crypto-key-objects-raw.js
 @@ -4,6 +4,9 @@ const common = require('../common');
@@ -97,10 +97,10 @@ index 535e6a33d5ccb00566a66d83711872f1304c70dc..d68b45c31cb59a637b5c757e96b98f26
  
  if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
 diff --git a/test/parallel/test-webcrypto-encap-decap-ml-kem.js b/test/parallel/test-webcrypto-encap-decap-ml-kem.js
-index f3850dcdf0254630b97a9d148d28ae0c12160052..dd1d438a2f4b5a86a0284054e02e834b58a80a98 100644
+index e31be79e6bfe4bbb73df7e0038ca4d3e43eb63c6..cae7fe2cd59d4042f1ec0862119895b27d40d299 100644
 --- a/test/parallel/test-webcrypto-encap-decap-ml-kem.js
 +++ b/test/parallel/test-webcrypto-encap-decap-ml-kem.js
-@@ -5,6 +5,9 @@ const common = require('../common');
+@@ -6,6 +6,9 @@ const common = require('../common');
  if (!common.hasCrypto)
    common.skip('missing crypto');
  
@@ -139,7 +139,7 @@ index 31ba739a1e55e0f9ae4472d7850a4a8892db9dce..ef01ac5d5517aa8f54eff68b25e81318
  
  if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index 49f63e215fadfc95bee1d1d51cb61391a89ec53e..94f840c190035ce50f623e63dad5e12fedbdd2a3 100644
+index 18ba6dc379637848a37774d7c73841624add429b..36efe3c6ff3a5985458d7e02f7b03f00279d06be 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
 @@ -5,6 +5,9 @@ const common = require('../common');
