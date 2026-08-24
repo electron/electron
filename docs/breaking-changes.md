@@ -49,6 +49,15 @@ constraints, matching `getDisplayMedia()`. Its default allowlist is `self`, so a
 cross-origin `<iframe>` that captures the screen this way now needs
 `allow="display-capture"` on the iframe element.
 
+### Default Changed: `document.requestStorageAccessFor` is disabled
+
+Chromium has disabled `document.requestStorageAccessFor` by default ahead of
+its removal. The API can temporarily be restored with the
+[`enableBlinkFeatures`](api/structures/web-preferences.md) web preference set to
+`RequestStorageAccessFor`. See
+[Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
+for more information.
+
 ## Planned Breaking API Changes (44.0)
 
 ### Behavior Changed: file descriptors for files inside ASAR archives are only usable through `fs`

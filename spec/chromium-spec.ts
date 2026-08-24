@@ -2700,7 +2700,12 @@ describe('chromium features', () => {
         callback(permission === 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -2729,7 +2734,12 @@ describe('chromium features', () => {
         callback(permission !== 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -5376,6 +5386,7 @@ describe('iframe sandbox popups', () => {
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
         a.href = ${JSON.stringify(href)};
+        a.target = '_blank';
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
