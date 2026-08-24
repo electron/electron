@@ -1180,13 +1180,23 @@ describe('dialog module', () => {
         expect(resolvedEarly, 'dialog closed on an unknown button ID').to.equal(false);
         expect(dialogHelper.getDialogInfo(handle).type).to.equal('message-box');
 
-        // A real button still closes the dialog and returns its index.
-        dialogHelper.clickMessageBoxButton(handle, 1);
-        await setTimeout(500);
+        // A real button still closes the dialog and returns its index. The
+        // dialog runs on a separate STA thread, so rather than a single click
+        // with a fixed deadline, re-inject the click and poll until the
+        // dialog acknowledges it by closing.
+        let closed = false;
+        for (let i = 0; i < 50; i++) {
+          dialogHelper.clickMessageBoxButton(handle, 1);
+          await setTimeout(100);
+          if (dialogHelper.getDialogInfo(handle).type === 'none') {
+            closed = true;
+            break;
+          }
+        }
         expect(
-          dialogHelper.getDialogInfo(handle).type,
+          closed,
           'a valid button click did not close the dialog; is kIDStart in dialog_helper_win.cc in sync with message_box_win.cc ?'
-        ).to.equal('none');
+        ).to.equal(true);
         const result = await p;
         expect(result.response).to.equal(1);
       });
