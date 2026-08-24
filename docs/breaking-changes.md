@@ -12,6 +12,43 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (45.0)
+
+### Behavior Changed: screen capture requests are reported as `display-capture` in `setPermissionRequestHandler`
+
+Requests to capture the screen, a window or a tab -- made through
+`navigator.mediaDevices.getDisplayMedia()` or through `getUserMedia()` with the
+`chromeMediaSource` / `chromeMediaSourceId` constraints used with
+[`desktopCapturer`](api/desktop-capturer.md) -- are now passed to
+[`session.setPermissionRequestHandler`](api/session.md#sessetpermissionrequesthandlerhandler)
+with the documented `display-capture` permission. Previously they were reported as
+`media` with an empty `details.mediaTypes` array, indistinguishable from a camera
+or microphone request other than by that empty array. `media` is now only used for
+camera and microphone devices.
+
+Applications with a permission request handler that grants `media` and denies
+everything else must also grant `display-capture` to keep screen sharing working:
+
+```js
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'media' || permission === 'display-capture') {
+    return callback(true)
+  }
+  callback(false)
+})
+```
+
+For `display-capture` requests, `details.mediaTypes` now lists `video` and/or
+`audio` to indicate whether display video and/or display audio was requested.
+The `setDisplayMediaRequestHandler` flow for `getDisplayMedia()` is unchanged and
+still runs after the permission request has been granted.
+
+The [`display-capture` Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Permissions-Policy/display-capture)
+is now also applied to `getUserMedia()` calls that use the `chromeMediaSource`
+constraints, matching `getDisplayMedia()`. Its default allowlist is `self`, so a
+cross-origin `<iframe>` that captures the screen this way now needs
+`allow="display-capture"` on the iframe element.
+
 ## Planned Breaking API Changes (44.0)
 
 ### Behavior Changed: file descriptors for files inside ASAR archives are only usable through `fs`
