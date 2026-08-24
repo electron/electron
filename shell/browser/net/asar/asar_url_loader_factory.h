@@ -22,6 +22,9 @@ class AsarURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create();
 
  private:
+  static void BindOnIOThread(
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver);
+
   AsarURLLoaderFactory(
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
   ~AsarURLLoaderFactory() override;
