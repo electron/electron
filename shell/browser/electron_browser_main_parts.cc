@@ -341,6 +341,16 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);
 
 #if BUILDFLAG(IS_MAC)
+  // On macOS, l10n_util::GetApplicationLocale() returns the --lang value
+  // verbatim instead of resolving it against the locales that actually ship
+  // (Chromium relies on Cocoa having already done that). A tag like "de-DE"
+  // therefore fails to find de.lproj and no locale pak is loaded at all,
+  // which leaves every localized string empty. Resolve it the same way the
+  // other platforms do, and fall back to Cocoa's choice if it can't be
+  // resolved.
+  if (!locale.empty())
+    locale = l10n_util::CheckAndResolveLocale(locale).value_or(std::string());
+
   // The browser process only wants to support the language Cocoa will use,
   // so force the app locale to be overridden with that value. This must
   // happen before the ResourceBundle is loaded
