@@ -3135,8 +3135,11 @@ describe('chromium features', () => {
         );
 
         expect(result.code, result.stderr).to.equal(0);
-        expect(JSON.parse(result.stdout)).to.deep.equal({
+        const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('WIDEVINE_CDM_PATH_RESULT='));
+        expect(resultLine, result.stdout).to.be.a('string');
+        expect(JSON.parse(resultLine!.slice('WIDEVINE_CDM_PATH_RESULT='.length))).to.deep.equal({
           isPackaged: true,
+          isSecureContext: true,
           widevineAvailable: false
         });
       });

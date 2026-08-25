@@ -1,3 +1,5 @@
+const path = require('node:path');
+
 const { app, BrowserWindow } = require('electron');
 
 const config = [
@@ -20,19 +22,22 @@ app
   .whenReady()
   .then(async () => {
     const window = new BrowserWindow({ show: false });
-    await window.loadURL('data:text/html,');
-    const widevineAvailable = await window.webContents.executeJavaScript(`
-    navigator.requestMediaKeySystemAccess(
-      'com.widevine.alpha',
-      ${JSON.stringify(config)}
-    ).then(() => true, () => false)
-  `);
+    await window.loadFile(path.join(__dirname, '..', '..', 'pages', 'blank.html'));
+    const result = await window.webContents.executeJavaScript(`
+      (async () => ({
+        isSecureContext: window.isSecureContext,
+        widevineAvailable: await navigator.requestMediaKeySystemAccess(
+          'com.widevine.alpha',
+          ${JSON.stringify(config)}
+        ).then(() => true, () => false)
+      }))()
+    `);
 
     process.stdout.write(
-      JSON.stringify({
+      `WIDEVINE_CDM_PATH_RESULT=${JSON.stringify({
         isPackaged: app.isPackaged,
-        widevineAvailable
-      })
+        ...result
+      })}\n`
     );
     app.quit();
   })
