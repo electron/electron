@@ -195,7 +195,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   root_layer_ = std::make_unique<ui::LayerSurface>();
 
-  root_layer()->SetBackgroundColor(SkColor4f::FromColor(background_color_));
+  root_layer()->SetFallbackBackgroundColor(
+      SkColor4f::FromColor(background_color_));
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
@@ -1001,7 +1002,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  root_layer()->SetBackgroundColor(SkColor4f::FromColor(color));
+  root_layer()->SetFallbackBackgroundColor(SkColor4f::FromColor(color));
 }
 
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
