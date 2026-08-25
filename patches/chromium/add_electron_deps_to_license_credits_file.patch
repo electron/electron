@@ -7,10 +7,10 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index 6b2eae031956dd3c69b2daf69ac6890078c701d4..8f0d583150412a3784c3c44ce386cc5898d55e8b 100755
+index 6b2eae031956dd3c69b2daf69ac6890078c701d4..cbb8d83e53491b4e78ba3e0748d9da86a2036f6a 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
-@@ -374,6 +374,30 @@ SPECIAL_CASES = {
+@@ -374,6 +374,36 @@ SPECIAL_CASES = {
      "License": "Apache 2.0",
      "License File": ["//third_party/sample3/the_license"],
    },
@@ -37,6 +37,12 @@ index 6b2eae031956dd3c69b2daf69ac6890078c701d4..8f0d583150412a3784c3c44ce386cc58
 +    "URL": "https://github.com/ReactiveCocoa/ReactiveObjC",
 +    "License": "MIT",
 +    "License File": ["/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md"],
++  },
++  os.path.join('third_party', 'squirrel.mac', 'vendor', 'Sparkle'): {
++    "Name": "Sparkle",
++    "URL": "https://github.com/sparkle-project/Sparkle",
++    "License": "MIT",
++    "License File": ["/third_party/squirrel.mac/vendor/Sparkle/LICENSE"],
 +  },
  }
  
