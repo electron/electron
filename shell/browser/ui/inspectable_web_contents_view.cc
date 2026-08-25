@@ -269,9 +269,23 @@ void InspectableWebContentsView::ShowDevToolsContextMenu(
   context_menu_->RunMenuAt(widget);
 }
 
+void InspectableWebContentsView::SetContentsViewBounds(
+    const gfx::Rect& bounds) {
+  GetContentsView()->SetBoundsRect(bounds);
+
+  // If the view isn't currently in a Widget, we need to propagate the new
+  // bounds to the WebContents manually or the page won't see the correct
+  // dimensions.
+  if (!GetWidget() && contents_web_view_) {
+    if (auto* web_contents = inspectable_web_contents_->GetWebContents()) {
+      web_contents->Resize(gfx::Rect(bounds.size()));
+    }
+  }
+}
+
 void InspectableWebContentsView::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
-    GetContentsView()->SetBoundsRect(GetContentsBounds());
+    SetContentsViewBounds(GetContentsBounds());
     // Propagate layout call to all children, for example browser views.
     LayoutSuperclass<View>(this);
     return;
@@ -289,7 +303,7 @@ void InspectableWebContentsView::Layout(PassKey) {
   new_contents_bounds.set_x(GetMirroredXForRect(new_contents_bounds));
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
-  GetContentsView()->SetBoundsRect(new_contents_bounds);
+  SetContentsViewBounds(new_contents_bounds);
 
   // Propagate layout call to all children, for example browser views.
   LayoutSuperclass<View>(this);
