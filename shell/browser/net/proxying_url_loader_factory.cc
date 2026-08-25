@@ -84,10 +84,11 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       proxied_loader_receiver_(this, std::move(loader_receiver)),
       target_client_(std::move(client)),
       current_response_(network::mojom::URLResponseHead::New()),
-      // Always use "extraHeaders" mode to be compatible with old APIs.
-      // A non-zero request ID is required to use the TrustedHeaderClient path
-      // which allows webRequest to modify headers like Proxy-Authorization.
-      has_any_extra_headers_listeners_(network_service_request_id != 0) {
+      // "extraHeaders" mode (two round trips per request) only while
+      // webRequest has listeners; see has_any_extra_headers_listeners_.
+      has_any_extra_headers_listeners_(network_service_request_id != 0 &&
+                                       factory->web_request_ &&
+                                       factory->web_request_->HasListener()) {
   // If there is a client error, clean up the request.
   target_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
