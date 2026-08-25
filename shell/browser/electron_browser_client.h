@@ -270,6 +270,14 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           handshake_client,
       WebSocketOptions options) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
+  void WillCreateWebTransport(
+      int process_id,
+      int frame_routing_id,
+      const GURL& url,
+      const url::Origin& initiator_origin,
+      mojo::PendingRemote<network::mojom::WebTransportHandshakeClient>
+          handshake_client,
+      WillCreateWebTransportCallback callback) override;
   void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,

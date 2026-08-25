@@ -92,6 +92,16 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::string GetUserAgent() const;
   bool can_use_http_cache() const { return use_cache_; }
   int max_cache_size() const { return max_cache_size_; }
+  // True when the session was created with `networkAccess: 'none'`: nothing
+  // in this session may open a network connection.
+  bool is_network_blocked() const { return block_network_; }
+  // Whether a request for |url| must be refused under that policy. Only
+  // http(s) and ws(s) URLs are network requests; every other scheme is served
+  // in-process (file, data, blob, custom protocols, extensions, WebUI) or
+  // fails as unknown without touching the network. A standard scheme that the
+  // session intercepts or registers with a `protocol` handler is served
+  // in-process too and stays allowed.
+  bool ShouldBlockNetworkRequest(const GURL& url) const;
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory() override;
@@ -225,6 +235,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   bool in_memory_ = false;
   bool use_cache_ = true;
   int max_cache_size_ = 0;
+  bool block_network_ = false;
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;

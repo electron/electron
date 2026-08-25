@@ -1,0 +1,306 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Tue, 25 Aug 2026 18:48:22 +0000
+Subject: feat: add NetworkContextParams::block_network
+
+Adds a per-NetworkContext switch that refuses every network connection for
+the context. When set, URL loads for non-local schemes, WebSockets,
+WebTransport sessions, preconnects, prefetches and host resolutions fail
+with ERR_NETWORK_ACCESS_REVOKED; the raw TCP/UDP, proxy-resolving, P2P and
+mDNS socket interfaces are not bound; and all host mapping is set to
+^NOTFOUND so code built directly on the URLRequestContext (cert fetching,
+reporting) cannot reach the network either.
+
+Electron uses this to implement sessions created with
+`networkAccess: 'none'`, which must be fully offline regardless of which
+browser-side path created the request.
+
+diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
+index 78442c82d34db8d4433744fc59b121da1b0abc43..0278ecac53e80fcba10c9ef64adcc13be298e1f8 100644
+--- a/services/network/cors/cors_url_loader_factory.cc
++++ b/services/network/cors/cors_url_loader_factory.cc
+@@ -437,11 +437,13 @@ void CorsURLLoaderFactory::CreateLoaderAndStart(
+     isolation_info_ptr = &isolation_info.value();
+   }
+ 
+-  // Check if the initiator's network access has been restricted.
+-  if (network_restrictions_id_.has_value() &&
+-      !context_->IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
+-          *network_restrictions_id_, resource_request.url,
+-          isolation_info_ptr->network_anonymization_key())) {
++  // Check if the initiator's network access has been restricted, or if the
++  // whole context is blocked from the network.
++  if (context_->IsNetworkBlockedForUrl(resource_request.url) ||
++      (network_restrictions_id_.has_value() &&
++       !context_->IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
++           *network_restrictions_id_, resource_request.url,
++           isolation_info_ptr->network_anonymization_key()))) {
+     // TODO(crbug.com/447954811): Perhaps change to a new error code and
+     // add console messages.
+     mojo::Remote<mojom::URLLoaderClient>(std::move(client))
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index 2065c41667a2f435453fa51f0ae7abe215bef9aa..185f276cc98e0509a6f227c81f32e683eec7c5a6 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -1000,6 +1000,7 @@ NetworkContext::NetworkContext(
+       std::move(url_loader_factory_for_cert_net_fetcher_receiver));
+ 
+   SetBlockTrustTokens(params_->block_trust_tokens);
++  block_network_ = params_->block_network;
+ 
+   if (params_ && params_->http_cache_file_operations_factory) {
+     http_cache_file_operations_factory_ =
+@@ -2146,6 +2147,9 @@ void NetworkContext::OnNewSCTAuditingReportSent() {
+ void NetworkContext::CreateUDPSocket(
+     mojo::PendingReceiver<mojom::UDPSocket> receiver,
+     mojo::PendingRemote<mojom::UDPSocketListener> listener) {
++  if (block_network_) {
++    return;
++  }
+   socket_factory_->CreateUDPSocket(std::move(receiver), std::move(listener));
+ }
+ 
+@@ -2159,6 +2163,10 @@ void NetworkContext::CreateRestrictedUDPSocket(
+     bool allow_multicast,
+     bool allow_source_specific_multicast,
+     CreateRestrictedUDPSocketCallback callback) {
++  if (block_network_) {
++    std::move(callback).Run(net::ERR_NETWORK_ACCESS_REVOKED, std::nullopt);
++    return;
++  }
+   // SimpleHostResolver is transitively owned by |this|.
+   socket_factory_->CreateRestrictedUDPSocket(
+       addr, mode, traffic_annotation, std::move(params), std::move(receiver),
+@@ -2172,6 +2180,10 @@ void NetworkContext::CreateTCPServerSocket(
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+     mojo::PendingReceiver<mojom::TCPServerSocket> receiver,
+     CreateTCPServerSocketCallback callback) {
++  if (block_network_) {
++    std::move(callback).Run(net::ERR_NETWORK_ACCESS_REVOKED, std::nullopt);
++    return;
++  }
+   socket_factory_->CreateTCPServerSocket(
+       local_addr, std::move(options),
+       static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
+@@ -2186,6 +2198,12 @@ void NetworkContext::CreateTCPConnectedSocket(
+     mojo::PendingReceiver<mojom::TCPConnectedSocket> receiver,
+     mojo::PendingRemote<mojom::SocketObserver> observer,
+     CreateTCPConnectedSocketCallback callback) {
++  if (block_network_) {
++    std::move(callback).Run(net::ERR_NETWORK_ACCESS_REVOKED, std::nullopt,
++                            std::nullopt, mojo::ScopedDataPipeConsumerHandle(),
++                            mojo::ScopedDataPipeProducerHandle());
++    return;
++  }
+   socket_factory_->CreateTCPConnectedSocket(
+       local_addr, remote_addr_list, std::move(tcp_connected_socket_options),
+       traffic_annotation, std::move(receiver), std::move(observer),
+@@ -2197,6 +2215,10 @@ void NetworkContext::CreateTCPBoundSocket(
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+     mojo::PendingReceiver<mojom::TCPBoundSocket> receiver,
+     CreateTCPBoundSocketCallback callback) {
++  if (block_network_) {
++    std::move(callback).Run(net::ERR_NETWORK_ACCESS_REVOKED, std::nullopt);
++    return;
++  }
+   socket_factory_->CreateTCPBoundSocket(
+       local_addr,
+       static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
+@@ -2205,6 +2227,9 @@ void NetworkContext::CreateTCPBoundSocket(
+ 
+ void NetworkContext::CreateProxyResolvingSocketFactory(
+     mojo::PendingReceiver<mojom::ProxyResolvingSocketFactory> receiver) {
++  if (block_network_) {
++    return;
++  }
+   proxy_resolving_socket_factories_.Add(
+       std::make_unique<ProxyResolvingSocketFactoryMojo>(url_request_context()),
+       std::move(receiver));
+@@ -2340,6 +2365,7 @@ void NetworkContext::ResolveHost(
+                        .GetURL()
+                  : host->get_scheme_host_port().GetURL();
+   bool is_network_disallowed_for_restrictions_id =
++      block_network_ ||
+       (optional_parameters &&
+        optional_parameters->network_restrictions_id.has_value() &&
+        !IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
+@@ -2381,7 +2407,9 @@ void NetworkContext::CreateHostResolver(
+   net::HostResolver* internal_resolver = url_request_context_->host_resolver();
+   std::unique_ptr<net::HostResolver> private_internal_resolver;
+ 
+-  if (config_overrides &&
++  // A standalone resolver would bypass the host mapping rules installed for
++  // a network-blocked context, so ignore any overrides in that case.
++  if (!block_network_ && config_overrides &&
+       config_overrides.value() != net::DnsConfigOverrides()) {
+     // If custom configuration is needed, create a separate internal resolver
+     // with the specified configuration overrides. Because we are using a non-
+@@ -2789,13 +2817,16 @@ void NetworkContext::CreateP2PSocketManager(
+     mojo::PendingReceiver<mojom::P2PTrustedSocketManager>
+         trusted_socket_manager,
+     mojo::PendingReceiver<mojom::P2PSocketManager> socket_manager_receiver) {
++  // Keep the manager bound even when the network is blocked: the renderer's
++  // P2PSocketDispatcher reconnects forever if this pipe is dropped. The
++  // manager refuses every CreateSocket() instead.
+   std::unique_ptr<P2PSocketManager> socket_manager =
+       std::make_unique<P2PSocketManager>(
+           network_anonymization_key, std::move(client),
+           std::move(trusted_socket_manager), std::move(socket_manager_receiver),
+           base::BindRepeating(&NetworkContext::DestroySocketManager,
+                               base::Unretained(this)),
+-          url_request_context_);
++          url_request_context_, /*block_sockets=*/block_network_);
+   socket_managers_[socket_manager.get()] = std::move(socket_manager);
+ }
+ #endif  // BUILDFLAG(IS_P2P_ENABLED)
+@@ -2803,6 +2834,9 @@ void NetworkContext::CreateP2PSocketManager(
+ void NetworkContext::CreateMdnsResponder(
+     mojo::PendingReceiver<mojom::MdnsResponder> responder_receiver) {
+ #if BUILDFLAG(ENABLE_MDNS)
++  if (block_network_) {
++    return;
++  }
+   if (!mdns_responder_manager_) {
+     mdns_responder_manager_ = std::make_unique<MdnsResponderManager>();
+   }
+@@ -3383,7 +3417,12 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+             std::move(network_layer));
+       }));
+ 
+-  if (command_line->HasSwitch(switches::kHostResolverRules)) {
++  if (params_->block_network) {
++    // Fail every host resolution (including IP literals) so that nothing
++    // built directly on the URLRequestContext (cert fetching, reporting,
++    // proxy-resolving sockets, ...) can reach the network.
++    builder.set_host_mapping_rules("MAP * ^NOTFOUND");
++  } else if (command_line->HasSwitch(switches::kHostResolverRules)) {
+     builder.set_host_mapping_rules(
+         command_line->GetSwitchValueASCII(switches::kHostResolverRules));
+   } else if (command_line->HasSwitch(switches::kHostRules)) {
+@@ -4029,6 +4068,10 @@ bool NetworkContext::IsNetworkForNetworkRestrictionsIdAndUrlAllowed(
+     const GURL& url,
+     const net::NetworkAnonymizationKey& network_anonymization_key,
+     bool is_redirect) {
++  if (IsNetworkBlockedForUrl(url)) {
++    return false;
++  }
++
+   if (!base::FeatureList::IsEnabled(network::features::kConnectionAllowlists)) {
+     return true;
+   }
+@@ -4103,6 +4146,10 @@ bool NetworkContext::IsHostResolutionForNetworkRestrictionsIdAndHostAllowed(
+     const base::UnguessableToken& network_restrictions_id,
+     const mojom::HostResolverHost& host,
+     const net::NetworkAnonymizationKey& network_anonymization_key) {
++  if (block_network_) {
++    return false;
++  }
++
+   if (!base::FeatureList::IsEnabled(network::features::kConnectionAllowlists)) {
+     return true;
+   }
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index ae02ecb16e92212719112ac324be9260953f4f2f..c8f492f728603b644b86630fbc4c23e9c285399d 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -744,6 +744,13 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   }
+   bool are_trust_tokens_blocked() const { return block_trust_tokens_; }
+ 
++  // True if `NetworkContextParams::block_network` was set and `url` is not a
++  // local or file scheme, i.e. a request for `url` must not reach the network.
++  bool IsNetworkBlockedForUrl(const GURL& url) const {
++    return block_network_ && !url.SchemeIsLocal() && !url.SchemeIsFile();
++  }
++  bool is_network_blocked() const { return block_network_; }
++
+   WebBundleManager& GetWebBundleManager() { return web_bundle_manager_; }
+ 
+   SharedDictionaryManager* GetSharedDictionaryManager() {
+@@ -1032,6 +1039,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   // PrivacySandboxSettings service.
+   bool block_trust_tokens_ = false;
+ 
++  // Whether all network access is blocked for this context. See
++  // NetworkContextParams::block_network.
++  bool block_network_ = false;
++
+ #if BUILDFLAG(ENABLE_WEBSOCKETS)
+   std::unique_ptr<WebSocketFactory> websocket_factory_;
+ #endif  // BUILDFLAG(ENABLE_WEBSOCKETS)
+diff --git a/services/network/p2p/socket_manager.cc b/services/network/p2p/socket_manager.cc
+index 3a814c12d15be84f0424a8eb071d9acf2d0fb7a7..28fdbec67d52645434a5070bb42dfac557be3477 100644
+--- a/services/network/p2p/socket_manager.cc
++++ b/services/network/p2p/socket_manager.cc
+@@ -172,9 +172,11 @@ P2PSocketManager::P2PSocketManager(
+         trusted_socket_manager_receiver,
+     mojo::PendingReceiver<mojom::P2PSocketManager> socket_manager_receiver,
+     DeleteCallback delete_callback,
+-    net::URLRequestContext* url_request_context)
++    net::URLRequestContext* url_request_context,
++    bool block_sockets)
+     : delete_callback_(std::move(delete_callback)),
+       url_request_context_(url_request_context),
++      block_sockets_(block_sockets),
+       network_anonymization_key_(network_anonymization_key),
+       network_list_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
+           {base::MayBlock(), base::TaskPriority::USER_VISIBLE})),
+@@ -411,6 +413,12 @@ void P2PSocketManager::CreateSocket(
+     const std::optional<base::UnguessableToken>& devtools_token,
+     mojo::PendingRemote<mojom::P2PSocketClient> client,
+     mojo::PendingReceiver<mojom::P2PSocket> receiver) {
++  // Dropping |client| and |receiver| surfaces as OnError() in the renderer's
++  // P2PSocketClientImpl.
++  if (block_sockets_) {
++    return;
++  }
++
+   if (port_range.min_port > port_range.max_port ||
+       (port_range.min_port == 0 && port_range.max_port != 0)) {
+     trusted_socket_manager_client_->InvalidSocketPortRangeRequested();
+diff --git a/services/network/p2p/socket_manager.h b/services/network/p2p/socket_manager.h
+index 5505f0bb01340cc78ecae6708a3e16d809234ba8..b36849f6e1c42af8b6b4bf70d7681210c80c8640 100644
+--- a/services/network/p2p/socket_manager.h
++++ b/services/network/p2p/socket_manager.h
+@@ -77,7 +77,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) P2PSocketManager
+           trusted_socket_manager_receiver,
+       mojo::PendingReceiver<mojom::P2PSocketManager> socket_manager_receiver,
+       DeleteCallback delete_callback,
+-      net::URLRequestContext* url_request_context);
++      net::URLRequestContext* url_request_context,
++      bool block_sockets = false);
+ 
+   P2PSocketManager(const P2PSocketManager&) = delete;
+   P2PSocketManager& operator=(const P2PSocketManager&) = delete;
+@@ -152,6 +153,12 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) P2PSocketManager
+ 
+   DeleteCallback delete_callback_;
+   raw_ptr<net::URLRequestContext> url_request_context_;
++
++  // When set (NetworkContextParams::block_network), CreateSocket() refuses
++  // every request. The manager itself stays bound so that the renderer's
++  // P2PSocketDispatcher does not treat the dropped pipe as a network service
++  // crash and reconnect in a loop.
++  const bool block_sockets_ = false;
+   const net::NetworkAnonymizationKey network_anonymization_key_;
+ 
+   std::unique_ptr<ProxyResolvingClientSocketFactory>
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index e266c2974e6581ec19c401056daea9e60eac60da..88fe8099ddb531df8628eefa73dfe6ff29db9047 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -598,6 +598,14 @@ struct NetworkContextParams {
+   // Is true, Trust Token operations should be blocked.
+   bool block_trust_tokens;
+ 
++  // If true, this context may not open any network connection. URL requests
++  // for non-local schemes, WebSockets, WebTransport sessions, preconnects,
++  // prefetches and host resolutions fail with ERR_NETWORK_ACCESS_REVOKED, and
++  // raw TCP/UDP, proxy-resolving and mDNS interfaces are not bound, and the
++  // P2P (WebRTC) socket manager refuses to create sockets. Local schemes
++  // (file, data, blob, about, filesystem) are unaffected.
++  bool block_network = false;
++
+   // Whether "Compression dictionary transport" feature should be enabled.
+   bool shared_dictionary_enabled = false;
+ 

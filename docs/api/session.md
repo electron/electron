@@ -19,6 +19,73 @@ const ses = win.webContents.session
 console.log(ses.getUserAgent())
 ```
 
+## Offline sessions
+
+A session created with `networkAccess: 'none'` cannot open a network
+connection. The restriction is enforced in the network service for the
+session's own network context, so it covers every path that would otherwise
+reach the network from that session, not just page loads:
+
+* Navigations, subresources, `fetch()`, XHR, beacons, workers and service
+  workers, downloads, prefetches and `<link rel="preconnect">` /
+  `<link rel="dns-prefetch">` hints.
+* WebSockets and WebTransport.
+* WebRTC (`RTCPeerConnection`), including STUN/TURN and host candidates.
+* Host resolution, certificate revocation fetches and reporting uploads.
+* The main-process [`net`](net.md) module and `session` APIs when used with
+  that session: `net.request`, `net.fetch`, `session.fetch`, `net.WebSocket`,
+  `session.resolveHost`, `session.downloadURL`, `webContents.downloadURL` and
+  `session.preconnect`.
+
+Requests fail with `net::ERR_NETWORK_ACCESS_REVOKED` (error code `-33`). The
+session's [`webRequest`](web-request.md) listeners still run first, so a listener
+can redirect a network URL to a bundled `file://` or custom-scheme URL before it
+would be blocked.
+
+Only `http:`, `https:`, `ws:` and `wss:` URLs are network requests. `file://`,
+`data:`, `blob:` and `about:` URLs, extension and DevTools pages, and any
+scheme served by a [`protocol.handle`](protocol.md#protocolhandlescheme-handler)
+or `protocol.registerXxxProtocol` handler of that session keep working. A
+handler that itself fetches from the network through the offline session (for
+example `ses.fetch(request, { bypassCustomProtocolHandlers: true })`) is
+blocked like any other request. Note that [`net.fetch`](net.md#netfetchinput-init)
+uses the default session, so it is only blocked when the default session is
+itself offline.
+
+`networkAccess` only affects Chromium's network stack. Node.js APIs in the main
+process (`http`, `net`, `dns`, ...) are unaffected, and `navigator.onLine`
+still reflects the state of the machine's network.
+
+A few browser-level features do not use the session's network context and are
+therefore **not** blocked by `networkAccess: 'none'`: network-based geolocation
+(`navigator.geolocation`, which may query a geolocation web service) and
+spellcheck dictionary downloads both use the shared system network context. If
+you need those blocked as well, deny the geolocation permission with
+[`session.setPermissionRequestHandler`](#sessetpermissionrequesthandlerhandler)
+and disable the spellchecker with
+[`session.setSpellCheckerEnabled`](#sessetspellcheckerenabledenable).
+
+`networkAccess` is a per-session property, applied only when the session is
+first created; like other session options it is ignored when a `Session` for
+the same partition or path already exists, and creating one with a conflicting
+`networkAccess` value throws. Read [`ses.networkAccess`](#sesnetworkaccess-readonly)
+to check the effective value. Because the restriction is per session, content in
+an offline session can still reach the network through a `<webview>` or a child
+window the app places in a _different_ session, so apps embedding untrusted
+content should keep `webviewTag` disabled or filter
+[`will-attach-webview`](web-contents.md#event-will-attach-webview).
+
+```js
+const { session, BrowserWindow } = require('electron')
+
+const offline = session.fromPartition('offline-viewer', { networkAccess: 'none' })
+offline.protocol.handle('app', (request) => {
+  // serve bundled content
+})
+const win = new BrowserWindow({ webPreferences: { session: offline } })
+win.loadURL('app://index.html')
+```
+
 ## Methods
 
 The `session` module has the following methods:
@@ -27,8 +94,11 @@ The `session` module has the following methods:
 
 * `partition` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+  * `cache` boolean (optional) - Whether to enable cache. Default is `true` unless the
     [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
+  * `networkAccess` string (optional) - Can be `all` or `none`. Default is
+    `all`. `none` creates a fully offline session, see
+    [Offline sessions](#offline-sessions).
 
 Returns `Session` - A session instance from `partition` string. When there is an existing
 `Session` with the same `partition`, it will be returned; otherwise a new
@@ -47,8 +117,11 @@ of an existing `Session` object.
 
 * `path` string
 * `options` Object (optional)
-  * `cache` boolean - Whether to enable cache. Default is `true` unless the
+  * `cache` boolean (optional) - Whether to enable cache. Default is `true` unless the
     [`--disable-http-cache` switch](command-line-switches.md#--disable-http-cache) is used.
+  * `networkAccess` string (optional) - Can be `all` or `none`. Default is
+    `all`. `none` creates a fully offline session, see
+    [Offline sessions](#offline-sessions).
 
 Returns `Session` - A session instance from the absolute path as specified by the `path`
 string. When there is an existing `Session` with the same absolute path, it
@@ -1793,6 +1866,13 @@ A `boolean` indicating whether builtin spell checker is enabled.
 
 A `string | null` indicating the absolute file system path where data for this
 session is persisted on disk.  For in memory sessions this returns `null`.
+
+#### `ses.networkAccess` _Readonly_
+
+A `string` (`'all'` or `'none'`) indicating whether this session can access the
+network. Set with the `networkAccess` option of
+[`session.fromPartition`](#sessionfrompartitionpartition-options) /
+[`session.fromPath`](#sessionfrompathpath-options).
 
 #### `ses.cookies` _Readonly_
 
