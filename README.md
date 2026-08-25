@@ -15,7 +15,7 @@ Follow [@electronjs](https://twitter.com/electronjs) on Twitter for important
 announcements.
 
 This project adheres to the Contributor Covenant
-[code of conduct](https://github.com/electron/electron/tree/main/CODE_OF_CONDUCT.md).
+[code of conduct](CODE_OF_CONDUCT.md).
 By participating, you are expected to uphold this code. Please report unacceptable
 behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
@@ -96,6 +96,6 @@ and more can be found on the [Community page](https://www.electronjs.org/communi
 
 ## License
 
-[MIT](https://github.com/electron/electron/blob/main/LICENSE)
+[MIT](LICENSE)
 
 When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://trademark-policy.openjsf.org/).
