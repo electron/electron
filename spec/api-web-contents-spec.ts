@@ -875,6 +875,28 @@ describe('webContents module', () => {
         await back2;
         expect(w.getTitle()).to.equal('My own Title');
       });
+
+      it('should not update page title if there was no title update and window was created with title on back nav', async () => {
+        // page has no <title> tag to preserve the one from BrowserWindow options
+        const page = `<html><head></head><body>Test</body></html>`;
+        w = new BrowserWindow({ show: false, title: 'Our custom title' });
+
+        const pushed = once(w.webContents, 'did-navigate-in-page');
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+        await w.webContents.executeJavaScript("history.pushState({}, '', '#test')", true);
+        await pushed;
+
+        // we need to wait for both events to make sure all the relevant
+        // code runs for the BaseWindow and title logic
+        const back = once(w.webContents, 'did-navigate-in-page');
+        const titleUpdated = once(w.webContents, 'page-title-updated');
+
+        w.webContents.navigationHistory.goBack();
+
+        await Promise.all([back, titleUpdated]);
+
+        expect(w.getTitle()).to.equal('Our custom title');
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
