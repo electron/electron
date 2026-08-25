@@ -74,7 +74,7 @@ index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index af7cf14a6b153626fb9c7ba8647f68c46975f642..bf7a41c149e89d3cd913eb010450124d3c3a8911 100644
+index 900bf7a3d67245dbbdbe9198671bc4de5093dd52..1c37d60329af852a53f352bfc8c53a37acf34ae1 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -1054,8 +1054,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
