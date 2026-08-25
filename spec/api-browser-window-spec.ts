@@ -11,7 +11,6 @@ import {
   protocol,
   screen,
   webContents,
-  webFrameMain,
   session,
   systemPreferences,
   WebContents,
@@ -890,31 +889,27 @@ describe('BrowserWindow module', () => {
 
         it('can be prevented when navigating subframe', (done) => {
           let willNavigate = false;
-          w.webContents.on(
-            'did-frame-navigate',
-            (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
-              if (isMainFrame) return;
+          w.webContents.on('did-frame-navigate', ({ isMainFrame, frame }) => {
+            if (isMainFrame) return;
+            expect(frame).to.not.be.null();
 
-              w.webContents.once('will-frame-navigate', (e) => {
-                willNavigate = true;
-                e.preventDefault();
-              });
+            w.webContents.once('will-frame-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
 
-              w.webContents.on('did-stop-loading', () => {
-                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-                expect(frame).to.not.be.undefined();
-                if (willNavigate) {
-                  // i.e. it shouldn't have had '?navigated' appended to it.
-                  try {
-                    expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
-                    done();
-                  } catch (e) {
-                    done(e);
-                  }
+            w.webContents.on('did-stop-loading', () => {
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                  done();
+                } catch (e) {
+                  done(e);
                 }
-              });
-            }
-          );
+              }
+            });
+          });
           w.loadURL(
             `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`
           );
@@ -1131,6 +1126,48 @@ describe('BrowserWindow module', () => {
             }
           });
           w.loadURL(`${url}/navigate-302`);
+        });
+      });
+
+      describe('did-navigate event', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        before(async () => {
+          server = http.createServer((req, res) => {
+            res.setHeader('x-single-header', 'single');
+            res.setHeader('x-multi-header', ['multi1', 'multi2']);
+            res.end('');
+          });
+          url = (await listen(server)).url;
+        });
+
+        after(() => {
+          server.close();
+        });
+
+        it('provides navigation details on the did-navigate and did-frame-navigate event objects', async () => {
+          const didFrameNavigate = once(w.webContents, 'did-frame-navigate');
+          const didNavigate = once(w.webContents, 'did-navigate');
+          w.loadURL(url + '/');
+          for (const [event, ...args] of [await didFrameNavigate, await didNavigate]) {
+            expect(event.url).to.equal(url + '/');
+            expect(event.httpResponseCode).to.equal(200);
+            expect(event.httpStatusText).to.equal('OK');
+            expect(event.isMainFrame).to.be.true();
+            expect(event.frame).to.equal(w.webContents.mainFrame);
+            expect(event.responseHeaders['x-single-header']).to.deep.equal(['single']);
+            expect(event.responseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
+            expect(args.slice(0, 3)).to.deep.equal([url + '/', 200, 'OK']);
+          }
+        });
+
+        it('provides empty response headers for non HTTP navigations', async () => {
+          const didNavigate = once(w.webContents, 'did-navigate');
+          w.loadURL('about:blank');
+          const [event] = await didNavigate;
+          expect(event.httpResponseCode).to.equal(-1);
+          expect(event.httpStatusText).to.equal('');
+          expect(event.responseHeaders).to.deep.equal({});
         });
       });
 

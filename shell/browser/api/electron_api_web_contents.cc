@@ -2518,13 +2518,37 @@ void WebContents::DidFinishNavigation(
         http_status_text = http_response->GetStatusText();
         http_response_code = http_response->response_code();
       }
-      Emit("did-frame-navigate", url, http_response_code, http_status_text,
-           is_main_frame, frame_process_id, frame_routing_id);
+
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::Value> response_headers =
+          gin::ConvertToV8(isolate, http_response);
+      auto make_event = [&] {
+        gin_helper::internal::Event* event =
+            gin_helper::internal::Event::New(isolate);
+        v8::Local<v8::Object> event_object =
+            event->GetWrapper(isolate).ToLocalChecked();
+        gin_helper::Dictionary dict(isolate, event_object);
+        dict.Set("url", url);
+        dict.Set("httpResponseCode", http_response_code);
+        dict.Set("httpStatusText", http_status_text);
+        dict.Set("isMainFrame", is_main_frame);
+        dict.SetGetter("frame", frame_host);
+        dict.Set("responseHeaders", response_headers);
+        return event_object;
+      };
+
+      // The positional arguments are deprecated. web-contents.ts re-emits
+      // these as the public events and warns when a listener uses them.
+      EmitWithoutEvent("-did-frame-navigate", make_event(), url,
+                       http_response_code, http_status_text, is_main_frame,
+                       frame_process_id, frame_routing_id);
       if (is_main_frame) {
         // Ensure zoom is updated before JS handlers see the event.
         if (auto* zc = GetZoomController())
           zc->ProcessNavigationZoom(navigation_handle);
-        Emit("did-navigate", url, http_response_code, http_status_text);
+        EmitWithoutEvent("-did-navigate", make_event(), url, http_response_code,
+                         http_status_text);
       }
     }
 
