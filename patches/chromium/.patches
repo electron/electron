@@ -168,3 +168,9 @@ chore_let_the_embedder_handle_shared_d-bus_disconnects.patch
 remove_cr_xcode_build_define_from_build_gn.patch
 fix_wayland_window_stuck_maximized_after_early_maximize.patch
 fix_register_the_spare_renderer_before_initializing_it.patch
+cherry-pick-5502405663.patch
+cherry-pick-6ab740c157.patch
+cherry-pick-1a6dd962ff.patch
+cherry-pick-79fa2fbc21.patch
+cherry-pick-27cdb66ce2.patch
+cherry-pick-506c834ecc.patch

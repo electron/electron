@@ -1,0 +1,481 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Fri, 21 Aug 2026 13:22:36 -0700
+Subject: [M152] [Extensions] Disallow error documents from spoofing
+ permissions
+
+Original change's description:
+> [Extensions] Disallow error documents from spoofing permissions
+>
+> When a navigation fails and commits an error page
+> (chrome-error://chromewebdata/), RenderFrameHost::GetLastCommittedURL()
+> returns the failed destination target URL rather than the error page
+> URL. Previously, several extension permission, messaging, and
+> capability checks inspected GetLastCommittedURL() on RenderFrameHost or
+> WebContents without checking whether the frame was displaying an error
+> document. This allowed compromised renderers hosting an error page to
+> spoof permissions or content-script identity for the failed destination
+> target URL.
+>
+> With this change, error documents are explicitly filtered out during
+> extension permission and access checks, returning an empty GURL instead
+> of the failed destination target URL. Error pages can no longer claim
+> permissions, receive activeTab grants, connect to externally_connectable
+> extensions, or spoof declarativeContent script injection identities.
+>
+> To accomplish this, we:
+> 1. Introduced util::GetURLForExtensionPermissionCheck(RenderFrameHost*)
+>    in extension_util.h/.cc which returns an empty GURL if the frame is
+>    null, uncommitted, or displaying an error document.
+> 2. Updated BrowserFrameContextData::GetUrl() to delegate to
+>    GetURLForExtensionPermissionCheck().
+> 3. Migrated permission check call sites across declarativeContent,
+>    messaging, activeTab, host access requests, site permissions helper,
+>    and webRequest embedders.
+> 4. Added comprehensive unit tests in extension_util_unittest.cc and
+>    browser_frame_context_data_unittest.cc.
+>
+> TAG=agy
+> CONV=2b4b4118-cfbd-484a-abc2-16a733f5218e
+>
+> Fixed: 540870921, 535876894
+> Change-Id: Ia47199c56c8ae9855e45e0c545fde141573bf64b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8246242
+> Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+> Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+> Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+> Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1682524}
+
+(cherry picked from commit ac5658b6d7bb7ca9417f636dc83b09d226a0a2ec)
+
+Bug: 549535546,540870921,535876894
+Change-Id: Ia47199c56c8ae9855e45e0c545fde141573bf64b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8279014
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#1871}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/chrome/browser/extensions/api/declarative_content/content_action.cc b/chrome/browser/extensions/api/declarative_content/content_action.cc
+index 85cd204f06d4cb818e54a400207397af73e5fb2a..fed023ba0918ab7636539af3021d0b5eff1991a7 100644
+--- a/chrome/browser/extensions/api/declarative_content/content_action.cc
++++ b/chrome/browser/extensions/api/declarative_content/content_action.cc
+@@ -18,11 +18,13 @@
+ #include "chrome/browser/profiles/profile.h"
+ #include "components/sessions/content/session_tab_helper.h"
+ #include "content/public/browser/invalidate_type.h"
++#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/web_contents.h"
+ #include "extensions/browser/extension_action.h"
+ #include "extensions/browser/extension_action_manager.h"
+ #include "extensions/browser/extension_system.h"
+ #include "extensions/browser/extension_user_script_loader.h"
++#include "extensions/browser/extension_util.h"
+ #include "extensions/browser/extension_web_contents_observer.h"
+ #include "extensions/browser/icon_util.h"
+ #include "extensions/browser/script_injection_tracker.h"
+@@ -381,27 +383,27 @@ void RequestContentScript::InstructRenderProcessToInject(
+   // `extensions::mojom::LocalFrameHost::WatchedPageChange` IPC bypassing the
+   // check we have for an invalid selector and getting here).
+   std::string error;
++  content::RenderFrameHost* main_frame = contents->GetPrimaryMainFrame();
++  const GURL& url = util::GetURLForExtensionPermissionCheck(main_frame);
+   if (!extension->permissions_data()->CanAccessPage(
+-          contents->GetLastCommittedURL(), ExtensionTabUtil::GetTabId(contents),
+-          &error)) {
++          url, ExtensionTabUtil::GetTabId(contents), &error)) {
+     return;
+   }
+ 
+-  ScriptInjectionTracker::WillExecuteCode(base::PassKey<RequestContentScript>(),
+-                                          contents->GetPrimaryMainFrame(),
+-                                          *extension);
+-
+   mojom::LocalFrame* local_frame =
+       ExtensionWebContentsObserver::GetForWebContents(contents)->GetLocalFrame(
+-          contents->GetPrimaryMainFrame());
++          main_frame);
+   if (!local_frame) {
+     // TODO(crbug.com/40763607): Need to review when this method is
+     // called with non-live frame.
+     return;
+   }
++
++  ScriptInjectionTracker::WillExecuteCode(base::PassKey<RequestContentScript>(),
++                                          main_frame, *extension);
+   local_frame->ExecuteDeclarativeScript(
+       sessions::SessionTabHelper::IdForTab(contents).id(), extension->id(),
+-      script_.id(), contents->GetLastCommittedURL());
++      script_.id(), url);
+ }
+ 
+ void RequestContentScript::OnScriptsLoaded(
+diff --git a/content/public/browser/render_frame_host.h b/content/public/browser/render_frame_host.h
+index f3f86745e4f845ac23312f44627e3797c15daa7b..5cdf53c7cb9f43c367f1e82e276c35c9928601c0 100644
+--- a/content/public/browser/render_frame_host.h
++++ b/content/public/browser/render_frame_host.h
+@@ -527,6 +527,15 @@ class CONTENT_EXPORT RenderFrameHost : public IPC::Listener {
+   // Note that this does not reflect navigations in other RenderFrameHosts,
+   // frames, or pages within the same WebContents, so it may differ from
+   // NavigationController::GetLastCommittedEntry().
++  //
++  // Note: When a navigation fails and commits an error page (e.g.
++  // `chrome-error://chromewebdata/`), `GetLastCommittedURL()` continues to
++  // return the failed destination target URL rather than an error URL.
++  // Therefore, this should not be used directly for security, authorization,
++  // or permission checks without verifying `!IsErrorDocument()`.
++  // Higher-level layers (such as extensions) should use their dedicated
++  // permission-check URL helper (e.g.,
++  // `extensions::util::GetURLForExtensionPermissionCheck()`).
+   virtual const GURL& GetLastCommittedURL() const = 0;
+ 
+   // Returns the last committed origin of this RenderFrameHost.
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index 8beacf747f5eac020bbc50e04535f04bb0b98b07..d36bb54119db9904a1740325429f926c0130a60f 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -504,6 +504,16 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+   // See also GetVisibleURL above, which may differ from this URL. Note that
+   // this might return an empty GURL if no navigation has committed in the
+   // WebContents' main frame.
++  //
++  // Note: When a navigation fails and commits an error page (e.g.
++  // `chrome-error://chromewebdata/`), `GetLastCommittedURL()` continues to
++  // return the failed destination target URL rather than an error URL.
++  // Therefore, this should not be used directly for security, authorization,
++  // or permission checks without verifying that the primary main frame is not
++  // an error document (`!GetPrimaryMainFrame()->IsErrorDocument()`).
++  // Higher-level layers (such as extensions) should use their dedicated
++  // permission-check URL helper (e.g.,
++  // `extensions::util::GetURLForExtensionPermissionCheck()`).
+   virtual const GURL& GetLastCommittedURL() const = 0;
+ 
+   // Returns the primary main frame for the currently active page. Always
+diff --git a/extensions/browser/api/messaging/message_service.cc b/extensions/browser/api/messaging/message_service.cc
+index 7580b86fd1d810792cebfc8793fdeb757fae852f..c66193b461b100dec69ede2af2164a68687f79de 100644
+--- a/extensions/browser/api/messaging/message_service.cc
++++ b/extensions/browser/api/messaging/message_service.cc
+@@ -547,10 +547,8 @@ void MessageService::OpenChannelToExtension(
+         // Check that the web page URL matches. Skip error pages, whose last
+         // committed URL reflects the failed navigation target rather than a
+         // document the source process actually hosts.
+-        is_externally_connectable =
+-            !source_render_frame_host->IsErrorDocument() &&
+-            externally_connectable->matches.MatchesURL(
+-                source_render_frame_host->GetLastCommittedURL());
++        is_externally_connectable = externally_connectable->matches.MatchesURL(
++            util::GetURLForExtensionPermissionCheck(source_render_frame_host));
+       }
+     } else {
+       // Default behaviour. Any extension or content script, no webpages.
+diff --git a/extensions/browser/api/web_request/web_request_api.cc b/extensions/browser/api/web_request/web_request_api.cc
+index b81ac840ec422c54925f8b4152b88b636597e747..c7d9f0fe8d5e5f302db52e4358d98c16b8d5ca8f 100644
+--- a/extensions/browser/api/web_request/web_request_api.cc
++++ b/extensions/browser/api/web_request/web_request_api.cc
+@@ -1064,7 +1064,8 @@ bool WebRequestAPI::IsAvailableToWebViewEmbedderWebUIFrame(
+       render_frame_host->GetBrowserContext();
+   content::RenderFrameHost* embedder_frame =
+       render_frame_host->GetOutermostMainFrameOrEmbedder();
+-  const auto& embedder_url = embedder_frame->GetLastCommittedURL();
++  const GURL& embedder_url =
++      util::GetURLForExtensionPermissionCheck(embedder_frame);
+   // TODO(crbug.com/40288053): Remove the scheme check once we're sure
+   // that WebUIs with WebView run in real WebUI processes and check the
+   // context type using |IsAvailableToWebViewEmbedderWebPageFrame()| below.
+@@ -1125,7 +1126,8 @@ bool WebRequestAPI::IsAvailableToWebViewEmbedderWebPageFrame(
+   Feature::Availability availability =
+       ExtensionAPI::GetSharedInstance()->IsAvailable(
+           "webRequestInternal", /*extension=*/nullptr,
+-          mojom::ContextType::kWebPage, embedder_frame->GetLastCommittedURL(),
++          mojom::ContextType::kWebPage,
++          util::GetURLForExtensionPermissionCheck(embedder_frame),
+           CheckAliasStatus::ALLOWED, util::GetBrowserContextId(browser_context),
+           BrowserFrameContextData(embedder_frame));
+   return availability.is_available();
+diff --git a/extensions/browser/browser_frame_context_data.cc b/extensions/browser/browser_frame_context_data.cc
+index 3260341c6bf3bcefc3e4cd0a92fc3cf7cc83af34..a3fc381229ba51e5b712efff41d8db71b5ee5943 100644
+--- a/extensions/browser/browser_frame_context_data.cc
++++ b/extensions/browser/browser_frame_context_data.cc
+@@ -10,6 +10,7 @@
+ #include "content/public/browser/isolated_web_apps_policy.h"
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/web_contents.h"
++#include "extensions/browser/extension_util.h"
+ #include "extensions/browser/extensions_browser_client.h"
+ #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-shared.h"
+ 
+@@ -66,7 +67,7 @@ GURL BrowserFrameContextData::GetUrl() const {
+     // document's URL about:blank instead of empty in that case.
+     return GURL(url::kAboutBlankURL);
+   }
+-  return frame_->GetLastCommittedURL();
++  return util::GetURLForExtensionPermissionCheck(frame_);
+ }
+ 
+ url::Origin BrowserFrameContextData::GetOrigin() const {
+diff --git a/extensions/browser/browser_frame_context_data_unittest.cc b/extensions/browser/browser_frame_context_data_unittest.cc
+index cd2b4efa6e54a2442ed6e48d0223ff69306a3595..b13c930f3ccab317db9a233fae51dabdbf82a216 100644
+--- a/extensions/browser/browser_frame_context_data_unittest.cc
++++ b/extensions/browser/browser_frame_context_data_unittest.cc
+@@ -5,11 +5,16 @@
+ #include "extensions/browser/browser_frame_context_data.h"
+ 
+ #include <memory>
++
+ #include "base/memory/scoped_refptr.h"
++#include "content/public/browser/navigation_handle.h"
++#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/site_instance.h"
+ #include "content/public/browser/web_contents.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/web_contents_tester.h"
+ #include "extensions/browser/extensions_test.h"
++#include "net/base/net_errors.h"
+ #include "url/origin.h"
+ #include "url/url_constants.h"
+ 
+@@ -134,4 +139,58 @@ TEST_F(BrowserFrameContextDataTest, UrlAndOriginGetters) {
+   }
+ }
+ 
++// Verifies that `BrowserFrameContextData::GetUrl()`:
++// - Returns the committed `GURL` for valid committed documents.
++// - Returns an empty `GURL` for error documents.
++// - Returns `about:blank` for uncommitted initial frames.
++// - Safely inspects frames in
++//   `content::RenderFrameHost::LifecycleState::kPendingCommit` without
++//   triggering frame lifecycle check failure assertions.
++TEST_F(BrowserFrameContextDataTest,
++       GetUrl_ErrorDocumentsAndPendingNavigations) {
++  // Verify that an error document returns an empty `GURL` instead of the
++  // failed destination target URL.
++  {
++    auto site_instance = content::SiteInstance::Create(browser_context());
++    auto web_contents = content::WebContentsTester::CreateTestWebContents(
++        browser_context(), site_instance);
++    const GURL kFailedUrl("https://example.com/error.html");
++    content::NavigationSimulator::NavigateAndFailFromBrowser(
++        web_contents.get(), kFailedUrl, net::ERR_FAILED);
++
++    auto* rfh = GetRenderFrameHost(web_contents.get());
++    ASSERT_TRUE(rfh->IsErrorDocument());
++
++    BrowserFrameContextData data(rfh);
++    EXPECT_TRUE(data.GetUrl().is_empty());
++  }
++
++  // Simulate an uncommitted cross-site navigation reaching `ReadyToCommit` to
++  // verify that `BrowserFrameContextData::GetUrl()` safely handles a frame in
++  // `content::RenderFrameHost::LifecycleState::kPendingCommit` without
++  // triggering assertion crashes.
++  {
++    auto site_instance = content::SiteInstance::Create(browser_context());
++    auto web_contents = content::WebContentsTester::CreateTestWebContents(
++        browser_context(), site_instance);
++    const GURL kInitialUrl("https://example.com/initial.html");
++    content::NavigationSimulator::NavigateAndCommitFromBrowser(
++        web_contents.get(), kInitialUrl);
++
++    const GURL kCrossSiteUrl("https://other-site.com/pending.html");
++    auto navigation = content::NavigationSimulator::CreateBrowserInitiated(
++        kCrossSiteUrl, web_contents.get());
++    navigation->ReadyToCommit();
++
++    content::RenderFrameHost* pending_rfh =
++        navigation->GetNavigationHandle()->GetRenderFrameHost();
++    ASSERT_TRUE(pending_rfh);
++    EXPECT_TRUE(pending_rfh->IsInLifecycleState(
++        content::RenderFrameHost::LifecycleState::kPendingCommit));
++
++    BrowserFrameContextData data(pending_rfh);
++    EXPECT_EQ(data.GetUrl(), GURL(url::kAboutBlankURL));
++  }
++}
++
+ }  // namespace extensions
+diff --git a/extensions/browser/extension_util.cc b/extensions/browser/extension_util.cc
+index 88d615a48404f8e4a33cf593825b61c7892fd54d..d934b8791f88eb1e4b24f5208be9c3fa39c06c62 100644
+--- a/extensions/browser/extension_util.cc
++++ b/extensions/browser/extension_util.cc
+@@ -16,6 +16,7 @@
+ #include "components/user_prefs/user_prefs.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/child_process_security_policy.h"
++#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/security_principal.h"
+ #include "content/public/browser/site_instance.h"
+ #include "content/public/browser/storage_partition.h"
+@@ -587,4 +588,17 @@ bool IsExtensionDownload(const download::DownloadItem& download_item) {
+   return false;
+ }
+ 
++const GURL& GetURLForExtensionPermissionCheck(content::RenderFrameHost* rfh) {
++  // Avoid `CHECK_NE(lifecycle_state(), LifecycleStateImpl::kSpeculative)` in
++  // `content::RenderFrameHost::IsErrorDocument()` by checking for an empty
++  // `GURL` first.
++  if (!rfh || rfh->GetLastCommittedURL().is_empty()) {
++    return GURL::EmptyGURL();
++  }
++  if (rfh->IsErrorDocument()) {
++    return GURL::EmptyGURL();
++  }
++  return rfh->GetLastCommittedURL();
++}
++
+ }  // namespace extensions::util
+diff --git a/extensions/browser/extension_util.h b/extensions/browser/extension_util.h
+index e058d52860a1ee81bb13e5d1831c7f0c79fb105a..c3bf25fc34e102fd5708617577d21b0b2db2d6bc 100644
+--- a/extensions/browser/extension_util.h
++++ b/extensions/browser/extension_util.h
+@@ -8,7 +8,6 @@
+ #include <string>
+ #include <vector>
+ 
+-#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/render_process_host.h"
+ #include "content/public/common/child_process_id.h"
+ #include "extensions/buildflags/buildflags.h"
+@@ -185,6 +184,16 @@ bool AnyCurrentlyInstalledExtensionIsFromWebstore(
+ // scripts to be extension downloads, since we convert those automatically.
+ bool IsExtensionDownload(const download::DownloadItem& download_item);
+ 
++// Returns the last committed `GURL` of `rfh` for extension permission and
++// authorization checks. Returns an empty `GURL` if:
++// - `rfh` is null,
++// - `rfh` has an empty committed `GURL`, or
++// - `rfh` is displaying an error document.
++//
++// For tab-level or `content::WebContents`-level checks, pass the primary main
++// frame (e.g. `web_contents->GetPrimaryMainFrame()`).
++const GURL& GetURLForExtensionPermissionCheck(content::RenderFrameHost* rfh);
++
+ }  // namespace util
+ }  // namespace extensions
+ 
+diff --git a/extensions/browser/extension_util_unittest.cc b/extensions/browser/extension_util_unittest.cc
+index c31bd0e619d6f802acb602b5172bf5f233d93f5a..5474520d83df025782e2ea62d3906ab37153b424 100644
+--- a/extensions/browser/extension_util_unittest.cc
++++ b/extensions/browser/extension_util_unittest.cc
+@@ -8,14 +8,21 @@
+ #include "base/path_service.h"
+ #include "base/strings/strcat.h"
+ #include "build/android_buildflags.h"
++#include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/site_instance.h"
++#include "content/public/browser/web_contents.h"
+ #include "content/public/common/url_constants.h"
+ #include "content/public/test/browser_task_environment.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/test_browser_context.h"
+ #include "content/public/test/test_content_client_initializer.h"
++#include "content/public/test/test_renderer_host.h"
++#include "content/public/test/web_contents_tester.h"
++#include "extensions/browser/extensions_test.h"
+ #include "extensions/common/extension_builder.h"
+ #include "extensions/common/extension_paths.h"
+ #include "extensions/common/extension_set.h"
++#include "net/base/net_errors.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "url/url_constants.h"
+ 
+@@ -103,4 +110,98 @@ TEST(ExtensionUtilTest, MAYBE_ExtensionIdForSiteInstance) {
+   EXPECT_EQ("", util::GetExtensionIdForSiteInstance(*https_site_instance));
+ }
+ 
++// Verifies that `util::GetURLForExtensionPermissionCheck` returns an empty
++// `GURL` when passed a null `content::RenderFrameHost*`.
++TEST_F(ExtensionsTest, GetURLForExtensionPermissionCheck_Null) {
++  content::RenderFrameHost* null_rfh = nullptr;
++  EXPECT_TRUE(util::GetURLForExtensionPermissionCheck(null_rfh).is_empty());
++}
++
++// Verifies that `util::GetURLForExtensionPermissionCheck` returns an empty
++// `GURL` when passed an uncommitted initial frame.
++TEST_F(ExtensionsTest, GetURLForExtensionPermissionCheck_Uncommitted) {
++  std::unique_ptr<content::WebContents> web_contents =
++      content::WebContentsTester::CreateTestWebContents(browser_context(),
++                                                        /*instance=*/nullptr);
++  content::RenderFrameHost* main_rfh = web_contents->GetPrimaryMainFrame();
++  EXPECT_TRUE(util::GetURLForExtensionPermissionCheck(main_rfh).is_empty());
++}
++
++// Verifies that `util::GetURLForExtensionPermissionCheck` returns the committed
++// `GURL` for a valid main frame navigation, and returns an empty `GURL` when
++// the main frame fails to navigate and commits an error document.
++TEST_F(ExtensionsTest, GetURLForExtensionPermissionCheck_MainFrame) {
++  // Create a test `content::WebContents`.
++  std::unique_ptr<content::WebContents> web_contents =
++      content::WebContentsTester::CreateTestWebContents(browser_context(),
++                                                        /*instance=*/nullptr);
++  content::RenderFrameHost* main_rfh = web_contents->GetPrimaryMainFrame();
++
++  // Simulate a successful navigation to a valid webpage in the main frame.
++  const GURL kValidUrl("https://example.com/page.html");
++  content::NavigationSimulator::NavigateAndCommitFromBrowser(web_contents.get(),
++                                                             kValidUrl);
++
++  // Verify that a committed valid navigation in the main frame returns the
++  // committed `GURL`.
++  EXPECT_EQ(kValidUrl, util::GetURLForExtensionPermissionCheck(main_rfh));
++
++  // Simulate a failed navigation in the main frame resulting in a top-level
++  // error document.
++  const GURL kFailedUrl("https://example.com/error.html");
++  content::RenderFrameHost* error_rfh =
++      content::NavigationSimulator::NavigateAndFailFromBrowser(
++          web_contents.get(), kFailedUrl, net::ERR_FAILED);
++  ASSERT_TRUE(error_rfh);
++
++  // Verify that a top-level error document returns an empty `GURL` instead of
++  // the failed destination target URL.
++  EXPECT_TRUE(util::GetURLForExtensionPermissionCheck(error_rfh).is_empty());
++}
++
++// Verifies that `util::GetURLForExtensionPermissionCheck` returns the committed
++// `GURL` for a valid child subframe, returns an empty `GURL` for an uncommitted
++// child subframe, and returns an empty `GURL` when the child subframe fails to
++// navigate and commits a subframe error document.
++TEST_F(ExtensionsTest, GetURLForExtensionPermissionCheck_Subframe) {
++  // Create a test `content::WebContents` with a committed main frame.
++  std::unique_ptr<content::WebContents> web_contents =
++      content::WebContentsTester::CreateTestWebContents(browser_context(),
++                                                        /*instance=*/nullptr);
++  const GURL kParentUrl("https://example.com/parent.html");
++  content::NavigationSimulator::NavigateAndCommitFromBrowser(web_contents.get(),
++                                                             kParentUrl);
++  content::RenderFrameHost* main_rfh = web_contents->GetPrimaryMainFrame();
++
++  // Create a child subframe inside the main frame.
++  content::RenderFrameHost* child_rfh =
++      content::RenderFrameHostTester::For(main_rfh)->AppendChild("child_frame");
++  ASSERT_TRUE(child_rfh);
++
++  // Verify that an uncommitted child subframe returns an empty `GURL`.
++  EXPECT_TRUE(util::GetURLForExtensionPermissionCheck(child_rfh).is_empty());
++
++  // Simulate a successful committed navigation in the child subframe.
++  const GURL kValidChildUrl("https://example.com/child.html");
++  content::NavigationSimulator::NavigateAndCommitFromDocument(kValidChildUrl,
++                                                              child_rfh);
++
++  // Verify that a committed valid navigation in the child subframe returns the
++  // child subframe's committed `GURL`.
++  EXPECT_EQ(kValidChildUrl, util::GetURLForExtensionPermissionCheck(child_rfh));
++
++  // Simulate a failed navigation in the child subframe resulting in a subframe
++  // error document.
++  const GURL kFailedChildUrl("https://example.com/child_error.html");
++  content::RenderFrameHost* error_child_rfh =
++      content::NavigationSimulator::NavigateAndFailFromDocument(
++          kFailedChildUrl, net::ERR_FAILED, child_rfh);
++  ASSERT_TRUE(error_child_rfh);
++
++  // Verify that a child subframe error document returns an empty `GURL` instead
++  // of the failed child navigation target URL.
++  EXPECT_TRUE(
++      util::GetURLForExtensionPermissionCheck(error_child_rfh).is_empty());
++}
++
+ }  // namespace extensions
