@@ -597,6 +597,8 @@ describe('command line switches', () => {
     it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should set the locale with country code', async () =>
       testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should resolve a locale whose country code is not shipped', async () =>
+      testLocale('de-DE', `de|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should not set an invalid locale', async () =>
       testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
 
