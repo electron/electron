@@ -9,7 +9,7 @@ capability to switch the microtask polciy of these per context microtask queue t
 Node.js integration in the renderer.
 
 diff --git a/include/v8-microtask-queue.h b/include/v8-microtask-queue.h
-index b99a734aa6f6a539457d7bb54c6c152b57effcfd..c22c1975dc5e7378ffe31d0cc0d90eac331a1299 100644
+index 6c0fd73921478e9e7af176d19af047bde6cce4c3..9a1cb493e3ae704e8611c937eaeb373bebfdc469 100644
 --- a/include/v8-microtask-queue.h
 +++ b/include/v8-microtask-queue.h
 @@ -121,6 +121,9 @@ class V8_EXPORT MicrotaskQueue
@@ -23,10 +23,10 @@ index b99a734aa6f6a539457d7bb54c6c152b57effcfd..c22c1975dc5e7378ffe31d0cc0d90eac
    MicrotaskQueue& operator=(const MicrotaskQueue&) = delete;
  
 diff --git a/src/execution/microtask-queue.h b/src/execution/microtask-queue.h
-index ef643a9a3c6e79763962058d7f0f75eab44392d5..b9ddea8c29d94d9795c5adf0a5dc0982da6aeea3 100644
+index becdf0e0d51ff4d7fdcce24d2fba0fc2171ef1ce..d458a80ccfd327b749d3378009a3129831d143da 100644
 --- a/src/execution/microtask-queue.h
 +++ b/src/execution/microtask-queue.h
-@@ -115,10 +115,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
+@@ -112,10 +112,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
    }
  #endif
  

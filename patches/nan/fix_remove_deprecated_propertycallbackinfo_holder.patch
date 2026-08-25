@@ -9,19 +9,6 @@ Property interceptors should be migrated to use info.This if they are installed
 on the object instance otherwise info.HolderV2 if they are installed on the
 prototype chain.
 
-diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index ff3b654de5bcc7a187c4361b9eec26ea4b62a1eb..e40383c095ab329b2e20b7e68ade507788a79fb6 100644
---- a/nan_callbacks_12_inl.h
-+++ b/nan_callbacks_12_inl.h
-@@ -160,7 +160,7 @@ class PropertyCallbackInfo {
-   inline v8::Isolate* GetIsolate() const { return info_.GetIsolate(); }
-   inline v8::Local<v8::Value> Data() const { return data_; }
-   inline v8::Local<v8::Object> This() const { return info_.This(); }
--  inline v8::Local<v8::Object> Holder() const { return info_.Holder(); }
-+  inline v8::Local<v8::Object> Holder() const { return info_.HolderV2(); }
-   inline ReturnValue<T> GetReturnValue() const {
-     return ReturnValue<T>(info_.GetReturnValue());
-   }
 diff --git a/test/cpp/accessors.cpp b/test/cpp/accessors.cpp
 index 5848a40920c35680360a9d8b1390e983c6896996..e8506e4727e707ca766fe1b4229272ba18864ae0 100644
 --- a/test/cpp/accessors.cpp

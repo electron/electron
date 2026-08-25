@@ -12,7 +12,73 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (45.0)
+
+### Behavior Changed: screen capture requests are reported as `display-capture` in `setPermissionRequestHandler`
+
+Requests to capture the screen, a window or a tab -- made through
+`navigator.mediaDevices.getDisplayMedia()` or through `getUserMedia()` with the
+`chromeMediaSource` / `chromeMediaSourceId` constraints used with
+[`desktopCapturer`](api/desktop-capturer.md) -- are now passed to
+[`session.setPermissionRequestHandler`](api/session.md#sessetpermissionrequesthandlerhandler)
+with the documented `display-capture` permission. Previously they were reported as
+`media` with an empty `details.mediaTypes` array, indistinguishable from a camera
+or microphone request other than by that empty array. `media` is now only used for
+camera and microphone devices.
+
+Applications with a permission request handler that grants `media` and denies
+everything else must also grant `display-capture` to keep screen sharing working:
+
+```js
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'media' || permission === 'display-capture') {
+    return callback(true)
+  }
+  callback(false)
+})
+```
+
+For `display-capture` requests, `details.mediaTypes` now lists `video` and/or
+`audio` to indicate whether display video and/or display audio was requested.
+The `setDisplayMediaRequestHandler` flow for `getDisplayMedia()` is unchanged and
+still runs after the permission request has been granted.
+
+The [`display-capture` Permissions-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Permissions-Policy/display-capture)
+is now also applied to `getUserMedia()` calls that use the `chromeMediaSource`
+constraints, matching `getDisplayMedia()`. Its default allowlist is `self`, so a
+cross-origin `<iframe>` that captures the screen this way now needs
+`allow="display-capture"` on the iframe element.
+
+### Default Changed: `document.requestStorageAccessFor` is disabled
+
+Chromium has disabled `document.requestStorageAccessFor` by default ahead of
+its removal. The API can temporarily be restored with the
+[`enableBlinkFeatures`](api/structures/web-preferences.md) web preference set to
+`RequestStorageAccessFor`. See
+[Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
+for more information.
+
 ## Planned Breaking API Changes (44.0)
+
+### Behavior Changed: file descriptors for files inside ASAR archives are only usable through `fs`
+
+`fs.open`, `fs.openSync` and `fs.promises.open` on a file inside an ASAR archive
+used to extract the file to a temporary copy and return a descriptor for that
+copy. They now return a descriptor that only identifies the entry to Node's
+`fs` module, which reads directly out of the archive with no temporary file
+(`fs.read`, `fs.readv`, `fs.fstat`, `fs.readFile(fd)`, `fs.createReadStream`
+and the `FileHandle` methods). The descriptor itself is not backed by the
+file's contents: code that reads the raw descriptor (a native addon,
+`child_process` `stdio`, `net.Socket({ fd })`,
+`http2stream.respondWithFile()` / `respondWithFD()`, a `FileHandle`
+transferred to a worker, ...) fails with `EBADF` and is not supported.
+Opening a file inside an archive with a flag that allows writing (`w`, `a`,
+`r+`, ...) now fails with `EACCES` instead of silently writing to the
+temporary copy, and `fs.fchmod`, `fs.fchown` and `fs.futimes` on these
+descriptors fail with `EACCES`.
+
+`fs.stat` on a symbolic link inside an archive now follows the link like it
+does on a real filesystem (`fs.lstat` still describes the link itself).
 
 ### Behavior Changed: `window.open()` children of unsandboxed windows get their own sandboxed process
 

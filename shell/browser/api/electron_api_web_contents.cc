@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/auto_reset.h"
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
@@ -469,6 +470,8 @@ constexpr char kMediaSize[] = "mediaSize";
 constexpr char kDpi[] = "dpi";
 constexpr char kMarginType[] = "marginType";
 constexpr char kMargins[] = "margins";
+constexpr char kPrintBackground[] = "printBackground";
+constexpr char kDuplexMode[] = "duplexMode";
 
 constexpr char kDpiHorizontal[] = "horizontal";
 constexpr char kDpiVertical[] = "vertical";
@@ -1005,6 +1008,9 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     params.enable_wake_locks = !disable_wake_locks;
+    base::AutoReset<bool> reset(
+        ElectronBrowserClient::Get()->spare_renderer_compatible(),
+        RendererProcessPreferences::From(options).CanUseSpareRenderer());
     web_contents = content::WebContents::Create(params);
   }
 
@@ -1313,6 +1319,8 @@ void WebContents::OnDidAddMessageToConsole(
     int32_t line_no,
     const std::u16string& source_id,
     const std::optional<std::u16string>& untrusted_stack_trace) {
+  if (!console_message_observed_)
+    return;
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -3611,9 +3619,11 @@ void WebContents::Print(gin::Arguments* const args) {
   // Set optional silent printing.
   settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
 
-  settings.Set(
-      printing::kSettingShouldPrintBackgrounds,
-      options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds, false));
+  settings.Set(printing::kSettingShouldPrintBackgrounds,
+               options.ValueOrDefault(
+                   kPrintBackground,
+                   options.ValueOrDefault(
+                       printing::kSettingShouldPrintBackgrounds, false)));
 
   // Set custom margin settings
   auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -3718,7 +3728,9 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Duplex type user wants to use.
   const auto duplex_mode = options.ValueOrDefault(
-      printing::kSettingDuplexMode, printing::mojom::DuplexMode::kSimplex);
+      kDuplexMode,
+      options.ValueOrDefault(printing::kSettingDuplexMode,
+                             printing::mojom::DuplexMode::kUnknownDuplexMode));
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   // Set custom media size if passed. If none is passed, the media size
@@ -4948,6 +4960,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("clone", &WebContents::Clone)
+      .SetMethod("_setConsoleMessageObserved",
+                 &WebContents::SetConsoleMessageObserved)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)

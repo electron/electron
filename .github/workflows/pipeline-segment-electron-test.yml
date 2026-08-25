@@ -259,11 +259,13 @@ jobs:
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
+        if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
+        if [ -f xcache.zip ]; then unzip -:o xcache.zip electron_xcache; fi
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |

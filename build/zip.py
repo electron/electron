@@ -76,7 +76,9 @@ def skip_path(dep, dist_zip, target_cpu):
       "arm" in target_cpu
       and dist_zip == "mksnapshot.zip"
       and "snapshot_blob.bin" in candidates
-    )
+    ) or
+    # electron_xcache links V8 but is always handed the target's blob.
+    (dist_zip == "xcache.zip" and "snapshot_blob.bin" in candidates)
   )
   if should_skip and os.environ.get('ELECTRON_DEBUG_ZIP_SKIP') == '1':
     print("Skipping {}".format(dep))

@@ -17,7 +17,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
-#include "gin/public/gin_embedders.h"
+#include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/uv_includes.h"
 #include "v8/include/v8-forward.h"
 
@@ -223,7 +223,7 @@ class NodeBindings {
   // and thus unlikely to collide with an existing index.
   static constexpr int kElectronContextEmbedderDataIndex =
       static_cast<int>(gin::kPerContextDataStartIndex) +
-      static_cast<int>(gin::kEmbedderElectron);
+      static_cast<int>(kEmbedderElectron);
 
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);

@@ -24,10 +24,10 @@ builds compile natively on Windows.
 This patch can be upstreamed.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 25697fa9d070a74bfab874bc5cc80e277ded8f0f..f22b3ab7b22713fe1bcfabeaa1b77f47a78ea386 100644
+index c60ce3b4343646f5e662840783d57d9758e22670..08fa609e2a7f69f07d166e6d5a2abffc6bde31b5 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
-@@ -42,6 +42,24 @@ config("pgo_instrumentation_flags") {
+@@ -45,6 +45,24 @@ config("pgo_instrumentation_flags") {
        # linking, and embeds the path to the profile runtime library as
        # dependent library into each object file.
        ldflags = [ "-fprofile-generate" ]

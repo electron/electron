@@ -11,6 +11,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
@@ -31,7 +32,7 @@ namespace {
 
 static constexpr int kElectronContextEmbedderDataIndex =
     static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(gin::kEmbedderElectron);
+    static_cast<int>(electron::kEmbedderElectron);
 
 // This is a helper class to make the initiator ExecutionContext the owner
 // of a ShadowRealmGlobalScope and its ScriptState. When the initiator

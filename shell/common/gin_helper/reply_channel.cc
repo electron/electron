@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/reply_channel.h"
 
+#include "base/task/single_thread_task_runner.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"

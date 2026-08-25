@@ -15,6 +15,7 @@ description: 'Ensures proper binaries are in place'
 # 11. Fix rc binary on Windows
 # 12. Fix clang-format binary on Windows
 # 13. Install the host typescript-go (tsc v7) binary on macOS
+# 14. Fixing the hermetic host Python binary
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
@@ -40,6 +41,14 @@ runs:
         installation-dir: third_party/esbuild
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
+    - name: Fix hermetic Python
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: cpython3-host
+        deps-file: src/DEPS
+        installation-dir: src/third_party/cpython3/host
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/cpython3/${platform}
     # ts_library() runs the host tsgo binary (//third_party/typescript/tsgo.gni),
     # which DEPS only fetches when host_os == "mac". The DEPS key and package
     # are literal per-arch names (no CIPD ${platform} templating), so pick the
