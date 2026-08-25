@@ -180,6 +180,17 @@ void WebSocketWrapper::Start() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   CHECK(browser_context_);
 
+  if (static_cast<ElectronBrowserContext*>(browser_context_)
+          ->is_network_blocked()) {
+    // Start() runs before the wrapper is handed back to JS, so defer the
+    // failure until listeners can have been attached.
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, base::BindOnce(&WebSocketWrapper::Fail, WeakRef(),
+                                  "Network access revoked",
+                                  net::ERR_NETWORK_ACCESS_REVOKED));
+    return;
+  }
+
   auto handshake_remote = handshake_receiver_.BindNewPipeAndPassRemote();
   handshake_receiver_.set_disconnect_handler(
       base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
