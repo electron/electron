@@ -14,7 +14,7 @@ import {
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as ws from 'ws';
+import WebSocketClient = require('ws');
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
@@ -452,6 +452,29 @@ describe('web security', () => {
     });
   });
 
+  describe('WebAssembly streaming compilation', () => {
+    it('works in a renderer with nodeIntegration', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/wasm');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        // Minimal valid WebAssembly module (magic number + version).
+        res.end(Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]));
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+      const result = await w.webContents.executeJavaScript(
+        `WebAssembly.instantiateStreaming(fetch('${serverUrl}')).then(() => 'loaded')`
+      );
+      expect(result).to.equal('loaded');
+    });
+  });
+
   describe('csp', () => {
     for (const sandbox of [true, false]) {
       describe(`when sandbox: ${sandbox}`, () => {
@@ -673,19 +696,183 @@ describe('command line switches', () => {
         if (m) {
           appProcess!.stderr.removeAllListeners('data');
           const port = m[1];
-          http.get(`http://127.0.0.1:${port}`, (res) => {
-            try {
-              expect(res.statusCode).to.eql(200);
-              expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
-              done();
-            } catch (e) {
-              done(e);
-            } finally {
-              res.destroy();
-            }
-          });
+          http
+            .get(`http://127.0.0.1:${port}`, (res) => {
+              try {
+                expect(res.statusCode).to.eql(200);
+                expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
+                done();
+              } catch (e) {
+                done(e);
+              } finally {
+                res.destroy();
+              }
+            })
+            .on('error', done);
         }
       });
+    });
+
+    it('should use bundled devtools frontend URL in /json response', async () => {
+      // Regression test for https://github.com/electron/electron/issues/51035
+      // Verifies that devtoolsFrontendUrl points to the local bundled path
+      // (/devtools/inspector.html) rather than the remote CDN URL
+      // (https://chrome-devtools-frontend.appspot.com), which would 404 for
+      // Electron's custom Chromium builds.
+      const electronPath = process.execPath;
+      let stderr = '';
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=0']);
+
+      const port = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools port was found. stderr: ${stderr}`))
+        );
+      });
+
+      const jsonTargets = await new Promise<any[]>((resolve, reject) => {
+        http
+          .get(`http://127.0.0.1:${port}/json`, (res) => {
+            let body = '';
+            res.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(body));
+              } catch {
+                reject(new Error(`Failed to parse /json response: ${body}`));
+              }
+            });
+            res.on('error', reject);
+          })
+          .on('error', reject);
+      });
+
+      expect(jsonTargets).to.be.an('array');
+      expect(jsonTargets.length).to.be.greaterThan(0);
+
+      // Every target's devtoolsFrontendUrl must use the bundled path,
+      // not the remote CDN (chrome-devtools-frontend.appspot.com).
+      for (const target of jsonTargets) {
+        expect(target).to.have.property('devtoolsFrontendUrl');
+        expect(target.devtoolsFrontendUrl).to.match(
+          /^\/devtools\//,
+          `devtoolsFrontendUrl should start with /devtools/ (bundled), got: ${target.devtoolsFrontendUrl}`
+        );
+        expect(target.devtoolsFrontendUrl).to.not.include(
+          'chrome-devtools-frontend.appspot.com',
+          'devtoolsFrontendUrl should not point to the remote CDN'
+        );
+      }
+    });
+
+    it('clears device metrics overrides when a client disconnects without detaching', async function () {
+      // A client dying without clearing its overrides used to leave the page
+      // pinned at the emulated size forever.
+      const appPath = path.join(fixturesPath, 'apps', 'remote-debugging-emulation');
+      appProcess = ChildProcess.spawn(process.execPath, [appPath, '--remote-debugging-port=0']);
+
+      let stderr = '';
+      const browserWsUrl = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on (ws:\/\/\S+)/.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools URL was found. stderr: ${stderr}`))
+        );
+      });
+
+      type Client = {
+        socket: WebSocketClient;
+        send(method: string, params?: unknown, sessionId?: string): Promise<any>;
+        attachToPage(): Promise<string>;
+      };
+      const connectClient = async (): Promise<Client> => {
+        const socket = new WebSocketClient(browserWsUrl);
+        await once(socket, 'open');
+        let nextId = 1;
+        const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
+        socket.on('message', (data: WebSocketClient.Data) => {
+          const message = JSON.parse(data.toString());
+          const handler = message.id && pending.get(message.id);
+          if (handler) {
+            pending.delete(message.id);
+            if (message.error) handler.reject(new Error(message.error.message));
+            else handler.resolve(message.result);
+          }
+        });
+        const failPending = (why: string) => {
+          for (const handler of pending.values()) handler.reject(new Error(why));
+          pending.clear();
+        };
+        socket.on('error', (error: Error) => failPending(`websocket error: ${error.message}`));
+        socket.on('close', () => failPending('websocket closed'));
+        const send = (method: string, params: unknown = {}, sessionId?: string) =>
+          new Promise<any>((resolve, reject) => {
+            const id = nextId++;
+            pending.set(id, { resolve, reject });
+            socket.send(JSON.stringify({ id, method, params, sessionId }));
+          });
+        const attachToPage = async () => {
+          // The window may not exist yet when the DevTools server comes up.
+          let page: any;
+          await waitUntil(async () => {
+            const { targetInfos } = await send('Target.getTargets');
+            page = targetInfos.find((target: any) => target.type === 'page');
+            return page !== undefined;
+          });
+          const { sessionId } = await send('Target.attachToTarget', { targetId: page.targetId, flatten: true });
+          return sessionId;
+        };
+        return { socket, send, attachToPage };
+      };
+      const innerSize = async (client: Client, sessionId: string) => {
+        const { result } = await client.send(
+          'Runtime.evaluate',
+          {
+            expression: 'window.innerWidth + "x" + window.innerHeight',
+            returnByValue: true
+          },
+          sessionId
+        );
+        return result.value;
+      };
+
+      const clientA = await connectClient();
+      const sessionA = await clientA.attachToPage();
+      const originalSize = await innerSize(clientA, sessionA);
+      await clientA.send(
+        'Emulation.setDeviceMetricsOverride',
+        {
+          width: 800,
+          height: 450,
+          deviceScaleFactor: 0,
+          mobile: false
+        },
+        sessionA
+      );
+      expect(await innerSize(clientA, sessionA)).to.equal('800x450');
+
+      // Drop the TCP connection like a killed client process would.
+      (clientA.socket as any)._socket.destroy();
+
+      const clientB = await connectClient();
+      const sessionB = await clientB.attachToPage();
+      await waitUntil(async () => (await innerSize(clientB, sessionB)) === originalSize);
+      clientB.socket.close();
     });
   });
 
@@ -3107,6 +3294,13 @@ describe('chromium features', () => {
       expect(w.getURL()).to.equal(pdfSource);
     });
 
+    it('loads a PDF resource in an in-memory session', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'pdf-viewer-in-memory' } });
+      await w.loadURL(pdfSource);
+      // The viewer hosts the document in a frame of its own once its plugin is up.
+      await waitUntil(() => w.webContents.mainFrame.framesInSubtree.filter((f) => f.url === pdfSource).length === 2);
+    });
+
     it('successfully loads a PDF resource in a iframe', async () => {
       const w = new BrowserWindow({ show: false });
 
@@ -3381,7 +3575,7 @@ describe('chromium features', () => {
       const server = http.createServer();
       defer(() => server.close());
       const { port } = await listen(server);
-      const wss = new ws.Server({ server });
+      const wss = new WebSocketClient.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -3676,6 +3870,14 @@ describe('chromium features', () => {
       expect(console.trace, 'trace').to.be.a('function');
       expect(console.time, 'time').to.be.a('function');
       expect(console.timeEnd, 'timeEnd').to.be.a('function');
+    });
+  });
+
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
     });
   });
 
@@ -5007,11 +5209,11 @@ describe('iframe sandbox popups', () => {
   let serverUrl: string;
   let w: BrowserWindow;
 
-  const childHtml = `
+  const makeChildHtml = (href: string) => `
     <script>
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
-        a.href = 'https://example.com/sandbox-bypassed';
+        a.href = ${JSON.stringify(href)};
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
@@ -5023,10 +5225,19 @@ describe('iframe sandbox popups', () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       if (req.url === '/child') {
-        res.end(childHtml);
+        res.end(makeChildHtml('https://example.com/sandbox-bypassed'));
+      } else if (req.url === '/child-local-popup') {
+        res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/csp-sandbox-top') {
+        res.setHeader('Content-Security-Policy', 'sandbox allow-scripts allow-popups');
+        res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/popup') {
+        res.end('<title>popup</title>');
       } else {
-        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
-        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+        const params = new URL(req.url!, serverUrl).searchParams;
+        const sandbox = params.get('sandbox') ?? '';
+        const child = params.get('child') ?? '/child';
+        res.end(`<iframe sandbox="${sandbox}" src="${child}"></iframe>`);
       }
     });
     serverUrl = (await listen(server)).url;
@@ -5072,5 +5283,62 @@ describe('iframe sandbox popups', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
     await setTimeout(200);
     expect(handlerCalls).to.equal(1);
+  });
+
+  async function openPopupFromSandboxedIframe(sandbox: string) {
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(
+      `${serverUrl}/?child=${encodeURIComponent('/child-local-popup')}&sandbox=${encodeURIComponent(sandbox)}`
+    );
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    return popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+  }
+
+  it('popups from a sandboxed iframe without allow-popups-to-escape-sandbox inherit the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups');
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
+  });
+
+  it('popups from a sandboxed iframe with allow-popups-to-escape-sandbox escape the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    expect(result.origin).to.equal(new URL(serverUrl).origin);
+    expect(result.localStorage).to.equal('allowed');
+    expect(result.cookie).to.equal('allowed');
+  });
+
+  it('popups opened by a sandboxed top-level frame inherit the sandbox', async () => {
+    // A document made sandboxed by a CSP header is a sandboxed main frame (no
+    // parent); a window it opens must stay sandboxed just like an iframe's does.
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(`${serverUrl}/csp-sandbox-top`);
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    const result = await popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
   });
 });

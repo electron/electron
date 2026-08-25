@@ -11,10 +11,10 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/configure.py b/configure.py
-index fa25de8c316b71d3ad5b55b5ce398b69a5d4a965..fc48438060e0dd84edc60d1aebf3d0946be98ea9 100755
+index 9c426b3f8f9cbf2ce086fce2fe1ee7c7bd636f89..bdf0d19292bf32e3e5621d7af2c93618c85dc6a4 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1838,7 +1838,7 @@ def configure_v8(o, configs):
+@@ -1947,7 +1947,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
@@ -68,10 +68,10 @@ index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a9
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef43921c2e453 100644
+index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488feec2c41b 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -455,6 +455,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -458,6 +458,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    return value.As<Function>();
  }
  
@@ -102,7 +102,7 @@ index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef439
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
-@@ -741,7 +765,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
+@@ -744,7 +768,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
    // Pre-fetch all dependencies.
    if (requests->Length() > 0) {
      for (int i = 0; i < requests->Length(); i++) {
@@ -111,7 +111,7 @@ index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef439
        std::string specifier =
            Utf8Value(isolate, req->GetSpecifier()).ToString();
        std::string resolved_id = ResolveRequestForBuiltin(specifier);
-@@ -900,6 +924,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -903,6 +927,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -305,9 +305,18 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..df0ae804a5338d8f2ec4d331a1e2ed053c3c3955 100644
+index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..7265e09bf7601afe76463f528ffb385db796e093 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
+@@ -94,7 +94,7 @@ template("node_gn_build") {
+       "-Wno-unused-function",
+     ]
+ 
+-    if (current_cpu == "x86") {
++    if (target_cpu == "x86") {
+       node_arch = "ia32"
+     } else {
+       node_arch = target_cpu
 @@ -147,32 +147,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",

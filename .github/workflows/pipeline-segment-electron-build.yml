@@ -43,6 +43,16 @@ on:
         required: true
         type: boolean
         default: false
+      generate-chromedriver:
+        description: 'Whether or not to build chromedriver'
+        required: false
+        type: boolean
+        default: true
+      generate-test-artifacts:
+        description: 'Whether or not to generate artifacts only consumed by test jobs'
+        required: false
+        type: boolean
+        default: true
       upload-to-storage: 
         description: 'Whether or not to upload build artifacts to external storage'
         required: true
@@ -115,12 +125,13 @@ jobs:
         CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    # Safe to background: it only deletes preinstalled toolchains/simulators that
+    # none of the setup steps below read; the wait-all before the src cache
+    # restore (the step that needs the freed disk) is a no-op on win/linux.
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
-    - name: Check disk space after freeing up space
-      if: ${{ inputs.target-platform == 'macos' }}
-      run: df -h
+      background: true
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
       uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
@@ -130,9 +141,6 @@ jobs:
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Install AZCopy
-      if: ${{ inputs.target-platform == 'macos' }}
-      run: brew install azcopy
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
       run: |
@@ -158,6 +166,16 @@ jobs:
         DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Wait for space cleanup to finish
+      wait-all:
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h
+    # Must stay after the wait: free-space-macos runs brew uninstall/autoremove,
+    # which cannot overlap another brew invocation.
+    - name: Install AZCopy
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: brew install azcopy
     - name: Restore src cache via AZCopy
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
@@ -185,6 +203,17 @@ jobs:
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    # Release builds consume Electron-generated PGO profiles, resolved through
+    # the state files in build/pgo_profiles. The gclient hooks that download
+    # them do not run in build jobs ("Run Electron Only Hooks" sets
+    # process_deps=False, and cross-compiled targets do not match the host's
+    # checkout_* vars), so fetch exactly this build's profile here.
+    - name: Download PGO Profiles
+      if: ${{ inputs.gn-build-type == 'release' }}
+      env:
+        PGO_TARGET: ${{ inputs.target-platform }}-${{ inputs.target-arch }}
+      run: |
+        python3 src/electron/script/pgo/download-profiles.py --targets "$PGO_TARGET,v8-builtins"
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
@@ -194,11 +223,26 @@ jobs:
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
+    # siso runs on the build host, not the target, so the artifact is chosen by
+    # build-host os/arch: win -> windows-amd64, linux (any target arch) ->
+    # linux-amd64, macOS (x64 or arm64, both built on arm64 hosts) -> darwin-arm64.
     - name: Download custom siso binary (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: siso-windows-amd64
+        path: ${{ runner.temp }}/siso
+    - name: Download custom siso binary (Linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: siso-linux-amd64
+        path: ${{ runner.temp }}/siso
+    - name: Download custom siso binary (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: siso-darwin-arm64
         path: ${{ runner.temp }}/siso
     - name: Set SISO_PATH (Windows)
       if: ${{ inputs.target-platform == 'win' }}
@@ -210,6 +254,34 @@ jobs:
         fi
         echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
         echo "Using custom siso binary at $SISO_BIN"
+    - name: Set SISO_PATH (Linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        SISO_BIN="${RUNNER_TEMP}/siso/siso"
+        if [ ! -f "$SISO_BIN" ]; then
+          echo "error: expected siso binary at $SISO_BIN" >&2
+          exit 1
+        fi
+        # download-artifact does not preserve the executable bit.
+        chmod +x "$SISO_BIN"
+        echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+        echo "Using custom siso binary at $SISO_BIN"
+    - name: Set SISO_PATH (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        SISO_BIN="${RUNNER_TEMP}/siso/siso"
+        if [ ! -f "$SISO_BIN" ]; then
+          echo "error: expected siso binary at $SISO_BIN" >&2
+          exit 1
+        fi
+        # download-artifact does not preserve the executable bit.
+        chmod +x "$SISO_BIN"
+        # The binary is unsigned; clear the Gatekeeper quarantine and
+        # ad-hoc sign it so it can exec on the macOS build host.
+        xattr -d com.apple.quarantine "$SISO_BIN" || true
+        codesign -s - "$SISO_BIN" || true
+        echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+        echo "Using custom siso binary at $SISO_BIN"
     - name: Build Electron
       if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
       uses: ./src/electron/.github/actions/build-electron
@@ -219,6 +291,8 @@ jobs:
         artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
+        generate-chromedriver: '${{ inputs.generate-chromedriver }}'
+        generate-test-artifacts: '${{ inputs.generate-test-artifacts }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
@@ -237,5 +311,7 @@ jobs:
         artifact-platform: 'mas'
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
+        generate-chromedriver: '${{ inputs.generate-chromedriver }}'
+        generate-test-artifacts: '${{ inputs.generate-test-artifacts }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         step-suffix: '(mas)'

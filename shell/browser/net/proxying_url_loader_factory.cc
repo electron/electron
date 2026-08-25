@@ -82,10 +82,11 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       proxied_loader_receiver_(this, std::move(loader_receiver)),
       target_client_(std::move(client)),
       current_response_(network::mojom::URLResponseHead::New()),
-      // Always use "extraHeaders" mode to be compatible with old APIs.
-      // A non-zero request ID is required to use the TrustedHeaderClient path
-      // which allows webRequest to modify headers like Proxy-Authorization.
-      has_any_extra_headers_listeners_(network_service_request_id != 0) {
+      // "extraHeaders" mode (two round trips per request) only while
+      // webRequest has listeners; see has_any_extra_headers_listeners_.
+      has_any_extra_headers_listeners_(network_service_request_id != 0 &&
+                                       factory->web_request_ &&
+                                       factory->web_request_->HasListener()) {
   // If there is a client error, clean up the request.
   target_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -771,6 +772,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     api::WebRequest* web_request,
     const HandlersMap& intercepted_handlers,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     int render_process_id,
     int frame_routing_id,
     uint64_t* request_id_generator,
@@ -783,6 +785,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_{web_request},
       intercepted_handlers_(intercepted_handlers),
+      browser_context_(std::move(browser_context)),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
       request_id_generator_(request_id_generator),
@@ -839,7 +842,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     auto it = intercepted_handlers_->find(request.url.scheme());
     if (it != intercepted_handlers_->end()) {
       override_target_factory.Bind(ElectronURLLoaderFactory::Create(
-          it->second.first, it->second.second));
+          it->second.first, it->second.second, browser_context_));
     }
   }
 

@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Buchanan <kenrb@chromium.org>
+Date: Mon, 22 Jun 2026 07:32:16 -0700
+Subject: [WebAuthn] Prevent WebAuthn requests from inactive frames
+
+WebAuthn calls should not be possible from inactive frames, such as
+those in the process of navigation or in BFCache. This is currently
+enforced in the desktop WebAuthn implementation and treated as a
+non-focused frame, but there is no check in the Android implementation.
+
+This change adds an explicit check when binding the interface, for
+both Android and desktop.
+
+It also adds checks at the time of invocation of makeCredential
+and getAssertion, in case an interface bound on a live frame
+is used while the frame is later inactive.
+
+Fixed: 516813184
+Change-Id: I1ede1544bcdbb4b090b1feb777d9e6dc58436a73
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7969319
+Reviewed-by: Nina Satragno <nsatragno@chromium.org>
+Commit-Queue: Ken Buchanan <kenrb@chromium.org>
+Auto-Submit: Ken Buchanan <kenrb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1650300}
+
+diff --git a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+index 6c246f002c745c8598deb9a96cea085b0cc05f05..de0bfc14bc062d92a851a8114cb1a0c2a136cc6f 100644
+--- a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
++++ b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+@@ -31,6 +31,7 @@ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.components.password_manager.BrowserAssistedLoginType;
+ import org.chromium.components.ukm.UkmRecorder;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -162,6 +163,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedMakeCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "makeCredential");
+ 
+         mIsPaymentRequest = options.isPaymentCredentialCreation;
+@@ -239,6 +247,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedGetCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "getCredential");
+ 
+         mRequestCallback = requestCallback;
+diff --git a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+index 90bd545ec324753272c7e9107808ede9fba93b8b..7b3b53748349cb6ce4c862ae4bd50638e8145bcc 100644
+--- a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
++++ b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+@@ -30,6 +30,7 @@ import org.chromium.blink.mojom.Authenticator;
+ import org.chromium.blink.mojom.GetCredentialOptions;
+ import org.chromium.blink.mojom.Mediation;
+ import org.chromium.blink.mojom.PublicKeyCredentialRequestOptions;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -65,6 +66,7 @@ public class AuthenticatorImplPasswordOnlyTest {
+         mTopOrigin = Origin.create(new GURL("https://example.com"));
+ 
+         when(mRenderFrameHost.getLastCommittedOrigin()).thenReturn(mOrigin);
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.ACTIVE);
+ 
+         WebauthnModeProvider.setInstanceForTesting(mModeProviderMock);
+         when(mModeProviderMock.getWebauthnMode(any())).thenReturn(WebauthnMode.CHROME);
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 8bf1dac46f79a681ef68c01b93e285304b5221c5..7a4d9078ecb039b124b1b33465e0589105e37855 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -15273,6 +15273,10 @@ void RenderFrameHostImpl::CreatePermissionService(
+ 
+ void RenderFrameHostImpl::GetWebAuthenticationService(
+     mojo::PendingReceiver<blink::mojom::Authenticator> receiver) {
++  if (!IsActive()) {
++    return;
++  }
++
+ #if !BUILDFLAG(IS_ANDROID)
+   AuthenticatorImpl::Create(this, std::move(receiver));
+ #else

@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kramer Ge <fangzhoug@chromium.org>
+Date: Tue, 14 Jul 2026 09:25:04 -0700
+Subject: [M150] [Ozone/Wayland]Add window manager GetAllWindowsAsWeakPtr()
+
+Original change's description:
+> [Ozone/Wayland]Add window manager GetAllWindowsAsWeakPtr()
+>
+> A class of uaf are caused by direct/indirect delegate OnStatusUpdate()
+> calls. Notably iterating on GetAllWindows() while the delegate may
+> destroy the window and its descendant windows.
+>
+> Add GetAllWindowsAsWeakPtr() for callers that need to check for
+> potential window destruction.
+>
+> Bug: 532925350
+> Change-Id: I06109f25e6a1d9588fb55e930bc5ba81e82f6267
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8072281
+> Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+> Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1661337}
+
+(cherry picked from commit c9c9c645ab28e5a002c926a456f10a36ac36029c)
+
+Bug: 534617840,532925350
+Change-Id: I06109f25e6a1d9588fb55e930bc5ba81e82f6267
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8092609
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3414}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_buffer_manager_host.cc b/ui/ozone/platform/wayland/host/wayland_buffer_manager_host.cc
+index c67677137c1c186a280b61b19696fe43084857f7..a7506130a0dcc6084193cf808801da26ff6804f8 100644
+--- a/ui/ozone/platform/wayland/host/wayland_buffer_manager_host.cc
++++ b/ui/ozone/platform/wayland/host/wayland_buffer_manager_host.cc
+@@ -81,8 +81,14 @@ void WaylandBufferManagerHost::OnChannelDestroyed() {
+ 
+   buffer_backings_.clear();
+   dma_buffers_.clear();
+-  for (auto* window : connection_->window_manager()->GetAllWindows())
+-    window->OnChannelDestroyed();
++  for (auto window : connection_->window_manager()->GetAllWindowsAsWeakPtr()) {
++    // OnChannelDestroyed() may RequestState() from window delegate and close
++    // its child windows. This can happen if `should_ack_swap_without_commit_`
++    // in the frame manager.
++    if (window) {
++      window->OnChannelDestroyed();
++    }
++  }
+ 
+   buffer_manager_gpu_associated_.reset();
+   receiver_.reset();
+diff --git a/ui/ozone/platform/wayland/host/wayland_output_manager.cc b/ui/ozone/platform/wayland/host/wayland_output_manager.cc
+index 28b7bfab21be3d0ecadb5c6adb1d13e9975cd658..c3564a0fe8b9a6428a19441af5a2c3712cdcd2e1 100644
+--- a/ui/ozone/platform/wayland/host/wayland_output_manager.cc
++++ b/ui/ozone/platform/wayland/host/wayland_output_manager.cc
+@@ -70,8 +70,13 @@ void WaylandOutputManager::RemoveWaylandOutput(WaylandOutput::Id output_id) {
+   // 2. from `WaylandScreen::display_list_`
+   // 3. from `WaylandOutputManager::output_list_`
+   auto* wayland_window_manager = connection_->window_manager();
+-  for (auto* window : wayland_window_manager->GetAllWindows())
+-    window->RemoveEnteredOutput(output_id);
++  for (auto window : wayland_window_manager->GetAllWindowsAsWeakPtr()) {
++    // RemoveEnteredOutput() may RequestState() from window delegate and close
++    // its child windows.
++    if (window) {
++      window->RemoveEnteredOutput(output_id);
++    }
++  }
+ 
+   if (wayland_screen_)
+     wayland_screen_->OnOutputRemoved(output_id);
+@@ -174,7 +179,12 @@ void WaylandOutputManager::OnOutputHandleMetrics(
+   const bool is_primary =
+       wayland_screen_ &&
+       metrics.display_id == wayland_screen_->GetPrimaryDisplay().id();
+-  for (auto* window : connection_->window_manager()->GetAllWindows()) {
++  for (auto window : connection_->window_manager()->GetAllWindowsAsWeakPtr()) {
++    // RemoveEnteredOutput() may RequestState() from window delegate and close
++    // its child windows.
++    if (!window) {
++      continue;
++    }
+     auto entered_output = window->GetPreferredEnteredOutputId();
+     if (entered_output == metrics.output_id ||
+         (!entered_output && is_primary)) {
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_manager.cc b/ui/ozone/platform/wayland/host/wayland_window_manager.cc
+index 50db3bd8e6060d2e7326b33e1fb51cabbdf6abec..82bf07642c644414445a972310ac96e730349080 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_manager.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window_manager.cc
+@@ -335,6 +335,16 @@ std::vector<WaylandWindow*> WaylandWindowManager::GetAllWindows() const {
+   return result;
+ }
+ 
++std::vector<base::WeakPtr<WaylandWindow>>
++WaylandWindowManager::GetAllWindowsAsWeakPtr() const {
++  std::vector<base::WeakPtr<WaylandWindow>> result;
++  result.reserve(window_map_.size());
++  for (auto& entry : window_map_) {
++    result.push_back(entry.second->AsWeakPtr());
++  }
++  return result;
++}
++
+ bool WaylandWindowManager::IsWindowValid(const WaylandWindow* window) const {
+   for (auto& pair : window_map_) {
+     if (pair.second == window)
+@@ -348,8 +358,10 @@ void WaylandWindowManager::SetFontScale(float new_font_scale) {
+     return;
+   }
+   font_scale_ = new_font_scale;
+-  for (WaylandWindow* window : GetAllWindows()) {
+-    window->OnFontScaleFactorChanged();
++  for (auto window : GetAllWindowsAsWeakPtr()) {
++    if (window) {
++      window->OnFontScaleFactorChanged();
++    }
+   }
+ }
+ 
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_manager.h b/ui/ozone/platform/wayland/host/wayland_window_manager.h
+index 7735975074d667ab2b8ff13dc385bc0ec3432272..5568396d2d0a06edfd142f292dc6883415e14b8b 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_manager.h
++++ b/ui/ozone/platform/wayland/host/wayland_window_manager.h
+@@ -10,6 +10,7 @@
+ 
+ #include "base/containers/flat_map.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "ui/gfx/geometry/size_f.h"
+ #include "ui/gfx/native_ui_types.h"
+@@ -115,6 +116,10 @@ class WaylandWindowManager {
+   // Returns all stored windows.
+   std::vector<WaylandWindow*> GetAllWindows() const;
+ 
++  // Same as above, but for callers that may destroy windows while iterating on
++  // them.
++  std::vector<base::WeakPtr<WaylandWindow>> GetAllWindowsAsWeakPtr() const;
++
+   // Returns true if the |window| still exists.
+   bool IsWindowValid(const WaylandWindow* window) const;
+ 
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_manager_unittest.cc b/ui/ozone/platform/wayland/host/wayland_window_manager_unittest.cc
+index 17c2192e8d978e5b9f6032876a302c5cba7aa433..6306d513cbcc9563355986081889ff888ae26961 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_manager_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window_manager_unittest.cc
+@@ -184,6 +184,9 @@ TEST_P(WaylandWindowManagerTest, GetAllWindows) {
+ 
+   windows = manager_->GetAllWindows();
+   EXPECT_EQ(2u, windows.size());
++
++  auto weak_windows = manager_->GetAllWindowsAsWeakPtr();
++  EXPECT_EQ(2u, weak_windows.size());
+ }
+ 
+ INSTANTIATE_TEST_SUITE_P(XdgVersionStableTest,

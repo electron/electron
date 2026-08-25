@@ -5,6 +5,7 @@
 #include <iterator>
 #include <utility>
 
+#include "base/dcheck_is_on.h"
 #include "base/run_loop.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -91,6 +92,19 @@ void RunUntilIdle() {
   base::RunLoop().RunUntilIdle();
 }
 
+#if DCHECK_IS_ON()
+// Test-only (DCHECK builds): per-process map of builtin id (electron/js2c/*
+// bundles and Node's own lib/ builtins compiled so far in this process) ->
+// whether its build-time/snapshot code cache was consumed. Backs the
+// code-cache spec.
+v8::Local<v8::Value> GetJs2cCodeCacheStatus(v8::Isolate* isolate) {
+  gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  for (const auto& [id, accepted] : node::builtins::ElectronJs2cCacheStatus())
+    dict.Set(id, accepted);
+  return dict.GetHandle();
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -104,6 +118,9 @@ void Initialize(v8::Local<v8::Object> exports,
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
+#if DCHECK_IS_ON()
+  dict.SetMethod("getJs2cCodeCacheStatus", &GetJs2cCodeCacheStatus);
+#endif
 }
 
 }  // namespace

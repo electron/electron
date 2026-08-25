@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kramer Ge <fangzhoug@chromium.org>
+Date: Fri, 26 Jun 2026 13:46:17 -0700
+Subject: [M148] [ozone/wayland]Handle window destruction during surface
+ configure
+
+Original change's description:
+> [ozone/wayland]Handle window destruction during surface configure
+>
+> ProcessPendingConfigureState() calls RequestStateFromServer(), which
+> reaches the delegate's OnStateUpdate(). The views layer may
+> synchronously close the widget and destroy the platform window inside
+> that callout. The existing weak-ptr guard in
+> MaybeApplyLatestStateRequest() returns early in that case, but
+> ProcessPendingConfigureState() then continued to access members after
+> the call returned.
+>
+> Add a weak-ptr liveness check around RequestStateFromServer(), mirroring
+> the existing pattern used elsewhere in this file and in
+> WaylandToplevelWindow::HandleToplevelConfigure().
+>
+> Fixed: 518006275
+> Change-Id: I8812d780c4e46b42bc1a8302c69e4f2e8256b660
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7981871
+> Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+> Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1651724}
+
+(cherry picked from commit 06d1bbdddd1f176c3443ca2ddb1f1d21dfe9a094)
+
+Bug: 527756736,518006275
+Change-Id: I8812d780c4e46b42bc1a8302c69e4f2e8256b660
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8006087
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4430}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_window.cc b/ui/ozone/platform/wayland/host/wayland_window.cc
+index 10b2f0275628694a9d6947b731b8029a8e61d2a2..17f883751ab8e686182ecc6f0600fefe051594e8 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window.cc
+@@ -1316,7 +1316,13 @@ void WaylandWindow::ProcessPendingConfigureState(uint32_t serial) {
+     }
+   }
+ 
++  // RequestStateFromServer transitively calls delegate()->OnStateUpdate(),
++  // which may synchronously delete |this|.
++  auto weak_this = AsWeakPtr();
+   RequestStateFromServer(state, serial);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // Reset values.
+   pending_configure_state_ = PendingConfigureState();
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+index 7381400179ec0a9d2ef95fc4b3fcef414ee24f66..4eeaf54d3adfa7d46ec143e7c7a4f0148d69e3c7 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+@@ -473,6 +473,22 @@ TEST_P(WaylandWindowTest, Shutdown) {
+   window_->OnDragSessionClose(mojom::DragOperation::kNone);
+ }
+ 
++// Regression test for https://crbug.com/495948109.
++TEST_P(WaylandWindowTest, DeleteWindowFromOnStateUpdateDuringSurfaceConfigure) {
++  delegate_.set_on_state_update_callback(base::BindLambdaForTesting([&]() {
++    window_.reset();
++    return false;
++  }));
++
++  WaylandWindow* window = window_.get();
++  WaylandWindow::WindowStates window_states;
++  window_states.is_activated = true;
++  window->HandleToplevelConfigure(1024, 768, window_states);
++  window->HandleSurfaceConfigure(2);
++
++  EXPECT_FALSE(window_);
++}
++
+ TEST_P(WaylandWindowTest, SetTitle) {
+   window_->SetTitle(u"hello");
+   PostToServerAndWait([id = surface_id_](wl::TestWaylandServerThread* server) {

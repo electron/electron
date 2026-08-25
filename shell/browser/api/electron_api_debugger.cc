@@ -89,11 +89,25 @@ void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
   // so if the new_rfh is not the primary main frame, we don't want to
   // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
   // that already has a DevToolsAgentHost associated with it.
-  if (agent_host_ && new_rfh->IsInPrimaryMainFrame()) {
-    agent_host_->DisconnectWebContents();
-    auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
-    agent_host_->ConnectWebContents(web_contents);
-  }
+  if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
+    return;
+
+  auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
+
+  // The DevToolsAgentHost already follows primary main-frame RenderFrameHost
+  // changes within the same WebContents on its own. Disconnecting and
+  // reconnecting here is therefore redundant for such navigations, and is
+  // actively harmful: it tears down and rebinds the DevTools session mojo
+  // pipe, discarding any protocol notifications that the renderer has already
+  // emitted onto the pipe. With RenderDocument enabled the main-frame RFH
+  // changes on every navigation, so this dropped requests for every page load
+  // whenever a debugger was attached. Only reconnect when the WebContents
+  // actually changed, which the agent host does not track on its own.
+  if (agent_host_->GetWebContents() == web_contents)
+    return;
+
+  agent_host_->DisconnectWebContents();
+  agent_host_->ConnectWebContents(web_contents);
 }
 
 void Debugger::Attach(gin::Arguments* args) {

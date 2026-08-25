@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 22 May 2026 01:03:46 -0700
+Subject: Properly clone and reattach @keyframes rules
+
+The rules not being properly deep-cloned as CSSOM wrappers reattached
+lead to modifications being applied to multiple stylesheets initially
+sharing a StyleSheetContents instance.
+
+Bug: 514449396
+
+Change-Id: Ia78191430974e6263ad3afca19d9a0d2a39f170b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7865248
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1634779}
+
+diff --git a/third_party/blink/renderer/core/css/css_keyframe_rule.cc b/third_party/blink/renderer/core/css/css_keyframe_rule.cc
+index d7b6a5983d89186b085cc1e6416456f46f7b026a..74e906abae387af5011fb6d929d804ec1437b43b 100644
+--- a/third_party/blink/renderer/core/css/css_keyframe_rule.cc
++++ b/third_party/blink/renderer/core/css/css_keyframe_rule.cc
+@@ -72,9 +72,11 @@ CSSStyleDeclaration* CSSKeyframeRule::style() const {
+   return properties_cssom_wrapper_.Get();
+ }
+ 
+-void CSSKeyframeRule::Reattach(StyleRuleBase*) {
+-  // No need to reattach, the underlying data is shareable on mutation.
+-  NOTREACHED();
++void CSSKeyframeRule::Reattach(StyleRuleBase* rule) {
++  keyframe_ = To<StyleRuleKeyframe>(rule);
++  if (properties_cssom_wrapper_) {
++    properties_cssom_wrapper_->Reattach(keyframe_->MutableProperties());
++  }
+ }
+ 
+ void CSSKeyframeRule::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/css/css_keyframes_rule.cc b/third_party/blink/renderer/core/css/css_keyframes_rule.cc
+index b1407bdecd784d6bf45800ebf359e0d9190e624b..80914b4c9ecee6ab5a7d105a3d35fa744ce1186e 100644
+--- a/third_party/blink/renderer/core/css/css_keyframes_rule.cc
++++ b/third_party/blink/renderer/core/css/css_keyframes_rule.cc
+@@ -48,6 +48,17 @@ StyleRuleKeyframes::StyleRuleKeyframes()
+ 
+ StyleRuleKeyframes::StyleRuleKeyframes(const StyleRuleKeyframes& o) = default;
+ 
++StyleRuleKeyframes::StyleRuleKeyframes(
++    HeapVector<Member<StyleRuleKeyframe>>&& keyframes,
++    const AtomicString& name,
++    unsigned version,
++    bool is_vendor_prefixed)
++    : StyleRuleBase(kKeyframes),
++      keyframes_(std::move(keyframes)),
++      name_(name),
++      version_(version),
++      is_prefixed_(is_vendor_prefixed) {}
++
+ StyleRuleKeyframes::~StyleRuleKeyframes() = default;
+ 
+ void StyleRuleKeyframes::ParserAppendKeyframe(StyleRuleKeyframe* keyframe) {
+@@ -230,6 +241,14 @@ CSSRuleList* CSSKeyframesRule::cssRules() const {
+ void CSSKeyframesRule::Reattach(StyleRuleBase* rule) {
+   DCHECK(rule);
+   keyframes_rule_ = To<StyleRuleKeyframes>(rule);
++  CHECK_EQ(child_rule_cssom_wrappers_.size(),
++           keyframes_rule_->Keyframes().size());
++  for (unsigned i = 0; i < child_rule_cssom_wrappers_.size(); ++i) {
++    if (child_rule_cssom_wrappers_[i]) {
++      child_rule_cssom_wrappers_[i]->Reattach(
++          keyframes_rule_->Keyframes()[i].Get());
++    }
++  }
+ }
+ 
+ void CSSKeyframesRule::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/css/css_keyframes_rule.h b/third_party/blink/renderer/core/css/css_keyframes_rule.h
+index 32cf2928e11f53e42ff3eef05fe5b70bf329d960..f8323b284f8340e6ab2d6acac8c7868bc8f862ee 100644
+--- a/third_party/blink/renderer/core/css/css_keyframes_rule.h
++++ b/third_party/blink/renderer/core/css/css_keyframes_rule.h
+@@ -42,7 +42,11 @@ class CSSParserContext;
+ class StyleRuleKeyframes final : public StyleRuleBase {
+  public:
+   StyleRuleKeyframes();
+-  explicit StyleRuleKeyframes(const StyleRuleKeyframes&);
++  StyleRuleKeyframes(HeapVector<Member<StyleRuleKeyframe>>&& keyframes,
++                     const AtomicString& name,
++                     unsigned version,
++                     bool is_vendor_prefixed);
++  StyleRuleKeyframes(const StyleRuleKeyframes&);
+   ~StyleRuleKeyframes();
+ 
+   const HeapVector<Member<StyleRuleKeyframe>>& Keyframes() const {
+diff --git a/third_party/blink/renderer/core/css/style_rule.cc b/third_party/blink/renderer/core/css/style_rule.cc
+index 84ba93981cd82dc4e4b334f8c21e7a4b6aa192d7..249477012de8d2a4572ac57578a4416825c10595 100644
+--- a/third_party/blink/renderer/core/css/style_rule.cc
++++ b/third_party/blink/renderer/core/css/style_rule.cc
+@@ -760,9 +760,18 @@ StyleRuleBase* StyleRuleBase::Clone(
+           To<StyleRuleFontFeature>(*this));
+     case kImport:
+       return MakeGarbageCollected<StyleRuleImport>(To<StyleRuleImport>(*this));
+-    case kKeyframes:
++    case kKeyframes: {
++      StyleRuleKeyframes* keyframes_rule = To<StyleRuleKeyframes>(this);
++      HeapVector<Member<StyleRuleKeyframe>> new_keyframes;
++      for (const Member<StyleRuleKeyframe>& keyframe :
++           keyframes_rule->Keyframes()) {
++        new_keyframes.push_back(To<StyleRuleKeyframe>(
++            keyframe->Clone(new_parent, mixin_parameter_bindings)));
++      }
+       return MakeGarbageCollected<StyleRuleKeyframes>(
+-          To<StyleRuleKeyframes>(*this));
++          std::move(new_keyframes), keyframes_rule->GetName(),
++          keyframes_rule->Version(), keyframes_rule->IsVendorPrefixed());
++    }
+     case kLayerStatement:
+       return MakeGarbageCollected<StyleRuleLayerStatement>(
+           To<StyleRuleLayerStatement>(*this));
+@@ -772,9 +781,13 @@ StyleRuleBase* StyleRuleBase::Clone(
+     case kCounterStyle:
+       return MakeGarbageCollected<StyleRuleCounterStyle>(
+           To<StyleRuleCounterStyle>(*this));
+-    case kKeyframe:
++    case kKeyframe: {
++      auto* keyframe_rule = To<StyleRuleKeyframe>(this);
++      std::unique_ptr<Vector<KeyframeOffset>> keys =
++          std::make_unique<Vector<KeyframeOffset>>(keyframe_rule->Keys());
+       return MakeGarbageCollected<StyleRuleKeyframe>(
+-          To<StyleRuleKeyframe>(*this));
++          std::move(keys), keyframe_rule->Properties().ImmutableCopyIfNeeded());
++    }
+     case kCharset:
+       return MakeGarbageCollected<StyleRuleCharset>(
+           To<StyleRuleCharset>(*this));
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-animations/keyframes-rule-caching.html b/third_party/blink/web_tests/external/wpt/css/css-animations/keyframes-rule-caching.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6d7fcfd751a1306a3b288a3dc6d85edbc8d3f5d
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-animations/keyframes-rule-caching.html
+@@ -0,0 +1,24 @@
++<!DOCTYPE html>
++<title>Tests that given two identical sheets containing the same @keyframes rule, modifying one sheet doesn't affect the other sheet</title>
++<link rel="help" href="https://drafts.csswg.org/css-animations/#interface-csskeyframesrule">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<style id="style1">
++  @keyframes --anim {
++    from { color: red; }
++    to { color: black; }
++  }
++</style>
++<style id="style2">
++  @keyframes --anim {
++    from { color: red; }
++    to { color: black; }
++  }
++</style>
++<script>
++  test(() => {
++    style1.sheet.cssRules[0].cssRules[1].style.color = "green";
++    assert_equals(style1.sheet.cssRules[0].cssRules[1].style.color, "green", "sheet1 keyframe changed");
++    assert_equals(style2.sheet.cssRules[0].cssRules[1].style.color, "black", "sheet2 keyframe did not change");
++  }, "Modifying one sheet should not affect the other");
++</script>

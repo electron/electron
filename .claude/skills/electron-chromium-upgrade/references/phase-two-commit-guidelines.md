@@ -26,7 +26,23 @@ Use the **upstream CL's original commit title** — do not paraphrase or rewrite
 
 Only add a description body if it provides clarity beyond what the title already says (e.g., when Electron's adaptation is non-obvious). For simple renames, method additions, or straightforward API updates, the title + Ref link is sufficient.
 
-Each change should have its own commit and its own Ref. Logically group into commits that make sense rather than one giant commit. You may include multiple "Ref" links if required.
+Each change should have its own commit and its own Ref. Logically group into commits that make sense rather than one giant commit. Include multiple "Ref" links in one commit only when the changes are genuinely one inseparable adaptation motivated by those CLs together — never combine unrelated CLs into a single commit.
+
+**Check for an existing commit first — one commit per CL for the whole upgrade.** Before creating a `{CL-Number}: {title}` commit, check whether a commit referencing that CL already exists on the branch:
+
+```bash
+git log --oneline --grep={CL-Number}
+```
+
+A commit for the same CL may already exist from Phase One (e.g., a patch fix for the same upstream change), from an earlier build-fix iteration, or from before a context compaction. If one exists, do NOT create a second commit with the same Ref — fold the new changes into the existing commit:
+
+```bash
+git add <files>
+git commit --fixup=<existing-commit-hash>
+GIT_SEQUENCE_EDITOR=: git rebase --autosquash -i <existing-commit-hash>^
+```
+
+If the autosquash rebase hits conflicts, run `git rebase --abort` and keep the `fixup! ...` commit as-is — the linter allows it (pattern 1) and it keeps the pairing visible to reviewers.
 
 For a CL link in the format `https://chromium-review.googlesource.com/c/chromium/src/+/2958369` the "CL-Number" is `2958369`.
 
@@ -46,6 +62,24 @@ git status
 git add patches/
 git commit -m "chore: update patches (trivial only)"
 ```
+
+## Self-Contained Commits Help Bisecting (Advisory)
+
+Maintainers bisect rolls with build-tools' `e rcv`, which reconstructs intermediate
+Chromium versions by cherry-picking this branch's commits, keyed on the Gerrit CL URL(s)
+in each commit message. Commits without a CL URL are skipped during reconstruction.
+
+The preferences below make reconstructions more accurate. They are nice-to-haves, not
+requirements — completing the roll always comes first:
+
+- Keep the `Ref:` on any commit that changes code or patch content. Reserve Ref-less
+  `chore: update patches` for metadata-only changes (index hashes, line numbers, hunk
+  headers).
+- When practical, fold a CL's patch-file fixes into that CL's own commit rather than a
+  later catch-all `chore: update patches` commit.
+- Squash any `fixup!` commits (e.g. `git rebase --autosquash`) before finishing.
+- Prefer one CL per commit. A commit spanning multiple CLs is fine when the changes are
+  genuinely coupled — include a `Ref:` line for every CL involved.
 
 ## Finding CL References
 

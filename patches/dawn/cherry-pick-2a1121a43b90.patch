@@ -1,0 +1,475 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: dan sinclair <dsinclair@chromium.org>
+Date: Tue, 9 Jun 2026 05:01:46 -0700
+Subject: Reland "Fix location selection for pixel center polyfill."
+
+This reverts commit b85548b0d317e71ea6034ceedf0bf1ed6fd352bf.
+
+There was an issue with the fuzzer setting the position center location
+which is now fixed.
+
+Fixed: 517522769
+Change-Id: I85a63e65e7ea2ff5543e04b87009f4112afae1d1
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314935
+Auto-Submit: dan sinclair <dsinclair@chromium.org>
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: dan sinclair <dsinclair@chromium.org>
+
+diff --git a/src/dawn/native/vulkan/RenderPipelineVk.cpp b/src/dawn/native/vulkan/RenderPipelineVk.cpp
+index 95b433648a9e159e38d15594bf636caed847a9f1..f23a6f47d6bdaf92cd5d6aecc87f8461ea4b442f 100644
+--- a/src/dawn/native/vulkan/RenderPipelineVk.cpp
++++ b/src/dawn/native/vulkan/RenderPipelineVk.cpp
+@@ -27,7 +27,6 @@
+ 
+ #include "dawn/native/vulkan/RenderPipelineVk.h"
+ 
+-#include <memory>
+ #include <string>
+ #include <utility>
+ #include <vector>
+@@ -443,14 +442,37 @@ ResultOrError<RenderPipeline::SpecializationResult> RenderPipeline::InitializeSp
+         return {};
+     };
+ 
++    std::optional<uint32_t> pixelCenterPolyfillLocation = std::nullopt;
++    if (NeedsPixelCenterPolyfill()) {
++        const EntryPointMetadata* vtx = GetStage(SingleShaderStage::Vertex).metadata;
++        for (size_t i = 0; i < vtx->usedInterStageVariables.size(); ++i) {
++            if (vtx->usedInterStageVariables[i] == false) {
++                pixelCenterPolyfillLocation = uint32_t(i);
++                break;
++            }
++        }
++        if (!pixelCenterPolyfillLocation.has_value()) {
++            return DAWN_INTERNAL_ERROR(
++                "unable to find a free vertex location for the pixel center polyfill");
++        }
++
++        if (HasStage(SingleShaderStage::Fragment)) {
++            const EntryPointMetadata* frag = GetStage(SingleShaderStage::Fragment).metadata;
++            // Because the fragment stage must be a subset of the vertex stage, if the value was
++            // free in the vertex stage it _must_ be free in the fragment stage.
++            DAWN_ASSERT(frag->usedInterStageVariables[pixelCenterPolyfillLocation.value()] ==
++                        false);
++        }
++    }
++
+     // Add the vertex stage that's always present.
+     DAWN_TRY(AddShaderStage({
+         .stage = &GetStage(SingleShaderStage::Vertex),
+         .layout = layout,
+         .immediateMask = GetImmediateMask(),
+         .ycbcrExternalTextures = &specialization.ycbcrExternalTextures,
++        .polyfillPixelCenter = pixelCenterPolyfillLocation,
+         .emitPointSize = GetPrimitiveTopology() == wgpu::PrimitiveTopology::PointList,
+-        .polyfillPixelCenter = NeedsPixelCenterPolyfill(),
+     }));
+ 
+     // Add the fragment stage if present.
+@@ -460,7 +482,7 @@ ResultOrError<RenderPipeline::SpecializationResult> RenderPipeline::InitializeSp
+             .layout = layout,
+             .immediateMask = GetImmediateMask(),
+             .ycbcrExternalTextures = &specialization.ycbcrExternalTextures,
+-            .polyfillPixelCenter = NeedsPixelCenterPolyfill(),
++            .polyfillPixelCenter = pixelCenterPolyfillLocation,
+             .needsMultisampledFramebufferFetch = UseSampleRateShading() && UsesFramebufferFetch(),
+         }));
+     }
+diff --git a/src/dawn/native/vulkan/ShaderModuleVk.h b/src/dawn/native/vulkan/ShaderModuleVk.h
+index 38de4727c57a8642ac9fc6e55f2ecf47f01dbcb6..beb329ef194586d550532f44e7cf58235fd99fa7 100644
+--- a/src/dawn/native/vulkan/ShaderModuleVk.h
++++ b/src/dawn/native/vulkan/ShaderModuleVk.h
+@@ -72,8 +72,8 @@ class ShaderModule final : public ShaderModuleBase {
+         ImmediateConstantMask immediateMask;
+         raw_ptr<const absl::flat_hash_set<APIBindPoint>> ycbcrExternalTextures;
+ 
++        std::optional<uint32_t> polyfillPixelCenter = std::nullopt;
+         bool emitPointSize = false;
+-        bool polyfillPixelCenter = false;
+         bool needsMultisampledFramebufferFetch = false;
+     };
+ 
+diff --git a/src/dawn/tests/BUILD.gn b/src/dawn/tests/BUILD.gn
+index 53b2b028393df81bef3dab0a3813e46cde44c981..a75786845e5d48c49218ebcf777f3154ed352c61 100644
+--- a/src/dawn/tests/BUILD.gn
++++ b/src/dawn/tests/BUILD.gn
+@@ -712,6 +712,7 @@ source_set("end2end_tests_sources") {
+     "end2end/ShaderAtomicTests.cpp",
+     "end2end/ShaderBuiltinPartialConstArgsErrorTests.cpp",
+     "end2end/ShaderF16Tests.cpp",
++    "end2end/ShaderIOPolyfillTests.cpp",
+     "end2end/ShaderModuleCachingTests.cpp",
+     "end2end/ShaderPrintTests.cpp",
+     "end2end/ShaderTests.cpp",
+diff --git a/src/dawn/tests/CMakeLists.txt b/src/dawn/tests/CMakeLists.txt
+index 224fdee61c60ebcd0357a7c3c65e03a81a4bec65..2172e7afa38f449523fd4dc7a2124ca56638f63e 100644
+--- a/src/dawn/tests/CMakeLists.txt
++++ b/src/dawn/tests/CMakeLists.txt
+@@ -142,6 +142,7 @@ set(end2end_sources
+     "end2end/ShaderAtomicTests.cpp"
+     "end2end/ShaderBuiltinPartialConstArgsErrorTests.cpp"
+     "end2end/ShaderF16Tests.cpp"
++    "end2end/ShaderIOPolyfillTests.cpp"
+     "end2end/ShaderModuleCachingTests.cpp"
+     "end2end/ShaderPrintTests.cpp"
+     "end2end/ShaderTests.cpp"
+diff --git a/src/dawn/tests/end2end/ShaderIOPolyfillTests.cpp b/src/dawn/tests/end2end/ShaderIOPolyfillTests.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..20501ff8b74fcc2198b01a2d882700f58105240e
+--- /dev/null
++++ b/src/dawn/tests/end2end/ShaderIOPolyfillTests.cpp
+@@ -0,0 +1,111 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include <utility>
++
++#include "src/dawn/tests/DawnTest.h"
++#include "src/dawn/utils/ComboRenderPipelineDescriptor.h"
++#include "src/dawn/utils/WGPUHelpers.h"
++
++namespace dawn {
++namespace {
++
++using ShaderIOPolyfillTests = DawnTest;
++
++// https://crbug.com/517522769
++TEST_P(ShaderIOPolyfillTests, DivergentLocations) {
++    wgpu::ShaderModule vsModule = utils::CreateShaderModule(device, R"(
++        struct VOut {
++            @builtin(position) pos : vec4f,
++            @location(0) a : vec4f,
++            @location(1) @interpolate(flat) b : i32,
++        };
++        @vertex fn vs(@builtin(vertex_index) vi : u32) -> VOut {
++            var p = array<vec2f, 3>(
++                vec2f(-1, -1),
++                vec2f( 3, -1),
++                vec2f(-1,  3));
++            var o : VOut;
++            o.pos = vec4f(p[vi], 0, 1);
++            o.a   = vec4f(1, 0, 0, 1);
++            o.b   = 0x7eadbeef;
++            return o;
++        }
++    )");
++
++    wgpu::ShaderModule fsModule = utils::CreateShaderModule(device, R"(
++        @fragment fn fs(
++            @location(0) a : vec4f,
++            @builtin(sample_index) s : u32,
++            @builtin(position) p : vec4f) -> @location(0) vec4f {
++            return a + vec4f(p.z, f32(s) * 0, 0, 0);
++        }
++    )");
++
++    utils::ComboRenderPipelineDescriptor pipelineDesc;
++    pipelineDesc.vertex.module = std::move(vsModule);
++    pipelineDesc.cFragment.module = std::move(fsModule);
++    pipelineDesc.multisample.count = 4;
++    pipelineDesc.cTargets[0].format = wgpu::TextureFormat::RGBA8Unorm;
++
++    wgpu::RenderPipeline pipeline = device.CreateRenderPipeline(&pipelineDesc);
++
++    wgpu::TextureDescriptor msaaDesc;
++    msaaDesc.size = {64, 64, 1};
++    msaaDesc.sampleCount = 4;
++    msaaDesc.format = wgpu::TextureFormat::RGBA8Unorm;
++    msaaDesc.usage = wgpu::TextureUsage::RenderAttachment;
++    wgpu::Texture msaa = device.CreateTexture(&msaaDesc);
++
++    wgpu::TextureDescriptor resolveDesc;
++    resolveDesc.size = {64, 64, 1};
++    resolveDesc.format = wgpu::TextureFormat::RGBA8Unorm;
++    resolveDesc.usage = wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::CopySrc;
++    wgpu::Texture resolve = device.CreateTexture(&resolveDesc);
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    utils::ComboRenderPassDescriptor renderPass({msaa.CreateView()});
++    renderPass.cColorAttachments[0].resolveTarget = resolve.CreateView();
++    renderPass.cColorAttachments[0].clearValue = {0.0, 0.0, 0.0, 0.0};
++    renderPass.cColorAttachments[0].loadOp = wgpu::LoadOp::Clear;
++    renderPass.cColorAttachments[0].storeOp = wgpu::StoreOp::Discard;
++
++    wgpu::RenderPassEncoder pass = encoder.BeginRenderPass(&renderPass);
++    pass.SetPipeline(pipeline);
++    pass.Draw(3);
++    pass.End();
++
++    wgpu::CommandBuffer commands = encoder.Finish();
++    queue.Submit(1, &commands);
++
++    EXPECT_PIXEL_RGBA8_EQ(utils::RGBA8::kRed, resolve, 32, 32);
++}
++
++DAWN_INSTANTIATE_TEST(ShaderIOPolyfillTests, VulkanBackend());
++
++}  // namespace
++}  // namespace dawn
+diff --git a/src/tint/lang/spirv/writer/common/options.h b/src/tint/lang/spirv/writer/common/options.h
+index a77d96cedf4f5103a8246e113da4066ad0561ded..d72af7c4ef82ccaa84886966b3878f098c29e5a0 100644
+--- a/src/tint/lang/spirv/writer/common/options.h
++++ b/src/tint/lang/spirv/writer/common/options.h
+@@ -229,8 +229,9 @@ struct Options {
+     /// from all vertex shaders in the module.
+     bool emit_vertex_point_size = true;
+ 
+-    /// Set to `true` to apply builtin 'position' pixel center emulation.
+-    bool polyfill_pixel_center = false;
++    /// If the optional is set, then we apply the builtin 'position' pixel center emulation with a
++    /// location provided by the optional.
++    std::optional<uint32_t> polyfill_pixel_center = std::nullopt;
+ 
+     /// Set to `true` if framebuffer fetch should be multisampled
+     bool multisampled_framebuffer_fetch = false;
+diff --git a/src/tint/lang/spirv/writer/raise/shader_io.cc b/src/tint/lang/spirv/writer/raise/shader_io.cc
+index 4703d031906bf6822ee3080f91f75d17093c81bc..344729b282e8d8ac415237eef431fc29ba7f0f80 100644
+--- a/src/tint/lang/spirv/writer/raise/shader_io.cc
++++ b/src/tint/lang/spirv/writer/raise/shader_io.cc
+@@ -99,31 +99,13 @@ struct StateImpl : core::ir::transform::ShaderIOBackendState {
+ 
+     /// Add a new interpolant that will be used to emulate the position builtin as if it always is
+     /// pixel centered.
+-    /// @param entries the entries to emit
+     /// @param addrspace the address to use for the global variables
+-    uint32_t AddCenterPosInterpolant(Vector<core::type::Manager::StructMemberDesc, 4>& entries,
+-                                     core::AddressSpace addrspace) {
+-        // Verbose way of finding the smallest free location (id). This of course needs to be the
+-        // same id value for both vertex and fragment.
+-        std::set<uint32_t> existing_locations;
+-        for (auto io : entries) {
+-            if (io.attributes.location.has_value()) {
+-                existing_locations.insert(io.attributes.location.value());
+-            }
+-        }
+-        uint32_t free_location = 0u;
+-        // We only need to search through existing_locations.size + 1 because either we will simply
+-        // add an index to the end or there will be a hole in the range of locations
+-        for (uint32_t i = 0u; i < (existing_locations.size() + 1); i++) {
+-            if (existing_locations.find(i) == existing_locations.end()) {
+-                free_location = i;
+-                break;
+-            }
+-        }
+-
++    uint32_t AddCenterPosInterpolant(core::AddressSpace addrspace) {
++        // For our 'position' -> 'FragCoord' polyfill we must use 'perspective' because
++        // 'interpolateAtOffset' may not be supported for 'linear'.
+         auto io_attrib = core::IOAttributes{
+-            .location = free_location,
+-            .interpolation = core::Interpolation{.type = core::InterpolationType::kLinear,
++            .location = config.polyfill_pixel_center.value(),
++            .interpolation = core::Interpolation{.type = core::InterpolationType::kPerspective,
+                                                  .sampling = core::InterpolationSampling::kCenter}};
+ 
+         if (addrspace == core::AddressSpace::kOut) {
+@@ -144,12 +126,12 @@ struct StateImpl : core::ir::transform::ShaderIOBackendState {
+                   core::Access access,
+                   const char* name_suffix) {
+         if (func->IsVertex() && addrspace == core::AddressSpace::kOut &&
+-            config.polyfill_pixel_center) {
+-            center_pos_vert_idx = AddCenterPosInterpolant(entries, addrspace);
++            config.polyfill_pixel_center.has_value()) {
++            center_pos_vert_idx = AddCenterPosInterpolant(addrspace);
+ 
+         } else if (func->IsFragment() && addrspace == core::AddressSpace::kIn &&
+-                   config.polyfill_pixel_center) {
+-            center_pos_frag_idx = AddCenterPosInterpolant(entries, addrspace);
++                   config.polyfill_pixel_center.has_value()) {
++            center_pos_frag_idx = AddCenterPosInterpolant(addrspace);
+         }
+ 
+         for (auto io : entries) {
+diff --git a/src/tint/lang/spirv/writer/raise/shader_io.h b/src/tint/lang/spirv/writer/raise/shader_io.h
+index 80f875874417168aaed7cb766eb512de86ed6caf..5f1147d2d4a306596cefd80d362c3acf46e14676 100644
+--- a/src/tint/lang/spirv/writer/raise/shader_io.h
++++ b/src/tint/lang/spirv/writer/raise/shader_io.h
+@@ -64,7 +64,7 @@ struct ShaderIOConfig {
+     /// true if f16 IO types should be replaced with f32 types and converted
+     bool polyfill_f16_io = false;
+     /// true if we should force pixel centers via polyfill when multi-sampling.
+-    bool polyfill_pixel_center = false;
++    std::optional<uint32_t> polyfill_pixel_center = std::nullopt;
+     /// true if the framebuffer fetch should be multisampled
+     bool multisampled_framebuffer_fetch = false;
+     /// offsets for clamping frag depth
+diff --git a/src/tint/lang/spirv/writer/raise/shader_io_test.cc b/src/tint/lang/spirv/writer/raise/shader_io_test.cc
+index eab5824a80987eee2eced1aced30181f64abf2ec..c1a9a18f7ba69d91404c681d92e72b97ad235f91 100644
+--- a/src/tint/lang/spirv/writer/raise/shader_io_test.cc
++++ b/src/tint/lang/spirv/writer/raise/shader_io_test.cc
+@@ -1422,7 +1422,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 1;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+@@ -1457,7 +1457,7 @@ TEST_F(SpirvWriter_ShaderIOTest, ForcePixelCenters_SampleIndex) {
+ $B1: {  # root
+   %foo_position_Input:ptr<__in, vec4<f32>, read> = var undef @builtin(position)
+   %foo_sample_index_Input:ptr<__in, u32, read> = var undef @interpolate(flat) @builtin(sample_index)
+-  %foo_loc0_Input:ptr<__in, vec4<f32>, read> = var undef @location(0) @interpolate(linear, center)
++  %foo_loc1_Input:ptr<__in, vec4<f32>, read> = var undef @location(1) @interpolate(perspective, center)
+ }
+ 
+ %foo_inner = func(%position:vec4<f32>, %idx:u32):void {
+@@ -1472,7 +1472,7 @@ $B1: {  # root
+     %10:vec2<f32> = swizzle %9, xy
+     %11:vec2<f32> = floor %10
+     %12:vec2<f32> = add %11, vec2<f32>(0.5f)
+-    %13:vec4<f32> = load %foo_loc0_Input
++    %13:vec4<f32> = spirv.interpolate_at_offset %foo_loc1_Input, vec2<f32>(0.0f)
+     %14:f32 = swizzle %13, z
+     %15:f32 = swizzle %13, w
+     %16:vec4<f32> = construct %12, %14, %15
+@@ -1485,7 +1485,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 1;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+@@ -1548,7 +1548,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 1;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+@@ -1635,7 +1635,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 0;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+@@ -1717,7 +1717,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 0;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+@@ -1782,7 +1782,7 @@ $B1: {  # root
+ 
+     core::ir::transform::ImmediateDataLayout immediate_data;
+     ShaderIOConfig config{immediate_data};
+-    config.polyfill_pixel_center = true;
++    config.polyfill_pixel_center = 1;
+     Run(ShaderIO, config);
+ 
+     EXPECT_EQ(expect, str());
+diff --git a/src/tint/lang/spirv/writer/writer_fuzz.cc b/src/tint/lang/spirv/writer/writer_fuzz.cc
+index 1f7736651a5b37db3bda0c1ec9ddb92b19abd3dd..07970047765bfca2978e1e5b64e1ab2f1e4c9995 100644
+--- a/src/tint/lang/spirv/writer/writer_fuzz.cc
++++ b/src/tint/lang/spirv/writer/writer_fuzz.cc
+@@ -304,7 +304,9 @@ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+     options.disable_polyfill_integer_div_mod = fuzzed_options.disable_polyfill_integer_div_mod;
+     options.disable_integer_range_analysis = !fuzzed_options.enable_integer_range_analysis;
+     options.emit_vertex_point_size = fuzzed_options.emit_vertex_point_size;
+-    options.polyfill_pixel_center = fuzzed_options.polyfill_pixel_center;
++    if (fuzzed_options.polyfill_pixel_center) {
++        options.polyfill_pixel_center = 99;  // Number bigger then is normally allowed in WGSL
++    }
+     options.workarounds.polyfill_case_switch = fuzzed_options.polyfill_case_switch;
+     options.workarounds.scalarize_max_min_clamp = fuzzed_options.scalarize_max_min_clamp;
+     options.workarounds.dva_transform_handle = fuzzed_options.dva_transform_handle;
+diff --git a/src/tint/lang/spirv/writer/writer_test.cc b/src/tint/lang/spirv/writer/writer_test.cc
+index 3ccb8c3122284c51c3adac2405f18952ffbc217a..b5e30a73f9939f2f54874c041b94195fdbcc0a56 100644
+--- a/src/tint/lang/spirv/writer/writer_test.cc
++++ b/src/tint/lang/spirv/writer/writer_test.cc
+@@ -394,5 +394,60 @@ TEST_F(SpirvWriterTest, WorkgroupStorageSize_OverflowAfterAlign) {
+     EXPECT_EQ(workgroup_info.storage_size, 0x100000000ull);
+ }
+ 
++TEST_F(SpirvWriterTest, CanGenerate_StructMemberPadding_TooLarge) {
++    ty.Get<core::type::Struct>(
++        mod.symbols.New("S"),
++        tint::Vector{ty.Get<core::type::StructMember>(mod.symbols.New("a"), ty.i32(), 0u, 0u, 4u,
++                                                      4u, core::IOAttributes{}),
++                     ty.Get<core::type::StructMember>(
++                         mod.symbols.New("b"), ty.i32(), 1u,
++                         static_cast<uint32_t>(tint::internal_limits::kMaxStructMemberPadding + 4),
++                         4u, 4u, core::IOAttributes{})},
++        8u /* size */);
++
++    auto* ep = b.ComputeFunction("main");
++    b.Append(ep->Block(), [&] { b.Return(ep); });
++
++    Options options;
++    auto result = Generate(options);
++    ASSERT_NE(result, Success);
++    EXPECT_THAT(result.Failure().reason, testing::HasSubstr("is larger than the maximum"));
++}
++
++TEST_F(SpirvWriterTest, PolyfillPixelCenter) {
++    auto* position = b.FunctionParam("position", ty.vec4f());
++    position->SetBuiltin(core::BuiltinValue::kPosition);
++
++    auto* ep = b.FragmentFunction("main", ty.void_());
++    ep->SetParams({position});
++
++    b.Append(ep->Block(), [&] {
++        b.Let("p", position);
++        b.Return(ep);
++    });
++
++    Options options;
++    options.polyfill_pixel_center = 0;
++    auto result = Generate(options);
++    ASSERT_EQ(result, Success) << result.Failure() << output_;
++    EXPECT_INST(R"(
++       %main = OpFunction %void None %12
++         %13 = OpLabel
++         %14 = OpLoad %v4float %main_position_Input None
++         %15 = OpVectorShuffle %v2float %14 %14 0 1
++         %17 = OpExtInst %v2float %18 Floor %15
++         %19 = OpFAdd %v2float %17 %20
++         %22 = OpExtInst %v4float %18 InterpolateAtOffset %main_loc0_Input %23
++         %24 = OpCompositeExtract %float %22 2
++         %25 = OpCompositeExtract %float %22 3
++         %26 = OpFDiv %float %24 %25
++         %27 = OpFDiv %float %float_1 %25
++         %29 = OpCompositeConstruct %v4float %19 %26 %27
++         %30 = OpFunctionCall %void %main_inner %29
++               OpReturn
++               OpFunctionEnd
++)");
++}
++
+ }  // namespace
+ }  // namespace tint::spirv::writer

@@ -1,0 +1,338 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andres Ricardo Perez <andresrperez@chromium.org>
+Date: Tue, 9 Jun 2026 06:53:39 -0700
+Subject: Move PlatformFont::Compare() to a static typeface id
+
+The PlatformFont::Compare() operator, used on LRU cache to
+gfx:Canvas::GetStringWidth(), uses SkTypeface::uniqueID() as part of the
+ordering. In some platforms (MacOS), the underlying typeface might be
+purged from other caches. This can cause a future query to not match the
+ID originally used in insertion.
+
+This change extracts and caches the Skia unique ID once as an immutable
+integer during PlatformFont construction. Sorting logic now evaluates
+this locked integer directly. Additionally, if the returned
+typeface_unique_id is 0, meaning it was never set, the cache is not
+used.
+
+Bug: 502282040
+Change-Id: Ia9f276b52f3410f541e4189aed720903be298d3e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7841558
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Robert Liao <robliao@chromium.org>
+Commit-Queue: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1643923}
+
+diff --git a/ui/gfx/canvas.cc b/ui/gfx/canvas.cc
+index 853e021b093753a0c3dfec5aa0d365dbb62cbd4f..8842d4334ece1219d983b85953814b10dcc40913 100644
+--- a/ui/gfx/canvas.cc
++++ b/ui/gfx/canvas.cc
+@@ -124,12 +124,14 @@ float Canvas::GetStringWidthF(std::u16string_view text,
+       font_list.GetPrimaryFont().platform_font());
+ 
+   // Cache only if there is one single Font, and that Font is already
+-  // initialized (has a not-null PlatformFont). Otherwise SizeStringFloat()
+-  // might return a different value on subsequent calls.
++  // initialized (has a non-null PlatformFont and a non-zero
++  // typeface_unique_id). Otherwise, unstable font state during initialization
++  // could lead to incorrect cache matches or misses.
+   const bool use_cache =
+       base::FeatureList::IsEnabled(features::kStringWidthCache) &&
+       text.length() <= kMaxStringWidthCacheStringLength &&
+-      font_list.GetFonts().size() == 1 && platform_font_ref;
++      font_list.GetFonts().size() == 1 && platform_font_ref &&
++      platform_font_ref->typeface_unique_id() != 0u;
+ 
+   if (use_cache) {
+     const StringWidthCacheKey key(std::u16string(text), platform_font_ref);
+diff --git a/ui/gfx/canvas_unittest.cc b/ui/gfx/canvas_unittest.cc
+index 3c2fed90228755bff193f4753cfe3529a512ebb3..fac371b18cfc6231c49cb5090b26a4ad858b5327 100644
+--- a/ui/gfx/canvas_unittest.cc
++++ b/ui/gfx/canvas_unittest.cc
+@@ -4,11 +4,14 @@
+ 
+ #include "ui/gfx/canvas.h"
+ 
++#include <algorithm>
++#include <array>
+ #include <limits>
+ 
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "build/build_config.h"
++#include "skia/ext/font_utils.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/gfx/font_list.h"
+@@ -91,4 +94,119 @@ TEST_F(CanvasTest, StringSizeWithLineHeight) {
+   EXPECT_EQ(3 * 1000 + one_line_size.height(), four_line_size.height());
+ }
+ 
++namespace {
++
++class IdMutatingMockPlatformFont : public PlatformFont {
++ public:
++  explicit IdMutatingMockPlatformFont(sk_sp<SkTypeface> typeface)
++      : typeface_(typeface) {
++    // Lock in the initial Skia ID during simulated platform construction
++    set_typeface_unique_id(typeface_ ? typeface_->uniqueID() : 0);
++  }
++
++  void SimulateBackendIdMutation(sk_sp<SkTypeface> new_typeface) {
++    // Simulate Skia purging and allocating a new SkTypeface with a new ID
++    typeface_ = new_typeface;
++  }
++
++  // Minimal virtual overrides
++  Font DeriveFont(int size_delta,
++                  int style,
++                  Font::Weight weight) const override {
++    return Font();
++  }
++  int GetHeight() override { return 10; }
++  Font::Weight GetWeight() const override { return Font::Weight::NORMAL; }
++  int GetBaseline() override { return 10; }
++  int GetCapHeight() override { return 10; }
++  int GetExpectedTextWidth(int length) override { return length * 5; }
++  int GetStyle() const override { return Font::NORMAL; }
++  const std::string& GetFontName() const override {
++    static const std::string name = "Mock";
++    return name;
++  }
++  std::string GetActualFontName() const override { return "Mock"; }
++  std::vector<std::string> GetActualFontNames() const override {
++    return {"Mock"};
++  }
++  int GetFontSize() const override { return 12; }
++  const FontRenderParams& GetFontRenderParams() override {
++    static FontRenderParams params;
++    return params;
++  }
++  sk_sp<SkTypeface> GetNativeSkTypeface() const override { return typeface_; }
++
++#if BUILDFLAG(IS_APPLE)
++  CTFontRef GetCTFont() const override { return nullptr; }
++#endif
++
++ private:
++  ~IdMutatingMockPlatformFont() override = default;
++  sk_sp<SkTypeface> typeface_;
++};
++
++}  // namespace
++
++TEST_F(CanvasTest, StringWidthCacheIdMutationResilience) {
++  base::test::ScopedFeatureList feature_list(features::kStringWidthCache);
++  auto& cache = Canvas::GetStringWidthCacheForTesting();
++  cache.Clear();
++
++  // Create different typefaces to simulate ID change.
++#if BUILDFLAG(IS_WIN)
++  std::string font1 = "Arial";
++  std::string font2 = "Courier New";
++#else
++  std::string font1 = "sans-serif";
++  std::string font2 = "monospace";
++#endif
++
++  std::array<sk_sp<SkTypeface>, 3> tfs;
++  tfs[0] = skia::MakeTypefaceFromName(font1.c_str(), SkFontStyle());
++  tfs[1] = skia::MakeTypefaceFromName(font2.c_str(), SkFontStyle());
++  tfs[2] = skia::MakeTypefaceFromName("serif", SkFontStyle());
++
++  ASSERT_TRUE(tfs[0]);
++  ASSERT_TRUE(tfs[1]);
++  ASSERT_TRUE(tfs[2]);
++
++  // Sort by unique ID to guarantee tf_low < tf_mid < tf_high
++  std::sort(tfs.begin(), tfs.end(),
++            [](const sk_sp<SkTypeface>& a, const sk_sp<SkTypeface>& b) {
++              return a->uniqueID() < b->uniqueID();
++            });
++
++  sk_sp<SkTypeface> tf_low = tfs[0];
++  sk_sp<SkTypeface> tf_mid = tfs[1];
++  sk_sp<SkTypeface> tf_high = tfs[2];
++
++  ASSERT_NE(tf_low->uniqueID(), tf_mid->uniqueID());
++  ASSERT_NE(tf_mid->uniqueID(), tf_high->uniqueID());
++
++  auto other_font = base::MakeRefCounted<IdMutatingMockPlatformFont>(tf_mid);
++  Canvas::StringWidthCacheKey key_other(u"IdMutationTest", other_font);
++
++  auto mock_font = base::MakeRefCounted<IdMutatingMockPlatformFont>(tf_low);
++  Canvas::StringWidthCacheKey key(u"IdMutationTest", mock_font);
++
++  // Insert key_other first to make it the root
++  cache.Put(key_other, 60.0f);
++  cache.Put(key, 50.0f);
++  EXPECT_EQ(cache.size(), 2U);
++
++  // Simulate Skia cache purging/re-deriving the physical font ID
++  // tf_low -> tf_high.
++  // Now key (tf_high) is left child of key_other (tf_mid), which violates BST
++  // (tf_high > tf_mid).
++  mock_font->SimulateBackendIdMutation(tf_high);
++
++  // Without the fix, the mutated ID will corrupt the RB-tree, causing Get()
++  // to return end(). With the fix, the locked ID ensures it is found perfectly.
++  EXPECT_NE(cache.Get(key), cache.end());
++
++  // Clean up cache for other tests.
++  cache.Clear();
++  EXPECT_EQ(cache.size(), 0U);
++}
++
+ }  // namespace gfx
+diff --git a/ui/gfx/platform_font.cc b/ui/gfx/platform_font.cc
+index d01a6ca178b87059d0dbd1b0ff0a39ccff468cbc..110f9e77564b5196c8e3e23b7261eb68b27d84c3 100644
+--- a/ui/gfx/platform_font.cc
++++ b/ui/gfx/platform_font.cc
+@@ -36,13 +36,21 @@ int PlatformFont::GetFontSizeDeltaIgnoringUserOrLocaleSettings(
+          user_or_locale_delta;
+ }
+ 
++PlatformFont::PlatformFont() = default;
++PlatformFont::~PlatformFont() = default;
++
++void PlatformFont::set_typeface_unique_id(uint32_t id) {
++  CHECK_EQ(typeface_unique_id_, 0U);
++  CHECK_NE(id, 0U);
++  typeface_unique_id_ = id;
++}
++
+ std::strong_ordering PlatformFont::Compare(const PlatformFont& other) const {
+-  DCHECK(GetNativeSkTypeface());
+-  DCHECK(other.GetNativeSkTypeface());
+-  return std::make_tuple(GetNativeSkTypeface()->uniqueID(), GetFontSize(),
+-                         GetStyle()) <=>
+-         std::make_tuple(other.GetNativeSkTypeface()->uniqueID(),
+-                         other.GetFontSize(), other.GetStyle());
++  CHECK_NE(typeface_unique_id_, 0U);
++  CHECK_NE(other.typeface_unique_id_, 0U);
++  return std::make_tuple(typeface_unique_id_, GetFontSize(), GetStyle()) <=>
++         std::make_tuple(other.typeface_unique_id_, other.GetFontSize(),
++                         other.GetStyle());
+ }
+ 
+ }  // namespace gfx
+diff --git a/ui/gfx/platform_font.h b/ui/gfx/platform_font.h
+index f0f6567e910701dbc23429d45dc7948790315989..16b7275aabaac6d08cddaca6c8584662be751ff9 100644
+--- a/ui/gfx/platform_font.h
++++ b/ui/gfx/platform_font.h
+@@ -126,18 +126,27 @@ class COMPONENT_EXPORT(GFX) PlatformFont
+   // otherwise lose the handle to the correct platform font instance.
+   virtual sk_sp<SkTypeface> GetNativeSkTypeface() const = 0;
+ 
++  uint32_t typeface_unique_id() const { return typeface_unique_id_; }
++
+   std::strong_ordering operator<=>(const PlatformFont& other) const {
+     return Compare(other);
+   }
+ 
+  protected:
+-  virtual ~PlatformFont() = default;
++  PlatformFont();
++  virtual ~PlatformFont();
+ 
+   // Compares this PlatformFont with |other|.
+   virtual std::strong_ordering Compare(const PlatformFont& other) const;
+ 
++  void set_typeface_unique_id(uint32_t id);
++
+  private:
+   friend class base::RefCounted<PlatformFont>;
++
++  // Cached unique ID of the Skia typeface, used to ensure stable comparison
++  // ordering.
++  uint32_t typeface_unique_id_ = 0;
+ };
+ 
+ constexpr int PlatformFont::GetFontSizeDelta(int desired_font_size) {
+diff --git a/ui/gfx/platform_font_ios.mm b/ui/gfx/platform_font_ios.mm
+index 88bacca5729dd31600264ad95e2bf26d220143ee..0bc303e545b03bdbbf26a9f528f36069adacf3c2 100644
+--- a/ui/gfx/platform_font_ios.mm
++++ b/ui/gfx/platform_font_ios.mm
+@@ -135,6 +135,9 @@
+ CTFontRef PlatformFontIOS::GetCTFont() const {
+   UIFont* font = [UIFont fontWithName:base::SysUTF8ToNSString(font_name_)
+                                  size:font_size_];
++  if (!font) {
++    font = [UIFont systemFontOfSize:font_size_];
++  }
+ 
+   UIFontDescriptor* descriptor = [font fontDescriptor];
+ 
+@@ -161,7 +164,8 @@
+ }
+ 
+ sk_sp<SkTypeface> PlatformFontIOS::GetNativeSkTypeface() const {
+-  return SkMakeTypefaceFromCTFont(GetCTFont());
++  CTFontRef ct_font = GetCTFont();
++  return ct_font ? SkMakeTypefaceFromCTFont(ct_font) : nullptr;
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -186,12 +190,17 @@
+ }
+ 
+ void PlatformFontIOS::CalculateMetrics() {
+-  UIFont* font = base::apple::CFToNSPtrCast(GetCTFont());
++  CTFontRef ct_font = GetCTFont();
++  UIFont* font = base::apple::CFToNSPtrCast(ct_font);
+   height_ = ceil(font.lineHeight);
+   ascent_ = ceil(font.ascender);
+   cap_height_ = ceil(font.capHeight);
+   average_width_ = [@"x" cr_sizeWithFont:font].width;
+ 
++  sk_sp<SkTypeface> typeface =
++      ct_font ? SkMakeTypefaceFromCTFont(ct_font) : nullptr;
++  set_typeface_unique_id(typeface ? typeface->uniqueID() : 0);
++
+   FontRenderParamsQuery query;
+   query.families.push_back(font_name_);
+   query.pixel_size = font_size_;
+diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
+index 06ee100d7ea2e892dbf3c0b1adc96c5013ef678a..86c937f1e6d03b88803a2ca80abff19c5acc6408 100644
+--- a/ui/gfx/platform_font_mac.mm
++++ b/ui/gfx/platform_font_mac.mm
+@@ -436,7 +436,8 @@ CTFontRef SystemFontForConstructorOfType(
+ }
+ 
+ sk_sp<SkTypeface> PlatformFontMac::GetNativeSkTypeface() const {
+-  return SkMakeTypefaceFromCTFont(GetCTFont());
++  CTFontRef ct_font = GetCTFont();
++  return ct_font ? SkMakeTypefaceFromCTFont(ct_font) : nullptr;
+ }
+ 
+ // static
+@@ -476,6 +477,9 @@ CTFontRef SystemFontForConstructorOfType(
+       << "use the SystemFontType constructor. Extend the SystemFontType enum "
+       << "if necessary.";
+ #endif  // DCHECK_IS_ON()
++  sk_sp<SkTypeface> typeface =
++      ct_font ? SkMakeTypefaceFromCTFont(ct_font) : nullptr;
++  set_typeface_unique_id(typeface ? typeface->uniqueID() : 0);
+   CalculateMetricsAndInitRenderParams();
+ }
+ 
+diff --git a/ui/gfx/platform_font_skia.cc b/ui/gfx/platform_font_skia.cc
+index 99b85736e1e55de9430131d638de16ce34b20b65..15385b4e9375d0ae174855cfba0b2ba85c215a8b 100644
+--- a/ui/gfx/platform_font_skia.cc
++++ b/ui/gfx/platform_font_skia.cc
+@@ -382,6 +382,7 @@ void PlatformFontSkia::InitFromDetails(sk_sp<SkTypeface> typeface,
+     return;
+   }
+ 
++  set_typeface_unique_id(typeface_->uniqueID());
+   font_size_pixels_ = font_size_pixels;
+   style_ = style;
+   weight_ = weight;
+@@ -392,6 +393,7 @@ void PlatformFontSkia::InitFromDetails(sk_sp<SkTypeface> typeface,
+ void PlatformFontSkia::InitFromPlatformFont(const PlatformFontSkia* other) {
+   TRACE_EVENT0("fonts", "PlatformFontSkia::InitFromPlatformFont");
+   typeface_ = other->typeface_;
++  set_typeface_unique_id(other->typeface_unique_id());
+   font_family_ = other->font_family_;
+   font_size_pixels_ = other->font_size_pixels_;
+   style_ = other->style_;

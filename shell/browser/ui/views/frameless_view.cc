@@ -16,7 +16,6 @@ namespace electron {
 
 namespace {
 
-const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace

@@ -1,0 +1,5 @@
+# Downloaded profile data (fetched by script/pgo/download-profiles.py via
+# gclient hooks); only the .pgo.txt state files are checked in.
+*.profdata
+*.profile
+*.version

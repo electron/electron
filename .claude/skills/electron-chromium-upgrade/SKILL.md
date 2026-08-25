@@ -133,6 +133,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 6. When `e build` succeeds, run `e start --version`
 7. Check if you have any pending changes in the Chromium repo by running `git status`
     - If you have changes follow the instructions below in "A. Patch Fixes" to correctly commit those modifications into the appropriate patch file
+8. Final commit self-check: run `git log --format='%h %B'` over the commits this upgrade added (everything since the `chore: bump chromium in DEPS` commit) and verify that each upstream CL is referenced by exactly one non-fixup commit — full messages, not just titles, since `Ref:` lines live in commit bodies. If a CL appears in more than one non-fixup commit, consolidate with `git commit --fixup` + autosquash rebase per `references/phase-two-commit-guidelines.md`
 
 ## Commands Reference
 

@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Allen Bauer <kylixrd@chromium.org>
+Date: Tue, 12 May 2026 11:20:04 -0700
+Subject: Check for MenuController deletion in OnMouseReleased.
+
+In the rare, off-chance that an Accessibility tool causes the
+MenuController to be deleted while in OnMouseReleased, check for that
+case and exit immediately. This guards against a potential UaF of
+"this".
+
+Change-Id: Icdd4898c7ca38d00ac9839f4b8e48b86830ca92b
+Bug: 511712766
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7839811
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Allen Bauer <kylixrd@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1629464}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index ea1824d09b37f6404985ffb048ce196ad5811507..5095e25112ffa1551e82bc5c64bdde07df40c89d 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -966,6 +966,8 @@ void MenuController::OnMouseReleased(SubmenuView* source,
+                                      const ui::MouseEvent& event) {
+   current_mouse_pressed_state_ &= ~event.changed_button_flags();
+ 
++  auto this_ref = AsWeakPtr();
++
+   if (current_mouse_event_target_) {
+     // If this was the final mouse button, then remove the forwarding target.
+     // We need to do this *before* dispatching the event to the root view
+@@ -1041,6 +1043,12 @@ void MenuController::OnMouseReleased(SubmenuView* source,
+     // User either clicked on empty space, or a menu that has children.
+     SetSelection(part.menu ? part.menu.get() : state_.item.get(),
+                  SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
++    // On the rare, off chance that an accessibility event is fired as a result
++    // of the selection changing *and* the Accessibility tool causes the menu to
++    // be closed, `this` will be otherwise dangling. Guard against that.
++    if (!this_ref) {
++      return;
++    }
+   }
+   SendMouseCaptureLostToActiveView();
+   MaybeForwardToAnnotation(source, event);

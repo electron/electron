@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 30 Jul 2026 16:26:11 -0400
+Subject: fix: don't read a stale last-error in ReplaceFile on Windows
+
+When ::ReplaceFile fails with ERROR_FILE_NOT_FOUND, ReplaceFile() falls
+back to ::MoveFile and, if that also fails, reports the ::MoveFile
+failure via File::GetLastFileError(). However, RecordReplaceFileResult()
+runs between the ::MoveFile call and the GetLastError() call. Recording a
+histogram touches TLS, locks and (on first use) allocates, any of which
+may reset the thread's last-error value to ERROR_SUCCESS.
+
+When that happens File::OSErrorToFileError() is called with
+ERROR_SUCCESS, which trips its "This function should only be called for
+errors" DCHECK and crashes debug/DCHECK-enabled builds:
+
+  FATAL:base/files/file_win.cc:386] DCHECK failed:
+  static_cast<DWORD>(0L) != last_error (0 vs. 0).
+
+Capture the ::MoveFile error code immediately after the call instead, and
+fall back to the original ::ReplaceFile error if no error was recorded.
+
+diff --git a/base/files/file_util_win.cc b/base/files/file_util_win.cc
+index b55c60b492cbd90bdb7534383f64330f19582123..5eac6983fc1705980eef3c6bbb4384db90b41945 100644
+--- a/base/files/file_util_win.cc
++++ b/base/files/file_util_win.cc
+@@ -636,6 +636,7 @@ bool ReplaceFile(const FilePath& from_path,
+   }
+ 
+   const DWORD replace_error_code = GetLastError();
++  DWORD move_error_code = ERROR_SUCCESS;
+   if (replace_error_code == ERROR_UNABLE_TO_MOVE_REPLACEMENT_2 &&
+       !backup_path.empty()) {
+     // In the case of ERROR_UNABLE_TO_MOVE_REPLACEMENT_2, the replace operation
+@@ -652,6 +653,9 @@ bool ReplaceFile(const FilePath& from_path,
+     // doesn't already exist.
+     const bool is_move_success =
+         ::MoveFile(from_path.value().c_str(), to_path.value().c_str());
++    // Capture the failure reason immediately: everything below (histogram
++    // recording, DeleteFile, ...) may reset the thread's last-error value.
++    move_error_code = is_move_success ? DWORD{ERROR_SUCCESS} : ::GetLastError();
+     RecordReplaceFileResult(/*is_backup_path_valid=*/!backup_path.empty(),
+                             replace_error_code, is_move_success);
+ 
+@@ -672,8 +676,9 @@ bool ReplaceFile(const FilePath& from_path,
+   if (error) {
+     const File::Error replace_error =
+         File::OSErrorToFileError(replace_error_code);
+-    *error = replace_error == File::FILE_ERROR_NOT_FOUND
+-                 ? File::GetLastFileError()
++    *error = (replace_error == File::FILE_ERROR_NOT_FOUND &&
++              move_error_code != ERROR_SUCCESS)
++                 ? File::OSErrorToFileError(move_error_code)
+                  : replace_error;
+   }
+   return false;

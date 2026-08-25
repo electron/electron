@@ -4,6 +4,8 @@
 
 #include "shell/common/node_util.h"
 
+#include <cstdlib>
+
 #include "base/compiler_specific.h"
 #include "base/containers/to_value_list.h"
 #include "base/json/json_writer.h"
@@ -18,6 +20,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_natives_code_cache.h"
 #include "shell/common/process_util.h"
 #include "third_party/electron_node/src/node_process-inl.h"
 
@@ -35,7 +38,16 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
       base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
       builtin_loader;
   if (!builtin_loader->Get()) {
-    builtin_loader->Set(base::WrapUnique(new node::builtins::BuiltinLoader));
+    auto loader = std::make_unique<node::builtins::BuiltinLoader>();
+    // Feed the build-time js2c code cache so the framework bundles are
+    // consumed instead of compiled from source. Must run before the first
+    // LookupAndCompileFunction; empty on builds without a generated cache.
+    const bool has_node_env = node::Environment::GetCurrent(context) != nullptr;
+    const auto& cache =
+        GetNativesCodeCache(CurrentProcessJs2cCacheFlavor(has_node_env));
+    if (!cache.empty())
+      loader->RefreshCodeCache(cache);
+    builtin_loader->Set(std::move(loader));
   }
   v8::MaybeLocal<v8::Function> compiled =
       builtin_loader->Get()->LookupAndCompileFunction(
@@ -65,6 +77,22 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
                << "): " << msg;
   }
   return ret;
+}
+
+void FeedEnvironmentCodeCache(node::Environment* env) {
+  const auto& cache = GetNativesCodeCache(CurrentProcessJs2cCacheFlavor());
+  if (!cache.empty())
+    env->builtin_loader()->RefreshCodeCache(cache);
+}
+
+void InstallProcessCodeCache() {
+  static const bool installed = [] {
+    const auto& cache = GetNativesCodeCache(CurrentProcessJs2cCacheFlavor());
+    if (!cache.empty())
+      node::builtins::BuiltinLoader::SetProcessDefaultCodeCache(&cache);
+    return true;
+  }();
+  (void)installed;
 }
 
 void EmitWarning(const std::string_view warning_msg,
@@ -153,16 +181,12 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
 
 ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
     : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
-  // In browser-like processes, some nested run loops (macOS usually) may
-  // re-enter. This is safe because we expect the policy was explicit in the
-  // first place for those processes. However, in renderer processes, there may
-  // be unexpected behavior if this code is triggered within a pending microtask
-  // scope.
-  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
+  // Browser-like processes already run with kExplicit, nested run loops
+  // included. Renderers can get here from inside script (a frame's environment
+  // freed by element.remove()); explicit checkpoints are then no-ops until the
+  // enclosing scope unwinds.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
     DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
-  } else {
-    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
-  }
 
   microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 }

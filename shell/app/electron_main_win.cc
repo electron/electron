@@ -4,7 +4,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include <shellapi.h>
 #include <shellscalingapi.h>
 #include <tchar.h>
@@ -15,18 +14,15 @@
 #include <string>
 #include <utility>
 
-// workaround for base/strings/strcat.h(18,9): error: 'StrCat' macro redefined
-// [-Werror,-Wmacro-redefined]
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmacro-redefined"
-
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/process/launch.h"
+#include "base/process/process.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/atl.h"  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include "base/win/dark_mode_support.h"
 #include "chrome/app/exit_code_watcher_win.h"
 #include "components/crash/core/app/crash_switches.h"
@@ -43,14 +39,15 @@
 #include "shell/common/electron_constants.h"
 #include "third_party/crashpad/crashpad/util/win/initial_client_data.h"
 
-#pragma clang diagnostic pop
-
 namespace {
 
 // Redefined here so we don't have to introduce a dependency on //content
 // from //electron:electron_app
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
+const char kUtilityProcess[] = "utility";
+const char kUtilitySubType[] = "utility-sub-type";
+const char kNodeService[] = "node.mojom.NodeService";
 
 [[nodiscard]] bool IsEnvSet(const base::cstring_view name) {
   size_t required_size = 0;
@@ -214,6 +211,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crashpad_status;
   }
 
+  if (!process_type.empty()) {
+    // Have Windows shut child processes down after the browser at logoff and
+    // shutdown, as Chrome does, so the browser never watches them die.
+    ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
+  }
+
   // access ui native theme here to prevent blocking calls later
   base::win::AllowDarkModeForApp(true);
 
@@ -232,5 +235,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   content::ContentMainParams params(&delegate);
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
-  return content::ContentMain(std::move(params));
+  int rc = content::ContentMain(std::move(params));
+  // System DLLs loaded into utility processes crash in their DLL_PROCESS_DETACH
+  // handlers during CRT exit, so leave the way Chrome does: without running it.
+  // Node utility processes keep the normal exit for their addons' handlers.
+  if (process_type == kUtilityProcess &&
+      command_line->GetSwitchValueASCII(kUtilitySubType) != kNodeService) {
+    base::Process::TerminateCurrentProcessImmediately(rc);
+  }
+  return rc;
 }

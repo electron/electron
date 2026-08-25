@@ -4,12 +4,16 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+const features = process._linkedBinding('electron_common_features');
 
 describe('asar package', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -84,6 +88,56 @@ describe('asar package', () => {
       } else if (message === 'error') {
         throw new Error(error);
       }
+    });
+  });
+
+  describe('downloads', () => {
+    const fileUrl = (p: string) => url.pathToFileURL(p).toString();
+
+    it('downloads a packed file through webContents.downloadURL()', async () => {
+      const w = new BrowserWindow({ show: false });
+      const src = path.join(asarDir, 'a.asar', 'ping.js');
+      const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-dl-')), 'saved.js');
+      const willDownload = once(w.webContents.session, 'will-download');
+      w.webContents.downloadURL(fileUrl(src));
+      const [, item] = (await willDownload) as [unknown, Electron.DownloadItem];
+      item.savePath = savePath;
+      const [, state] = await once(item, 'done');
+      expect(state).to.equal('completed');
+      expect(item.getFilename()).to.equal('ping.js');
+      expect(importedFs.readFileSync(savePath, 'utf8')).to.equal(importedFs.readFileSync(src, 'utf8'));
+    });
+
+    ifit(features.isPDFViewerEnabled())('saves a packed PDF from the PDF viewer', async () => {
+      const w = new BrowserWindow({ show: false });
+      const src = path.join(asarDir, 'pdf.asar', 'cat.pdf');
+      const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-pdf-')), 'saved.pdf');
+      const willDownload = once(w.webContents.session, 'will-download');
+      await w.loadURL(fileUrl(src));
+      // Click the viewer's download button once its plugin is up; an
+      // unedited document is saved through the browser as a download.
+      const clickSave = `new Promise((resolve) => { const tick = () => {
+        const button = document.querySelector('#viewer')?.shadowRoot?.querySelector('#toolbar')
+          ?.shadowRoot?.querySelector('#downloads')?.shadowRoot?.querySelector('#save');
+        if (button) { button.click(); resolve(true); } else { setTimeout(tick, 100); } }; tick(); })`;
+      const viewerFrame = () =>
+        w.webContents.mainFrame.framesInSubtree.find((f) => f.url.startsWith('chrome-extension://'));
+      const deadline = Date.now() + 20000;
+      let downloading: unknown[] | undefined;
+      while (!downloading && Date.now() < deadline) {
+        const frame = viewerFrame();
+        if (frame) await frame.executeJavaScript(clickSave, true).catch(() => {});
+        downloading = await Promise.race([willDownload, setTimeout(500).then(() => undefined)]);
+      }
+      expect(downloading, 'the viewer never started a download').to.be.an('array');
+      const item = downloading![1] as Electron.DownloadItem;
+      item.savePath = savePath;
+      const [, state] = await once(item, 'done');
+      expect(state).to.equal('completed');
+      expect(item.getFilename()).to.equal('cat.pdf');
+      expect(
+        importedFs.readFileSync(savePath).equals(importedFs.readFileSync(path.join(fixtures, 'cat.pdf')))
+      ).to.equal(true);
     });
   });
 
@@ -250,6 +304,49 @@ describe('asar package', function () {
       itremote('reads a file in filesystem', function () {
         const p = path.resolve(asarDir, 'file');
         expect(fs.readFileSync(p).toString().trim()).to.equal('file');
+      });
+    });
+
+    describe('archives with self-referential link entries', function () {
+      // Guard against a missing/renamed fixture silently passing the ENOENT
+      // assertions below: a path inside a non-existent .asar would also throw
+      // ENOENT. Assert the archive file itself is present first.
+      itremote('has the link-cycle fixtures on disk', function () {
+        // original-fs bypasses the asar wrapper so the archive file is stat'd
+        // as a plain file rather than resolved as an archive root.
+        const originalFs = require('original-fs') as typeof importedFs;
+        for (const name of ['cyclic-link.asar', 'cyclic-link2.asar', 'cyclic-dir-link.asar']) {
+          const archive = path.join(fixtures, 'asar', name);
+          expect(originalFs.statSync(archive).isFile(), `${name} fixture missing`).to.equal(true);
+        }
+      });
+
+      itremote('throws instead of hanging on a self-linked file', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-link.asar', 'a');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('throws instead of hanging on a two-node link cycle', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-link2.asar', 'a');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('throws instead of hanging on a link that resolves through itself', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
+        expect(() => {
+          fs.readFileSync(p);
+        }).to.throw(/ENOENT/);
+      });
+
+      itremote('reports the missing entry from statSync without hanging', function () {
+        const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
+        expect(() => {
+          fs.statSync(p);
+        }).to.throw(/ENOENT/);
       });
     });
 
@@ -1035,6 +1132,7 @@ describe('asar package', function () {
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
         const names = dirs.map((a) => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1147,6 +1245,7 @@ describe('asar package', function () {
         const dirs = await promisify(fs.readdir)(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
 
         const names = dirs.map((a: any) => a.name);
@@ -1280,6 +1379,7 @@ describe('asar package', function () {
         const dirs = await fs.promises.readdir(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
         const names = dirs.map((a) => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1300,6 +1400,28 @@ describe('asar package', function () {
       itremote('throws ENOENT error when can not find file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.readdir(p), 'ENOENT');
+      });
+    });
+
+    describe('fs.globSync', function () {
+      itremote('supports withFileTypes with a cwd inside an asar archive', function () {
+        const cwd = path.join(asarDir, 'a.asar');
+        const dirents = fs.globSync('*.js', { cwd, withFileTypes: true });
+        expect(dirents).to.have.lengthOf(1);
+        expect(dirents[0]).to.be.an.instanceof(fs.Dirent);
+        expect(dirents[0].name).to.equal('ping.js');
+        expect(dirents[0].parentPath).to.equal(cwd);
+      });
+    });
+
+    describe('fs.glob', function () {
+      itremote('supports withFileTypes with a cwd inside an asar archive', async function () {
+        const cwd = path.join(asarDir, 'a.asar');
+        const dirents = await promisify(fs.glob)('*.js', { cwd, withFileTypes: true });
+        expect(dirents).to.have.lengthOf(1);
+        expect(dirents[0]).to.be.an.instanceof(fs.Dirent);
+        expect(dirents[0].name).to.equal('ping.js');
+        expect(dirents[0].parentPath).to.equal(cwd);
       });
     });
 
@@ -1604,6 +1726,44 @@ describe('asar package', function () {
             expect(fs).to.have.own.property(propertyName).that.has.own.property(util.promisify.custom);
           }
         }
+      });
+    });
+
+    describe('splitPath', function () {
+      itremote('splits at the deepest .asar file component and normalizes the relative part', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        const archive = path.join(asarDir, 'a.asar');
+        expect(splitPath(path.join(archive, 'dir1', 'file1'))).to.deep.equal({
+          isAsar: true,
+          asarPath: archive,
+          filePath: ['dir1', 'file1'].join(path.sep)
+        });
+        expect(
+          splitPath(archive + path.sep + path.sep + 'dir1' + path.sep + path.sep + 'file1' + path.sep)
+        ).to.deep.equal({ isAsar: true, asarPath: archive, filePath: ['dir1', 'file1'].join(path.sep) });
+        expect(splitPath(path.join(archive, 'nested.asar', 'x'))).to.deep.equal({
+          isAsar: true,
+          asarPath: path.join(archive, 'nested.asar'),
+          filePath: 'x'
+        });
+        expect(splitPath(archive)).to.deep.equal({ isAsar: true, asarPath: archive, filePath: '' });
+      });
+
+      itremote('does not treat a real directory named like an archive as an archive', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        expect(splitPath(path.join(asarDir, 'file'))).to.deep.equal({ isAsar: false });
+        expect(splitPath(asarDir)).to.deep.equal({ isAsar: false });
+        expect(splitPath(path.join(fixtures, 'module', 'noop.js'))).to.deep.equal({ isAsar: false });
+      });
+
+      itremote('matches the archive extension the same way base::FilePath does', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        const dir = path.join(fixtures, 'module');
+        expect(splitPath(path.join(dir, 'X.ASAR', 'y')).isAsar).to.equal(true);
+        expect(splitPath(path.join(dir, '.asar', 'y')).isAsar).to.equal(true);
+        expect(splitPath(path.join(dir, 'x.asar.gz', 'y')).isAsar).to.equal(false);
+        expect(splitPath(path.join(dir, 'x.asarx', 'y')).isAsar).to.equal(false);
+        expect(splitPath(path.join(dir, 'asar', 'y')).isAsar).to.equal(false);
       });
     });
 

@@ -1,16 +1,15 @@
-const chalk = require('chalk');
-
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+const pass = styleText('green', '✓');
+const fail = styleText('red', '✗');
 
 function getElectronExec() {
   const OUT_DIR = getOutDir();

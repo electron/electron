@@ -1,0 +1,199 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Tue, 21 Jul 2026 13:40:21 -0700
+Subject: Add DontChangeBaseLevelForNPOTImmutableTextures driver bug
+ workaround.
+
+PowerVR GPUs on Android have a bug when changing the BASE_LEVEL of an
+immutable NPOT texture created via glTexStorage2D.
+
+This workaround triggers a Context Lost event when changing an immutable
+NPOT texture's BASE_LEVEL.
+
+TEST=gpu_unittests
+
+Bug: 534903095
+Change-Id: Ifffb9725dbf875e7757f14f914db4e7df7b154a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8131461
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1665757}
+(cherry picked from commit cd7d046effc5d185ae117d18e036deac0fd0427f)
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 4e411474542dc846942fe630b1dca64d014ae8c7..f72d93a27243368f5725b85b66bbf79802c1ba35 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -1907,6 +1907,9 @@ class GLES2DecoderImpl : public GLES2Decoder,
+                             const volatile GLint* params);
+ 
+   // Wrappers for glTexParameter functions.
++  bool CheckTexParameterBaseLevel(TextureRef* texture,
++                                  GLenum pname,
++                                  GLint param);
+   void DoTexParameterf(GLenum target, GLenum pname, GLfloat param);
+   void DoTexParameteri(GLenum target, GLenum pname, GLint param);
+   void DoTexParameterfv(GLenum target,
+@@ -8558,6 +8561,26 @@ void GLES2DecoderImpl::DoSamplerParameteriv(GLuint client_id,
+                                    sampler, pname, params[0]);
+ }
+ 
++bool GLES2DecoderImpl::CheckTexParameterBaseLevel(TextureRef* texture,
++                                                  GLenum pname,
++                                                  GLint param) {
++  if (pname == GL_TEXTURE_BASE_LEVEL &&
++      workarounds().dont_change_base_level_for_npot_immutable_textures) {
++    Texture* tex = texture->texture();
++    if (tex->base_level() != param && tex->target() == GL_TEXTURE_2D &&
++        tex->IsImmutable()) {
++      GLsizei width = 0, height = 0, depth = 0;
++      if (tex->GetLevelSize(tex->target(), 0, &width, &height, &depth) &&
++          (GLES2Util::IsNPOT(width) || GLES2Util::IsNPOT(height))) {
++        MarkContextLost(error::kGuilty);
++        group_->LoseContexts(error::kUnknown);
++        return false;
++      }
++    }
++  }
++  return true;
++}
++
+ void GLES2DecoderImpl::DoTexParameterf(
+     GLenum target, GLenum pname, GLfloat param) {
+   TextureRef* texture = texture_manager()->GetTextureInfoForTarget(
+@@ -8567,6 +8590,10 @@ void GLES2DecoderImpl::DoTexParameterf(
+     return;
+   }
+ 
++  if (!CheckTexParameterBaseLevel(texture, pname, static_cast<GLint>(param))) {
++    return;
++  }
++
+   texture_manager()->SetParameterf("glTexParameterf", error_state_.get(),
+                                    texture, pname, param);
+ }
+@@ -8580,6 +8607,10 @@ void GLES2DecoderImpl::DoTexParameteri(
+     return;
+   }
+ 
++  if (!CheckTexParameterBaseLevel(texture, pname, param)) {
++    return;
++  }
++
+   texture_manager()->SetParameteri("glTexParameteri", error_state_.get(),
+                                    texture, pname, param);
+ }
+@@ -8594,6 +8625,11 @@ void GLES2DecoderImpl::DoTexParameterfv(GLenum target,
+     return;
+   }
+ 
++  if (!CheckTexParameterBaseLevel(texture, pname,
++                                  static_cast<GLint>(*params))) {
++    return;
++  }
++
+   texture_manager()->SetParameterf("glTexParameterfv", error_state_.get(),
+                                    texture, pname, *params);
+ }
+@@ -8609,6 +8645,10 @@ void GLES2DecoderImpl::DoTexParameteriv(GLenum target,
+     return;
+   }
+ 
++  if (!CheckTexParameterBaseLevel(texture, pname, *params)) {
++    return;
++  }
++
+   texture_manager()->SetParameteri("glTexParameteriv", error_state_.get(),
+                                    texture, pname, *params);
+ }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index 8221dd0b24400df0e6650ce87974ec2f4cae5462..7e54c1280d28a49bae2aa929ad8f1f41b7f16b18 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -4325,6 +4325,49 @@ TEST_P(GLES3DecoderTest, ClearRenderableLevelsWithOutOfRangeBaseLevel) {
+   manager->ClearRenderableLevels(GetDecoder(), texture_ref);
+ }
+ 
++class GLES3DecoderNPOTImmutableTest : public GLES3DecoderManualInitTest {};
++
++INSTANTIATE_TEST_SUITE_P(Service,
++                         GLES3DecoderNPOTImmutableTest,
++                         ::testing::Bool());
++
++TEST_P(GLES3DecoderNPOTImmutableTest,
++       DontChangeBaseLevelForNPOTImmutableTextures) {
++  InitState init;
++  init.extensions = "GL_EXT_texture_storage ";
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.dont_change_base_level_for_npot_immutable_textures = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  // Set up an NPOT immutable texture via TexStorage2D.
++  DoBindTexture(GL_TEXTURE_2D, client_texture_id_, kServiceTextureId);
++  EXPECT_CALL(*gl_, TexStorage2DEXT(GL_TEXTURE_2D, 1, GL_RGBA8, 5, 5))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++  cmds::TexStorage2DEXT storage_cmd;
++  storage_cmd.Init(GL_TEXTURE_2D, 1, GL_RGBA8, 5, 5);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(storage_cmd));
++
++  // Setting BASE_LEVEL to 0 (same value) should succeed.
++  cmds::TexParameteri same_param_cmd;
++  same_param_cmd.Init(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_EQ(error::kNoError, ExecuteCmd(same_param_cmd));
++
++  // Changing BASE_LEVEL to 1 should lose context when workaround is enabled.
++  cmds::TexParameteri param_cmd;
++  param_cmd.Init(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++  EXPECT_EQ(error::kLostContext, ExecuteCmd(param_cmd));
++}
++
+ // TODO(gman): Complete this test.
+ // TEST_P(GLES2DecoderTest, CompressedTexImage2DGLError) {
+ // }
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index b1965b0db188d2ed6a18d5f838206f93c0d278ad..c91d69e64a38316f30b09ddf62a50726b3492e50 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3786,6 +3786,18 @@
+       "features": [
+         "reattach_fbo_depth_stencil_on_reallocation"
+       ]
++    },
++    {
++      "id": 486,
++      "cr_bugs": [534903095],
++      "description": "Changing BASE_LEVEL of NPOT immutable texture triggers driver bug on PowerVR GPUs.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "dont_change_base_level_for_npot_immutable_textures"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 7d6f58afbbed7c01fe6a71e3ee5f8a5d10995c32..c7cfb4bbe3c8da187df71848dd7cf80c0e87cbee 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -75,6 +75,7 @@ disable_webgpu_shared_images
+ disable_webnn_for_gpu
+ disable_webnn_for_npu
+ disallow_large_instanced_draw
++dont_change_base_level_for_npot_immutable_textures
+ dont_delete_source_texture_for_egl_image
+ dont_invalidate_incomplete_fbos
+ dont_use_loops_to_initialize_variables

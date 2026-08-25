@@ -4,6 +4,9 @@ root_extra_deps = [ "//electron" ]
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
 node_module_version = 146
 
+# Build Node.js against Chromium's BoringSSL instead of node's bundled OpenSSL.
+node_openssl_path = "//third_party/boringssl"
+
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
 
@@ -72,3 +75,13 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
+
+# Blink's crowdsourced V8 compile hints producer randomly selects 0.5% of
+# renderer processes (Windows only) to compile every http(s) script from
+# source -- deliberately not consuming an existing code cache, and neither
+# consuming nor producing local compile hints -- so that it can record which
+# functions were compiled to UKM. The consumer half lives in chrome/browser
+# and needs OptimizationGuide, and there is no UKM backend here, so this only
+# ever costs a cold-cache page load. Build the stub producer (as Android
+# does) instead.
+produce_v8_compile_hints = false

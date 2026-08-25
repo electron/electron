@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Tue, 19 May 2026 16:08:55 -0400
+Subject: GL: Sync program state after transform feedback.
+
+If we are syncing a call to BeginTransformFeedback,
+PauseTransformFeedback, UseProgram all at once, the program will be
+bound and then changed to an incorrect program when the transform
+feedback active state is synced afterwards.
+
+Fixed: chromium:513919827
+Change-Id: I66562446d364d03f628f927b4f4e8f5d7113fe4b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7858018
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index c0dea0110abcefe22f3e4380ba63364a5b504359..37b5740db3833711e5e04f548eb52ce823378661 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -2321,14 +2321,8 @@ angle::Result StateManagerGL::syncState(const gl::Context *context,
+                 updateDispatchIndirectBufferBinding(context);
+                 break;
+             case gl::state::DIRTY_BIT_PROGRAM_BINDING:
+-            {
+-                gl::Program *program = state.getProgram();
+-                if (program != nullptr)
+-                {
+-                    useProgram(GetImplAs<ProgramGL>(program)->getProgramID());
+-                }
++                syncProgramState(context);
+                 break;
+-            }
+             case gl::state::DIRTY_BIT_PROGRAM_EXECUTABLE:
+             {
+                 const gl::ProgramExecutable *executable = state.getProgramExecutable();
+@@ -2901,6 +2895,18 @@ void StateManagerGL::syncTransformFeedbackState(const gl::Context *context)
+         bindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+         mCurrentTransformFeedback = nullptr;
+     }
++
++    syncProgramState(context);
++}
++
++void StateManagerGL::syncProgramState(const gl::Context *context)
++{
++    gl::Program *program = context->getState().getProgram();
++    if (program != nullptr)
++    {
++        ProgramGL *programGL = GetImplAs<ProgramGL>(program);
++        useProgram(programGL->getProgramID());
++    }
+ }
+ 
+ GLuint StateManagerGL::getDefaultVAO() const
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index bad9aa5dfc406bb613d55b0c4752c0da13054558..fc44d63bde9c117c4586b0f86672132e7a52b25b 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -373,6 +373,7 @@ class StateManagerGL final : angle::NonCopyable
+ 
+     void syncSamplersState(const gl::Context *context);
+     void syncTransformFeedbackState(const gl::Context *context);
++    void syncProgramState(const gl::Context *context);
+ 
+     void updateEmulatedClipDistanceState(const gl::ProgramExecutable *executable,
+                                          const gl::ClipDistanceEnableBits enables) const;
+diff --git a/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp b/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
+index 4caf28b0019420008d8957961a42cb68cfb2e46e..77b028b0bbee4dd6301811212798d254690669f8 100644
+--- a/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
++++ b/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
+@@ -162,10 +162,16 @@ void TransformFeedbackGL::syncPausedState(bool paused) const
+         mStateManager->bindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTransformFeedbackID);
+         if (mIsPaused)
+         {
++            // If we're transitioning from active to paused, the currently bound program must be the
++            // one associated with this transform feedback.
++            ASSERT(mStateManager->getProgramID() == mActiveProgram);
+             mFunctions->pauseTransformFeedback();
+         }
+         else
+         {
++            // When transitioning to resumed, make sure the program associated with this transform
++            // feedback is set
++            mStateManager->useProgram(mActiveProgram);
+             mFunctions->resumeTransformFeedback();
+         }
+     }
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index d4b86a48220a4db37910a8c25a5eab6a73ccc35b..5356d09b58773edebef8ab399948354a36d2eb73 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -251,6 +251,34 @@ TEST_P(TransformFeedbackTest, QueryActiveNoXfbDrawThenXfbBeginEnd)
+     EXPECT_EQ(primitivesWritten, 0u);
+ }
+ 
++// Test that starting transform feedback with one program but pausing and drawing with another
++// program draws the expected results
++TEST_P(TransformFeedbackTest, DrawWithOtherProgramDuringPause)
++{
++    ANGLE_GL_PROGRAM(blueProgram, essl3_shaders::vs::Simple(), essl3_shaders::fs::Blue());
++
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    glUseProgram(mProgram);
++
++    // Bind the buffer for transform feedback output and start transform feedback
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++    glBeginTransformFeedback(GL_TRIANGLES);
++    glPauseTransformFeedback();
++    EXPECT_GL_NO_ERROR();
++
++    glUseProgram(blueProgram);
++    drawQuad(blueProgram, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    glUseProgram(mProgram);
++    glResumeTransformFeedback();
++    glEndTransformFeedback();
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
+ // Test that resuming transform feedback with a different program results in validation error.
+ TEST_P(TransformFeedbackTest, ProgramSwitchDuringPauseAndResume)
+ {

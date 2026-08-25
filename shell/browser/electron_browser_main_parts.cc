@@ -15,10 +15,13 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/nix/xdg_util.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/threading/watchdog.h"
+#include "base/time/time.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
@@ -81,6 +84,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
 #include "chrome/browser/ui/views/dark_mode_manager_linux.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
@@ -136,6 +140,23 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(IS_LINUX)
+// The display server connection or the session bus is gone: exit like
+// Chrome's SessionEnding(), with an off-thread watchdog that crashes us if
+// exiting hangs on the dead connection.
+void ExitOnSessionLoss() {
+  class ShutdownWatchdogDelegate : public base::Watchdog::Delegate {
+   public:
+    void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
+  };
+  static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
+  static base::NoDestructor<base::Watchdog> watchdog(
+      base::Seconds(10), "SessionLossShutdown", /*enabled=*/true,
+      delegate.get());
+  watchdog->Arm();
+  if (Browser* browser = Browser::Get())
+    browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
+}
+
 class LinuxUiGetterImpl : public ui::LinuxUiGetter {
  public:
   LinuxUiGetterImpl() = default;
@@ -181,7 +202,8 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
       node_bindings_{
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser,
+                               uv_default_loop())},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
       browser_{std::make_unique<Browser>()} {
@@ -254,11 +276,23 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope(isolate);
 
-  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+  // Electron: when the embedded Node startup snapshot is being consumed,
+  // JavascriptEnvironment did not create a context (it comes from
+  // Context::FromSnapshot inside node::CreateEnvironment) -- pass empty.
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+  node_bindings_->Initialize(isolate, context);
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      isolate, isolate->GetCurrentContext(), js_env_->platform(),
+      isolate, context, js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes());
+
+  // Enter the snapshot-deserialized main context (it was created inside
+  // CreateEnvironment, not in JavascriptEnvironment's ctor).
+  if (context.IsEmpty()) {
+    node_env_->context()->Enter();
+  }
+  node_bindings_->SetUpIsolate(isolate);
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
@@ -520,11 +554,11 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   std::string app_name = electron::Browser::Get()->GetName();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  auto shutdown_cb =
-      base::BindOnce([] { LOG(FATAL) << "Failed to shutdown."; });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
-      std::move(shutdown_cb),
+      base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
+  dbus_thread_linux::SetDisconnectedCallback(
+      base::BindRepeating(&ExitOnSessionLoss));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();

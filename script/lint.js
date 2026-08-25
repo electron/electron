@@ -156,7 +156,12 @@ const LINTERS = [
   {
     key: 'javascript',
     roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
-    ignoreRoots: ['.github/workflows/node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
+    ignoreRoots: [
+      '.github/workflows/node_modules',
+      'script/pgo/node_modules',
+      'spec/node_modules',
+      'spec/fixtures/native-addon'
+    ],
     test: (filename) => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
     run: async (opts, filenames) => {
       const clean = runOxlint(filenames, { fix: opts.fix });
@@ -305,6 +310,7 @@ const LINTERS = [
       '.git',
       '.github/workflows/node_modules',
       'node_modules',
+      'script/pgo/node_modules',
       'spec/node_modules',
       'spec/fixtures/native-addon'
     ],

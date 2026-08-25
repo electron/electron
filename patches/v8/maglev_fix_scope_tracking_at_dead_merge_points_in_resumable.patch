@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Tue, 21 Apr 2026 19:48:39 +0200
+Subject: [maglev] Fix scope tracking at dead merge points in resumable
+ functions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MarkBytecodeDead failed to update current_scope_info_ from the merge state
+at dead merge points in resumable functions. This lead to stale scope
+information being used in subsequent dead bytecodes, which can cause
+DCHECK failures when accessing context slots.
+
+Fixed by synchronizing current_scope_info_ from the merge state (if
+available) in MarkBytecodeDead.
+
+TAG=agy
+
+Bug: 501676158
+Change-Id: I6500f7cedb0a8892d940b32883fdb164ac7a2eef
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7780217
+Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106694}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index b53c8ee7d8fc9947b2306a9610a31cba0f8b109b..ae8ed4e0c9550605d8362eb668fab78850c74602 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -17432,7 +17432,9 @@ void MaglevGraphBuilder::MarkBytecodeDead() {
+   DCHECK_NULL(current_block());
+   if (is_resumable_function_) {
+     int current_offset = iterator_.current_offset();
+-    if (merge_states_[current_offset] == nullptr) {
++    if (merge_states_[current_offset] != nullptr) {
++      SetCurrentScopeInfo(merge_states_[current_offset]->context_scope_info());
++    } else {
+       auto it = dead_scope_infos_.find(current_offset);
+       if (it != dead_scope_infos_.end()) {
+         SetCurrentScopeInfo(it->second);
+diff --git a/test/mjsunit/maglev/regress-501676158.js b/test/mjsunit/maglev/regress-501676158.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a48cf6344192d23cd2a64d97dfbc9708bfbf410c
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-501676158.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev --no-turbofan
++
++async function __f_0() {
++  try {
++    return __f_15;
++    function __f_2() {
++      return __f_2;
++    }
++  } catch (__v_3) {
++      await 0;
++  }
++}
++%PrepareFunctionForOptimization(__f_0);
++try {
++  __f_0();
++} catch (e) {}
++%OptimizeMaglevOnNextCall(__f_0);
++try {
++  __f_0();
++} catch (e) {}

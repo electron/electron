@@ -2,7 +2,6 @@
 
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
-import * as chalk from 'chalk';
 import got from 'got';
 import { gte } from 'semver';
 import { track as trackTemp } from 'temp';
@@ -10,6 +9,7 @@ import { track as trackTemp } from 'temp';
 import { execSync, ExecSyncOptions } from 'node:child_process';
 import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
 import { join } from 'node:path';
+import { styleText } from 'node:util';
 
 import { getElectronVersion } from '../lib/get-version';
 import { ELECTRON_DIR } from '../lib/utils';
@@ -19,8 +19,8 @@ import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '
 
 const temp = trackTemp();
 
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+const pass = styleText('green', '✓');
+const fail = styleText('red', '✗');
 
 const pkgVersion = `v${getElectronVersion()}`;
 

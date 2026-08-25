@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Fri, 17 Jul 2026 06:15:18 -0700
+Subject: Fix release fence vkSemaphore destruction
+
+There is no reason to handle fail case and success case differently, we
+should always use VulkanFenceHelper.
+
+Bug: 513044017
+Change-Id: I00c0f359494fa81d129396a0ed9fa9070d831e59
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8102907
+Reviewed-by: Saifuddin Hitawala <hitawala@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1663840}
+(cherry picked from commit 7247631764e0dc6dd1ec83912b0e05081b25bddc)
+
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+index 1b51c0f1ebf94cccbb428a1c77f3a910d2dc2a67..5aca5e6f92b1694551a3124e6e1d5d9044b294bf 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
++++ b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+@@ -2312,13 +2312,20 @@ void SkiaOutputSurfaceImplOnGpu::PostSubmit(
+   semaphores.reserve(pending_release_fence_cbs_.size());
+ 
+   while (!pending_release_fence_cbs_.empty()) {
++    gfx::GpuFenceHandle release_fence;
++
+     auto& item = pending_release_fence_cbs_.front();
+-    auto release_fence = CreateReleaseFenceForVulkan(item.first);
+-    if (release_fence.is_null()) {
+-      LOG(ERROR) << "Unable to create a release fence for Vulkan.";
+-    } else {
+-      semaphores.emplace_back(GrBackendSemaphores::GetVkSemaphore(item.first));
++    VkSemaphore semaphore = GrBackendSemaphores::GetVkSemaphore(item.first);
++
++    if (semaphore != VK_NULL_HANDLE) {
++      semaphores.emplace_back(semaphore);
++
++      release_fence = CreateReleaseFenceForVulkan(semaphore);
++      if (release_fence.is_null()) {
++        LOG(ERROR) << "Unable to create a release fence for Vulkan.";
++      }
+     }
++
+     std::move(item.second).Run(std::move(release_fence));
+     pending_release_fence_cbs_.pop_front();
+   }
+@@ -2584,25 +2591,14 @@ void SkiaOutputSurfaceImplOnGpu::DiscardBackbuffer() {
+ 
+ #if BUILDFLAG(ENABLE_VULKAN)
+ gfx::GpuFenceHandle SkiaOutputSurfaceImplOnGpu::CreateReleaseFenceForVulkan(
+-    const GrBackendSemaphore& semaphore) {
++    VkSemaphore semaphore) {
+   DCHECK(is_using_vulkan());
+ 
+-  if (GrBackendSemaphores::GetVkSemaphore(semaphore) == VK_NULL_HANDLE) {
+-    return {};
+-  }
+-
+   auto* implementation = vulkan_context_provider_->GetVulkanImplementation();
+   VkDevice device =
+       vulkan_context_provider_->GetDeviceQueue()->GetVulkanDevice();
+ 
+-  auto handle = implementation->GetSemaphoreHandle(
+-      device, GrBackendSemaphores::GetVkSemaphore(semaphore));
+-  if (!handle.is_valid()) {
+-    vkDestroySemaphore(device, GrBackendSemaphores::GetVkSemaphore(semaphore),
+-                       /*pAllocator=*/nullptr);
+-    LOG(ERROR) << "Failed to create a release fence for Vulkan.";
+-    return {};
+-  }
++  auto handle = implementation->GetSemaphoreHandle(device, semaphore);
+   return std::move(handle).ToGpuFenceHandle();
+ }
+ 
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
+index 2b4ebefe9b8d890ca863428086c3c3ef9b6bf68f..d18bbeee063c6a09c40c5cc29d7b64ec9dd7aa2b 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
++++ b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
+@@ -462,8 +462,7 @@ class SkiaOutputSurfaceImplOnGpu
+   // by CreateAndStoreExternalSemaphoreVulkan(). May destroy VkSemaphore that
+   // the |semaphore| stores if creation of a release fence fails. In this case,
+   // invalid fence handle is returned.
+-  gfx::GpuFenceHandle CreateReleaseFenceForVulkan(
+-      const GrBackendSemaphore& semaphore);
++  gfx::GpuFenceHandle CreateReleaseFenceForVulkan(VkSemaphore semaphore);
+   // Returns true if succeess.
+   bool CreateAndStoreExternalSemaphoreVulkan(
+       std::vector<GrBackendSemaphore>& end_semaphores);

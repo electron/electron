@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Wed, 10 Jun 2026 20:18:38 -0700
+Subject: Vulkan: Avoid UB in CreateSamplerYCbCrConversion
+
+If the Chroma Filter is linear in CreateSamplerYCbCrConversion do
+a check to ensure that the format allows for it and adjust the
+filter to nearest if not to avoid undefined behavior in
+CreateSamplerYcbcrConversion.
+
+Fixed: 520180257
+Change-Id: I6be11b5e72f83326f73a2e4ad9b6659172c83ae4
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314296
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+
+diff --git a/src/dawn/native/vulkan/UtilsVulkan.cpp b/src/dawn/native/vulkan/UtilsVulkan.cpp
+index 4978d3928a9cf786b41a371bc6b641db590f11b1..8562c5fda3f570e9cf3cd7ac75c2ffe06cf642e1 100644
+--- a/src/dawn/native/vulkan/UtilsVulkan.cpp
++++ b/src/dawn/native/vulkan/UtilsVulkan.cpp
+@@ -34,6 +34,7 @@
+ #include "dawn/native/ShaderModule.h"
+ #include "dawn/native/vulkan/DeviceVk.h"
+ #include "dawn/native/vulkan/Forward.h"
++#include "dawn/native/vulkan/PhysicalDeviceVk.h"
+ #include "dawn/native/vulkan/TextureVk.h"
+ #include "dawn/native/vulkan/VulkanError.h"
+ #include "dawn/native/vulkan/VulkanFunctions.h"
+@@ -436,6 +437,25 @@ ResultOrError<VkSamplerYcbcrConversion> CreateSamplerYCbCrConversion(
+     vulkanYCbCrCreateInfo.forceExplicitReconstruction =
+         static_cast<VkBool32>(yCbCrDescriptor.forceExplicitReconstruction);
+ 
++    // VUID-VkSamplerYcbcrConversionCreateInfo-chromaFilter-01657
++    // Adjust linear filter to nearest if the format doesn't support linear. This is to support
++    // samplers created with YCrCb conversion info directly, which can't easily validate against the
++    // driver information at creation time.
++    if (vulkanFormat != VK_FORMAT_UNDEFINED &&
++        vulkanYCbCrCreateInfo.chromaFilter == VK_FILTER_LINEAR) {
++        VkPhysicalDevice vkPhysicalDevice =
++            ToBackend(device->GetPhysicalDevice())->GetVkPhysicalDevice();
++        VkFormatProperties formatProperties;
++        device->fn.GetPhysicalDeviceFormatProperties(vkPhysicalDevice, vulkanFormat,
++                                                     &formatProperties);
++        bool supportsLinear = IsSubset(
++            VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT,
++            formatProperties.optimalTilingFeatures | formatProperties.linearTilingFeatures);
++        if (!supportsLinear) {
++            vulkanYCbCrCreateInfo.chromaFilter = VK_FILTER_NEAREST;
++        }
++    }
++
+ #if DAWN_PLATFORM_IS(ANDROID)
+     VkExternalFormatANDROID vulkanExternalFormat;
+     // Chain VkExternalFormatANDROID only if needed.

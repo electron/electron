@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Josh Karlin <jkarlin@chromium.org>
+Date: Mon, 11 May 2026 07:40:20 -0700
+Subject: [AdTracker] Fix potentially invalid iterator access
+
+The AdTracker held onto an iterator across a js call, which could have
+invalidated the iterator. Fix by holding onto an ad script identifier
+instead of an iterator.
+
+Bug: 511722207
+Change-Id: I94f7c06696fb386e3e4d66a6a628e6de07ff7a74
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7836598
+Auto-Submit: Josh Karlin <jkarlin@chromium.org>
+Reviewed-by: Yao Xiao <yaoxia@chromium.org>
+Commit-Queue: Yao Xiao <yaoxia@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1628561}
+
+diff --git a/third_party/blink/renderer/core/ad_tracker/ad_tracker.cc b/third_party/blink/renderer/core/ad_tracker/ad_tracker.cc
+index 9c66bf46050bcce747228bba88f2b48db55d587b..88c1ea21ab30786d4f7d815c0f12271bf2e4c51a 100644
+--- a/third_party/blink/renderer/core/ad_tracker/ad_tracker.cc
++++ b/third_party/blink/renderer/core/ad_tracker/ad_tracker.cc
+@@ -499,7 +499,7 @@ bool AdTracker::IsAdScriptInStackHelper(
+     return false;
+   }
+ 
+-  auto ad_script_it = ad_script_data_.end();
++  std::optional<AdScriptIdentifier> matched_ad_script;
+   int ad_script_index = -1;
+ 
+   for (size_t i = 0; i < stack.size(); ++i) {
+@@ -511,12 +511,12 @@ bool AdTracker::IsAdScriptInStackHelper(
+     auto it = ad_script_data_.find(script_id);
+     if (it != ad_script_data_.end()) {
+       ad_script_index = static_cast<int>(i);
+-      ad_script_it = it;
++      matched_ad_script = it->value.id;
+       break;
+     }
+   }
+ 
+-  if (ad_script_it == ad_script_data_.end()) {
++  if (!matched_ad_script.has_value()) {
+     // The top scripts on the stack are not registered ad script. Are they
+     // from ad frames?
+ 
+@@ -534,7 +534,7 @@ bool AdTracker::IsAdScriptInStackHelper(
+         IsFunctionAMonkeyPatch(isolate, stack[ad_script_index - 1].function,
+                                ignore_monkey_patch)) {
+       if (out_ad_script) {
+-        *out_ad_script = ad_script_it->value.id;
++        *out_ad_script = *matched_ad_script;
+       }
+       return true;
+     }
+@@ -554,7 +554,7 @@ bool AdTracker::IsAdScriptInStackHelper(
+   }
+ 
+   if (out_ad_script) {
+-    *out_ad_script = ad_script_it->value.id;
++    *out_ad_script = *matched_ad_script;
+   }
+ 
+   return true;
+diff --git a/third_party/blink/renderer/core/ad_tracker/ad_tracker.h b/third_party/blink/renderer/core/ad_tracker/ad_tracker.h
+index 3a50c05df8f8e027c10dbc40d7e5aebd5d1ecf94..41152942f713b151e69a04bf4db59c99042b83e2 100644
+--- a/third_party/blink/renderer/core/ad_tracker/ad_tracker.h
++++ b/third_party/blink/renderer/core/ad_tracker/ad_tracker.h
+@@ -210,6 +210,9 @@ class CORE_EXPORT AdTracker : public GarbageCollected<AdTracker> {
+ 
+   // Returns true if `api` is a monkeyaptched function and matches `function` in
+   // the `isolate`'s current context.
++  // WARNING: This function executes js and can therefore modify the members of
++  // this class. Consider all iterators obtained before calling
++  // IsFunctionAMonkeyPatch to be invalid.
+   // TODO(jkarlin): This function really wants a context, not an isolate.
+   bool IsFunctionAMonkeyPatch(v8::Isolate* isolate,
+                               const v8::Local<v8::Function>& function,

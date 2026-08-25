@@ -1,0 +1,294 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muyao Xu <muyaoxu@google.com>
+Date: Mon, 1 Jun 2026 11:07:09 -0700
+Subject: [Fullscreen] Use WeakPtr in ExclusiveAccessManager to prevent UAF
+
+Add WeakPtr checks when iterating `exclusive_access_controllers_`
+to prevent UAF if the manager is destroyed during iteration.
+
+Bug: 516683433
+Change-Id: Ic285adab7e9e922d5f0a202856796919a16b1ccf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879474
+Commit-Queue: Muyao Xu <muyaoxu@google.com>
+Reviewed-by: Mike Wasserman <msw@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1639530}
+
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc b/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc
+index c1c0da48439e7e3fa9803618947d909fad7d7c87..910309499d367e30bd9385793cae2986613acc64 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc
+@@ -40,8 +40,13 @@ void ExclusiveAccessControllerBase::OnTabClosing(WebContents* web_contents) {
+     return;
+   }
+ 
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   ExitExclusiveAccessIfNecessary();
+ 
++  if (!weak_ptr) {
++    return;
++  }
++
+   // The call to exit exclusive access may result in asynchronous notification
+   // of state change (e.g. fullscreen change on Linux). We don't want to rely
+   // on it to call NotifyTabExclusiveAccessLost(), because at that point
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h b/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h
+index b6b2b31c3a4bb02c4fab43a3970d4c2804a293c7..49addb9ad22e0762e86c97e1fcd77ce916029be1 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h
+@@ -6,6 +6,7 @@
+ #define CHROME_BROWSER_UI_EXCLUSIVE_ACCESS_EXCLUSIVE_ACCESS_CONTROLLER_BASE_H_
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h"
+ #include "content/public/browser/web_contents_observer.h"
+ #include "url/origin.h"
+@@ -85,6 +86,8 @@ class ExclusiveAccessControllerBase {
+    private:
+     const raw_ref<ExclusiveAccessControllerBase> controller_;
+   } web_contents_observer_{*this};
++
++  base::WeakPtrFactory<ExclusiveAccessControllerBase> weak_ptr_factory_{this};
+ };
+ 
+ #endif  // CHROME_BROWSER_UI_EXCLUSIVE_ACCESS_EXCLUSIVE_ACCESS_CONTROLLER_BASE_H_
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
+index 717054bcd3f69e0a6e763e552ec95e1367b794e3..b05185eb681f8095515310ea163ddda06be13848 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.cc
+@@ -133,20 +133,32 @@ url::Origin ExclusiveAccessManager::GetExclusiveAccessBubbleOrigin() const {
+ 
+ 
+ void ExclusiveAccessManager::OnTabDeactivated(WebContents* web_contents) {
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   for (auto controller : exclusive_access_controllers_) {
+     controller->OnTabDeactivated(web_contents);
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ }
+ 
+ void ExclusiveAccessManager::OnTabDetachedFromView(WebContents* web_contents) {
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   for (auto controller : exclusive_access_controllers_) {
+     controller->OnTabDetachedFromView(web_contents);
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ }
+ 
+ void ExclusiveAccessManager::OnTabClosing(WebContents* web_contents) {
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   for (auto controller : exclusive_access_controllers_) {
+     controller->OnTabClosing(web_contents);
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ }
+ 
+@@ -157,6 +169,7 @@ bool ExclusiveAccessManager::HandleUserKeyEvent(
+     return false;
+   }
+ 
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   // When `features::kPressAndHoldEscToExitBrowserFullscreen` is enabled, the
+   // `esc_key_hold_timer_` starts on `kRawKeyDown` events, unless the key press
+   // event comes with a modifier key. This metrics records how often the timer
+@@ -175,6 +188,9 @@ bool ExclusiveAccessManager::HandleUserKeyEvent(
+       show_exit_bubble_timer_.Stop();
+       for (auto controller : exclusive_access_controllers_) {
+         controller->HandleUserReleasedEscapeEarly();
++        if (!weak_ptr) {
++          return false;
++        }
+       }
+     } else if (IsUnmodifiedEscKeyDownEvent(event) &&
+                !esc_key_hold_timer_.IsRunning()) {
+@@ -209,6 +225,9 @@ bool ExclusiveAccessManager::HandleUserKeyEvent(
+     if (controller->HandleUserPressedEscape()) {
+       handled = true;
+     }
++    if (!weak_ptr) {
++      return handled;
++    }
+   }
+   return handled;
+ }
+@@ -218,13 +237,21 @@ void ExclusiveAccessManager::OnUserInput() {
+ }
+ 
+ void ExclusiveAccessManager::ExitExclusiveAccess() {
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   for (auto controller : exclusive_access_controllers_) {
+     controller->ExitExclusiveAccessToPreviousState();
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ }
+ 
+ void ExclusiveAccessManager::HandleUserHeldEscape() {
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+   for (auto controller : exclusive_access_controllers_) {
+     controller->HandleUserHeldEscape();
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ }
+diff --git a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
+index 8cdc94a488bcb1c77520b9cdc63fc7cfadc4cc67..da7e8450ea7b4b28fe3317895780d9d017dbaace 100644
+--- a/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
++++ b/chrome/browser/ui/exclusive_access/exclusive_access_manager.h
+@@ -6,6 +6,7 @@
+ #define CHROME_BROWSER_UI_EXCLUSIVE_ACCESS_EXCLUSIVE_ACCESS_MANAGER_H_
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h"
+ #include "chrome/browser/ui/exclusive_access/exclusive_access_permission_manager.h"
+ #include "chrome/browser/ui/exclusive_access/fullscreen_controller.h"
+@@ -107,6 +108,8 @@ class ExclusiveAccessManager {
+   base::flat_set<raw_ptr<ExclusiveAccessControllerBase>>
+       exclusive_access_controllers_;
+   ExclusiveAccessPermissionManager permission_manager_;
++
++  base::WeakPtrFactory<ExclusiveAccessManager> weak_ptr_factory_{this};
+ };
+ 
+ #endif  // CHROME_BROWSER_UI_EXCLUSIVE_ACCESS_EXCLUSIVE_ACCESS_MANAGER_H_
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+index 275eca5fe7d18d802fc032006c9995a2da71ba6b..f9267ccc53a21b280ef28ee9e93a05f8a605da7c 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+@@ -4,7 +4,6 @@
+ 
+ #include "chrome/browser/ui/exclusive_access/fullscreen_controller.h"
+ 
+-#include "base/auto_reset.h"
+ #include "base/check.h"
+ #include "base/command_line.h"
+ #include "base/functional/bind.h"
+@@ -340,13 +339,6 @@ void FullscreenController::FullscreenTabOpeningPopup(
+ }
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
+-void FullscreenController::OnTabDeactivated(
+-    content::WebContents* web_contents) {
+-  base::AutoReset<raw_ptr<content::WebContents>> auto_resetter(
+-      &deactivated_contents_, web_contents);
+-  ExclusiveAccessControllerBase::OnTabDeactivated(web_contents);
+-}
+-
+ void FullscreenController::OnTabDetachedFromView(WebContents* old_contents) {
+   if (!IsFullscreenWithinTab(old_contents)) {
+     return;
+@@ -505,7 +497,7 @@ void FullscreenController::ExitExclusiveAccessIfNecessary() {
+ void FullscreenController::PostFullscreenChangeNotification() {
+   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+       FROM_HERE, base::BindOnce(&FullscreenController::NotifyFullscreenChange,
+-                                ptr_factory_.GetWeakPtr()));
++                                weak_ptr_factory_.GetWeakPtr()));
+ }
+ 
+ void FullscreenController::NotifyFullscreenChange() {
+@@ -647,6 +639,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+   fullscreen_parameters_.reset();
+   toggled_into_fullscreen_ = false;
+   started_fullscreen_transition_ = true;
++  auto weak_ptr = weak_ptr_factory_.GetWeakPtr();
+ 
+   // Electron native windows report a state change instantly, and so we must also clear
+   // state_prior_to_tab_fullscreen_ to match them else other logic using
+@@ -655,8 +648,14 @@ void FullscreenController::ExitFullscreenModeInternal() {
+   // Controller. The change is instant so we notify about access lost to
+   // keep the state coherent.
+   NotifyTabExclusiveAccessLost();
++  if (!weak_ptr) {
++    return;
++  }
+ 
+   exclusive_access_manager()->context()->ExitFullscreen();
++  if (!weak_ptr) {
++    return;
++  }
+   extension_url_.reset();
+   exclusive_access_manager()->UpdateBubble(base::NullCallback());
+ }
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
+index 7a3495c6d26667508271fe2cc77fafaae9d39204..2684cb29d0f025217b33c2378d798964ea154003 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
+@@ -137,7 +137,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   void ExitFullscreenModeForTab(content::WebContents* web_contents);
+ 
+   base::WeakPtr<FullscreenController> GetWeakPtr() {
+-    return ptr_factory_.GetWeakPtr();
++    return weak_ptr_factory_.GetWeakPtr();
+   }
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+@@ -149,7 +149,6 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   // Platform Fullscreen ///////////////////////////////////////////////////////
+ 
+   // Override from ExclusiveAccessControllerBase.
+-  void OnTabDeactivated(content::WebContents* web_contents) override;
+   void OnTabDetachedFromView(content::WebContents* web_contents) override;
+   void OnTabClosing(content::WebContents* web_contents) override;
+   bool HandleUserPressedEscape() override;
+@@ -257,10 +256,6 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   // is completed.
+   base::OnceClosure fullscreen_transition_complete_callback_;
+ 
+-  // Set in OnTabDeactivated(). Used to see if we're in the middle of
+-  // deactivation of a tab.
+-  raw_ptr<content::WebContents> deactivated_contents_ = nullptr;
+-
+   // Used in testing to set the state to tab fullscreen.
+   bool is_tab_fullscreen_for_testing_ = false;
+ 
+@@ -286,7 +281,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   // This is used for accessing HistoryService.
+   base::CancelableTaskTracker task_tracker_;
+ 
+-  base::WeakPtrFactory<FullscreenController> ptr_factory_{this};
++  base::WeakPtrFactory<FullscreenController> weak_ptr_factory_{this};
+ };
+ 
+ #endif  // CHROME_BROWSER_UI_EXCLUSIVE_ACCESS_FULLSCREEN_CONTROLLER_H_
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller_interactive_browsertest.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller_interactive_browsertest.cc
+index 02451793c24e8fb9fbdde344a7c69b849fcf2b6b..3f6214af54c2558d5eaea83f2e2c7e0b2f478d4a 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller_interactive_browsertest.cc
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller_interactive_browsertest.cc
+@@ -1965,3 +1965,28 @@ IN_PROC_BROWSER_TEST_F(MAYBE_MultiScreenFullscreenControllerInteractiveTest,
+   ui_test_utils::BrowserActivationWaiter(popup).WaitForActivation();
+   EXPECT_TRUE(ui_test_utils::IsBrowserActive(popup));
+ }
++
++IN_PROC_BROWSER_TEST_F(FullscreenControllerInteractiveTest,
++                       ClosingTabExitsFullscreenSafely) {
++  // Add a new tab so the browser doesn't close when we close the active tab.
++  ui_test_utils::NavigateToURLWithDisposition(
++      browser(), GURL("about:blank"), WindowOpenDisposition::NEW_FOREGROUND_TAB,
++      ui_test_utils::BROWSER_TEST_WAIT_FOR_LOAD_STOP);
++
++  WebContents* active_tab =
++      browser()->tab_strip_model()->GetActiveWebContents();
++
++  browser()
++      ->GetFeatures()
++      .exclusive_access_manager()
++      ->fullscreen_controller()
++      ->EnterFullscreenModeForTab(active_tab->GetPrimaryMainFrame(), {});
++
++  content::WebContentsDestroyedWatcher watcher(active_tab);
++
++  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&chrome::CloseTab, base::Unretained(browser())));
++
++  watcher.Wait();
++}

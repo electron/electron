@@ -49,18 +49,21 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 }
 
 // static
-WebWorkerObserver* WebWorkerObserver::Create() {
-  auto obs = std::make_unique<WebWorkerObserver>();
+WebWorkerObserver* WebWorkerObserver::Create(v8::Isolate* isolate) {
+  auto obs = std::make_unique<WebWorkerObserver>(isolate);
   auto* obs_raw = obs.get();
   lazy_tls->Set(std::move(obs));
   return obs_raw;
 }
 
-WebWorkerObserver::WebWorkerObserver()
+WebWorkerObserver::WebWorkerObserver(v8::Isolate* isolate)
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker,
+                               nullptr)),
       electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+  node_bindings_->SetUpIsolate(isolate);
+}
 
 WebWorkerObserver::~WebWorkerObserver() = default;
 
@@ -94,6 +97,11 @@ void WebWorkerObserver::InitializeNewEnvironment(
     auto* tracing_agent = new node::tracing::Agent();
     node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   }
+
+  // The renderer main thread normally installed the process-wide builtin code
+  // cache already (NodeBindings::Initialize); make sure before this thread's
+  // per-context BuiltinLoader is constructed by InitializeContext. Idempotent.
+  electron::util::InstallProcessCodeCache();
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);

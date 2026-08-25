@@ -185,6 +185,10 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 #endif
   dict.Set("free", free.InKiB());
 
+#if BUILDFLAG(IS_LINUX)
+  dict.Set("available", mem_info.available.InKiB());
+#endif
+
 #if BUILDFLAG(IS_MAC)
   dict.Set("fileBacked", mem_info.file_backed.InKiB());
   dict.Set("purgeable", mem_info.purgeable.InKiB());

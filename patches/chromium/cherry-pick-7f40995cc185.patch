@@ -1,0 +1,255 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 30 Jul 2026 10:21:50 -0700
+Subject: Add GPU driver workaround
+ reattach_texture_to_fbo_after_layer_increase
+
+On PowerVR Android GPUs, when TexImage3D is called on a layered texture
+(GL_TEXTURE_2D_ARRAY) whose layer count increases, if any layer of the
+texture is attached to a framebuffer, the driver leaves the framebuffer
+attached to old freed memory.
+
+This adds the workaround reattach_texture_to_fbo_after_layer_increase to
+the validating command buffer:
+- Extends GetBindingFramebuffersForTexture to optionally include color
+  attachments in addition to depth and stencil attachments.
+- Updates ScopedDepthStencilReattacher in gles2_cmd_decoder.cc to detach
+  all bound FBO attachments of a GL_TEXTURE_2D_ARRAY texture before
+  storage reallocation when this workaround is enabled, and reattach
+  immediately afterwards using glFramebufferTextureLayer.
+- Adds entry 487 to gpu_driver_bug_list.json for Imagination GPUs on
+  Android.
+
+Bug: 499602793,537729021
+Change-Id: I32fb037ddc2ebed88d5ed16156a1f55be4c2de88
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8157124
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671194}
+(cherry picked from commit 7f40995cc185017a53392b8b32c23ef258a712dd)
+
+diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
+index 4b77e1b0f7898e77a9c2468ca6a54c00322b46f4..9f3b8355381f4a9cf09778cac98d6333123addcc 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.cc
++++ b/gpu/command_buffer/service/framebuffer_manager.cc
+@@ -1246,15 +1246,23 @@ bool FramebufferManager::IsComplete(const Framebuffer* framebuffer) {
+ }
+ 
+ std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
+-FramebufferManager::GetBindingFramebuffersForTexture(TextureRef* texture_ref) {
++FramebufferManager::GetBindingFramebuffersForTexture(
++    TextureRef* texture_ref,
++    bool include_color_attachments) {
+   std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>> result;
+   if (!texture_ref) {
+     return result;
+   }
+   for (const auto& pair : framebuffers_) {
+     Framebuffer* framebuffer = pair.second.get();
+-    for (GLenum attachment_point :
+-         {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT}) {
++    std::vector<GLenum> attachment_points = {GL_DEPTH_ATTACHMENT,
++                                             GL_STENCIL_ATTACHMENT};
++    if (include_color_attachments) {
++      for (uint32_t i = 0; i < max_color_attachments_; ++i) {
++        attachment_points.push_back(GL_COLOR_ATTACHMENT0 + i);
++      }
++    }
++    for (GLenum attachment_point : attachment_points) {
+       const Framebuffer::Attachment* attachment =
+           framebuffer->GetAttachment(attachment_point);
+       if (attachment && attachment->IsTexture(texture_ref)) {
+diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
+index 097ea1172fdd729550701b7a7bb8cafec3d71a8a..bf38de0adb44f195857c1c6abfe733e93c26b8f9 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.h
++++ b/gpu/command_buffer/service/framebuffer_manager.h
+@@ -384,7 +384,8 @@ class GPU_GLES2_EXPORT FramebufferManager {
+   bool IsComplete(const Framebuffer* framebuffer);
+ 
+   std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
+-  GetBindingFramebuffersForTexture(TextureRef* texture_ref);
++  GetBindingFramebuffersForTexture(TextureRef* texture_ref,
++                                   bool include_color_attachments = false);
+ 
+   std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
+   GetBindingFramebuffersForRenderbuffer(Renderbuffer* renderbuffer);
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index f72d93a27243368f5725b85b66bbf79802c1ba35..9002e7dbd7fae141ab772245057416e187876453 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -2621,7 +2621,12 @@ ScopedDepthStencilReattacher::ScopedDepthStencilReattacher(
+ }
+ 
+ void ScopedDepthStencilReattacher::Initialize() {
+-  if (!decoder_->workarounds().reattach_fbo_depth_stencil_on_reallocation) {
++  const bool reattach_depth_stencil =
++      decoder_->workarounds().reattach_fbo_depth_stencil_on_reallocation;
++  const bool reattach_layer_increase =
++      decoder_->workarounds().reattach_texture_to_fbo_after_layer_increase &&
++      texture_ref_ && texture_ref_->texture()->target() == GL_TEXTURE_2D_ARRAY;
++  if (!reattach_depth_stencil && !reattach_layer_increase) {
+     return;
+   }
+ 
+@@ -2629,7 +2634,7 @@ void ScopedDepthStencilReattacher::Initialize() {
+   if (texture_ref_) {
+     detached_fbos =
+         decoder_->framebuffer_manager()->GetBindingFramebuffersForTexture(
+-            texture_ref_);
++            texture_ref_, reattach_layer_increase);
+   } else if (renderbuffer_) {
+     detached_fbos =
+         decoder_->framebuffer_manager()->GetBindingFramebuffersForRenderbuffer(
+@@ -2673,8 +2678,14 @@ void ScopedDepthStencilReattacher::Initialize() {
+     // Detach in driver.
+     decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, fbo->service_id());
+     if (info.is_texture) {
+-      decoder_->api()->glFramebufferTexture2DEXTFn(
+-          GL_FRAMEBUFFER, attachment_point, info.texture_target, 0, 0);
++      if (info.texture_target == GL_TEXTURE_2D_ARRAY ||
++          info.texture_target == GL_TEXTURE_3D) {
++        decoder_->api()->glFramebufferTextureLayerFn(GL_FRAMEBUFFER,
++                                                     attachment_point, 0, 0, 0);
++      } else {
++        decoder_->api()->glFramebufferTexture2DEXTFn(
++            GL_FRAMEBUFFER, attachment_point, info.texture_target, 0, 0);
++      }
+     } else if (info.is_renderbuffer) {
+       decoder_->api()->glFramebufferRenderbufferEXTFn(
+           GL_FRAMEBUFFER, attachment_point, GL_RENDERBUFFER, 0);
+@@ -2692,7 +2703,8 @@ ScopedDepthStencilReattacher::~ScopedDepthStencilReattacher() {
+     Framebuffer* fbo = info.framebuffer.get();
+     decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, fbo->service_id());
+     if (info.is_texture) {
+-      if (info.texture_layer == 0) {
++      if (info.texture_target != GL_TEXTURE_2D_ARRAY &&
++          info.texture_target != GL_TEXTURE_3D) {
+         if (info.texture_samples == 0) {
+           decoder_->api()->glFramebufferTexture2DEXTFn(
+               GL_FRAMEBUFFER, info.attachment_point, info.texture_target,
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index 7e54c1280d28a49bae2aa929ad8f1f41b7f16b18..8583619d43433a54f66a417d96feccfceece3a79 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -4368,6 +4368,85 @@ TEST_P(GLES3DecoderNPOTImmutableTest,
+   EXPECT_EQ(error::kLostContext, ExecuteCmd(param_cmd));
+ }
+ 
++class GLES3DecoderReattachTextureAfterLayerIncreaseTest
++    : public GLES3DecoderManualInitTest {};
++
++INSTANTIATE_TEST_SUITE_P(Service,
++                         GLES3DecoderReattachTextureAfterLayerIncreaseTest,
++                         ::testing::Bool());
++
++TEST_P(GLES3DecoderReattachTextureAfterLayerIncreaseTest,
++       ReattachTextureAfterLayerIncrease) {
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.reattach_texture_to_fbo_after_layer_increase = GetParam();
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLenum kTarget = GL_TEXTURE_2D_ARRAY;
++  const GLint kLevel = 0;
++  const GLint kInternalFormat = GL_RGBA8;
++  const GLsizei kWidth = 4;
++  const GLsizei kHeight = 4;
++  const GLsizei kDepth = 1;
++  const GLsizei kNewDepth = 2;
++  const GLenum kFormat = GL_RGBA;
++  const GLenum kType = GL_UNSIGNED_BYTE;
++
++  DoBindTexture(kTarget, client_texture_id_, kServiceTextureId);
++  DoTexImage3D(kTarget, kLevel, kInternalFormat, kWidth, kHeight, kDepth, 0,
++               kFormat, kType, 0, 0);
++
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++
++  EXPECT_CALL(*gl_,
++              FramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                                      kServiceTextureId, kLevel, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  cmds::FramebufferTextureLayer attach_cmd;
++  attach_cmd.Init(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, client_texture_id_,
++                  kLevel, 0);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(attach_cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++
++  // Calling TexImage3D with increased depth should trigger detach, TexImage3D,
++  // and re-attach when the workaround is enabled.
++  EXPECT_CALL(*gl_, BindFramebufferEXT(_, _)).Times(::testing::AnyNumber());
++  ::testing::InSequence sequence;
++  if (GetParam()) {
++    EXPECT_CALL(*gl_, FramebufferTextureLayer(GL_FRAMEBUFFER,
++                                              GL_COLOR_ATTACHMENT0, 0, 0, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, TexImage3D(kTarget, kLevel, _, kWidth, kHeight, kNewDepth,
++                               0, kFormat, kType, _))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++  if (GetParam()) {
++    EXPECT_CALL(*gl_,
++                FramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                                        kServiceTextureId, kLevel, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++
++  cmds::TexImage3D cmd;
++  cmd.Init(kTarget, kLevel, kInternalFormat, kWidth, kHeight, kNewDepth,
++           kFormat, kType, 0, 0);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++}
++
+ // TODO(gman): Complete this test.
+ // TEST_P(GLES2DecoderTest, CompressedTexImage2DGLError) {
+ // }
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index c91d69e64a38316f30b09ddf62a50726b3492e50..99aa812649102eb5d2742a8e6611f0ecb12bb9af 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3798,6 +3798,18 @@
+       "features": [
+         "dont_change_base_level_for_npot_immutable_textures"
+       ]
++    },
++    {
++      "id": 487,
++      "cr_bugs": [499602793],
++      "description": "Reattach texture to FBO after layer count increase on PowerVR GPUs.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "reattach_texture_to_fbo_after_layer_increase"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index c7cfb4bbe3c8da187df71848dd7cf80c0e87cbee..af6c53592efd873a756e25e1e3f8f4d429a90ec2 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -113,6 +113,7 @@ pack_parameters_workaround_with_pack_buffer
+ prefer_draw_to_copy
+ r8_egl_images_broken
+ reattach_fbo_depth_stencil_on_reallocation
++reattach_texture_to_fbo_after_layer_increase
+ recreate_fbo_upon_flush
+ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector

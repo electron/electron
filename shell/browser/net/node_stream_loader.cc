@@ -4,10 +4,13 @@
 
 #include "shell/browser/net/node_stream_loader.h"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 
+#include "base/numerics/safe_conversions.h"
 #include "mojo/public/cpp/system/string_data_source.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -50,9 +53,19 @@ NodeStreamLoader::~NodeStreamLoader() {
 }
 
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
+  // A declared Content-Length larger than mojo's 64 KB default grows the pipe
+  // (up to the network service's default); it never shrinks it, since the
+  // header may describe an encoded upstream body rather than this stream.
+  constexpr int64_t kMojoDefaultPipeSize = 64 * 1024;
+  const uint32_t pipe_size =
+      head->content_length > kMojoDefaultPipeSize
+          ? base::saturated_cast<uint32_t>(
+                std::min<int64_t>(head->content_length,
+                                  network::GetDataPipeDefaultAllocationSize()))
+          : 0;
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+  MojoResult rv = mojo::CreateDataPipe(pipe_size, producer, consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;
@@ -79,11 +92,21 @@ void NodeStreamLoader::NotifyError() {
 }
 
 void NodeStreamLoader::NotifyReadable() {
-  if (!readable_)
-    ReadMore();
-  else if (is_reading_)
-    has_read_waiting_ = true;
+  if (readable_) {
+    // 'readable' was emitted from within stream.read(), so remember to read
+    // again once the in-progress read completes.
+    if (is_reading_)
+      has_read_waiting_ = true;
+    return;
+  }
+
+  // `readable_` must be set before ReadMore(): it clears the flag itself when
+  // read() comes up empty, and a re-entrant 'readable' emitted from within
+  // read() needs to see `true` so that it records `has_read_waiting_`.
   readable_ = true;
+
+  // ReadMore() may delete `this`, so it must be the last thing we do.
+  ReadMore();
 }
 
 void NodeStreamLoader::NotifyComplete(int result) {

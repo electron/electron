@@ -1,0 +1,399 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Thu, 30 Jul 2026 13:21:50 -0700
+Subject: views/aura/wm: Use weak pointer for capture window
+
+This CL changes capture_window_ in DesktopCaptureClient,
+DefaultCaptureClient, and CaptureController to use base::WeakPtr
+instead of raw_ptr to avoid dangling pointers when the capture window is
+destroyed.
+
+It also updates WindowEventDispatcher::UpdateCapture to block
+the deletion of new_capture_window, because deleting it and
+recursively call UpdateCapture can cause unexpected result.
+
+If this ever happens in the field, we'll work on a fix for that
+scenario.
+
+Bug: 515428251, 502041642
+
+TAG=agy
+
+CONV=c8f9d59f-22c6-456c-9f6d-52b1cd075207
+
+Change-Id: I9740e11f2d8f93a94f4a1aa0de6ce8795c34a09e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8127178
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671366}
+(cherry picked from commit 5c2010f1a7ea14ead6d4a9848cce9f783ddd9fc1)
+
+diff --git a/ui/aura/client/default_capture_client.cc b/ui/aura/client/default_capture_client.cc
+index ee11652183fcd63bc1e372ae693b4afdb06ede67..413b32885c4d8225216e4c4df962a37696207c5b 100644
+--- a/ui/aura/client/default_capture_client.cc
++++ b/ui/aura/client/default_capture_client.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "ui/aura/client/default_capture_client.h"
+ 
++#include "base/no_destructor.h"
+ #include "base/observer_list.h"
+ #include "ui/aura/client/capture_client_observer.h"
+ #include "ui/aura/env.h"
+@@ -16,7 +17,10 @@ namespace client {
+ namespace {
+ 
+ // Track the active capture window across root windows.
+-Window* global_capture_window_ = nullptr;
++base::WeakPtr<Window>& GetGlobalCaptureWindowRef() {
++  static base::NoDestructor<base::WeakPtr<Window>> global_capture_window;
++  return *global_capture_window;
++}
+ 
+ }  // namespace
+ 
+@@ -27,20 +31,25 @@ DefaultCaptureClient::DefaultCaptureClient(Window* root_window)
+ }
+ 
+ DefaultCaptureClient::~DefaultCaptureClient() {
+-  if (global_capture_window_ == capture_window_)
+-    global_capture_window_ = nullptr;
++  if (GetGlobalCaptureWindowRef().get() == capture_window_.get()) {
++    GetGlobalCaptureWindowRef() = nullptr;
++  }
+   SetCaptureClient(root_window_, nullptr);
+ }
+ 
+ void DefaultCaptureClient::SetCapture(Window* window) {
+-  if (capture_window_ == window)
++  if (capture_window_.get() == window) {
+     return;
++  }
++  auto new_capture_window_weak =
++      window ? window->GetWeakPtrAsWindow() : nullptr;
+   if (window)
+     Env::GetInstance()->gesture_recognizer()->CancelActiveTouchesExcept(window);
+ 
+-  Window* old_capture_window = capture_window_;
+-  capture_window_ = window;
+-  global_capture_window_ = window;
++  auto old_capture_window = capture_window_;
++
++  capture_window_ = new_capture_window_weak;
++  GetGlobalCaptureWindowRef() = new_capture_window_weak;
+ 
+   CaptureDelegate* capture_delegate = nullptr;
+   if (capture_window_) {
+@@ -54,24 +63,26 @@ void DefaultCaptureClient::SetCapture(Window* window) {
+     capture_delegate->ReleaseNativeCapture();
+   }
+ 
+-  capture_delegate->UpdateCapture(old_capture_window, capture_window_);
++  capture_delegate->UpdateCapture(old_capture_window.get(),
++                                  capture_window_.get());
+ 
+   observers_.Notify(&CaptureClientObserver::OnCaptureChanged,
+-                    old_capture_window, capture_window_);
++                    old_capture_window.get(), capture_window_.get());
+ }
+ 
+ void DefaultCaptureClient::ReleaseCapture(Window* window) {
+-  if (capture_window_ != window)
++  if (capture_window_.get() != window) {
+     return;
+-  SetCapture(NULL);
++  }
++  SetCapture(nullptr);
+ }
+ 
+ Window* DefaultCaptureClient::GetCaptureWindow() {
+-  return capture_window_;
++  return capture_window_.get();
+ }
+ 
+ Window* DefaultCaptureClient::GetGlobalCaptureWindow() {
+-  return global_capture_window_;
++  return GetGlobalCaptureWindowRef().get();
+ }
+ 
+ void DefaultCaptureClient::AddObserver(CaptureClientObserver* observer) {
+diff --git a/ui/aura/client/default_capture_client.h b/ui/aura/client/default_capture_client.h
+index 8a0c3cdb36da4c80e858e10d3ea0d5c15f401771..b283438e45c4fd82aa5318e6cbb4d4d25e4252fa 100644
+--- a/ui/aura/client/default_capture_client.h
++++ b/ui/aura/client/default_capture_client.h
+@@ -6,6 +6,7 @@
+ #define UI_AURA_CLIENT_DEFAULT_CAPTURE_CLIENT_H_
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "ui/aura/aura_export.h"
+ #include "ui/aura/client/capture_client.h"
+@@ -33,7 +34,7 @@ class AURA_EXPORT DefaultCaptureClient : public client::CaptureClient {
+ 
+  private:
+   raw_ptr<Window> root_window_;  // May be null.
+-  raw_ptr<Window> capture_window_;
++  base::WeakPtr<Window> capture_window_;
+   base::ObserverList<CaptureClientObserver>::Unchecked observers_;
+ };
+ 
+diff --git a/ui/aura/window_event_dispatcher.cc b/ui/aura/window_event_dispatcher.cc
+index 180a83d83d350712a3424d80c069fc71a6d6ebb8..fbfab5c4f35df02418beebf145683ec8d39fd7e6 100644
+--- a/ui/aura/window_event_dispatcher.cc
++++ b/ui/aura/window_event_dispatcher.cc
+@@ -424,6 +424,12 @@ void WindowEventDispatcher::UpdateCapture(Window* old_capture,
+   if (mouse_moved_handler_ && !window()->Contains(mouse_moved_handler_))
+     mouse_moved_handler_ = nullptr;
+ 
++  std::unique_ptr<Window::ScopedDeleteBlocker> new_capture_blocker;
++  if (new_capture) {
++    new_capture_blocker =
++        std::make_unique<Window::ScopedDeleteBlocker>(new_capture);
++  }
++
+   if (old_capture && old_capture->GetRootWindow() == window() &&
+       old_capture->delegate()) {
+     // Send a capture changed event with the most recent mouse screen location.
+diff --git a/ui/aura/window_event_dispatcher_unittest.cc b/ui/aura/window_event_dispatcher_unittest.cc
+index 2f0ea0c573f8cff3cb73468290e888afb6d1252b..33e1c5e951467b58564db4fdeb93fe23311801af 100644
+--- a/ui/aura/window_event_dispatcher_unittest.cc
++++ b/ui/aura/window_event_dispatcher_unittest.cc
+@@ -2594,6 +2594,25 @@ class CaptureWindowTracker : public test::TestWindowDelegate {
+   std::unique_ptr<aura::Window> capture_window_;
+ };
+ 
++class DeleteOtherWindowOnCaptureLostDelegate : public test::TestWindowDelegate {
++ public:
++  DeleteOtherWindowOnCaptureLostDelegate() = default;
++  ~DeleteOtherWindowOnCaptureLostDelegate() override = default;
++
++  void set_other_window(Window* other) { other_ = other; }
++
++  // test::TestWindowDelegate:
++  void OnCaptureLost() override {
++    if (other_) {
++      Window* raw_other = std::exchange(other_, nullptr);
++      delete raw_other;
++    }
++  }
++
++ private:
++  raw_ptr<Window> other_ = nullptr;
++};
++
+ }  // namespace
+ 
+ // Verifies handling loss of capture by the capture window being hidden.
+@@ -2612,6 +2631,29 @@ TEST_F(WindowEventDispatcherTest, CaptureWindowDestroyed) {
+   EXPECT_EQ(NULL, capture_window_tracker.capture_window());
+ }
+ 
++using WindowEventDispatcherDeathTest = WindowEventDispatcherTest;
++
++// Verifies that deleting the new capture window during OnCaptureLost of the
++// old capture window causes a crash (due to ScopedDeleteBlocker).
++TEST_F(WindowEventDispatcherDeathTest, DeleteNewCaptureDuringOnCaptureLost) {
++  DeleteOtherWindowOnCaptureLostDelegate d1;
++  test::TestWindowDelegate d2;
++  std::unique_ptr<Window> w1(CreateNormalWindow(1, root_window(), &d1));
++
++  Window* w2 = CreateNormalWindow(2, root_window(), &d2);
++
++  d1.set_other_window(w2);
++
++  client::GetCaptureClient(root_window())->SetCapture(w1.get());
++  EXPECT_EQ(w1.get(),
++            client::GetCaptureClient(root_window())->GetCaptureWindow());
++
++  // This will trigger UpdateCapture(w1, w2).
++  // w1's OnCaptureLost will delete w2, which should crash due to
++  // ScopedDeleteBlocker.
++  EXPECT_DEATH(client::GetCaptureClient(root_window())->SetCapture(w2), "");
++}
++
+ namespace {
+ 
+ class RunLoopHandler : public ui::EventHandler {
+diff --git a/ui/views/widget/desktop_aura/desktop_capture_client.cc b/ui/views/widget/desktop_aura/desktop_capture_client.cc
+index 81ef01109f281930e7539f62e2e47abc113ba204..c4f211b7470a647e5525778edde1f596f55f9b6b 100644
+--- a/ui/views/widget/desktop_aura/desktop_capture_client.cc
++++ b/ui/views/widget/desktop_aura/desktop_capture_client.cc
+@@ -32,7 +32,7 @@ DesktopCaptureClient::ClientSet* DesktopCaptureClient::clients_ = nullptr;
+ aura::Window* DesktopCaptureClient::GetCaptureWindowGlobal() {
+   for (const auto& client : *clients_) {
+     if (client && client->capture_window_) {
+-      return client->capture_window_;
++      return client->capture_window_.get();
+     }
+   }
+   return nullptr;
+@@ -52,7 +52,7 @@ DesktopCaptureClient::~DesktopCaptureClient() {
+ }
+ 
+ void DesktopCaptureClient::SetCapture(aura::Window* new_capture_window) {
+-  if (capture_window_ == new_capture_window) {
++  if (capture_window_.get() == new_capture_window) {
+     return;
+   }
+ 
+@@ -61,7 +61,9 @@ void DesktopCaptureClient::SetCapture(aura::Window* new_capture_window) {
+   DCHECK(!new_capture_window || (new_capture_window->GetRootWindow() == root_));
+   DCHECK(!capture_window_ || capture_window_->GetRootWindow());
+ 
+-  aura::Window* old_capture_window = capture_window_;
++  auto old_capture_window_weak = capture_window_;
++  base::WeakPtr<aura::Window> new_capture_window_weak =
++      new_capture_window ? new_capture_window->GetWeakPtrAsWindow() : nullptr;
+ 
+   // If we're starting a new capture, cancel all touches that aren't
+   // targeted to the capturing window.
+@@ -69,8 +71,6 @@ void DesktopCaptureClient::SetCapture(aura::Window* new_capture_window) {
+     // Cancelling touches might cause |new_capture_window| to get deleted.
+     // Track |new_capture_window| and check if it still exists before
+     // committing |capture_window_|.
+-    base::WeakPtr<aura::Window> new_capture_window_weak =
+-        new_capture_window->GetWeakPtrAsWindow();
+     aura::Env::GetInstance()->gesture_recognizer()->CancelActiveTouchesExcept(
+         new_capture_window);
+     if (!new_capture_window_weak) {
+@@ -78,15 +78,15 @@ void DesktopCaptureClient::SetCapture(aura::Window* new_capture_window) {
+     }
+   }
+ 
+-  capture_window_ = new_capture_window;
++  capture_window_ = new_capture_window_weak;
+ 
+   aura::client::CaptureDelegate* delegate = root_->GetHost()->dispatcher();
+-  delegate->UpdateCapture(old_capture_window, new_capture_window);
++  delegate->UpdateCapture(old_capture_window_weak.get(), new_capture_window);
+ 
+   // Initiate native capture updating.
+   if (!capture_window_) {
+     delegate->ReleaseNativeCapture();
+-  } else if (!old_capture_window) {
++  } else if (!old_capture_window_weak) {
+     delegate->SetNativeCapture();
+ 
+     // Notify the other roots that we got capture. This is important so that
+@@ -102,17 +102,17 @@ void DesktopCaptureClient::SetCapture(aura::Window* new_capture_window) {
+   }  // else case is capture is remaining in our root, nothing to do.
+ 
+   observers_.Notify(&aura::client::CaptureClientObserver::OnCaptureChanged,
+-                    old_capture_window, capture_window_);
++                    old_capture_window_weak.get(), capture_window_.get());
+ }
+ 
+ void DesktopCaptureClient::ReleaseCapture(aura::Window* window) {
+-  if (capture_window_ == window) {
++  if (capture_window_.get() == window) {
+     SetCapture(nullptr);
+   }
+ }
+ 
+ aura::Window* DesktopCaptureClient::GetCaptureWindow() {
+-  return capture_window_;
++  return capture_window_.get();
+ }
+ 
+ aura::Window* DesktopCaptureClient::GetGlobalCaptureWindow() {
+diff --git a/ui/views/widget/desktop_aura/desktop_capture_client.h b/ui/views/widget/desktop_aura/desktop_capture_client.h
+index f6f7778b261834bac8581a5f2a1d62903291a993..74fa818c5d5b8b277a508f65b395341fb7cce977 100644
+--- a/ui/views/widget/desktop_aura/desktop_capture_client.h
++++ b/ui/views/widget/desktop_aura/desktop_capture_client.h
+@@ -8,6 +8,7 @@
+ #include <set>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "ui/aura/client/capture_client.h"
+ #include "ui/views/views_export.h"
+@@ -58,7 +59,7 @@ class VIEWS_EXPORT DesktopCaptureClient : public aura::client::CaptureClient {
+   using ClientSet = std::set<base::WeakPtr<DesktopCaptureClient>, Comparator>;
+ 
+   raw_ptr<aura::Window> root_;
+-  raw_ptr<aura::Window> capture_window_ = nullptr;
++  base::WeakPtr<aura::Window> capture_window_;
+ 
+   // The global set of DesktopCaptureClients.
+   static ClientSet* clients_;
+diff --git a/ui/wm/core/capture_controller.cc b/ui/wm/core/capture_controller.cc
+index 5b1159a505f308916adad51d36387aab9aa36ec9..8b5405a1a825e147896112317c10f30911fbf3e8 100644
+--- a/ui/wm/core/capture_controller.cc
++++ b/ui/wm/core/capture_controller.cc
+@@ -56,14 +56,15 @@ void CaptureController::SetCapture(aura::Window* new_capture_window) {
+     return;
+   }
+ 
+-  if (capture_window_ == new_capture_window)
++  if (capture_window_.get() == new_capture_window) {
+     return;
++  }
+ 
+   // Make sure window has a root window.
+   DCHECK(!new_capture_window || new_capture_window->GetRootWindow());
+   DCHECK(!capture_window_ || capture_window_->GetRootWindow());
+ 
+-  aura::Window* old_capture_window = capture_window_;
++  aura::Window* old_capture_window = capture_window_.get();
+   aura::client::CaptureDelegate* old_capture_delegate = capture_delegate_;
+ 
+   // Copy the map in case it's modified out from under us.
+@@ -92,7 +93,7 @@ void CaptureController::SetCapture(aura::Window* new_capture_window) {
+     }
+   }
+ 
+-  capture_window_ = new_capture_window;
++  capture_window_ = new_capture_window_weak;
+   aura::Window* capture_root_window =
+       capture_window_ ? capture_window_->GetRootWindow() : nullptr;
+   capture_delegate_ = delegates_.find(capture_root_window) == delegates_.end()
+@@ -118,21 +119,22 @@ void CaptureController::SetCapture(aura::Window* new_capture_window) {
+   }
+ 
+   observers_.Notify(&aura::client::CaptureClientObserver::OnCaptureChanged,
+-                    old_capture_window, capture_window_);
++                    old_capture_window, capture_window_.get());
+ }
+ 
+ void CaptureController::ReleaseCapture(aura::Window* window) {
+-  if (capture_window_ != window)
++  if (capture_window_.get() != window) {
+     return;
++  }
+   SetCapture(nullptr);
+ }
+ 
+ aura::Window* CaptureController::GetCaptureWindow() {
+-  return capture_window_;
++  return capture_window_.get();
+ }
+ 
+ aura::Window* CaptureController::GetGlobalCaptureWindow() {
+-  return capture_window_;
++  return capture_window_.get();
+ }
+ 
+ void CaptureController::AddObserver(
+diff --git a/ui/wm/core/capture_controller.h b/ui/wm/core/capture_controller.h
+index cda6115fb54f57ebb1b029f8d570145e96ec6c54..f24cc89ee35aa8589b743aa7b8e66d39e813f3f5 100644
+--- a/ui/wm/core/capture_controller.h
++++ b/ui/wm/core/capture_controller.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/component_export.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "ui/aura/client/capture_client.h"
+ #include "ui/aura/window_observer.h"
+@@ -65,7 +66,7 @@ class COMPONENT_EXPORT(UI_WM) CaptureController
+   bool destroying_ = false;
+ 
+   // The current capture window. NULL if there is no capture window.
+-  raw_ptr<aura::Window> capture_window_;
++  base::WeakPtr<aura::Window> capture_window_;
+ 
+   // The capture delegate for the root window with native capture. The root
+   // window with native capture may not contain |capture_window_|. This occurs

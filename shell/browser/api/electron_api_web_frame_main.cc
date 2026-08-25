@@ -18,6 +18,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
@@ -26,6 +27,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -35,6 +37,10 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/print_to_pdf.h"
+#endif
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace {
@@ -260,6 +266,20 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+#if BUILDFLAG(ENABLE_PRINTING)
+v8::Local<v8::Promise> WebFrameMain::PrintToPDF(const base::Value& settings) {
+  if (!HasRenderFrame()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Local<v8::Promise> handle = promise.GetHandle();
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+  return PrintFrameToPDF(render_frame_host(), settings);
+}
+#endif
+
 bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
@@ -274,7 +294,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
                         bool internal,
                         const std::string& channel,
                         v8::Local<v8::Value> args) {
-  blink::CloneableMessage message;
+  electron::SerializedValue message;
   if (!gin::ConvertFromV8(isolate, args, &message)) {
     isolate->ThrowException(v8::Exception::Error(
         gin::StringToV8(isolate, "Failed to serialize arguments")));
@@ -596,6 +616,9 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("collectJavaScriptCallStack",
                  &WebFrameMain::CollectDocumentJSCallStack)
+#if BUILDFLAG(ENABLE_PRINTING)
+      .SetMethod("_printToPDF", &WebFrameMain::PrintToPDF)
+#endif
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)

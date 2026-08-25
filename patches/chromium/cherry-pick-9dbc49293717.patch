@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 19 May 2026 10:30:59 -0700
+Subject: Escaped idents when serializing CSS counter names
+
+There was missing escaping for idents when serializing counter names in:
+
+- The counter-set/reset/increment property values
+- The content property value
+
+Bug: 514429130
+Change-Id: Ia21161017622af951fb6895bb995af396489f04e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7859556
+Reviewed-by: Daniil Sakhapov <sakhapov@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1632982}
+
+diff --git a/third_party/blink/renderer/core/css/css_counter_content_value.cc b/third_party/blink/renderer/core/css/css_counter_content_value.cc
+index 48e13cd913b9e7029dc5078d2edbbc4199b26568..0769edc0c1ce0751caba7543b5f70f5292acc511 100644
+--- a/third_party/blink/renderer/core/css/css_counter_content_value.cc
++++ b/third_party/blink/renderer/core/css/css_counter_content_value.cc
+@@ -19,7 +19,7 @@ String CSSCounterContentValue::CustomCSSText() const {
+     result.Append("counters(");
+   }
+ 
+-  result.Append(Identifier());
++  SerializeIdentifier(Identifier(), result);
+   if (!Separator().empty()) {
+     result.Append(", ");
+     result.Append(separator_->CssText());
+diff --git a/third_party/blink/renderer/core/css/css_counter_value.cc b/third_party/blink/renderer/core/css/css_counter_value.cc
+index 3dbb9a754ef613cdecfbefcb1d4b23545d58280c..3344d21f30b9a03afa576b04fdfb61455107baac 100644
+--- a/third_party/blink/renderer/core/css/css_counter_value.cc
++++ b/third_party/blink/renderer/core/css/css_counter_value.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/css/css_counter_value.h"
+ 
++#include "third_party/blink/renderer/core/css/css_markup.h"
+ #include "third_party/blink/renderer/core/css/css_primitive_value.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+ 
+@@ -14,7 +15,7 @@ String CSSCounterValue::CustomCSSText() const {
+   if (is_reversed_) {
+     result.Append("reversed(");
+   }
+-  result.Append(identifier_->Value());
++  SerializeIdentifier(identifier_->Value(), result);
+   if (is_reversed_) {
+     result.Append(')');
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-content/parsing/content-valid.html b/third_party/blink/web_tests/external/wpt/css/css-content/parsing/content-valid.html
+index 097bf66f62b2151eedf33bc94616110ad77bb71d..80bb54f8dcb35e6dfcf7e30c475e0d30555dedde 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-content/parsing/content-valid.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-content/parsing/content-valid.html
+@@ -47,6 +47,9 @@ test_valid_value_combinations("content", `counters(counter-name, ".") "potato"`)
+ test_valid_value_combinations("content", `"(" counters(counter-name, ".", counter-style) ")"`);
+ test_valid_value_combinations("content", `open-quote "hello" "world" close-quote`);
+ test_valid_value_combinations("content", `url("picture.svg") "hello"`);
++
++test_valid_value_combinations("content", "counter(\\})");
++test_valid_value_combinations("content", `counters(\\}, ".")`);
+ </script>
+ </body>
+ </html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-increment-valid.html b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-increment-valid.html
+index c77fd74ac769f0fcbf742cc8700f937f48723725..557290f87005e84f77c0bb31902c95502a84809b 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-increment-valid.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-increment-valid.html
+@@ -18,6 +18,9 @@ test_valid_value('counter-increment', 'first -1 second third 99', 'first -1 seco
+ test_valid_value('counter-increment', 'section calc(1)');
+ test_valid_value('counter-increment', 'section calc(-2.5)');
+ test_valid_value('counter-increment', 'section calc(10 + (5 * sign(2cqw - 10px)))');
++test_valid_value('counter-increment', 'a 1 b 2 c 3 d 4 e 5');
++test_valid_value('counter-increment', 'a 1 b 2 c 3 a 4 b 5');
++test_valid_value('counter-increment', 'a\\ 8 9');
+ </script>
+ </body>
+ </html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-reset-valid.html b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-reset-valid.html
+index b74ce160c7cd2fe0ce786763a25577c1db5e1632..55c9f5e4e394804e73d1f3ed81314fddcd41eaa3 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-reset-valid.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-reset-valid.html
+@@ -24,6 +24,9 @@ test_valid_value('counter-reset', 'reversed(first) -1 reversed(second) third 99'
+ test_valid_value('counter-reset', 'section calc(1)');
+ test_valid_value('counter-reset', 'section calc(-2.5)');
+ test_valid_value('counter-reset', 'section calc(10 + (5 * sign(2cqw - 10px)))');
++test_valid_value('counter-reset', 'a 1 b 2 c 3 d 4 e 5');
++test_valid_value('counter-reset', 'a 1 b 2 c 3 a 4 b 5');
++test_valid_value('counter-reset', 'a\\ 8 9');
+ </script>
+ </body>
+ </html>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-set-valid.html b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-set-valid.html
+index 96cb71e398c683c33d2fa7af762d1fd1780eb3f8..e985fcae149fa676f9677770136c74e157dadd88 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-set-valid.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-lists/parsing/counter-set-valid.html
+@@ -18,6 +18,9 @@ test_valid_value('counter-set', 'first -1 second third 99', 'first -1 second 0 t
+ test_valid_value('counter-set', 'section calc(1)');
+ test_valid_value('counter-set', 'section calc(-2.5)');
+ test_valid_value('counter-set', 'section calc(10 + (5 * sign(2cqw - 10px)))');
++test_valid_value('counter-set', 'a 1 b 2 c 3 d 4 e 5');
++test_valid_value('counter-set', 'a 1 b 2 c 3 a 4 b 5');
++test_valid_value('counter-set', 'a\\ 8 9');
+ </script>
+ </body>
+ </html>

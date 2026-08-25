@@ -1,6 +1,6 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
@@ -802,6 +802,63 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('webpreferences inheritance', () => {
+    afterEach(closeAllWindows);
+
+    // The guest page spins up a dedicated Worker and reports back, via the
+    // console, whether that Worker has access to Node's `require`.
+    const guestSrc =
+      'data:text/html,' +
+      encodeURIComponent(`<script>
+      const src = 'try { postMessage(typeof require) } catch (e) { postMessage("err") }';
+      const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      wk.onmessage = (e) => console.log('WORKER_REQUIRE:' + e.data);
+    </script>`);
+
+    async function workerRequireTypeof(w: BrowserWindow, webpreferences: string): Promise<string> {
+      await w.loadURL('about:blank');
+      return w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const webview = new WebView()
+        webview.setAttribute('src', ${JSON.stringify(guestSrc)})
+        webview.setAttribute('webpreferences', ${JSON.stringify(webpreferences)})
+        webview.addEventListener('console-message', (e) => {
+          if (e.message.startsWith('WORKER_REQUIRE:')) {
+            resolve(e.message.slice('WORKER_REQUIRE:'.length))
+          }
+        })
+        document.body.appendChild(webview)
+      })`);
+    }
+
+    it('does not let the webpreferences attribute grant a worker Node access the embedder lacks', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: false,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
+    });
+
+    it('keeps a guest worker free of Node when the embedder is sandboxed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: true,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
+    });
+  });
+
   describe('webpreferences attribute', () => {
     const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
@@ -829,8 +886,8 @@ describe('<webview> tag', function () {
         src: 'data:text/html,foo'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('remains transparent when set', async () => {
@@ -839,8 +896,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=yes'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('can disable transparency', async () => {
@@ -849,8 +906,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=no'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
 

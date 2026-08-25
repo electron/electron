@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Aug 2026 17:33:15 -0700
+Subject: [content] Lower child process shutdown priority on Windows
+
+At logoff and shutdown csrss ends processes in descending shutdown-level
+order and, within a level, in no particular order. chrome.exe lowers
+every non-browser process to 0x280 - 1 in its DLL loader so the browser
+(default 0x280) goes first and never sees its children killed. That
+lives in chrome/app, so no other content embedder gets it: their
+browser process shares a level with its own GPU, network and renderer
+processes, watches them die mid-session-teardown, and reacts as if
+they had crashed (relaunches that fail DLL initialization, sad tabs,
+and the GPU fallback ladder ending in an intentional browser crash).
+
+Do it in content's CommonSubprocessInit() for every non-browser
+process instead, still before any sandbox lockdown, and drop the two
+now-duplicate calls from Chrome's loader.
+
+Bug: 542224257
+Change-Id: I6ee480982dc99f5a330afb4606655c8a4d9322ee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8223224
+Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
+Reviewed-by: Greg Thompson <grt@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1678427}
+
+diff --git a/chrome/app/main_dll_loader_win.cc b/chrome/app/main_dll_loader_win.cc
+index 721c7cb973f808ce48318c3f8616379054295ce6..54472e64b4ad060e12a42173f2180c1bc60db06f 100644
+--- a/chrome/app/main_dll_loader_win.cc
++++ b/chrome/app/main_dll_loader_win.cc
+@@ -151,8 +151,6 @@ MainDllLoader::MainDllLoader() : dll_(nullptr) {}
+ 
+ MainDllLoader::~MainDllLoader() = default;
+ 
+-const int kNonBrowserShutdownPriority = 0x280;
+-
+ // Launching is a matter of loading the right dll and calling the entry point.
+ // Derived classes can add custom code in the OnBeforeLaunch callback.
+ int MainDllLoader::Launch(HINSTANCE instance,
+@@ -188,16 +186,6 @@ int MainDllLoader::Launch(HINSTANCE instance,
+   if (!dll_)
+     return CHROME_RESULT_CODE_MISSING_DATA;
+ 
+-  if (!is_browser) {
+-    // Set non-browser processes up to be killed by the system after the
+-    // browser goes away. The browser uses the default shutdown order, which
+-    // is 0x280. Note that lower numbers here denote "kill later" and higher
+-    // numbers mean "kill sooner". This gets rid of most of those unsightly
+-    // sad tabs on logout and shutdown.
+-    ::SetProcessShutdownParameters(kNonBrowserShutdownPriority - 1,
+-                                   SHUTDOWN_NORETRY);
+-  }
+-
+   OnBeforeLaunch(process_type_, file);
+   DLL_MAIN chrome_main =
+       reinterpret_cast<DLL_MAIN>(::GetProcAddress(dll_, "ChromeMain"));
+@@ -237,14 +225,6 @@ void ChromeDllLoader::OnBeforeLaunch(const std::string& process_type,
+     if constexpr (kShouldRecordActiveUse) {
+       RecordDidRun(dll_path);
+     }
+-  } else {
+-    // Set non-browser processes up to be killed by the system after the browser
+-    // goes away. The browser uses the default shutdown order, which is 0x280.
+-    // Note that lower numbers here denote "kill later" and higher numbers mean
+-    // "kill sooner".
+-    // This gets rid of most of those unsightly sad tabs on logout and shutdown.
+-    ::SetProcessShutdownParameters(kNonBrowserShutdownPriority - 1,
+-                                   SHUTDOWN_NORETRY);
+   }
+ }
+ 
+diff --git a/content/app/content_main.cc b/content/app/content_main.cc
+index dcce405488dd4c61c218a6b6c356d5932de99fb2..a67db088f014a747726152f7dc59a8b63a189e6b 100644
+--- a/content/app/content_main.cc
++++ b/content/app/content_main.cc
+@@ -124,6 +124,12 @@ bool IsSubprocess() {
+ 
+ void CommonSubprocessInit() {
+ #if BUILDFLAG(IS_WIN)
++  // Lower non-browser processes to 0x27F so `csrss` notifies/terminates the
++  // browser process (0x280) first during OS shutdown. The browser's teardown
++  // or job handle cleanup then takes care of child processes before it can
++  // observe them dying unexpectedly.
++  ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
++
+   // HACK: Let Windows know that we have started.  This is needed to suppress
+   // the IDC_APPSTARTING cursor from being displayed for a prolonged period
+   // while a subprocess is starting.

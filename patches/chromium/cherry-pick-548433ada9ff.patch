@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Liam Brady <lbrady@google.com>
+Date: Thu, 9 Jul 2026 11:58:07 -0700
+Subject: Enable new redirect URL sanitization features by default.
+
+This CL enables the kSanitizeLocationHeadersDuringNavigation and
+kSanitizeOriginalUrlDuringNavigation features by default. These features
+sanitize the location headers and original URL when a cross-origin
+redirect takes place, keeping the renderer from getting access to
+potentially sensitive cross-origin data (such as query parameters).
+
+Bug: 495463654
+Change-Id: I06e884c1568358a0b8f4200aad06c7e5450a6c68
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7946293
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Liam Brady <lbrady@google.com>
+Cr-Commit-Position: refs/heads/main@{#1659739}
+
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 0ca6c8c16fb36f5425c4dfad543b6413e9640b88..432453ca69ac5742daa3efef677c650112755238 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -675,13 +675,13 @@ BASE_FEATURE(kScrollAfterOSKViewportShrinkFix,
+ // to only include the origin when cross-origin to the final URL.
+ // See https://crbug.com/495463654.
+ BASE_FEATURE(kSanitizeLocationHeadersDuringNavigation,
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ // Controls whether the `original_url` contains the full URL or just the
+ // sanitized origin when sent to the renderer on commit.
+ // See https://crbug.com/495463654.
+ BASE_FEATURE(kSanitizeOriginalUrlDuringNavigation,
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ BASE_FEATURE(kServiceWorkerAvoidMainThreadForInitialization,
+              base::FEATURE_ENABLED_BY_DEFAULT);

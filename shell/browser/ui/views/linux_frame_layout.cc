@@ -155,8 +155,20 @@ LinuxCSDNativeFrameLayout::LinuxCSDNativeFrameLayout(NativeWindowViews* window)
 LinuxCSDNativeFrameLayout::~LinuxCSDNativeFrameLayout() = default;
 
 gfx::Insets LinuxCSDNativeFrameLayout::RestoredFrameBorderInsets() const {
-  const gfx::Insets input_insets = GetInputInsets();
-  const gfx::Insets frame_insets = GetFrameProvider()->GetFrameThicknessDip();
+  // Compute restored-state insets without consulting window_->IsMaximized()
+  // (via IsShowingShadow()/GetInputInsets()/GetFrameProvider()): Ozone calls
+  // CalculateInsetsInDIP twice per configure and assumes the same
+  // window_state yields the same insets. TriggerStateChanges' optimistic
+  // kMaximized is live for the first call and reverted by the second when the
+  // compositor declines set_maximized (e.g. sway floating), so reading widget
+  // state here makes the two disagree and the window shrinks each maximize().
+  const gfx::Insets input_insets(
+      host_supports_client_frame_shadow_ ? kResizeBorder : 0);
+  const gfx::Insets frame_insets =
+      ui::LinuxUiTheme::GetForProfile(nullptr)
+          ->GetWindowFrameProvider(!host_supports_client_frame_shadow_, tiled(),
+                                   /*maximized=*/false)
+          ->GetFrameThicknessDip();
   return NormalizeBorderInsets(frame_insets, input_insets);
 }
 
@@ -183,13 +195,17 @@ LinuxCSDCustomFrameLayout::LinuxCSDCustomFrameLayout(NativeWindowViews* window)
 LinuxCSDCustomFrameLayout::~LinuxCSDCustomFrameLayout() = default;
 
 gfx::Insets LinuxCSDCustomFrameLayout::RestoredFrameBorderInsets() const {
-  const gfx::Insets input_insets = GetInputInsets();
-  const bool showing_shadow = IsShowingShadow();
-  const auto shadow_values = (showing_shadow && !tiled())
+  // See LinuxCSDNativeFrameLayout::RestoredFrameBorderInsets() above: do not
+  // read window_->IsMaximized()/IsFullscreen() here or the two
+  // CalculateInsetsInDIP calls per configure can disagree and the window
+  // shrinks by ~30x41px per maximize() on compositors that decline it.
+  const bool supports_shadow = host_supports_client_frame_shadow_;
+  const gfx::Insets input_insets(supports_shadow ? kResizeBorder : 0);
+  const auto shadow_values = (supports_shadow && !tiled())
                                  ? GetFrameShadowValuesLinux(/*active=*/true)
                                  : gfx::ShadowValues();
   const gfx::Insets frame_insets = GetRestoredFrameBorderInsetsLinux(
-      showing_shadow, kDefaultCustomFrameBorder, shadow_values, input_insets);
+      supports_shadow, kDefaultCustomFrameBorder, shadow_values, input_insets);
   return NormalizeBorderInsets(frame_insets, input_insets);
 }
 

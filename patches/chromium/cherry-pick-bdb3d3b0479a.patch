@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Wed, 3 Jun 2026 14:33:49 -0700
+Subject: media/gpu/vaapi: Reject up-scaling in spatial layer encoding
+
+VideoEncodeAccelerator supports down-scaling in spatial layer encoding.
+This adds the validation checks to ensure that all spatial layer
+resolutions are less than or equal to the input visible size.
+
+Specifically:
+- VaapiVideoEncodeAccelerator now validates frame size against encode
+  size during surface creation for mappable SI encoding.
+- VP9VaapiVideoEncoderDelegate validates spatial layer resolutions
+  during initialization.
+- MojoVideoEncodeAcceleratorService rejects initialization if any
+  spatial layer is larger than the input visible size.
+
+Bug: 516872067
+Test: video_encode_accelerator_tests
+Test: webrtc.RTCPeerConnection.vp9*
+Change-Id: I02e46207debbfecadecfd2cde7a2956a93b13313
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7891570
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Reviewed-by: Nathan Hebert <nhebert@chromium.org>
+Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1641219}
+
+diff --git a/media/gpu/vaapi/vaapi_video_encode_accelerator.cc b/media/gpu/vaapi/vaapi_video_encode_accelerator.cc
+index 17c5f49ee250efa995bbb82ee8f8c9a2027dde9c..44df9f5bd794747b340b73931cb522e2127e55ef 100644
+--- a/media/gpu/vaapi/vaapi_video_encode_accelerator.cc
++++ b/media/gpu/vaapi/vaapi_video_encode_accelerator.cc
+@@ -657,6 +657,12 @@ bool VaapiVideoEncodeAccelerator::CreateSurfacesForMappableSIEncoding(
+                spatial_layer_resolutions.size());
+   auto source_rect = frame.visible_rect();
+   for (const gfx::Size& encode_size : spatial_layer_resolutions) {
++    if (encode_size.width() > source_rect.width() ||
++        encode_size.height() > source_rect.height()) {
++      NotifyError({EncoderStatus::Codes::kInvalidInputFrame,
++                   "Only down scaling is supported in spatial layer encoding"});
++      return false;
++    }
+     const bool engage_vpp = source_rect != gfx::Rect(encode_size);
+     // Crop and scale |source_surface| to a surface whose size is |encode_size|.
+     // The size of a reconstructed surface is also |encode_size|.
+diff --git a/media/gpu/vaapi/vp9_vaapi_video_encoder_delegate.cc b/media/gpu/vaapi/vp9_vaapi_video_encoder_delegate.cc
+index 27a524fad9f6f9b68b225bfd2464e5fa4c816610..739a02fc95f503498d76fc7ccd04f62add064596 100644
+--- a/media/gpu/vaapi/vp9_vaapi_video_encoder_delegate.cc
++++ b/media/gpu/vaapi/vp9_vaapi_video_encoder_delegate.cc
+@@ -8,6 +8,7 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <cstdint>
+ #include <numeric>
+ 
+ #include "base/bits.h"
+@@ -261,6 +262,13 @@ bool VP9VaapiVideoEncoderDelegate::Initialize(
+       return false;
+     }
+     for (const auto& spatial_layer : config.spatial_layers) {
++      // Only down scaling is supported in spatial layer encoding.
++      if (spatial_layer.width > visible_size_.width() ||
++          spatial_layer.height > visible_size_.height()) {
++        VLOGF(1) << "Spatial layer resolution is larger than visible size";
++        return false;
++      }
++
+       spatial_layer_resolutions.emplace_back(
+           gfx::Size(spatial_layer.width, spatial_layer.height));
+     }
+diff --git a/media/mojo/services/mojo_video_encode_accelerator_service.cc b/media/mojo/services/mojo_video_encode_accelerator_service.cc
+index dcaa64f8a7045369ddefb02d817ddad4455f8d2e..1f6657bf803162882c3cb079bcc35f45b9db3066 100644
+--- a/media/mojo/services/mojo_video_encode_accelerator_service.cc
++++ b/media/mojo/services/mojo_video_encode_accelerator_service.cc
+@@ -134,6 +134,33 @@ void MojoVideoEncodeAcceleratorService::Initialize(
+     return;
+   }
+ 
++  for (const auto& spatial_layer : config.spatial_layers) {
++    if (spatial_layer.width > limits::kMaxDimension ||
++        spatial_layer.height > limits::kMaxDimension ||
++        base::CheckMul<uint64_t>(spatial_layer.width, spatial_layer.height)
++                .ValueOrDefault(std::numeric_limits<uint64_t>::max()) >
++            limits::kMaxCanvas) {
++      MEDIA_LOG(ERROR, media_log_.get())
++          << __func__ << "too large spatial_layer " << spatial_layer.width
++          << "x" << spatial_layer.height;
++      std::move(success_callback)
++          .Run({EncoderStatus::Codes::kEncoderInitializationError});
++      return;
++    }
++    if (spatial_layer.width > config.input_visible_size.width() ||
++        spatial_layer.height > config.input_visible_size.height()) {
++      MEDIA_LOG(ERROR, media_log_.get())
++          << __func__
++          << " spatial layer size is larger than input_visible_size: "
++          << spatial_layer.width << "x" << spatial_layer.height << " vs "
++          << config.input_visible_size.ToString();
++
++      std::move(success_callback)
++          .Run({EncoderStatus::Codes::kEncoderInitializationError});
++      return;
++    }
++  }
++
+   encoder_.reset();
+   auto encoder_or_error =
+       std::move(create_vea_callback_)

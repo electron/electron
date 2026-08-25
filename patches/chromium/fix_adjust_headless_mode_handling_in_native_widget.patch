@@ -67,7 +67,7 @@ index b4554165e3c5344c7ff0b21ccc3986c3e5edf593..4a9e866b57333cbaf8f8e9b415572e9d
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 94ee727830545ff1576685722c0fd0dd215131cf..ba70aca429e33c12215dfd67d3855245855ae369 100644
+index e4d55c27f13102c975c0c7a843ebabac3237404d..502332858c31e0d8666dd990676ec16d3fd9a058 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -559,7 +559,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {

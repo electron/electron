@@ -9,6 +9,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
@@ -123,6 +124,22 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('app.setDesktopName(name)', () => {
+    it('sets the desktop name to the CHROME_DESKTOP environment variable', () => {
+      const original = process.env.CHROME_DESKTOP;
+      defer(() => {
+        if (original === undefined) {
+          delete process.env.CHROME_DESKTOP;
+        } else {
+          process.env.CHROME_DESKTOP = original;
+        }
+      });
+
+      app.setDesktopName('electron-test-set-desktop-name.desktop');
+      expect(process.env.CHROME_DESKTOP).to.equal('electron-test-set-desktop-name.desktop');
+    });
+  });
+
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
       expect(app.getLocale()).to.not.equal('');
@@ -182,6 +199,39 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux' && fs.existsSync('/usr/bin/dbus-daemon'))(
+    'when a D-Bus bus goes away',
+    () => {
+      it('exits cleanly instead of crashing', async () => {
+        const daemon = cp.spawn('dbus-daemon', ['--session', '--nofork', '--print-address']);
+        defer(() => daemon.kill());
+        const [address] = await once(daemon.stdout, 'data');
+        const bus = address.toString().trim();
+        const env = { ...process.env, DBUS_SESSION_BUS_ADDRESS: bus, DBUS_SYSTEM_BUS_ADDRESS: bus };
+
+        const appProcess = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'session-bus-lost')], { env });
+        defer(() => appProcess.kill());
+        const exited = once(appProcess, 'exit');
+        await once(appProcess.stdout, 'data');
+        await waitUntil(() => {
+          const names = cp
+            .spawnSync(
+              'dbus-send',
+              ['--session', '--dest=org.freedesktop.DBus', '--print-reply', '/', 'org.freedesktop.DBus.ListNames'],
+              { env }
+            )
+            .stdout.toString();
+          return (names.match(/string ":1\./g) ?? []).length >= 2;
+        });
+
+        daemon.kill();
+        const [code, signal] = await exited;
+        expect(signal).to.be.null();
+        expect(code).to.equal(0);
+      });
+    }
+  );
+
   describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
@@ -217,6 +267,27 @@ describe('app module', () => {
 
       expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound');
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
+    });
+
+    // Exiting before 'ready' leaves browser start-up state unfreed by design,
+    // which LeakSanitizer reports and turns into exit code 1.
+    ifit(!process.env.IS_ASAN)('exits cleanly when called before ready right after loading tls', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'exit-before-ready-after-tls');
+      // This guards against a shutdown race that was lost roughly one run in
+      // five, so go a few rounds.
+      for (let i = 0; i < 15; i++) {
+        appProcess = cp.spawn(process.execPath, [appPath]);
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(123, message);
+        expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
+      }
     });
 
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
@@ -328,6 +399,20 @@ describe('app module', () => {
       });
     });
 
+    it('sends and receives data larger than the singleton message buffer', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-size=300000'],
+        expectedAdditionalData: 'x'.repeat(300000)
+      });
+    });
+
+    ifit(process.platform !== 'win32')('passes long arguments to the second-instance event', async () => {
+      await testArgumentPassing({
+        args: [`--long-arg=${'a'.repeat(50000)}`],
+        expectedAdditionalData: null
+      });
+    });
+
     it('sends and receives numerical data', async () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content=2'],
@@ -339,6 +424,19 @@ describe('app module', () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content="data"'],
         expectedAdditionalData: 'data'
+      });
+    });
+
+    it('preserves NUL followed by whitespace in additional data', async () => {
+      // The real invariant here is the V8-serialized format of the data. Using
+      // a string here is just a convenient way to test the invariant.
+      const expectedAdditionalData = {
+        value: 'foo\0\tbar'
+      };
+
+      await testArgumentPassing({
+        args: ['--send-data', `--data-content=${JSON.stringify(expectedAdditionalData)}`],
+        expectedAdditionalData
       });
     });
 
@@ -860,6 +958,16 @@ describe('app module', () => {
             type: 'daemonService'
           });
         }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
+      ifit(isVenturaOrHigher)('does not crash when the service name is not valid UTF-8', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: false,
+            type: 'daemonService',
+            serviceName: '\uD800'
+          });
+        }).to.not.throw();
       });
 
       ifit(isVenturaOrHigher)('can unset a login item', () => {
@@ -1653,92 +1761,70 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'linux')('default protocol client APIs with mocked XDG settings', () => {
+  ifdescribe(process.platform === 'linux')('default protocol client APIs', () => {
     const protocol = 'electron-test-linux';
     const desktopFileId = 'electron-test.desktop';
     const protocolMimeType = `x-scheme-handler/${protocol}`;
 
-    let xdgDir: string;
-    let xdgDataHome: string;
-    let xdgConfigHome: string;
-    let xdgBinDir: string;
-    let oldEnv: Record<string, string | undefined>;
-
-    const getRegisteredHandler = () => {
-      for (const list of [
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        path.join(xdgDataHome, 'applications', 'mimeapps.list'),
-        path.join(xdgDataHome, 'applications', 'defaults.list')
-      ]) {
-        if (!fs.existsSync(list)) continue;
-
-        const match = fs
-          .readFileSync(list, 'utf8')
-          .split('\n')
-          .find((line) => line.startsWith(`${protocolMimeType}=`));
-
-        // foo=bar.desktop; --> bar.desktop
-        if (match) return match.split('=', 2)[1].split(';', 1)[0];
-      }
-
-      return '';
-    };
+    // GIO caches XDG directory paths at process startup, so we must
+    // operate on the directories it is actually monitoring rather than
+    // creating isolated temp dirs.
+    const gioDataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+    const gioConfigHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    const desktopFileDst = path.join(gioDataHome, 'applications', desktopFileId);
+    const mimeappsListPath = path.join(gioConfigHome, 'mimeapps.list');
 
     beforeEach(() => {
-      ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-default-client-'));
+      const oldDesktopName = process.env.CHROME_DESKTOP;
 
-      oldEnv = {
-        PATH: process.env.PATH,
-        CHROME_DESKTOP: process.env.CHROME_DESKTOP,
-        XDG_DATA_HOME: process.env.XDG_DATA_HOME,
-        XDG_DATA_DIRS: process.env.XDG_DATA_DIRS,
-        XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME
-      };
+      // Install the test .desktop file where GIO can discover it.
+      fs.mkdirSync(path.dirname(desktopFileDst), { recursive: true });
+      fs.copyFileSync(
+        path.join(fixturesPath, 'api', 'xdg-mock', 'data', 'applications', desktopFileId),
+        desktopFileDst
+      );
+
+      app.setDesktopName(desktopFileId);
 
       defer(() => {
-        for (const [key, value] of Object.entries(oldEnv)) {
-          if (value === undefined) {
-            delete process.env[key];
-          } else {
-            process.env[key] = value;
-          }
+        // Restore CHROME_DESKTOP.
+        if (oldDesktopName !== undefined) {
+          process.env.CHROME_DESKTOP = oldDesktopName;
+        } else {
+          delete process.env.CHROME_DESKTOP;
         }
 
-        fs.rmSync(xdgDir, { recursive: true, force: true });
+        // Remove the test .desktop file.
+        try {
+          fs.unlinkSync(desktopFileDst);
+        } catch {}
+
+        // Remove any association for the test protocol from mimeapps.list.
+        if (fs.existsSync(mimeappsListPath)) {
+          const content = fs.readFileSync(mimeappsListPath, 'utf8');
+          const cleaned = content
+            .split('\n')
+            .filter((line) => !line.includes(protocolMimeType))
+            .join('\n');
+          if (cleaned !== content) {
+            fs.writeFileSync(mimeappsListPath, cleaned);
+          }
+        }
       });
-
-      process.env.PATH = [xdgBinDir, oldEnv.PATH].filter(Boolean).join(':');
-      process.env.XDG_DATA_HOME = xdgDataHome;
-      process.env.XDG_DATA_DIRS = [xdgDataHome, oldEnv.XDG_DATA_DIRS].filter(Boolean).join(':');
-      process.env.XDG_CONFIG_HOME = xdgConfigHome;
-      app.setDesktopName(desktopFileId);
     });
 
-    it('writes the default handler to the XDG association files', async () => {
-      expect(getRegisteredHandler()).to.equal('');
-
-      expect(app.setAsDefaultProtocolClient(protocol)).to.equal(true);
-
-      await waitUntil(() => getRegisteredHandler() === desktopFileId);
-      expect(getRegisteredHandler()).to.equal(desktopFileId);
-    });
-
-    it('detects whether the app is the default protocol client', async () => {
+    it('sets and queries the default protocol client', async () => {
       expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
 
-      fs.writeFileSync(
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        ['[Default Applications]', `${protocolMimeType}=other.desktop`].join('\n')
-      );
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
-
-      fs.writeFileSync(
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        ['[Default Applications]', `${protocolMimeType}=${desktopFileId}`].join('\n')
-      );
+      // GIO needs to discover the newly installed .desktop file via inotify.
+      await waitUntil(() => app.setAsDefaultProtocolClient(protocol));
 
       await waitUntil(() => app.isDefaultProtocolClient(protocol));
       expect(app.isDefaultProtocolClient(protocol)).to.equal(true);
+
+      // Changing identity should make the check return false.
+      app.setDesktopName('other-app.desktop');
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
   });
 

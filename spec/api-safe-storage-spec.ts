@@ -2,7 +2,7 @@ import { safeStorage } from 'electron/main';
 
 import * as chai from 'chai';
 import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
+import chaiAsPromised from 'chai-as-promised';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -81,8 +81,8 @@ describe('safeStorage module', () => {
   });
 
   describe('SafeStorage.isAsyncEncryptionAvailable()', () => {
-    it('should return true when async encryption is available', () => {
-      expect(safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
+    it('should resolve true when async encryption is available', async () => {
+      expect(await safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
     });
   });
 

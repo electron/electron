@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Mon, 3 Aug 2026 10:32:04 -0700
+Subject: Add defensive copy in CollectFlattenedAssignedNodes
+
+CollectFlattenedAssignedNodes binds a reference to assigned_nodes_ and
+iterates over it by reference while synchronously recursing into slot
+assignment recalculation. A nested recalculation can clear assigned
+nodes of the outer slot, freeing the backing vector during iteration.
+
+This change creates a defensive copy of assigned_nodes to ensure the
+vector backing remains valid throughout the loop iteration.
+
+This fix was validated using the POC provided in the bug description,
+which was implemented and executed locally, but no committable repro
+was found.
+
+Fixed: 540100588
+Change-Id: I39d6e02c7face470cbfe42c6419c5f2ec15519ae
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8175731
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1672756}
+
+diff --git a/third_party/blink/renderer/core/html/html_slot_element.cc b/third_party/blink/renderer/core/html/html_slot_element.cc
+index deb9ad3e28fdae23725f0da94e804a78c00b0330..98220012f4eeeef8808cc72b59b14e605c8a3964 100644
+--- a/third_party/blink/renderer/core/html/html_slot_element.cc
++++ b/third_party/blink/renderer/core/html/html_slot_element.cc
+@@ -93,7 +93,8 @@ HeapVector<Member<Node>> CollectFlattenedAssignedNodes(
+     const HTMLSlotElement& slot) {
+   DCHECK(slot.SupportsAssignment());
+ 
+-  const HeapVector<Member<Node>>& assigned_nodes = slot.AssignedNodes();
++  // Copy the array - code inside the loop can modify assigned nodes.
++  const HeapVector<Member<Node>> assigned_nodes = slot.AssignedNodes();
+   HeapVector<Member<Node>> nodes;
+   if (assigned_nodes.empty()) {
+     // Fallback contents.

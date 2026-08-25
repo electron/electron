@@ -12,7 +12,6 @@ import {
 
 import { assert, expect } from 'chai';
 
-import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -23,6 +22,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
+import { containsText, readPDF } from './lib/pdf-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
@@ -748,6 +748,61 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         expect(w.getTitle()).to.equal(title);
       });
+
+      it('should update the title when navigating back or forward without browserWindow.setTitle()', async () => {
+        const page = `
+<html>
+<head><meta charset="UTF-8"><title>Document</title></head>
+<body>
+<script>
+  const setTitle = () => document.title = location.hash.slice(1) || 'Document';
+  addEventListener('popstate', setTitle);
+  setTitle(location.hash);
+  window.navigate = name => {
+        history.pushState(null, '', '#' + name);
+        setTitle();
+  };
+</script>
+<button id="btn1" onclick="navigate('path1')">Link 1</button>
+<button id="btn2" onclick="navigate('path2')">Link 2</button>
+
+</body>
+</html>`.trim();
+
+        w = new BrowserWindow({ show: false });
+
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+
+        const nav1 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn1").click()', true);
+        await nav1;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const nav2 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn2").click()', true);
+        await nav2;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+
+        const back = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const forward = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goForward();
+        await forward;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        w.setTitle('My own Title');
+        const back2 = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back2;
+        expect(w.getTitle()).to.equal('My own Title');
+      });
     });
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
@@ -1239,6 +1294,40 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
+    // Regression test for https://github.com/electron/electron/issues/52158.
+    // The api::WebContents wrapping the DevTools WebContents is created as soon
+    // as openDevTools() is called but only referenced again once the frontend
+    // has finished loading. A GC in between used to collect its wrapper, after
+    // which `devtools-opened` would either crash the main process (if the
+    // collected object had not been freed yet) or create a second
+    // api::WebContents for the same DevTools WebContents.
+    it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
+      const gc = require('node:vm').runInNewContext('gc');
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const created: number[] = [];
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
+      app.on('web-contents-created', onCreated);
+      try {
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach', activate: false });
+        gc({ type: 'major', execution: 'sync' });
+        await devtoolsOpened;
+      } finally {
+        app.removeListener('web-contents-created', onCreated);
+      }
+
+      const devtools = w.webContents.devToolsWebContents;
+      expect(devtools).to.not.be.null();
+      expect(devtools!.isDestroyed()).to.be.false();
+      // Exactly one WebContents (the DevTools one) was created, and it is the
+      // one we ended up with.
+      expect(created).to.deep.equal([devtools!.id]);
+    });
+
     it('can show a DevTools window with custom title', async () => {
       const w = new BrowserWindow({ show: false });
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
@@ -1355,6 +1444,116 @@ describe('webContents module', () => {
         expect(alive).to.be.true();
       }
     );
+  });
+
+  describe('DevTools native integration', () => {
+    afterEach(closeAllWindows);
+
+    async function openDevTools(w: BrowserWindow) {
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+    }
+
+    // The DevTools frontend should route context menus through the native
+    // DevToolsHost binding rather than a JS override injected by Electron.
+    function usesNativeShowContextMenu(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+    }
+
+    // Triggers InspectorFrontendHost.showContextMenuAtPoint with an empty
+    // item list at a non-editable point. No menu UI is shown, but a correctly
+    // routed request still round-trips through the browser, which reports
+    // the menu closed back to the frontend as DevToolsAPI.contextMenuCleared.
+    // A request swallowed by the generic context-menu path never resolves.
+    function devToolsMenuRequestRoundTrips(devtoolsContents: Electron.WebContents): Promise<boolean> {
+      return devtoolsContents.executeJavaScript(`new Promise(resolve => {
+        const timeout = setTimeout(() => resolve(false), 5000);
+        const original = DevToolsAPI.contextMenuCleared.bind(DevToolsAPI);
+        DevToolsAPI.contextMenuCleared = () => {
+          clearTimeout(timeout);
+          DevToolsAPI.contextMenuCleared = original;
+          resolve(true);
+          original();
+        };
+        InspectorFrontendHost.showContextMenuAtPoint(10, 10, [], document);
+      })`);
+    }
+
+    it('uses the native showContextMenuAtPoint implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      expect(await usesNativeShowContextMenu(w.webContents.devToolsWebContents!)).to.be.true();
+    });
+
+    it('uses the native window.confirm implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // window.confirm should be the platform implementation (backed by the
+      // DevTools JavaScript dialog manager), not a JS override.
+      const confirmIsNative = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'window.confirm.toString().includes("[native code]")'
+      );
+      expect(confirmIsNative).to.be.true();
+    });
+
+    // Baseline for the setDevToolsWebContents() regression test below: the
+    // managed (built-in) DevTools route via InspectableWebContents.
+    it('routes context menu requests through the native menu path', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      const roundTripped = await devToolsMenuRequestRoundTrips(w.webContents.devToolsWebContents!);
+      expect(roundTripped).to.be.true();
+    });
+
+    describe('with setDevToolsWebContents()', () => {
+      async function openCustomDevTools(w: BrowserWindow, devtools: BrowserWindow) {
+        await w.loadURL('about:blank');
+        w.webContents.setDevToolsWebContents(devtools.webContents);
+        const devtoolsReady = once(devtools.webContents, 'dom-ready');
+        w.webContents.openDevTools();
+        await devtoolsReady;
+        await waitUntil(() => devtools.webContents.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+        // The browser only delivers context-menu-closed notifications to a
+        // focused frame; focus the frontend like a user interacting with it.
+        devtools.webContents.focus();
+        await waitUntil(() => devtools.webContents.executeJavaScript('document.hasFocus()'));
+      }
+
+      it('uses the native showContextMenuAtPoint implementation', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        expect(await usesNativeShowContextMenu(devtools.webContents)).to.be.true();
+      });
+
+      // Regression test for https://github.com/electron/electron/issues/51962:
+      // a DevTools frontend hosted in a user-provided WebContents must show
+      // its popup menus via the native DevTools menu path rather than having
+      // the request swallowed by the generic 'context-menu' event plumbing.
+      it('routes context menu requests through the native menu path', async () => {
+        const w = new BrowserWindow({ show: false });
+        const devtools = new BrowserWindow({ show: false });
+        await openCustomDevTools(w, devtools);
+
+        let emittedContextMenu = false;
+        devtools.webContents.once('context-menu', () => {
+          emittedContextMenu = true;
+        });
+
+        const roundTripped = await devToolsMenuRequestRoundTrips(devtools.webContents);
+        expect(roundTripped).to.be.true();
+        expect(emittedContextMenu).to.be.false();
+      });
+    });
   });
 
   describe('before-mouse-event event', () => {
@@ -1626,6 +1825,7 @@ describe('webContents module', () => {
     });
 
     it('can correctly convert accelerators to key codes', async () => {
+      await w.webContents.executeJavaScript('document.getElementById("input").focus()');
       const keyup = once(ipcMain, 'keyup');
       w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
       w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
@@ -2518,6 +2718,22 @@ describe('webContents module', () => {
         w.webContents.reload();
         expect(w.webContents.isCrashed()).to.equal(false);
       });
+
+      it('survives a synchronous reload() from the render-process-gone handler', async () => {
+        // Regression test: a synchronous reload() from 'render-process-gone'
+        // used to re-enter renderer process launch mid-teardown and
+        // CHECK-crash the browser process. See
+        // WebContents::PrimaryMainFrameRenderProcessGone.
+        const crashEvent = once(w.webContents, 'render-process-gone');
+        w.webContents.once('render-process-gone', () => {
+          // Deliberately synchronous.
+          w.webContents.reload();
+        });
+        w.webContents.forcefullyCrashRenderer();
+        await crashEvent;
+        await once(w.webContents, 'did-finish-load');
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
     });
   }
 
@@ -2880,6 +3096,45 @@ describe('webContents module', () => {
 
       w.webContents.setBackgroundThrottling(false);
     });
+
+    // Regression test: disabling throttling on a WebContentsView while its
+    // window is hidden used to un-hide the RenderWidgetHost without telling the
+    // view, so the surface the renderer produced was never embedded and the
+    // window stayed blank (and un-capturable) once shown, until a resize.
+    it('leaves a hidden WebContentsView paintable once its window is shown', async () => {
+      const w = new BaseWindow({ show: false, width: 300, height: 200 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 300, height: 200 });
+      await view.webContents.loadURL('data:text/html,<body style="background:%23ff0000">');
+      view.webContents.setBackgroundThrottling(false);
+      // Give the renderer time to submit frames while still hidden.
+      await setTimeout(500);
+      w.show();
+      // In the broken state capturePage rejects forever ("Current display
+      // surface not available for capture"); in the fixed state the surface is
+      // available immediately or after a frame or two.
+      let image: Electron.NativeImage | undefined;
+      await waitUntil(
+        async () => {
+          try {
+            image = await view.webContents.capturePage();
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100, timeout: 5000 }
+      );
+      const size = image!.getSize();
+      expect(size.width).to.be.greaterThan(0);
+      expect(size.height).to.be.greaterThan(0);
+      const px = image!.toBitmap();
+      // BGRA; expect the red background, not the blank white surface.
+      expect(px[2]).to.equal(255);
+      expect(px[1]).to.equal(0);
+      expect(px[0]).to.equal(0);
+    });
   });
 
   describe('getBackgroundThrottling()', () => {
@@ -2927,45 +3182,8 @@ describe('webContents module', () => {
 
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let server: http.Server | null;
-    const readPDF = async (data: any) => {
-      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
-      const pdfPath = path.resolve(tmpDir, 'test.pdf');
-      await fs.promises.writeFile(pdfPath, data);
-      const pdfReaderPath = path.resolve(fixturesPath, 'api', 'pdf-reader.mjs');
-
-      const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
-        stdio: 'pipe'
-      });
-
-      const stdout: Buffer[] = [];
-      const stderr: Buffer[] = [];
-      result.stdout.on('data', (chunk) => stdout.push(chunk));
-      result.stderr.on('data', (chunk) => stderr.push(chunk));
-
-      const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-        result.on('close', (code, signal) => {
-          resolve([code, signal]);
-        });
-      });
-      await fs.promises.rm(tmpDir, { force: true, recursive: true });
-      if (code !== 0) {
-        const errMsg = Buffer.concat(stderr).toString().trim();
-        console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
-      }
-      try {
-        return JSON.parse(Buffer.concat(stdout).toString().trim());
-      } catch (err) {
-        console.error('Error parsing PDF file:', err);
-        console.error('Raw output:', Buffer.concat(stdout).toString().trim());
-        throw err;
-      }
-    };
 
     let w: BrowserWindow;
-
-    const containsText = (items: any[], text: RegExp) => {
-      return items.some(({ str }: { str: string }) => str.match(text));
-    };
 
     beforeEach(() => {
       w = new BrowserWindow({

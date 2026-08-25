@@ -1,0 +1,178 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Tue, 21 Jul 2026 21:58:39 -0700
+Subject: Reject unsupported redirects during worker script loading
+
+Loading a blob: URL is not expected to produce a redirect. To maintain
+behavioral consistency with main frame navigations in
+NavigationURLLoaderImpl and to follow expected resource loading
+semantics, worker main script loading paths should decline unexpected or
+unsupported redirect sequences.
+
+This change updates WorkerScriptLoader::OnReceiveRedirect to immediately
+complete script loads with net::ERR_UNSAFE_REDIRECT when:
+- The originating request URL uses the blob: scheme.
+- The destination URL scheme is not supported as a redirect target
+  according to IsSafeRedirectTarget() (e.g., attempting a redirect to
+  file:// or chrome://).
+
+Handling this verification at WorkerScriptLoader guarantees that
+unsupported redirects are cleanly terminated at the underlying URLLoader
+boundary before ever reaching the outer URLLoaderClient (such as
+WorkerScriptFetcher). This provides consistent error handling across
+both renderer-initiated and browser-initiated worker loading flows.
+
+Two unit test cases (RedirectFromBlobUrl and RejectUnsafeRedirectTarget)
+are added to WorkerScriptLoaderFactoryTest to verify this error
+handling.
+
+TAG=agy
+CONV=e9ed9a69-d0d2-4765-a7e4-262255687012
+
+Bug: 532939327
+Change-Id: I486a8e999b926472c7835234efb4f05d338d5ae6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130577
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666012}
+(cherry picked from commit 22500d480098ce3bb02f8850a7e4f93bed85d335)
+
+diff --git a/content/browser/worker_host/worker_script_loader.cc b/content/browser/worker_host/worker_script_loader.cc
+index d5063c33284aacce36ed5413a61e1e9669a9aebd..5e3e33ad4dfe410fc1a56fe622b579e076683345 100644
+--- a/content/browser/worker_host/worker_script_loader.cc
++++ b/content/browser/worker_host/worker_script_loader.cc
+@@ -12,7 +12,9 @@
+ #include "content/browser/service_worker/service_worker_main_resource_loader_interceptor.h"
+ #include "content/public/browser/browser_task_traits.h"
+ #include "content/public/browser/browser_thread.h"
++#include "content/public/common/url_utils.h"
+ #include "net/base/load_timing_info.h"
++#include "net/base/net_errors.h"
+ #include "net/url_request/redirect_util.h"
+ #include "services/network/public/cpp/record_ontransfersizeupdate_utils.h"
+ #include "services/network/public/cpp/shared_url_loader_factory.h"
+@@ -228,6 +230,22 @@ void WorkerScriptLoader::OnReceiveRedirect(
+     const net::RedirectInfo& redirect_info,
+     network::mojom::URLResponseHeadPtr response_head) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
++
++  if (resource_request_.url.SchemeIsBlob()) {
++    // Loading a blob URL never produces a redirect.
++    complete_status_ =
++        network::URLLoaderCompletionStatus(net::ERR_UNSAFE_REDIRECT);
++    CommitCompleted();
++    return;
++  }
++
++  if (!IsSafeRedirectTarget(resource_request_.url, redirect_info.new_url)) {
++    complete_status_ =
++        network::URLLoaderCompletionStatus(net::ERR_UNSAFE_REDIRECT);
++    CommitCompleted();
++    return;
++  }
++
+   if (--redirect_limit_ == 0) {
+     complete_status_ =
+         network::URLLoaderCompletionStatus(net::ERR_TOO_MANY_REDIRECTS);
+diff --git a/content/browser/worker_host/worker_script_loader_factory_unittest.cc b/content/browser/worker_host/worker_script_loader_factory_unittest.cc
+index d9d896b17513c10f451df60989c81d9b34f44887..4746b25f8fff860ff4dd8b1326b318d3b4f05e61 100644
+--- a/content/browser/worker_host/worker_script_loader_factory_unittest.cc
++++ b/content/browser/worker_host/worker_script_loader_factory_unittest.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/functional/callback_helpers.h"
+ #include "base/run_loop.h"
++#include "base/test/run_until.h"
+ #include "content/browser/service_worker/embedded_worker_test_helper.h"
+ #include "content/browser/service_worker/service_worker_client.h"
+ #include "content/browser/service_worker/service_worker_context_core.h"
+@@ -16,6 +17,7 @@
+ #include "content/test/fake_network_url_loader_factory.h"
+ #include "net/base/isolation_info.h"
+ #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
++#include "net/url_request/redirect_info.h"
+ #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
+ #include "services/network/test/test_url_loader_client.h"
+@@ -186,6 +188,80 @@ TEST_F(WorkerScriptLoaderFactoryTest, NullBrowserContext) {
+   EXPECT_EQ(net::ERR_ABORTED, client.completion_status().error_code);
+ }
+ 
++// Tests that a redirect received while loading a blob: URL is rejected. Loading
++// a blob URL never produces a redirect, so any redirect must be rejected before
++// it is forwarded or followed.
++TEST_F(WorkerScriptLoaderFactoryTest, RedirectFromBlobUrl) {
++  GURL url("blob:https://www.example.com/49146318-7a89-4041-9bcc-36e6b6eeef86");
++
++  // Defer the mock network load so we can inject a redirect on the in-flight
++  // load.
++  network_loader_factory_instance_->DeferHandleRequest();
++
++  // Create the factory.
++  auto factory = std::make_unique<WorkerScriptLoaderFactory>(
++      kProcessId, DedicatedOrSharedWorkerToken(),
++      net::IsolationInfo::CreateForInternalRequest(url::Origin::Create(url)),
++      service_worker_handle_.get(), browser_context_getter_,
++      network_loader_factory_);
++
++  // Start loading the script.
++  network::TestURLLoaderClient client;
++  mojo::PendingRemote<network::mojom::URLLoader> loader =
++      CreateTestLoaderAndStart(url, factory.get(), &client);
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return factory->GetScriptLoader() != nullptr; }));
++
++  // Simulate receiving a redirect from the blob load.
++  net::RedirectInfo redirect_info;
++  redirect_info.status_code = 302;
++  redirect_info.new_method = "GET";
++  redirect_info.new_url = GURL("https://other.example.com/worker.js");
++  factory->GetScriptLoader()->OnReceiveRedirect(
++      redirect_info, network::mojom::URLResponseHead::New());
++  client.RunUntilComplete();
++
++  // Verify that the redirect was blocked and the load was aborted with
++  // ERR_UNSAFE_REDIRECT.
++  EXPECT_FALSE(client.has_received_redirect());
++  ASSERT_TRUE(client.has_received_completion());
++  EXPECT_EQ(net::ERR_UNSAFE_REDIRECT, client.completion_status().error_code);
++}
++
++// Tests that a redirect to an unsafe target scheme is rejected.
++TEST_F(WorkerScriptLoaderFactoryTest, RejectUnsafeRedirectTarget) {
++  GURL url("https://www.example.com/worker.js");
++
++  network_loader_factory_instance_->DeferHandleRequest();
++
++  auto factory = std::make_unique<WorkerScriptLoaderFactory>(
++      kProcessId, DedicatedOrSharedWorkerToken(),
++      net::IsolationInfo::CreateForInternalRequest(url::Origin::Create(url)),
++      service_worker_handle_.get(), browser_context_getter_,
++      network_loader_factory_);
++
++  network::TestURLLoaderClient client;
++  mojo::PendingRemote<network::mojom::URLLoader> loader =
++      CreateTestLoaderAndStart(url, factory.get(), &client);
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return factory->GetScriptLoader() != nullptr; }));
++
++  // Simulate receiving an unsafe redirect (e.g. to a file scheme).
++  net::RedirectInfo redirect_info;
++  redirect_info.status_code = 302;
++  redirect_info.new_method = "GET";
++  redirect_info.new_url = GURL("file:///path/to/worker.js");
++  factory->GetScriptLoader()->OnReceiveRedirect(
++      redirect_info, network::mojom::URLResponseHead::New());
++  client.RunUntilComplete();
++
++  // Verify that the redirect was blocked and the load was aborted with
++  // ERR_UNSAFE_REDIRECT.
++  EXPECT_FALSE(client.has_received_redirect());
++  ASSERT_TRUE(client.has_received_completion());
++  EXPECT_EQ(net::ERR_UNSAFE_REDIRECT, client.completion_status().error_code);
++}
++
+ // TODO(falken): Add a test for a shared worker that's controlled by a service
+ // worker.
+ 

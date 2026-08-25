@@ -1,0 +1,286 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 9 Jun 2026 13:58:24 -0400
+Subject: Vulkan: Fix advanced blend validation + backend skip
+
+Advanced blend is only valid when used with draw buffer 0.  When
+enabled, non-0 draw buffers shouldn't be enabled.
+
+In the Vulkan backend, blend is skipped for disabled draw buffers
+because Vulkan's validation is less forgiving to mixing blend and
+advanced blend for disabled attachments (See
+VUID-VkPipelineColorBlendAttachmentState-advancedBlendIndependentBlend-01407)
+
+Bug: chromium:513257423
+Change-Id: I9671015fef16bcb7b170b182905d481c37c2371d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7914802
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/ErrorStrings.h b/src/libANGLE/ErrorStrings.h
+index f309e723d3beb318ceac4b54c347eb4d5e69e0b7..2822ff205ce95844ca55e6399d1a5bb8d5674e15 100644
+--- a/src/libANGLE/ErrorStrings.h
++++ b/src/libANGLE/ErrorStrings.h
+@@ -17,7 +17,7 @@ namespace err
+ // clang-format off
+ inline constexpr const char *k3DDepthStencil = "Format cannot be GL_DEPTH_COMPONENT or GL_DEPTH_STENCIL if target is GL_TEXTURE_3D.";
+ inline constexpr const char *kANGLECopyTextureMissingRequiredExtension = "Copy*TextureCHROMIUM from EXTERNAL_OES to integer format requires OES_EGL_image_external_essl3.";
+-inline constexpr const char *kAdvancedBlendEquationWithMRT = "Advanced blend equation can only be used when only one draw buffer is not NONE.";
++inline constexpr const char *kAdvancedBlendEquationWithMRT = "Advanced blend equations are used with a draw buffer other than draw buffer zero or with multiple draw buffers.";
+ inline constexpr const char *kAtomicCounterResourceName = "Active atomic counter resources are not assigned name strings.";
+ inline constexpr const char *kAttributeListNotNull = "Attribute list must be NULL or GL_NONE.";
+ inline constexpr const char *kAttributeNameNull = "Attribute name is null.";
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 20205ffc2cdc18a037dae10163c3046c9975d48a..f6ea00e29a215f796a60d61faecbca0d1ea3537c 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -4719,6 +4719,18 @@ void ContextVk::updateMissingAttachments()
+     }
+ }
+ 
++void ContextVk::updateBlendEnabled()
++{
++    const gl::DrawBufferMask framebufferMask = mState.getDrawFramebuffer()->getDrawBufferMask();
++    const gl::DrawBufferMask enabledBlend    = mState.getBlendStateExt().getEnabledMask();
++
++    // Filter out blend for disabled attachments.  If advanced blend is enabled, Vulkan
++    // forbids blend from being specified on the other attachments (same as GL, but GL
++    // ignores blend on disabled attachments).
++    mGraphicsPipelineDesc->updateBlendEnabled(&mGraphicsPipelineTransition,
++                                              enabledBlend & framebufferMask);
++}
++
+ void ContextVk::updateBlendFuncsAndEquations()
+ {
+     const gl::BlendStateExt &blendStateExt = mState.getBlendStateExt();
+@@ -5380,8 +5392,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
+                 updateDepthRange(glState.getNearPlane(), glState.getFarPlane());
+                 break;
+             case gl::state::DIRTY_BIT_BLEND_ENABLED:
+-                mGraphicsPipelineDesc->updateBlendEnabled(
+-                    &mGraphicsPipelineTransition, glState.getBlendStateExt().getEnabledMask());
++                updateBlendEnabled();
+                 updateDither();
+                 updateAdvancedBlendEquations(programExecutable);
+                 break;
+@@ -5645,6 +5656,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
+                                glState.getFarPlane());
+                 updateColorMasks();
+                 updateMissingAttachments();
++                updateBlendEnabled();
+                 updateRasterizationSamples(drawFramebufferVk->getSamples());
+                 updateRasterizerDiscardEnabled(
+                     mState.isQueryActive(gl::QueryType::PrimitivesGenerated));
+@@ -6420,6 +6432,7 @@ angle::Result ContextVk::onFramebufferChange(FramebufferVk *framebufferVk, gl::C
+ 
+     // Attachments might have changed.
+     updateMissingAttachments();
++    updateBlendEnabled();
+ 
+     if (mState.getProgramExecutable())
+     {
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.h b/src/libANGLE/renderer/vulkan/ContextVk.h
+index 206876032d738e9d8a457e990fb88bdcf9da46e4..6551bb8be92aae731a0ce7db143e364288246eb2 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.h
++++ b/src/libANGLE/renderer/vulkan/ContextVk.h
+@@ -495,6 +495,7 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
+                                        gl::SamplerFormat format,
+                                        gl::Texture **textureOut);
+     void updateColorMasks();
++    void updateBlendEnabled();
+     void updateBlendFuncsAndEquations();
+ 
+     void handleError(VkResult errorCode,
+diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+index 7cd55d54a58ddfd0ce443a06334d7b20d8d9534d..b07a2416fea25d8b76182b7c89001e43e99bf6db 100644
+--- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+@@ -2752,6 +2752,7 @@ angle::Result FramebufferVk::syncState(const gl::Context *context,
+     if (shouldUpdateColorMaskAndBlend)
+     {
+         contextVk->updateColorMasks();
++        contextVk->updateBlendEnabled();
+         contextVk->updateBlendFuncsAndEquations();
+     }
+ 
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 1ef1514c78d810b0d0a316dbc0bd2566d408bff6..27998e37ccdc172d7be596015801c964d0a830c4 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -4151,28 +4151,27 @@ const char *ValidateDrawStates(const Context *context, GLenum *outErrorCode)
+         }
+     }
+ 
+-    // Advanced blend equation can only be enabled for a single render target.
++    // Advanced blend equation can only be enabled for color attachment zero and with only that
++    // attachment enabled.
+     const BlendStateExt &blendStateExt = state.getBlendStateExt();
+-    if (ANGLE_UNLIKELY(blendStateExt.getUsesAdvancedBlendEquationMask().any()))
++    const gl::DrawBufferMask drawBuffersWithAdvancedBlend =
++        blendStateExt.getUsesAdvancedBlendEquationMask() & blendStateExt.getEnabledMask();
++    if (ANGLE_UNLIKELY(drawBuffersWithAdvancedBlend.any()))
+     {
++        // Note: Framebuffer::getDrawBufferMask() excludes non-existing draw buffers.  But if
++        // glDrawBuffers sets them to non-NONE, draw with advanced blend is still expected to fail.
++        // So we can't do a quick check with getDrawBufferMask() alone.
+         const size_t drawBufferCount            = framebuffer->getDrawbufferStateCount();
+-        uint32_t advancedBlendRenderTargetCount = 0;
+-
+-        for (size_t drawBufferIndex : blendStateExt.getUsesAdvancedBlendEquationMask())
++        const bool advancedBlendOnDrawBufferZero =
++            drawBuffersWithAdvancedBlend[0] && framebuffer->getDrawBufferState(0) != GL_NONE;
++        for (size_t drawBufferIndex = 1; drawBufferIndex < drawBufferCount; ++drawBufferIndex)
+         {
+-            if (drawBufferIndex < drawBufferCount &&
+-                framebuffer->getDrawBufferState(drawBufferIndex) != GL_NONE &&
+-                blendStateExt.getEnabledMask().test(drawBufferIndex) &&
+-                blendStateExt.getUsesAdvancedBlendEquationMask().test(drawBufferIndex))
++            if (framebuffer->getDrawBufferState(drawBufferIndex) != GL_NONE &&
++                (advancedBlendOnDrawBufferZero || drawBuffersWithAdvancedBlend[drawBufferIndex]))
+             {
+-                ++advancedBlendRenderTargetCount;
++                return kAdvancedBlendEquationWithMRT;
+             }
+         }
+-
+-        if (advancedBlendRenderTargetCount > 1)
+-        {
+-            return kAdvancedBlendEquationWithMRT;
+-        }
+     }
+ 
+     // Dual-source blending functions limit the number of supported draw buffers.
+diff --git a/src/tests/gl_tests/AdvancedBlendTest.cpp b/src/tests/gl_tests/AdvancedBlendTest.cpp
+index 15a6c496b30c10e0eb6b6cf0e0d82181e114dbd2..bc79347aef7f11662a2a08b0d08182cd0ac5a33d 100644
+--- a/src/tests/gl_tests/AdvancedBlendTest.cpp
++++ b/src/tests/gl_tests/AdvancedBlendTest.cpp
+@@ -34,6 +34,129 @@ class AdvancedBlendTest : public ANGLETest<>
+ class AdvancedBlendTestES32 : public AdvancedBlendTest
+ {};
+ 
++// Test that advanced blend cannot be used when a non-zero draw buffer is enabled.
++TEST_P(AdvancedBlendTest, NonZeroDrawBufferDisallowed)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_KHR_blend_equation_advanced"));
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    std::array<GLRenderbuffer, 4> rbo;
++    for (uint32_t i = 0; i < 4; ++i)
++    {
++        glBindRenderbuffer(GL_RENDERBUFFER, rbo[i]);
++        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 1, 1);
++        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_RENDERBUFFER,
++                                  rbo[i]);
++    }
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    GLenum enabled[4] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2,
++                         GL_COLOR_ATTACHMENT3};
++    glDrawBuffers(4, enabled);
++
++    constexpr char kVS[] = R"(#version 300 es
++precision highp float;
++void main()
++{
++    switch (gl_VertexID)
++    {
++        case 0:  gl_Position = vec4(-1, -1, 0, 1); break;
++        case 1:  gl_Position = vec4( 3, -1, 0, 1); break;
++        default: gl_Position = vec4(-1, 3, 0, 1); break;
++    }
++})";
++
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_KHR_blend_equation_advanced : require
++layout (blend_support_multiply) out;
++precision mediump float;
++out vec4 fragColor;
++void main()
++{
++    fragColor = vec4(1., 0., 0., 1.);
++})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    glEnable(GL_BLEND);
++    glBlendEquation(GL_MULTIPLY_KHR);
++
++    // Invalid draw because all 4 draw buffers are enabled.
++    ASSERT_GL_NO_ERROR();
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    enabled[1] = GL_NONE;
++    enabled[2] = GL_NONE;
++    glDrawBuffers(4, enabled);
++
++    // Still invalid because draw buffer #3 is enabled.
++    ASSERT_GL_NO_ERROR();
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    enabled[0] = GL_NONE;
++    enabled[1] = GL_COLOR_ATTACHMENT1;
++    enabled[3] = GL_NONE;
++    glDrawBuffers(4, enabled);
++
++    // Even though a single draw buffer is enabled, it's not index 0 so it's still invalid
++    ASSERT_GL_NO_ERROR();
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    enabled[0] = GL_COLOR_ATTACHMENT0;
++    enabled[1] = GL_NONE;
++    glDrawBuffers(4, enabled);
++
++    // When only color attachment 0 is enabled, the draw is valid.
++    glClearColor(1, 1, 1, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glDrawArrays(GL_TRIANGLES, 0, 3);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // It's also ok to render to multiple attachments if blend is not enabled on the attachment that
++    // has advanced blend..
++    if (EnsureGLExtensionEnabled("GL_OES_draw_buffers_indexed"))
++    {
++        // Enable two attachments
++        enabled[1] = GL_COLOR_ATTACHMENT1;
++        glDrawBuffers(4, enabled);
++
++        // Enable blend only on attachment 0
++        glDisable(GL_BLEND);
++        glEnableiOES(GL_BLEND, 0);
++        glDisableiOES(GL_BLEND, 1);
++
++        // Set advanced blend on the attachment that has blend disabled.  Set a non-advanced blend
++        // on the one that has blend enabled.
++        glBlendEquationiOES(0, GL_FUNC_ADD);
++        glBlendFunciOES(0, GL_ONE, GL_ONE);
++        glBlendEquationiOES(1, GL_MULTIPLY_KHR);
++
++        glClearColor(0, 1, 0, 1);
++        glClear(GL_COLOR_BUFFER_BIT);
++        glDrawArrays(GL_TRIANGLES, 0, 3);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++
++        // If advanced blend is enabled on a NONE attachment, that's also ok.
++        enabled[1] = GL_NONE;
++        glDrawBuffers(4, enabled);
++        glEnableiOES(GL_BLEND, 1);
++
++        glClearColor(0, 0, 1, 1);
++        glClear(GL_COLOR_BUFFER_BIT);
++        glDrawArrays(GL_TRIANGLES, 0, 3);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::magenta);
++    }
++}
++
+ void AdvancedBlendTest::callBlendBarrier(APIExtensionVersion usedExtension)
+ {
+     ASSERT(usedExtension == APIExtensionVersion::Core || usedExtension == APIExtensionVersion::KHR);

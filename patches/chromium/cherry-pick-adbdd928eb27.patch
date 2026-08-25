@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 12 Aug 2026 13:34:48 -0700
+Subject: [gpu] Don't count Windows session teardown as GPU crashes
+
+When a Windows session ends (logoff, shutdown, restart) the OS kills a
+browser's child processes and refuses to initialize new ones: GPU
+children exit with STATUS_DLL_INIT_FAILED_LOGOFF (0xC000026B) or are
+terminated with DBG_TERMINATE_PROCESS (0x40010004). GpuProcessHost
+counts each of these as a GPU crash, so a browser process that is still
+alive at that moment drains the whole fallback ladder within about a
+second and dies in IntentionallyCrashBrowserForUnusableGpuProcess() - a
+crash report that has nothing to do with the GPU.
+
+Chrome rarely sees this because of ordering, not because its GPU
+process is treated specially: chrome.exe lowers the shutdown priority
+of every non-browser process (SetProcessShutdownParameters in
+chrome/app/main_dll_loader_win.cc), so the OS ends the browser first,
+and the browser terminates itself in chrome::SessionEnding() before its
+children are killed. Content embedders that do neither still have a
+live browser process while their GPU process is torn down, and this is
+their top browser-process crash on Windows.
+
+Exit codes are reported on behalf of the child, so ask the OS instead:
+RecordProcessCrash() returns early while
+GetSystemMetrics(SM_SHUTTINGDOWN) is nonzero, and GpuProcessHost::Get()
+does not launch a new GPU process in that window. Relaunch,
+GpuDataManagerImpl::ProcessCrashed() and fallback for real crashes are
+unchanged.
+
+Bug: 542224257
+Change-Id: I4f843921043127ced6685c93b5f4a46364ef21f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8186617
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
+Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1678281}
+
+diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
+index bc3fa4b1bb0bb31b1620b5962d93111e4e0328a6..df888345341a9559e4031d164696faff040211db 100644
+--- a/content/browser/gpu/gpu_process_host.cc
++++ b/content/browser/gpu/gpu_process_host.cc
+@@ -106,6 +106,8 @@
+ #endif
+ 
+ #if BUILDFLAG(IS_WIN)
++#include <windows.h>
++
+ #include "base/win/access_token.h"
+ #include "base/win/security_descriptor.h"
+ #include "base/win/win_util.h"
+@@ -557,6 +559,17 @@ void InitGpuPersistentCacheFileFactoryOnce() {
+   }
+ }
+ 
++// True while the OS is ending the user session (Windows logoff, shutdown,
++// restart): it is killing this browser's child processes and refuses to start
++// new ones, which says nothing about the GPU.
++bool IsSessionEnding() {
++#if BUILDFLAG(IS_WIN)
++  return ::GetSystemMetrics(SM_SHUTTINGDOWN) != 0;
++#else
++  return false;
++#endif
++}
++
+ }  // anonymous namespace
+ 
+ // static
+@@ -604,6 +617,12 @@ GpuProcessHost* GpuProcessHost::Get(GpuProcessKind kind, bool force_create) {
+     return nullptr;
+   }
+ 
++  // Nor while the OS ends the session: the launch would fail and nothing is
++  // left to use the process.
++  if (IsSessionEnding()) {
++    return nullptr;
++  }
++
+   if (kind != GPU_PROCESS_KIND_INFO_COLLECTION) {
+     InitGpuPersistentCacheFileFactoryOnce();
+   }
+@@ -1435,6 +1454,14 @@ void GpuProcessHost::RecordProcessCrash() {
+   if (!process_launched_ || kind_ != GPU_PROCESS_KIND_SANDBOXED)
+     return;
+ 
++  // The OS is ending the session: it kills child processes, refuses to start
++  // new ones, and ends the browser next. Whether this exit was that or a real
++  // crash just before no longer matters - Get() won't launch another GPU
++  // process - so don't spend the fallback budget on it.
++  if (IsSessionEnding()) {
++    return;
++  }
++
+   // Keep track of the total number of GPU crashes.
+   base::subtle::NoBarrier_AtomicIncrement(&gpu_crash_count_, 1);
+   LOG(WARNING) << "The GPU process has crashed " << GetGpuCrashCount()

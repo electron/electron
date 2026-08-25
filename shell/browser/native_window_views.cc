@@ -55,7 +55,6 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/frame_view.h"
 #include "ui/views/window/non_client_view.h"
-#include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -91,7 +90,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
 
@@ -236,12 +234,20 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
     if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_button_color_);
+      SkColor overlay_button_color;
+      bool success = content::ParseCssColorString(val, &overlay_button_color);
       DCHECK(success);
+      if (success) {
+        overlay_button_color_ = overlay_button_color;
+      }
     }
     if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
+      SkColor overlay_symbol_color;
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color);
       DCHECK(success);
+      if (success) {
+        overlay_symbol_color_ = overlay_symbol_color;
+      }
     }
   }
 
@@ -262,6 +268,15 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
   gfx::Rect bounds{0, 0, width, height};
+  // If an explicit position is provided, place the HWND on the target monitor
+  // at creation time. On Windows, DesktopWindowTreeHostWin::SetBoundsInDIP
+  // resolves the display from the bounds' DIP position (with a null window),
+  // so the very first DIP->pixel conversion picks up the correct per-monitor
+  // scale factor. Without this, the HWND is created at (0,0) using
+  // primary-monitor DPI and later repositioned, producing the
+  // secondary-creation deflation symptom.
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y))
+    bounds.set_origin({x, y});
   widget_size_ = bounds.size();
 
   has_shadow_ = options.ValueOrDefault(options::kHasShadow, true);
@@ -428,7 +443,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if ((has_frame() || has_client_frame()) && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
-  widget()->CenterWindow(size);
+  // Bounds need to be re-applied before centering to account for frame
+  // insets, which weren't available on init.
+  SetSize(size);
+  Center();
 
 #if BUILDFLAG(IS_WIN)
   // Save initial window state.
@@ -442,13 +460,6 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
-
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
-  // The initial params.bounds was applied before the frame view existed, so
-  // non-client insets weren't accounted for and bounds need to be set again.
-  if (!GetRestoredFrameBorderInsets().IsEmpty())
-    SetBounds(gfx::Rect(GetPosition(), size), false);
-#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -530,8 +541,13 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 }
 
 void NativeWindowViews::SetContentView(views::View* view) {
-  if (content_view()) {
-    root_view_.GetMainView()->RemoveChildView(content_view());
+  if (views::View* old_view = content_view()) {
+    set_content_view(nullptr);
+    focused_view_ = nullptr;
+    if (old_view->owned_by_client())
+      root_view_.GetMainView()->RemoveChildView(old_view);
+    else
+      root_view_.GetMainView()->RemoveChildViewT(old_view);
   }
   set_content_view(view);
   focused_view_ = view;
@@ -941,14 +957,19 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
     return *content_size_constraints_;
   if (!size_constraints_)
     return extensions::SizeConstraints();
+  // Inflate Electron's logical window size constraints by frame insets to get
+  // the full HWND size for WindowSizeToContentSizeBuggy.
+  const gfx::Size inset_size = GetRestoredFrameBorderInsets().size();
   extensions::SizeConstraints constraints;
   if (size_constraints_->HasMaximumSize()) {
     constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMaximumSize() + inset_size));
   }
   if (size_constraints_->HasMinimumSize()) {
     constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMinimumSize() + inset_size));
   }
   return constraints;
 }
@@ -1174,24 +1195,21 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
   return widget()->GetZOrderLevel();
 }
 
-// We previous called widget()->CenterWindow() here, but in
-// Chromium CL 4916277 behavior was changed to center relative to the
-// parent window if there is one. We want to keep the old behavior
-// for now to avoid breaking API contract, but should consider the long
-// term plan for this aligning with upstream.
 void NativeWindowViews::Center() {
-#if BUILDFLAG(IS_LINUX)
+  // On Windows we previously called gfx::CenterAndSizeWindow on the HWND.
+  // That had the problem of placing windows slightly too high if they have
+  // insets, since top/bottom insets are asymmetric. It also introduces
+  // DIP/pixel conversion errors at fractional scales. We also avoid
+  // widget()->CenterWindow(), since in addition to those issues it centers
+  // relative to the parent window when one exists as of Chromium CL 4916277.
+  //
+  // Centering the logical rect (size without insets) avoids all of the above
+  // and works on Windows and Linux.
   auto display =
       display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
-  gfx::Rect window_bounds_in_screen = display.work_area();
-  window_bounds_in_screen.ClampToCenteredSize(GetSize());
-  widget()->SetBounds(window_bounds_in_screen);
-#else
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Size size =
-      display::win::GetScreenWin()->DIPToScreenSize(hwnd, GetSize());
-  gfx::CenterAndSizeWindow(nullptr, hwnd, size);
-#endif
+  gfx::Rect bounds = display.work_area();
+  bounds.ClampToCenteredSize(GetSize());
+  SetBounds(bounds, false);
 }
 
 void NativeWindowViews::Invalidate() {
@@ -1263,15 +1281,14 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() const {
-  auto* background = root_view_.background();
-  if (!background)
-    return SK_ColorTRANSPARENT;
-  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
+  return background_color_;
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
-  // web views' background color.
-  root_view_.SetBackground(views::CreateSolidBackground(background_color));
+  SkColor compositor_color = background_color;
+  SkColor root_view_color = background_color;
+
+  background_color_ = background_color;
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1283,23 +1300,31 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  SkColor compositor_color = background_color;
+
 #if BUILDFLAG(IS_LINUX)
-  // Widget background needs to stay transparent for CSD shadow regions.
+  // Widget and root view need to be transparent for CSD to draw shadow regions
+  // and custom edges and corners. The web contents view will still be
+  // painted with the true background color, which is cached in state.
   LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
   const bool uses_csd =
       frame_layout && frame_layout->SupportsClientFrameShadow();
-  if (transparent() || uses_csd)
+  if (transparent() || uses_csd) {
     compositor_color = SK_ColorTRANSPARENT;
+    root_view_color = SK_ColorTRANSPARENT;
+  }
 #endif
+
+  // Root view is painted behind the WebContents view.
+  root_view_.SetBackground(views::CreateSolidBackground(root_view_color));
+  // Widget background is painted behind everything.
   widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  // Shadows are now drawn by CSD (Linux) or DWM (Windows) instead of Aura,
+  // so we no longer call wm::SetShadowElevation and similar to avoid
+  // artifacts. https://github.com/electron/electron/issues/51456.
   has_shadow_ = has_shadow;
-  wm::SetShadowElevation(GetNativeWindow(),
-                         has_shadow ? wm::kShadowElevationInactiveWindow
-                                    : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() const {
@@ -2003,9 +2028,11 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
 void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 #if BUILDFLAG(IS_WIN)
   if (behind_task_bar_) {
-    const HWND task_bar_hwnd = ::FindWindow(kUniqueTaskBarClassName, nullptr);
-    ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (const HWND task_bar_hwnd =
+            ::FindWindow(kUniqueTaskBarClassName, nullptr)) {
+      ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
   }
 #endif
   // TODO(julien.isorce): Implement X11 case.

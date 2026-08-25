@@ -1,0 +1,544 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 6 May 2026 13:49:11 +0200
+Subject: [interpreter] Elide unreachable catch blocks and consider
+ JumpIfToBoolean safe
+
+In resumable functions, dead code processing might encounter catch
+blocks with missing scope info if the try block cannot throw.
+This CL elides unreachable catch blocks in Ignition, avoiding
+generating handler table entries and bytecode for them.
+
+To enable this for empty try blocks that contain implicit jumps
+with type coercion, this CL also updates IsJumpWithoutEffects to
+include JumpIfToBoolean bytecodes, as they do not have external
+side effects or throw exceptions.
+
+This avoids crashes in Maglev's PrewalkBytecode due to missing
+scope info, and also avoids the DCHECK failure in BuildMergeStates.
+
+TAG=agy
+CONV=bb210dde-1a09-4cb8-91fc-3eca5e11930a
+
+Bug: 505413738
+Change-Id: Ifac88b7da94b99f0cd01d76f90c4965a70ae5353
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7789498
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#107186}
+
+diff --git a/src/interpreter/bytecode-array-builder.cc b/src/interpreter/bytecode-array-builder.cc
+index 28cbb4651b9f6c458ab697bab3509006cc20c76a..7d4a9a99b6933a2cd97e3ece9bf04becbe99ce3f 100644
+--- a/src/interpreter/bytecode-array-builder.cc
++++ b/src/interpreter/bytecode-array-builder.cc
+@@ -59,7 +59,8 @@ BytecodeArrayBuilder::BytecodeArrayBuilder(
+       register_allocator_(fixed_register_count()),
+       bytecode_array_writer_(zone, &constant_array_builder_,
+                              source_position_mode),
+-      register_optimizer_(nullptr) {
++      register_optimizer_(nullptr),
++      potentially_throwing_bytecode_count_(0) {
+   DCHECK_GE(parameter_count_, 0);
+   DCHECK_LE(parameter_count_, std::numeric_limits<uint16_t>::max());
+   DCHECK_GE(local_register_count_, 0);
+@@ -146,7 +147,8 @@ BytecodeSourceInfo BytecodeArrayBuilder::CurrentSourcePosition(
+     // invalidate the existing source position information if it is used.
+     if (latest_source_info_.is_statement() ||
+         !v8_flags.ignition_filter_expression_positions ||
+-        !Bytecodes::IsWithoutExternalSideEffects(bytecode)) {
++        !Bytecodes::IsWithoutExternalSideEffects(bytecode) ||
++        Bytecodes::IsJumpIfToBoolean(bytecode)) {
+       source_position = latest_source_info_;
+       latest_source_info_.set_invalid();
+     }
+@@ -175,23 +177,31 @@ void BytecodeArrayBuilder::AttachOrEmitDeferredSourceInfo(BytecodeNode* node) {
+ 
+ void BytecodeArrayBuilder::Write(BytecodeNode* node) {
+   AttachOrEmitDeferredSourceInfo(node);
++  if (!Bytecodes::IsWithoutExternalSideEffects(node->bytecode())) {
++    potentially_throwing_bytecode_count_++;
++  }
+   bytecode_array_writer_.Write(node);
+ }
+ 
+ void BytecodeArrayBuilder::WriteJump(BytecodeNode* node, BytecodeLabel* label) {
+   AttachOrEmitDeferredSourceInfo(node);
++  DCHECK(Bytecodes::IsWithoutExternalSideEffects(node->bytecode()) ||
++         Bytecodes::IsJumpIfToBoolean(node->bytecode()));
+   bytecode_array_writer_.WriteJump(node, label);
+ }
+ 
+ void BytecodeArrayBuilder::WriteJumpLoop(BytecodeNode* node,
+                                          BytecodeLoopHeader* loop_header) {
+   AttachOrEmitDeferredSourceInfo(node);
++  // JumpLoop can throw due to interrupt checks (stack overflow, termination).
++  potentially_throwing_bytecode_count_++;
+   bytecode_array_writer_.WriteJumpLoop(node, loop_header);
+ }
+ 
+ void BytecodeArrayBuilder::WriteSwitch(BytecodeNode* node,
+                                        BytecodeJumpTable* jump_table) {
+   AttachOrEmitDeferredSourceInfo(node);
++  DCHECK(Bytecodes::IsWithoutExternalSideEffects(node->bytecode()));
+   bytecode_array_writer_.WriteSwitch(node, jump_table);
+ }
+ 
+@@ -1296,6 +1306,11 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::MarkTryEnd(int handler_id) {
+   return *this;
+ }
+ 
++BytecodeArrayBuilder& BytecodeArrayBuilder::DropHandlerEntry(int handler_id) {
++  handler_table_builder()->DropHandlerEntry(handler_id);
++  return *this;
++}
++
+ BytecodeArrayBuilder& BytecodeArrayBuilder::Jump(BytecodeLabel* label) {
+   DCHECK(!label->is_bound());
+   OutputJump(label, 0);
+diff --git a/src/interpreter/bytecode-array-builder.h b/src/interpreter/bytecode-array-builder.h
+index 4009f2ebf1713bdb135df57c2f26dcac605bd421..fcb2bd7d99f268e58e318468a188e2ed574f3e59 100644
+--- a/src/interpreter/bytecode-array-builder.h
++++ b/src/interpreter/bytecode-array-builder.h
+@@ -74,6 +74,10 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
+     return local_register_count_;
+   }
+ 
++  int potentially_throwing_bytecode_count() const {
++    return potentially_throwing_bytecode_count_;
++  }
++
+   // Returns the number of fixed (non-temporary) registers.
+   int fixed_register_count() const { return locals_count(); }
+ 
+@@ -450,6 +454,7 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
+                                     HandlerTable::CatchPrediction will_catch);
+   BytecodeArrayBuilder& MarkTryBegin(int handler_id, Register context);
+   BytecodeArrayBuilder& MarkTryEnd(int handler_id);
++  BytecodeArrayBuilder& DropHandlerEntry(int handler_id);
+ 
+   // Flow Control.
+   BytecodeArrayBuilder& Bind(BytecodeLabel* label);
+@@ -699,6 +704,21 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
+   BytecodeRegisterOptimizer* register_optimizer_;
+   BytecodeSourceInfo latest_source_info_;
+   BytecodeSourceInfo deferred_source_info_;
++  int potentially_throwing_bytecode_count_;
++};
++
++class V8_NODISCARD ThrowTrackingScope {
++ public:
++  explicit ThrowTrackingScope(BytecodeArrayBuilder* builder)
++      : builder_(builder),
++        start_count_(builder->potentially_throwing_bytecode_count()) {}
++  bool HasEmittedThrowingBytecode() const {
++    return builder_->potentially_throwing_bytecode_count() > start_count_;
++  }
++
++ private:
++  BytecodeArrayBuilder* builder_;
++  int start_count_;
+ };
+ 
+ V8_EXPORT_PRIVATE std::ostream& operator<<(
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 82bed856d57719b10ec591a419895ad2f4c3aa77..687ae00f9a4d28b9e32ce8005cc979a30b91614c 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2945,6 +2945,8 @@ void BytecodeGenerator::BuildTryCatch(
+   // that is intercepting 'throw' control commands.
+   try_control_builder.BeginTry(context);
+ 
++  ThrowTrackingScope throw_tracker(builder());
++
+   HoleCheckElisionMergeScope merge_elider(this);
+ 
+   {
+@@ -2964,16 +2966,18 @@ void BytecodeGenerator::BuildTryCatch(
+     HoleCheckElisionMergeScope::Branch branch_elider(merge_elider);
+     try_body_func();
+   }
+-  try_control_builder.EndTry();
+ 
+-  {
++  bool emit_catch = throw_tracker.HasEmittedThrowingBytecode() ||
++                    block_coverage_builder_ != nullptr;
++  try_control_builder.EndTry(emit_catch);
++
++  if (emit_catch) {
+     HoleCheckElisionMergeScope::Branch branch_elider(merge_elider);
+     catch_body_func(context);
++    try_control_builder.EndCatch();
+   }
+ 
+   merge_elider.Merge();
+-
+-  try_control_builder.EndCatch();
+ }
+ 
+ template <typename TryBodyFunc, typename FinallyBodyFunc>
+diff --git a/src/interpreter/bytecodes.h b/src/interpreter/bytecodes.h
+index 8ea6061ce7480c63fd18ed4fe25d6852042df8ed..7bc4d1a5f6e9876acc1d402e5255f775d1b079f1 100644
+--- a/src/interpreter/bytecodes.h
++++ b/src/interpreter/bytecodes.h
+@@ -853,10 +853,11 @@ class V8_EXPORT_PRIVATE Bytecodes final : public AllStatic {
+ 
+   // Return true if |bytecode| is a jump without effects,
+   // e.g. any jump excluding those that include type coercion like
+-  // JumpIfTrueToBoolean, and JumpLoop due to having an implicit StackCheck.
++  // JumpIfToBooleanTrue/False, and JumpLoop due to having an implicit
++  // StackCheck.
+   static constexpr bool IsJumpWithoutEffects(Bytecode bytecode) {
+-    return IsJump(bytecode) && !IsJumpIfToBoolean(bytecode) &&
+-           bytecode != Bytecode::kJumpLoop;
++    return IsJump(bytecode) && bytecode != Bytecode::kJumpLoop &&
++           !IsJumpIfToBoolean(bytecode);
+   }
+ 
+   // Returns true if the bytecode is a switch.
+diff --git a/src/interpreter/control-flow-builders.cc b/src/interpreter/control-flow-builders.cc
+index 0aef8907da332a06ce349bcf782a65b5f29455e4..da87d318ad02249a98d5946b6bc173b773dec59e 100644
+--- a/src/interpreter/control-flow-builders.cc
++++ b/src/interpreter/control-flow-builders.cc
+@@ -157,15 +157,21 @@ void TryCatchBuilder::BeginTry(Register context) {
+   builder()->MarkTryBegin(handler_id_, context);
+ }
+ 
+-
+-void TryCatchBuilder::EndTry() {
++void TryCatchBuilder::EndTry(bool emit_catch) {
+   builder()->MarkTryEnd(handler_id_);
+-  builder()->Jump(&exit_);
+-  builder()->MarkHandler(handler_id_, catch_prediction_);
+-
+-  if (block_coverage_builder_ != nullptr) {
+-    block_coverage_builder_->IncrementBlockCounter(statement_,
+-                                                   SourceRangeKind::kCatch);
++  if (emit_catch) {
++    builder()->Jump(&exit_);
++    builder()->MarkHandler(handler_id_, catch_prediction_);
++    if (block_coverage_builder_ != nullptr) {
++      block_coverage_builder_->IncrementBlockCounter(statement_,
++                                                     SourceRangeKind::kCatch);
++    }
++  } else {
++    builder()->DropHandlerEntry(handler_id_);
++    if (block_coverage_builder_ != nullptr) {
++      block_coverage_builder_->AllocateBlockCoverageSlot(
++          statement_, SourceRangeKind::kCatch);
++    }
+   }
+ }
+ 
+diff --git a/src/interpreter/control-flow-builders.h b/src/interpreter/control-flow-builders.h
+index 9174603ed259611c04c102c28a8960bb8ba7a6cb..bb6449dfac503666364bde327fb40376e9f78f80 100644
+--- a/src/interpreter/control-flow-builders.h
++++ b/src/interpreter/control-flow-builders.h
+@@ -214,7 +214,7 @@ class V8_EXPORT_PRIVATE TryCatchBuilder final : public ControlFlowBuilder {
+   ~TryCatchBuilder() override;
+ 
+   void BeginTry(Register context);
+-  void EndTry();
++  void EndTry(bool emit_catch = true);
+   void EndCatch();
+ 
+  private:
+diff --git a/src/interpreter/handler-table-builder.cc b/src/interpreter/handler-table-builder.cc
+index 915969d7c91e073c1a7b1a9b5311ddc76aa3c35c..ac2342df5c3aa22fd2a0894f1760b9240096b8d9 100644
+--- a/src/interpreter/handler-table-builder.cc
++++ b/src/interpreter/handler-table-builder.cc
+@@ -19,19 +19,26 @@ HandlerTableBuilder::HandlerTableBuilder(Zone* zone) : entries_(zone) {}
+ template <typename IsolateT>
+ DirectHandle<TrustedByteArray> HandlerTableBuilder::ToHandlerTable(
+     IsolateT* isolate) {
+-  const uint32_t handler_table_size =
+-      base::checked_cast<uint32_t>(entries_.size());
++  uint32_t effective_size = 0;
++  for (const auto& entry : entries_) {
++    if (!entry.dropped) effective_size++;
++  }
++
+   DirectHandle<TrustedByteArray> table_byte_array =
+       isolate->factory()->NewTrustedByteArray(
+-          HandlerTable::LengthForRange(handler_table_size));
++          HandlerTable::LengthForRange(effective_size));
+   HandlerTable table(*table_byte_array);
+-  for (uint32_t i = 0; i < handler_table_size; ++i) {
++  uint32_t table_index = 0;
++  for (size_t i = 0; i < entries_.size(); ++i) {
+     Entry& entry = entries_[i];
++    if (entry.dropped) continue;
+     HandlerTable::CatchPrediction pred = entry.catch_prediction_;
+-    table.SetRangeStart(i, static_cast<int>(entry.offset_start));
+-    table.SetRangeEnd(i, static_cast<int>(entry.offset_end));
+-    table.SetRangeHandler(i, static_cast<int>(entry.offset_target), pred);
+-    table.SetRangeData(i, entry.context.index());
++    table.SetRangeStart(table_index, static_cast<int>(entry.offset_start));
++    table.SetRangeEnd(table_index, static_cast<int>(entry.offset_end));
++    table.SetRangeHandler(table_index, static_cast<int>(entry.offset_target),
++                          pred);
++    table.SetRangeData(table_index, entry.context.index());
++    table_index++;
+   }
+   return table_byte_array;
+ }
+@@ -43,7 +50,10 @@ template DirectHandle<TrustedByteArray> HandlerTableBuilder::ToHandlerTable(
+ 
+ int HandlerTableBuilder::NewHandlerEntry() {
+   int handler_id = static_cast<int>(entries_.size());
+-  Entry entry = {0, 0, 0, Register::invalid_value(), HandlerTable::UNCAUGHT};
++  // Avoid unnecessary spaces
++  // clang-format off
++  Entry entry = {0, 0, 0, Register::invalid_value(), HandlerTable::UNCAUGHT, false};
++  // clang-format on
+   entries_.push_back(entry);
+   return handler_id;
+ }
+@@ -76,6 +86,10 @@ void HandlerTableBuilder::SetContextRegister(int handler_id, Register reg) {
+   entries_[handler_id].context = reg;
+ }
+ 
++void HandlerTableBuilder::DropHandlerEntry(int handler_id) {
++  entries_[handler_id].dropped = true;
++}
++
+ }  // namespace interpreter
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/interpreter/handler-table-builder.h b/src/interpreter/handler-table-builder.h
+index 07820e534ec80b7480a3222931da567fee33c393..2bb3136efdc9a63c7ce6839f1bc2f064188c6e96 100644
+--- a/src/interpreter/handler-table-builder.h
++++ b/src/interpreter/handler-table-builder.h
+@@ -41,6 +41,7 @@ class V8_EXPORT_PRIVATE HandlerTableBuilder final {
+   void SetHandlerTarget(int handler_id, size_t offset);
+   void SetPrediction(int handler_id, HandlerTable::CatchPrediction prediction);
+   void SetContextRegister(int handler_id, Register reg);
++  void DropHandlerEntry(int handler_id);
+ 
+  private:
+   struct Entry {
+@@ -50,6 +51,7 @@ class V8_EXPORT_PRIVATE HandlerTableBuilder final {
+     Register context;      // Register holding context for handler.
+                            // Optimistic prediction for handler.
+     HandlerTable::CatchPrediction catch_prediction_;
++    bool dropped;
+   };
+ 
+   ZoneVector<Entry> entries_;
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index ae8ed4e0c9550605d8362eb668fab78850c74602..62f4acd4e68faa88da82d42ed423158ae1043e9b 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -17432,7 +17432,8 @@ void MaglevGraphBuilder::MarkBytecodeDead() {
+   DCHECK_NULL(current_block());
+   if (is_resumable_function_) {
+     int current_offset = iterator_.current_offset();
+-    if (merge_states_[current_offset] != nullptr) {
++    if (merge_states_[current_offset] != nullptr &&
++        merge_states_[current_offset]->has_context_scope_info()) {
+       SetCurrentScopeInfo(merge_states_[current_offset]->context_scope_info());
+     } else {
+       auto it = dead_scope_infos_.find(current_offset);
+diff --git a/test/unittests/interpreter/bytecode_expectations/TryCatch.golden b/test/unittests/interpreter/bytecode_expectations/TryCatch.golden
+index 04418957d7feaf53ac777d955dac7398cde4e1c7..6130ee9f434a7597c4d79932163cdbf069aac4ce 100644
+--- a/test/unittests/interpreter/bytecode_expectations/TryCatch.golden
++++ b/test/unittests/interpreter/bytecode_expectations/TryCatch.golden
+@@ -9,28 +9,17 @@ wrap: yes
+ snippet: "
+   try { return 1; } catch(e) { return 2; }
+ "
+-frame size: 2
++frame size: 1
+ parameter count: 1
+-bytecode array length: 20
++bytecode array length: 6
+ bytecodes: [
+                 B(Mov), R(context), R(0),
+   /*   40 S> */ B(LdaSmi), I8(1),
+   /*   49 S> */ B(Return),
+-                B(Star1),
+-                B(CreateCatchContext), R(1), U8(0:SCOPE_INFO_TYPE),
+-                B(Star0),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(0),
+-                B(PushContext), R(1),
+-  /*   63 S> */ B(LdaSmi), I8(2),
+-  /*   72 S> */ B(Return),
+ ]
+ constant pool: [
+-  SCOPE_INFO_TYPE,
+ ]
+ handlers: [
+-  [3, 6, 6],
+ ]
+ 
+ ---
+@@ -39,45 +28,21 @@ snippet: "
+   try { a = 1 } catch(e1) {};
+   try { a = 2 } catch(e2) { a = 3 }
+ "
+-frame size: 3
++frame size: 2
+ parameter count: 1
+-bytecode array length: 47
++bytecode array length: 14
+ bytecodes: [
+                 B(Mov), R(context), R(1),
+   /*   47 S> */ B(LdaSmi), I8(1),
+                 B(Star0),
+-                B(Jump), U8(15),
+-                B(Star2),
+-  /*   49 E> */ B(CreateCatchContext), R(2), U8(0:SCOPE_INFO_TYPE),
+-                B(Star1),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(1),
+-                B(PushContext), R(2),
+-                B(PopContext), R(2),
+                 B(Mov), R(context), R(1),
+   /*   75 S> */ B(LdaSmi), I8(2),
+                 B(Star0),
+-                B(Jump), U8(18),
+-                B(Star2),
+-  /*   77 E> */ B(CreateCatchContext), R(2), U8(1:SCOPE_INFO_TYPE),
+-                B(Star1),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(1),
+-                B(PushContext), R(2),
+-  /*   95 S> */ B(LdaSmi), I8(3),
+-                B(Star0),
+-                B(PopContext), R(2),
+                 B(LdaUndefined),
+   /*  103 S> */ B(Return),
+ ]
+ constant pool: [
+-  SCOPE_INFO_TYPE,
+-  SCOPE_INFO_TYPE,
+ ]
+ handlers: [
+-  [3, 6, 8],
+-  [24, 27, 29],
+ ]
+ 
+diff --git a/test/unittests/interpreter/bytecode_expectations/TryFinally.golden b/test/unittests/interpreter/bytecode_expectations/TryFinally.golden
+index 4727f094008951cd42b33c2f2f257ef7fdb4d5e6..0898d8f995c694524f1d45b858f6d54a15b28341 100644
+--- a/test/unittests/interpreter/bytecode_expectations/TryFinally.golden
++++ b/test/unittests/interpreter/bytecode_expectations/TryFinally.golden
+@@ -54,9 +54,9 @@ snippet: "
+   var a = 1;
+   try { a = 2; } catch(e) { a = 20 } finally { a = 3; }
+ "
+-frame size: 7
++frame size: 6
+ parameter count: 1
+-bytecode array length: 60
++bytecode array length: 42
+ bytecodes: [
+   /*   42 S> */ B(LdaSmi), I8(1),
+                 B(Star0),
+@@ -66,17 +66,6 @@ bytecodes: [
+                 B(Mov), R(context), R(5),
+   /*   51 S> */ B(LdaSmi), I8(2),
+                 B(Star0),
+-                B(Jump), U8(18),
+-                B(Star6),
+-  /*   53 E> */ B(CreateCatchContext), R(6), U8(0:SCOPE_INFO_TYPE),
+-                B(Star5),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(5),
+-                B(PushContext), R(6),
+-  /*   71 S> */ B(LdaSmi), I8(20),
+-                B(Star0),
+-                B(PopContext), R(6),
+                 B(LdaSmi), I8(-1),
+                 B(Star2),
+                 B(Star1),
+@@ -85,7 +74,7 @@ bytecodes: [
+                 B(LdaZero),
+                 B(Star1),
+                 B(LdaTheHole),
+-  /*   73 E> */ B(SetPendingMessage),
++  /*   53 E> */ B(SetPendingMessage),
+                 B(Star3),
+   /*   90 S> */ B(LdaSmi), I8(3),
+                 B(Star0),
+@@ -100,11 +89,9 @@ bytecodes: [
+   /*   99 S> */ B(Return),
+ ]
+ constant pool: [
+-  SCOPE_INFO_TYPE,
+ ]
+ handlers: [
+-  [8, 32, 38],
+-  [11, 14, 16],
++  [8, 14, 20],
+ ]
+ 
+ ---
+@@ -113,9 +100,9 @@ snippet: "
+     try { a = 1 } catch(e) { a = 2 }
+   } catch(e) { a = 20 } finally { a = 3; }
+ "
+-frame size: 8
++frame size: 7
+ parameter count: 1
+-bytecode array length: 78
++bytecode array length: 42
+ bytecodes: [
+                 B(LdaTheHole),
+                 B(Star3),
+@@ -124,28 +111,6 @@ bytecodes: [
+                 B(Mov), R(context), R(6),
+   /*   55 S> */ B(LdaSmi), I8(1),
+                 B(Star0),
+-                B(Jump), U8(18),
+-                B(Star7),
+-  /*   57 E> */ B(CreateCatchContext), R(7), U8(0:SCOPE_INFO_TYPE),
+-                B(Star6),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(6),
+-                B(PushContext), R(7),
+-  /*   74 S> */ B(LdaSmi), I8(2),
+-                B(Star0),
+-                B(PopContext), R(7),
+-                B(Jump), U8(18),
+-                B(Star6),
+-  /*   76 E> */ B(CreateCatchContext), R(6), U8(1:SCOPE_INFO_TYPE),
+-                B(Star5),
+-                B(LdaTheHole),
+-                B(SetPendingMessage),
+-                B(Ldar), R(5),
+-                B(PushContext), R(6),
+-  /*   95 S> */ B(LdaSmi), I8(20),
+-                B(Star0),
+-                B(PopContext), R(6),
+                 B(LdaSmi), I8(-1),
+                 B(Star2),
+                 B(Star1),
+@@ -154,7 +119,7 @@ bytecodes: [
+                 B(LdaZero),
+                 B(Star1),
+                 B(LdaTheHole),
+-  /*   97 E> */ B(SetPendingMessage),
++  /*   57 E> */ B(SetPendingMessage),
+                 B(Star3),
+   /*  114 S> */ B(LdaSmi), I8(3),
+                 B(Star0),
+@@ -169,12 +134,8 @@ bytecodes: [
+   /*  123 S> */ B(Return),
+ ]
+ constant pool: [
+-  SCOPE_INFO_TYPE,
+-  SCOPE_INFO_TYPE,
+ ]
+ handlers: [
+-  [5, 50, 56],
+-  [8, 32, 34],
+-  [11, 14, 16],
++  [5, 14, 20],
+ ]
+ 

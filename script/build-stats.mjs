@@ -2,6 +2,20 @@ import * as fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
+// Returns the last `maxBytes` of `filename` as a string.
+async function readTail(filename, maxBytes) {
+  const handle = await fs.open(filename, 'r');
+  try {
+    const { size } = await handle.stat();
+    const length = Math.min(size, maxBytes);
+    const buffer = Buffer.alloc(length);
+    await handle.read(buffer, 0, length, size - length);
+    return buffer.toString('utf-8');
+  } finally {
+    await handle.close();
+  }
+}
+
 async function main() {
   const {
     positionals: [filename],
@@ -20,10 +34,11 @@ async function main() {
     throw new Error('filename is required (should be a siso.INFO file)');
   }
 
-  const log = await fs.readFile(filename, 'utf-8');
-
   // We expect to find a line which looks like stats=build.Stats{..., CacheHit:39008, Local:4778, Remote:0, LocalFallback:0, ...}
-  const match = log.match(/stats=build\.Stats{(.*)}/);
+  // near the end of the log. siso.INFO can exceed V8's maximum string length
+  // (it grows with the step count; a release build's is several hundred MB),
+  // so read the tail of the file rather than the whole thing.
+  const match = (await readTail(filename, 16 * 1024 * 1024)).match(/stats=build\.Stats{(.*)}/);
 
   if (!match) {
     throw new Error('could not find stats=build.Stats in log');

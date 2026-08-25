@@ -306,6 +306,17 @@ WebContentsPreferences* WebContentsPreferences::From(
   return FromWebContents(web_contents);
 }
 
+// static
+bool WebContentsPreferences::ShouldUseSandbox(
+    content::WebContents* web_contents) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  auto* prefs = From(web_contents);
+  return !prefs || prefs->IsSandboxed();
+}
+
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {
@@ -353,6 +364,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 void WebContentsPreferences::SaveLastPreferences() {
   base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
+  dict.Set(options::kNodeIntegrationInWorker, node_integration_in_worker_);
   dict.Set(options::kNodeIntegrationInSubFrames,
            node_integration_in_sub_frames_);
   dict.Set(options::kSandbox, IsSandboxed());

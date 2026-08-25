@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Fri, 29 May 2026 08:56:57 -0700
+Subject: Add CHECK for in progress moves in selectedcontent cloning
+
+A recent change should have made sure the selectedcontent element
+doesn't make any DOM changes during a move operation, and this patch
+just adds an additional CHECK next to some DCHECKs as a good measure to
+make sure this can't happen.
+
+Bug: 517345069, 458113204
+Change-Id: I74dbb5914b2de15ca8a84c425bc6e7222da9655e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7883677
+Reviewed-by: David Grogan <dgrogan@chromium.org>
+Commit-Queue: David Grogan <dgrogan@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Auto-Submit: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1638510}
+
+diff --git a/third_party/blink/renderer/core/html/forms/html_selected_content_element.cc b/third_party/blink/renderer/core/html/forms/html_selected_content_element.cc
+index affc49fd906abfc08b8c4cc2bf50150619b9814e..2486f24b71b4a978f75695e6c77cfffbbf92f582 100644
+--- a/third_party/blink/renderer/core/html/forms/html_selected_content_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_selected_content_element.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/html/forms/html_selected_content_element.h"
+ 
++#include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/html/forms/html_option_element.h"
+ #include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ 
+@@ -18,6 +19,10 @@ void HTMLSelectedContentElement::CloneContentsFromOptionElement(
+     return;
+   }
+ 
++  if (RuntimeEnabledFeatures::SelectedcontentSpecEnabled()) {
++    CHECK(!GetDocument().StatePreservingAtomicMoveInProgress());
++  }
++
+   VectorOf<Node> nodes;
+   if (option) {
+     for (Node& child : NodeTraversal::ChildrenOf(*option)) {

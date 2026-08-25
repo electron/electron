@@ -10,15 +10,12 @@
 #include <string>
 
 #include "base/command_line.h"
-#include "base/environment.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
-#include "electron/fuses.h"
-#include "shell/common/electron_constants.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -96,13 +93,6 @@ void GetCrashKeys(std::map<std::string, std::string>* keys) {
     }
   }
 }
-
-namespace {
-bool IsRunningAsNode() {
-  return electron::fuses::IsRunAsNodeEnabled() &&
-         base::Environment::Create()->HasVar(electron::kRunAsNode);
-}
-}  // namespace
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line) {
   // NB. this is redundant with the 'ptype' key that //components/crash

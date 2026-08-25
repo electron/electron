@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 
 import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifit, waitUntil } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -63,10 +64,18 @@ const shouldRunCase = (crashCase: string) => {
 
 describe('crash cases', () => {
   afterEach(async () => {
-    for (const child of children) {
-      child.kill();
-    }
-    await waitUntil(() => children.length === 0);
+    // A wedged crash-case fixture child can ignore the default SIGTERM and
+    // never emit 'exit'. Attach the exit listener first, then force-kill with
+    // SIGKILL, and await each child's real 'exit' rather than polling the
+    // shared `children` array (whose length only drops via that same handler).
+    await Promise.all(
+      children.map((child) => {
+        if (child.exitCode !== null || child.signalCode !== null) return null;
+        const exited = once(child, 'exit');
+        child.kill('SIGKILL');
+        return exited;
+      })
+    );
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);

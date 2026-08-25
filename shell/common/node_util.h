@@ -57,6 +57,20 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::LocalVector<v8::String>* parameters,
     v8::LocalVector<v8::Value>* arguments);
 
+// Feeds the build-time js2c code cache to the Environment's BuiltinLoader
+// so the *_init bundles are consumed. Call once, after CreateEnvironment and
+// before LoadEnvironment.
+void FeedEnvironmentCodeCache(node::Environment* env);
+
+// Install this process's build-time code cache (see node_natives_code_cache.h)
+// as the default every node BuiltinLoader constructed from now on starts with,
+// so builtins compiled before Electron can reach an Environment's loader --
+// the per-context scripts node::NewContext runs and the whole
+// internal/bootstrap/* sequence inside node::CreateEnvironment -- consume it
+// too. Idempotent; call before the first node::NewContext / CreateEnvironment
+// in a process that hosts a Node.js environment.
+void InstallProcessCodeCache();
+
 // Wrapper for node::CreateEnvironment that logs failure
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::IsolateData* isolate_data,

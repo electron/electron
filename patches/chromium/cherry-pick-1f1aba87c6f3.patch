@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Thu, 21 May 2026 02:31:22 -0700
+Subject: Missing reattach of CSSStyleDeclaration for some @-rules
+
+@position-try, @property, and @counter-style did not reattach their
+CSSStyleDeclaration CSSOM wrapper when reattaching the rule.
+
+Also, @position-try did not clone its property set as necessary which
+resulted in modifying a shared property set between stylesheet when the
+StyleSheetContents is shared.
+
+@property does not have this issue since it is fully immutable.
+
+@counter-style only creates a wrapper for internal devtools usage, but
+still needs its cloning fixed.
+
+Removed Copy() methods which were not in use.
+
+Bug: 514445398, 514906337
+Change-Id: Id0abdb9013332e6f84ce6ebaa7ad13af75529451
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7865527
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1634136}
+
+diff --git a/third_party/blink/renderer/core/css/css_position_try_rule.cc b/third_party/blink/renderer/core/css/css_position_try_rule.cc
+index 323e56a7acd7f8770b108db3cf3daac865290c60..67cbe2de6def5a856211ce09f4775d30bbe2a039 100644
+--- a/third_party/blink/renderer/core/css/css_position_try_rule.cc
++++ b/third_party/blink/renderer/core/css/css_position_try_rule.cc
+@@ -66,6 +66,10 @@ CSSStyleDeclaration* CSSPositionTryRule::style() const {
+ void CSSPositionTryRule::Reattach(StyleRuleBase* rule) {
+   DCHECK(rule);
+   position_try_rule_ = To<StyleRulePositionTry>(rule);
++  if (properties_cssom_wrapper_) {
++    properties_cssom_wrapper_->Reattach(
++        position_try_rule_->MutableProperties());
++  }
+ }
+ 
+ void CSSPositionTryRule::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/css/css_position_try_rule.h b/third_party/blink/renderer/core/css/css_position_try_rule.h
+index 22e073ca3ce4676ae95d66eadf9f3f7a9ec94330..51dd2172c535feecddfa47cb3ed3e44442b7720a 100644
+--- a/third_party/blink/renderer/core/css/css_position_try_rule.h
++++ b/third_party/blink/renderer/core/css/css_position_try_rule.h
+@@ -15,13 +15,9 @@ class StyleRuleCSSStyleDeclaration;
+ class StyleRulePositionTry final : public StyleRuleBase {
+  public:
+   StyleRulePositionTry(const AtomicString& name, CSSPropertyValueSet*);
+-  StyleRulePositionTry(const StyleRulePositionTry&) = default;
++  StyleRulePositionTry(const StyleRulePositionTry&) = delete;
+   ~StyleRulePositionTry();
+ 
+-  StyleRulePositionTry* Copy() const {
+-    return MakeGarbageCollected<StyleRulePositionTry>(*this);
+-  }
+-
+   const AtomicString& Name() const { return name_; }
+   const CSSPropertyValueSet& Properties() const { return *properties_; }
+   MutableCSSPropertyValueSet& MutableProperties();
+diff --git a/third_party/blink/renderer/core/css/css_property_rule.cc b/third_party/blink/renderer/core/css/css_property_rule.cc
+index e88f98693618ab7028782718a9e618412d27d54e..172a3854ccff45efe13244912a41334841f0eefa 100644
+--- a/third_party/blink/renderer/core/css/css_property_rule.cc
++++ b/third_party/blink/renderer/core/css/css_property_rule.cc
+@@ -55,6 +55,9 @@ String CSSPropertyRule::cssText() const {
+ void CSSPropertyRule::Reattach(StyleRuleBase* rule) {
+   DCHECK(rule);
+   property_rule_ = To<StyleRuleProperty>(rule);
++  if (properties_cssom_wrapper_) {
++    properties_cssom_wrapper_->Reattach(property_rule_->MutableProperties());
++  }
+ }
+ 
+ StyleRuleProperty* CSSPropertyRule::Property() const {
+diff --git a/third_party/blink/renderer/core/css/style_rule.cc b/third_party/blink/renderer/core/css/style_rule.cc
+index 29bd8402482b337a0dcc7dcfa967c3f598b6d131..84ba93981cd82dc4e4b334f8c21e7a4b6aa192d7 100644
+--- a/third_party/blink/renderer/core/css/style_rule.cc
++++ b/third_party/blink/renderer/core/css/style_rule.cc
+@@ -781,9 +781,12 @@ StyleRuleBase* StyleRuleBase::Clone(
+     case kViewTransition:
+       return MakeGarbageCollected<StyleRuleViewTransition>(
+           To<StyleRuleViewTransition>(*this));
+-    case kPositionTry:
++    case kPositionTry: {
++      auto* position_try = To<StyleRulePositionTry>(this);
+       return MakeGarbageCollected<StyleRulePositionTry>(
+-          To<StyleRulePositionTry>(*this));
++          position_try->Name(),
++          position_try->Properties().ImmutableCopyIfNeeded());
++    }
+     case kCustomMedia:
+       return MakeGarbageCollected<StyleRuleCustomMedia>(
+           To<StyleRuleCustomMedia>(*this));
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-anchor-position/position-try-rule-caching-002-expected.txt b/third_party/blink/web_tests/external/wpt/css/css-anchor-position/position-try-rule-caching-002-expected.txt
+deleted file mode 100644
+index ff7e84a2135fba467f6cca264fda7ba908aeb4c3..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/css/css-anchor-position/position-try-rule-caching-002-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] Modifying one sheet containing @position-try rule doesn't affect another sheet
+-  assert_equals: expected "right top" but got "right bottom"
+-Harness: the test ran to completion.
+-

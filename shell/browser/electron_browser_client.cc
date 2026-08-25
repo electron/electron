@@ -59,8 +59,10 @@
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/common/extension_id.h"
 #include "ipc/constants.mojom.h"
+#include "media/mojo/mojom/speech_recognizer.mojom.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
@@ -104,10 +106,13 @@
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/tracing/electron_tracing_delegate.h"
@@ -257,6 +262,30 @@ void BindNetworkHintsHandler(
     mojo::PendingReceiver<network_hints::mojom::NetworkHintsHandler> receiver) {
   NetworkHintsHandlerImpl::Create(frame_host, std::move(receiver));
 }
+
+// On-device speech recognition is not supported; bind a stub that says so, as
+// an unbound frame interface is a bad message that kills the renderer.
+class OnDeviceSpeechRecognitionStub final
+    : public media::mojom::OnDeviceSpeechRecognition {
+ public:
+  static void Bind(
+      content::RenderFrameHost* frame_host,
+      mojo::PendingReceiver<media::mojom::OnDeviceSpeechRecognition> receiver) {
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<OnDeviceSpeechRecognitionStub>(), std::move(receiver));
+  }
+
+  void Available(const std::vector<std::string>& languages,
+                 media::mojom::SpeechRecognitionQuality quality,
+                 AvailableCallback callback) override {
+    std::move(callback).Run(media::mojom::AvailabilityStatus::kUnavailable);
+  }
+  void Install(const std::vector<std::string>& languages,
+               media::mojom::SpeechRecognitionQuality quality,
+               InstallCallback callback) override {
+    std::move(callback).Run(false);
+  }
+};
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 // Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
@@ -724,6 +753,58 @@ bool ElectronBrowserClient::CanCreateWindow(
   return false;
 }
 
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
+    content::RenderFrameHost* new_window_main_frame,
+    const GURL& target_url) {
+  // A window.open() popup's synchronous about:blank fires
+  // DidCreateScriptContext — and runs the preload — before any async push can
+  // land. We've just run setWindowOpenHandler so the popup's WebContents has
+  // its (possibly overridden) preload set; attach it to the reply.
+  //
+  // Only the about:blank document needs this. A popup that navigates
+  // (window.open(url)) does not run the preload on its initial document and
+  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // building the data here for it would be pure waste.
+  if (!target_url.is_empty() && !target_url.IsAboutBlank())
+    return std::nullopt;
+
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(new_window_main_frame);
+  if (!web_contents)
+    return std::nullopt;
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::BuildForFrame(new_window_main_frame);
+  }
+  // Opaque blob — Chromium can't depend on Electron's mojom types.
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetServiceWorkerStartupData(
+    content::BrowserContext* browser_context,
+    const GURL& scope) {
+  // Only the service-worker preload realm consumes this, and it's only created
+  // when SW preloads are registered. Skip the asar reads + serialization
+  // otherwise — this runs on every service worker start.
+  auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
+  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript())
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(
+        browser_context, PreloadScript::ScriptType::kServiceWorker);
+  }
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
 std::unique_ptr<content::VideoOverlayWindow>
 ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
     content::VideoPictureInPictureWindowController* controller) {
@@ -760,21 +841,17 @@ void ElectronBrowserClient::GetAdditionalWebUISchemes(
 void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto* browser_context =
-      static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  if (!browser_context->IsOffTheRecord()) {
-    extensions::ExtensionRegistry* registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    const extensions::Extension* extension =
-        registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
-    if (!extension)
-      return;
+  auto* browser_context = site_instance->GetBrowserContext();
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  const extensions::Extension* extension =
+      registry->enabled_extensions().GetExtensionOrAppByURL(
+          site_instance->GetSiteURL());
+  if (!extension)
+    return;
 
-    extensions::ProcessMap::Get(browser_context)
-        ->Insert(extension->id(),
-                 site_instance->GetProcess()->GetDeprecatedID());
-  }
+  extensions::ProcessMap::Get(browser_context)
+      ->Insert(extension->id(), site_instance->GetProcess()->GetDeprecatedID());
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
@@ -1414,6 +1491,25 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
 
+  // Renderer-facing factories get an IO-thread gate in front of the proxy, so
+  // requests only detour through this thread while something observes them.
+  if (frame_host && type != URLLoaderFactoryType::kNavigation) {
+    mojo::Remote<network::mojom::URLLoaderFactory> target(
+        std::move(target_factory_remote));
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_network;
+    target->Clone(gate_to_network.InitWithNewPipeAndPassReceiver());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_proxy;
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
+        gate_to_proxy.InitWithNewPipeAndPassReceiver();
+    CreateURLLoaderFactoryGate(
+        static_cast<ElectronBrowserContext*>(browser_context)
+            ->intercept_state(),
+        std::move(proxied_receiver), std::move(gate_to_network),
+        std::move(gate_to_proxy));
+    proxied_receiver = std::move(proxy_receiver);
+    target_factory_remote = target.Unbind();
+  }
+
   // Required by WebRequestInfoInitParams.
   //
   // Note that in Electron we allow webRequest to capture requests sent from
@@ -1435,6 +1531,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
+      static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
       render_process_id,
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
       &next_id_,
@@ -1734,6 +1831,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
       &content::KeyboardLockServiceImpl::CreateMojoService));
+  map->Add<media::mojom::OnDeviceSpeechRecognition>(
+      &OnDeviceSpeechRecognitionStub::Bind);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   map->Add<spellcheck::mojom::SpellCheckHost>(base::BindRepeating(
       [](content::RenderFrameHost* frame_host,

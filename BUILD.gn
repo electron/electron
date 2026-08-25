@@ -31,6 +31,18 @@ import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
+declare_args() {
+  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
+  # false an empty stub is compiled and bundles compile from source.
+  #
+  # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
+  # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
+  # so the cache it emits is keyed to the target's read-only checksum -- the
+  # same mechanism that makes V8's mksnapshot cross-arch correct. Cross-OS is
+  # untested and stays off.
+  electron_generate_js2c_code_cache = host_os == target_os
+}
+
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
@@ -153,17 +165,25 @@ config("electron_lib_config") {
   include_dirs = [ "." ]
 }
 
-# We generate the definitions twice here, once in //electron/electron.d.ts
-# and once in $target_gen_dir
-# The one in $target_gen_dir is used for the actual TSC build later one
-# and the one in //electron/electron.d.ts is used by your IDE (vscode)
-# for typescript prompting
-npm_action("build_electron_definitions") {
-  script = "gn-typescript-definitions"
-  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-  inputs = auto_filenames.api_docs + [ "yarn.lock" ]
+# electron.d.ts is generated into the repo root (//electron/electron.d.ts) — a
+# single shared path consumed via the /// <reference> in
+# typings/internal-electron.d.ts — plus a per-toolchain gen-dir copy. Because
+# the repo-root write is a fixed shared path, instantiating this action in more
+# than one toolchain races two concurrent truncate-then-write generators on it.
+# Generate it once in the default toolchain and forward to that instance
+# everywhere else.
+if (current_toolchain == default_toolchain) {
+  npm_action("build_electron_definitions") {
+    script = "gn-typescript-definitions"
+    args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+    inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
-  outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+    outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+  }
+} else {
+  group("build_electron_definitions") {
+    public_deps = [ ":build_electron_definitions($default_toolchain)" ]
+  }
 }
 
 webpack_build("electron_browser_bundle") {
@@ -533,6 +553,11 @@ source_set("electron_lib") {
     "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
+
+    # Provides the strong SnapshotBuilder::GetEmbeddedSnapshotData() (the
+    # embedded Node startup snapshot) that overrides libnode's weak no-snapshot
+    # stub. Lets the browser process boot Node from a snapshot.
+    "//third_party/electron_node:node_snapshot",
     "//third_party/highway:libhwy",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
@@ -553,13 +578,15 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
-  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+  if (v8_use_external_startup_data && use_v8_context_snapshot &&
+      current_toolchain == default_toolchain) {
     deps += [ ":mksnapshot_checksum_gen" ]
   }
 
   public_deps = [
     "//base",
     "//base:i18n",
+    "//build/config/compiler:compiler_buildflags",
     "//content/public/app",
     "//ui/base/unowned_user_data",
   ]
@@ -607,6 +634,19 @@ source_set("electron_lib") {
   }
   if (!is_mac) {
     sources += filenames.lib_sources_views
+  }
+
+  if (electron_generate_js2c_code_cache) {
+    sources += [
+      "$root_gen_dir/electron_natives_code_cache_browser.cc",
+      "$root_gen_dir/electron_natives_code_cache_renderer.cc",
+      "$root_gen_dir/electron_natives_code_cache_sandbox.cc",
+      "$root_gen_dir/electron_natives_code_cache_utility.cc",
+      "$root_gen_dir/electron_natives_code_cache_worker.cc",
+    ]
+    deps += [ ":run_electron_natives_codecache" ]
+  } else {
+    sources += [ "shell/common/node_natives_code_cache_stub.cc" ]
   }
 
   if (is_component_build) {
@@ -756,6 +796,8 @@ source_set("electron_lib") {
 
   if (enable_printing) {
     sources += [
+      "shell/browser/printing/print_to_pdf.cc",
+      "shell/browser/printing/print_to_pdf.h",
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
       "shell/browser/printing/printing_utils.cc",
@@ -828,16 +870,200 @@ source_set("electron_lib") {
   }
 }
 
-action("mksnapshot_checksum_gen") {
-  script = "build/checksum_header.py"
+# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
+# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
+# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
+# the cache it emits is keyed to the target's read-only checksum and flag hash.
+# Cross-OS stays off; see electron_generate_js2c_code_cache.
+if (electron_generate_js2c_code_cache) {
+  if (current_toolchain == v8_snapshot_toolchain) {
+    executable("electron_natives_codecache") {
+      # Host build tool, not shipped Chromium code.
+      configs += [ "//build/config/compiler:no_chromium_code" ]
+      configs -= [ "//build/config/compiler:chromium_code" ]
+      include_dirs = [
+        ".",
+        "//",
+      ]
+      sources = [ "shell/common/electron_natives_codecache_main.cc" ]
 
-  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
-  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
-  args = rebase_path(inputs)
+      # node's zstd binding also needs the compression symbols.
+      deps = [
+        "//third_party/electron_node:libnode",
 
-  args += rebase_path(outputs)
+        # libnode no longer carries the GetEmbeddedSnapshotData stub; this
+        # (non-browser-flavor) tool builds caches against the v8 context
+        # snapshot, not the embedded Node snapshot, so it links the stub.
+        "//third_party/electron_node:node_snapshot_stub",
+        "//third_party/zstd:compress",
+      ]
+    }
 
-  deps = [ "//tools/v8_context_snapshot" ]
+    # The browser process boots from the embedded Node startup snapshot, whose
+    # read-only heap (and thus the code-cache read-only checksum) is owned
+    # uniquely by the SnapshotCreator-produced blob -- matching no standalone
+    # snapshot file. This variant links the real node_snapshot so it builds the
+    # browser bundles' cache against that exact snapshot's isolate (via
+    # GetEmbeddedSnapshotData + InitializeIsolateParams in the tool), the only
+    # isolate whose read-only checksum matches the runtime browser process.
+    if (node_use_node_snapshot) {
+      executable("electron_natives_codecache_snapshot") {
+        # Host build tool, not shipped Chromium code.
+        configs += [ "//build/config/compiler:no_chromium_code" ]
+        configs -= [ "//build/config/compiler:chromium_code" ]
+        include_dirs = [
+          ".",
+          "//",
+        ]
+        sources = [ "shell/common/electron_natives_codecache_main.cc" ]
+        deps = [
+          "//third_party/electron_node:libnode",
+          "//third_party/electron_node:node_snapshot",
+          "//third_party/zstd:compress",
+        ]
+      }
+    }
+  }
+
+  # One generated cache per process flavor: V8's code-cache key includes
+  # FlagList::Hash() over non-default flags, which differs per process type.
+  # The flag deltas below were captured from live processes.
+  # `node_builtins`: whether the flavor also carries a cache for Node's own
+  # builtins, i.e. whether its processes bootstrap their Node.js environment
+  # from scratch on this build instead of deserializing it from the embedded
+  # Node startup snapshot (~6.5 MB per flavor, so only where it is consumed).
+  # Renderer / web-worker environments always bootstrap from scratch; the node
+  # service's utility process only on builds without a Node snapshot; the
+  # sandboxed renderer has no Node environment and no process type consumes the
+  # worker flavor for one.
+  _js2c_cc_flavors = [
+    {
+      name = "sandbox"  # sandboxed renderer (no Node env)
+      flags = "--enable-sharedarraybuffer-per-context"
+      node_builtins = false
+    },
+    {
+      name = "renderer"
+      flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
+              "--no-freeze-flags-after-init"
+      node_builtins = true
+    },
+    {
+      name = "utility"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = !node_use_node_snapshot
+    },
+    {
+      name = "worker"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      node_builtins = false
+    },
+  ]
+
+  # The browser flavor is special-cased below when a Node startup snapshot is
+  # embedded: its isolate (and so its code-cache read-only checksum) comes from
+  # that snapshot, not the v8 context snapshot. Without a snapshot it boots from
+  # the v8 context snapshot like the rest, and bootstraps Node from scratch.
+  if (!node_use_node_snapshot) {
+    _js2c_cc_flavors += [
+      {
+        name = "browser"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+        node_builtins = true
+      },
+    ]
+  }
+
+  foreach(_f, _js2c_cc_flavors) {
+    action("run_electron_natives_codecache_" + _f.name) {
+      deps = [
+        ":electron_natives_codecache($v8_snapshot_toolchain)",
+        "//tools/v8_context_snapshot",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir =
+          get_label_info(":electron_natives_codecache($v8_snapshot_toolchain)",
+                         "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_" + _f.name + ".cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+        rebase_path("$root_out_dir/$v8_context_snapshot_filename",
+                    root_build_dir),
+        _f.name,
+        _f.flags,
+      ]
+      if (_f.node_builtins) {
+        args += [ "1" ]
+      } else {
+        args += [ "0" ]
+      }
+    }
+  }
+
+  # Browser flavor, built against the embedded Node startup snapshot so its
+  # code-cache read-only checksum matches the runtime browser isolate.
+  if (node_use_node_snapshot) {
+    action("run_electron_natives_codecache_browser") {
+      deps = [
+        ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir = get_label_info(
+              ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+              "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_browser.cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache_snapshot",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+
+        # Base blob for V8's global init; the isolate itself is created from the
+        # embedded snapshot, which overrides this (the tool ignores it when the
+        # real node_snapshot is linked).
+        rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
+        "browser",
+        "--rehash-snapshot --no-freeze-flags-after-init",
+
+        # Processes created from the Node snapshot deserialize Node's builtins'
+        # code cache from it.
+        "0",
+      ]
+    }
+  }
+
+  group("run_electron_natives_codecache") {
+    public_deps = []
+    foreach(_f, _js2c_cc_flavors) {
+      public_deps += [ ":run_electron_natives_codecache_" + _f.name ]
+    }
+    if (node_use_node_snapshot) {
+      public_deps += [ ":run_electron_natives_codecache_browser" ]
+    }
+  }
+}
+
+# tools/v8_context_snapshot writes its output to $root_build_dir regardless
+# of toolchain, so this is only well-formed in the default toolchain (where
+# $root_out_dir == $root_build_dir). It is also only needed there -- only the
+# shipped framework reads snapshot_checksum.h.
+if (current_toolchain == default_toolchain) {
+  action("mksnapshot_checksum_gen") {
+    script = "build/checksum_header.py"
+
+    outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+    inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+    args = rebase_path(inputs)
+
+    args += rebase_path(outputs)
+
+    deps = [ "//tools/v8_context_snapshot" ]
+  }
 }
 
 electron_paks("packed_resources") {
@@ -936,6 +1162,15 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
+
+    # Perform full ThinLTO optimization in the link step for the framework
+    # (where all of Chromium/Electron's code lives on macOS), matching what
+    # Chrome does for its framework. The default thinlto_optimize_default
+    # config links with --lto-O0, which skips link-time optimization entirely
+    # and gives up most of the benefit of ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     framework_contents = [
       "Resources",
       "Libraries",
@@ -1268,6 +1503,15 @@ if (is_mac) {
 
   executable("electron_app") {
     output_name = electron_project_name
+
+    # Perform full ThinLTO optimization in the link step for the main binary,
+    # matching what Chrome does for its main executable. The default
+    # thinlto_optimize_default config links with --lto-O0, which skips
+    # link-time optimization entirely and gives up most of the benefit of
+    # ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     if (is_win) {
       sources = [ "shell/app/electron_main_win.cc" ]
     } else if (is_linux) {
@@ -1544,6 +1788,14 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+
+  # When the snapshot tools are built in a secondary toolchain (see
+  # //electron/build/toolchain/mac) their runtime deps live under
+  # $root_out_dir/<toolchain>/; flatten so mksnapshot.zip keeps the layout
+  # consumers (@electron/mksnapshot) expect on macOS: everything at the root.
+  if (is_mac && v8_snapshot_toolchain != default_toolchain) {
+    flatten = true
+  }
   if (is_linux && is_official_build) {
     data_deps += [
       ":strip_libEGL_shlib",

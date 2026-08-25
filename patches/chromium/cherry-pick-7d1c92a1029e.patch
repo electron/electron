@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 4 Jun 2026 08:29:54 -0700
+Subject: Clear and check GL errors around GLTextureHolder allocations.
+
+Keep state in sync between the texture object and its metadata.
+
+A unit test isn't feasible.
+
+Fixed: 518007423
+Change-Id: I774d803f3c2f11d75e853b117ddf3b104386907d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7900975
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1641661}
+
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index 1e78d036c6a3be4096be6e8e2d4612e7e32e205f..05d020ec55dc43ddfdc4146b6bf874e9d0e35542 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -150,22 +150,19 @@ void GLTextureHolder::Initialize(
+ 
+   if (is_passthrough_) {
+     passthrough_texture_->SetEstimatedSize(format_.EstimatedSizeInBytes(size_));
+-  } else {
+-    // TODO(piman): We pretend the texture was created in an ES2 context, so
+-    // that it can be used in other ES2 contexts, and so we have to pass
+-    // gl_format as the internal format in the LevelInfo.
+-    // https://crbug.com/628064
+-    texture_->SetLevelInfo(format_desc_.target, 0, format_desc_.data_format,
+-                           size_.width(), size_.height(), /*depth=*/1, 0,
+-                           format_desc_.data_format, format_desc_.data_type,
+-                           /*cleared_rect=*/gfx::Rect());
+-    texture_->SetImmutable(true, format_info.supports_storage);
+   }
+ 
+   gl::GLApi* api = gl::g_current_gl_context;
+   gl::ScopedRestoreTexture scoped_restore(api, format_desc_.target,
+                                           GetServiceId());
+ 
++  // Drain any pre-existing GL errors so the post-allocation check
++  // below is attributable to the storage call. Silently squelching
++  // these errors is unfortunate, but is done in order to mirror other
++  // allocation checks done in the command decoder.
++  while (api->glGetErrorFn() != GL_NO_ERROR) {
++  }
++
+   // Initialize the texture storage/image parameters and upload initial pixels
+   // if available.
+   if (format_info.supports_storage) {
+@@ -214,6 +211,25 @@ void GLTextureHolder::Initialize(
+   }
+ 
+   if (!is_passthrough_) {
++    // Only commit decoder-side LevelInfo / immutable state once the native
++    // allocation has succeeded. If the driver rejected the allocation (e.g.
++    // GL_OUT_OF_MEMORY), leaving LevelInfo at {0,0,0} ensures
++    // Texture::ValidForTexture rejects subsequent TexSubImage calls instead of
++    // forwarding oversized writes to a zero-storage native texture. This
++    // mirrors the fix in GLES2DecoderImpl::TexStorageImpl.
++    if (api->glGetErrorFn() == GL_NO_ERROR) {
++      // TODO(piman): We pretend the texture was created in an ES2 context, so
++      // that it can be used in other ES2 contexts, and so we have to pass
++      // gl_format as the internal format in the LevelInfo.
++      // https://crbug.com/628064
++      texture_->SetLevelInfo(format_desc_.target, 0, format_desc_.data_format,
++                             size_.width(), size_.height(), /*depth=*/1, 0,
++                             format_desc_.data_format, format_desc_.data_type,
++                             /*cleared_rect=*/gfx::Rect());
++      texture_->SetImmutable(true, format_info.supports_storage);
++    } else {
++      LOG(ERROR) << "GLTextureHolder: native storage allocation failed";
++    }
+     // Must be set after initial pixel upload.
+     texture_->SetCompatibilitySwizzle(format_info.swizzle);
+   }

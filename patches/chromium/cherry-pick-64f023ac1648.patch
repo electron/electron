@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 14 Jul 2026 10:22:15 -0700
+Subject: [M150] [aura] Guard against root window destruction in
+ ScopedCursorHider
+
+Original change's description:
+> [aura] Guard against root window destruction in ScopedCursorHider
+>
+> Avoid Use-After-Free during device scale factor changes on Linux/X11 by
+> using an aura::WindowTracker inside
+> ScopedCursorHider::~ScopedCursorHider(). Previously,
+> display::Screen::Get()->GetDisplayNearestWindow() could synchronously
+> dispatch events that tear down the root window and the CursorClient. By
+> tracking window destruction, the window is verified to be alive after
+> returning from display queries before making calls on the CursorClient.
+>
+> Fixed: 532970574
+> Change-Id: I495fa5f12bf0a58fb047009d792366879e75521b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8072900
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Colin Blundell <blundell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1661444}
+
+(cherry picked from commit d5f0488a4d6a4a7fd8d4941d748b5d6112bb40c9)
+
+Bug: 534618099,532970574
+Change-Id: I495fa5f12bf0a58fb047009d792366879e75521b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8092250
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#3417}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index 6809e434c791cb8e1de21d2008e34a13ccd373ea..91ef981a6984acfbd8aab82daa8cba09c167da96 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -148,18 +148,31 @@ class ScopedCursorHider {
+   ScopedCursorHider& operator=(const ScopedCursorHider&) = delete;
+ 
+   ~ScopedCursorHider() {
+-    if (!window_->IsRootWindow())
++    // Store the raw window pointer in a local variable and clear the `window_`
++    // raw_ptr to nullptr before carrying out the rest of the destructor. Since
++    // the window can be synchronously destroyed inside display query sink calls
++    // below, clearing the raw_ptr while the window is still alive prevents
++    // Chromium's dangling raw_ptr checks from triggering on destruction.
++    Window* window = window_;
++    window_ = nullptr;
++
++    if (!window->IsRootWindow()) {
+       return;
++    }
+ 
+     // Update the device scale factor of the cursor client only when the last
+     // mouse location is on this root window.
+     if (hid_cursor_) {
+-      client::CursorClient* cursor_client = client::GetCursorClient(window_);
+-      if (cursor_client) {
+-        const display::Display& display =
+-            display::Screen::Get()->GetDisplayNearestWindow(window_);
+-        cursor_client->SetDisplay(display);
+-        cursor_client->ShowCursor();
++      aura::WindowTracker tracker;
++      tracker.Add(window);
++      const display::Display& display =
++          display::Screen::Get()->GetDisplayNearestWindow(window);
++      if (tracker.Contains(window)) {
++        client::CursorClient* cursor_client = client::GetCursorClient(window);
++        if (cursor_client) {
++          cursor_client->SetDisplay(display);
++          cursor_client->ShowCursor();
++        }
+       }
+     }
+   }
+diff --git a/ui/aura/window_unittest.cc b/ui/aura/window_unittest.cc
+index c59b14ef0962a847d5cd1f446bbc653dca3fdcfa..0c21e77e810f5680b8af352fda08673565906969 100644
+--- a/ui/aura/window_unittest.cc
++++ b/ui/aura/window_unittest.cc
+@@ -22,6 +22,7 @@
+ #include "cc/trees/layer_tree_frame_sink.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/aura/client/capture_client.h"
++#include "ui/aura/client/cursor_client.h"
+ #include "ui/aura/client/focus_change_observer.h"
+ #include "ui/aura/client/visibility_client.h"
+ #include "ui/aura/client/window_parenting_client.h"
+@@ -30,6 +31,7 @@
+ #include "ui/aura/scoped_window_event_targeting_blocker.h"
+ #include "ui/aura/test/aura_test_base.h"
+ #include "ui/aura/test/aura_test_utils.h"
++#include "ui/aura/test/test_cursor_client.h"
+ #include "ui/aura/test/test_window_delegate.h"
+ #include "ui/aura/test/test_windows.h"
+ #include "ui/aura/test/window_test_api.h"
+@@ -4078,6 +4080,106 @@ TEST_P(WindowActualScreenBoundsTest, VerifyWindowActualBoundsDuringAnimation) {
+   bounds_checker.WaitForAnimationCompletion();
+ }
+ 
++class ReentrantDisplayScreen : public display::Screen {
++ public:
++  explicit ReentrantDisplayScreen(display::Screen* original_screen,
++                                  base::RepeatingClosure on_get_display)
++      : original_screen_(original_screen),
++        on_get_display_(std::move(on_get_display)) {
++    set_shutdown(true);
++  }
++
++  ReentrantDisplayScreen(const ReentrantDisplayScreen&) = delete;
++  ReentrantDisplayScreen& operator=(const ReentrantDisplayScreen&) = delete;
++
++  ~ReentrantDisplayScreen() override = default;
++
++  // Overridden from display::Screen:
++  gfx::Point GetCursorScreenPoint() override {
++    return original_screen_->GetCursorScreenPoint();
++  }
++  bool IsWindowUnderCursor(gfx::NativeWindow window) override {
++    return original_screen_->IsWindowUnderCursor(window);
++  }
++  gfx::NativeWindow GetWindowAtScreenPoint(const gfx::Point& point) override {
++    return original_screen_->GetWindowAtScreenPoint(point);
++  }
++  gfx::NativeWindow GetLocalProcessWindowAtPoint(
++      const gfx::Point& point,
++      const std::set<gfx::NativeWindow>& ignore) override {
++    return original_screen_->GetLocalProcessWindowAtPoint(point, ignore);
++  }
++  int GetNumDisplays() const override {
++    return original_screen_->GetNumDisplays();
++  }
++  const std::vector<display::Display>& GetAllDisplays() const override {
++    return original_screen_->GetAllDisplays();
++  }
++  display::Display GetDisplayNearestWindow(
++      gfx::NativeWindow window) const override {
++    on_get_display_.Run();
++    return original_screen_->GetDisplayNearestWindow(window);
++  }
++  display::Display GetDisplayNearestPoint(
++      const gfx::Point& point) const override {
++    return original_screen_->GetDisplayNearestPoint(point);
++  }
++  display::Display GetDisplayMatching(
++      const gfx::Rect& match_rect) const override {
++    return original_screen_->GetDisplayMatching(match_rect);
++  }
++  display::Display GetPrimaryDisplay() const override {
++    return original_screen_->GetPrimaryDisplay();
++  }
++  void AddObserver(display::DisplayObserver* observer) override {
++    original_screen_->AddObserver(observer);
++  }
++  void RemoveObserver(display::DisplayObserver* observer) override {
++    original_screen_->RemoveObserver(observer);
++  }
++
++ private:
++  raw_ptr<display::Screen> original_screen_;
++  base::RepeatingClosure on_get_display_;
++};
++
++TEST_F(WindowTest, ScopedCursorHiderCursorClientFreedDuringGetDisplay) {
++  display::Screen* original_screen = display::Screen::Get();
++
++  std::unique_ptr<Window> test_root = std::make_unique<Window>(nullptr);
++  test_root->Init(ui::LAYER_NOT_DRAWN);
++  test_root->set_host(host());
++  test_root->SetBounds(gfx::Rect(0, 0, 800, 600));
++
++  TestCursorClient cursor_client(root_window());
++  client::SetCursorClient(root_window(), nullptr);
++  client::SetCursorClient(test_root.get(), &cursor_client);
++
++  Env::GetInstance()->SetLastMouseLocation(gfx::Point(10, 10));
++
++  cursor_client.ShowCursor();
++  EXPECT_TRUE(cursor_client.IsCursorVisible());
++
++  ReentrantDisplayScreen reentrant_screen(
++      original_screen,
++      base::BindLambdaForTesting([&]() { test_root.reset(); }));
++
++  display::Screen::SetScreenInstance(&reentrant_screen);
++
++  // This call synchronously destroys `test_root` during the nested display
++  // nearest window query. With the fix, the ScopedCursorHider destructor
++  // detects this destruction via `WindowTracker` and avoids dereferencing the
++  // freed `CursorClient` pointer or `test_root`, so this call should complete
++  // without crashing.
++  test_root->OnDeviceScaleFactorChanged(1.0f, 2.0f);
++
++  display::Screen::SetScreenInstance(nullptr);
++  display::Screen::SetScreenInstance(original_screen);
++
++  // Restore cursor client.
++  client::SetCursorClient(root_window(), &cursor_client);
++}
++
+ }  // namespace
+ }  // namespace test
+ }  // namespace aura

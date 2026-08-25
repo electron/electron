@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Thu, 23 Jul 2026 22:36:13 -0700
+Subject: blink: Copy flat_tree_children_ before iterating in HTMLSlotElement
+
+Copy flat_tree_children_ into a local variable before iterating over
+slot children in AttachLayoutTreeForSlotChildren,
+RebuildDistributedChildrenLayoutTrees, and RecalcStyleForSlotChildren to
+prevent issues if flat_tree_children_ is modified during traversal.
+
+Add a regression test in SlotAssignmentTest.
+
+Bug: 520167277
+Change-Id: Ic8988f1caea7c9f2a40cefe18de034ade7467e92
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130162
+Commit-Queue: Keishi Hattori <keishi@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1667650}
+(cherry picked from commit 4834d3b1b4da5920923d6efa033d6d224907f22b)
+
+diff --git a/third_party/blink/renderer/core/dom/slot_assignment_test.cc b/third_party/blink/renderer/core/dom/slot_assignment_test.cc
+index c3c261c500063f668507a0ecd219c9ac8177a085..ca5f697fb267c2898f8f4e57e7a896888f8fc810 100644
+--- a/third_party/blink/renderer/core/dom/slot_assignment_test.cc
++++ b/third_party/blink/renderer/core/dom/slot_assignment_test.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/css/style_engine.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/flat_tree_traversal.h"
+@@ -149,4 +150,38 @@ TEST_F(SlotAssignmentTest, ScheduleVisualUpdate) {
+             GetDocument().Lifecycle().GetState());
+ }
+ 
++// Regression test for crbug.com/520167277.
++// Verifies that slot assignment recalculation works safely when triggered
++// during layout tree rebuild of slot children.
++TEST_F(SlotAssignmentTest, RebuildDistributedChildrenDuringRecalc) {
++  SetBody(R"HTML(
++    <div id="host">
++      <template shadowrootmode="open">
++        <slot></slot>
++      </template>
++      <div id="child1"></div>
++      <div id="child2"></div>
++    </div>
++  )HTML");
++
++  GetDocument().View()->UpdateAllLifecyclePhasesForTest();
++
++  Element* host = GetDocument().QuerySelector(AtomicString("#host"));
++  ASSERT_NE(nullptr, host);
++  ShadowRoot* shadow_root = host->GetShadowRoot();
++  ASSERT_NE(nullptr, shadow_root);
++  Element* child1 = GetDocument().QuerySelector(AtomicString("#child1"));
++  Element* child2 = GetDocument().QuerySelector(AtomicString("#child2"));
++  ASSERT_NE(nullptr, child1);
++  ASSERT_NE(nullptr, child2);
++
++  // Force layout tree rebuild for children and mark slot assignment dirty.
++  child1->SetForceReattachLayoutTree();
++  child2->SetForceReattachLayoutTree();
++  shadow_root->SetNeedsAssignmentRecalc();
++
++  GetDocument().UpdateStyleAndLayoutTree();
++  EXPECT_FALSE(shadow_root->NeedsSlotAssignmentRecalc());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/html/html_slot_element.cc b/third_party/blink/renderer/core/html/html_slot_element.cc
+index 98220012f4eeeef8808cc72b59b14e605c8a3964..4230b9f5bc7e7c0f1e207dc434becd910e82b7bf 100644
+--- a/third_party/blink/renderer/core/html/html_slot_element.cc
++++ b/third_party/blink/renderer/core/html/html_slot_element.cc
+@@ -358,7 +358,9 @@ AtomicString HTMLSlotElement::GetName() const {
+ }
+ 
+ void HTMLSlotElement::AttachLayoutTreeForSlotChildren(AttachContext& context) {
+-  for (Node* child : flat_tree_children_) {
++  // Defensive copy to prevent UAF from sync recalc. See crbug.com/520167277.
++  const HeapVector<Member<Node>> flat_tree_children = flat_tree_children_;
++  for (Node* child : flat_tree_children) {
+     child->AttachLayoutTree(context);
+   }
+ }
+@@ -392,7 +394,9 @@ void HTMLSlotElement::RebuildDistributedChildrenLayoutTrees(
+ 
+   // This loop traverses the nodes from right to left for the same reason as the
+   // one described in ContainerNode::RebuildChildrenLayoutTrees().
+-  for (const auto& child : base::Reversed(flat_tree_children_)) {
++  // Defensive copy to prevent UAF from sync recalc. See crbug.com/520167277.
++  const HeapVector<Member<Node>> flat_tree_children = flat_tree_children_;
++  for (const auto& child : base::Reversed(flat_tree_children)) {
+     RebuildLayoutTreeForChild(child, whitespace_attacher);
+   }
+ }
+@@ -501,7 +505,9 @@ void HTMLSlotElement::RemovedFrom(ContainerNode& insertion_point) {
+ void HTMLSlotElement::RecalcStyleForSlotChildren(
+     const StyleRecalcChange change,
+     const StyleRecalcContext& style_recalc_context) {
+-  for (auto& node : flat_tree_children_) {
++  // Defensive copy to prevent UAF from sync recalc. See crbug.com/520167277.
++  const HeapVector<Member<Node>> flat_tree_children = flat_tree_children_;
++  for (auto& node : flat_tree_children) {
+     if (!change.TraverseChild(*node))
+       continue;
+     if (auto* element = DynamicTo<Element>(node.Get()))

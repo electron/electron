@@ -6,9 +6,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
-
-#include <atlbase.h>
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
@@ -26,11 +23,14 @@
 #include "base/logging.h"
 #include "base/strings/escape.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/win/atl.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
+#include "base/win/shlwapi.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/electron_paths.h"
@@ -332,34 +332,47 @@ std::string OpenPathOnThread(const base::FilePath& full_path) {
 
 namespace platform_util {
 
+namespace {
+
+// Shell operations are handed to a COM STA thread-pool thread. They are
+// USER_BLOCKING because they are the direct result of a user action, and
+// CONTINUE_ON_SHUTDOWN because ShellExecuteEx() and friends can block for an
+// unbounded amount of time inside the OS -- e.g. while Windows shows its
+// "you'll need a new app to open this link" / "How do you want to open this
+// file?" UI for a scheme or file type with no registered handler. With the
+// default SKIP_ON_SHUTDOWN behaviour a task that is already running blocks
+// ThreadPoolInstance::Shutdown(), so app.quit() would never finish until the
+// user dismissed that system dialog. Nothing these tasks touch depends on
+// browser state that is torn down at shutdown.
+scoped_refptr<base::SingleThreadTaskRunner> CreateShellOperationTaskRunner() {
+  return base::ThreadPool::CreateCOMSTATaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING,
+       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN});
+}
+
+}  // namespace
+
 void ShowItemInFolder(const base::FilePath& full_path) {
-  base::ThreadPool::CreateCOMSTATaskRunner(
-      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-      ->PostTask(FROM_HERE,
-                 base::BindOnce(&ShowItemInFolderOnWorkerThread,
+  CreateShellOperationTaskRunner()->PostTask(
+      FROM_HERE, base::BindOnce(&ShowItemInFolderOnWorkerThread,
                                 full_path.NormalizePathSeparators()));
 }
 
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  base::ThreadPool::CreateCOMSTATaskRunner(
-      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-      ->PostTaskAndReplyWithResult(
-          FROM_HERE,
-          base::BindOnce(&OpenPathOnThread,
-                         full_path.NormalizePathSeparators()),
-          std::move(callback));
+  CreateShellOperationTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE,
+      base::BindOnce(&OpenPathOnThread, full_path.NormalizePathSeparators()),
+      std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenCallback callback) {
-  base::ThreadPool::CreateCOMSTATaskRunner(
-      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-      ->PostTaskAndReplyWithResult(
-          FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
-          std::move(callback));
+  CreateShellOperationTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
+      std::move(callback));
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& path,

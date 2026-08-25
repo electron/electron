@@ -1,6 +1,4 @@
 import '@electron/internal/sandboxed_renderer/pre-init';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import {
   createPreloadProcessObject,
   executeSandboxedPreloadScripts
@@ -11,16 +9,17 @@ import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {
   process: NodeJS.Process;
-  createPreloadScript: (src: string) => Function;
+  createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
+  // Pushed by the browser via mojom.ElectronFrameStartup, ordered ahead of
+  // the CommitNavigation that triggered DidCreateScriptContext — always
+  // present for documents that reach this bundle.
+  startupData: {
+    preloadScripts: ElectronInternal.PreloadScript[];
+    process: NodeJS.Process;
+  };
 };
 
-const ipcRendererUtils =
-  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
-
-const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync<{
-  preloadScripts: ElectronInternal.PreloadScript[];
-  process: NodeJS.Process;
-}>(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
+const { preloadScripts, process: processProps } = binding.startupData;
 
 const electron = require('electron');
 
@@ -50,6 +49,12 @@ v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
 
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
+
+// Test-only (DCHECK builds): expose the js2c code-cache status on the
+// sandboxed preload's process shim for the code-cache spec.
+if ((v8Util as any).getJs2cCodeCacheStatus) {
+  (preloadProcess as any).getJs2cCodeCacheStatus = () => (v8Util as any).getJs2cCodeCacheStatus();
+}
 
 Object.assign(process, processProps);
 

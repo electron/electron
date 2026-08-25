@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 19 May 2026 06:05:15 -0700
+Subject: Escape 'name' part of @position-try prelude when necessary
+
+Bug: 514420555
+Change-Id: I97ba58938a16c52f47f9e8003ace9f98ede207f5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7859393
+Reviewed-by: Morten Stenshorne <mstensho@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1632802}
+
+diff --git a/third_party/blink/renderer/core/css/css_position_try_rule.cc b/third_party/blink/renderer/core/css/css_position_try_rule.cc
+index 26f91b4087144fd29709d162e61cc60feaa4b885..323e56a7acd7f8770b108db3cf3daac865290c60 100644
+--- a/third_party/blink/renderer/core/css/css_position_try_rule.cc
++++ b/third_party/blink/renderer/core/css/css_position_try_rule.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/css/css_position_try_rule.h"
+ 
++#include "third_party/blink/renderer/core/css/css_markup.h"
+ #include "third_party/blink/renderer/core/css/css_position_try_descriptors.h"
+ #include "third_party/blink/renderer/core/css/css_property_value_set.h"
+ #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+@@ -27,10 +28,16 @@ CSSPositionTryRule::CSSPositionTryRule(StyleRulePositionTry* position_try_rule,
+ 
+ CSSPositionTryRule::~CSSPositionTryRule() = default;
+ 
++String CSSPositionTryRule::name() const {
++  StringBuilder result;
++  SerializeIdentifier(position_try_rule_->Name(), result);
++  return result.ReleaseString();
++}
++
+ String CSSPositionTryRule::cssText() const {
+   StringBuilder result;
+   result.Append("@position-try ");
+-  result.Append(name());
++  SerializeIdentifier(position_try_rule_->Name(), result);
+   result.Append(" { ");
+   if (!position_try_rule_->Properties().IsEmpty()) {
+     result.Append(position_try_rule_->Properties().AsText());
+diff --git a/third_party/blink/renderer/core/css/css_position_try_rule.h b/third_party/blink/renderer/core/css/css_position_try_rule.h
+index d07cca20895d7b9030bf861d0d4c570f4135cfe2..22e073ca3ce4676ae95d66eadf9f3f7a9ec94330 100644
+--- a/third_party/blink/renderer/core/css/css_position_try_rule.h
++++ b/third_party/blink/renderer/core/css/css_position_try_rule.h
+@@ -50,7 +50,7 @@ class CSSPositionTryRule final : public CSSRule {
+   CSSStyleDeclaration* style() const;
+   Type GetType() const final { return kPositionTryRule; }
+ 
+-  String name() const { return position_try_rule_->Name(); }
++  String name() const;
+   String cssText() const final;
+   void Reattach(StyleRuleBase*) final;
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-anchor-position/at-position-try-cssom.html b/third_party/blink/web_tests/external/wpt/css/css-anchor-position/at-position-try-cssom.html
+index 126b9fa81a76d48a3a915d0ae4e03f27c161bc76..f15fa7620dc413b78dd8faf31ed706b15c1ccf0e 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-anchor-position/at-position-try-cssom.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-anchor-position/at-position-try-cssom.html
+@@ -29,6 +29,15 @@ test(t => {
+   assert_equals(positionTryRule.style.left, 'anchor(right)');
+ }, 'CSSPositionTryRule attribute values');
+ 
++test(t => {
++  const style = createStyle(
++      t, '@position-try --\\{ {}');
++  const positionTryRule = style.sheet.cssRules[0];
++  assert_true(positionTryRule instanceof CSSPositionTryRule);
++  assert_equals(positionTryRule.name, '--\\{');
++  assert_equals(positionTryRule.cssText, '@position-try --\\{ { }');
++}, 'CSSPositionTryRule escaped ident name');
++
+ test(t => {
+   const style = createStyle(t, `
+     @position-try --pf { top: anchor(top); left: 0; }

@@ -11,7 +11,7 @@ We can fix this by allowing the C++ implementation of legacyMainResolve to use
 a fileExists function that does take Asar into account.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index b01eafd3c476c065a16701317aca2a1def559376..a7471f3c55d94b7572061f5a04cb67cef120fe79 100644
+index 185793fa305edbeab299f743e0018f34b2aaa655..b44eab420fe1bbec7ce34bde2ca4974b9d24a6dd 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,11 +28,10 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -50,10 +50,10 @@ index b01eafd3c476c065a16701317aca2a1def559376..a7471f3c55d94b7572061f5a04cb67ce
    const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
      packageConfig.main || './' : '';
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 65bd2661bbceba2f1ab76f662d8a25f3419ed723..bf202f5e2bf5eaf2dd9192dfd701e621126c492c 100644
+index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3ad847aaf6 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3640,13 +3640,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3648,13 +3648,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
  }
  
  BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
@@ -80,7 +80,7 @@ index 65bd2661bbceba2f1ab76f662d8a25f3419ed723..bf202f5e2bf5eaf2dd9192dfd701e621
    uv_fs_t req;
  
    int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
-@@ -3704,6 +3716,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3712,6 +3724,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
    std::optional<std::string> initial_file_path;
    std::string file_path;
  
@@ -92,7 +92,7 @@ index 65bd2661bbceba2f1ab76f662d8a25f3419ed723..bf202f5e2bf5eaf2dd9192dfd701e621
    if (args.Length() >= 2 && args[1]->IsString()) {
      auto package_config_main = Utf8Value(isolate, args[1]).ToString();
  
-@@ -3724,7 +3741,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3732,7 +3749,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
        BufferValue buff_file_path(isolate, local_file_path);
        ToNamespacedPath(env, &buff_file_path);
  
@@ -101,7 +101,7 @@ index 65bd2661bbceba2f1ab76f662d8a25f3419ed723..bf202f5e2bf5eaf2dd9192dfd701e621
          case BindingData::FilePathIsFileReturnType::kIsFile:
            return args.GetReturnValue().Set(i);
          case BindingData::FilePathIsFileReturnType::kIsNotFile:
-@@ -3761,7 +3778,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3769,7 +3786,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
      BufferValue buff_file_path(isolate, local_file_path);
      ToNamespacedPath(env, &buff_file_path);
  
@@ -111,10 +111,10 @@ index 65bd2661bbceba2f1ab76f662d8a25f3419ed723..bf202f5e2bf5eaf2dd9192dfd701e621
          return args.GetReturnValue().Set(i);
        case BindingData::FilePathIsFileReturnType::kIsNotFile:
 diff --git a/src/node_file.h b/src/node_file.h
-index 95bc5802051642a0e8c21ac97fd402396d7d45aa..f84886d0c33dcad50370775c9437bf0a96fd9204 100644
+index c276a873f8516a5c7c6efcf8a400e07f78f92620..fe314d2a2c0fa9e2b71e12ae83b915c4314986a0 100644
 --- a/src/node_file.h
 +++ b/src/node_file.h
-@@ -101,7 +101,8 @@ class BindingData : public SnapshotableObject {
+@@ -102,7 +102,8 @@ class BindingData : public SnapshotableObject {
    InternalFieldInfo* internal_field_info_ = nullptr;
  
    static FilePathIsFileReturnType FilePathIsFile(Environment* env,

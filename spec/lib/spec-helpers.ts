@@ -80,6 +80,7 @@ class RemoteControlApp {
           });
         }
       );
+      req.on('error', reject);
       req.write(js);
       req.end();
     });

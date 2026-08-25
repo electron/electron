@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@chromium.org>
+Date: Wed, 1 Jul 2026 13:30:17 -0700
+Subject: [M148] Add better handling of RtcVideoDecoderAdapter init timeout.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Add better handling of RtcVideoDecoderAdapter init timeout.
+>
+> This CL introduced as new private `OnInitializeDone()` callback method
+> and uses the `weak_decoder_this_` instead of unreatined
+> `video_decoder_.get()`.
+>
+> Bug: 523712556
+> Change-Id: Icc2f8272b948dbc4fa65d5175dbcf60cea033462
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7992498
+> Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+> Commit-Queue: Erik Språng <sprang@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1652310}
+
+(cherry picked from commit 18a41228c0a061c0a08d01c22e943e4862223f1e)
+
+Bug: 528195553,523712556
+Change-Id: Icc2f8272b948dbc4fa65d5175dbcf60cea033462
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8018763
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Erik Språng <sprang@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4443}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.cc b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.cc
+index b9e357a441673974e779385a1a1f73d3edfc2394..e77b58eaf808be5e28d59e32efc0decec073fcb9 100644
+--- a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.cc
++++ b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.cc
+@@ -61,6 +61,8 @@ constexpr gfx::Size kDefaultSize(640, 480);
+ // Maximum number of buffers that we will queue in |pending_buffers_|.
+ constexpr int32_t kMaxPendingBuffers = 8;
+ 
++std::optional<base::TimeDelta> g_init_timeout_for_testing;
++
+ // Maximum number of timestamps that will be maintained in |decode_timestamps_|.
+ // Really only needs to be a bit larger than the maximum reorder distance (which
+ // is presumably 0 for WebRTC), but being larger doesn't hurt much.
+@@ -234,6 +236,9 @@ class RTCVideoDecoderAdapter::Impl {
+   void DecodePendingBuffers();
+   void OnDecodeDone(media::DecoderStatus status);
+   void OnOutput(scoped_refptr<media::VideoFrame> frame);
++  void OnInitializeDone(CrossThreadOnceFunction<void(bool)> init_cb,
++                        media::VideoDecoderType* decoder_type,
++                        media::DecoderStatus status);
+ 
+   const raw_ptr<media::GpuVideoAcceleratorFactories> gpu_factories_;
+   const scoped_refptr<WebRtcVideoFrameAdapter::SharedResources>
+@@ -291,22 +296,28 @@ void RTCVideoDecoderAdapter::Impl::Initialize(
+   media::VideoDecoder::OutputCB output_cb =
+       ConvertToBaseRepeatingCallback(CrossThreadBindRepeating(
+           &RTCVideoDecoderAdapter::Impl::OnOutput, weak_decoder_this_));
++  // Safe to use CrossThreadUnretained(decoder_type) because `decoder_type`
++  // points to the `RTCVideoDecoderAdapter::decoder_type_` member variable,
++  // which is guaranteed to outlive `Impl` since the adapter's destructor
++  // blocks synchronously on the media thread while destroying `Impl` in
++  // `Release()`.
+   video_decoder_->Initialize(
+-      config, /*low_delay=*/true,
+-      /*cdm_context=*/nullptr,
+-      base::BindOnce(
+-          [](base::OnceCallback<void(bool)> cb,
+-             media::VideoDecoderType* decoder_type,
+-             media::VideoDecoder* video_decoder, media::DecoderStatus status) {
+-            *decoder_type = video_decoder->GetDecoderType();
+-            std::move(cb).Run(status.is_ok());
+-          },
+-          ConvertToBaseOnceCallback(std::move(init_cb)),
+-          CrossThreadUnretained(decoder_type),
+-          CrossThreadUnretained(video_decoder_.get())),
++      config, /*low_delay=*/true, /*cdm_context=*/nullptr,
++      ConvertToBaseOnceCallback(CrossThreadBindOnce(
++          &RTCVideoDecoderAdapter::Impl::OnInitializeDone, weak_decoder_this_,
++          std::move(init_cb), CrossThreadUnretained(decoder_type))),
+       output_cb, base::DoNothing());
+ }
+ 
++void RTCVideoDecoderAdapter::Impl::OnInitializeDone(
++    CrossThreadOnceFunction<void(bool)> init_cb,
++    media::VideoDecoderType* decoder_type,
++    media::DecoderStatus status) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(media_sequence_checker_);
++  *decoder_type = video_decoder_->GetDecoderType();
++  std::move(init_cb).Run(status.is_ok());
++}
++
+ void RTCVideoDecoderAdapter::Impl::Decode(
+     scoped_refptr<media::DecoderBuffer> buffer,
+     base::WaitableEvent* waiter,
+@@ -628,8 +639,8 @@ bool RTCVideoDecoderAdapter::InitializeSync(
+                               weak_impl_, config, std::move(init_cb),
+                               start_time,
+                               CrossThreadUnretained(&decoder_type_)))) {
+-    // TODO(crbug.com/1076817) Remove if a root cause is found.
+-    if (!async_init_waiter_->TimedWait(base::Seconds(10))) {
++    if (!async_init_waiter_->TimedWait(
++            g_init_timeout_for_testing.value_or(base::Seconds(10)))) {
+       RecordInitializationLatency(base::TimeTicks::Now() - start_time);
+       return false;
+     }
+@@ -946,4 +957,9 @@ void RTCVideoDecoderAdapter::DecrementCurrentDecoderCountForTesting() {
+   g_num_decoders_--;
+ }
+ 
++void RTCVideoDecoderAdapter::SetInitializeSyncTimeoutForTesting(
++    std::optional<base::TimeDelta> timeout) {
++  g_init_timeout_for_testing = timeout;
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.h b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.h
+index f2ddb9888a62ddb146d819adf8bc9aff4a348d37..d4c522ee76e657d442f31196745637f0a10554ed 100644
+--- a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.h
++++ b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter.h
+@@ -91,6 +91,8 @@ class PLATFORM_EXPORT RTCVideoDecoderAdapter : public webrtc::VideoDecoder {
+   static int GetCurrentDecoderCountForTesting();
+   static void IncrementCurrentDecoderCountForTesting();
+   static void DecrementCurrentDecoderCountForTesting();
++  static void SetInitializeSyncTimeoutForTesting(
++      std::optional<base::TimeDelta> timeout);
+ 
+   static std::atomic<int> g_num_decoders_;
+ 
+diff --git a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter_test.cc b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter_test.cc
+index 6811843b5eff4c1bc94291a3fbc7e858d26bf82f..14e9b5ba17ac1df3624096234482b08a09622efd 100644
+--- a/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter_test.cc
++++ b/third_party/blink/renderer/platform/peerconnection/rtc_video_decoder_adapter_test.cc
+@@ -21,6 +21,7 @@
+ #include "base/test/mock_callback.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
++#include "base/threading/platform_thread.h"
+ #include "base/threading/thread.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
+@@ -889,4 +890,32 @@ TEST_F(RTCVideoDecoderAdapterTest, CanReadSharedFrameBuffer) {
+   media_thread_.FlushForTesting();
+ }
+ 
++TEST_F(RTCVideoDecoderAdapterTest, InitializeSyncTimeoutRace) {
++  RTCVideoDecoderAdapter::SetInitializeSyncTimeoutForTesting(
++      base::Milliseconds(1));
++
++  base::WaitableEvent initialize_called;
++  media::VideoDecoder::InitCB saved_init_cb;
++
++  EXPECT_CALL(*video_decoder_, Initialize_)
++      .WillOnce(testing::WithArg<3>([&](media::VideoDecoder::InitCB& init_cb) {
++        saved_init_cb = std::move(init_cb);
++        initialize_called.Signal();
++      }));
++
++  ASSERT_FALSE(RTCVideoDecoderAdapterWrapper::Create(
++      &gpu_factories_,
++      webrtc::SdpVideoFormat(
++          webrtc::CodecTypeToPayloadString(webrtc::kVideoCodecVP9)),
++      true));
++
++  initialize_called.Wait();
++  media_thread_.task_runner()->PostTask(
++      FROM_HERE, base::BindOnce(std::move(saved_init_cb),
++                                media::DecoderStatus::Codes::kOk));
++  media_thread_.FlushForTesting();
++
++  RTCVideoDecoderAdapter::SetInitializeSyncTimeoutForTesting(std::nullopt);
++}
++
+ }  // namespace blink
