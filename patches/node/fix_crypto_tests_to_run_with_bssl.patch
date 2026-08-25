@@ -138,6 +138,22 @@ index 31ba739a1e55e0f9ae4472d7850a4a8892db9dce..ef01ac5d5517aa8f54eff68b25e81318
  const { hasOpenSSL } = require('../common/crypto');
  
  if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+index 5c13561dc260639ff62601ff8248d8fae48d5134..e3cae4a14800b72d4914fec53b5980f0285aafbe 100644
+--- a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
++++ b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+@@ -1028,6 +1028,11 @@ for (const [name, operations] of supportedAlgorithms) {
+   const fixture = fixtures.get(name);
+   assert(fixture, `missing prototype pollution fixture for ${name}`);
+ 
++  if (process.features.openssl_is_boringssl &&
++      (name.startsWith('ML-DSA-') || name.startsWith('ML-KEM-'))) {
++    continue;
++  }
++
+   const ctx = { __proto__: null };
+   for (const operation of operationOrder) {
+     if (!operations.has(operation))
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 18ba6dc379637848a37774d7c73841624add429b..36efe3c6ff3a5985458d7e02f7b03f00279d06be 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
