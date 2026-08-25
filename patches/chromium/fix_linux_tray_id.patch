@@ -13,10 +13,10 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index ddc7877f7891fcda71ddfc84db55ab0072078ad5..671729894787a859a88d0f78287d11476ba5c3cc 100644
+index 60a3c13471a630c36b377544e83bd5bf967c47d7..8169dfff20f281ebe9b489fb0449fbd09af7d0b8 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -136,8 +136,9 @@ int NextServiceId() {
+@@ -137,8 +137,9 @@ int NextServiceId() {
    return ++status_icon_count;
  }
  
@@ -27,16 +27,15 @@ index ddc7877f7891fcda71ddfc84db55ab0072078ad5..671729894787a859a88d0f78287d1147
 +      {app_name, "_status_icon_", base::NumberToString(service_id)});
  }
  
- dbus::ObjectPath ObjectPathFromId(const std::string& path, int service_id) {
-@@ -232,15 +233,18 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+ using DbusImage = std::tuple</*width=*/int32_t,
+@@ -249,15 +250,17 @@ scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
  
  }  // namespace
  
 -StatusIconLinuxDbus::StatusIconLinuxDbus()
--    : StatusIconLinuxDbus(dbus_thread_linux::GetSharedSessionBus()) {}
+-    : StatusIconLinuxDbus(GetBusForNewStatusIcon()) {}
 +StatusIconLinuxDbus::StatusIconLinuxDbus(const std::string_view app_name)
-+    : StatusIconLinuxDbus(dbus_thread_linux::GetSharedSessionBus(), app_name) {
-+}
++    : StatusIconLinuxDbus(GetBusForNewStatusIcon(), app_name) {}
  
 -StatusIconLinuxDbus::StatusIconLinuxDbus(scoped_refptr<dbus::Bus> bus)
 +StatusIconLinuxDbus::StatusIconLinuxDbus(scoped_refptr<dbus::Bus> bus,
@@ -51,7 +50,7 @@ index ddc7877f7891fcda71ddfc84db55ab0072078ad5..671729894787a859a88d0f78287d1147
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    if (bus_) {
      CheckStatusNotifierWatcherHasOwner();
-@@ -447,7 +451,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -469,7 +472,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    SetProperty<"s">(kPropertyAttentionIconName, "", false);
    SetProperty<"s">(kPropertyAttentionMovieName, "", false);
    SetProperty<"s">(kPropertyCategory, kPropertyValueCategory, false);
