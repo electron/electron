@@ -141,7 +141,7 @@ struct Converter<T*> {
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
     *out = static_cast<T*>(static_cast<gin_helper::DeprecatedWrappableBase*>(
         gin_helper::internal::FromV8Impl(isolate, val, &T::kWrapperInfo)));
-    return *out != NULL;
+    return *out != nullptr;
   }
 };
 
