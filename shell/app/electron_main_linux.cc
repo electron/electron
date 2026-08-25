@@ -35,15 +35,19 @@ namespace {
 // it to 1024 entries now is free; content's zygote does the same for the
 // children it forks.
 void PreallocateFileDescriptorTable() {
+  base::ScopedFD dev_null(
+      HANDLE_EINTR(open("/dev/null", O_RDONLY | O_CLOEXEC)));
+  if (!dev_null.is_valid()) {
+    return;
+  }
   base::ScopedFD high_fd(
-      HANDLE_EINTR(fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, 512)));
+      HANDLE_EINTR(fcntl(dev_null.get(), F_DUPFD_CLOEXEC, 512)));
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
   FixStdioStreams();
-  PreallocateFileDescriptorTable();
 
   // Chromium expects the original argv in its original memory location
   // to update /proc/<pid>/cmdline.
@@ -53,6 +57,7 @@ int main(int argc, char* argv[]) {
   electron::ElectronCommandLine::Init(argc, argv);
 
   if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
+    PreallocateFileDescriptorTable();
     base::i18n::InitializeICU();
     base::AtExitManager atexit_manager;
     return electron::NodeMain();
