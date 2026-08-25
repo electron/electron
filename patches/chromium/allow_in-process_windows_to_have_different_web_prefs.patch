@@ -64,7 +64,7 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 735a8ca35575d6be95749c16e7e63d3f59f65bd2..b11b98cd54f867d0c52a54f922d8700ab75a2e39 100644
+index 91593851bc33781ca0a986f0100a5f334847fec0..c8959182b8657ce7842918b6e9eb58311cebd8cb 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -8,6 +8,7 @@

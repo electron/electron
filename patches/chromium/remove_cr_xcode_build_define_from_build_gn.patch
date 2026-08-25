@@ -9,7 +9,7 @@ Xcode, which causes pointless cache misses in development.
 There's an open Chromium issue to fix this: https://issues.chromium.org/issues/514632432
 
 diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
-index b21e766931b19a5cb1f785acfb7f8df47e56e276..edffd0f3b3450f6875054f580b2fe65ec74d2a66 100644
+index 7114fd817a76ecaf095712f96c2cfdd662ce1e93..4c161338026b7a426493c4e25c2af41df7338669 100644
 --- a/build/config/mac/BUILD.gn
 +++ b/build/config/mac/BUILD.gn
 @@ -26,11 +26,6 @@ config("compiler") {

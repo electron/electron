@@ -694,7 +694,8 @@ class WebFrameRenderer final
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kAllow,
         blink::mojom::WantResultOption::kWantResult,
-        blink::mojom::PromiseResultOption::kDoNotWait);
+        blink::mojom::PromiseResultOption::kDoNotWait,
+        /*is_injected_extension_script=*/false);
 
     return handle;
   }
@@ -766,7 +767,8 @@ class WebFrameRenderer final
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
         blink::mojom::WantResultOption::kWantResult,
-        blink::mojom::PromiseResultOption::kDoNotWait);
+        blink::mojom::PromiseResultOption::kDoNotWait,
+        /*is_injected_extension_script=*/false);
 
     return handle;
   }
