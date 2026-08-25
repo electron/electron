@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('dialog module', () => {
@@ -1180,13 +1180,20 @@ describe('dialog module', () => {
         expect(resolvedEarly, 'dialog closed on an unknown button ID').to.equal(false);
         expect(dialogHelper.getDialogInfo(handle).type).to.equal('message-box');
 
-        // A real button still closes the dialog and returns its index.
-        dialogHelper.clickMessageBoxButton(handle, 1);
-        await setTimeout(500);
-        expect(
-          dialogHelper.getDialogInfo(handle).type,
+        // A real button still closes the dialog and returns its index. The
+        // dialog runs on a separate STA thread, so rather than a single click
+        // with a fixed deadline, re-inject the click until the dialog
+        // acknowledges it by closing.
+        await expect(
+          waitUntil(
+            () => {
+              dialogHelper.clickMessageBoxButton(handle, 1);
+              return dialogHelper.getDialogInfo(handle).type === 'none';
+            },
+            { rate: 100 }
+          ),
           'a valid button click did not close the dialog; is kIDStart in dialog_helper_win.cc in sync with message_box_win.cc ?'
-        ).to.equal('none');
+        ).to.eventually.be.fulfilled();
         const result = await p;
         expect(result.response).to.equal(1);
       });

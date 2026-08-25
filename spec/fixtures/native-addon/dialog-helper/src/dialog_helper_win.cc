@@ -4,6 +4,8 @@
 
 #include <commctrl.h>
 
+#include <cstring>
+
 namespace {
 
 // Electron assigns custom TaskDialog button IDs starting at this value; a
@@ -11,8 +13,21 @@ namespace {
 // shell/browser/ui/message_box_win.cc.
 constexpr int kIDStart = 100;
 
+// Extract the HWND from the native handle buffer. The buffer contains the
+// HWND returned by BrowserWindow.getNativeWindowHandle(), which is the same
+// window that message_box_win.cc passes to TaskDialogIndirect as hwndParent,
+// i.e. the owner of the task dialog.
+HWND GetHWNDFromHandle(char* handle, size_t size) {
+  if (!handle || size != sizeof(HWND))
+    return nullptr;
+  HWND hwnd = nullptr;
+  std::memcpy(&hwnd, handle, sizeof(HWND));
+  return hwnd;
+}
+
 struct FindContext {
   DWORD process_id;
+  HWND owner;
   HWND result;
 };
 
@@ -32,13 +47,23 @@ BOOL CALLBACK FindMessageBoxProc(HWND hwnd, LPARAM param) {
   if (process_id != context->process_id)
     return TRUE;
 
+  // Only match the dialog owned by the given window, so that unrelated
+  // dialog-class windows in the process (e.g. a dialog leaked by an earlier
+  // test) are never picked up.
+  if (::GetWindow(hwnd, GW_OWNER) != context->owner)
+    return TRUE;
+
   context->result = hwnd;
   return FALSE;
 }
 
-// Finds the visible task dialog owned by the current process.
-HWND FindMessageBox() {
-  FindContext context = {::GetCurrentProcessId(), nullptr};
+// Finds the visible task dialog created by the current process that is owned
+// by the window identified by the handle buffer.
+HWND FindMessageBox(char* handle, size_t size) {
+  HWND owner = GetHWNDFromHandle(handle, size);
+  if (!owner)
+    return nullptr;
+  FindContext context = {::GetCurrentProcessId(), owner, nullptr};
   ::EnumWindows(&FindMessageBoxProc, reinterpret_cast<LPARAM>(&context));
   return context.result;
 }
@@ -47,14 +72,14 @@ HWND FindMessageBox() {
 
 namespace dialog_helper {
 
-DialogInfo GetDialogInfo(char*, size_t) {
+DialogInfo GetDialogInfo(char* handle, size_t size) {
   DialogInfo info;
-  info.type = FindMessageBox() ? "message-box" : "none";
+  info.type = FindMessageBox(handle, size) ? "message-box" : "none";
   return info;
 }
 
-bool ClickMessageBoxButton(char*, size_t, int button_index) {
-  HWND window = FindMessageBox();
+bool ClickMessageBoxButton(char* handle, size_t size, int button_index) {
+  HWND window = FindMessageBox(handle, size);
   if (!window)
     return false;
 
