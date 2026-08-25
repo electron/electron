@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Fri, 10 Jul 2026 16:05:41 -0700
+Subject: Add split_level_0_pbo_full_sub_image_2d workaround.
+
+This is the validating command decoder version of the similar ANGLE
+workaround.
+
+If uploading the full level 0 of a texture from a PBO via
+glTexSubImage2D, split the upload into two.
+
+Apply this workaround to Imagination's drivers. Note the validating
+command decoder doesn't have support for conditioning this on driver
+version, and I'm not adding that because the validating command
+decoder will be removed before the workaround is obsoleted.
+
+Bug: 496807874
+Change-Id: I86bd95e856b064ef7b916b53f5cdca23404984bd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8076418
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1660582}
+
+diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
+index a327d2af2907a68708bbb644790c651aa2a50e94..5462652cabe1c4023c4697b085735a7baaf7e5a7 100644
+--- a/gpu/command_buffer/service/texture_manager.cc
++++ b/gpu/command_buffer/service/texture_manager.cc
+@@ -444,7 +444,9 @@ DecoderTextureState::DecoderTextureState(
+       unpack_alignment_workaround_with_unpack_buffer(
+           workarounds.unpack_alignment_workaround_with_unpack_buffer),
+       unpack_overlapping_rows_separately_unpack_buffer(
+-          workarounds.unpack_overlapping_rows_separately_unpack_buffer) {}
++          workarounds.unpack_overlapping_rows_separately_unpack_buffer),
++      split_level_0_pbo_full_sub_image_2d(
++          workarounds.split_level_0_pbo_full_sub_image_2d) {}
+ 
+ TextureManager::DestructionObserver::DestructionObserver() = default;
+ 
+@@ -2945,6 +2947,16 @@ void TextureManager::ValidateAndDoTexSubImage(
+     }
+   }
+ 
++  if (texture_state->split_level_0_pbo_full_sub_image_2d && args.level == 0 &&
++      buffer &&
++      args.command_type ==
++          DoTexSubImageArguments::CommandType::kTexSubImage2D &&
++      full_image && args.width > 0 && args.height > 0) {
++    TRACE_EVENT0("gpu", "SplitLevel0PboFullSubImage2dWorkaround");
++    DoTexSubImageSplitLevel0PboWorkaround(texture_state, state, args);
++    return;
++  }
++
+   if (full_image && !texture->IsImmutable()) {
+     TRACE_EVENT0("gpu", "FullImage");
+     GLenum internal_format;
+@@ -3193,6 +3205,68 @@ void TextureManager::DoTexSubImageLayerByLayerWorkaround(
+   glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, unpack_params.image_height);
+ }
+ 
++void TextureManager::DoTexSubImageSplitLevel0PboWorkaround(
++    DecoderTextureState* texture_state,
++    ContextState* state,
++    const DoTexSubImageArguments& args) {
++  DCHECK(state->bound_pixel_unpack_buffer.get());
++  DCHECK_EQ(args.level, 0);
++  DCHECK(args.command_type ==
++         DoTexSubImageArguments::CommandType::kTexSubImage2D);
++  DCHECK(args.width > 0 && args.height > 0);
++  DCHECK(args.xoffset == 0 && args.yoffset == 0 && args.zoffset == 0);
++
++  uint32_t base_offset = ToGLuint(args.pixels);
++  GLenum format = AdjustTexFormat(feature_info_.get(), args.format);
++  PixelStoreParams params = state->GetUnpackParams(ContextState::k2D);
++
++  uint32_t size = 0;
++  uint32_t padded_row_size = 0;
++  if (!GLES2Util::ComputeImageDataSizesES3(
++          args.width, args.height, 1, args.format, args.type, params, &size,
++          nullptr, &padded_row_size, nullptr, nullptr)) {
++    return;
++  }
++
++  GLint first_width = 0;
++  GLint first_height = 0;
++  GLint second_x = args.xoffset;
++  GLint second_y = args.yoffset;
++  GLsizei second_width = 1;
++  uint32_t second_offset = 0;
++
++  if (args.height > 1) {
++    first_width = args.width;
++    first_height = args.height - 1;
++    second_y = args.yoffset + args.height - 1;
++    second_width = args.width;
++    second_offset = static_cast<uint32_t>(args.height - 1) * padded_row_size;
++  } else {
++    DCHECK_EQ(args.height, 1);
++    uint32_t pixel_bytes =
++        GLES2Util::ComputeImageGroupSize(args.format, args.type);
++
++    if (args.width > 1) {
++      first_width = args.width - 1;
++      first_height = 1;
++    }
++
++    second_x = args.xoffset + args.width - 1;
++    second_offset = static_cast<uint32_t>(args.width - 1) * pixel_bytes;
++  }
++
++  if (first_width > 0 && first_height > 0) {
++    glTexSubImage2D(args.target, args.level, args.xoffset, args.yoffset,
++                    first_width, first_height, format, args.type,
++                    reinterpret_cast<const void*>(base_offset));
++  }
++
++  uint32_t total_second_offset = base_offset + second_offset;
++  glTexSubImage2D(args.target, args.level, second_x, second_y, second_width, 1,
++                  format, args.type,
++                  reinterpret_cast<const void*>(total_second_offset));
++}
++
+ // static
+ const Texture::CompatibilitySwizzle* TextureManager::GetCompatibilitySwizzle(
+     const gles2::FeatureInfo* feature_info,
+diff --git a/gpu/command_buffer/service/texture_manager.h b/gpu/command_buffer/service/texture_manager.h
+index 1c4ca6276dd9e412bc013b33ae7360ee527444aa..6fd089b77396abd355d156759984f2be64b09b8a 100644
+--- a/gpu/command_buffer/service/texture_manager.h
++++ b/gpu/command_buffer/service/texture_manager.h
+@@ -703,6 +703,7 @@ struct DecoderTextureState {
+   bool force_int_or_srgb_cube_texture_complete;
+   bool unpack_alignment_workaround_with_unpack_buffer;
+   bool unpack_overlapping_rows_separately_unpack_buffer;
++  bool split_level_0_pbo_full_sub_image_2d;
+ };
+ 
+ // This class keeps track of the textures and their sizes so we can do NPOT and
+@@ -1175,6 +1176,11 @@ class GPU_GLES2_EXPORT TextureManager
+       const DoTexSubImageArguments& args,
+       const PixelStoreParams& unpack_params);
+ 
++  void DoTexSubImageSplitLevel0PboWorkaround(
++      DecoderTextureState* texture_state,
++      ContextState* state,
++      const DoTexSubImageArguments& args);
++
+   void DoCubeMapWorkaround(DecoderTextureState* texture_state,
+                            ContextState* state,
+                            ErrorState* error_state,
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 99aa812649102eb5d2742a8e6611f0ecb12bb9af..b209eb6f7a47f04851c8eb5a28d8ffda6b5a63ab 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3810,6 +3810,18 @@
+       "features": [
+         "reattach_texture_to_fbo_after_layer_increase"
+       ]
++    },
++    {
++      "id": 482,
++      "cr_bugs": [496807874],
++      "description": "Split full-image level 0 PBO uploads via TexSubImage2D into two calls to work around driver bugs.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "split_level_0_pbo_full_sub_image_2d"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index af6c53592efd873a756e25e1e3f8f4d429a90ec2..b97fa7ad102d6f73adb9d6ca3e6a2df2f6af4dba 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -119,6 +119,7 @@ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector
+ round_down_uniform_bind_buffer_range_size
+ scalarize_vec_and_mat_constructor_args
++split_level_0_pbo_full_sub_image_2d
+ supports_two_yuv_hardware_overlays
+ unbind_attachments_on_bound_render_fbo_delete
+ unbind_egl_context_to_flush_driver_caches

@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Fri, 21 Aug 2026 11:58:35 +0200
+Subject: [7922_169] Native builtins are strict
+
+Original change's description:
+> [M151] Native builtins are strict
+>
+> Original change's description:
+> > Native builtins are strict
+> >
+> > There was a discrepancy between native builtins registered in
+> > bootstrapper vs setup-heap-internal.
+> > The former marked the builtins as strict, whereas the latter didn't.
+> >
+> > Mark builtins as strict also in setup-heap-internal.
+> >
+> > Fixed: 545767601
+> > Change-Id: Ida4da4bdcfe7dcfdc16f1da0ec022a65cf853ce8
+> > Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8274474
+> > Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> > Commit-Queue: Patrick Thier <pthier@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#109425}
+>
+> (cherry picked from commit 6f81b563fa9e3fde15412b0e3ab2b1e2b7e6d0d7)
+>
+> Bug: 550760421,545767601
+> Change-Id: Ida4da4bdcfe7dcfdc16f1da0ec022a65cf853ce8
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8279576
+> Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+> Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Cr-Commit-Position: refs/branch-heads/15.1@{#56}
+> Cr-Branched-From: b231b8f07c377ee257f573eb690850d24830dd0d-refs/heads/15.1.206@{#1}
+> Cr-Branched-From: a88116848637bdef375cf46b03b303511e4e6def-refs/heads/main@{#108311}
+
+(cherry picked from commit 052532579880011847f1926717bf9ff5e144b6cc)
+
+Bug: 550760421,550760421,545767601
+Change-Id: Ida4da4bdcfe7dcfdc16f1da0ec022a65cf853ce8
+LAND_ON_CHROMIUM_BRANCH=automated minibranch cherry-pick
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8285360
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/heap/setup-heap-internal.cc b/src/heap/setup-heap-internal.cc
+index c8846e6c768d4adf4c04eead093dec93742c59a5..fd54cf4b703e09543676d9bad3d0477c8539a063 100644
+--- a/src/heap/setup-heap-internal.cc
++++ b/src/heap/setup-heap-internal.cc
+@@ -72,6 +72,7 @@ DirectHandle<SharedFunctionInfo> CreateSharedFunctionInfo(
+   DirectHandle<SharedFunctionInfo> shared =
+       isolate->factory()->NewSharedFunctionInfoForBuiltin(
+           isolate->factory()->empty_string(), builtin, len, kAdapt, kind);
++  shared->set_language_mode(LanguageMode::kStrict);
+   return shared;
+ }
+ 

@@ -1,0 +1,839 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 13 Jul 2026 11:56:52 -0400
+Subject: GL: Work around bug with complex expr in struct constructor
+
+In AST, a function is declared that acts as the struct constructor.
+This forces the compiler to evaluate complex expressions outside the
+struct constructor.
+
+This transformation is not needed for the IR.  The driver bug is
+specifically about using constant arrays in the struct constructor, and
+the IR already puts constant arrays in a variable.
+
+Initial AST transformation attempts credit Ken Russell [1]
+
+[1]: https://crrev.com/c/8027555
+
+Bug: chromium:529509587
+Change-Id: I92d72a65fde72dd00a50e04dbc86155a6d1e9d00
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8087037
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/include/GLSLANG/ShaderLang.h b/include/GLSLANG/ShaderLang.h
+index 03e1e0d649b3d199a1c835ba80c19ee7649882b8..cc500d8ebc23f6c40299da0422b21ee3f8b58a5e 100644
+--- a/include/GLSLANG/ShaderLang.h
++++ b/include/GLSLANG/ShaderLang.h
+@@ -26,7 +26,7 @@
+ 
+ // Version number for shader translation API.
+ // It is incremented every time the API changes.
+-#define ANGLE_SH_VERSION 408
++#define ANGLE_SH_VERSION 409
+ 
+ enum ShShaderSpec
+ {
+@@ -413,6 +413,9 @@ struct ShCompileOptions
+     // ceil()ed instead.
+     uint64_t roundOutputAfterDithering : 1;
+ 
++    // Avoid complex expressions in struct constructors to work around driver bugs.
++    uint64_t avoidComplexExpressionsInStructConstructor : 1;
++
+     // placeholder bit for removed castMediumpFloatTo16Bit option. This is needed because chromium
+     // fuzzer needs the ShCompileOptions memory layout remains unchanged to be able to map the bugs
+     // filed.
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 0750575e7a7028df16777cdd5bffc4d200ed5566..f565d07ffca9c61e98a0a635194909c56d0a1250 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -734,6 +734,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo avoidComplexExpressionsInStructConstructor = {
++        "avoidComplexExpressionsInStructConstructor",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 1862db292ca88170ae7f4315637008f6c645242f..27ef5b97c9ce04830ab3b331144292f148b8596f 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -959,6 +959,14 @@
+                 "Limit the number of declared varying components at compile time to work around a PowerVR driver bug."
+             ],
+             "issue": "http://crbug.com/529991907"
++        },
++        {
++            "name": "avoid_complex_expressions_in_struct_constructor",
++            "category": "Workarounds",
++            "description": [
++                "Remove complex expressions from struct constructors."
++            ],
++            "issue": "http://crbug.com/529509587"
+         }
+     ]
+ }
+diff --git a/src/compiler.gni b/src/compiler.gni
+index 29c9c8ee3ca2fb269120c692ed18f9098a0e6733..74aa8543b2daa318880dc7b66dd2e0362b482701 100644
+--- a/src/compiler.gni
++++ b/src/compiler.gni
+@@ -196,6 +196,7 @@ angle_translator_sources = [
+   "src/compiler/translator/tree_ops/glsl/RegenerateStructNames.h",
+   "src/compiler/translator/tree_ops/glsl/RewriteRepeatedAssignToSwizzled.h",
+   "src/compiler/translator/tree_ops/glsl/UseInterfaceBlockFields.h",
++  "src/compiler/translator/tree_ops/glsl/WrapStructConstructors.h",
+   "src/compiler/translator/tree_ops/glsl/apple/AddAndTrueToLoopCondition.h",
+   "src/compiler/translator/tree_ops/glsl/apple/RewriteRowMajorMatrices.h",
+   "src/compiler/translator/tree_ops/glsl/apple/UnfoldShortCircuitAST.h",
+@@ -263,6 +264,7 @@ angle_translator_glsl_sources = [
+   "src/compiler/translator/tree_ops/glsl/RegenerateStructNames.cpp",
+   "src/compiler/translator/tree_ops/glsl/RewriteRepeatedAssignToSwizzled.cpp",
+   "src/compiler/translator/tree_ops/glsl/UseInterfaceBlockFields.cpp",
++  "src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp",
+ ]
+ angle_translator_glsl_apple_sources = [
+   "src/compiler/translator/tree_ops/glsl/apple/AddAndTrueToLoopCondition.cpp",
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 96350cbe2e9969aaa10c398ceb8788ce7521f984..3fc29174072087de9062f9ed2a1a26ae29c4df94 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -52,6 +52,7 @@
+ #include "compiler/translator/tree_ops/glsl/RegenerateStructNames.h"
+ #include "compiler/translator/tree_ops/glsl/RewriteRepeatedAssignToSwizzled.h"
+ #include "compiler/translator/tree_ops/glsl/UseInterfaceBlockFields.h"
++#include "compiler/translator/tree_ops/glsl/WrapStructConstructors.h"
+ #include "compiler/translator/tree_ops/glsl/apple/AddAndTrueToLoopCondition.h"
+ #include "compiler/translator/tree_ops/glsl/apple/UnfoldShortCircuitAST.h"
+ #include "compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h"
+@@ -1138,6 +1139,14 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+             }
+         }
+ 
++        if (compileOptions.avoidComplexExpressionsInStructConstructor)
++        {
++            if (!WrapStructConstructors(this, root, &mSymbolTable))
++            {
++                return false;
++            }
++        }
++
+         if (compileOptions.clampIndirectArrayBounds)
+         {
+             if (!ClampIndirectIndices(this, root, &mSymbolTable))
+diff --git a/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..99d79228a9ab69e19e5583e821eb284cf4466ef9
+--- /dev/null
++++ b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.cpp
+@@ -0,0 +1,257 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++
++#include "compiler/translator/tree_ops/glsl/WrapStructConstructors.h"
++
++#include <limits>
++#include <string>
++
++#include "compiler/translator/Compiler.h"
++#include "compiler/translator/ImmutableString.h"
++#include "compiler/translator/IntermRebuild.h"
++#include "compiler/translator/Symbol.h"
++#include "compiler/translator/tree_util/FindFunction.h"
++#include "compiler/translator/tree_util/IntermNode_util.h"
++
++namespace sh
++{
++
++namespace
++{
++bool IsSimple(TIntermNode *node)
++{
++    if (node->getAsSymbolNode() != nullptr)
++    {
++        return true;
++    }
++
++    TIntermConstantUnion *asConst = node->getAsConstantUnion();
++    if (asConst != nullptr)
++    {
++        return !asConst->getType().isArray() && asConst->getType().getStruct() == nullptr;
++    }
++
++    return false;
++}
++
++class WrapRebuilder final : public TIntermRebuild
++{
++  public:
++    explicit WrapRebuilder(TCompiler &compiler) : TIntermRebuild(compiler, false, true) {}
++
++    PostResult visitAggregatePost(TIntermAggregate &node) override
++    {
++        // Transform only struct constructors
++        if (node.getOp() != EOpConstruct)
++        {
++            return node;
++        }
++
++        const TType &type = node.getType();
++        if (type.isArray())
++        {
++            return node;
++        }
++
++        const TStructure *structure = type.getStruct();
++        if (structure == nullptr)
++        {
++            return node;
++        }
++
++        // Check if the arguments are complex.  If the arguments are only variables, or basic type
++        // constants, leave the constructor be.
++        TIntermSequence *arguments = node.getSequence();
++        bool isAnyComplex          = false;
++        for (TIntermNode *arg : *arguments)
++        {
++            if (!IsSimple(arg))
++            {
++                isAnyComplex = true;
++                break;
++            }
++        }
++
++        if (!isAnyComplex)
++        {
++            return node;
++        }
++
++        if (mIsGlobalScope)
++        {
++            return transformConstructorGlobalScope(node, structure);
++        }
++        else
++        {
++            return transformConstructorFunctionScope(node, structure);
++        }
++    }
++
++    PostResult transformConstructorGlobalScope(TIntermAggregate &node, const TStructure *structure)
++    {
++        // For any argument that is complex, create a temp variable that holds its value, and
++        // replace the argument with that.
++        TIntermSequence *arguments = node.getSequence();
++        TIntermSequence replacement;
++        for (TIntermNode *arg : *arguments)
++        {
++            if (IsSimple(arg))
++            {
++                replacement.push_back(arg);
++            }
++            else
++            {
++                const TVariable *globalVariable =
++                    CreateTempVariable(&mSymbolTable, &arg->getAsTyped()->getType(), EvqConst);
++                TIntermSymbol *global          = new TIntermSymbol(globalVariable);
++                TIntermDeclaration *globalDecl = new TIntermDeclaration();
++                globalDecl->appendDeclarator(
++                    new TIntermBinary(EOpInitialize, global, arg->getAsTyped()));
++                mAdditionalVariables.push_back(globalDecl);
++
++                replacement.push_back(global->deepCopy());
++            }
++        }
++
++        // Replace the constructor.
++        return *TIntermAggregate::CreateConstructor(node.getType(), &replacement);
++    }
++
++    PostResult transformConstructorFunctionScope(TIntermAggregate &node,
++                                                 const TStructure *structure)
++    {
++        TIntermSequence *arguments = node.getSequence();
++
++        // Create a constructor function for it, if not already
++        const TFunction *constructor = makeConstructorHelper(structure);
++
++        // Replace the constructor call with a call to the helper function.
++        return *TIntermAggregate::CreateFunctionCall(*constructor, arguments);
++    }
++
++    bool rewrite(TIntermBlock &root)
++    {
++        // Process struct constructors in global declarations differently from in-function ones.
++        // The global declarations cannot call a function if they are |const|, so instead their
++        // complex arguments are pulled into global variables.  For in-function struct constructors,
++        // a helper function is used.
++        TIntermSequence *original = root.getSequence();
++        TIntermSequence replacement;
++        for (TIntermNode *node : *original)
++        {
++            // Choose which strategy to use for this node.
++            mIsGlobalScope = !node->getAsFunctionDefinition();
++            ASSERT(!rebuild(*node).isFail());
++            replacement.insert(replacement.end(), mAdditionalVariables.begin(),
++                               mAdditionalVariables.end());
++            mAdditionalVariables.clear();
++            replacement.push_back(node);
++        }
++        root.replaceAllChildren(std::move(replacement));
++
++        addConstructorFunctions(root);
++
++        return mCompiler.validateAST(&root);
++    }
++
++    void addConstructorFunctions(TIntermBlock &root)
++    {
++        if (mConstructorFunctions.empty())
++        {
++            return;
++        }
++
++        // Split the declarations from functions.  Move all declarations up, similar to
++        // MoveDeclarationsBeforeFunctions, and add the new helpers in between declarations and
++        // existing functions.
++        TIntermSequence *original = root.getSequence();
++
++        TIntermSequence replacement;
++        TIntermSequence functionDefs;
++
++        // Accumulate non-function-definition declarations in |replacement| and function definitions
++        // in |functionDefs|.
++        for (TIntermNode *node : *original)
++        {
++            if (node->getAsFunctionDefinition() || node->getAsFunctionPrototypeNode())
++            {
++                functionDefs.push_back(node);
++            }
++            else
++            {
++                replacement.push_back(node);
++            }
++        }
++
++        // Add constructor helpers
++        for (const auto &function : mConstructorFunctions)
++        {
++            replacement.push_back(function.second);
++        }
++
++        // Append function definitions to |replacement|.
++        replacement.insert(replacement.end(), functionDefs.begin(), functionDefs.end());
++
++        // Replace root's sequence with |replacement|.
++        root.replaceAllChildren(std::move(replacement));
++    }
++
++  private:
++    const TFunction *makeConstructorHelper(const TStructure *structure)
++    {
++        auto it = mConstructorFunctions.find(structure);
++        if (it != mConstructorFunctions.end())
++        {
++            return it->second->getFunction();
++        }
++
++        const TType *returnType = new TType(structure, false);
++        TFunction *function     = new TFunction(&mSymbolTable, kEmptyImmutableString,
++                                                SymbolType::AngleInternal, returnType, true);
++
++        // Add parameters matching the struct fields.
++        const TFieldList &fields         = structure->fields();
++        TIntermSequence *constructorArgs = new TIntermSequence();
++        for (const TField *field : fields)
++        {
++            const TVariable *var = CreateTempVariable(&mSymbolTable, field->type(), EvqParamIn);
++            function->addParameter(var);
++            constructorArgs->push_back(new TIntermSymbol(var));
++        }
++
++        TIntermBlock *body = new TIntermBlock;
++
++        // StructType(param0, param1, ...)
++        TIntermTyped *constructorCall =
++            TIntermAggregate::CreateConstructor(*returnType, constructorArgs);
++
++        // return ...;
++        TIntermBranch *returnStatement = new TIntermBranch(EOpReturn, constructorCall);
++        body->appendStatement(returnStatement);
++
++        TIntermFunctionDefinition *functionDefinition =
++            CreateInternalFunctionDefinitionNode(*function, body);
++
++        // Cache the definition so it'll be added to the shader at the right place.
++        mConstructorFunctions[structure] = functionDefinition;
++        return function;
++    }
++
++    bool mIsGlobalScope = false;
++    // For global-scope constructors:
++    TVector<TIntermDeclaration *> mAdditionalVariables;
++    // For function-scope constructors:
++    TMap<const TStructure *, TIntermFunctionDefinition *> mConstructorFunctions;
++};
++}  // namespace
++
++bool WrapStructConstructors(TCompiler *compiler, TIntermBlock *root, TSymbolTable *symbolTable)
++{
++    WrapRebuilder rebuilder(*compiler);
++    return rebuilder.rewrite(*root);
++}
++
++}  // namespace sh
+diff --git a/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.h b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f77882dbda5cb0367718152299115c477493868
+--- /dev/null
++++ b/src/compiler/translator/tree_ops/glsl/WrapStructConstructors.h
+@@ -0,0 +1,38 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// WrapStructConstructors: Replace struct constructor invocations with a call to a helper function,
++// so that complex expressions aren't directly used in the struct constructor.
++//
++
++#ifndef COMPILER_TRANSLATOR_TREEOPS_GLSL_WRAPSTRUCTCONSTRUCTORS_H_
++#define COMPILER_TRANSLATOR_TREEOPS_GLSL_WRAPSTRUCTCONSTRUCTORS_H_
++
++#include "common/angleutils.h"
++
++namespace sh
++{
++
++class TCompiler;
++class TIntermBlock;
++class TSymbolTable;
++
++#ifdef ANGLE_ENABLE_GLSL
++[[nodiscard]] bool WrapStructConstructors(TCompiler *compiler,
++                                          TIntermBlock *root,
++                                          TSymbolTable *symbolTable);
++#else
++[[nodiscard]] bool WrapStructConstructors(TCompiler *compiler,
++                                          TIntermBlock *root,
++                                          TSymbolTable *symbolTable)
++{
++    UNREACHABLE();
++    return false;
++}
++#endif
++
++}  // namespace sh
++
++#endif  // COMPILER_TRANSLATOR_TREEOPS_GLSL_WRAPSTRUCTCONSTRUCTORS_H_
+diff --git a/src/libANGLE/renderer/gl/ShaderGL.cpp b/src/libANGLE/renderer/gl/ShaderGL.cpp
+index 181191fe1df4b0604085e8ab89002ca229e27ea9..4c3155d3f3d3539a78ac617eccd5b31febf5b216 100644
+--- a/src/libANGLE/renderer/gl/ShaderGL.cpp
++++ b/src/libANGLE/renderer/gl/ShaderGL.cpp
+@@ -256,6 +256,11 @@ std::shared_ptr<ShaderTranslateTask> ShaderGL::compile(const gl::Context *contex
+         options->scalarizeVecAndMatConstructorArgs = true;
+     }
+ 
++    if (features.avoidComplexExpressionsInStructConstructor.enabled)
++    {
++        options->avoidComplexExpressionsInStructConstructor = true;
++    }
++
+     if (features.explicitFragmentLocations.enabled)
+     {
+         options->explicitFragmentLocations = true;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 9bf86a114bd06f5ef4f01479ba7b982d8a0849ad..17c02ee67e54da554ab44e7de7fa3f3f81294fa4 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2849,6 +2849,13 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // crbug.com/529991907
+     ANGLE_FEATURE_CONDITION(features, limitOutputVaryingsTo256AtCompileTime, IsPowerVR(vendor));
+ 
++    // crbug.com/529509587 -- IMG GLSL frontend OOB-writes during semantic analysis of a struct
++    // constructor whose array-typed member receives a constant array-constructor argument with a
++    // precision mismatch.  The workaround avoids all complex expressions, not just constant arrays
++    // just in case.
++    ANGLE_FEATURE_CONDITION(features, avoidComplexExpressionsInStructConstructor,
++                            IsPowerVR(vendor));
++
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+     ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
+ }
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 4367c17409afbb265fa96550402e9bee08ce2f2b..28bccb9371b995c6eb55a37a00139feb83cd22fc 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -718,6 +718,7 @@
+ 42266171 PIXEL4ORXL GLES : FramebufferFetchES31.DrawNonFetchDrawFetchInStorageBuffer* = SKIP
+ 40096454 PIXEL4ORXL GLES : WebGL2GLSLTest.InitOutputParams/* = SKIP
+ 42266687 PIXEL4ORXL GLES : GLSLTest_ES3.ComplexConstructor/* = SKIP
++42266687 PIXEL4ORXL GLES : GLSLTest_ES3.StructConstructorComplexExpressionShortCircuit/* = SKIP
+ 42266774 PIXEL4ORXL GLES : MultithreadingTestES3.SimultaneousUploadAndDraw/* = SKIP
+ 42266774 PIXEL4ORXL VULKAN : MultithreadingTestES3.SimultaneousUploadAndDraw/* = SKIP
+ 384314370 PIXEL4ORXL GLES : FramebufferFetchES31.WriteOnlyInOutVariableConditional/* = SKIP
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index f0fc2d138a716746d997b592f356cdf838d91431..5fa71f54212d7499213f6141c875e7ae89ea36eb 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -16656,14 +16656,98 @@ struct S
+     T t;
+ };
+ 
++const float five = 5.;
++const mat3x4 m = mat3x4(
++                         vec4(T(4.).f, five, 6, 7),
++                         vec4(8, 9, 10, 11),
++                         vec4(12, 13, 14, 15)
++                  );
+ S s = S(
+         vec4(0, 1, 2, 3),
+         mat3x4[2](
++                  m,
+                   mat3x4(
+-                         vec4(4, 5, 6, 7),
++                         vec4(16, 17, 18, 19),
++                         vec4(20, 21, 22, 23),
++                         vec4(24, 25, 26, 27)
++                  )
++        ),
++        T(28.0)
++       );
++
++void main()
++{
++    vec4 result = vec4(0, 1, 0, 1);
++
++    if (s.v != vec4(0, 1, 2, 3))
++        result = vec4(1, 0, 0, 0);
++
++    for (int index = 0; index < 2; ++index)
++    {
++        for (int column = 0; column < 3; ++column)
++        {
++            int expect = index * 12 + column * 4 + 4;
++            if (s.m[index][column] != vec4(expect, expect + 1, expect + 2, expect + 3))
++                result = vec4(float(index + 1) / 2.0, 0, float(column + 1) / 3.0, 1);
++        }
++    }
++
++    if (s.t.f != 28.0)
++        result = vec4(0, 0, 1, 0);
++
++    color = result;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that initializing global variables with complex constants work when the constant is
++// qualified with a `const`.
++TEST_P(GLSLTest_ES3, InitGlobalComplexConstConstant)
++{
++    // The SPIR-V generator does not handle |s.m| correctly in the shader below where |s| is const,
++    // expecting it to be constant folded but it isn't because it's an array type.
++    //
++    // The GLES output seems to generate an incorrect number of arguments to the constructor, but
++    // somehow only the Qualcomm and Imagination drivers complain about it.
++    //
++    // On Metal, the test fails with GL_INVALID_OPERATION for some reason.
++    //
++    // There are no failures with the IR.
++    ANGLE_SKIP_TEST_IF((IsVulkan() || IsOpenGLES() || IsMetal()) &&
++                       !getEGLWindow()->isFeatureEnabled(Feature::UseIr));
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++
++struct T
++{
++    float f;
++};
++
++struct S
++{
++    vec4 v;
++    mat3x4 m[2];
++    T t;
++};
++
++const float five = 5.;
++const mat3x4 m = mat3x4(
++                         vec4(T(4.).f, five, 6, 7),
+                          vec4(8, 9, 10, 11),
+                          vec4(12, 13, 14, 15)
+-                  ),
++                  );
++const S s = S(
++        vec4(0, 1, 2, 3),
++        mat3x4[2](
++                  m,
+                   mat3x4(
+                          vec4(16, 17, 18, 19),
+                          vec4(20, 21, 22, 23),
+@@ -23255,13 +23339,216 @@ void main()
+     }
+ }
+ 
++class GLSLTestPassthrough : public GLSLTest
++{};
++
++// Test that uniforms of nameless struct type work with the shader passthrough feature
++TEST_P(GLSLTestPassthrough, StructUniformNameless)
++{
++    constexpr char kFS[] = R"(
++uniform struct
++{
++    mediump vec4 c;
++} s;
++void main()
++{
++    gl_FragColor = s.c;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    glUniform4f(glGetUniformLocation(program, "s.c"), 1, 0, 0, 1);
++
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that uniforms of named struct type work with the shader passthrough feature
++TEST_P(GLSLTestPassthrough, StructUniformNamed)
++{
++    constexpr char kFS[] = R"(
++uniform struct S
++{
++    mediump vec4 c;
++} s;
++void main()
++{
++    gl_FragColor = s.c;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    glUniform4f(glGetUniformLocation(program, "s.c"), 1, 0, 0, 1);
++
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that struct constructor arguments with array constants and mixed precision work.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionWithArrayConstant)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++precision lowp int;
++struct S {
++    float f;
++    mediump uint i[3];
++};
++
++out vec4 color;
++void main()
++{
++    // Note: default precision of int is lowp, but the struct has mediump
++    S s = S(gl_FragCoord.x, uint[3](10u, 20u, 30u));
++    color = vec4(s.i[0] == 10u, s.i[1] == 20u, s.i[2] == 30u, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
++}
++
++// Test that struct constructor arguments are not evaluated if they are in a short-circuited
++// expression.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionShortCircuit)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++uniform bool ufalse;
++struct S {
++    int i;
++};
++void main()
++{
++    int a = 10;
++    int b = 20;
++    // |ufalse| is false by default, so a should be unmodified.
++    if (ufalse && S(++a).i == 11)
++    {
++        b = 30;
++    }
++
++    color = vec4(a == 10, b == 20, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++}
++
++// Test struct constructor with complex expression with mixed function and struct declarations.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionMixedDecls)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++struct A {
++    int i;
++};
++int f() {
++    int a = 10;
++    return A(++a).i;
++}
++struct B {
++    float f;
++};
++void main()
++{
++    int a = f();
++    float f = B(float(a)).f;
++    color = vec4(a == 11, f == 11.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++}
++
++// Test struct constructor with complex expression with local struct declarations.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionLocalDecl)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++struct B {
++    float f;
++};
++void main()
++{
++    struct A {
++        int i;
++    };
++    int a = 10;
++    int b = A(a++).i;
++    color = vec4(a == 11, b == 10, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++}
++
++// Test struct constructor with complex expression with struct declaration in function return value.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionDeclInReturn)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++struct A {
++    int i;
++} f() {
++    int a = 10;
++    return A(++a);
++}
++void main()
++{
++    A a = f();
++    color = vec4(a.i == 11, 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
++// Test nested struct constructor s with complex expression work.
++TEST_P(GLSLTest_ES3, StructConstructorComplexExpressionNested)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++struct B {
++    int i;
++};
++struct A {
++    int i;
++    B b;
++};
++void main()
++{
++    int a = 10;
++    int b = 20;
++    // Directly nest B's constructor under A
++    int c = A(a++, B(++b)).i;
++    color = vec4(a == 11, b == 21, c == 10, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
++}
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(
+     GLSLTest,
+     ES3_OPENGL().enable(Feature::ForceInitShaderVariables),
+     ES3_OPENGL().enable(Feature::ScalarizeVecAndMatConstructorArgs),
++    ES3_OPENGL().enable(Feature::AvoidComplexExpressionsInStructConstructor),
+     ES3_OPENGLES().enable(Feature::ScalarizeVecAndMatConstructorArgs),
++    ES3_OPENGLES().enable(Feature::AvoidComplexExpressionsInStructConstructor),
+     ES3_VULKAN().enable(Feature::AvoidOpSelectWithMismatchingRelaxedPrecision),
+     ES3_VULKAN().enable(Feature::ForceInitShaderVariables),
+     ES3_VULKAN().disable(Feature::SupportsSPIRV14),
+@@ -23277,7 +23564,9 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     GLSLTest_ES3,
+     ES3_OPENGL().enable(Feature::ForceInitShaderVariables),
+     ES3_OPENGL().enable(Feature::ScalarizeVecAndMatConstructorArgs),
++    ES3_OPENGL().enable(Feature::AvoidComplexExpressionsInStructConstructor),
+     ES3_OPENGLES().enable(Feature::ScalarizeVecAndMatConstructorArgs),
++    ES3_OPENGLES().enable(Feature::AvoidComplexExpressionsInStructConstructor),
+     ES3_VULKAN().enable(Feature::AvoidOpSelectWithMismatchingRelaxedPrecision),
+     ES3_VULKAN().enable(Feature::ForceInitShaderVariables),
+     ES3_VULKAN().disable(Feature::SupportsSPIRV14),
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index cf32e2be07f5e5b9983e688065e275662fb2ed50..0b2ce6ff4a627dd48ebcdd71dcf66842464bccf4 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -53,6 +53,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::AsyncGarbageCleanup, "asyncGarbageCleanup"},
+     {Feature::Avoid1BitAlphaTextureFormats, "avoid1BitAlphaTextureFormats"},
+     {Feature::AvoidBindFragDataLocation, "avoidBindFragDataLocation"},
++    {Feature::AvoidComplexExpressionsInStructConstructor, "avoidComplexExpressionsInStructConstructor"},
+     {Feature::AvoidInvisibleWindowSwapchainRecreate, "avoidInvisibleWindowSwapchainRecreate"},
+     {Feature::AvoidOpSelectWithMismatchingRelaxedPrecision, "avoidOpSelectWithMismatchingRelaxedPrecision"},
+     {Feature::AvoidStencilTextureSwizzle, "avoidStencilTextureSwizzle"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 78834c49916e2d3ef83fde3c1c38ea98ee1188e9..06705fe1f35dee6ece6382a4f87f4bc118c5a7f4 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -53,6 +53,7 @@ enum class Feature
+     AsyncGarbageCleanup,
+     Avoid1BitAlphaTextureFormats,
+     AvoidBindFragDataLocation,
++    AvoidComplexExpressionsInStructConstructor,
+     AvoidInvisibleWindowSwapchainRecreate,
+     AvoidOpSelectWithMismatchingRelaxedPrecision,
+     AvoidStencilTextureSwizzle,

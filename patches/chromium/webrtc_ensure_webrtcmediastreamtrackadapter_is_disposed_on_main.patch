@@ -1,0 +1,274 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Fri, 3 Jul 2026 08:10:23 -0700
+Subject: [WebRTC] Ensure WebRtcMediaStreamTrackAdapter is disposed on main
+ thread
+
+If an iframe hosting an RTCPeerConnection is detached while
+replaceTrack is communicating with the WebRTC signaling thread,
+cross-thread tasks posted back to the main thread can fail because the
+main thread task runner is shut down. When this happens, closures
+holding AdapterRef objects are deconstructed on the signaling thread.
+
+Previously, AdapterRef::~AdapterRef() would remove the adapter from the
+map and execute removed_adapter->Dispose() directly on whatever thread
+invoked ~AdapterRef(). When run on the signaling thread, this triggered
+main-thread disposal paths (such as MediaStreamVideoTrack::RemoveSink)
+on the signaling thread without synchronization, leading to data races
+and Use-After-Free.
+
+This CL updates AdapterRef::~AdapterRef() and
+WebRtcMediaStreamTrackAdapter::Dispose() to check whether execution is
+occurring on the main thread. If invoked on a non-main thread, map
+removal and track disposal are posted to the main thread.
+
+Bug: 523296105
+Change-Id: I85f5403e14dbdc7e49b5060bc098014878d19297
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8028963
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Tove Petersson <tovep@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1656585}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.cc b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.cc
+index 3a7b7737dc9b959e1752646c9dcfd64e7dc08c04..2d88663b4e8fbd9977fa5bb5f85531fcc1f3cdae 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.cc
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.cc
+@@ -110,6 +110,17 @@ void WebRtcMediaStreamTrackAdapterTraits::Destruct(
+ }
+ 
+ void WebRtcMediaStreamTrackAdapter::Dispose() {
++  if (!main_thread_->BelongsToCurrentThread()) {
++    PostCrossThreadTask(
++        *main_thread_, FROM_HERE,
++        CrossThreadBindOnce(&WebRtcMediaStreamTrackAdapter::DisposeOnMainThread,
++                            WrapRefCounted(this)));
++    return;
++  }
++  DisposeOnMainThread();
++}
++
++void WebRtcMediaStreamTrackAdapter::DisposeOnMainThread() {
+   DCHECK(main_thread_->BelongsToCurrentThread());
+   DCHECK(is_initialized_);
+   if (is_disposed_)
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.h b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.h
+index 844dfae8ab658c7e979b8cc6e49a3405082c7060..bc19bf7e994f64fdcbf13114ae39fe758454df61 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.h
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter.h
+@@ -56,7 +56,7 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapter
+       const WebRtcMediaStreamTrackAdapter&) = delete;
+ 
+   // Must be called before all external references are released (i.e. before
+-  // destruction). Invoke on the main thread. Disposing may finish
++  // destruction). Can be called from any thread. Disposing may finish
+   // asynchronously using the webrtc signaling thread and the main thread. After
+   // calling this method it is safe to release all external references to the
+   // adapter.
+@@ -110,9 +110,11 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapter
+   void FinalizeRemoteTrackInitializationOnMainThread();
+   void EnsureTrackIsInitialized();
+ 
+-  // Disposing starts and finishes on the main thread. Local tracks and remote
+-  // video tracks are disposed synchronously. Remote audio tracks are disposed
+-  // asynchronously with a jump to the webrtc signaling thread and back.
++  // The disposal logic starts and finishes on the main thread, although it can
++  // be initiated from any thread. Local tracks and remote video tracks are
++  // disposed synchronously. Remote audio tracks are disposed asynchronously
++  // with a jump to the webrtc signaling thread and back.
++  void DisposeOnMainThread();
+   void DisposeLocalAudioTrack();
+   void DisposeLocalVideoTrack();
+   void DisposeRemoteAudioTrack();
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.cc b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.cc
+index 2cf70f55deef6093697322748a07f16ecc7c7e74..1e4759fb64ec79f6d06da53d4f6ac51625e657b9 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.cc
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.cc
+@@ -25,29 +25,47 @@ WebRtcMediaStreamTrackAdapterMap::AdapterRef::AdapterRef(
+ }
+ 
+ WebRtcMediaStreamTrackAdapterMap::AdapterRef::~AdapterRef() {
+-  DCHECK(map_->main_thread_->BelongsToCurrentThread());
++  if (!map_->main_thread_->BelongsToCurrentThread()) {
++    scoped_refptr<base::SingleThreadTaskRunner> main_thread =
++        map_->main_thread_;
++    PostCrossThreadTask(
++        *main_thread, FROM_HERE,
++        CrossThreadBindOnce(
++            &WebRtcMediaStreamTrackAdapterMap::DisposeAdapterRef,
++            std::move(map_), type_, std::move(adapter_)));
++    return;
++  }
++  DisposeAdapterRef(std::move(map_), type_, std::move(adapter_));
++}
++
++// static
++void WebRtcMediaStreamTrackAdapterMap::DisposeAdapterRef(
++    scoped_refptr<WebRtcMediaStreamTrackAdapterMap> map,
++    AdapterRef::Type type,
++    scoped_refptr<blink::WebRtcMediaStreamTrackAdapter> adapter) {
++  DCHECK(map->main_thread_->BelongsToCurrentThread());
+   scoped_refptr<blink::WebRtcMediaStreamTrackAdapter> removed_adapter;
+   {
+-    base::AutoLock scoped_lock(map_->lock_);
+-    // The adapter is stored in the track adapter map and we have |adapter_|,
++    base::AutoLock scoped_lock(map->lock_);
++    // The adapter is stored in the track adapter map and we have |adapter|,
+     // so there must be at least two references to the adapter.
+-    DCHECK(!adapter_->HasOneRef());
+-    // Using a raw pointer instead of |adapter_| allows the reference count to
++    DCHECK(!adapter->HasOneRef());
++    // Using a raw pointer instead of |adapter| allows the reference count to
+     // go down to one if this is the last |AdapterRef|.
+-    blink::WebRtcMediaStreamTrackAdapter* adapter = adapter_.get();
+-    adapter_ = nullptr;
+-    if (adapter->HasOneRef()) {
+-      removed_adapter = adapter;
++    blink::WebRtcMediaStreamTrackAdapter* adapter_ptr = adapter.get();
++    adapter = nullptr;
++    if (adapter_ptr->HasOneRef()) {
++      removed_adapter = adapter_ptr;
+       // "GetOrCreate..." ensures the adapter is initialized and the secondary
+       // key is set before the last |AdapterRef| is destroyed. We can use either
+       // the primary or secondary key for removal.
+-      DCHECK(adapter->is_initialized());
+-      if (type_ == Type::kLocal) {
+-        map_->local_track_adapters_.EraseByPrimary(
+-            adapter->track()->UniqueId());
++      DCHECK(adapter_ptr->is_initialized());
++      if (type == AdapterRef::Type::kLocal) {
++        map->local_track_adapters_.EraseByPrimary(
++            adapter_ptr->track()->UniqueId());
+       } else {
+-        map_->remote_track_adapters_.EraseByPrimary(
+-            adapter->webrtc_track().get());
++        map->remote_track_adapters_.EraseByPrimary(
++            adapter_ptr->webrtc_track().get());
+       }
+     }
+   }
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.h b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.h
+index 1c7ccbc54dfc3303284cdbd0870707e919b6836b..09f06fef6c26de15cc818bf93f426bdbe248b334 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.h
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map.h
+@@ -36,8 +36,9 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapterMap
+   // is |Dispose|d and removed from the map.
+   class MODULES_EXPORT AdapterRef {
+    public:
+-    // Must be invoked on the main thread. If this was the last reference to the
+-    // adapter it will be disposed and removed from the map.
++    // Usually invoked on the main thread. If invoked on another thread,
++    // disposal is posted to the main thread. When the last reference to the
++    // adapter is destroyed, it is disposed and removed from the map.
+     ~AdapterRef();
+ 
+     std::unique_ptr<AdapterRef> Copy() const;
+@@ -80,9 +81,8 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapterMap
+ 
+   // Gets a new reference to the local track adapter, or null if no such adapter
+   // was found. When all references are destroyed the adapter is disposed and
+-  // removed from the map. This method can be called from any thread, but
+-  // references must be destroyed on the main thread.
+-  // The adapter is a associated with a blink and webrtc track, lookup works by
++  // removed from the map. This method can be called from any thread.
++  // The adapter is associated with a blink and webrtc track, lookup works by
+   // either track.
+   std::unique_ptr<AdapterRef> GetLocalTrackAdapter(
+       MediaStreamComponent* component);
+@@ -91,16 +91,15 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapterMap
+   // Invoke on the main thread. Gets a new reference to the local track adapter
+   // for the web track. If no adapter exists for the track one is created and
+   // initialized. When all references are destroyed the adapter is disposed and
+-  // removed from the map. References must be destroyed on the main thread.
++  // removed from the map.
+   std::unique_ptr<AdapterRef> GetOrCreateLocalTrackAdapter(
+       MediaStreamComponent* component);
+   size_t GetLocalTrackCount() const;
+ 
+   // Gets a new reference to the remote track adapter. When all references are
+   // destroyed the adapter is disposed and removed from the map. This method can
+-  // be called from any thread, but references must be destroyed on the main
+-  // thread. The adapter is a associated with a blink and webrtc track, lookup
+-  // works by either track.
++  // be called from any thread. The adapter is a associated with a blink and
++  // webrtc track, lookup works by either track.
+   // First variety: If an adapter exists it will already be initialized, if one
+   // does not exist null is returned.
+   std::unique_ptr<AdapterRef> GetRemoteTrackAdapter(
+@@ -114,12 +113,17 @@ class MODULES_EXPORT WebRtcMediaStreamTrackAdapterMap
+   // track adapter for the webrtc track. If no adapter exists for the track one
+   // is created and initialization completes on the main thread in a post. When
+   // all references are destroyed the adapter is disposed and removed from the
+-  // map. References must be destroyed on the main thread.
++  // map.
+   std::unique_ptr<AdapterRef> GetOrCreateRemoteTrackAdapter(
+       scoped_refptr<webrtc::MediaStreamTrackInterface> webrtc_track);
+   size_t GetRemoteTrackCount() const;
+ 
+  private:
++  static void DisposeAdapterRef(
++      scoped_refptr<WebRtcMediaStreamTrackAdapterMap> map,
++      AdapterRef::Type type,
++      scoped_refptr<blink::WebRtcMediaStreamTrackAdapter> adapter);
++
+   friend class ThreadSafeRefCounted<WebRtcMediaStreamTrackAdapterMap>;
+ 
+   // "(MediaStreamComponent, webrtc::MediaStreamTrackInterface) ->
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map_test.cc b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map_test.cc
+index 2337ae1dc7ae58d5e5bad05b07deafa074372c6e..68d88683994f0a96765a3005df01bf7e32b0401a 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_map_test.cc
+@@ -255,6 +255,29 @@ TEST_F(WebRtcMediaStreamTrackAdapterMapTest, GetMissingRemoteTrackAdapter) {
+   EXPECT_EQ(nullptr, map_->GetRemoteTrackAdapter(webrtc_track.get()));
+ }
+ 
++TEST_F(WebRtcMediaStreamTrackAdapterMapTest,
++       DestroyAdapterRefOnSignalingThread) {
++  MediaStreamComponent* track = CreateLocalTrack("local_track");
++  std::unique_ptr<blink::WebRtcMediaStreamTrackAdapterMap::AdapterRef>
++      adapter_ref = map_->GetOrCreateLocalTrackAdapter(track);
++  EXPECT_TRUE(adapter_ref->is_initialized());
++  EXPECT_EQ(1u, map_->GetLocalTrackCount());
++
++  // Destroying the AdapterRef on the signaling thread should post the removal
++  // and disposal to the main thread.
++  PostCrossThreadTask(
++      *signaling_thread(), FROM_HERE,
++      CrossThreadBindOnce(
++          [](std::unique_ptr<
++              blink::WebRtcMediaStreamTrackAdapterMap::AdapterRef> ref) {
++            // Destroyed when going out of scope on the signaling thread.
++          },
++          std::move(adapter_ref)));
++  RunMessageLoopsUntilIdle();
++  EXPECT_EQ(0u, map_->GetLocalTrackCount());
++  EXPECT_EQ(nullptr, map_->GetLocalTrackAdapter(track));
++}
++
+ // Continuously calls GetOrCreateLocalTrackAdapter() on the main thread and
+ // GetOrCreateRemoteTrackAdapter() on the signaling thread hoping to hit
+ // deadlocks if the operations were to synchronize with the other thread while
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_test.cc b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_test.cc
+index 84fe2996b55897ac4471b7cbc4116309968ca92c..dda0fc59b7dbe36849e6381f8a1a073a5f7774db 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_media_stream_track_adapter_test.cc
+@@ -272,4 +272,20 @@ TEST_F(WebRtcMediaStreamTrackAdapterTest, LastReferenceOnSignalingThread) {
+   RunMessageLoopsUntilIdle();
+ }
+ 
++TEST_F(WebRtcMediaStreamTrackAdapterTest, DisposeOnSignalingThread) {
++  track_adapter_ =
++      blink::WebRtcMediaStreamTrackAdapter::CreateLocalTrackAdapter(
++          dependency_factory_.Get(), main_thread_, CreateLocalAudioTrack());
++  EXPECT_TRUE(track_adapter_->is_initialized());
++
++  dependency_factory_->GetWebRtcSignalingTaskRunner()->PostTask(
++      FROM_HERE,
++      base::BindOnce(
++          [](scoped_refptr<blink::WebRtcMediaStreamTrackAdapter> adapter) {
++            adapter->Dispose();
++          },
++          track_adapter_));
++  RunMessageLoopsUntilIdle();
++}
++
+ }  // namespace blink

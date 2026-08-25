@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Fri, 24 Jul 2026 09:47:27 -0700
+Subject: Fix potential use-after-free in WidgetBase.
+
+The call to frame_widget->TextInputInfo() can trigger synchronous events that destroy the WidgetBase instance. This CL adds a weak pointer check to safely return early if WidgetBase is destroyed during the call.
+
+BUG=536606137
+
+Change-Id: I608949df84c68980760d8c068ddefd8edca5fe4e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8139142
+Reviewed-by: David Bokan <bokan@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1667929}
+
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 75e8e3a6827be2b3e38339719d606570017747d8..20a8240f4ca1f9772e2deb2de0f204023a947f7d 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1148,7 +1148,11 @@ void WidgetBase::UpdateTextInputStateInternal(bool show_virtual_keyboard,
+   std::optional<gfx::Rect> control_bounds;
+   std::optional<gfx::Rect> selection_bounds;
+   if (frame_widget) {
++    base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+     new_info = frame_widget->TextInputInfo();
++    if (!weak_this) {
++      return;
++    }
+     // This will be used to decide whether or not to show VK when VK policy is
+     // manual.
+     last_vk_visibility_request =

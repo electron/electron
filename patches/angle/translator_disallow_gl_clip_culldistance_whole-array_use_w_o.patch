@@ -1,0 +1,612 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 20 Jul 2026 15:39:51 -0400
+Subject: Translator: Disallow gl_Clip/CullDistance whole-array use w/o...
+
+... an explicit declaration.  The alternative would be to record all
+whole-array uses of these built-ins and at the end of the shader
+validate that the implicitly-derived size matches the whole array use.
+Such usage is banned instead in this change.
+
+Bug: chromium:517245017
+Change-Id: I842b2073c5132e1b1a74fd5316c4bb99c8740b2b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8122943
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Alexey Knyazev <lexa.knyazev@gmail.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index f355ead81dbce45f512647b98db628e99c3750e7..b49e39284d8580f0b84eeb272aa57e857509cd05 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -3089,7 +3089,7 @@ void TParseContext::functionCallRValueLValueErrorCheck(const TFunction *fnCandid
+     for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
+     {
+         TQualifier qual        = fnCandidate->getParam(i)->getType().getQualifier();
+-        TIntermTyped *argument = (*(fnCall->getSequence()))[i]->getAsTyped();
++        TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
+         bool argumentIsRead    = (IsQualifierUnspecified(qual) || qual == EvqParamIn ||
+                                qual == EvqParamInOut || qual == EvqParamConst);
+         if (argumentIsRead)
+@@ -3135,6 +3135,45 @@ void TParseContext::functionCallFragDataCheck(const TFunction *fnCandidate,
+     }
+ }
+ 
++void TParseContext::checkClipCullDistanceWholeArrayUse(const TSourceLoc &location,
++                                                       TQualifier qualifier,
++                                                       const char *message)
++{
++    switch (qualifier)
++    {
++        case EvqClipDistance:
++            if (mClipDistanceInfo.size == 0)
++            {
++                error(location, message, "gl_ClipDistance");
++                return;
++            }
++            break;
++        case EvqCullDistance:
++            if (mCullDistanceInfo.size == 0)
++            {
++                error(location, message, "gl_CullDistance");
++                return;
++            }
++            break;
++        default:
++            break;
++    }
++}
++
++void TParseContext::functionCallClipCullDistanceCheck(const TFunction *fnCandidate,
++                                                      TIntermAggregate *fnCall)
++{
++    // If clip/cull distance is not redeclared, they can't be passed to a function because their
++    // size is unknown.  Per EXT_clip_cull_distance, only indexing with constants can implicitly
++    // size the built-ins, passing to a function shouldn't try to size them.
++    for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
++    {
++        TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
++        checkClipCullDistanceWholeArrayUse(argument->getLine(), argument->getQualifier(),
++                                           "Cannot pass to function unless it is explicitly sized");
++    }
++}
++
+ void TParseContext::checkInvariantVariableQualifier(bool invariant,
+                                                     const TQualifier qualifier,
+                                                     const TSourceLoc &invariantLocation)
+@@ -8788,6 +8827,16 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
+             error(loc, "array size mismatch", GetOperatorString(op));
+             return false;
+         }
++
++        // If either side is gl_Clip/CullDistance but the built-in is not sized, that's not allowed.
++        // Per EXT_clip_cull_distance, only indexing with constants can implicitly size the
++        // built-ins, using them in whole-array assignment shouldn't try to size them.
++        checkClipCullDistanceWholeArrayUse(
++            loc, left->getType().getQualifier(),
++            "Cannot use as left-hand side of assignment unless it is explicitly sized");
++        checkClipCullDistanceWholeArrayUse(
++            loc, right->getType().getQualifier(),
++            "Cannot use as right-hand side of assignment unless it is explicitly sized");
+     }
+ 
+     // Check ops which require integer / ivec parameters
+@@ -9764,6 +9813,7 @@ TIntermTyped *TParseContext::addNonConstructorFunctionCallImpl(TFunctionLookup *
+             checkImageMemoryAccessForUserDefinedFunctions(fnCandidate, callNode);
+             functionCallRValueLValueErrorCheck(fnCandidate, callNode);
+             functionCallFragDataCheck(fnCandidate, callNode);
++            functionCallClipCullDistanceCheck(fnCandidate, callNode);
+ 
+             mCallGraph[mCurrentFunction].insert(fnCandidate);
+             mIRBuilder.callFunction(mFunctionToId.at(fnCandidate));
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index 8fba309f11b1abc67e492570d00edb476fe14c17..9b09cd82ce68e7346409f3689037ffa24ebe3700 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -214,6 +214,10 @@ class TParseContext : angle::NonCopyable
+                                           const TLayoutQualifier &layoutQualifier);
+     void functionCallRValueLValueErrorCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
+     void functionCallFragDataCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
++    void checkClipCullDistanceWholeArrayUse(const TSourceLoc &location,
++                                            TQualifier qualifier,
++                                            const char *message);
++    void functionCallClipCullDistanceCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
+     void checkInvariantVariableQualifier(bool invariant,
+                                          const TQualifier qualifier,
+                                          const TSourceLoc &invariantLocation);
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index d7cfb6ae52bb714ba6a8410cdbd1c6d3fc4b950f..ca1906ed6613a4caa1de61dcfd7da5dcbafcc072 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -182,6 +182,9 @@
+ 42266866 WIN INTEL OPENGL : GLSLTest_ES3.LargeInterfaceBlockNestedArray/* = SKIP
+ 463961767 WIN INTEL OPENGL : EGLSurfacelessContextTest.Switcheroo/* = SKIP
+ 494350632 WIN INTEL OPENGL : MipmapTestES3.MismatchingLevelFormats/* = SKIP
++537235696 WIN INTEL OPENGL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
++537235696 LINUX INTEL OPENGL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
++537235696 NVIDIA OPENGL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
+ 
+ // Failures on Intel Alder Lake S UHD Graphics 770 (8086:4680-31.0.101.5333)
+ 352085732 WIN INTEL OPENGL : GeometryShaderTest.LayeredFramebufferClear2DArrayColor/* = SKIP
+@@ -510,6 +513,7 @@
+ 518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColorUnused/* = SKIP
+ 524008572 MAC METAL : VertexAttributeTestES3.LargeAttribPointerOffsetNoCrash/* = SKIP
+ 534815900 MAC METAL : TextureCubeTestES3.RedefinedCubemapLevelsOnlyFaceZeroCompatible/* = SKIP
++536936861 MAC METAL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
+ 
+ // The workaround is not intended to be enabled in this configuration so
+ // skip it as the failure is likely a driver bug.
+diff --git a/src/tests/gl_tests/ClipDistanceTest.cpp b/src/tests/gl_tests/ClipDistanceTest.cpp
+index 46c5623c999cc60a4df646de8dd54bf4d4fbabfe..069d16df3a46885ef2cf95c97bf59fa783971e89 100644
+--- a/src/tests/gl_tests/ClipDistanceTest.cpp
++++ b/src/tests/gl_tests/ClipDistanceTest.cpp
+@@ -28,8 +28,16 @@ class ClipDistanceAPPLETest : public ANGLETest<>
+         setConfigDepthBits(24);
+         setExtensionsEnabled(false);
+     }
++
++    // Given the vertex and fragment shader, writes position to |a_position| and three planes in
++    // |u_plane[i]|.  The vertex shader should evaluate |gl_ClipDistance[i]| as
++    // |dot(position, u_plane[i])|.  The fragment shader should output red.
++    void threeClipDistancesRedeclared(const char *vs, const char *fs);
+ };
+ 
++class ClipDistanceTestES3 : public ClipDistanceAPPLETest
++{};
++
+ // Query max clip distances and enable, disable states of clip distances
+ TEST_P(ClipDistanceAPPLETest, StateQuery)
+ {
+@@ -218,11 +226,15 @@ uniform vec4 u_plane;
+ 
+ attribute vec2 a_position;
+ 
++void write(out float distance)
++{
++    distance = dot(gl_Position, u_plane);
++}
++
+ void main()
+ {
+     gl_Position = vec4(a_position, 0.0, 1.0);
+-
+-    gl_ClipDistance[0] = dot(gl_Position, u_plane);
++    write(gl_ClipDistance[0]);
+ })";
+ 
+     ANGLE_GL_PROGRAM(programRed, kVS, essl1_shaders::fs::Red());
+@@ -647,36 +659,9 @@ void main()
+     }
+ }
+ 
+-// Redeclare gl_ClipDistance in shader with explicit size, also use it in a global function
+-// outside main()
+-TEST_P(ClipDistanceAPPLETest, ThreeClipDistancesRedeclared)
+-{
+-    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_APPLE_clip_distance"));
+-
+-    constexpr char kVS[] = R"(
+-#extension GL_APPLE_clip_distance : require
+-
+-varying highp float gl_ClipDistance[3];
+-
+-void computeClipDistances(in vec4 position, in vec4 plane[3])
+-{
+-    gl_ClipDistance[0] = dot(position, plane[0]);
+-    gl_ClipDistance[1] = dot(position, plane[1]);
+-    gl_ClipDistance[2] = dot(position, plane[2]);
+-}
+-
+-uniform vec4 u_plane[3];
+-
+-attribute vec2 a_position;
+-
+-void main()
++void ClipDistanceAPPLETest::threeClipDistancesRedeclared(const char *vs, const char *fs)
+ {
+-    gl_Position = vec4(a_position, 0.0, 1.0);
+-
+-    computeClipDistances(gl_Position, u_plane);
+-})";
+-
+-    ANGLE_GL_PROGRAM(programRed, kVS, essl1_shaders::fs::Red());
++    ANGLE_GL_PROGRAM(programRed, vs, fs);
+     glUseProgram(programRed);
+     ASSERT_GL_NO_ERROR();
+ 
+@@ -741,6 +726,104 @@ void main()
+     }
+ }
+ 
++// Redeclare gl_ClipDistance in shader with explicit size, also use it in a global function
++// outside main()
++TEST_P(ClipDistanceAPPLETest, ThreeClipDistancesRedeclared)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_APPLE_clip_distance"));
++
++    constexpr char kVS[] = R"(
++#extension GL_APPLE_clip_distance : require
++
++varying highp float gl_ClipDistance[3];
++
++void computeClipDistances(in vec4 position, in vec4 plane[3])
++{
++    gl_ClipDistance[0] = dot(position, plane[0]);
++    gl_ClipDistance[1] = dot(position, plane[1]);
++    gl_ClipDistance[2] = dot(position, plane[2]);
++}
++
++uniform vec4 u_plane[3];
++
++attribute vec2 a_position;
++
++void main()
++{
++    gl_Position = vec4(a_position, 0.0, 1.0);
++
++    computeClipDistances(gl_Position, u_plane);
++})";
++
++    threeClipDistancesRedeclared(kVS, essl1_shaders::fs::Red());
++}
++
++// Redeclare gl_ClipDistance in shader with explicit size, also pass it to a function.
++TEST_P(ClipDistanceAPPLETest, ThreeClipDistancesRedeclaredAndPassedToFunction)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_APPLE_clip_distance"));
++
++    constexpr char kVS[] = R"(
++#extension GL_APPLE_clip_distance : require
++
++varying highp float gl_ClipDistance[3];
++
++void computeClipDistances(out float distance[3], in vec4 position, in vec4 plane[3])
++{
++    distance[0] = dot(position, plane[0]);
++    distance[1] = dot(position, plane[1]);
++    distance[2] = dot(position, plane[2]);
++}
++
++uniform vec4 u_plane[3];
++
++attribute vec2 a_position;
++
++void main()
++{
++    gl_Position = vec4(a_position, 0.0, 1.0);
++
++    computeClipDistances(gl_ClipDistance, gl_Position, u_plane);
++})";
++
++    threeClipDistancesRedeclared(kVS, essl1_shaders::fs::Red());
++}
++
++// Redeclare gl_ClipDistance in shader with explicit size, also pass it to a function.
++TEST_P(ClipDistanceTestES3, ThreeClipDistancesRedeclaredAndPassedToFunction)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    std::stringstream vs;
++    vs << R"(#version 300 es
++#extension )"
++       << (hasExt ? "GL_EXT_clip_cull_distance" : "GL_ANGLE_clip_cull_distance") << R"( : require
++
++varying highp float gl_ClipDistance[3];
++
++void computeClipDistances(out float distance[3], in vec4 position, in vec4 plane[3])
++{
++    distance[0] = dot(position, plane[0]);
++    distance[1] = dot(position, plane[1]);
++    distance[2] = dot(position, plane[2]);
++}
++
++uniform vec4 u_plane[3];
++
++in vec2 a_position;
++
++void main()
++{
++    gl_Position = vec4(a_position, 0.0, 1.0);
++
++    computeClipDistances(gl_ClipDistance, gl_Position, u_plane);
++})";
++
++    threeClipDistancesRedeclared(vs.str().c_str(), essl3_shaders::fs::Red());
++}
++
+ using ClipCullDistanceTestParams = std::tuple<angle::PlatformParameters, bool>;
+ 
+ std::string PrintToStringParamName(const ::testing::TestParamInfo<ClipCullDistanceTestParams> &info)
+@@ -2918,6 +3001,9 @@ void main()
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(ClipDistanceAPPLETest);
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ClipDistanceTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(ClipDistanceTestES3);
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ClipCullDistanceTest);
+ ANGLE_INSTANTIATE_TEST_COMBINE_1(ClipCullDistanceTest,
+                                  PrintToStringParamName,
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 2b0eaafa2881affe8d1466c93085f69d3fb124db..18ba1287e5cbee9c9cb2752d8350c2c3b24991ab 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -6318,6 +6318,276 @@ void main()
+     }
+ }
+ 
++// Shader passes gl_ClipDistance to function without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedClipDistancePassedToFunction)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void f(float d[8]) {}
++void main()
++{
++    gl_Position = aPosition;
++    gl_ClipDistance[0] = 1.0;
++    f(gl_ClipDistance);
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_ClipDistance' : Cannot pass to function unless it is explicitly sized";
++
++    if (hasAngle)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader passes gl_CullDistance to function without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedCullDistancePassedToFunction)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void f(float d[8]) {}
++void main()
++{
++    gl_Position = aPosition;
++    gl_CullDistance[0] = 1.0;
++    f(gl_CullDistance);
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_CullDistance' : Cannot pass to function unless it is explicitly sized";
++
++    if (hasAngle)
++    {
++        GLint maxCullDistances = 0;
++        glGetIntegerv(GL_MAX_CULL_DISTANCES_EXT, &maxCullDistances);
++        if (maxCullDistances > 0)
++        {
++            validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++        }
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns to gl_ClipDistance without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedClipDistanceAssignedTo)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    float d[8];
++    gl_ClipDistance = d;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_ClipDistance' : Cannot use as left-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns to gl_CullDistance without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedCullDistanceAssignedTo)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    float d[8];
++    gl_CullDistance = d;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_CullDistance' : Cannot use as left-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        GLint maxCullDistances = 0;
++        glGetIntegerv(GL_MAX_CULL_DISTANCES_EXT, &maxCullDistances);
++        if (maxCullDistances > 0)
++        {
++            validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++        }
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns gl_ClipDistance to array without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedClipDistanceAssignedFrom)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    gl_ClipDistance[0] = 1.0;
++    float d[8];
++    d = gl_ClipDistance;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_ClipDistance' : Cannot use as right-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns gl_CullDistance to array without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedCullDistanceAssignedFrom)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    gl_CullDistance[0] = 1.0;
++    float d[8];
++    d = gl_CullDistance;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_CullDistance' : Cannot use as right-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        GLint maxCullDistances = 0;
++        glGetIntegerv(GL_MAX_CULL_DISTANCES_EXT, &maxCullDistances);
++        if (maxCullDistances > 0)
++        {
++            validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++        }
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns gl_ClipDistance to array as initializer without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedClipDistanceInitializer)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    gl_ClipDistance[0] = 1.0;
++    float d[8] = gl_ClipDistance;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_ClipDistance' : Cannot use as right-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
++// Shader assigns gl_CullDistance to array as initializer without explicitly sizing it
++TEST_P(GLSLValidationClipDistanceTest_ES3, UnsizedCullDistanceInitializer)
++{
++    const bool hasExt   = IsGLExtensionEnabled("GL_EXT_clip_cull_distance");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_clip_cull_distance");
++    ANGLE_SKIP_TEST_IF(!hasExt && !hasAngle);
++
++    constexpr char kVS[] =
++        R"(in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++    gl_CullDistance[0] = 1.0;
++    float d[8] = gl_CullDistance;
++}
++)";
++    constexpr char kExpect[] =
++        "'gl_CullDistance' : Cannot use as right-hand side of assignment unless it is explicitly "
++        "sized";
++
++    if (hasAngle)
++    {
++        GLint maxCullDistances = 0;
++        glGetIntegerv(GL_MAX_CULL_DISTANCES_EXT, &maxCullDistances);
++        if (maxCullDistances > 0)
++        {
++            validateErrorWithExt(GL_VERTEX_SHADER, "GL_ANGLE_clip_cull_distance", kVS, kExpect);
++        }
++    }
++
++    if (hasExt)
++    {
++        validateErrorWithExt(GL_VERTEX_SHADER, "GL_EXT_clip_cull_distance", kVS, kExpect);
++    }
++}
++
+ // In compute shader, redeclaring gl_ClipDistance should be denied.
+ TEST_P(GLSLValidationClipDistanceTest_ES31, ComputeDeclareClipDistance)
+ {

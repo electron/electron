@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 27 Apr 2026 14:38:29 -0400
+Subject: Translator: Fix gl_FragData index check when dual-src blending
+
+Bug: chromium:503392431
+Change-Id: I0e7dda15d238b926b996f5df1d62b52fb3ab51f3
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7797472
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index bcc3d3134084b03f1297b42c371387af884a8355..9b97e177292e52c428eaa07ec95c3243aca35595 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -577,6 +577,7 @@ TParseContext::TParseContext(TSymbolTable &symt,
+           ShouldEnforceESSL100LoopAndIndexingLimitations(spec, mShaderVersion, options)),
+       mFragmentOutputIndex1Used(false),
+       mFragmentOutputFragDepthUsed(false),
++      mMaxFragDataArrayIndexUsed(0),
+       mGeometryShaderInputPrimitiveType(EptUndefined),
+       mGeometryShaderOutputPrimitiveType(EptUndefined),
+       mGeometryShaderInvocations(0),
+@@ -7173,18 +7174,16 @@ TIntermTyped *TParseContext::addIndexExpression(TIntermTyped *baseExpression,
+ 
+         if (!baseExpression->getType().isUnsizedArray())
+         {
+-            if (baseExpression->isArray())
++            if (baseExpression->isArray() && baseExpression->getQualifier() == EvqFragData)
+             {
+-                if (baseExpression->getQualifier() == EvqFragData && index > 0)
++                mMaxFragDataArrayIndexUsed = std::max(mMaxFragDataArrayIndexUsed, index);
++                if (index > 0 && !isExtensionEnabled(TExtension::EXT_draw_buffers))
+                 {
+-                    if (!isExtensionEnabled(TExtension::EXT_draw_buffers))
+-                    {
+-                        outOfRangeError(outOfRangeIndexIsError, location,
+-                                        "array index for gl_FragData must be zero when "
+-                                        "GL_EXT_draw_buffers is disabled",
+-                                        "[]");
+-                        safeIndex = 0;
+-                    }
++                    outOfRangeError(outOfRangeIndexIsError, location,
++                                    "array index for gl_FragData must be zero when "
++                                    "GL_EXT_draw_buffers is disabled",
++                                    "[]");
++                    safeIndex = 0;
+                 }
+             }
+             // Only do generic out-of-range check if similar error hasn't already been reported.
+@@ -10352,6 +10351,24 @@ void TParseContext::postParseValidateFragmentOutputLocations()
+                   variable.variable->name());
+         }
+     }
++
++    // If gl_SecondaryFragDataEXT is used, then indices to gl_FragData must be smaller than
++    // gl_MaxDualSourceDrawBuffersEXT.  This cannot be validated until the end of the shader because
++    // it would be unknown if gl_SecondaryFragDataEXT is ever used.
++    //
++    // Note that gl_SecondaryFragColorEXT is not checked, because simultaneous use of gl_FragData
++    // and gl_SecondaryFragColorEXT is already forbidden.  Additionally, mFragmentOutputIndex1Used
++    // is not checked as it pertains to ESSL 300+.
++    const bool secondaryFragDataUsed =
++        symbolTable.gl_SecondaryFragDataEXT() != nullptr &&
++        symbolTable.isStaticallyUsed(*symbolTable.gl_SecondaryFragDataEXT());
++    if (secondaryFragDataUsed && mMaxFragDataArrayIndexUsed >= mResources.MaxDualSourceDrawBuffers)
++    {
++        mDiagnostics->globalError(
++            "array index for gl_FragData must be less than "
++            "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when "
++            "gl_SecondaryFragDataEXT is used");
++    }
+ }
+ 
+ bool TParseContext::postParseChecks()
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index ec667c952a05c5d3ae8f0859217cc5e0b42e8bcf..de848ab3087d128e126150a732056932ac703aef 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -981,6 +981,7 @@ class TParseContext : angle::NonCopyable
+     TVector<VariableAndLocation> mFragmentOutputsYuv;
+     bool mFragmentOutputIndex1Used;
+     bool mFragmentOutputFragDepthUsed;
++    int mMaxFragDataArrayIndexUsed;
+ 
+     // Track the geometry shader global parameters declared in layout.
+     TLayoutPrimitiveType mGeometryShaderInputPrimitiveType;
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 8240847aa47a8284e7d49b782e15e8cdf978dc7d..1b309eb85110f24a359053c28720e2e76ff3f792 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -4651,6 +4651,19 @@ void main()
+                   "'i' : Loop index cannot be statically assigned to within the body of the loop");
+ }
+ 
++// Shader that writes to FragData at index >= gl_MaxDrawBuffers.
++TEST_P(GLSLValidationTest, FragDataIndexTooLarge)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++precision mediump float;
++void main() {
++    gl_FragData[gl_MaxDrawBuffers] = vec4(0.1);
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS, "array index out of range");
++}
++
+ // Shader that writes to SecondaryFragColor and SecondaryFragData does not compile.
+ TEST_P(GLSLValidationTest, BlendFuncExtendedSecondaryColorAndData)
+ {
+@@ -4694,13 +4707,49 @@ TEST_P(GLSLValidationTest, BlendFuncExtendedDataAndSecondaryColor)
+ precision mediump float;
+ void main() {
+     gl_SecondaryFragColorEXT = vec4(1.0);
+-    gl_FragData[gl_MaxDrawBuffers - 1] = vec4(0.1);
++    gl_FragData[gl_MaxDualSourceDrawBuffersEXT - 1] = vec4(0.1);
+ })";
+     validateError(GL_FRAGMENT_SHADER, kFS,
+                   "cannot use both output variable sets (gl_FragData, gl_SecondaryFragDataEXT) and "
+                   "(gl_FragColor, gl_SecondaryFragColorEXT)");
+ }
+ 
++// Shader that writes to SecondaryFragData and FragData at an index >= than
++// gl_MaxDualSourceDrawBuffersEXT.
++TEST_P(GLSLValidationTest, BlendFuncExtendedDataArrayAndSecondaryData)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_blend_func_extended"));
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++#extension GL_EXT_blend_func_extended : require
++precision mediump float;
++void main() {
++    gl_SecondaryFragDataEXT[0] = vec4(1.0);
++    gl_FragData[gl_MaxDualSourceDrawBuffersEXT] = vec4(0.1);
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "array index for gl_FragData must be less than "
++                  "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when gl_SecondaryFragDataEXT is used");
++}
++
++// Shader that writes to FragData at an index >= than gl_MaxDualSourceDrawBuffersEXT is fine if
++// SecondaryFragData is not used.  Note that gl_MaxDualSourceDrawBuffersEXT is typically 1, while
++// the size of gl_FragData (gl_MaxDrawBuffers) is larger.
++TEST_P(GLSLValidationTest, BlendFuncExtendedDataArrayOnly)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_blend_func_extended"));
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++#extension GL_EXT_blend_func_extended : require
++precision mediump float;
++void main() {
++    gl_FragData[gl_MaxDrawBuffers - 1] = vec4(0.1);
++})";
++    validateSuccess(GL_FRAGMENT_SHADER, kFS);
++}
++
+ // Dynamic indexing of SecondaryFragData is not allowed in WebGL 2.0.
+ TEST_P(WebGL2GLSLValidationTest, BlendFuncExtendedSecondaryDataIndexing)
+ {

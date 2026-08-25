@@ -1,0 +1,469 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Wed, 8 Jul 2026 14:08:48 -0700
+Subject: GL: workaround: split PBO uploads to 2D textures' level 0.
+
+To work around a bug in Imagination's drivers, if uploading the entire
+level 0 of a 2D texture from a PBO, split the upload into two:
+everything except the last line/pixel, and the last line/pixel. Reuse
+setSubImageRowByRowWorkaround, and enhance it to support uploads of
+height 1. Add PowerVR driver version support to workarounds, and add
+unit test for parsing it. Add a new gl_test verifying the workaround.
+
+Co-authored with Gemini with feedback from Imagination, Shahbaz
+Youssefi and Amirali Abdolrashidi.
+
+Bug: chromium:496807874
+Change-Id: I598aeeb14fdaeaef2f0d96e566235e57582ee15f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8027554
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 1367de54d92659e12a3f83070c845009f6a8a8ea..40b95495a54c9822b7ae58366a1975d5d65f2dc8 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -722,6 +722,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo splitLevel0PboFullSubImage2D = {
++        "splitLevel0PboFullSubImage2D",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index e14e26e3aae70cf1fd64ff50a365dc68e8402a4d..55bdc40f4c8e3fefa699ae64641d75b8ba07b893 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -943,6 +943,14 @@
+                 "Reattach texture layer to framebuffer after calling TexImage3D to increase layer count on PowerVR Android."
+             ],
+             "issue": "http://crbug.com/499602793"
++        },
++        {
++            "name": "split_level_0_pbo_full_sub_image_2D",
++            "category": "Workarounds",
++            "description": [
++                "Split full-image level 0 PBO uploads via TexSubImage2D into two calls to work around driver bugs."
++            ],
++            "issue": "http://crbug.com/496807874"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 2e39a12abac273adbad395b022ebfa9206c8aec2..fc6b710178f8441e70382591dccc9269e1c3e415 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -375,6 +375,44 @@ angle::Result TextureGL::setSubImage(const gl::Context *context,
+                .lumaWorkaround.enabled);
+ 
+     stateManager->bindTexture(getType(), mTextureID);
++    const gl::ImageDesc &desc = mState.getImageDesc(index);
++    const bool isFullImage    = area.x == 0 && area.y == 0 && area.width == desc.size.width &&
++                                area.height == desc.size.height;
++
++    if (features.splitLevel0PboFullSubImage2D.enabled && level == 0 && unpackBuffer &&
++        nativegl::UseTexImage2D(getType()) && isFullImage && (area.width > 1 || area.height > 1))
++    {
++        GLuint rowBytes = 0;
++        ANGLE_CHECK_GL_MATH(contextGL, originalInternalFormatInfo.computeRowPitch(
++                                           type, area.width, unpack.alignment, unpack.rowLength,
++                                           &rowBytes));
++        GLuint imageBytes = 0;
++        ANGLE_CHECK_GL_MATH(contextGL, originalInternalFormatInfo.computeDepthPitch(
++                                           area.height, unpack.imageHeight, rowBytes,
++                                           &imageBytes));
++        GLuint skipBytes = 0;
++        ANGLE_CHECK_GL_MATH(contextGL,
++                            originalInternalFormatInfo.computeSkipBytes(
++                                type, rowBytes, imageBytes, unpack, /*is3D=*/false, &skipBytes));
++
++        size_t maxBytesUploadedPerChunk = 0;
++        if (area.height > 1)
++        {
++            maxBytesUploadedPerChunk = static_cast<size_t>(area.height - 1) * rowBytes;
++        }
++        else
++        {
++            ASSERT(area.height == 1 && area.width > 1);
++            GLuint pixelBytes        = originalInternalFormatInfo.computePixelBytes(type);
++            maxBytesUploadedPerChunk = static_cast<size_t>(area.width - 1) * pixelBytes;
++        }
++
++        ANGLE_TRY(setSubImageRowByRowWorkaround(context, target, level, area, format, type, unpack,
++                                                unpackBuffer, maxBytesUploadedPerChunk, pixels));
++        contextGL->markWorkSubmitted();
++        return angle::Result::Continue;
++    }
++
+     if (features.unpackOverlappingRowsSeparatelyUnpackBuffer.enabled && unpackBuffer &&
+         unpack.rowLength != 0 && unpack.rowLength < area.width)
+     {
+@@ -504,15 +542,35 @@ angle::Result TextureGL::setSubImageRowByRowWorkaround(const gl::Context *contex
+     else
+     {
+         ASSERT(nativegl::UseTexImage2D(getType()));
+-        for (GLint row = 0; row < area.height; row += rowsPerChunk)
++        if (area.height == 1 && maxBytesUploadedPerChunk > 0 && maxBytesUploadedPerChunk < rowBytes)
+         {
+-            GLint height             = std::min(rowsPerChunk, area.height - row);
+-            GLint byteOffset         = row * rowBytes;
+-            const GLubyte *rowPixels = pixelsWithSkip + byteOffset;
+-            ANGLE_GL_TRY(context, functions->texSubImage2D(
+-                                      ToGLenum(target), static_cast<GLint>(level), area.x,
+-                                      row + area.y, area.width, height, texSubImageFormat.format,
+-                                      texSubImageFormat.type, rowPixels));
++            GLuint pixelBytes    = glFormat.computePixelBytes(type);
++            GLint pixelsPerChunk = std::min(
++                std::max(static_cast<GLint>(maxBytesUploadedPerChunk / pixelBytes), 1), area.width);
++            for (GLint col = 0; col < area.width; col += pixelsPerChunk)
++            {
++                GLint width              = std::min(pixelsPerChunk, area.width - col);
++                GLint byteOffset         = col * pixelBytes;
++                const GLubyte *colPixels = ANGLE_UNSAFE_TODO(pixelsWithSkip + byteOffset);
++                ANGLE_GL_TRY(context, functions->texSubImage2D(
++                                          ToGLenum(target), static_cast<GLint>(level), area.x + col,
++                                          area.y, width, 1, texSubImageFormat.format,
++                                          texSubImageFormat.type, colPixels));
++            }
++        }
++        else
++        {
++            for (GLint row = 0; row < area.height; row += rowsPerChunk)
++            {
++                GLint height             = std::min(rowsPerChunk, area.height - row);
++                GLint byteOffset         = row * rowBytes;
++                const GLubyte *rowPixels = ANGLE_UNSAFE_TODO(pixelsWithSkip + byteOffset);
++                ANGLE_GL_TRY(context,
++                             functions->texSubImage2D(ToGLenum(target), static_cast<GLint>(level),
++                                                      area.x, row + area.y, area.width, height,
++                                                      texSubImageFormat.format,
++                                                      texSubImageFormat.type, rowPixels));
++            }
+         }
+     }
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index a5c31d8f7e4915bc9961ec0217e364273cfd0ba1..10d99aea3e92d4d7ccb3f87f39d33a124ba58342 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -38,6 +38,7 @@
+ 
+ #include <EGL/eglext.h>
+ #include <algorithm>
++#include <cctype>
+ #include <sstream>
+ 
+ using angle::CheckedNumeric;
+@@ -224,6 +225,59 @@ bool PrecisionMeetsSpecForHighpFloat(const gl::TypePrecision &precision)
+ }
+ }  // namespace
+ 
++// Example GL_VENDOR, GL_RENDERER and GL_VERSION strings:
++//   GL_VENDOR:   "Imagination Technologies"
++//   GL_RENDERER: "PowerVR D-Series DXT-48-1536"
++//   GL_VERSION:  "OpenGL ES 3.2 build 25.3@6908880"
++//   GL_VENDOR:   "Imagination Technologies"
++//   GL_RENDERER: "PowerVR D-Series DXT-48-1536"
++//   GL_VERSION:  "OpenGL ES 3.2 build 26.1@7000000"
++bool GetPowerVRDriverVersion(const std::string &vendorString,
++                             const std::string &rendererString,
++                             const std::string &versionString,
++                             std::array<int, 2> *versionOut)
++{
++    ASSERT(versionOut);
++    (*versionOut)[0] = 0;
++    (*versionOut)[1] = 0;
++
++    if (vendorString.find("Imagination") == std::string::npos)
++    {
++        return false;
++    }
++
++    if (rendererString.find("PowerVR") == std::string::npos)
++    {
++        return false;
++    }
++
++    size_t atPos = versionString.find('@');
++    if (atPos == std::string::npos)
++    {
++        return false;
++    }
++
++    size_t startPos = atPos;
++    while (startPos > 0 && !std::isspace(static_cast<unsigned char>(versionString[startPos - 1])))
++    {
++        --startPos;
++    }
++
++    // SAFETY: this offset is computed safely above.
++    std::istringstream stream(ANGLE_UNSAFE_BUFFERS(&versionString[startPos]));
++    int major = 0;
++    int minor = 0;
++    char dot  = 0;
++    if (!(stream >> major >> dot >> minor) || dot != '.')
++    {
++        return false;
++    }
++
++    (*versionOut)[0] = major;
++    (*versionOut)[1] = minor;
++    return true;
++}
++
+ SwapControlData::SwapControlData()
+     : targetSwapInterval(0), maxSwapInterval(-1), currentSwapInterval(-1)
+ {}
+@@ -2362,6 +2416,13 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, unpackOverlappingRowsSeparatelyUnpackBuffer, isNvidia);
+     ANGLE_FEATURE_CONDITION(features, packOverlappingRowsSeparatelyPackBuffer, isNvidia);
+ 
++    std::array<int, 2> powerVRVersion = {0, 0};
++    bool isPowerVRDriver =
++        GetPowerVRDriverVersion(GetVendorString(functions), GetRendererString(functions),
++                                GetVersionString(functions), &powerVRVersion);
++    ANGLE_FEATURE_CONDITION(features, splitLevel0PboFullSubImage2D,
++                            isPowerVRDriver && powerVRVersion < (std::array<int, 2>{26, 2}));
++
+     ANGLE_FEATURE_CONDITION(features, initializeCurrentVertexAttributes, isNvidia);
+ 
+     ANGLE_FEATURE_CONDITION(features, unpackLastRowSeparatelyForPaddingInclusion,
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.h b/src/libANGLE/renderer/gl/renderergl_utils.h
+index 03a15a0c11b9524b8728c33115910acce20cedfa..747cae15526f5ce83a398ddc0c8a2996f3497f41 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.h
++++ b/src/libANGLE/renderer/gl/renderergl_utils.h
+@@ -18,6 +18,7 @@
+ #include "libANGLE/renderer/driver_utils.h"
+ #include "libANGLE/renderer/gl/functionsgl_typedefs.h"
+ 
++#include <array>
+ #include <string>
+ #include <vector>
+ 
+@@ -183,6 +184,11 @@ std::string GetRendererString(const FunctionsGL *functions);
+ std::string GetVendorString(const FunctionsGL *functions);
+ std::string GetVersionString(const FunctionsGL *functions);
+ 
++bool GetPowerVRDriverVersion(const std::string &vendorString,
++                             const std::string &rendererString,
++                             const std::string &versionString,
++                             std::array<int, 2> *versionOut);
++
+ }  // namespace rx
+ 
+ #endif  // LIBANGLE_RENDERER_GL_RENDERERGLUTILS_H_
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils_unittest.cpp b/src/libANGLE/renderer/gl/renderergl_utils_unittest.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..27ab6e418061e299e8230d197ff5c89fbfa7a6a0
+--- /dev/null
++++ b/src/libANGLE/renderer/gl/renderergl_utils_unittest.cpp
+@@ -0,0 +1,55 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++
++#include "gtest/gtest.h"
++
++#include "libANGLE/renderer/gl/renderergl_utils.h"
++
++#include <array>
++
++namespace rx
++{
++namespace
++{
++
++// Test parsing of PowerVR driver version strings.
++TEST(RendererGLUtilsTest, GetPowerVRDriverVersion)
++{
++    std::array<int, 2> version = {0, 0};
++
++    // Valid PowerVR driver version strings
++    EXPECT_TRUE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                        "OpenGL ES 3.2 build 25.3@6908880", &version));
++    EXPECT_EQ(version[0], 25);
++    EXPECT_EQ(version[1], 3);
++
++    EXPECT_TRUE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                        "OpenGL ES 3.2 build 26.1@7000000", &version));
++    EXPECT_EQ(version[0], 26);
++    EXPECT_EQ(version[1], 1);
++
++    // Negative tests
++    EXPECT_FALSE(GetPowerVRDriverVersion("", "", "", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("", "PowerVR D-Series DXT-48-1536",
++                                         "OpenGL ES 3.2 build 25.3@6908880", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "",
++                                         "OpenGL ES 3.2 build 25.3@6908880", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "Some Other Renderer",
++                                         "OpenGL ES 3.2 build 25.3@6908880", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                         "", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Intel", "Mesa DRI Intel(R) HD Graphics 4000 (IVB GT2)",
++                                         "OpenGL ES 3.2 build 25.3@6908880", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                         "without build version", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                         "build invalid@version", &version));
++    EXPECT_FALSE(GetPowerVRDriverVersion("Imagination Technologies", "PowerVR D-Series DXT-48-1536",
++                                         "build 26@7000000", &version));
++}
++
++}  // namespace
++}  // namespace rx
+diff --git a/src/tests/angle_unittests.gni b/src/tests/angle_unittests.gni
+index a2c924cf391e856f094830b3c8eb6773d60c4a8f..f71a62aaf6826881242ae4d752b2c1273232b6bd 100644
+--- a/src/tests/angle_unittests.gni
++++ b/src/tests/angle_unittests.gni
+@@ -134,8 +134,10 @@ angle_unittests_hlsl_sources = [
+   "compiler_tests/UnrollFlatten_test.cpp",
+ ]
+ 
+-angle_unittests_gl_sources =
+-    [ "../libANGLE/renderer/gl/DisplayGL_unittest.cpp" ]
++angle_unittests_gl_sources = [
++  "../libANGLE/renderer/gl/DisplayGL_unittest.cpp",
++  "../libANGLE/renderer/gl/renderergl_utils_unittest.cpp",
++]
+ 
+ angle_unittests_msl_sources = [
+   "../common/apple/ObjCPtr_test.mm",
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 43288ec2b45576bac2ff113ed4492d881b2941f4..341e9dfae85cf247430492248230a199692804a5 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -530,6 +530,9 @@ class Texture2DTestES3RobustInit : public Texture2DTestES3
+     Texture2DTestES3RobustInit() : Texture2DTestES3() { setRobustResourceInit(true); }
+ };
+ 
++class Texture2DTestES3PBO : public Texture2DTestES3
++{};
++
+ class Texture2DTestES3Foveation : public Texture2DTestES3
+ {
+   protected:
+@@ -10248,6 +10251,79 @@ TEST_P(Texture2DTestES3RobustInit, TextureCOMPRESSEDSRGB8A1ETC2)
+     EXPECT_PIXEL_ALPHA_EQ(0, 0, 255);
+ }
+ 
++// Test that full level 0 PBO uploads with height > 1 correctly upload the last line when split.
++TEST_P(Texture2DTestES3PBO, SplitUploadLastLine)
++{
++    constexpr GLuint kWidth  = 8;
++    constexpr GLuint kHeight = 8;
++
++    std::vector<GLColor> pixelData(kWidth * kHeight, GLColor::green);
++    for (GLuint x = 0; x < kWidth; ++x)
++    {
++        pixelData[(kHeight - 1) * kWidth + x] = GLColor::red;
++    }
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    EXPECT_GL_NO_ERROR();
++
++    GLBuffer pbo;
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, pixelData.size() * sizeof(GLColor), pixelData.data(),
++                 GL_STATIC_DRAW);
++
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight - 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, kHeight - 1, kWidth, 1, GLColor::red);
++}
++
++// Test that full level 0 PBO uploads with height == 1 correctly upload the last pixel when split.
++TEST_P(Texture2DTestES3PBO, SplitUploadLastPixel)
++{
++    constexpr GLuint kWidth  = 8;
++    constexpr GLuint kHeight = 1;
++
++    std::vector<GLColor> pixelData(kWidth * kHeight, GLColor::blue);
++    pixelData[kWidth - 1] = GLColor::yellow;
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    EXPECT_GL_NO_ERROR();
++
++    GLBuffer pbo;
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, pixelData.size() * sizeof(GLColor), pixelData.data(),
++                 GL_STATIC_DRAW);
++
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth - 1, 1, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(kWidth - 1, 0, 1, 1, GLColor::yellow);
++}
++
+ // Test that compressed textures ignore the pixel unpack state.
+ // (https://crbug.org/1267496)
+ TEST_P(Texture2DTestES3, PixelUnpackStateTexImage)
+@@ -20471,6 +20547,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3YUV,
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3RobustInit);
+ ANGLE_INSTANTIATE_TEST_ES3(Texture2DTestES3RobustInit);
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3PBO);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3PBO,
++                               ES3_OPENGL().enable(Feature::SplitLevel0PboFullSubImage2D),
++                               ES3_OPENGLES().enable(Feature::SplitLevel0PboFullSubImage2D));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3Foveation);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     Texture2DTestES3Foveation,
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 2c56f6c70b71658d5b78ab860b072e5986c557af..2ae1024a15978b985f63c444810d9f3f35cbe791 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -317,6 +317,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::SkipPipelineCacheSerialization, "skipPipelineCacheSerialization"},
+     {Feature::SkipVSConstantRegisterZero, "skipVSConstantRegisterZero"},
+     {Feature::SlowDownMonolithicPipelineCreationForTesting, "slowDownMonolithicPipelineCreationForTesting"},
++    {Feature::SplitLevel0PboFullSubImage2D, "splitLevel0PboFullSubImage2D"},
+     {Feature::SrgbBlendingBroken, "srgbBlendingBroken"},
+     {Feature::SupportFragmentShadingRateExtExtensions, "supportFragmentShadingRateExtExtensions"},
+     {Feature::Supports16BitInputOutput, "supports16BitInputOutput"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index f774d3e8cfb5d8e5c45d6ab9c6049ef584a25c53..81326b8aaa7088877af2729af77b7105c311058b 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -317,6 +317,7 @@ enum class Feature
+     SkipPipelineCacheSerialization,
+     SkipVSConstantRegisterZero,
+     SlowDownMonolithicPipelineCreationForTesting,
++    SplitLevel0PboFullSubImage2D,
+     SrgbBlendingBroken,
+     SupportFragmentShadingRateExtExtensions,
+     Supports16BitInputOutput,

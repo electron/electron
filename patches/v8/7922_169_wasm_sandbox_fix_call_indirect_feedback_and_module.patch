@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Lehmann <dlehmann@chromium.org>
+Date: Tue, 4 Aug 2026 14:27:12 +0200
+Subject: [7922_169] [wasm][sandbox] Fix call_indirect feedback and module
+ lookup
+
+Original change's description:
+> [M151] [wasm][sandbox] Fix call_indirect feedback and module lookup
+>
+> Original change's description:
+> > [wasm][sandbox] Fix call_indirect feedback and module lookup
+> >
+> > This change fixes a use-after-free during NativeModule teardown and
+> > simplifies code lookup during feedback processing:
+> >
+> > 1. Resolve targets for call_indirect inlining only in the current
+> >    NativeModule: In FeedbackMaker::AddCallIndirectCandidate, look up the
+> >    target in `instance_data_->native_module()` instead of the
+> >    process-wide WasmCodeManager. Inlining requires the target to be in
+> >    the same module anyway. Looking it up locally avoids racing with
+> >    concurrent teardown of foreign modules.
+> >
+> > 2. Require an Isolate for cached LookupCode: Enforce
+> >    `DCHECK_NOT_NULL(isolate)` in `LookupCode(Isolate*, Address)`. Add an
+> >    explicit non-cached overload `LookupCode(Address)` and switch
+> >    non-isolate callers (e.g., in the disassembler) to use it directly.
+> >
+> > Fixed: 541448581
+> > Bug: 540430406
+> > Change-Id: I0b05f142e34d619b2a5c3e0317adec151d328748
+> > Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8193537
+> > Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+> > Auto-Submit: Daniel Lehmann <dlehmann@chromium.org>
+> > Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#109042}
+>
+> (cherry picked from commit 00250c2d2cfb2306090a3330c621ee02d2ae6823)
+>
+> Bug: 549535068,541448581,540430406
+> Change-Id: I0b05f142e34d619b2a5c3e0317adec151d328748
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8273049
+> Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+> Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+> Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+> Commit-Queue: Thibaud Michaud <thibaudm@chromium.org>
+> Cr-Commit-Position: refs/branch-heads/15.1@{#48}
+> Cr-Branched-From: b231b8f07c377ee257f573eb690850d24830dd0d-refs/heads/15.1.206@{#1}
+> Cr-Branched-From: a88116848637bdef375cf46b03b303511e4e6def-refs/heads/main@{#108311}
+
+(cherry picked from commit 704307654e5deb067f4d107b5132b1ccb2c60b94)
+
+Bug: 549535068,549535068,541448581,540430406
+Change-Id: I0b05f142e34d619b2a5c3e0317adec151d328748
+LAND_ON_CHROMIUM_BRANCH=automated minibranch cherry-pick
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8283284
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/diagnostics/disassembler.cc b/src/diagnostics/disassembler.cc
+index 32316c42b99f35fb6e1425d22e837fa7b108fe63..adadce13b8fe3b56389093c51b81cd2eea18cdbc 100644
+--- a/src/diagnostics/disassembler.cc
++++ b/src/diagnostics/disassembler.cc
+@@ -104,8 +104,9 @@ const char* V8NameConverter::NameOfAddress(uint8_t* pc) const {
+     }
+ 
+ #if V8_ENABLE_WEBASSEMBLY
++    wasm::WasmCodeRefScope code_ref_scope;
+     if (auto* wasm_code = wasm::GetWasmCodeManager()->LookupCode(
+-            isolate_, reinterpret_cast<Address>(pc))) {
++            reinterpret_cast<Address>(pc))) {
+       SNPrintF(v8_buffer_, "%p  (%s)", static_cast<void*>(pc),
+                wasm::GetWasmCodeKindAsString(wasm_code->kind()));
+       return v8_buffer_.begin();
+diff --git a/src/wasm/module-compiler.cc b/src/wasm/module-compiler.cc
+index f564d18d552ec9da14dd6dab92e69a24d5bc594f..dbee5f4d2cc690c95c1af9eec11424e72a3500ca 100644
+--- a/src/wasm/module-compiler.cc
++++ b/src/wasm/module-compiler.cc
+@@ -1265,10 +1265,11 @@ class FeedbackMaker {
+ 
+     // Feedback data is untrusted. An invalid handle could lead to an OOB read
+     // from the `WasmCodePointerTable`, which either crashes or returns some
+-    // garbage. Thus `WasmCodeManager::LookupCode` would either return `nullptr`
+-    // (safe) or an unrelated code object which will be checked for a compatible
+-    // signature before being inlined.
+-    // So the CHECK here is mostly just there to silence a false positive report
++    // garbage. Only look up the target address in the current NativeModule: a
++    // target from a foreign module is not an inline candidate, and looking it
++    // up across all modules via `WasmCodeManager::LookupCode` could race with
++    // concurrent teardown of that foreign module.
++    // The CHECK here is mostly just there to silence a false positive report
+     // by the sandbox crash filter about an OOB read.
+     uint32_t untrusted_code_pointer =
+         static_cast<uint32_t>(target_truncated_smi.value());
+@@ -1276,10 +1277,9 @@ class FeedbackMaker {
+     WasmCodePointer handle = WasmCodePointer{untrusted_code_pointer};
+     Address entry = GetProcessWideWasmCodePointerTable()
+                         ->GetEntrypointWithoutSignatureCheck(handle);
+-    wasm::WasmCode* code =
+-        wasm::GetWasmCodeManager()->LookupCode(nullptr, entry);
+-    if (!code || code->native_module() != instance_data_->native_module() ||
+-        code->IsAnonymous()) {
++    WasmCodeRefScope code_ref_scope;
++    wasm::WasmCode* code = instance_data_->native_module()->Lookup(entry);
++    if (!code || code->IsAnonymous()) {
+       // Was not in the main table (e.g., because it's an imported function).
+       has_non_inlineable_targets_ = true;
+       return;
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index 410b588fd797f441f95d7a36cc06b007a5b878aa..0ecb7fd9f1ffb616228f6c2d66a0be9ed6d8e066 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -3022,17 +3022,11 @@ WasmCode* WasmCodeManager::LookupCode(Address pc) const {
+ }
+ 
+ WasmCode* WasmCodeManager::LookupCode(Isolate* isolate, Address pc) const {
++  DCHECK_NOT_NULL(isolate);
+   // Since kNullAddress is used as a sentinel value, we should not try
+-  // to look it up in the cache
++  // to look it up in the cache.
+   if (pc == kNullAddress) return nullptr;
+-  // If 'isolate' is nullptr, do not use a cache. This can happen when
+-  // called from function V8NameConverter::NameOfAddress
+-  if (isolate) {
+-    return isolate->wasm_code_look_up_cache()->GetCacheEntry(pc)->code;
+-  } else {
+-    wasm::WasmCodeRefScope code_ref_scope;
+-    return LookupCode(pc);
+-  }
++  return isolate->wasm_code_look_up_cache()->GetCacheEntry(pc)->code;
+ }
+ 
+ std::pair<WasmCode*, SafepointEntry&> WasmCodeManager::LookupCodeAndSafepoint(
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index 692ad1d990c89206a1c9c9450014fcf6209a3cf4..d271c2e4dd88f5dcb510e6f2754a89014ebe5b5c 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -1168,14 +1168,19 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+   static bool CanRegisterUnwindInfoForNonABICompliantCodeRange();
+ #endif  // V8_OS_WIN64
+ 
++  // Returns the NativeModule that contains the given address. Note that the
++  // returned pointer is borrowed and not reference-counted. Callers MUST ensure
++  // that the target NativeModule is kept alive (e.g. by an active call stack,
++  // owning pointer, or WasmCodeRefScope).
+   NativeModule* LookupNativeModule(Address pc) const;
+-  // Returns the Wasm code that contains the given address. The result
+-  // is cached. There is one cache per isolate for performance reasons
+-  // (to avoid locking and reference counting). Note that the returned
+-  // value is not reference counted. This should not be an issue since
+-  // we expect that the code is currently being executed. If 'isolate'
+-  // is nullptr, no caching occurs.
++  // Returns the Wasm code that contains the given address. The result is cached
++  // in the given isolate's lookup cache. Note that the returned pointer is
++  // borrowed and not reference-counted. The {isolate} must not be nullptr.
+   WasmCode* LookupCode(Isolate* isolate, Address pc) const;
++  // Non-cached version of LookupCode for contexts where no Isolate is available
++  // (e.g., in the disassembler). The caller must have an active
++  // WasmCodeRefScope. Returns a borrowed pointer.
++  WasmCode* LookupCode(Address pc) const;
+   // The referenced {SafepointEntry} is owned by the cache. The next call
+   // to this function must be assumed to invalidate the reference.
+   std::pair<WasmCode*, SafepointEntry&> LookupCodeAndSafepoint(Isolate* isolate,
+@@ -1233,8 +1238,6 @@ class V8_EXPORT_PRIVATE WasmCodeManager final {
+ 
+   void AssignRange(base::AddressRegion, NativeModule*);
+ 
+-  WasmCode* LookupCode(Address pc) const;
+-
+   const size_t max_committed_code_space_;
+ 
+   std::atomic<size_t> total_committed_code_space_{0};
