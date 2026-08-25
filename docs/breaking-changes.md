@@ -14,6 +14,26 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (44.0)
 
+### Behavior Changed: file descriptors for files inside ASAR archives are only usable through `fs`
+
+`fs.open`, `fs.openSync` and `fs.promises.open` on a file inside an ASAR archive
+used to extract the file to a temporary copy and return a descriptor for that
+copy. They now return a descriptor that only identifies the entry to Node's
+`fs` module, which reads directly out of the archive with no temporary file
+(`fs.read`, `fs.readv`, `fs.fstat`, `fs.readFile(fd)`, `fs.createReadStream`
+and the `FileHandle` methods). The descriptor itself is not backed by the
+file's contents: code that reads the raw descriptor (a native addon,
+`child_process` `stdio`, `net.Socket({ fd })`,
+`http2stream.respondWithFile()` / `respondWithFD()`, a `FileHandle`
+transferred to a worker, ...) fails with `EBADF` and is not supported.
+Opening a file inside an archive with a flag that allows writing (`w`, `a`,
+`r+`, ...) now fails with `EACCES` instead of silently writing to the
+temporary copy, and `fs.fchmod`, `fs.fchown` and `fs.futimes` on these
+descriptors fail with `EACCES`.
+
+`fs.stat` on a symbolic link inside an archive now follows the link like it
+does on a real filesystem (`fs.lstat` still describes the link itself).
+
 ### Behavior Changed: `window.open()` children of unsandboxed windows get their own sandboxed process
 
 A `window.open()` child normally shares its opener's renderer process, and the OS sandbox
