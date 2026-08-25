@@ -90,7 +90,7 @@ index b3ea7e70d7436238448f6f41ca8865a844290e69..9d7fe063c87a9c76a9ff655fa272c008
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index d810e8a44795404c0c4d9c30c74eda18ba52f336..b22205572bf0375eaac4d9a7e1f73ca1638d7e77 100644
+index d166641ee2492f3e6afdf23c936ae8738cb3848c..5b444e70af843c2f319264de9ef7f506ed0fa69e 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -15,6 +15,7 @@ import "services/network/public/mojom/fetch_api.mojom";
@@ -112,7 +112,7 @@ index d810e8a44795404c0c4d9c30c74eda18ba52f336..b22205572bf0375eaac4d9a7e1f73ca1
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 1e700c0fc0a4ebf9c08c682a1edd556159213ce4..8e14c395231f66707e985f1247146e3e15071eb2 100644
+index cbf7f704ced37efe0bfe302762e789949d9c7ad1..19617b63f0e442011c434480024f6b4c5bbdf784 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -372,6 +372,9 @@ URLLoader::URLLoader(
@@ -134,7 +134,7 @@ index 1e700c0fc0a4ebf9c08c682a1edd556159213ce4..8e14c395231f66707e985f1247146e3e
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1157,6 +1160,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1166,6 +1169,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,7 +155,7 @@ index 1e700c0fc0a4ebf9c08c682a1edd556159213ce4..8e14c395231f66707e985f1247146e3e
  
    if (expected_response_headers_for_synthetic_response &&
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index c74d6fa891364307499789eda7098679069e8ef0..b113686e26de80a618e9e61fac0ecda6341fd6be 100644
+index bf23e0501ab27d51e00c6f30b917088d86e7f6af..35483bb50097d79f3278af51f79922d18dfedf40 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -556,6 +556,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
