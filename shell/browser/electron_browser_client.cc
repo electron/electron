@@ -66,6 +66,7 @@
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "net/base/net_errors.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
@@ -80,6 +81,7 @@
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
+#include "services/network/public/mojom/web_transport.mojom.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -1444,6 +1446,12 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   if (!web_request)
     return false;
 
+  // Sessions with `networkAccess: 'none'` intercept every WebSocket so that
+  // CreateWebSocket() can refuse it.
+  if (static_cast<ElectronBrowserContext*>(browser_context)
+          ->is_network_blocked())
+    return true;
+
   bool has_listener = web_request->HasListener();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   const auto* web_request_api =
@@ -1470,6 +1478,15 @@ void ElectronBrowserClient::CreateWebSocket(
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
 
+  if (static_cast<ElectronBrowserContext*>(browser_context)
+          ->is_network_blocked()) {
+    mojo::Remote<network::mojom::WebSocketHandshakeClient>(
+        std::move(handshake_client))
+        ->OnFailure("Network access revoked", net::ERR_NETWORK_ACCESS_REVOKED,
+                    -1);
+    return;
+  }
+
   auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request);
 
@@ -1492,6 +1509,30 @@ void ElectronBrowserClient::CreateWebSocket(
       std::move(handshake_client), true, frame->GetProcess()->GetDeprecatedID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
       &next_id_);
+}
+
+void ElectronBrowserClient::WillCreateWebTransport(
+    int process_id,
+    int frame_routing_id,
+    const GURL& url,
+    const url::Origin& initiator_origin,
+    mojo::PendingRemote<network::mojom::WebTransportHandshakeClient>
+        handshake_client,
+    WillCreateWebTransportCallback callback) {
+  // |frame_routing_id| is unset for workers, so look the session up through
+  // the process instead.
+  auto* process = content::RenderProcessHost::FromID(process_id);
+  if (process &&
+      static_cast<ElectronBrowserContext*>(process->GetBrowserContext())
+          ->is_network_blocked()) {
+    std::move(callback).Run(
+        std::move(handshake_client),
+        network::mojom::WebTransportError::New(
+            net::ERR_NETWORK_ACCESS_REVOKED, /*quic_error=*/0,
+            "Network access revoked", /*safe_to_report_details=*/false));
+    return;
+  }
+  std::move(callback).Run(std::move(handshake_client), std::nullopt);
 }
 
 void ElectronBrowserClient::WillCreateURLLoaderFactory(

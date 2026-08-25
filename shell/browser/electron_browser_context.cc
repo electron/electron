@@ -373,6 +373,9 @@ ElectronBrowserContext::ElectronBrowserContext(
   if (auto use_cache_opt = options.FindBool("cache")) {
     use_cache_ = use_cache_opt.value();
   }
+  if (const std::string* network_access = options.FindString("networkAccess")) {
+    block_network_ = *network_access == "none";
+  }
 
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
@@ -515,6 +518,18 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterStringPref(electron::kWebAuthnTouchIdMetadataSecretPrefName,
                                std::string());
 #endif
+}
+
+bool ElectronBrowserContext::ShouldBlockNetworkRequest(const GURL& url) const {
+  if (!block_network_)
+    return false;
+  if (!url.SchemeIsHTTPOrHTTPS() && !url.SchemeIsWSOrWSS())
+    return false;
+  // A scheme served by a `protocol.handle`/`protocol.interceptXxxProtocol`
+  // handler of this session is produced in-process and never touches the
+  // network, even when it is a standard scheme such as https.
+  return !protocol_registry_->FindIntercepted(url.scheme()) &&
+         !protocol_registry_->FindRegistered(url.scheme());
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {

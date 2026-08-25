@@ -1100,6 +1100,13 @@ void WebContents::InitWithSessionAndOptions(
   accept_languages.pop_back();
   prefs->accept_languages = accept_languages;
 
+  // Sessions with `networkAccess: 'none'` cannot open P2P sockets at all;
+  // stop the renderer from even gathering host candidates.
+  if (browser_context->is_network_blocked()) {
+    prefs->webrtc_ip_handling_policy =
+        blink::mojom::WebRtcIpHandlingPolicy::kDisableNonProxiedUdp;
+  }
+
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
   // Update font settings.
   static const gfx::FontRenderParams params(
@@ -2927,6 +2934,15 @@ void WebContents::ReloadIgnoringCache() {
 }
 
 void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
+  if (static_cast<ElectronBrowserContext*>(web_contents()->GetBrowserContext())
+          ->ShouldBlockNetworkRequest(url)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(
+            "webContents.downloadURL cannot download network URLs when the "
+            "session was created with networkAccess: 'none'");
+    return;
+  }
+
   std::map<std::string, std::string> headers;
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {

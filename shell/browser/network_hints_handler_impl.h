@@ -24,6 +24,7 @@ class NetworkHintsHandlerImpl
           receiver);
 
   // network_hints::mojom::NetworkHintsHandler:
+  void PrefetchDNS(const std::vector<url::SchemeHostPort>& urls) override;
   void Preconnect(const url::SchemeHostPort& url,
                   bool allow_credentials) override;
 

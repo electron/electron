@@ -1036,6 +1036,10 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
+std::string Session::NetworkAccess() const {
+  return browser_context_->is_network_blocked() ? "none" : "all";
+}
+
 void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
   browser_context_->SetSSLConfig(std::move(config));
 }
@@ -1056,6 +1060,16 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
 }
 
 void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
+  // Downloads started without a frame bypass the session's URL loader proxy,
+  // so refuse network URLs here rather than surfacing an interrupted item.
+  if (browser_context()->ShouldBlockNetworkRequest(url)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(
+            "session.downloadURL cannot download network URLs when the "
+            "session was created with networkAccess: 'none'");
+    return;
+  }
+
   std::map<std::string, std::string> headers;
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
@@ -1419,6 +1433,13 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   if (!options.Get("url", &url) || !url.is_valid()) {
     args->ThrowTypeError(
         "Must pass non-empty valid url to session.preconnect.");
+    return;
+  }
+  if (browser_context()->is_network_blocked()) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(
+            "session.preconnect is not available when the session was "
+            "created with networkAccess: 'none'");
     return;
   }
   int num_sockets_to_preconnect = 1;
@@ -1893,6 +1914,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
       .SetProperty("webRequest", &Session::WebRequest)
       .SetProperty("storagePath", &Session::GetPath)
+      .SetProperty("networkAccess", &Session::NetworkAccess)
       .Build();
 }
 
@@ -1931,6 +1953,19 @@ namespace {
 
 using electron::api::Session;
 
+bool ValidateSessionOptions(const base::DictValue& options,
+                            gin::Arguments* args) {
+  if (const base::Value* network_access = options.Find("networkAccess")) {
+    if (!network_access->is_string() ||
+        (network_access->GetString() != "all" &&
+         network_access->GetString() != "none")) {
+      args->ThrowTypeError("networkAccess must be either 'all' or 'none'");
+      return false;
+    }
+  }
+  return true;
+}
+
 Session* FromPartition(const std::string& partition, gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
@@ -1938,7 +1973,22 @@ Session* FromPartition(const std::string& partition, gin::Arguments* args) {
   }
   base::DictValue options;
   args->GetNext(&options);
-  return Session::FromPartition(args->isolate(), partition, std::move(options));
+  if (!ValidateSessionOptions(options, args))
+    return {};
+  const std::string* requested = options.FindString("networkAccess");
+  std::optional<bool> want_blocked =
+      requested ? std::make_optional(*requested == "none") : std::nullopt;
+  Session* session =
+      Session::FromPartition(args->isolate(), partition, std::move(options));
+  if (session && want_blocked &&
+      session->browser_context()->is_network_blocked() != *want_blocked) {
+    args->ThrowTypeError(
+        "A session for this partition already exists with a different "
+        "networkAccess value; options are only applied when the session is "
+        "first created");
+    return {};
+  }
+  return session;
 }
 
 Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
@@ -1948,7 +1998,20 @@ Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
   }
   base::DictValue options;
   args->GetNext(&options);
-  return Session::FromPath(args, path, std::move(options));
+  if (!ValidateSessionOptions(options, args))
+    return {};
+  const std::string* requested = options.FindString("networkAccess");
+  std::optional<bool> want_blocked =
+      requested ? std::make_optional(*requested == "none") : std::nullopt;
+  Session* session = Session::FromPath(args, path, std::move(options));
+  if (session && want_blocked &&
+      session->browser_context()->is_network_blocked() != *want_blocked) {
+    args->ThrowTypeError(
+        "A session for this path already exists with a different networkAccess "
+        "value; options are only applied when the session is first created");
+    return {};
+  }
+  return session;
 }
 
 void Initialize(v8::Local<v8::Object> exports,
