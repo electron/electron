@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 21 Jul 2026 13:44:48 -0400
+Subject: Translator: Check gl_FragData passed to function
+
+... when gl_SecondaryFragDataEXT is used.
+
+Bug: chromium:536505721
+Change-Id: I644862db03603892b4bdb493a7c2d0a4b694e46d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8132423
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Alexey Knyazev <lexa.knyazev@gmail.com>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 3cdf692c43b768a18f696324d1b24191c274d28d..74919d69ba2c83053723cdc9f21baebecdba70fd 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -3222,6 +3222,22 @@ void TParseContext::functionCallRValueLValueErrorCheck(const TFunction *fnCandid
+     }
+ }
+ 
++void TParseContext::functionCallFragDataCheck(const TFunction *fnCandidate,
++                                              TIntermAggregate *fnCall)
++{
++    for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
++    {
++        TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
++        if (argument->getType().getQualifier() == EvqFragData)
++        {
++            // The whole array is passed to the function.  For validation purposes, assume all
++            // indices are accessed in the function.
++            ASSERT(argument->getType().isArray());
++            mMaxFragDataArrayIndexUsed = argument->getType().getOutermostArraySize() - 1;
++        }
++    }
++}
++
+ void TParseContext::checkInvariantVariableQualifier(bool invariant,
+                                                     const TQualifier qualifier,
+                                                     const TSourceLoc &invariantLocation)
+@@ -9878,6 +9894,7 @@ TIntermTyped *TParseContext::addNonConstructorFunctionCallImpl(TFunctionLookup *
+             callNode->setLine(loc);
+             checkImageMemoryAccessForUserDefinedFunctions(fnCandidate, callNode);
+             functionCallRValueLValueErrorCheck(fnCandidate, callNode);
++            functionCallFragDataCheck(fnCandidate, callNode);
+ 
+             mCallGraph[mCurrentFunction].insert(fnCandidate);
+             mIRBuilder.callFunction(mFunctionToId.at(fnCandidate));
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index bdae6e4044e0c56ab7a2dcc7abbd09c9dc983678..39f8e3e0078b7bd7b7ac3f19908df864bb9b6bab 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -216,6 +216,7 @@ class TParseContext : angle::NonCopyable
+     bool checkWorkGroupSizeIsNotSpecified(const TSourceLoc &location,
+                                           const TLayoutQualifier &layoutQualifier);
+     void functionCallRValueLValueErrorCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
++    void functionCallFragDataCheck(const TFunction *fnCandidate, TIntermAggregate *fnCall);
+     void checkInvariantVariableQualifier(bool invariant,
+                                          const TQualifier qualifier,
+                                          const TSourceLoc &invariantLocation);
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 637df19543e199b09b1babd1637d4bed46875ad1..18cc533029a974f105657f426bd638fd6b6a432a 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -4894,6 +4894,33 @@ void main() {
+                   "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when gl_SecondaryFragDataEXT is used");
+ }
+ 
++// Shader that writes to SecondaryFragData and passes FragData to a function.
++TEST_P(GLSLValidationTest, BlendFuncExtendedPassFragDataToFunction)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_blend_func_extended"));
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    GLint maxDrawBuffers = 0, maxDualSourceDrawBuffers = 0;
++    glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT, &maxDualSourceDrawBuffers);
++    glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
++    ANGLE_SKIP_TEST_IF(maxDualSourceDrawBuffers == maxDrawBuffers);
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++#extension GL_EXT_blend_func_extended : require
++precision mediump float;
++void f(out vec4 fragData[gl_MaxDrawBuffers])
++{
++    fragData[0] = vec4(0.1);
++}
++void main() {
++    f(gl_FragData);
++    gl_SecondaryFragDataEXT[0] = vec4(1.0);
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "array index for gl_FragData must be less than "
++                  "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when gl_SecondaryFragDataEXT is used");
++}
++
+ // Shader that writes to FragData at an index >= than gl_MaxDualSourceDrawBuffersEXT is fine if
+ // SecondaryFragData is not used.  Note that gl_MaxDualSourceDrawBuffersEXT is typically 1, while
+ // the size of gl_FragData (gl_MaxDrawBuffers) is larger.

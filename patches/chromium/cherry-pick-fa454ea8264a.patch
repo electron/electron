@@ -1,0 +1,184 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter K <pkotwicz@google.com>
+Date: Mon, 20 Jul 2026 15:19:56 -0700
+Subject: [A11y] Fix potential type confusion in BrowserAccessibilityManagerWin
+
+This CL fixes potential type confusion in BrowserAccessibilityManagerWin::OnAtomicUpdateFinished() and
+BrowserAccessibilityComWin::GetTargetFromChildID()
+by using
+ToBrowserAccessibilityComWin(
+    BrowserAccessibility::FromAXPlatformNodeDelegate())
+
+Bug:498885920
+
+Change-Id: Idd3e2185e87fbaed58d8aa3f0025b5767fa0d514
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7958810
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Peter Kotwicz <pkotwicz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1664976}
+
+diff --git a/ui/accessibility/platform/ax_platform_node_delegate.cc b/ui/accessibility/platform/ax_platform_node_delegate.cc
+index a4ef40157a5e535973de4287dad316eead1f310c..aba6e257a289b092acfb27cb5226a09ee693f56b 100644
+--- a/ui/accessibility/platform/ax_platform_node_delegate.cc
++++ b/ui/accessibility/platform/ax_platform_node_delegate.cc
+@@ -1333,4 +1333,8 @@ std::string AXPlatformNodeDelegate::SubtreeToStringHelper(size_t level) {
+   return result;
+ }
+ 
++BrowserAccessibility* AXPlatformNodeDelegate::ToBrowserAccessibility() {
++  return nullptr;
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/platform/ax_platform_node_delegate.h b/ui/accessibility/platform/ax_platform_node_delegate.h
+index 6370202858ed69e1972e36894fdfe0b769967372..bb0267d50e53bfc14e600f777cc87f84a9defcb2 100644
+--- a/ui/accessibility/platform/ax_platform_node_delegate.h
++++ b/ui/accessibility/platform/ax_platform_node_delegate.h
+@@ -47,6 +47,7 @@ namespace ui {
+ struct AXActionData;
+ struct AXNodeData;
+ struct AXTreeData;
++class BrowserAccessibility;
+ class ChildIterator;
+ 
+ using TextAttribute = std::pair<std::string, std::string>;
+@@ -660,12 +661,16 @@ class COMPONENT_EXPORT(AX_PLATFORM) AXPlatformNodeDelegate {
+   }
+ 
+  protected:
++  friend class BrowserAccessibility;
++
+   explicit AXPlatformNodeDelegate(AXNode* node);
+ 
+   virtual std::string SubtreeToStringHelper(size_t level);
+ 
+   virtual void NotifyAccessibilityApiUsage() const {}
+ 
++  virtual BrowserAccessibility* ToBrowserAccessibility();
++
+   AXPlatformNodeDelegate* GetParentDelegate() const;
+ 
+   // Given a set of Blink node IDs, get their respective platform nodes and
+diff --git a/ui/accessibility/platform/browser_accessibility.cc b/ui/accessibility/platform/browser_accessibility.cc
+index d5f98748c305f9417ad94f7c429b2f68203c75e2..a7e90d5f054cc27bc15bf8808aeb6ca674b2a408 100644
+--- a/ui/accessibility/platform/browser_accessibility.cc
++++ b/ui/accessibility/platform/browser_accessibility.cc
+@@ -64,9 +64,10 @@ bool BrowserAccessibility::ignore_hovered_state_for_testing_ = false;
+ // static
+ BrowserAccessibility* BrowserAccessibility::FromAXPlatformNodeDelegate(
+     AXPlatformNodeDelegate* delegate) {
+-  if (!delegate || !delegate->IsWebContent())
++  if (!delegate) {
+     return nullptr;
+-  return static_cast<BrowserAccessibility*>(delegate);
++  }
++  return delegate->ToBrowserAccessibility();
+ }
+ 
+ BrowserAccessibility::BrowserAccessibility(BrowserAccessibilityManager* manager,
+@@ -987,6 +988,10 @@ std::string BrowserAccessibility::SubtreeToStringHelper(size_t level) {
+   return result;
+ }
+ 
++BrowserAccessibility* BrowserAccessibility::ToBrowserAccessibility() {
++  return this;
++}
++
+ const std::vector<gfx::NativeViewAccessible>
+ BrowserAccessibility::GetUIADirectChildrenInRange(AXPlatformNodeDelegate* start,
+                                                   AXPlatformNodeDelegate* end) {
+diff --git a/ui/accessibility/platform/browser_accessibility.h b/ui/accessibility/platform/browser_accessibility.h
+index 7aba93b3dd618e7dd89c75e3837e31da819a3a34..4ea1d429143508f7d1f8157f3b5fde0045be7557 100644
+--- a/ui/accessibility/platform/browser_accessibility.h
++++ b/ui/accessibility/platform/browser_accessibility.h
+@@ -488,6 +488,8 @@ class COMPONENT_EXPORT(AX_PLATFORM) BrowserAccessibility
+ 
+   std::string SubtreeToStringHelper(size_t level) override;
+ 
++  BrowserAccessibility* ToBrowserAccessibility() override;
++
+   // The UIA tree formatter needs access to GetUniqueId() to identify the
+   // starting point for tree dumps.
+   friend class AccessibilityTreeFormatterUia;
+diff --git a/ui/accessibility/platform/browser_accessibility_com_win.cc b/ui/accessibility/platform/browser_accessibility_com_win.cc
+index 59fd6af49185c77581c3f8825678bdbc352debda..d5ae4f876f5d7b21ceddc1ea431a21b10f26a935 100644
+--- a/ui/accessibility/platform/browser_accessibility_com_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_com_win.cc
+@@ -33,6 +33,7 @@
+ #include "ui/accessibility/ax_mode.h"
+ #include "ui/accessibility/ax_role_properties.h"
+ #include "ui/accessibility/platform/ax_platform.h"
++#include "ui/accessibility/platform/ax_platform_node_win.h"
+ #include "ui/accessibility/platform/browser_accessibility_manager_win.h"
+ #include "ui/accessibility/platform/browser_accessibility_win.h"
+ #include "ui/base/win/accessibility_ids_win.h"
+@@ -1833,8 +1834,13 @@ BrowserAccessibilityComWin* BrowserAccessibilityComWin::GetTargetFromChildID(
+     return ToBrowserAccessibilityComWin(owner->PlatformGetChild(child_id - 1));
+   }
+ 
+-  auto* child = static_cast<BrowserAccessibilityComWin*>(
+-      AXPlatformNodeWin::GetFromUniqueId(-child_id));
++  auto* platform_node = AXPlatformNodeWin::GetFromUniqueId(-child_id);
++  if (!platform_node) {
++    return nullptr;
++  }
++  auto* child = ToBrowserAccessibilityComWin(
++      BrowserAccessibility::FromAXPlatformNodeDelegate(
++          platform_node->GetDelegate()));
+   if (child && child->GetOwner()->IsDescendantOf(owner)) {
+     return child;
+   }
+diff --git a/ui/accessibility/platform/browser_accessibility_manager_win.cc b/ui/accessibility/platform/browser_accessibility_manager_win.cc
+index d2f17465fd03ed84ce315ab8883e13450eec548b..9edb575a025bc564dfb0ec4a5b7b1ccbeb8d2765 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_manager_win.cc
+@@ -63,6 +63,14 @@ BrowserAccessibility* GetUiaTextPatternProvider(BrowserAccessibility& node) {
+ constexpr char kBrowserRootViewClassName[] = "BrowserRootView";
+ constexpr char kTabClassName[] = "Tab";
+ 
++BrowserAccessibilityComWin* ToBrowserAccessibilityComWin(AXPlatformNode* node) {
++  if (!node) {
++    return nullptr;
++  }
++  return ::ui::ToBrowserAccessibilityComWin(
++      BrowserAccessibility::FromAXPlatformNodeDelegate(node->GetDelegate()));
++}
++
+ }  // namespace
+ 
+ // static
+@@ -1053,8 +1061,9 @@ void BrowserAccessibilityManagerWin::OnAtomicUpdateFinished(
+   // recomputes all of win_attributes_ other than IAccessibleText.
+   auto state_scan = update_states.begin();
+   for (auto* node : objs_to_update) {
+-    static_cast<BrowserAccessibilityComWin*>(node)
+-        ->UpdateStep1ComputeWinAttributes(&*state_scan);
++    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
++      com_win->UpdateStep1ComputeWinAttributes(&*state_scan);
++    }
+     ++state_scan;
+   }
+ 
+@@ -1062,8 +1071,9 @@ void BrowserAccessibilityManagerWin::OnAtomicUpdateFinished(
+   // concatenation of all of its child text nodes, so it can't run until
+   // the text of all of the nodes was computed in the previous step.
+   for (auto* node : objs_to_update) {
+-    static_cast<BrowserAccessibilityComWin*>(node)
+-        ->UpdateStep2ComputeHypertext();
++    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
++      com_win->UpdateStep2ComputeHypertext();
++    }
+   }
+ 
+   // The third step fires events on nodes based on what's changed - like
+@@ -1075,7 +1085,9 @@ void BrowserAccessibilityManagerWin::OnAtomicUpdateFinished(
+   // At the end, it deletes old_win_attributes_ since they're not needed
+   // anymore.
+   for (auto* node : objs_to_update) {
+-    static_cast<BrowserAccessibilityComWin*>(node)->UpdateStep3FireEvents();
++    if (auto* com_win = ToBrowserAccessibilityComWin(node)) {
++      com_win->UpdateStep3FireEvents();
++    }
+   }
+ }
+ 

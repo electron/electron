@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 22 Jul 2026 22:02:38 -0400
+Subject: Unset active textures on program relink
+
+While this didn't manifest as a bug, for uniformity with binding a new
+program, unsetActiveTextures() is now called when relinking the program
+too.  Both operations install a new executable, so it makes sense they
+do the same state clean up.
+
+Bug: chromium:536659904
+Change-Id: I19c0bd129e03859d242cb15c7e11969385156f2b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8135183
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 0609e54e538f3a5f840ddd11cfcde27315b9bd22..95c7059d0a3040cfa01dcb7330ac0d4d41a188fd 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -9561,6 +9561,7 @@ void Context::onSubjectStateChange(angle::SubjectIndex index, angle::SubjectMess
+                 {
+                     Program *program = mState.getProgram();
+                     ASSERT(program->isLinked());
++                    mState.onCurrentExecutableRelink();
+                     ANGLE_CONTEXT_TRY(mState.installProgramExecutable(this));
+                     mStateCache.onProgramExecutableChange(this);
+                     break;
+@@ -9584,6 +9585,7 @@ void Context::onSubjectStateChange(angle::SubjectIndex index, angle::SubjectMess
+                     mStateCache.onProgramExecutableChange(this);
+                     break;
+                 case angle::SubjectMessage::ProgramRelinked:
++                    mState.onCurrentExecutableRelink();
+                     ANGLE_CONTEXT_TRY(mState.installProgramPipelineExecutable(this));
+                     mStateCache.onProgramExecutableChange(this);
+                     break;
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index 105d7283c84b42ceae5d6500bafbfea0b197e007..bf32e7acff519d958ba8f39fbd7948d28cffdcc9 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -4274,6 +4274,16 @@ void State::onShaderStorageBufferStateChange(size_t shaderStorageBufferIndex)
+     mDirtyBits.set(state::DIRTY_BIT_SHADER_STORAGE_BUFFER_BINDING);
+ }
+ 
++void State::onCurrentExecutableRelink()
++{
++    // Called when a program or PPO is already current but its executable is recreated.  The state
++    // of the previous executable is cleaned up before the new executable is installed.
++    if (mExecutable)
++    {
++        unsetActiveTextures(mExecutable->getActiveSamplersMask());
++    }
++}
++
+ void State::initializeForCapture(const Context *context)
+ {
+     mPrivateState.initializeForCapture(context);
+diff --git a/src/libANGLE/State.h b/src/libANGLE/State.h
+index 4da37a46129979a13a75bc8f100f63ba2ab50807..0e0b622e0356962c2f12a56833d7106d415e0462 100644
+--- a/src/libANGLE/State.h
++++ b/src/libANGLE/State.h
+@@ -1255,6 +1255,7 @@ class State : angle::NonCopyable
+     void onUniformBufferStateChange(size_t uniformBufferIndex, angle::SubjectMessage message);
+     void onAtomicCounterBufferStateChange(size_t atomicCounterBufferIndex);
+     void onShaderStorageBufferStateChange(size_t shaderStorageBufferIndex);
++    void onCurrentExecutableRelink();
+ 
+     bool isCurrentTransformFeedback(const TransformFeedback *tf) const
+     {
+diff --git a/src/tests/gl_tests/LinkAndRelinkTest.cpp b/src/tests/gl_tests/LinkAndRelinkTest.cpp
+index 64cd70439a1411ce26d338cd1d67576543622c7f..54ec48ea4197eb7cdbcf825b9b3c8300e437f8df 100644
+--- a/src/tests/gl_tests/LinkAndRelinkTest.cpp
++++ b/src/tests/gl_tests/LinkAndRelinkTest.cpp
+@@ -955,6 +955,106 @@ void main()
+     glDeleteProgramPipelines(1, &pipeline);
+ }
+ 
++// Test relinking a program with a shader that uses fewer textures.
++TEST_P(LinkAndRelinkTestES3, RelinkRemovesOneTexture)
++{
++    // Create a program with two textures, then relink it with a shader that removes one of the
++    // textures.
++    constexpr char kFS1[] = R"(#version 300 es
++precision mediump float;
++uniform sampler2D t0;
++uniform sampler2D t1;
++out vec4 color;
++void main()
++{
++    color = texture(t0, vec2(0)) + texture(t1, vec2(0));
++})";
++    constexpr char kFS2[] = R"(#version 300 es
++precision mediump float;
++uniform sampler2D t0;
++out vec4 color;
++void main()
++{
++    color = texture(t0, vec2(0));
++})";
++
++    GLuint program = glCreateProgram();
++
++    GLuint vs  = CompileShader(GL_VERTEX_SHADER, essl3_shaders::vs::Simple());
++    GLuint fs1 = CompileShader(GL_FRAGMENT_SHADER, kFS1);
++    GLuint fs2 = CompileShader(GL_FRAGMENT_SHADER, kFS2);
++
++    EXPECT_NE(0u, vs);
++    EXPECT_NE(0u, fs1);
++    EXPECT_NE(0u, fs2);
++
++    glAttachShader(program, vs);
++    glAttachShader(program, fs1);
++    glLinkProgram(program);
++    glUseProgram(program);
++    glUniform1i(glGetUniformLocation(program, "t0"), 0);
++    glUniform1i(glGetUniformLocation(program, "t1"), 1);
++    ASSERT_GL_NO_ERROR();
++
++    constexpr GLColor kTexture0Color = GLColor(20, 30, 0, 100);
++    constexpr GLColor kTexture1Color = GLColor(70, 10, 55, 50);
++
++    GLTexture texture0;
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, texture0);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 1, 1);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &kTexture0Color);
++
++    GLTexture texture1;
++    glActiveTexture(GL_TEXTURE1);
++    glBindTexture(GL_TEXTURE_2D, texture1);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 1, 1);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &kTexture1Color);
++
++    glClearColor(0, 0, 0, 0);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    // Draw once, which sums the two textures.
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Mark texture1 dirty so it's tracked for getting synced.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++
++    // Attach the second fragment shader and relink the program
++    glDetachShader(program, fs1);
++    glAttachShader(program, fs2);
++    glLinkProgram(program);
++    glUseProgram(program);
++    glUniform1i(glGetUniformLocation(program, "t0"), 0);
++
++    // Delete the texture and bind another one in its place.
++    texture1.reset();
++
++    GLTexture texture2;
++    glBindTexture(GL_TEXTURE_2D, texture2);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 1, 1);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &kTexture1Color);
++
++    // Draw again, which accumulates the color from the first texture.
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Verify results
++    constexpr GLColor kExpect(
++        kTexture0Color.R * 2 + kTexture1Color.R, kTexture0Color.G * 2 + kTexture1Color.G,
++        kTexture0Color.B * 2 + kTexture1Color.B, kTexture0Color.A * 2 + kTexture1Color.A);
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, kExpect, 9);
++
++    glDeleteShader(vs);
++    glDeleteShader(fs1);
++    glDeleteShader(fs2);
++    glDeleteProgram(program);
++    ASSERT_GL_NO_ERROR();
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(LinkAndRelinkTest);
+ 
+ ANGLE_INSTANTIATE_TEST_ES3(LinkAndRelinkTestES3);

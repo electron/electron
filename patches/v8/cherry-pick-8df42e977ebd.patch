@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jihyeon Jeong <smartphonewithbear@gmail.com>
+Date: Tue, 4 Aug 2026 19:59:10 +0900
+Subject: [M151] Reland "[wasm][sandbox] Post async compilation tasks as
+ non-nestable"
+
+Original change's description:
+> Reland "[wasm][sandbox] Post async compilation tasks as non-nestable"
+>
+> This is a reland of commit 378544fbbb5d4083bf1c315027576f838f00f213.
+>
+> The original change was reverted by https://crrev.com/c/8205507 because
+> of a large-struct failure under turbofan_random_rescheduling. The same
+> test failure reproduces without this change and is addressed separately
+> by https://crrev.com/c/8211539.
+>
+> Original change's description:
+> > [wasm][sandbox] Post async compilation tasks as non-nestable
+> >
+> > Async compilation foreground tasks can complete compilation, invoke
+> > callbacks, and start async instantiation. Do not allow them to run
+> > nested inside an API interrupt while an interrupted Wasm activation
+> > remains on the stack.
+> >
+> > Bug: 540430406
+> > Change-Id: Ib88f974a58767880c9ccb252dfd4728beeb085e5
+> > Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8174443
+> > Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+> > Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+> > Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+> > Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#109079}
+>
+> Bug: 540430406
+> Change-Id: I5a4fc36a0feb3acd9161b55b836416d7a986d0f5
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8211879
+> Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+> Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+> Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109098}
+
+(cherry picked from commit db1a465144dee3dbc0eadfc775704f5c4e1991e4)
+
+Bug: 549535068,540430406
+Change-Id: I5a4fc36a0feb3acd9161b55b836416d7a986d0f5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8269517
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.1@{#50}
+Cr-Branched-From: b231b8f07c377ee257f573eb690850d24830dd0d-refs/heads/15.1.206@{#1}
+Cr-Branched-From: a88116848637bdef375cf46b03b303511e4e6def-refs/heads/main@{#108311}
+
+diff --git a/src/wasm/module-compiler.cc b/src/wasm/module-compiler.cc
+index b81b1f65c28bccce91bb19329653e20d403f7d39..3fd454c6af5935eb4970a3bc8f75d6ce0b36ec53 100644
+--- a/src/wasm/module-compiler.cc
++++ b/src/wasm/module-compiler.cc
+@@ -2795,7 +2795,10 @@ void AsyncCompileJob::StartForegroundTask() {
+ 
+   auto new_task = std::make_unique<CompileTask>(this, true);
+   pending_foreground_task_ = new_task.get();
+-  isolate_specific_info_.foreground_task_runner_->PostTask(std::move(new_task));
++  // Foreground compilation can invoke JavaScript callbacks and must not run
++  // nested inside an API interrupt.
++  isolate_specific_info_.foreground_task_runner_->PostNonNestableTask(
++      std::move(new_task));
+ }
+ 
+ void AsyncCompileJob::CancelPendingForegroundTask() {

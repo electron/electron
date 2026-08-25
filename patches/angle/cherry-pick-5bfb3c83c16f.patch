@@ -1,0 +1,609 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 17 Jul 2026 12:22:31 -0400
+Subject: Vulkan: Fix blitting into 3D images
+
+Bug: chromium:532988552
+Change-Id: I4c8717a84093e4d95651e6f5fde32e0424ef271b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8117567
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+index 427360b488d6fffe6a3358faf19ad41e7a0cd099..ce845f001775124843b506b0f8807f4b86bd32c4 100644
+--- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+@@ -2203,7 +2203,6 @@ angle::Result FramebufferVk::resolveColorWithCommand(ContextVk *contextVk,
+     resolveRegion.dstSubresource.layerCount     = 1;
+     resolveRegion.dstOffset.x                   = params.blitArea.x;
+     resolveRegion.dstOffset.y                   = params.blitArea.y;
+-    resolveRegion.dstOffset.z                   = 0;
+     resolveRegion.extent.width                  = params.blitArea.width;
+     resolveRegion.extent.height                 = params.blitArea.height;
+     resolveRegion.extent.depth                  = 1;
+@@ -2214,9 +2213,15 @@ angle::Result FramebufferVk::resolveColorWithCommand(ContextVk *contextVk,
+         RenderTargetVk *drawRenderTarget = mRenderTargetCache.getColors()[colorIndexGL];
+         vk::ImageHelper &dstImage        = drawRenderTarget->getImageForWrite();
+ 
++        // Note: In GL, the src image cannot be 3D because there is no way to create a multisampled
++        // 3D texture.
++        const bool isDst3D = dstImage.getType() == VK_IMAGE_TYPE_3D;
++
+         vk::LevelIndex levelVk = dstImage.toVkLevel(drawRenderTarget->getLevelIndex());
+         resolveRegion.dstSubresource.mipLevel       = levelVk.get();
+-        resolveRegion.dstSubresource.baseArrayLayer = drawRenderTarget->getLayerIndex();
++        resolveRegion.dstSubresource.baseArrayLayer =
++            isDst3D ? 0 : drawRenderTarget->getLayerIndex();
++        resolveRegion.dstOffset.z = isDst3D ? drawRenderTarget->getLayerIndex() : 0;
+ 
+         srcImage->resolve(renderer, &dstImage, resolveRegion, commandBuffer);
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 8fa6050ebc6de52f6869a93c4b640fc2787dffab..8d060e5b2990721e6cc12074a3515b9a4325e38c 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -321,6 +321,12 @@
+ // NVIDIA's glCopyImageSubData may be broken
+ 534923522 NVIDIA OPENGL : Texture2DTestES3_NonZeroBaseLevelGenMipmaps.VerifyMipmapContents/* = SKIP
+ 534923522 NVIDIA GLES : Texture2DTestES3_NonZeroBaseLevelGenMipmaps.VerifyMipmapContents/* = SKIP
++// Test cannot run when ASTC is emulated
++525079760 NVIDIA VULKAN : ImageTestES3.NonZeroLevel*GetCompressedTexImage/* = SKIP
++536046166 NVIDIA VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
++536046166 NVIDIA VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTexturesAfterFinish/* = SKIP
++536046166 NVIDIA VULKAN : FramebufferTest_ES31_MSAA.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
++536046166 NVIDIA VULKAN : FramebufferTest_ES31_MSAA.MultisampleStencilSampling/*EmulatedPrerotation* = SKIP
+ 42265709 NVIDIA VULKAN : GLSLTest_ES31.TessellationControlShaderMatrixCopyBug/* = SKIP
+ 42265709 NVIDIA VULKAN : GLSLTest_ES31.TessellationControlShaderMatrixMultiplicationBug/* = SKIP
+ 
+@@ -361,6 +367,10 @@
+ 40096893 LINUX INTEL VULKAN : TextureBufferTestES31.TexBufferFormatMismatch/* = SKIP
+ // RobustBufferAccess is not actually robust (will hang).
+ 435228814 LINUX INTEL VULKAN : RobustBufferAccessBehaviorTest.DynamicBufferCrash/* = SKIP
++536046166 INTEL VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
++536046166 INTEL VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTexturesAfterFinish/* = SKIP
++536046166 INTEL VULKAN : FramebufferTest_ES31_MSAA.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
++536046166 WIN INTEL VULKAN : FramebufferTest_ES31_MSAA.MultisampleStencilSampling/*EmulatedPrerotation* = SKIP
+ 
+ // Robust init of OOB framebuffer reads is not zero'd
+ 500528706 VULKAN : CopyTexImageTestRobustResourceInit.OOBReadShouldBeZeroInit/* = SKIP
+@@ -732,6 +742,11 @@
+ 384314370 PIXEL4ORXL GLES : FramebufferFetchES31.WriteOnlyInOutVariableEarlyReturn/* = SKIP
+ 384314370 PIXEL4ORXL GLES : FramebufferFetchES31.WriteOnlyInOutVariablePartial/* = SKIP
+ 384314370 PIXEL4ORXL GLES : FramebufferFetchES31.WriteOnlyInOutVariableInOutArgument/* = SKIP
++536042538 PIXEL4ORXL GLES : FramebufferTest_ES31.MultisampleResolveWithBlitInto3DTexture/* = SKIP
++536042538 PIXEL4ORXL GLES : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
++536042538 PIXEL4ORXL GLES : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTexturesAfterFinish/* = SKIP
++536042538 PIXEL4ORXL GLES : FramebufferTest_ES31_MSAA.MultisampleResolveWithBlitInto3DTexture/* = SKIP
++536042538 PIXEL4ORXL GLES : FramebufferTest_ES31_MSAA.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
+ 42264513 PIXEL4ORXL GLES : GLSLTest.NestedInoutVars2/* = SKIP
+ 42264513 PIXEL4ORXL GLES : GLSLTest.NestedInoutVars3/* = SKIP
+ 42264513 PIXEL4ORXL GLES : SimpleUniformTestES3.TernarySelectAnArrayThenIndex/* = SKIP
+@@ -806,6 +821,7 @@
+ 40096826 PIXEL6 VULKAN : FramebufferMultiviewLayeredClearTest.ScissoredClearBufferfi/* = SKIP
+ 40096826 PIXEL6 VULKAN : FramebufferTest_ES31.MultipleTextureMultisampleResolveWithBlitMultipleResolves* = SKIP
+ 40096826 PIXEL6 VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitThenDrawAttachment1/* = SKIP
++536046166 PIXEL6 VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitInto3DTexture/* = SKIP
+ 40096826 PIXEL6 VULKAN : GLSLTest.PointCoordConsistency/* = SKIP
+ 40096826 PIXEL6 VULKAN : GLSLTest_ES31.ArraysOfArraysImage/* = SKIP
+ 40096826 PIXEL6 VULKAN : GLSLTest_ES31.BoolInInterfaceBlocks/* = SKIP
+@@ -1003,6 +1019,8 @@
+ 480069042 PIXEL10 GLES : FramebufferTest_ES31.DepthStencilResolveThenDrawWithoutResolve/* = SKIP
+ 480069042 PIXEL10 GLES : FramebufferTest_ES31.MixesMultisampleTextureRenderbuffer/* = SKIP
+ 480069042 PIXEL10 GLES : FramebufferTest_ES31.MultisampleDepthStencilResolveMultipleTimesWithDrawInBetween/* = SKIP
++536042538 PIXEL10 GLES : FramebufferTest_ES31.MultisampleResolveWithBlitInto3DTexture/* = SKIP
++379700129 PIXEL10 GLES : FramebufferTest_ES31_MSAA.MultisampleStencilSampling/* = SKIP
+ 480069042 PIXEL10 GLES : GLSLConstantFoldingTest_ES31.NamedArrayOfArrayIndex/* = SKIP
+ 480069042 PIXEL10 GLES : GLSLTest.NestedStructsWithSamplersAsFunctionArg/* = SKIP
+ 480069042 PIXEL10 GLES : GLSLTest.SwizzledChainedAssign/* = SKIP
+@@ -1255,6 +1273,7 @@
+ 480069042 PIXEL10 VULKAN : ExternalBufferTestES31.SubDataDoesNotCauseOrphaning/* = SKIP
+ 480069042 PIXEL10 VULKAN : ExternalBufferTestES31.getBufferParameter/* = SKIP
+ 480069042 PIXEL10 VULKAN : FramebufferTest_ES31.DepthStencilResolveThenDrawWithoutResolve/* = SKIP
++536046166 PIXEL10 VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitInto3DTexture/* = SKIP
+ 480069042 PIXEL10 VULKAN : GLSLTest_ES31.ArrayOfArrayOfSamplerDynamicIndexEXT/* = SKIP
+ 480069042 PIXEL10 VULKAN : GLSLTest_ES31.ArrayOfArrayOfSamplerDynamicIndexOES/* = SKIP
+ 480069042 PIXEL10 VULKAN : GLSLTest_ES31.ArrayOfArrayOfSamplerInStructDynamicIndex/* = SKIP
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index 52123c0bee672aa5bb72e09c2931b0d5c6569898..125fbc4092bb367e72fc8373b2094c53236cd912 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -3492,7 +3492,7 @@ TEST_P(FramebufferTest_ES31, BasicDrawToYFlippedFBO)
+ // Test resolving a multisampled texture with blit
+ TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlit)
+ {
+-    constexpr int kSize = 16;
++    constexpr uint32_t kSize = 16;
+     glViewport(0, 0, kSize, kSize);
+ 
+     GLFramebuffer msaaFBO;
+@@ -3534,6 +3534,274 @@ TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlit)
+                       255, 1.0);
+ }
+ 
++// Test resolving a multisampled texture with blit into a 3D texture.
++TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlitInto3DTexture)
++{
++    constexpr uint32_t kSize      = 16;
++    constexpr uint32_t kBlitSlice = 11;
++    glViewport(0, 0, kSize, kSize);
++
++    GLFramebuffer msaaFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, msaaFBO);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
++    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, kSize, kSize, false);
++    ASSERT_GL_NO_ERROR();
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture,
++                           0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    ANGLE_GL_PROGRAM(gradientProgram, essl31_shaders::vs::Passthrough(),
++                     essl31_shaders::fs::RedGreenGradient());
++    drawQuad(gradientProgram, essl31_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Create another FBO to resolve the multisample buffer into.  Use a 3D texture.
++    GLTexture resolveTexture;
++    GLFramebuffer resolveFBO;
++    glBindTexture(GL_TEXTURE_3D, resolveTexture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, kSize, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glBindFramebuffer(GL_FRAMEBUFFER, resolveFBO);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, resolveTexture, 0, kBlitSlice);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFBO);
++    glBlitFramebuffer(0, 0, kSize, kSize, 0, 0, kSize, kSize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFBO);
++    constexpr uint8_t kHalfPixelGradient = 256 / kSize / 2;
++    EXPECT_PIXEL_NEAR(0, 0, kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++    EXPECT_PIXEL_NEAR(kSize - 1, 0, 255 - kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++    EXPECT_PIXEL_NEAR(0, kSize - 1, kHalfPixelGradient, 255 - kHalfPixelGradient, 0, 255, 1.0);
++    EXPECT_PIXEL_NEAR(kSize - 1, kSize - 1, 255 - kHalfPixelGradient, 255 - kHalfPixelGradient, 0,
++                      255, 1.0);
++}
++
++// Test resolving a multisampled texture with blit into multiple textures, including 3D textures.
++TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlitIntoMixedTextures)
++{
++    constexpr uint32_t kSize      = 16;
++    constexpr uint32_t kBlitSlice = 11;
++    glViewport(0, 0, kSize, kSize);
++
++    GLFramebuffer msaaFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, msaaFBO);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
++    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, kSize, kSize, false);
++    ASSERT_GL_NO_ERROR();
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture,
++                           0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    ANGLE_GL_PROGRAM(gradientProgram, essl31_shaders::vs::Passthrough(),
++                     essl31_shaders::fs::RedGreenGradient());
++    drawQuad(gradientProgram, essl31_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Create another FBO to resolve the multisample buffer into.  Use a 3D texture for some
++    // attachments.
++    GLFramebuffer resolveFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, resolveFBO);
++    std::array<GLTexture, 4> resolveTexture;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        if (i % 2 == 0)
++        {
++            glBindTexture(GL_TEXTURE_3D, resolveTexture[i]);
++            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, kSize, kSize, kSize, 0, GL_RGBA,
++                         GL_UNSIGNED_BYTE, nullptr);
++            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, resolveTexture[i],
++                                      0, kBlitSlice);
++        }
++        else
++        {
++            glBindTexture(GL_TEXTURE_2D, resolveTexture[i]);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                         nullptr);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
++                                   resolveTexture[i], 0);
++        }
++    }
++    constexpr std::array<GLenum, 4> kDrawBuffers = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
++                                                    GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
++    glDrawBuffers(4, kDrawBuffers.data());
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFBO);
++    glBlitFramebuffer(0, 0, kSize, kSize, 0, 0, kSize, kSize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFBO);
++    constexpr uint8_t kHalfPixelGradient = 256 / kSize / 2;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
++        EXPECT_PIXEL_NEAR(0, 0, kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(kSize - 1, 0, 255 - kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(0, kSize - 1, kHalfPixelGradient, 255 - kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(kSize - 1, kSize - 1, 255 - kHalfPixelGradient, 255 - kHalfPixelGradient,
++                          0, 255, 1.0);
++    }
++}
++
++// Test resolving a multisampled texture with blit into multiple textures, including 3D textures,
++// after the render pass is closed.
++TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlitIntoMixedTexturesAfterFinish)
++{
++    constexpr uint32_t kSize      = 16;
++    constexpr uint32_t kBlitSlice = 11;
++    glViewport(0, 0, kSize, kSize);
++
++    GLFramebuffer msaaFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, msaaFBO);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
++    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, kSize, kSize, false);
++    ASSERT_GL_NO_ERROR();
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, texture,
++                           0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    ANGLE_GL_PROGRAM(gradientProgram, essl31_shaders::vs::Passthrough(),
++                     essl31_shaders::fs::RedGreenGradient());
++    drawQuad(gradientProgram, essl31_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Close the render pass.  In the Vulkan backend, this disallows directly resolving into the
++    // destination with a render pass resolve attachment.
++    glFinish();
++
++    // Create another FBO to resolve the multisample buffer into.  Use a 3D texture for some
++    // attachments.
++    GLFramebuffer resolveFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, resolveFBO);
++    std::array<GLTexture, 4> resolveTexture;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        if (i % 2 == 1)
++        {
++            glBindTexture(GL_TEXTURE_3D, resolveTexture[i]);
++            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, kSize, kSize, kSize, 0, GL_RGBA,
++                         GL_UNSIGNED_BYTE, nullptr);
++            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, resolveTexture[i],
++                                      0, kBlitSlice);
++        }
++        else
++        {
++            glBindTexture(GL_TEXTURE_2D, resolveTexture[i]);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                         nullptr);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
++                                   resolveTexture[i], 0);
++        }
++    }
++    constexpr std::array<GLenum, 4> kDrawBuffers = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
++                                                    GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
++    glDrawBuffers(4, kDrawBuffers.data());
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, msaaFBO);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFBO);
++    glBlitFramebuffer(0, 0, kSize, kSize, 0, 0, kSize, kSize, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFBO);
++    constexpr uint8_t kHalfPixelGradient = 256 / kSize / 2;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
++        EXPECT_PIXEL_NEAR(0, 0, kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(kSize - 1, 0, 255 - kHalfPixelGradient, kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(0, kSize - 1, kHalfPixelGradient, 255 - kHalfPixelGradient, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(kSize - 1, kSize - 1, 255 - kHalfPixelGradient, 255 - kHalfPixelGradient,
++                          0, 255, 1.0);
++    }
++}
++
++class FramebufferTest_ES31_MSAA : public FramebufferTest_ES31
++{
++  protected:
++    FramebufferTest_ES31_MSAA()
++    {
++        setConfigRedBits(8);
++        setConfigGreenBits(8);
++        setConfigBlueBits(8);
++        setConfigAlphaBits(8);
++        setSamples(4);
++        setMultisampleEnabled(true);
++    }
++};
++
++// Test resolving a multisampled texture with blit into multiple textures, including 3D textures,,
++// using the default framebuffer as src.  With pre-rotation, this forces the Vulkan backend to take
++// a draw-based path.
++TEST_P(FramebufferTest_ES31_MSAA, MultisampleResolveWithBlitIntoMixedTextures)
++{
++    const int w                   = getWindowWidth();
++    const int h                   = getWindowHeight();
++    constexpr uint32_t kDepth     = 16;
++    constexpr uint32_t kBlitSlice = 11;
++
++    ANGLE_GL_PROGRAM(gradientProgram, essl31_shaders::vs::Passthrough(),
++                     essl31_shaders::fs::RedGreenGradient());
++    drawQuad(gradientProgram, essl31_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    ASSERT_GL_NO_ERROR();
++
++    // Create another FBO to resolve the multisample buffer into.  Use a 3D texture for some
++    // attachments.
++    GLFramebuffer resolveFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, resolveFBO);
++    std::array<GLTexture, 4> resolveTexture;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        if (i % 2 == 0)
++        {
++            glBindTexture(GL_TEXTURE_3D, resolveTexture[i]);
++            glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, w, h, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                         nullptr);
++            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, resolveTexture[i],
++                                      0, kBlitSlice);
++        }
++        else
++        {
++            glBindTexture(GL_TEXTURE_2D, resolveTexture[i]);
++            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D,
++                                   resolveTexture[i], 0);
++        }
++    }
++    constexpr std::array<GLenum, 4> kDrawBuffers = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1,
++                                                    GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3};
++    glDrawBuffers(4, kDrawBuffers.data());
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFBO);
++    glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFBO);
++    const uint8_t kHalfPixelGradientW = 256 / w / 2;
++    const uint8_t kHalfPixelGradientH = 256 / h / 2;
++    for (size_t i = 0; i < resolveTexture.size(); ++i)
++    {
++        glReadBuffer(GL_COLOR_ATTACHMENT0 + i);
++        EXPECT_PIXEL_NEAR(0, 0, kHalfPixelGradientW, kHalfPixelGradientH, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(w - 1, 0, 255 - kHalfPixelGradientW, kHalfPixelGradientH, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(0, h - 1, kHalfPixelGradientW, 255 - kHalfPixelGradientH, 0, 255, 1.0);
++        EXPECT_PIXEL_NEAR(w - 1, h - 1, 255 - kHalfPixelGradientW, 255 - kHalfPixelGradientH, 0,
++                          255, 1.0);
++    }
++}
++
+ // Test clearing a 2D multisample texture defined using glTexStorage2DMultisample().
+ TEST_P(FramebufferTest_ES31, ClearTextureEXT2DMS)
+ {
+@@ -3968,6 +4236,160 @@ TEST_P(FramebufferTest_ES31, ClearTextureEXT2DMSStencil)
+     EXPECT_PIXEL_RECT_EQ(0, 0, 16, 16, GLColor::blue);
+ }
+ 
++// Test sampling from a multisampled stencil texture.
++// This is based on KHR-GLES31.core.texture_stencil8.multisample
++TEST_P(FramebufferTest_ES31_MSAA, MultisampleStencilSampling)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_OES_texture_stencil8"));
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_OES_texture_storage_multisample_2d_array"));
++
++    constexpr GLsizei kWidth   = 2;
++    constexpr GLsizei kHeight  = 2;
++    constexpr GLsizei kLayers  = 2;
++    constexpr GLsizei kSamples = 4;
++
++    // 1. Create and populate 2D MS stencil texture
++    GLTexture msaaStencilTex;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaaStencilTex);
++    glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, kSamples, GL_STENCIL_INDEX8, kWidth,
++                              kHeight, GL_TRUE);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE,
++                           msaaStencilTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glEnable(GL_STENCIL_TEST);
++    glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
++    glEnable(GL_SAMPLE_MASK);
++    glViewport(0, 0, kWidth, kHeight);
++    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
++
++    ANGLE_GL_PROGRAM(drawStencilProg, essl31_shaders::vs::Passthrough(), essl31_shaders::fs::Red());
++
++    const GLubyte stencilRefs[4] = {64, 128, 192, 255};
++    for (int s = 0; s < kSamples; ++s)
++    {
++        glSampleMaski(0, 1 << s);
++        glStencilFunc(GL_ALWAYS, stencilRefs[s], 0xFF);
++        drawQuad(drawStencilProg, essl31_shaders::PositionAttrib(), 0.0f);
++    }
++
++    // 2. Create and populate 2D MS Array stencil texture
++    GLTexture msaaStencilArrayTex;
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES, msaaStencilArrayTex);
++    glTexStorage3DMultisampleOES(GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES, kSamples, GL_STENCIL_INDEX8,
++                                 kWidth, kHeight, kLayers, GL_TRUE);
++
++    // Populate Layer 0
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, msaaStencilArrayTex, 0, 0);
++    const GLubyte stencilRefs0[4] = {10, 20, 30, 40};
++    for (int s = 0; s < kSamples; ++s)
++    {
++        glSampleMaski(0, 1 << s);
++        glStencilFunc(GL_ALWAYS, stencilRefs0[s], 0xFF);
++        drawQuad(drawStencilProg, essl31_shaders::PositionAttrib(), 0.0f);
++    }
++
++    // Populate Layer 1
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, msaaStencilArrayTex, 0, 1);
++    const GLubyte stencilRefs1[4] = {50, 100, 150, 200};
++    for (int s = 0; s < kSamples; ++s)
++    {
++        glSampleMaski(0, 1 << s);
++        glStencilFunc(GL_ALWAYS, stencilRefs1[s], 0xFF);
++        drawQuad(drawStencilProg, essl31_shaders::PositionAttrib(), 0.0f);
++    }
++
++    glDisable(GL_SAMPLE_MASK);
++    glDisable(GL_STENCIL_TEST);
++    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
++    ASSERT_GL_NO_ERROR();
++
++    // 3. Set up sampling shader
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    const char kFS[] = R"(#version 310 es
++#extension GL_OES_texture_storage_multisample_2d_array : require
++precision highp float;
++uniform lowp usampler2DMS stencilTex;
++uniform lowp usampler2DMSArray stencilTexArray;
++uniform int useArray;
++out vec4 fragColor;
++void main()
++{
++    if (useArray == 0)
++    {
++        uint s0 = texelFetch(stencilTex, ivec2(0), 0).r;
++        uint s1 = texelFetch(stencilTex, ivec2(0), 1).r;
++        uint s2 = texelFetch(stencilTex, ivec2(0), 2).r;
++        uint s3 = texelFetch(stencilTex, ivec2(0), 3).r;
++        // Make sure incomplete texture is black
++        uint s3_l0 = texelFetch(stencilTexArray, ivec3(0, 0, 0), 3).r;
++        uint s0_l1 = texelFetch(stencilTexArray, ivec3(0, 0, 1), 0).r;
++        if (s0 == 64u && s1 == 128u && s2 == 192u && s3 == 255u && s3_l0 == 0u && s0_l1 == 0u)
++        {
++            fragColor = vec4(0.0, 1.0, 0.0, 1.0); // Green
++        }
++        else
++        {
++            fragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red
++        }
++    }
++    else
++    {
++        uint s0_l0 = texelFetch(stencilTexArray, ivec3(0, 0, 0), 0).r;
++        uint s1_l0 = texelFetch(stencilTexArray, ivec3(0, 0, 0), 1).r;
++        uint s2_l0 = texelFetch(stencilTexArray, ivec3(0, 0, 0), 2).r;
++        uint s3_l0 = texelFetch(stencilTexArray, ivec3(0, 0, 0), 3).r;
++        uint s0_l1 = texelFetch(stencilTexArray, ivec3(0, 0, 1), 0).r;
++        uint s1_l1 = texelFetch(stencilTexArray, ivec3(0, 0, 1), 1).r;
++        uint s2_l1 = texelFetch(stencilTexArray, ivec3(0, 0, 1), 2).r;
++        uint s3_l1 = texelFetch(stencilTexArray, ivec3(0, 0, 1), 3).r;
++        if (s0_l0 == 10u && s1_l0 == 20u && s2_l0 == 30u && s3_l0 == 40u &&
++            s0_l1 == 50u && s1_l1 == 100u && s2_l1 == 150u && s3_l1 == 200u)
++        {
++            fragColor = vec4(0.0, 1.0, 0.0, 1.0); // Green
++        }
++        else
++        {
++            fragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red
++        }
++    }
++})";
++
++    ANGLE_GL_PROGRAM(sampleProg, essl31_shaders::vs::Passthrough(), kFS);
++    glUseProgram(sampleProg);
++    GLint useArrayLoc = glGetUniformLocation(sampleProg, "useArray");
++    glUniform1i(glGetUniformLocation(sampleProg, "stencilTex"), 0);
++    glUniform1i(glGetUniformLocation(sampleProg, "stencilTexArray"), 1);
++
++    glViewport(0, 0, 1, 1);
++
++    // Draw 1: Test 2D MS stencil sampling (unit 0 bound, unit 1 unbound).
++    // This triggers incomplete texture generation for GL_TEXTURE_2D_MULTISAMPLE_ARRAY (unit 1).
++    glUniform1i(useArrayLoc, 0);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, msaaStencilTex);
++    glActiveTexture(GL_TEXTURE1);
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES, 0);
++    drawQuad(sampleProg, essl31_shaders::PositionAttrib(), 0.0f);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Draw 2: Test 2D MS Array stencil sampling (unit 0 unbound, unit 1 bound).
++    // This triggers incomplete texture generation for GL_TEXTURE_2D_MULTISAMPLE (unit 0).
++    glUniform1i(useArrayLoc, 1);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
++    glActiveTexture(GL_TEXTURE1);
++    glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY_OES, msaaStencilArrayTex);
++    drawQuad(sampleProg, essl31_shaders::PositionAttrib(), 0.0f);
++    ASSERT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ // Test resolving a multisampled texture with blit to a different format
+ TEST_P(FramebufferTest_ES31, MultisampleResolveWithBlitDifferentFormats)
+ {
+@@ -10132,6 +10554,44 @@ TEST_P(FramebufferTest_ES3FBOReattachmentWorkaround, TexImage2DToTexStorage2DUnb
+     runTexImage2DToTexStorage2DTest(false);
+ }
+ 
++ANGLE_INSTANTIATE_TEST_ES2_AND(AddMockTextureNoRenderTargetTest,
++                               ES2_D3D11().enable(Feature::AddMockTextureNoRenderTarget));
++
++ANGLE_INSTANTIATE_TEST_ES2_AND(FramebufferTest,
++                               ES2_VULKAN().disable(Feature::PreferDynamicRendering));
++ANGLE_INSTANTIATE_TEST_ES2_AND(FramebufferExtensionsTest,
++                               ES2_VULKAN().disable(Feature::PreferDynamicRendering));
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(FramebufferFormatsTest,
++                                       ES2_VULKAN().disable(Feature::PreferDynamicRendering));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(FramebufferTest_ES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(FramebufferTest_ES3,
++                               ES3_VULKAN().enable(Feature::EmulatedPrerotation90),
++                               ES3_VULKAN().enable(Feature::EmulatedPrerotation180),
++                               ES3_VULKAN().enable(Feature::EmulatedPrerotation270),
++                               ES3_VULKAN().disable(Feature::PreferDynamicRendering));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(FramebufferTest_ES3_WebGPU);
++ANGLE_INSTANTIATE_TEST(FramebufferTest_ES3_WebGPU, ES3_WEBGPU());
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(FramebufferTest_ES3Metal);
++ANGLE_INSTANTIATE_TEST(FramebufferTest_ES3Metal,
++                       ES3_METAL().enable(Feature::LimitMaxColorTargetBitsForTesting));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(FramebufferTest_ES31);
++ANGLE_INSTANTIATE_TEST_ES31_AND(FramebufferTest_ES31,
++                                ES31_VULKAN().disable(Feature::SupportsImagelessFramebuffer),
++                                ES31_VULKAN().disable(Feature::PreferDynamicRendering),
++                                ES31_VULKAN()
++                                    .disable(Feature::PreferDynamicRendering)
++                                    .disable(Feature::SupportsImagelessFramebuffer));
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    FramebufferTestWithFormatFallback,
++    ES3_VULKAN().disable(Feature::PreferDynamicRendering),
++    ES3_VULKAN_SWIFTSHADER().enable(Feature::ForceRenderableFallbackFormat));
++ANGLE_INSTANTIATE_TEST_ES3_AND(DefaultFramebufferTest,
++                               ES3_VULKAN().disable(Feature::PreferDynamicRendering));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(FramebufferTest_ES3FBOReattachmentWorkaround);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     FramebufferTest_ES3FBOReattachmentWorkaround,
+@@ -10139,3 +10599,8 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     ES3_OPENGL().disable(Feature::ReattachFboDepthStencilOnReallocation),
+     ES3_OPENGLES().enable(Feature::ReattachFboDepthStencilOnReallocation),
+     ES3_OPENGLES().disable(Feature::ReattachFboDepthStencilOnReallocation));
++
++ANGLE_INSTANTIATE_TEST_ES31_AND(FramebufferTest_ES31_MSAA,
++                                ES31_VULKAN().enable(Feature::EmulatedPrerotation90),
++                                ES31_VULKAN().enable(Feature::EmulatedPrerotation180),
++                                ES31_VULKAN().enable(Feature::EmulatedPrerotation270));

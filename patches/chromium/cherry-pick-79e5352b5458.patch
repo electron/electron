@@ -1,0 +1,548 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bo Liu <boliu@chromium.org>
+Date: Wed, 12 Aug 2026 05:40:26 -0700
+Subject: [webgpu] Check Skia flush success before calling SetCleared
+
+When using Skia to clear a shared image before, WebGPU decoder doesn't
+check if the Skia commands succeeded with Graphite. This CL fixes that
+by making the Graphite flush and submit functions return a success value
+and checking it in WebGPU decoder. Also add a unit test that simulates
+Graphite insert recording failure and assert that the shared image is
+not cleared incorrectly.
+
+Fixed: 517527943
+Change-Id: I4fcf826b5296aa60d1661255e57e1fbf6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8027742
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Kartar Singh <kartarsingh@google.com>
+Commit-Queue: Bo Liu <boliu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1677962}
+
+diff --git a/components/viz/test/test_gpu_service_holder.cc b/components/viz/test/test_gpu_service_holder.cc
+index d2be2d38a88b4c201189dc0ee0f9eb01d29e4cdc..da4ef5ee3eabdd90184382384d7e03fb3b925cbb 100644
+--- a/components/viz/test/test_gpu_service_holder.cc
++++ b/components/viz/test/test_gpu_service_holder.cc
+@@ -266,6 +266,16 @@ scoped_refptr<gl::GLShareGroup> TestGpuServiceHolder::GetShareGroup() {
+   return gpu_service_->share_group();
+ }
+ 
++gpu::GraphiteSharedContext* TestGpuServiceHolder::GetGraphiteSharedContext()
++    const {
++#if BUILDFLAG(SKIA_USE_DAWN)
++  if (gpu_service_->dawn_context_provider()) {
++    return gpu_service_->dawn_context_provider()->GetGraphiteSharedContext();
++  }
++#endif
++  return nullptr;
++}
++
+ void TestGpuServiceHolder::ScheduleGpuMainTask(base::OnceClosure callback) {
+   DCHECK(gpu_main_task_sequence_);
+   gpu_main_task_sequence_->ScheduleTask(
+diff --git a/components/viz/test/test_gpu_service_holder.h b/components/viz/test/test_gpu_service_holder.h
+index c4f3e61799c7cad71b4866247e45f3834e2e7b2b..0928e83c0f2ccc7542dce7d80d3d02d06f389ee8 100644
+--- a/components/viz/test/test_gpu_service_holder.h
++++ b/components/viz/test/test_gpu_service_holder.h
+@@ -31,6 +31,7 @@ class ShelfContextMenuTest;
+ 
+ namespace gpu {
+ class CommandBufferTaskExecutor;
++class GraphiteSharedContext;
+ class SingleTaskSequence;
+ #if BUILDFLAG(ENABLE_VULKAN)
+ class VulkanImplementation;
+@@ -131,6 +132,8 @@ class TestGpuServiceHolder : public gpu::GpuInProcessThreadServiceDelegate {
+   scoped_refptr<gpu::SharedContextState> GetSharedContextState() override;
+   scoped_refptr<gl::GLShareGroup> GetShareGroup() override;
+ 
++  gpu::GraphiteSharedContext* GetGraphiteSharedContext() const;
++
+  private:
+   void InitializeOnGpuThread(const gpu::GpuPreferences& preferences,
+                              base::WaitableEvent* completion);
+diff --git a/gpu/command_buffer/service/graphite_shared_context.cc b/gpu/command_buffer/service/graphite_shared_context.cc
+index eef93c3f224a33f32126176926c8ff7972189769..235c3275cede6fde354ea7429e703cd1c8df3120 100644
+--- a/gpu/command_buffer/service/graphite_shared_context.cc
++++ b/gpu/command_buffer/service/graphite_shared_context.cc
+@@ -277,6 +277,12 @@ GraphiteSharedContext::makePrecompileContext() {
+   return graphite_context_->makePrecompileContext();
+ }
+ 
++void GraphiteSharedContext::set_simulated_insert_status(
++    skgpu::graphite::InsertStatus status) {
++  AutoLock auto_lock(this);
++  simulated_insert_status_ = status;
++}
++
+ bool GraphiteSharedContext::insertRecording(
+     const skgpu::graphite::InsertRecordingInfo& info) {
+   AutoLock auto_lock(this);
+@@ -308,12 +314,17 @@ bool GraphiteSharedContext::InsertRecordingImpl(
+   // graphite::Context.
+   std::optional<skgpu::graphite::InsertRecordingInfo> info_copy;
+   if (info.fFinishedProc && task_runner) {
+-    info_copy = info;
++    info_copy = *info_ptr;
+     std::tie(info_copy->fFinishedProc, info_copy->fFinishedContext) =
+         CreateFinishedProcThreadSafe(info.fFinishedProc, info.fFinishedContext,
+                                      std::move(task_runner));
+     info_ptr = &info_copy.value();
+   }
++  if (simulated_insert_status_ != skgpu::graphite::InsertStatus::kSuccess) {
++    info_copy = *info_ptr;
++    info_copy->fSimulatedStatus = simulated_insert_status_;
++    info_ptr = &info_copy.value();
++  }
+ 
+   auto insert_status = graphite_context_->insertRecording(*info_ptr);
+ 
+diff --git a/gpu/command_buffer/service/graphite_shared_context.h b/gpu/command_buffer/service/graphite_shared_context.h
+index 2bb0618a9a456d632570e64373d5c5f06a5635d7..aa95e6c71ecb634c1d149880af494470686ce2ef 100644
+--- a/gpu/command_buffer/service/graphite_shared_context.h
++++ b/gpu/command_buffer/service/graphite_shared_context.h
+@@ -222,6 +222,10 @@ class GPU_GLES2_EXPORT GraphiteSharedContext {
+ 
+   skgpu::GpuStatsFlags supportedGpuStats() const;
+ 
++  // Overrides `fSimulatedStatus` for any `insertRecording` call when passed a
++  // `status` other than `kSuccess`.
++  void set_simulated_insert_status(skgpu::graphite::InsertStatus status);
++
+  private:
+   class AutoLock;
+ 
+@@ -251,6 +255,9 @@ class GPU_GLES2_EXPORT GraphiteSharedContext {
+ 
+   FlushCallback backend_flush_callback_;
+   MarkContextLostCallback mark_context_lost_callback_;
++
++  skgpu::graphite::InsertStatus simulated_insert_status_ =
++      skgpu::graphite::InsertStatus::kSuccess;
+ };
+ 
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/graphite_utils.cc b/gpu/command_buffer/service/graphite_utils.cc
+index f7518d6b5906919e209e2b9c701f7077d08f6d68..9dd217e037cf950525786fb1b68a956e2de3ccd8 100644
+--- a/gpu/command_buffer/service/graphite_utils.cc
++++ b/gpu/command_buffer/service/graphite_utils.cc
+@@ -39,7 +39,9 @@ bool GraphiteReadPixelsSyncImpl(GraphiteSharedContext* context,
+                                 size_t dst_bytes_per_row,
+                                 int src_x,
+                                 int src_y) {
+-  GraphiteFlush(context, recorder);
++  if (!GraphiteFlush(context, recorder)) {
++    return false;
++  }
+ 
+   ReadPixelsContext read_context;
+   const SkIRect src_rect =
+@@ -63,18 +65,23 @@ bool GraphiteReadPixelsSyncImpl(GraphiteSharedContext* context,
+ 
+ }  // namespace
+ 
+-void GraphiteFlush(GraphiteSharedContext* context,
++bool GraphiteFlush(GraphiteSharedContext* context,
+                    skgpu::graphite::Recorder* recorder) {
+   auto recording = recorder->snap();
+   if (recording) {
+-    context->insertRecording({recording.get()});
++    return context->insertRecording({recording.get()});
+   }
++  return true;
+ }
+ 
+-void GraphiteFlushAndSubmit(GraphiteSharedContext* context,
++bool GraphiteFlushAndSubmit(GraphiteSharedContext* context,
+                             skgpu::graphite::Recorder* recorder) {
+-  GraphiteFlush(context, recorder);
++  bool success = GraphiteFlush(context, recorder);
++  // We submit any pending GPU work despite insertRecording failing since the
++  // caller can expect any resources used to be eventually released when the
++  // submitted work is done on the GPU.
+   context->submit();
++  return success;
+ }
+ 
+ bool GraphiteReadPixelsSync(GraphiteSharedContext* context,
+diff --git a/gpu/command_buffer/service/graphite_utils.h b/gpu/command_buffer/service/graphite_utils.h
+index 4e35ea2d93b0cb2ece029c8e12c843ab3f9a9b84..94f6ff291a51a16bf6ab2686ebdb44f58ce4f41d 100644
+--- a/gpu/command_buffer/service/graphite_utils.h
++++ b/gpu/command_buffer/service/graphite_utils.h
+@@ -21,11 +21,11 @@ namespace gpu {
+ class GraphiteSharedContext;
+ 
+ GPU_GLES2_EXPORT
+-void GraphiteFlush(GraphiteSharedContext* context,
++bool GraphiteFlush(GraphiteSharedContext* context,
+                    skgpu::graphite::Recorder* recorder);
+ 
+ GPU_GLES2_EXPORT
+-void GraphiteFlushAndSubmit(GraphiteSharedContext* context,
++bool GraphiteFlushAndSubmit(GraphiteSharedContext* context,
+                             skgpu::graphite::Recorder* recorder);
+ 
+ // Synchronously read pixels from a graphite image.
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index 08ba87c8db6c6f82cf5cee07226315d78e11824c..f38db2dfcbe4d7063dcbe82472f7d4beb0d44be0 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -5,6 +5,7 @@
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ 
+ #include "base/compiler_specific.h"
++#include "base/debug/crash_logging.h"
+ #include "base/debug/dump_without_crashing.h"
+ #include "base/immediate_crash.h"
+ #include "base/metrics/histogram_functions.h"
+@@ -816,25 +817,32 @@ bool SharedContextState::InitializeGLWithFeatureInfo(
+   return true;
+ }
+ 
+-void SharedContextState::FlushGraphiteRecorder() {
++bool SharedContextState::FlushGraphiteRecorder() {
+   auto recording = gpu_main_graphite_recorder()->snap();
+-  if (recording) {
+-    skgpu::graphite::InsertRecordingInfo info = {};
+-    info.fRecording = recording.get();
+-    graphite_shared_context()->insertRecording(info);
++  if (!recording) {
++    return false;
+   }
++
++  skgpu::graphite::InsertRecordingInfo info = {};
++  info.fRecording = recording.get();
++  return graphite_shared_context()->insertRecording(info);
+ }
+ 
+-void SharedContextState::FlushAndSubmit(bool sync_to_cpu) {
++bool SharedContextState::FlushAndSubmit(bool sync_to_cpu) {
+   if (graphite_shared_context()) {
+-    FlushGraphiteRecorder();
++    bool flush_succeeded = FlushGraphiteRecorder();
++    // We submit any pending GPU work despite insertRecording failing since the
++    // caller can expect any resources used to be eventually released when the
++    // submitted work is done on the GPU.
+     graphite_shared_context()->submit(sync_to_cpu
+                                           ? skgpu::graphite::SyncToCpu::kYes
+                                           : skgpu::graphite::SyncToCpu::kNo);
++    return flush_succeeded;
+   } else if (gr_context()) {
+-    gr_context()->flushAndSubmit(sync_to_cpu ? GrSyncCpu::kYes
+-                                             : GrSyncCpu::kNo);
++    gr_context()->flush();
++    return gr_context()->submit(sync_to_cpu ? GrSyncCpu::kYes : GrSyncCpu::kNo);
+   }
++  return true;
+ }
+ 
+ void SharedContextState::FlushWriteAccess(
+@@ -869,7 +877,7 @@ void SharedContextState::FlushWriteAccess(
+   }
+ }
+ 
+-void SharedContextState::SubmitIfNecessary(
++bool SharedContextState::SubmitIfNecessary(
+     std::vector<GrBackendSemaphore> signal_semaphores,
+     bool need_graphite_submit) {
+   if (graphite_shared_context() && need_graphite_submit) {
+@@ -881,33 +889,35 @@ void SharedContextState::SubmitIfNecessary(
+     // and DrDC is not enabled.
+     CHECK(signal_semaphores.empty());
+     graphite_shared_context()->submit(skgpu::graphite::SyncToCpu::kNo);
+-    return;
++    return true;
+   }
+ 
+-  // Do nothing here if there is no context.
++  // Do nothing here if there is no Skia Ganesh GrContext.
+   if (!gr_context()) {
+-    return;
++    return true;
+   }
+ 
+   // Note that when DrDc is enabled, we need to call
+   // AddVulkanCleanupTaskForSkiaFlush() on gpu main thread and do skia flush.
+   // This will ensure that vulkan memory allocated on gpu main thread will be
+   // cleaned up.
++  SCOPED_CRASH_KEY_BOOL("gpu", "DrDcEnabled", is_drdc_enabled_);
++  SCOPED_CRASH_KEY_NUMBER("gpu", "SignalSemaphores", signal_semaphores.size());
+   if (!signal_semaphores.empty() || is_drdc_enabled_) {
+-    // NOTE: The Graphite SharedImage representation does not set semaphores,
+-    // and we are not enabling DrDC with Graphite.
+-    CHECK(gr_context());
+     GrFlushInfo flush_info = {
+         .fNumSemaphores = signal_semaphores.size(),
+         .fSignalSemaphores = signal_semaphores.data(),
+     };
+     gpu::AddVulkanCleanupTaskForSkiaFlush(vk_context_provider(), &flush_info);
+ 
+-    auto result = gr_context()->flush(flush_info);
+-    DCHECK_EQ(result, GrSemaphoresSubmitted::kYes);
++    if (gr_context()->flush(flush_info) != GrSemaphoresSubmitted::kYes) {
++      base::debug::DumpWithoutCrashing();
++      return false;
++    }
+   }
+ 
+   bool sync_cpu = gpu::ShouldVulkanSyncCpuForSkiaSubmit(vk_context_provider());
++  SCOPED_CRASH_KEY_BOOL("gpu", "SubmitSyncCpu", sync_cpu);
+ 
+   // If DrDc is enabled, submit the gr_context() to ensure correct ordering
+   // of vulkan commands between raster and display compositor.
+@@ -919,10 +929,12 @@ void SharedContextState::SubmitIfNecessary(
+   const bool need_submit =
+       sync_cpu || !signal_semaphores.empty() || is_drdc_enabled_;
+ 
+-  if (need_submit) {
+-    CHECK(gr_context());
+-    gr_context()->submit(sync_cpu ? GrSyncCpu::kYes : GrSyncCpu::kNo);
++  if (need_submit &&
++      !gr_context()->submit(sync_cpu ? GrSyncCpu::kYes : GrSyncCpu::kNo)) {
++    base::debug::DumpWithoutCrashing();
++    return false;
+   }
++  return true;
+ }
+ 
+ bool SharedContextState::MakeCurrent(gl::GLSurface* surface, bool needs_gl) {
+diff --git a/gpu/command_buffer/service/shared_context_state.h b/gpu/command_buffer/service/shared_context_state.h
+index 9de74f512f1e2f49a6bf96d2c63aec97fe70adb2..322b918e933b1464db3c637ff86a26b153582fff 100644
+--- a/gpu/command_buffer/service/shared_context_state.h
++++ b/gpu/command_buffer/service/shared_context_state.h
+@@ -146,10 +146,10 @@ class GPU_GLES2_EXPORT SharedContextState
+ 
+   bool IsGLInitialized() const { return !!feature_info_; }
+ 
+-  void FlushAndSubmit(bool sync_to_cpu);
+-  void FlushGraphiteRecorder();
++  bool FlushAndSubmit(bool sync_to_cpu);
++  bool FlushGraphiteRecorder();
+   void FlushWriteAccess(SkiaImageRepresentation::ScopedWriteAccess* access);
+-  void SubmitIfNecessary(std::vector<GrBackendSemaphore> signal_semaphores,
++  bool SubmitIfNecessary(std::vector<GrBackendSemaphore> signal_semaphores,
+                          bool need_graphite_submit);
+ 
+   // Returns true if context state is using GL, either for Skia to run on
+diff --git a/gpu/command_buffer/service/shared_image/wrapped_graphite_texture_holder.cc b/gpu/command_buffer/service/shared_image/wrapped_graphite_texture_holder.cc
+index 2e3727944017be5890c25ae07b479963bfd9b7f8..9e8f0015d371f7c28695da86a09bcab66ec63619 100644
+--- a/gpu/command_buffer/service/shared_image/wrapped_graphite_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/wrapped_graphite_texture_holder.cc
+@@ -21,7 +21,10 @@ WrappedGraphiteTextureHolder::WrappedGraphiteTextureHolder(
+ WrappedGraphiteTextureHolder::~WrappedGraphiteTextureHolder() {
+   auto destroy_resource = [](scoped_refptr<SharedContextState> context_state,
+                              skgpu::graphite::BackendTexture texture) {
+-    if (texture.isValid()) {
++    // It's possible in some tests that teardown with unsubmitted commands for
++    // the WrappedGraphiteTextureHolder to be released after the GraphiteDawn
++    // context has been nulled out and is in the middle of being torn down.
++    if (context_state->graphite_shared_context() && texture.isValid()) {
+       context_state->graphite_shared_context()->deleteBackendTexture(texture);
+     }
+   };
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 39bdfc96b9a522b63938976dbd24e3634353e866..0f52496d2ebeab5045bd8b8237c03f3bd51d1cb7 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -2465,10 +2465,12 @@ bool WebGPUDecoderImpl::ClearSharedImageWithSkia(const Mailbox& mailbox) {
+   if (!begin_semaphores.empty()) {
+     // gr_context() must not be null when begin_semaphores is not empty.
+     DCHECK(shared_context_state_->gr_context());
+-    bool wait_result = shared_context_state_->gr_context()->wait(
+-        begin_semaphores.size(), begin_semaphores.data(),
+-        /*deleteSemaphoresAfterWait=*/false);
+-    DCHECK(wait_result);
++    if (!shared_context_state_->gr_context()->wait(
++            begin_semaphores.size(), begin_semaphores.data(),
++            /*deleteSemaphoresAfterWait=*/false)) {
++      DLOG(ERROR) << "ClearSharedImage: Skia GrContext wait failed";
++      return false;
++    }
+   }
+   auto* canvas = surface->getCanvas();
+   SkColor4f clear_color;
+@@ -2487,28 +2489,22 @@ bool WebGPUDecoderImpl::ClearSharedImageWithSkia(const Mailbox& mailbox) {
+   } else {
+     DCHECK(shared_context_state_->graphite_shared_context());
+     DCHECK(shared_context_state_->gpu_main_graphite_recorder());
+-    GraphiteFlushAndSubmit(shared_context_state_->graphite_shared_context(),
+-                           shared_context_state_->gpu_main_graphite_recorder());
++    if (!GraphiteFlushAndSubmit(
++            shared_context_state_->graphite_shared_context(),
++            shared_context_state_->gpu_main_graphite_recorder())) {
++      DLOG(ERROR) << "ClearSharedImage: GraphiteFlushAndSubmit failed";
++      return false;
++    }
+   }
+   // Transition the image back to the desired end state. This is used for
+   // transitioning the image to the external queue for Vulkan/GL interop.
+   scoped_write_access->ApplyBackendSurfaceEndState();
+-
+-  if (!end_semaphores.empty()) {
+-    // gr_context() must not be null when end_semaphores is not empty.
+-    DCHECK(shared_context_state_->gr_context());
+-    GrFlushInfo flush_info = {
+-        .fNumSemaphores = end_semaphores.size(),
+-        .fSignalSemaphores = end_semaphores.data(),
+-    };
+-    // Note: this is a no-op if vk_context_provider is null.
+-    AddVulkanCleanupTaskForSkiaFlush(
+-        shared_context_state_->vk_context_provider(), &flush_info);
+-    auto flush_result = shared_context_state_->gr_context()->flush(flush_info);
+-    DCHECK(flush_result == GrSemaphoresSubmitted::kYes);
+-    shared_context_state_->gr_context()->submit();
++  if (!shared_context_state_->SubmitIfNecessary(
++          std::move(end_semaphores), /*need_graphite_submit=*/false)) {
++    DLOG(ERROR) << "ClearSharedImage: SharedContextState submit failed";
++    return false;
+   }
+-
++  representation->SetCleared();
+   return true;
+ }
+ 
+diff --git a/gpu/command_buffer/tests/webgpu_mailbox_unittest.cc b/gpu/command_buffer/tests/webgpu_mailbox_unittest.cc
+index 1bb7f159ae00dedd10c95b425f3ad32f736caf7d..acb2f9f67fe2d76f8e9172e7926936fff8b03ee8 100644
+--- a/gpu/command_buffer/tests/webgpu_mailbox_unittest.cc
++++ b/gpu/command_buffer/tests/webgpu_mailbox_unittest.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "base/compiler_specific.h"
+ #include "base/strings/stringprintf.h"
++#include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "components/viz/test/test_gpu_service_holder.h"
+ #include "gpu/command_buffer/client/client_shared_image.h"
+@@ -11,6 +12,7 @@
+ #include "gpu/command_buffer/client/webgpu_implementation.h"
+ #include "gpu/command_buffer/common/mailbox.h"
+ #include "gpu/command_buffer/common/shared_image_usage.h"
++#include "gpu/command_buffer/service/graphite_shared_context.h"
+ #include "gpu/command_buffer/service/webgpu_decoder.h"
+ #include "gpu/command_buffer/tests/webgpu_test.h"
+ #include "gpu/config/gpu_finch_features.h"
+@@ -1471,6 +1473,51 @@ TEST_P(WebGPUMailboxTextureTest, AssociateDissociateMailboxWhenNotCurrent) {
+                      std::move(gl_surface1), std::move(gl_surface2)));
+ }
+ 
++// Test that a SharedImage that is presented while still uninitialized stays
++// reported as uncleared if the Skia clear could not be inserted into the
++// Graphite context, so subsequent reads see lazy-cleared contents rather than
++// stale data.
++TEST_P(WebGPUMailboxTextureTest,
++       PresentClearLeavesSharedImageUnclearedOnInsertFailure) {
++  auto* graphite_shared_context =
++      GetGpuServiceHolder()->GetGraphiteSharedContext();
++  SKIP_TEST_IF(!graphite_shared_context);
++
++  // Create the shared image and fill it with a non-zero sentinel.
++  SharedImageInterface* sii = GetSharedImageInterface();
++  scoped_refptr<gpu::ClientSharedImage> shared_image =
++      sii->CreateSharedImage({GetParam().format,
++                              {1, 1},
++                              gfx::ColorSpace::CreateSRGB(),
++                              GetSharedImageUsage(AccessType::ReadWrite),
++                              "TestLabel"},
++                             kNullSurfaceHandle);
++  InitializeTextureColor(device_, shared_image, {1.0, 0, 0, 1.0});
++  WaitForCompletion(device_);
++
++  // Simulate a recoverable Graphite insertRecording() failure so any recorded
++  // work is dropped without losing the Skia context.
++  graphite_shared_context->set_simulated_insert_status(
++      skgpu::graphite::InsertStatus::kPromiseImageInstantiationFailed);
++
++  // Associate with DISCARD so the texture is treated as uninitialized, then
++  // present without writing. The decoder will attempt to clear via Skia and
++  // the recording insertion will be dropped.
++  wgpu::TextureDescriptor desc = {
++      .usage = wgpu::TextureUsage::RenderAttachment,
++  };
++  std::unique_ptr<WebGPUTextureScopedAccess> webgpu_scoped_access =
++      shared_image->BeginWebGPUTextureAccess(webgpu(), gpu::SyncToken(),
++                                             device_, desc, /*usage=*/0,
++                                             webgpu::WEBGPU_MAILBOX_DISCARD);
++  webgpu_scoped_access->SetNeedsPresent(true);
++
++  webgpu_impl()->SetLostContextCallback(
++      base::MakeExpectedRunClosure(FROM_HERE));
++  EXPECT_WEBGPU_DEVICE_LOST(device_, WebGPUTextureScopedAccess::EndAccess(
++                                         std::move(webgpu_scoped_access)));
++}
++
+ INSTANTIATE_TEST_SUITE_P(
+     ,
+     WebGPUMailboxTextureTest,
+diff --git a/gpu/command_buffer/tests/webgpu_test.cc b/gpu/command_buffer/tests/webgpu_test.cc
+index c3a3c2cefb46d87334132a6b0b9f48f52a1475bb..fabfa94cefdfcc3c8e1fedcc409b771afc923192 100644
+--- a/gpu/command_buffer/tests/webgpu_test.cc
++++ b/gpu/command_buffer/tests/webgpu_test.cc
+@@ -41,9 +41,13 @@ void CountCallback(int* count) {
+ 
+ WebGPUTest::Options::Options() = default;
+ 
+-std::map<std::pair<WGPUDevice, wgpu::ErrorType>, /* matched */ bool>
++// static
++std::map<std::pair<WGPUDevice, wgpu::ErrorType>, bool>
+     WebGPUTest::s_expected_errors = {};
+ 
++// static
++std::map<WGPUDevice, bool> WebGPUTest::s_expected_devices_lost = {};
++
+ WebGPUTest::WebGPUTest() = default;
+ WebGPUTest::~WebGPUTest() = default;
+ 
+@@ -240,8 +244,13 @@ wgpu::Device WebGPUTest::GetNewDevice(
+ 
+   device_desc.SetDeviceLostCallback(
+       wgpu::CallbackMode::AllowSpontaneous,
+-      [](const wgpu::Device&, wgpu::DeviceLostReason reason,
++      [](const wgpu::Device& device, wgpu::DeviceLostReason reason,
+          wgpu::StringView message) {
++        auto it = s_expected_devices_lost.find(device.Get());
++        if (it != s_expected_devices_lost.end() && !it->second) {
++          it->second = true;
++          return;
++        }
+         if (reason == wgpu::DeviceLostReason::Destroyed) {
+           return;
+         }
+diff --git a/gpu/command_buffer/tests/webgpu_test.h b/gpu/command_buffer/tests/webgpu_test.h
+index fff847f1f0600ab491d353d07478f5edcf0bf734..e68dc265e2932abc64a1e27f028c0fb4ac9d007e 100644
+--- a/gpu/command_buffer/tests/webgpu_test.h
++++ b/gpu/command_buffer/tests/webgpu_test.h
+@@ -8,6 +8,7 @@
+ #include <dawn/wire/client/webgpu_cpp.h>
+ #include <dawn/wire/client/webgpu_cpp_print.h>
+ 
++#include <map>
+ #include <memory>
+ 
+ #include "build/build_config.h"
+@@ -87,6 +88,8 @@ class WebGPUTest : public testing::Test {
+   static std::map<std::pair<WGPUDevice, wgpu::ErrorType>, /* matched */ bool>
+       s_expected_errors;
+ 
++  static std::map<WGPUDevice, /* matched */ bool> s_expected_devices_lost;
++
+   wgpu::Instance instance_ = nullptr;
+   wgpu::Adapter adapter_ = nullptr;
+ 
+@@ -110,6 +113,18 @@ class WebGPUTest : public testing::Test {
+     s_expected_errors.erase(it.first);                                         \
+   } while (0)
+ 
++#define EXPECT_WEBGPU_DEVICE_LOST(device, statement)                        \
++  do {                                                                      \
++    PollUntilIdle();                                                        \
++    auto it = s_expected_devices_lost.insert({device.Get(), false});        \
++    EXPECT_TRUE(it.second) << "Only one expectation per-device supported."; \
++    statement;                                                              \
++    PollUntilIdle();                                                        \
++    EXPECT_TRUE(it.first->second)                                           \
++        << "Expected device lost in `" #statement "`";                      \
++    s_expected_devices_lost.erase(it.first);                                \
++  } while (0)
++
+ }  // namespace gpu
+ 
+ #endif  // GPU_COMMAND_BUFFER_TESTS_WEBGPU_TEST_H_

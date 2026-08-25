@@ -1,0 +1,335 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Tue, 21 Jul 2026 14:44:35 +0000
+Subject: [M150][GL]workaround: Flush queries before deleting or unbinding FBOs
+ on ARM
+
+Implement a workaround to prevent a driver crash on ARM Mali
+(Avalon/Valhall) devices. The crash is triggered when a framebuffer
+object is unbound or deleted while GPU queries or jobs are still
+pending.
+
+This change introduces the `flushQueriesBeforeDeletingOrUnbindingFbo`
+feature. When active, ANGLE forces a synchronization of pending queries
+prior to FBO deletion or unbinding. The synchronization utilizes a
+`glFenceSync` flush to push pending command buffers, gracefully falling
+back to `glFinish()` if sync extensions are unavailable.
+
+TAG: agy
+CONV: c1a3bcfb-0d1f-4b4e-86b4-c6731bfeebfd
+Bug: chromium:534468209
+Fixed: chromium:546659565
+Change-Id: I39a26436ce8937a7682ce61355c164a6b306ee7a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8110977
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+(cherry picked from commit e33e55e0801c4ba770e39a8b52679c0205475184)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8258339
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 4cd31a97a0737ad6878dc9f99e0a2b7b4aa6b81b..4014d7b83c23632322ea4d538c93af923f75386c 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -764,6 +764,11 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo flushQueriesBeforeDeletingOrUnbindingFbo = {
++        "flushQueriesBeforeDeletingOrUnbindingFbo",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index ca3b28c635a3da0d753993662781a7cc2bc68a5a..397075897b91fe81a7ab336ebe48dd0dfb6d2a56 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1001,6 +1001,15 @@
+                 "Remove complex expressions from struct constructors."
+             ],
+             "issue": "http://crbug.com/529509587"
++        },
++        {
++            "name": "flush_queries_before_deleting_or_unbinding_fbo",
++            "category": "Workarounds",
++            "description": [
++                "Flush pending GPU jobs/queries before unbinding or deleting a user framebuffer ",
++                "object on ARM Mali Valhall/Avalon GPUs to avoid driver crash."
++            ],
++            "issue": "http://crbug.com/534468209"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/RendererGL.cpp b/src/libANGLE/renderer/gl/RendererGL.cpp
+index 8f58137396c9a85f6fcd2d9f2e734bbb9912788f..c8fe2f55f0b17d40a528515754cd463144900126 100644
+--- a/src/libANGLE/renderer/gl/RendererGL.cpp
++++ b/src/libANGLE/renderer/gl/RendererGL.cpp
+@@ -241,6 +241,7 @@ angle::Result RendererGL::finish()
+     mFunctions->finish();
+     mNeedsFlushBeforeDeleteTextures = false;
+     mWorkDoneSinceLastFlush         = false;
++    mStateManager->onSyncedFlushOrFinish();
+ 
+     if (mFeatures.finishDoesNotCauseQueriesToBeAvailable.enabled && mUseDebugOutput)
+     {
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index d46fc055965f891ecd7bb6cea566314d9b38a499..d7de4407340155db531488771a8fdc95341da9de 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -129,6 +129,7 @@ StateManagerGL::StateManagerGL(const FunctionsGL *functions,
+       mSampleCoverageInvert(false),
+       mSampleMaskEnabled(false),
+       mSampleCoverageEverChanged(false),
++      mHasUnflushedQueries(false),
+       mDepthTestEnabled(false),
+       mDepthFunc(GL_LESS),
+       mDepthMask(true),
+@@ -372,6 +373,7 @@ void StateManagerGL::deleteFramebuffer(GLuint fbo)
+ {
+     if (fbo != 0)
+     {
++        bool wasBound = false;
+         if (mHasSeparateFramebufferBindings)
+         {
+             for (size_t binding = 0; binding < mFramebuffers.size(); ++binding)
+@@ -381,6 +383,7 @@ void StateManagerGL::deleteFramebuffer(GLuint fbo)
+                     GLenum enumValue = angle::FramebufferBindingToEnum(
+                         static_cast<angle::FramebufferBinding>(binding));
+                     bindFramebuffer(enumValue, 0);
++                    wasBound = true;
+                 }
+             }
+         }
+@@ -391,8 +394,14 @@ void StateManagerGL::deleteFramebuffer(GLuint fbo)
+             if (mFramebuffers[angle::FramebufferBindingRead] == fbo)
+             {
+                 bindFramebuffer(GL_FRAMEBUFFER, 0);
++                wasBound = true;
+             }
+         }
++        if (!wasBound && mHasUnflushedQueries &&
++            mFeatures.flushQueriesBeforeDeletingOrUnbindingFbo.enabled)
++        {
++            forcefullyFlush();
++        }
+         mFunctions->deleteFramebuffers(1, &fbo);
+     }
+ }
+@@ -749,12 +758,44 @@ void StateManagerGL::bindFramebuffer(GLenum type, GLuint framebuffer)
+             break;
+     }
+ 
+-    if (framebufferChanged && mFeatures.flushOnFramebufferChange.enabled)
++    if (framebufferChanged)
+     {
+-        mFunctions->flush();
++        if (mFeatures.flushOnFramebufferChange.enabled)
++        {
++            mFunctions->flush();
++        }
++        if (mHasUnflushedQueries && mFeatures.flushQueriesBeforeDeletingOrUnbindingFbo.enabled)
++        {
++            forcefullyFlush();
++        }
+     }
+ }
+ 
++void StateManagerGL::onSyncedFlushOrFinish()
++{
++    mHasUnflushedQueries = false;
++}
++
++void StateManagerGL::forcefullyFlush()
++{
++    if (mFunctions->fenceSync != nullptr && mFunctions->clientWaitSync != nullptr &&
++        mFunctions->deleteSync != nullptr)
++    {
++        GLsync sync = mFunctions->fenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
++        if (sync != nullptr)
++        {
++            mFunctions->clientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
++            mFunctions->deleteSync(sync);
++            onSyncedFlushOrFinish();
++            return;
++        }
++    }
++
++    // Sync creation not supported or failed; fall back to finish()
++    mFunctions->finish();
++    onSyncedFlushOrFinish();
++}
++
+ void StateManagerGL::bindRenderbuffer(GLenum type, GLuint renderbuffer)
+ {
+     ASSERT(type == GL_RENDERBUFFER);
+@@ -826,6 +867,7 @@ void StateManagerGL::beginQuery(gl::QueryType type, QueryGL *queryObject, GLuint
+ 
+     mQueries[type] = queryObject;
+     mFunctions->beginQuery(ToGLenum(type), queryId);
++    mHasUnflushedQueries = true;
+ 
+     if (oldFramebufferBindingDraw != mPlaceholderFbo)
+     {
+@@ -839,6 +881,7 @@ void StateManagerGL::endQuery(gl::QueryType type, QueryGL *queryObject, GLuint q
+     ASSERT(mQueries[type] == queryObject);
+     mQueries[type] = nullptr;
+     mFunctions->endQuery(ToGLenum(type));
++    mHasUnflushedQueries = true;
+ }
+ 
+ void StateManagerGL::updateDrawIndirectBufferBinding(const gl::Context *context)
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index 7f0c7c1b5fe6ec13847b58a4349aa118afc37dd1..cc1bf28371ff887e32fc67a8de8adb2e2639ab33 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -185,6 +185,8 @@ class StateManagerGL final : angle::NonCopyable
+     void deleteRenderbuffer(GLuint rbo);
+     void deleteTransformFeedback(GLuint transformFeedback);
+ 
++    void onSyncedFlushOrFinish();
++
+     void useProgram(GLuint program);
+     void forceUseProgram(GLuint program);
+     void bindVertexArray(GLuint vao, VertexArrayStateGL *vaoState);
+@@ -207,6 +209,7 @@ class StateManagerGL final : angle::NonCopyable
+                           GLenum access,
+                           GLenum format);
+     void bindFramebuffer(GLenum type, GLuint framebuffer);
++    void forcefullyFlush();
+     void bindRenderbuffer(GLenum type, GLuint renderbuffer);
+     void bindTransformFeedback(GLenum type, GLuint transformFeedback);
+     void onTransformFeedbackStateChange();
+@@ -520,6 +523,7 @@ class StateManagerGL final : angle::NonCopyable
+     bool mSampleMaskEnabled;
+     gl::SampleMaskArray<GLbitfield> mSampleMaskValues;
+     bool mSampleCoverageEverChanged;
++    bool mHasUnflushedQueries;
+ 
+     bool mDepthTestEnabled;
+     GLenum mDepthFunc;
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index bf4b9f7be77d7e75c3517ddd3dede5655b7516c0..47f7d0cdfe596c05ade11fa484e9f834e7c2b78a 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2756,6 +2756,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // https://crbug.com/1356053
+     ANGLE_FEATURE_CONDITION(features, bindCompleteFramebufferForTimerQueries, isMali);
+ 
++    // http://crbug.com/534468209
++    ANGLE_FEATURE_CONDITION(features, flushQueriesBeforeDeletingOrUnbindingFbo, isMali);
++
+     // https://crbug.com/40264674
+     ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
+ 
+diff --git a/src/tests/gl_tests/OcclusionQueriesTest.cpp b/src/tests/gl_tests/OcclusionQueriesTest.cpp
+index c51bcd979d10f56b2c710c48e354e760b7dc45e1..af7b1e743305362a79a1b8177e849d962a86a348 100644
+--- a/src/tests/gl_tests/OcclusionQueriesTest.cpp
++++ b/src/tests/gl_tests/OcclusionQueriesTest.cpp
+@@ -1250,6 +1250,78 @@ TEST_P(OcclusionQueriesTestES3, QueryReuseWithMultipleFBOs)
+     EXPECT_GL_TRUE(result);
+ }
+ 
++// Test that deleting an FBO while a query result on that FBO is pending does not crash the driver
++// when calling glGetQueryObjectuiv.
++TEST_P(OcclusionQueriesTestES3, DeleteFBOWithPendingQuery)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glViewport(0, 0, 64, 64);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLQueryEXT query;
++    glBeginQuery(GL_ANY_SAMPLES_PASSED, query);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    glEndQuery(GL_ANY_SAMPLES_PASSED);
++
++    // Delete the FBO on which the query was executed, while result is still pending
++    fbo.reset();
++
++    // Retrieve query result - flushes pending jobs referencing the deleted FBO
++    GLuint result = GL_FALSE;
++    glGetQueryObjectuiv(query, GL_QUERY_RESULT, &result);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_GL_TRUE(result);
++}
++
++// Test that unbinding an FBO while a query result on that FBO is pending does not crash the driver
++// when calling glGetQueryObjectuiv.
++TEST_P(OcclusionQueriesTestES3, UnbindFBOWithPendingQuery)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glViewport(0, 0, 64, 64);
++    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLQueryEXT query;
++    glBeginQuery(GL_ANY_SAMPLES_PASSED, query);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    glEndQuery(GL_ANY_SAMPLES_PASSED);
++
++    // Unbind user FBO by switching back to default framebuffer (0)
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    // FORCE the driver to commit the unbind and end the previous render pass.
++    // Because drivers often optimize glClear, issuing geometry (drawQuad)
++    // strictly guarantees a new render pass is initiated in the hardware.
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++
++    // Retrieve query result
++    GLuint result = GL_FALSE;
++    glGetQueryObjectuiv(query, GL_QUERY_RESULT, &result);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_GL_TRUE(result);
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(OcclusionQueriesTest);
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(OcclusionQueriesTestES3);
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 7a61cf3542a98d89a8e5102e4a67f53ed941e453..2e08cb0a1f48d6e2a048a13bce931d48c6f4f431 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -188,6 +188,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+     {Feature::FlushBeforeDeleteTextureIfCopiedTo, "flushBeforeDeleteTextureIfCopiedTo"},
+     {Feature::FlushOnFramebufferChange, "flushOnFramebufferChange"},
++    {Feature::FlushQueriesBeforeDeletingOrUnbindingFbo, "flushQueriesBeforeDeletingOrUnbindingFbo"},
+     {Feature::ForceAtomicValueResolution, "forceAtomicValueResolution"},
+     {Feature::ForceBufferGPUStorage, "forceBufferGPUStorage"},
+     {Feature::ForceContinuousRefreshOnSharedPresent, "forceContinuousRefreshOnSharedPresent"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 9893cf9cdbbfbdeb13decefbb54d2bfaddd5c01b..b32bf8d06c5c4ffe0953a4d3ca49263d4ba89f60 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -188,6 +188,7 @@ enum class Feature
+     FlushAfterStreamVertexData,
+     FlushBeforeDeleteTextureIfCopiedTo,
+     FlushOnFramebufferChange,
++    FlushQueriesBeforeDeletingOrUnbindingFbo,
+     ForceAtomicValueResolution,
+     ForceBufferGPUStorage,
+     ForceContinuousRefreshOnSharedPresent,

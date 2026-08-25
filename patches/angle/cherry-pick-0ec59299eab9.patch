@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 6 Jul 2026 23:07:02 -0400
+Subject: Always sync the texture after robust init sync
+
+In the Vulkan backend, when handling the TEXTURES_INIT "dirty object"
+bit, a clear is only staged in the backing image.  This operation
+signals to the front-end that the texture is dirty.
+
+If a state sync is happening for a draw call that doesn't initially
+consider the textures dirty, it will not actually sync the texture to
+flush the staged clear.
+
+With this change, every time the TEXTURES_INIT dirty object is set, the
+TEXTURES dirty object is also set.
+
+At this point, the only reason TEXTURES_INIT even exists is because
+TEXTURES is synced _after_ DRAW_FRAMEBUFFER.  And the only reason for
+that is the deferred clear optimization in the Vulkan backend.  If the
+Vulkan backend is made to pick up clears during texture sync (e.g.
+stashed in the context) for framebuffer sync to be able to pick up as
+deferred clears, then TEXTURE sync can be moved earlier than
+DRAW_FRAMEBUFFER and TEXTURES_INIT can be completely removed.
+
+Bug: chromium:523723064
+Change-Id: I2b7e101f0ed019d5f81fe597099bf7ae3569ef32
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8050824
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index 5478c12a6ef1feac188d5ec431d39bb0423aa1ad..105d7283c84b42ceae5d6500bafbfea0b197e007 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -2683,12 +2683,14 @@ ANGLE_INLINE void State::setActiveTextureDirty(size_t textureIndex, Texture *tex
+         return;
+     }
+ 
+-    if (texture->hasAnyDirtyBit())
++    const bool needsRobustInit =
++        isRobustResourceInitEnabled() && texture->initState() == InitState::MayNeedInit;
++    if (texture->hasAnyDirtyBit() || needsRobustInit)
+     {
+         setTextureDirty(textureIndex);
+     }
+ 
+-    if (isRobustResourceInitEnabled() && texture->initState() == InitState::MayNeedInit)
++    if (needsRobustInit)
+     {
+         mDirtyObjects.set(state::DIRTY_OBJECT_TEXTURES_INIT);
+     }
+@@ -4122,15 +4124,12 @@ angle::Result State::onExecutableChange(const Context *context)
+         if (!image)
+             continue;
+ 
+-        if (image->hasAnyDirtyBit())
++        const bool needsRobustInit =
++            isRobustResourceInitEnabled() && image->initState() == InitState::MayNeedInit;
++        if (image->hasAnyDirtyBit() || needsRobustInit)
+         {
+             ANGLE_TRY(image->syncState(context, Command::Other));
+         }
+-
+-        if (isRobustResourceInitEnabled() && image->initState() == InitState::MayNeedInit)
+-        {
+-            mDirtyObjects.set(state::DIRTY_OBJECT_IMAGES_INIT);
+-        }
+     }
+ 
+     // Set all active blocks dirty on executable change
+@@ -4223,13 +4222,15 @@ void State::onImageStateChange(const Context *context, size_t unit)
+         if (!image.texture.get())
+             return;
+ 
+-        if (image.texture->hasAnyDirtyBit())
++        const bool needsRobustInit =
++            isRobustResourceInitEnabled() && image.texture->initState() == InitState::MayNeedInit;
++        if (image.texture->hasAnyDirtyBit() || needsRobustInit)
+         {
+             mDirtyImages.set(unit);
+             mDirtyObjects.set(state::DIRTY_OBJECT_IMAGES);
+         }
+ 
+-        if (isRobustResourceInitEnabled() && image.texture->initState() == InitState::MayNeedInit)
++        if (needsRobustInit)
+         {
+             mDirtyObjects.set(state::DIRTY_OBJECT_IMAGES_INIT);
+         }
+diff --git a/src/libANGLE/State.h b/src/libANGLE/State.h
+index 2676141f9deedcf1619d8f13e8a24aae12b4f162..4da37a46129979a13a75bc8f100f63ba2ab50807 100644
+--- a/src/libANGLE/State.h
++++ b/src/libANGLE/State.h
+@@ -1626,7 +1626,10 @@ class State : angle::NonCopyable
+         return (this->*handlers[dirtyObject])(context, command);
+     }
+ 
+-    // Robust init must happen before Framebuffer init for the Vulkan back-end.
++    // Robust init must happen before Framebuffer init for the Vulkan back-end.  If deferred clears
++    // can be made to work in the Vulkan back-end such that textures could be sync'ed before the
++    // framebuffer, then TEXTURES_INIT and IMAGES_INIT can be removed since robust init happens
++    // during texture sync as well.
+     static_assert(state::DIRTY_OBJECT_ACTIVE_TEXTURES < state::DIRTY_OBJECT_TEXTURES_INIT,
+                   "init order");
+     static_assert(state::DIRTY_OBJECT_TEXTURES_INIT < state::DIRTY_OBJECT_DRAW_FRAMEBUFFER,
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 2a1b45150a05eec5bcc360364bf736fd58545512..bcfcfb04712c1204600e2ff3a1d031c64cf04c3b 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -2465,7 +2465,8 @@ GLuint Texture::getNativeID() const
+ 
+ angle::Result Texture::syncState(const Context *context, Command source)
+ {
+-    ASSERT(hasAnyDirtyBit() || source == Command::GenerateMipmap);
++    ASSERT(hasAnyDirtyBit() || source == Command::GenerateMipmap ||
++           (context->isRobustResourceInitEnabled() && mState.mInitState == InitState::MayNeedInit));
+     ANGLE_TRY(ensureInitialized(context));
+     ANGLE_TRY(mTexture->syncState(context, mDirtyBits, source));
+     mDirtyBits.reset();
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index 594573adc6ff9dd09975d039e7a8cc07ca4a4b0b..cc0f7f1220a652bd1e650973fe02c3334304d779 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -1874,6 +1874,32 @@ TEST_P(RobustResourceInitTest, TextureAfterCheckStatus)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
+ }
+ 
++// Test that after a texture with data is sampled, recreating it with no data makes it cleared.
++TEST_P(RobustResourceInitTest, SampleReinitSample)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    const std::vector<GLColor> kInitData(kWidth * kHeight, GLColor::red);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++
++    // Draw once, the texture has data and should sample with data.  The texture is also sync'ed at
++    // this step.
++    ANGLE_GL_PROGRAM(testProgram, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    drawQuad(testProgram, essl1_shaders::PositionAttrib(), 0.0f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Recreate the texture with no data.  It should be cleared to black.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    drawQuad(testProgram, essl1_shaders::PositionAttrib(), 0.0f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++}
++
+ // Test that after a texture with data is sampled, recreating it with no data makes it cleared.
+ // Uses an RGB texture which may be emulated on some backends.
+ TEST_P(RobustResourceInitTest, SampleReinitSampleRGB)

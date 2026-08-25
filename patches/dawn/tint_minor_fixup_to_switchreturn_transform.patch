@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Natalie Chouinard <chouinard@google.com>
+Date: Tue, 28 Jul 2026 12:52:56 -0700
+Subject: [tint] Minor fixup to SwitchReturn transform
+
+Small follow-up fix from:
+https://dawn-review.googlesource.com/c/dawn/+/325075
+
+Bug: 508638064
+Change-Id: I08b720a04caedea82a0355d6cacac738008f87c6
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/328095
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: James Price <jrprice@google.com>
+Commit-Queue: Natalie Chouinard <chouinard@google.com>
+
+diff --git a/src/tint/lang/msl/writer/raise/switch_return.cc b/src/tint/lang/msl/writer/raise/switch_return.cc
+index ca905806fc69acd0676dd2bb37406ec0ca6b2dc9..10ac49dbbb7ab5c757c1b5c06e01edc70ff4015b 100644
+--- a/src/tint/lang/msl/writer/raise/switch_return.cc
++++ b/src/tint/lang/msl/writer/raise/switch_return.cc
+@@ -70,16 +70,10 @@ struct State {
+             b.InsertBefore(ret, [&] {
+                 auto* zero = b.Call<msl::ir::BuiltinCall>(ty.u32(), msl::BuiltinFn::kVolatileZero);
+                 auto* cond = b.If(b.Equal(zero, b.Constant(core::u32(0))));
+-                b.Append(cond->True(), [&] {
+-                    if (ret->Value()) {
+-                        b.Return(ret->Func(), ret->Value());
+-                    } else {
+-                        b.Return(ret->Func());
+-                    }
+-                });
+                 b.Exit(ret->Block()->Parent());
++                ret->Remove();
++                cond->True()->Append(ret);
+             });
+-            ret->Destroy();
+         }
+     }
+ };

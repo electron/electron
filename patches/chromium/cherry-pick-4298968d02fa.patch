@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Thompson <grt@chromium.org>
+Date: Tue, 28 Jul 2026 08:24:54 -0700
+Subject: [sandbox/linux] Fix directory traversal vulnerability
+
+BrokerFilePermission::ValidatePath failed to reject paths ending with
+the `/.` (current directory) self-reference. This allowed an attacker to
+request `/tmp/.`, which bypassed ValidatePath() but still successfully
+matched the base::StartsWith() check for the `/tmp/` recursive
+permission in MatchPath(), improperly granting a dirfd to the root
+capability. BrokerFilePermission now rejects paths containing `/../` or
+`/./`, as well as trailing `/..` and `/.` references.
+
+Fixed: 500311587
+Change-Id: If6beb2361a8a69c6f6a3955aa38c6585d102f3cb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8160841
+Reviewed-by: Elly <ellyjones@chromium.org>
+Auto-Submit: Greg Thompson <grt@chromium.org>
+Commit-Queue: Elly <ellyjones@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1669516}
+
+diff --git a/sandbox/linux/syscall_broker/broker_file_permission.cc b/sandbox/linux/syscall_broker/broker_file_permission.cc
+index e39e2077ca1b66e4ea620526fb898c37a3623c14..dd65facbe11df59877fff298f5afa5bce795c672 100644
+--- a/sandbox/linux/syscall_broker/broker_file_permission.cc
++++ b/sandbox/linux/syscall_broker/broker_file_permission.cc
+@@ -12,6 +12,7 @@
+ 
+ #include <ostream>
+ #include <string>
++#include <string_view>
+ 
+ #include "base/check.h"
+ #include "base/compiler_specific.h"
+@@ -32,19 +33,14 @@ BrokerFilePermission& BrokerFilePermission::operator=(
+ BrokerFilePermission::~BrokerFilePermission() = default;
+ 
+ namespace {
+-bool ContainsParentReference(const char* path, size_t len) {
+-  // No trailing /..
+-  if (len >= 3 && UNSAFE_TODO(path[len - 3]) == '/' &&
+-      UNSAFE_TODO(path[len - 2]) == '.' && UNSAFE_TODO(path[len - 1]) == '.') {
++bool ContainsParentOrSelfReference(std::string_view path) {
++  // No trailing /.. or /.
++  if (path.ends_with("/..") || path.ends_with("/.")) {
+     return true;
+   }
+-  for (size_t i = 0; i < len; i++) {
+-    if (UNSAFE_TODO(path[i]) == '/' && (len - i) > 3) {
+-      if (UNSAFE_TODO(path[i + 1]) == '.' && UNSAFE_TODO(path[i + 2]) == '.' &&
+-          UNSAFE_TODO(path[i + 3]) == '/') {
+-        return true;
+-      }
+-    }
++  if (path.find("/../") != std::string_view::npos ||
++      path.find("/./") != std::string_view::npos) {
++    return true;
+   }
+   return false;
+ }
+@@ -68,7 +64,7 @@ bool BrokerFilePermission::ValidatePath(const char* path) {
+   if (len > 1 && UNSAFE_TODO(path[len - 1]) == '/') {
+     return false;
+   }
+-  if (ContainsParentReference(path, len)) {
++  if (ContainsParentOrSelfReference(std::string_view(path, len))) {
+     return false;
+   }
+   return true;
+@@ -304,7 +300,7 @@ void BrokerFilePermission::DieOnInvalidPermission() {
+   else
+     CHECK(last_char != '/') << GetErrorMessageForTests();
+ 
+-  CHECK(!ContainsParentReference(path_.c_str(), path_.length()));
++  CHECK(!ContainsParentOrSelfReference(path_));
+ }
+ 
+ BrokerFilePermission::BrokerFilePermission(std::string path, uint64_t flags)
+diff --git a/sandbox/linux/syscall_broker/broker_process_unittest.cc b/sandbox/linux/syscall_broker/broker_process_unittest.cc
+index ba53cd3f9f1e54708f490ab64bf7f3cb298a12f4..b84898ebe1e78a2d0b908ee08689c38941948c94 100644
+--- a/sandbox/linux/syscall_broker/broker_process_unittest.cc
++++ b/sandbox/linux/syscall_broker/broker_process_unittest.cc
+@@ -455,6 +455,72 @@ TEST(BrokerProcess, OpenCpuinfoNoClientCheckRecursive) {
+   // expected.
+ }
+ 
++void TestOpenDirectory(bool fast_check_in_client) {
++  base::ScopedTempDir temp_dir;
++  ASSERT_TRUE(
++      temp_dir.CreateUniqueTempDirUnderPath(base::FilePath(kTempDirForTests)));
++  const std::string temp_dir_str = temp_dir.GetPath().MaybeAsASCII();
++  ASSERT_FALSE(temp_dir_str.empty());
++
++  base::FilePath sub_dir_path = temp_dir.GetPath().AppendASCII("sub");
++  ASSERT_TRUE(base::CreateDirectory(sub_dir_path));
++  const std::string sub_dir_str = sub_dir_path.MaybeAsASCII();
++  ASSERT_FALSE(sub_dir_str.empty());
++
++  base::FilePath file_path = temp_dir.GetPath().AppendASCII("file");
++  ASSERT_TRUE(base::WriteFile(file_path, "data"));
++  const std::string file_str = file_path.MaybeAsASCII();
++  ASSERT_FALSE(file_str.empty());
++
++  BrokerCommandSet command_set = MakeBrokerCommandSet({COMMAND_OPEN});
++  std::vector<BrokerFilePermission> permissions = {
++      BrokerFilePermission::ReadWriteCreateRecursive(temp_dir_str + "/")};
++  auto policy = std::make_optional<BrokerSandboxConfig>(
++      command_set, permissions, kFakeErrnoSentinel);
++  BrokerProcess open_broker(std::move(policy), BrokerType::SIGNAL_BASED,
++                            fast_check_in_client);
++  ASSERT_TRUE(open_broker.Fork(base::BindOnce(&NoOpCallback)));
++
++  // Regular files under the recursive prefix open normally.
++  int fd =
++      open_broker.GetBrokerClientSignalBased()->Open(file_str.c_str(), O_RDWR);
++  EXPECT_GE(fd, 0);
++  if (fd >= 0) {
++    EXPECT_EQ(0, IGNORE_EINTR(close(fd)));
++  }
++
++  // Opening a directory under the recursive prefix is allowed.
++  fd = open_broker.GetBrokerClientSignalBased()->Open(sub_dir_str.c_str(),
++                                                      O_RDONLY);
++  EXPECT_GE(fd, 0);
++  if (fd >= 0) {
++    EXPECT_EQ(0, IGNORE_EINTR(close(fd)));
++  }
++  fd = open_broker.GetBrokerClientSignalBased()->Open(sub_dir_str.c_str(),
++                                                      O_RDONLY | O_DIRECTORY);
++  EXPECT_GE(fd, 0);
++  if (fd >= 0) {
++    EXPECT_EQ(0, IGNORE_EINTR(close(fd)));
++  }
++
++  // The recursive root itself, reached via a "/." suffix, is rejected.
++  fd = open_broker.GetBrokerClientSignalBased()->Open(
++      (temp_dir_str + "/.").c_str(), O_RDONLY);
++  EXPECT_EQ(fd, -kFakeErrnoSentinel);
++}
++
++TEST(BrokerProcess, OpenDirectoryClient) {
++  TestOpenDirectory(true /* fast_check_in_client */);
++  // Don't do anything here, so that ASSERT works in the subfunction as
++  // expected.
++}
++
++TEST(BrokerProcess, OpenDirectoryHost) {
++  TestOpenDirectory(false /* fast_check_in_client */);
++  // Don't do anything here, so that ASSERT works in the subfunction as
++  // expected.
++}
++
+ TEST(BrokerProcess, OpenFileRW) {
+   ScopedTemporaryFile tempfile;
+   const char* tempfile_name = tempfile.full_file_name();

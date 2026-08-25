@@ -1,0 +1,264 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 20 Jul 2026 16:23:13 -0400
+Subject: Translator: Fix gl_FragData clamp without EXT_draw_buffers
+
+For AST, this change clamps the indices to [0,0] if EXT_draw_buffers is
+not enabled.
+
+For IR, this was already correct because gl_FragData is sized early to
+one element during parse.
+
+Bug: chromium:536531630
+Change-Id: I02d3ba21ab0f5fef1119967538f6c66fbeedd7d8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8121717
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index edf9108b7531241bae27693fe7cfc6ff7bd53c2e..af07ca18d3ea9e5dd461ec6d77769dad626a1edb 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -1060,7 +1060,7 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+ 
+     if (compileOptions.clampIndirectArrayBounds)
+     {
+-        if (!ClampIndirectIndices(this, root, &mSymbolTable))
++        if (!ClampIndirectIndices(this, root, &mSymbolTable, mExtensionBehavior))
+         {
+             return false;
+         }
+diff --git a/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp b/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
+index 3d26653db336d92419b4d574ae6f3acdcf3322f7..d45c71a62891e521baa81167776968f8665a15c6 100644
+--- a/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
++++ b/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
+@@ -18,13 +18,28 @@ namespace sh
+ {
+ namespace
+ {
++enum class ExtDrawBuffers
++{
++    Disabled,
++    Enabled,
++};
++
++bool ClampIndirectIndicesImpl(TCompiler *compiler,
++                              TIntermNode *root,
++                              TSymbolTable *symbolTable,
++                              ExtDrawBuffers extDrawBuffers);
++
+ // Traverser that finds EOpIndexIndirect nodes and applies a clamp to their right-hand side
+ // expression.
+ class ClampIndirectIndicesTraverser : public TIntermTraverser
+ {
+   public:
+-    ClampIndirectIndicesTraverser(TCompiler *compiler, TSymbolTable *symbolTable)
+-        : TIntermTraverser(true, false, false, symbolTable), mCompiler(compiler)
++    ClampIndirectIndicesTraverser(TCompiler *compiler,
++                                  TSymbolTable *symbolTable,
++                                  ExtDrawBuffers extDrawBuffers)
++        : TIntermTraverser(true, false, false, symbolTable),
++          mCompiler(compiler),
++          mExtDrawBuffers(extDrawBuffers)
+     {}
+ 
+     bool visitBinary(Visit visit, TIntermBinary *node) override
+@@ -38,9 +53,11 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+         }
+ 
+         // Apply the transformation to the left and right nodes
+-        bool valid = ClampIndirectIndices(mCompiler, node->getLeft(), mSymbolTable);
++        bool valid =
++            ClampIndirectIndicesImpl(mCompiler, node->getLeft(), mSymbolTable, mExtDrawBuffers);
+         ASSERT(valid);
+-        valid = ClampIndirectIndices(mCompiler, node->getRight(), mSymbolTable);
++        valid =
++            ClampIndirectIndicesImpl(mCompiler, node->getRight(), mSymbolTable, mExtDrawBuffers);
+         ASSERT(valid);
+ 
+         // Generate clamp(right, 0, N), where N is the size of the array being indexed minus 1.  If
+@@ -68,8 +85,14 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+ 
+         if (leftType.isArray())
+         {
+-            max = createClampValue(static_cast<int>(leftType.getOutermostArraySize()) - 1,
+-                                   useFloatClamp);
++            int arraySize = static_cast<int>(leftType.getOutermostArraySize());
++            if (leftType.getQualifier() == EvqFragData &&
++                mExtDrawBuffers == ExtDrawBuffers::Disabled)
++            {
++                // When EXT_draw_buffers is disabled, only element 0 of gl_FragData may be accessed.
++                arraySize = 1;
++            }
++            max = createClampValue(arraySize - 1, useFloatClamp);
+         }
+         else
+         {
+@@ -123,14 +146,31 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+     }
+ 
+     TCompiler *mCompiler;
++    const ExtDrawBuffers mExtDrawBuffers;
+ };
+-}  // anonymous namespace
+ 
+-bool ClampIndirectIndices(TCompiler *compiler, TIntermNode *root, TSymbolTable *symbolTable)
++bool ClampIndirectIndicesImpl(TCompiler *compiler,
++                              TIntermNode *root,
++                              TSymbolTable *symbolTable,
++                              ExtDrawBuffers extDrawBuffers)
+ {
+-    ClampIndirectIndicesTraverser traverser(compiler, symbolTable);
++    ClampIndirectIndicesTraverser traverser(compiler, symbolTable, extDrawBuffers);
+     root->traverse(&traverser);
+     return traverser.updateTree(compiler, root);
+ }
+ 
++}  // anonymous namespace
++
++bool ClampIndirectIndices(TCompiler *compiler,
++                          TIntermNode *root,
++                          TSymbolTable *symbolTable,
++                          const TExtensionBehavior &extensionBehavior)
++{
++    const ExtDrawBuffers extDrawBuffers =
++        IsExtensionEnabled(extensionBehavior, TExtension::EXT_draw_buffers)
++            ? ExtDrawBuffers::Enabled
++            : ExtDrawBuffers::Disabled;
++    return ClampIndirectIndicesImpl(compiler, root, symbolTable, extDrawBuffers);
++}
++
+ }  // namespace sh
+diff --git a/src/compiler/translator/tree_ops/ClampIndirectIndices.h b/src/compiler/translator/tree_ops/ClampIndirectIndices.h
+index eebbab02e69f082a68a3b94ee63f1fd078ec7238..64cb203eb4267809a3e59b76456a4e0d1ca79394 100644
+--- a/src/compiler/translator/tree_ops/ClampIndirectIndices.h
++++ b/src/compiler/translator/tree_ops/ClampIndirectIndices.h
+@@ -10,6 +10,7 @@
+ #define COMPILER_TRANSLATOR_TREEOPS_CLAMPINDIRECTINDICES_H_
+ 
+ #include "common/angleutils.h"
++#include "compiler/translator/ExtensionBehavior.h"
+ 
+ namespace sh
+ {
+@@ -20,7 +21,8 @@ class TSymbolTable;
+ 
+ [[nodiscard]] bool ClampIndirectIndices(TCompiler *compiler,
+                                         TIntermNode *root,
+-                                        TSymbolTable *symbolTable);
++                                        TSymbolTable *symbolTable,
++                                        const TExtensionBehavior &extensionBehavior);
+ 
+ }  // namespace sh
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 8cccdef36dc9f0373a450a55bee776d0214aec81..5aa7fb8c37413aecb8f4ee4280de47edb584f95b 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -527,6 +527,8 @@
+ 518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColorUnused/* = SKIP
+ 524008572 MAC METAL : VertexAttributeTestES3.LargeAttribPointerOffsetNoCrash/* = SKIP
+ 534815900 MAC METAL : TextureCubeTestES3.RedefinedCubemapLevelsOnlyFaceZeroCompatible/* = SKIP
++536936861 MAC METAL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
++537814733 MAC METAL : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
+ 
+ // The workaround is not intended to be enabled in this configuration so
+ // skip it as the failure is likely a driver bug.
+@@ -1261,6 +1263,55 @@
+ 512394647 PIXEL10 GLES : MipmapTestES3.GenerateMipmapLargeNPOTTexture/* = SKIP
+ 512394647 PIXEL10 GLES : RobustBufferAccessBehaviorTest.OutOfBoundsArrayBuffers/* = SKIP
+ 512394647 PIXEL10 GLES : WebGLCompatibilityTest.EXTBlendFuncExtendedMissingOutputsWithAllChannelsMaskedOut/* = SKIP
++519218481 PIXEL10 GLES : MSRTTES3Test.CubeMap/* = SKIP
++519218481 PIXEL10 GLES : MSRTTES3Test.CubeMapMultipleAttachments/* = SKIP
++522247737 PIXEL10 GLES : MSRTTES3Test.DrawDisabled/* = SKIP
++522247737 PIXEL10 GLES : MSRTTES3Test.DrawDisabledThenDraw/* = SKIP
++522247737 PIXEL10 GLES : MSRTTES3Test.DrawThenDrawDisabled/* = SKIP
++533314333 PIXEL10 GLES : MSRTTES3Test.RenderToTextureDepthOnly/* = SKIP
++533314333 PIXEL10 GLES : MSRTTES3Test.RenderToTextureStencilOnly/* = SKIP
++523128541 PIXEL10 GLES : BufferDataTestES3.CopyBufferSubDataSelfDependency/* = SKIP
++523128541 PIXEL10 GLES : ComputeShaderTest.SSBOAliasOverWrite/* = SKIP
++523128541 PIXEL10 GLES : GLSLTest_ES3.LargeConstGlobalArraysOfStructs/* = SKIP
++523128541 PIXEL10 GLES : ShaderStorageBufferTest31.ComputeShaderWriteThenGraphicsShaderWrite/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMatrix/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMatrixAndInstanced/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructFloatAndMat4/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructFloatAndVec3/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructFloatAndVec4/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructMat4AndFloat/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructVec2AndVec3/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsMixStructVec3AndFloat/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsStruct/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsStructAndInstanced/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsStructAndInstancedArray/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.MemberTypeIsVec4/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.SharedSameBufferWithOtherOne/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.TwoUniformBlocksInDiffProgram/* = SKIP
++523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.TwoUniformBlocksInSameProgram/* = SKIP
++523128541 PIXEL10 GLES : UniformBufferTest.SameBufferDifferentMetalSize/* = SKIP
++526503288 PIXEL10 GLES : BaseInstanceOverflowTest.BaseInstanceOverflow2/ES3_OpenGLES_AlwaysEnableEmulatedMultidrawExtensions = SKIP
++516824665 PIXEL10 GLES : Texture2DTest.InvalidFormatTypeCombosShouldFail/* = SKIP
++516824665 PIXEL10 GLES : Texture2DTest.FormatRGB10A2REVToRGB565/* = SKIP
++516824665 PIXEL10 GLES : Texture2DTest.FormatRGB10A2REVToRGB5A1/* = SKIP
++516824665 PIXEL10 GLES : Texture2DTest.FormatRGB10A2REVToRGB8/* = SKIP
++516824665 PIXEL10 GLES : Texture2DTestES3.InvalidFormatTypeCombosShouldFail/* = SKIP
++516824665 PIXEL10 GLES : Texture2DTestES3.FormatRGB10A2REVToRGB5A1/* = SKIP
++525786155 PIXEL10 GLES : PbufferTestES3.ImportImageThenBindTexImageShouldOrphan/* = SKIP
++525786155 PIXEL10 GLES : PbufferTestES3.ImportImageThenBindTexImageSourceShouldOrphan/* = SKIP
++525786155 PIXEL10 GLES : PbufferTestES3.BindRedefinesAllMips/* = SKIP
++526518127 PIXEL10 GLES : ImageTestES3.MipLevelsNonZeroBaseLevel/* = SKIP
++526518127 PIXEL10 GLES : ImageTestES3.NonZeroLevel*/* = SKIP
++526518127 PIXEL10 GLES : ImageTestES3RobustInit.NonZeroLevel*/* = SKIP
++533059467 PIXEL10 GLES : TextureTestES31.ComputeShaderLoadPartiallyBoundImageUnits/* = SKIP
++533059467 PIXEL10 GLES : TextureTestES31.FragmentShaderLoadUnboundImageUnits/* = SKIP
++535213600 PIXEL10 GLES : PbufferTest.BindTexImageAndCopyTexImageSrc/* = SKIP
++535213600 PIXEL10 GLES : PbufferTest.BindTexImageAndCopyTexSubImageDst/* = SKIP
++535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTexSubTextureDst/* = SKIP
++535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTexSubTextureInvertedDst/* = SKIP
++535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTextureInvertedSrc/* = SKIP
++535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTextureSrc/* = SKIP
++537235694 PIXEL10 GLES : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
+ 
+ 480069042 PIXEL10 VULKAN : ClearTextureEXTTestES31Unrenderable.Clear/ES3_1_Vulkan*__GL_RG16_SNORM_EXT_GL_RG_GL_SHORT_GL_TEXTURE_2D_ARRAY = SKIP
+ 480069042 PIXEL10 VULKAN : ClearTextureEXTTestES31Unrenderable.Clear/ES3_1_Vulkan*__GL_RGB32UI_GL_RGB_INTEGER_GL_UNSIGNED_INT_GL_TEXTURE_2D_ARRAY = SKIP
+@@ -2449,6 +2500,7 @@
+ 42267100 WGPU : GLSLTest.FragCoordConsistency/* = SKIP
+ 42267100 WGPU : GLSLTest.FragData/* = SKIP
+ 42267100 WGPU : GLSLTest.FragData_AlphaToCoverage/* = SKIP
++42267100 WGPU : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
+ 42267100 WGPU : GLSLTest.SeparateStructDeclaratorStructInStruct/* = SKIP
+ 42267100 WGPU : GLSLTest.ConstructorinSequenceOperator/* = SKIP
+ 42267100 WGPU : GLSLTest.VectorAndMatrixScalarizationDoesNotAffectRendering/* = SKIP
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 5fb13ddde836fb35609e62aeddfb307efdea8f3b..a1179b297e29d3d29b5cfc7ec648087045a3eda1 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -24302,6 +24302,29 @@ TEST_P(GLSLTest, EmulateGLFragColorBroadcastInvariantFragColorUnused)
+     // Verify compilation only, as output is not written to.
+     ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+ }
++// Test that indirect indices to gl_FragData get clamped to the right bounds when
++// GL_EXT_draw_buffers is not enabled.
++//
++// The same test for ES3 is not needed, because unlike gl_FragData in ESSL 100, it's not allowed to
++// index a fragment output variable with a non-constant index in ESSL 300+.
++TEST_P(WebGLGLSLTest, FragDataIndexClampWithoutDrawBuffers)
++{
++    constexpr char kFS[] = R"(precision mediump float;
++void main() {
++    // GL_EXT_draw_buffers is not enabled, which means only one output is valid.  Make sure all the
++    // following writes in the loop end up writing to gl_FragData[0].
++    gl_FragData[0] = vec4(1, 0, 0, 1);
++    for (int i = 0; i < 8; i++) {
++        gl_FragData[i] += vec4(-0.1, 0.05, 0.0, 0.0);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(51, 102, 0, 255), 1);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that indirect indices to gl_FragData get clamped to the right bounds when
+ // gl_SecondaryFragDataEXT is used.
+ //

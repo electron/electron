@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Chapovalov <danilchap@webrtc.org>
+Date: Thu, 23 Jul 2026 15:35:55 +0200
+Subject: Check RTP sequence number order when assembling H264 frame in
+ PacketBuffer
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+PacketBuffer::buffer_ slots can be re-used by packets with with
+different sequence numbers when their difference is multiple of
+buffer_.size()
+
+Non-H264 code path validates RTP sequence numbers continuity in
+`PotentialNewFrame` helper, H264 code path missed such check as the new
+test demonstrate.
+
+Bug: chromium:537233963
+Change-Id: I6af0f52bfcb3a4437450dffcece85bee7ce172cd
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/490840
+Reviewed-by: Åsa Persson <asapersson@webrtc.org>
+Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48222}
+
+diff --git a/modules/video_coding/packet_buffer.cc b/modules/video_coding/packet_buffer.cc
+index 961b41e66fbdeca71cd0203745c888161be0b392..0efaa8749a18ee0878804df616092be0df03220d 100644
+--- a/modules/video_coding/packet_buffer.cc
++++ b/modules/video_coding/packet_buffer.cc
+@@ -339,6 +339,8 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
+         // See: https://bugs.chromium.org/p/webrtc/issues/detail?id=7106
+         if (is_h264_descriptor &&
+             (buffer_[start_index] == nullptr ||
++             buffer_[start_index]->seq_num() !=
++                 static_cast<uint16_t>(start_seq_num - 1) ||
+              buffer_[start_index]->timestamp != frame_timestamp)) {
+           break;
+         }
+diff --git a/modules/video_coding/packet_buffer_unittest.cc b/modules/video_coding/packet_buffer_unittest.cc
+index 29f13e4f3e6ee146826341762c7823b79e733f56..45b09e6acaa45b3a834aa0bdd7af7772feb02a26 100644
+--- a/modules/video_coding/packet_buffer_unittest.cc
++++ b/modules/video_coding/packet_buffer_unittest.cc
+@@ -709,6 +709,14 @@ TEST_P(PacketBufferH264ParameterizedTest, InsertTooOldPackets) {
+   InsertH264(4662, kKeyFrame, kFirst, kLast, 1000);
+ }
+ 
++TEST_P(PacketBufferH264ParameterizedTest, InsertMisOrderedPackets) {
++  InsertH264(4660, kKeyFrame, kFirst, kNotLast, 1000);
++  // packet (4661 + kStartSize) can use the same buffer slot as packet 4661,
++  // PacketBuffer need to be careful to detect they are not the same packet.
++  InsertH264(4661 + kStartSize, kDeltaFrame, kFirst, kNotLast, 1000);
++  InsertH264(4662, kKeyFrame, kFirst, kLast, 1000);
++}
++
+ TEST_P(PacketBufferH264ParameterizedTest, ClearMissingPacketsOnKeyframe) {
+   InsertH264(0, kKeyFrame, kFirst, kLast, 1000);
+   InsertH264(2, kKeyFrame, kFirst, kLast, 3000);

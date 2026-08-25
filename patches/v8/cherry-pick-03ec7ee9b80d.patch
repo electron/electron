@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Fri, 21 Aug 2026 11:58:35 +0200
+Subject: [M150] Native builtins are strict
+
+Original change's description:
+> Native builtins are strict
+>
+> There was a discrepancy between native builtins registered in
+> bootstrapper vs setup-heap-internal.
+> The former marked the builtins as strict, whereas the latter didn't.
+>
+> Mark builtins as strict also in setup-heap-internal.
+>
+> Fixed: 545767601
+> Change-Id: Ida4da4bdcfe7dcfdc16f1da0ec022a65cf853ce8
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8274474
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109425}
+
+(cherry picked from commit 6f81b563fa9e3fde15412b0e3ab2b1e2b7e6d0d7)
+
+Bug: 550760715,545767601
+Change-Id: Ida4da4bdcfe7dcfdc16f1da0ec022a65cf853ce8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8282051
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#71}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/heap/setup-heap-internal.cc b/src/heap/setup-heap-internal.cc
+index 0a5293b530871c4c8cd6ad8a39acb38bb8907a9f..1abfc91ac60fbd38a927074d08861c10ad9cb8f2 100644
+--- a/src/heap/setup-heap-internal.cc
++++ b/src/heap/setup-heap-internal.cc
+@@ -73,6 +73,7 @@ DirectHandle<SharedFunctionInfo> CreateSharedFunctionInfo(
+   DirectHandle<SharedFunctionInfo> shared =
+       isolate->factory()->NewSharedFunctionInfoForBuiltin(
+           isolate->factory()->empty_string(), builtin, len, kAdapt, kind);
++  shared->set_language_mode(LanguageMode::kStrict);
+   return shared;
+ }
+ 

@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Tue, 21 Jul 2026 23:08:37 -0700
+Subject: Block the deletion of new/old_parent, and receiver window
+
+during the window hierachy change notifications.
+
+Fixed: 516427761
+Test: covered by unittest
+Change-Id: I72aaf6c940ed8883eecaa3efac3db3fe0d20d333
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8127340
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666030}
+
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index af27302ea7058aaeecb9b26ba248a37623c61702..80fe211003845001216fdc90fda3eee0438ce605 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -1277,6 +1277,12 @@ void Window::NotifyAddedToRootWindow() {
+ 
+ void Window::NotifyWindowHierarchyChange(
+     const WindowObserver::HierarchyChangeParams& params) {
++  // Block deletion of old_parent and new_parent across all target
++  // sub-tree callbacks to ensure neither parent is destroyed before
++  // NotifyWindowHierarchyChangeUp() runs.
++  ScopedDeleteBlocker old_blocker(params.old_parent);
++  ScopedDeleteBlocker new_blocker(params.new_parent);
++
+   params.target->NotifyWindowHierarchyChangeDown(params);
+   switch (params.phase) {
+     case WindowObserver::HierarchyChangeParams::HIERARCHY_CHANGING:
+@@ -1307,6 +1313,8 @@ void Window::NotifyWindowHierarchyChangeUp(
+ 
+ void Window::NotifyWindowHierarchyChangeAtReceiver(
+     const WindowObserver::HierarchyChangeParams& params) {
++  ScopedDeleteBlocker blocker(this);
++
+   WindowObserver::HierarchyChangeParams local_params = params;
+   local_params.receiver = this;
+ 
+diff --git a/ui/aura/window.h b/ui/aura/window.h
+index 4762eb3ecc315e30566e268afde8d2e061b825bf..8425404df24a798e98480674f7d4b2844d51152e 100644
+--- a/ui/aura/window.h
++++ b/ui/aura/window.h
+@@ -127,15 +127,22 @@ class AURA_EXPORT Window : public ui::LayerDelegate,
+   // A helper class to ensure that the Window is not deleted while it is
+   // notifying observers or doing other operations where re-entrant deletion
+   // would be problematic. Attempting to delete the Window while a
+-  // ScopedDeleteBlocker is active will cause a crash.
++  // ScopedDeleteBlocker is active will cause a crash. This is no-op if
++  // if nullptr is passed.
+   class ScopedDeleteBlocker {
+    public:
+     explicit ScopedDeleteBlocker(aura::Window* window) : window_(window) {
+-      window_->delete_block_count_++;
++      if (window_) {
++        window_->delete_block_count_++;
++      }
+     }
+     ScopedDeleteBlocker(const ScopedDeleteBlocker&) = delete;
+     ScopedDeleteBlocker& operator=(const ScopedDeleteBlocker&) = delete;
+-    ~ScopedDeleteBlocker() { window_->delete_block_count_--; }
++    ~ScopedDeleteBlocker() {
++      if (window_) {
++        window_->delete_block_count_--;
++      }
++    }
+     raw_ptr<aura::Window> window_;
+   };
+ 
+diff --git a/ui/aura/window_unittest.cc b/ui/aura/window_unittest.cc
+index d0ff347bf7749d6cdc6fd2444ffe112e429c1080..3d460c56a510b3acb1c4106b6c247de7046308c7 100644
+--- a/ui/aura/window_unittest.cc
++++ b/ui/aura/window_unittest.cc
+@@ -3207,6 +3207,53 @@ TEST_F(WindowDeathTest, DeleteWindowInBoundsChange) {
+   EXPECT_TRUE(weak_window);
+ }
+ 
++// WindowObserver implementation that deletes the observed window in
++// OnWindowHierarchyChanging().
++class DeleteOnHierarchyChangingObserver : public WindowObserver {
++ public:
++  explicit DeleteOnHierarchyChangingObserver(Window* window) : window_(window) {
++    window_->AddObserver(this);
++  }
++
++  DeleteOnHierarchyChangingObserver(const DeleteOnHierarchyChangingObserver&) =
++      delete;
++  DeleteOnHierarchyChangingObserver& operator=(
++      const DeleteOnHierarchyChangingObserver&) = delete;
++
++  ~DeleteOnHierarchyChangingObserver() override {
++    CHECK(window_);
++    window_->RemoveObserver(this);
++  }
++
++  // WindowObserver:
++  void OnWindowHierarchyChanging(const HierarchyChangeParams& params) override {
++    Window* window = window_;
++    window_ = nullptr;
++    window->RemoveObserver(this);
++    // This will fail with CHECK.
++    delete window;
++  }
++
++ private:
++  raw_ptr<Window> window_;
++};
++
++TEST_F(WindowDeathTest, DeleteReceiverInOnWindowHierarchyChanging) {
++  std::unique_ptr<Window> parent = std::make_unique<Window>(nullptr);
++  parent->Init(ui::LAYER_NOT_DRAWN);
++  std::unique_ptr<Window> child = std::make_unique<Window>(nullptr);
++  child->Init(ui::LAYER_NOT_DRAWN);
++  Window* grandchild = new Window(nullptr);
++  grandchild->Init(ui::LAYER_NOT_DRAWN);
++  child->AddChild(grandchild);
++
++  // |grandchild| is notified as a receiver while recursing down through the
++  // subtree rooted at |child|; deleting it from within the notification must
++  // not be allowed.
++  DeleteOnHierarchyChangingObserver observer(grandchild);
++  EXPECT_DEATH(parent->AddChild(child.get()), "");
++}
++
+ // WindowObserver implementation that deletes a window in
+ // OnWindowVisibilityChanged().
+ class DeleteOnVisibilityChangedObserver : public WindowObserver {

@@ -1,0 +1,887 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Mon, 24 Aug 2026 15:18:16 -0700
+Subject: [M150] Fix incorrectly copying row padding in command buffer clients
+
+Original change's description:
+> Fix incorrectly copying row padding in command buffer clients
+>
+> VideoFrame::copyTo() is supposed to copy only the pixels and not the
+> padding bytes between rows. Doing so requires one memcpy per row instead
+> of one big memcpy.
+>
+> - RasterImplementation::ReadbackImagePixelsINTERNAL and
+>   RasterImplementation::OnAsyncARGBReadbackDone:
+>   accessible via VideoFrame::copyTo.
+>   - There are many other codepaths reachable from VideoFrame::copyTo().
+>     The others seem to be correct.
+> - RasterImplementation::AsyncYUVReadbackRequest::CopyYUVPlane and
+>   GLES2Implementation::ReadbackARGBImagePixelsINTERNAL:
+>   also seemed to do this wrong, but I have not looked into exactly how
+>   they're used, so I'm not certain they're important or whether they
+>   have a security impact. I'm only guessing they are important based on
+>   the similar comments that said they write into JS-visible memory
+>   (which is how I stumbled on them).
+>
+> Tests:
+> - raster_implementation_unittest tests generated using Gemini, but
+>   manually verified that each of the four tests fails when the fix it
+>   targets is reverted (e.g. see how the first three were tested in
+>   patchset 4: https://crrev.com/c/8255469/4).
+>   - Manual drive-by fix some of the initialization sites of
+>     MockTransferBuffer::ExpectedMemoryInfo, so that the spanified form
+>     can be used instead of raw pointers in the new test.
+> - content/test/data/gpu/webcodecs/copyTo.html test also generated using
+>   Gemini, but manually verified that it hits the bug in
+>   RasterImplementation::ReadbackImagePixelsINTERNAL. It doesn't seem to
+>   hit any of the others on my device (Pixel 3).
+> - WPT test for copyTo() on VideoFrames that are CPU-backed (which was
+>   already fine) and texture-backed (which is what this fixes).
+>   Unfortunately this test does not seem to catch the issue on CQ, but
+>   the texture-backed one does at least catch it locally on my Mac.
+>
+> Fixed: 543707066
+> Change-Id: Iea2e75cdb75175f250ab5472a22c2f46819e6e84
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8255469
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1680958}
+
+(cherry picked from commit b261e1ba70cebb48b58560978af8a5978befe37e)
+
+Bug: 548913821,543707066
+Change-Id: Iea2e75cdb75175f250ab5472a22c2f46819e6e84
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8269851
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4330}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/test/data/gpu/webcodecs/copyTo.html b/content/test/data/gpu/webcodecs/copyTo.html
+index af001e9f045cc85eb9111adaecd2b0e0d9fdbfee..674232db4a25d3b8bd8f6848918d322c5c8037eb 100644
+--- a/content/test/data/gpu/webcodecs/copyTo.html
++++ b/content/test/data/gpu/webcodecs/copyTo.html
+@@ -177,6 +177,78 @@ Take frames coming from various sources and read them using copyTo().
+       worker.terminate();
+     }
+ 
++    // Test that padding bytes (stride/offset padding) are not overwritten.
++    {
++      const PAD = 0xAA;
++      const options = {
++        layout: [
++          {offset: 5, stride: frame.displayWidth * 4 + 16}, // plenty of padding
++        ],
++      };
++      if (frame.format === 'I420' || frame.format === 'I420A') {
++        options.layout = [
++          {offset: 5, stride: frame.displayWidth + 16},
++          {offset: (frame.displayWidth + 16) * frame.displayHeight + 10, stride: frame.displayWidth / 2 + 16},
++          {offset: (frame.displayWidth + 16) * frame.displayHeight + (frame.displayWidth / 2 + 16) * (frame.displayHeight / 2) + 20, stride: frame.displayWidth / 2 + 16},
++        ];
++        if (frame.format === 'I420A') {
++          options.layout.push({
++            offset: (frame.displayWidth + 16) * frame.displayHeight + (frame.displayWidth / 2 + 16) * (frame.displayHeight / 2) * 2 + 30,
++            stride: frame.displayWidth + 16
++          });
++        }
++      } else if (frame.format === 'NV12') {
++        options.layout = [
++          {offset: 5, stride: frame.displayWidth + 16},
++          {offset: (frame.displayWidth + 16) * frame.displayHeight + 10, stride: frame.displayWidth + 16},
++        ];
++      }
++
++      let size_with_padding = frame.allocationSize(options);
++      let buf = new ArrayBuffer(size_with_padding);
++      let view = new Uint8Array(buf);
++      view.fill(PAD);
++
++      let layout = await frame.copyTo(buf, options);
++
++      // Verify that the layout matches what we specified
++      for (let plane = 0; plane < layout.length; plane++) {
++        TEST.assert(layout[plane].offset === options.layout[plane].offset, "offset mismatch");
++        TEST.assert(layout[plane].stride === options.layout[plane].stride, "stride mismatch");
++      }
++
++      // We want to verify that the bytes between rows (the padding bytes) are untouched (still PAD).
++      for (let plane = 0; plane < layout.length; plane++) {
++        let plane_offset = layout[plane].offset;
++        let stride = layout[plane].stride;
++        let plane_height = frame.displayHeight;
++        let plane_width = frame.displayWidth;
++        if (plane > 0 && (frame.format === 'I420' || frame.format === 'I420A' || frame.format === 'NV12')) {
++          plane_height /= 2;
++          if (frame.format === 'I420' || frame.format === 'I420A') {
++            plane_width /= 2;
++          }
++        }
++        let bytes_per_pixel = 1;
++        if (frame.format === 'RGBA' || frame.format === 'RGBX' || frame.format === 'BGRA' || frame.format === 'BGRX') {
++          bytes_per_pixel = 4;
++        } else if (frame.format === 'NV12' && plane === 1) {
++          bytes_per_pixel = 2; // UV interleaved
++        }
++
++        let row_bytes = plane_width * bytes_per_pixel;
++        for (let y = 0; y < plane_height; ++y) {
++          let row_start = plane_offset + y * stride;
++          for (let x = row_bytes; x < stride; ++x) {
++            let pad_idx = row_start + x;
++            if (pad_idx < size_with_padding) {
++              TEST.assert(view[pad_idx] === PAD, `Padding byte overwritten at index ${pad_idx} for plane ${plane}, row ${y}, x ${x}. Expected ${PAD}, got ${view[pad_idx]}`);
++            }
++          }
++        }
++      }
++    }
++
+     // Validate pixels
+     if (!arg.validate_camera_frames && source_type == 'camera') {
+       TEST.log("Skip copyTo result validation");
+diff --git a/gpu/command_buffer/client/gles2_implementation.cc b/gpu/command_buffer/client/gles2_implementation.cc
+index e4a31d45e5dece78489b79ea1cf1745bfed769df..d3a3e8b2c1e773a19d29ec90ee6d6f9aef7de635 100644
+--- a/gpu/command_buffer/client/gles2_implementation.cc
++++ b/gpu/command_buffer/client/gles2_implementation.cc
+@@ -59,6 +59,7 @@
+ #include "gpu/command_buffer/common/swap_buffers_complete_params.h"
+ #include "gpu/command_buffer/common/sync_token.h"
+ #include "third_party/skia/include/core/SkAlphaType.h"
++#include "third_party/skia/include/core/SkColorType.h"
+ #include "third_party/skia/include/gpu/ganesh/GrTypes.h"
+ #include "ui/gfx/color_space.h"
+ #include "ui/gfx/geometry/rect.h"
+@@ -4671,12 +4672,15 @@ GLboolean GLES2Implementation::ReadbackARGBImagePixelsINTERNAL(
+   if (!*readback_result) {
+     return GL_FALSE;
+   }
+-  // We need to use `RelaxedAtomicWriteMemcpy` because we might be writing into
+-  // memory observed by JS at the same time.
+   auto dst = UNSAFE_TODO(base::span(static_cast<uint8_t*>(pixels), dst_size));
+   auto src = UNSAFE_TODO(
+       base::span(static_cast<uint8_t*>(shm_address) + pixels_offset, dst_size));
+-  base::subtle::RelaxedAtomicWriteMemcpy(dst, src);
++  size_t min_row_bytes =
++      dst_width *
++      SkColorTypeBytesPerPixel(static_cast<SkColorType>(dst_sk_color_type));
++  RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(
++      /*dst=*/dst, /*src=*/src, /*row_bytes=*/min_row_bytes,
++      /*height=*/dst_height, /*stride=*/dst_row_bytes);
+   return GL_TRUE;
+ }
+ 
+diff --git a/gpu/command_buffer/client/gles2_implementation_unittest.cc b/gpu/command_buffer/client/gles2_implementation_unittest.cc
+index 51380ad6c675ace3371492cdfffd7ed808fe33b9..0de18a57d2966d6338cbfde1a4f456a5376db536 100644
+--- a/gpu/command_buffer/client/gles2_implementation_unittest.cc
++++ b/gpu/command_buffer/client/gles2_implementation_unittest.cc
+@@ -17,6 +17,7 @@
+ #include <array>
+ #include <memory>
+ 
++#include "base/bits.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/heap_array.h"
+ #include "base/containers/span.h"
+@@ -403,7 +404,8 @@ class GLES2ImplementationTest : public testing::Test {
+     ExpectedMemoryInfo mem;
+ 
+     // Temporarily allocate memory and expect that memory block to be reused.
+-    mem.ptr = gl_->mapped_memory_->Alloc(size, &mem.id, &mem.offset).data();
++    mem.span = gl_->mapped_memory_->Alloc(size, &mem.id, &mem.offset);
++    mem.ptr = mem.span.data();
+     gl_->mapped_memory_->Free(mem.ptr);
+ 
+     return mem;
+@@ -3864,6 +3866,75 @@ TEST_F(GLES2ImplementationTest,
+                                  "but written again"));
+ }
+ 
++TEST_F(GLES2ImplementationTest, ReadbackARGBImagePixelsINTERNALPadding) {
++  gpu::Mailbox mailbox = gpu::Mailbox::Generate();
++
++  GLuint dst_width = 2;
++  GLuint dst_height = 2;
++  GLuint dst_sk_color_type = 4;  // kRGBA_8888_SkColorType
++  GLuint dst_sk_alpha_type = 1;  // kPremul_SkAlphaType
++  GLuint dst_row_bytes =
++      12;  // 2 pixels * 4 bytes/pixel = 8 bytes. Row padding = 4 bytes.
++  GLuint dst_size = dst_height * dst_row_bytes;
++
++  GLuint color_space_offset = base::bits::AlignUp(
++      sizeof(cmds::ReadbackARGBImagePixelsINTERNAL::Result), sizeof(uint64_t));
++  GLuint mailbox_offset = color_space_offset;
++  GLuint pixels_offset = base::bits::AlignUp(
++      mailbox_offset + sizeof(gpu::Mailbox), sizeof(uint64_t));
++
++  GLuint total_size =
++      pixels_offset +
++      base::bits::AlignUp(dst_size, static_cast<GLuint>(sizeof(uint64_t)));
++
++  ExpectedMemoryInfo mem = GetExpectedMappedMemory(total_size);
++
++  std::vector<uint8_t> dst_pixels(dst_size, 0xAA);
++
++  EXPECT_CALL(*command_buffer(), OnFlush())
++      .WillOnce([mem, pixels_offset, dst_size]() {
++        // Write 1 to readback_result (at the beginning of shm).
++        auto* result =
++            reinterpret_cast<cmds::ReadbackARGBImagePixelsINTERNAL::Result*>(
++                mem.ptr);
++        *result = 1;
++
++        // Write test data to the pixel portion of the shared memory.
++        auto src_pixels = mem.span.subspan(pixels_offset, dst_size);
++        // Fill src_pixels with distinct values, e.g. 1 to dst_size
++        for (size_t i = 0; i < dst_size; ++i) {
++          src_pixels[i] = static_cast<uint8_t>(i + 1);
++        }
++      })
++      .RetiresOnSaturation();
++
++  GLboolean success = gl_->ReadbackARGBImagePixelsINTERNAL(
++      mailbox.name, /*dst_color_space=*/nullptr,
++      /*dst_color_space_size=*/0, dst_size, dst_width, dst_height,
++      dst_sk_color_type, dst_sk_alpha_type, dst_row_bytes, /*src_x=*/0,
++      /*src_y=*/0, /*plane_index=*/0, dst_pixels.data());
++
++  EXPECT_TRUE(success);
++
++  // Expected output:
++  // Row 1 (pixels: 0 to 7) copied from src_pixels (0 to 7): 1, 2, 3, 4, 5, 6,
++  // 7, 8. Row 1 (padding: 8 to 11) untouched: 0xAA, 0xAA, 0xAA, 0xAA. Row 2
++  // (pixels: 12 to 19) copied from src_pixels (12 to 19): 13, 14, 15, 16, 17,
++  // 18, 19, 20. Row 2 (padding: 20 to 23) untouched: 0xAA, 0xAA, 0xAA, 0xAA.
++
++  std::vector<uint8_t> expected_pixels(dst_size, 0xAA);
++  size_t min_row_bytes = 8;  // 2 pixels * 4 bytes/pixel = 8.
++  for (size_t y = 0; y < dst_height; ++y) {
++    for (size_t x = 0; x < min_row_bytes; ++x) {
++      size_t dst_idx = y * dst_row_bytes + x;
++      size_t src_idx = y * dst_row_bytes + x;
++      expected_pixels[dst_idx] = static_cast<uint8_t>(src_idx + 1);
++    }
++  }
++
++  EXPECT_EQ(dst_pixels, expected_pixels);
++}
++
+ #include "gpu/command_buffer/client/gles2_implementation_unittest_autogen.h"
+ 
+ }  // namespace gles2
+diff --git a/gpu/command_buffer/client/implementation_base.cc b/gpu/command_buffer/client/implementation_base.cc
+index 4ffc1affd8b187f355c7afdfded6da4d2e364bb1..764e31c13f54c88461afa6202050d5ebf9e56d31 100644
+--- a/gpu/command_buffer/client/implementation_base.cc
++++ b/gpu/command_buffer/client/implementation_base.cc
+@@ -427,4 +427,24 @@ void ImplementationBase::RunIfContextNotLost(base::OnceClosure callback) {
+   }
+ }
+ 
++void RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(base::span<uint8_t> dst,
++                                                      base::span<uint8_t> src,
++                                                      size_t row_bytes,
++                                                      size_t height,
++                                                      size_t stride) {
++  // We need to use `RelaxedAtomicWriteMemcpy` because we might be writing into
++  // memory observed by JS at the same time.
++  if (row_bytes == stride) {
++    base::subtle::RelaxedAtomicWriteMemcpy(dst, src);
++  } else {
++    // If there's padding between rows, copy each row separately to leave
++    // padding untouched
++    for (size_t y = 0; y < height; ++y) {
++      base::subtle::RelaxedAtomicWriteMemcpy(
++          dst.subspan(y * stride, row_bytes),
++          src.subspan(y * stride, row_bytes));
++    }
++  }
++}
++
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/client/implementation_base.h b/gpu/command_buffer/client/implementation_base.h
+index 06e66b64964fcf1f29facbc0a2cc144f9907170c..d28ae61c32a11b1e501f8f5541c0566bcf21086d 100644
+--- a/gpu/command_buffer/client/implementation_base.h
++++ b/gpu/command_buffer/client/implementation_base.h
+@@ -161,6 +161,14 @@ class GLES2_IMPL_EXPORT ImplementationBase
+   base::WeakPtrFactory<ImplementationBase> weak_ptr_factory_{this};
+ };
+ 
++// Helper for copying 2D pixel data without touching the padding between rows.
++GLES2_IMPL_EXPORT void RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(
++    base::span<uint8_t> dst,
++    base::span<uint8_t> src,
++    size_t row_bytes,
++    size_t height,
++    size_t stride);
++
+ }  // namespace gpu
+ 
+ #endif  // GPU_COMMAND_BUFFER_CLIENT_IMPLEMENTATION_BASE_H_
+diff --git a/gpu/command_buffer/client/raster_implementation.cc b/gpu/command_buffer/client/raster_implementation.cc
+index e6d267341d75d1da31477a436ace0f8cc3b8242f..22be37c89b3ad4c7d87635f278f3cd69990dd746 100644
+--- a/gpu/command_buffer/client/raster_implementation.cc
++++ b/gpu/command_buffer/client/raster_implementation.cc
+@@ -416,13 +416,15 @@ RasterImplementation::SingleThreadChecker::~SingleThreadChecker() {
+ 
+ struct RasterImplementation::AsyncARGBReadbackRequest {
+   AsyncARGBReadbackRequest(void* dst_pixels,
+-                           GLuint dst_size,
++                           const SkImageInfo& dst_info,
++                           GLuint dst_row_bytes,
+                            GLuint pixels_offset,
+                            GLuint finished_query,
+                            std::unique_ptr<ScopedMappedMemoryPtr> shared_memory,
+                            base::OnceCallback<void(bool)> callback)
+       : dst_pixels(dst_pixels),
+-        dst_size(dst_size),
++        dst_info(dst_info),
++        dst_row_bytes(dst_row_bytes),
+         pixels_offset(pixels_offset),
+         shared_memory(std::move(shared_memory)),
+         callback(std::move(callback)),
+@@ -436,7 +438,8 @@ struct RasterImplementation::AsyncARGBReadbackRequest {
+   }
+ 
+   raw_ptr<void> dst_pixels;
+-  GLuint dst_size;
++  SkImageInfo dst_info;
++  GLuint dst_row_bytes;
+   GLuint pixels_offset;
+   std::unique_ptr<ScopedMappedMemoryPtr> shared_memory;
+   base::OnceCallback<void(bool)> callback;
+@@ -492,14 +495,14 @@ struct RasterImplementation::AsyncYUVReadbackRequest {
+       return;
+     }
+ 
+-    CopyYUVPlane(output_rect.height(), y_plane_stride, y_plane_offset,
+-                 shm_address, y_plane_data);
++    CopyYUVPlane(output_rect.width(), output_rect.height(), y_plane_stride,
++                 y_plane_offset, shm_address, y_plane_data);
+ 
+     // U and V planes are half the size of the Y plane.
+-    CopyYUVPlane(output_rect.height() / 2, u_plane_stride, u_plane_offset,
+-                 shm_address, u_plane_data);
+-    CopyYUVPlane(output_rect.height() / 2, v_plane_stride, v_plane_offset,
+-                 shm_address, v_plane_data);
++    CopyYUVPlane(output_rect.width() / 2, output_rect.height() / 2,
++                 u_plane_stride, u_plane_offset, shm_address, u_plane_data);
++    CopyYUVPlane(output_rect.width() / 2, output_rect.height() / 2,
++                 v_plane_stride, v_plane_offset, shm_address, v_plane_data);
+ 
+     readback_successful = true;
+   }
+@@ -527,20 +530,21 @@ struct RasterImplementation::AsyncYUVReadbackRequest {
+   bool readback_successful = false;
+ 
+  private:
+-  void CopyYUVPlane(GLuint plane_height,
++  void CopyYUVPlane(GLuint plane_width,
++                    GLuint plane_height,
+                     int plane_stride,
+                     GLuint plane_offset,
+                     void* in_buffer,
+                     uint8_t* out_buffer) {
+     // RasterDecoder writes the pixels into |in_buffer| with the requested
+     // stride so we can copy the whole block here.
+-    // We need to use `RelaxedAtomicWriteMemcpy` because we might be writing
+-    // into memory observed by JS at the same time.
+     size_t plane_size = plane_height * plane_stride;
+     auto dst = UNSAFE_TODO(base::span(out_buffer, plane_size));
+     auto src = UNSAFE_TODO(base::span(
+         static_cast<uint8_t*>(in_buffer) + plane_offset, plane_size));
+-    base::subtle::RelaxedAtomicWriteMemcpy(dst, src);
++    RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(
++        /*dst=*/dst, /*src=*/src, /*row_bytes=*/plane_width,
++        /*height=*/plane_height, /*stride=*/plane_stride);
+   }
+ };
+ 
+@@ -1509,7 +1513,7 @@ bool RasterImplementation::ReadbackImagePixelsINTERNAL(
+     EndQueryEXT(GL_COMMANDS_ISSUED_CHROMIUM);
+ 
+     auto request = std::make_unique<AsyncARGBReadbackRequest>(
+-        dst_pixels, dst_size, pixels_offset, query,
++        dst_pixels, dst_info, dst_row_bytes, pixels_offset, query,
+         std::move(scoped_shared_memory), std::move(readback_done));
+     auto* request_ptr = request.get();
+     argb_request_queue_.push(std::move(request));
+@@ -1522,13 +1526,14 @@ bool RasterImplementation::ReadbackImagePixelsINTERNAL(
+     if (!*readback_result) {
+       return false;
+     }
+-    // We need to use `RelaxedAtomicWriteMemcpy` because we might be writing
+-    // into memory observed by JS at the same time.
+     auto dst = UNSAFE_TODO(
+         base::span<uint8_t>(static_cast<uint8_t*>(dst_pixels), dst_size));
+     auto src = UNSAFE_TODO(base::span<uint8_t>(
+         static_cast<uint8_t*>(shm_address) + pixels_offset, dst_size));
+-    base::subtle::RelaxedAtomicWriteMemcpy(dst, src);
++    RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(
++        /*dst=*/dst, /*src=*/src, /*row_bytes=*/dst_info.minRowBytes(),
++        /*height=*/dst_info.height(),
++        /*stride=*/dst_row_bytes);
+   }
+ 
+   return true;
+@@ -1553,16 +1558,19 @@ void RasterImplementation::OnAsyncARGBReadbackDone(
+         static_cast<cmds::ReadbackARGBImagePixelsINTERNALImmediate::Result*>(
+             request->shared_memory->address());
+     if (*result) {
+-      // We need to use `RelaxedAtomicWriteMemcpy` because we might be writing
+-      // into memory observed by JS at the same time.
+-      size_t plane_size = request->dst_size;
++      size_t dst_size =
++          request->dst_info.computeByteSize(request->dst_row_bytes);
+       auto dst = UNSAFE_TODO(base::span<uint8_t>(
+-          static_cast<uint8_t*>(request->dst_pixels.get()), plane_size));
++          static_cast<uint8_t*>(request->dst_pixels.get()), dst_size));
+       auto src = UNSAFE_TODO(base::span<uint8_t>(
+           static_cast<uint8_t*>(request->shared_memory->address()) +
+               request->pixels_offset,
+-          plane_size));
+-      base::subtle::RelaxedAtomicWriteMemcpy(dst, src);
++          dst_size));
++      RelaxedAtomicWriteMemcpyImageRowsSkippingPadding(
++          /*dst=*/dst, /*src=*/src,
++          /*row_bytes=*/request->dst_info.minRowBytes(),
++          /*height=*/request->dst_info.height(),
++          /*stride=*/request->dst_row_bytes);
+       request->readback_successful = true;
+     }
+ 
+diff --git a/gpu/command_buffer/client/raster_implementation_unittest.cc b/gpu/command_buffer/client/raster_implementation_unittest.cc
+index a5c0f1482886f4c496c436b9981506f49949f75c..009fcd2cc56142e34c0690de7cec6cfdc5c5f28b 100644
+--- a/gpu/command_buffer/client/raster_implementation_unittest.cc
++++ b/gpu/command_buffer/client/raster_implementation_unittest.cc
+@@ -15,6 +15,7 @@
+ #include <array>
+ #include <memory>
+ 
++#include "base/bits.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/heap_array.h"
+ #include "base/functional/bind.h"
+@@ -252,7 +253,8 @@ class RasterImplementationTest : public testing::Test {
+     ExpectedMemoryInfo mem;
+ 
+     // Temporarily allocate memory and expect that memory block to be reused.
+-    mem.ptr = gl_->mapped_memory_->Alloc(size, &mem.id, &mem.offset).data();
++    mem.span = gl_->mapped_memory_->Alloc(size, &mem.id, &mem.offset);
++    mem.ptr = mem.span.data();
+     gl_->mapped_memory_->Free(mem.ptr);
+ 
+     return mem;
+@@ -273,6 +275,19 @@ class RasterImplementationTest : public testing::Test {
+     return gl_->GetBucketContents(bucket_id, data);
+   }
+ 
++  bool ReadbackImagePixelsINTERNAL(const gpu::Mailbox& source_mailbox,
++                                   const SkImageInfo& dst_info,
++                                   GLuint dst_row_bytes,
++                                   int src_x,
++                                   int src_y,
++                                   int plane_index,
++                                   base::OnceCallback<void(bool)> readback_done,
++                                   void* dst_pixels) {
++    return gl_->ReadbackImagePixelsINTERNAL(
++        source_mailbox, dst_info, dst_row_bytes, src_x, src_y, plane_index,
++        std::move(readback_done), dst_pixels);
++  }
++
+   static SharedMemoryLimits SharedMemoryLimitsForTesting() {
+     SharedMemoryLimits limits;
+     limits.command_buffer_size = kCommandBufferSizeBytes;
+@@ -877,6 +892,275 @@ TEST_F(RasterImplementationTest, SetActiveURLCHROMIUM) {
+   EXPECT_TRUE(NoCommandsWritten());
+ }
+ 
++// https://crbug.com/543707066
++TEST_F(RasterImplementationTest, ReadbackImagePixelsSyncPadding) {
++  gpu::Mailbox mailbox = gpu::Mailbox::Generate();
++  SkImageInfo dst_info = SkImageInfo::MakeN32Premul(2, 2);
++  GLuint dst_row_bytes =
++      12;  // 2 pixels * 4 bytes/pixel = 8 bytes. Row padding = 4 bytes.
++
++  GLuint color_space_offset = base::bits::AlignUp(
++      sizeof(cmds::ReadbackARGBImagePixelsINTERNALImmediate::Result),
++      sizeof(uint64_t));
++  GLuint pixels_offset = color_space_offset;
++  GLuint dst_size = dst_info.computeByteSize(dst_row_bytes);
++  GLuint total_size =
++      pixels_offset +
++      base::bits::AlignUp(dst_size, static_cast<GLuint>(sizeof(uint64_t)));
++
++  ExpectedMemoryInfo mem = GetExpectedMappedMemory(total_size);
++
++  std::vector<uint8_t> dst_pixels(dst_row_bytes * dst_info.height(), 0xAA);
++
++  EXPECT_CALL(*command_buffer(), OnFlush())
++      .WillOnce([mem, pixels_offset, dst_size]() {
++        // Write 1 to readback_result (at the beginning of shm).
++        auto* result = reinterpret_cast<
++            cmds::ReadbackARGBImagePixelsINTERNALImmediate::Result*>(mem.ptr);
++        *result = 1;
++
++        // Write test data to the pixel portion of the shared memory.
++        auto src_pixels = mem.span.subspan(pixels_offset, dst_size);
++        // Fill src_pixels with distinct values, e.g. 1 to dst_size
++        for (size_t i = 0; i < dst_size; ++i) {
++          src_pixels[i] = static_cast<uint8_t>(i + 1);
++        }
++      })
++      .RetiresOnSaturation();
++
++  bool success = gl_->ReadbackImagePixels(mailbox, dst_info, dst_row_bytes,
++                                          /*src_x=*/0, /*src_y=*/0,
++                                          /*plane_index=*/0, dst_pixels.data());
++
++  EXPECT_TRUE(success);
++
++  // Expected output:
++  // Row 1 (pixels: 0 to 7) copied from src_pixels (0 to 7): 1, 2, 3, 4, 5, 6,
++  // 7, 8. Row 1 (padding: 8 to 11) untouched: 0xAA, 0xAA, 0xAA, 0xAA. Row 2
++  // (pixels: 12 to 19) copied from src_pixels (12 to 19): 13, 14, 15, 16, 17,
++  // 18, 19, 20. Row 2 (padding: 20 to 23) untouched: 0xAA, 0xAA, 0xAA, 0xAA.
++
++  std::vector<uint8_t> expected_pixels(dst_row_bytes * dst_info.height(), 0xAA);
++  for (int y = 0; y < dst_info.height(); ++y) {
++    for (size_t x = 0; x < dst_info.minRowBytes(); ++x) {
++      size_t dst_idx = y * dst_row_bytes + x;
++      size_t src_idx = y * dst_row_bytes + x;
++      expected_pixels[dst_idx] = static_cast<uint8_t>(src_idx + 1);
++    }
++  }
++
++  EXPECT_EQ(dst_pixels, expected_pixels);
++}
++
++// https://crbug.com/543707066
++TEST_F(RasterImplementationTest, ReadbackImagePixelsAsyncPadding) {
++  gpu::Mailbox mailbox = gpu::Mailbox::Generate();
++  SkImageInfo dst_info = SkImageInfo::MakeN32Premul(2, 2);
++  GLuint dst_row_bytes =
++      12;  // 2 pixels * 4 bytes/pixel = 8 bytes. Row padding = 4 bytes.
++
++  GLuint color_space_offset = base::bits::AlignUp(
++      sizeof(cmds::ReadbackARGBImagePixelsINTERNALImmediate::Result),
++      sizeof(uint64_t));
++  GLuint pixels_offset = color_space_offset;
++  GLuint dst_size = dst_info.computeByteSize(dst_row_bytes);
++  GLuint total_size =
++      pixels_offset +
++      base::bits::AlignUp(dst_size, static_cast<GLuint>(sizeof(uint64_t)));
++
++  ExpectedMemoryInfo mem = GetExpectedMappedMemory(total_size);
++
++  std::vector<uint8_t> dst_pixels(dst_row_bytes * dst_info.height(), 0xAA);
++
++  base::OnceClosure signal_closure;
++  EXPECT_CALL(*gpu_control_, DoSignalQuery(_, _))
++      .WillOnce([&signal_closure](uint32_t query, base::OnceClosure* callback) {
++        signal_closure = std::move(*callback);
++      })
++      .RetiresOnSaturation();
++
++  bool callback_run = false;
++  bool callback_success = false;
++  base::OnceCallback<void(bool)> readback_done = base::BindOnce(
++      [](bool* run, bool* success, bool val) {
++        *run = true;
++        *success = val;
++      },
++      &callback_run, &callback_success);
++
++  bool success = ReadbackImagePixelsINTERNAL(
++      mailbox, dst_info, dst_row_bytes, /*src_x=*/0, /*src_y=*/0,
++      /*plane_index=*/0, std::move(readback_done), dst_pixels.data());
++
++  EXPECT_TRUE(success);
++  EXPECT_FALSE(callback_run);
++
++  // Now simulate the GPU process completing the operation by writing to shared
++  // memory.
++  auto* result =
++      reinterpret_cast<cmds::ReadbackARGBImagePixelsINTERNALImmediate::Result*>(
++          mem.ptr);
++  *result = 1;
++
++  auto src_pixels = mem.span.subspan(pixels_offset, dst_size);
++  for (size_t i = 0; i < dst_size; ++i) {
++    src_pixels[i] = static_cast<uint8_t>(i + 1);
++  }
++
++  EXPECT_CALL(*command_buffer(), OnFlush()).Times(AnyNumber());
++
++  // Run the signal query callback.
++  ASSERT_TRUE(signal_closure);
++  std::move(signal_closure).Run();
++
++  EXPECT_TRUE(callback_run);
++  EXPECT_TRUE(callback_success);
++
++  // Verify pixels and padding.
++  std::vector<uint8_t> expected_pixels(dst_row_bytes * dst_info.height(), 0xAA);
++  for (int y = 0; y < dst_info.height(); ++y) {
++    for (size_t x = 0; x < dst_info.minRowBytes(); ++x) {
++      size_t dst_idx = y * dst_row_bytes + x;
++      size_t src_idx = y * dst_row_bytes + x;
++      expected_pixels[dst_idx] = static_cast<uint8_t>(src_idx + 1);
++    }
++  }
++
++  EXPECT_EQ(dst_pixels, expected_pixels);
++}
++
++// https://crbug.com/543707066
++TEST_F(RasterImplementationTest, ReadbackYUVPixelsAsyncPadding) {
++  gpu::Mailbox mailbox = gpu::Mailbox::Generate();
++  gfx::Rect source_rect(0, 0, 4, 4);
++  gfx::Rect output_rect(0, 0, 4, 4);
++  int y_plane_stride = 8;
++  int u_plane_stride = 4;
++  int v_plane_stride = 4;
++
++  auto y_offset = static_cast<GLuint>(base::bits::AlignUp(
++      sizeof(cmds::ReadbackYUVImagePixelsINTERNALImmediate::Result),
++      sizeof(uint64_t)));
++  GLuint y_padded_size = output_rect.height() * y_plane_stride;
++
++  constexpr auto kSizeofUint64 = static_cast<GLuint>(sizeof(uint64_t));
++  GLuint u_offset =
++      base::bits::AlignUp(y_offset + y_padded_size, kSizeofUint64);
++  GLuint u_padded_size = (output_rect.height() / 2) * u_plane_stride;
++
++  GLuint v_offset =
++      base::bits::AlignUp(u_offset + u_padded_size, kSizeofUint64);
++  GLuint v_padded_size = (output_rect.height() / 2) * v_plane_stride;
++
++  size_t total_size =
++      base::bits::AlignUp(v_offset + v_padded_size, kSizeofUint64);
++
++  ExpectedMemoryInfo mem = GetExpectedMappedMemory(total_size);
++
++  std::vector<uint8_t> y_plane_data(y_plane_stride * output_rect.height(),
++                                    0xAA);
++  std::vector<uint8_t> u_plane_data(u_plane_stride * (output_rect.height() / 2),
++                                    0xAA);
++  std::vector<uint8_t> v_plane_data(v_plane_stride * (output_rect.height() / 2),
++                                    0xAA);
++
++  base::OnceClosure signal_closure;
++  EXPECT_CALL(*gpu_control_, DoSignalQuery(_, _))
++      .WillOnce([&signal_closure](uint32_t query, base::OnceClosure* callback) {
++        signal_closure = std::move(*callback);
++      })
++      .RetiresOnSaturation();
++
++  bool release_mailbox_called = false;
++  base::OnceClosure release_mailbox = base::BindOnce(
++      [](bool* called) { *called = true; }, &release_mailbox_called);
++
++  bool callback_run = false;
++  bool callback_success = false;
++  base::OnceCallback<void(bool)> readback_done = base::BindOnce(
++      [](bool* run, bool* success, bool val) {
++        *run = true;
++        *success = val;
++      },
++      &callback_run, &callback_success);
++
++  gl_->ReadbackYUVPixelsAsync(
++      mailbox, GL_TEXTURE_2D, source_rect, output_rect,
++      /*vertically_flip_texture=*/false, y_plane_stride,
++      base::span(y_plane_data), u_plane_stride, base::span(u_plane_data),
++      v_plane_stride, base::span(v_plane_data), std::move(release_mailbox),
++      std::move(readback_done));
++
++  EXPECT_FALSE(callback_run);
++
++  // Simulate GPU process completion.
++  auto* result =
++      reinterpret_cast<cmds::ReadbackYUVImagePixelsINTERNALImmediate::Result*>(
++          mem.ptr);
++  *result = 1;
++
++  // Fill in mock source data for each plane in the shared memory.
++  auto y_src_pixels = mem.span.subspan(y_offset, y_padded_size);
++  for (size_t i = 0; i < y_padded_size; ++i) {
++    y_src_pixels[i] = static_cast<uint8_t>(i + 1);
++  }
++
++  auto u_src_pixels = mem.span.subspan(u_offset, u_padded_size);
++  for (size_t i = 0; i < u_padded_size; ++i) {
++    u_src_pixels[i] = static_cast<uint8_t>(i + 41);
++  }
++
++  auto v_src_pixels = mem.span.subspan(v_offset, v_padded_size);
++  for (size_t i = 0; i < v_padded_size; ++i) {
++    v_src_pixels[i] = static_cast<uint8_t>(i + 51);
++  }
++
++  EXPECT_CALL(*command_buffer(), OnFlush()).Times(AnyNumber());
++
++  // Run the signal query callback.
++  ASSERT_TRUE(signal_closure);
++  std::move(signal_closure).Run();
++
++  EXPECT_TRUE(callback_run);
++  EXPECT_TRUE(callback_success);
++  EXPECT_TRUE(release_mailbox_called);
++
++  // Verify Y plane. Width = 4, Stride = 8, Height = 4.
++  std::vector<uint8_t> expected_y(y_plane_stride * output_rect.height(), 0xAA);
++  for (int y = 0; y < output_rect.height(); ++y) {
++    for (int x = 0; x < output_rect.width(); ++x) {
++      size_t dst_idx = y * y_plane_stride + x;
++      size_t src_idx = y * y_plane_stride + x;
++      expected_y[dst_idx] = static_cast<uint8_t>(src_idx + 1);
++    }
++  }
++  EXPECT_EQ(y_plane_data, expected_y);
++
++  // Verify U plane. Width = 2, Stride = 4, Height = 2.
++  std::vector<uint8_t> expected_u(u_plane_stride * (output_rect.height() / 2),
++                                  0xAA);
++  for (int y = 0; y < output_rect.height() / 2; ++y) {
++    for (int x = 0; x < output_rect.width() / 2; ++x) {
++      size_t dst_idx = y * u_plane_stride + x;
++      size_t src_idx = y * u_plane_stride + x;
++      expected_u[dst_idx] = static_cast<uint8_t>(src_idx + 41);
++    }
++  }
++  EXPECT_EQ(u_plane_data, expected_u);
++
++  // Verify V plane. Width = 2, Stride = 4, Height = 2.
++  std::vector<uint8_t> expected_v(v_plane_stride * (output_rect.height() / 2),
++                                  0xAA);
++  for (int y = 0; y < output_rect.height() / 2; ++y) {
++    for (int x = 0; x < output_rect.width() / 2; ++x) {
++      size_t dst_idx = y * v_plane_stride + x;
++      size_t src_idx = y * v_plane_stride + x;
++      expected_v[dst_idx] = static_cast<uint8_t>(src_idx + 51);
++    }
++  }
++  EXPECT_EQ(v_plane_data, expected_v);
++}
++
+ #include "gpu/command_buffer/client/raster_implementation_unittest_autogen.h"
+ 
+ }  // namespace raster
+diff --git a/third_party/blink/web_tests/external/wpt/webcodecs/videoFrame-copyTo.any.js b/third_party/blink/web_tests/external/wpt/webcodecs/videoFrame-copyTo.any.js
+index 7cd3c3f73cdd1e6b125a10526ce97051bf0426ab..8b8a7cd555c105922edebe5db97629e64fd1c834 100644
+--- a/third_party/blink/web_tests/external/wpt/webcodecs/videoFrame-copyTo.any.js
++++ b/third_party/blink/web_tests/external/wpt/webcodecs/videoFrame-copyTo.any.js
+@@ -188,18 +188,7 @@ promise_test(async t => {
+ }, 'Test I420A stride and offset work.');
+ 
+ promise_test(async t => {
+-  const init = {
+-    format: 'NV12',
+-    timestamp: 0,
+-    codedWidth: 4,
+-    codedHeight: 2,
+-  };
+-  const buf = new Uint8Array([
+-    1, 2, 3, 4,   // y
+-    5, 6, 7, 8,
+-    9, 10, 11, 12 // uv
+-  ]);
+-  const frame = new VideoFrame(buf, init);
++  const frame = makeNV12_4x2();
+   const options = {
+       layout: [
+           {offset: 4, stride: 4},
+@@ -365,3 +354,92 @@ promise_test(async t => {
+ 
+   assert_array_equals(copied_data, packed_data, `Copied frame data incorrect.`);
+ }, 'copyTo from byte data with non-default visibleRect');
++
++promise_test(async t => {
++  const i420_4x4 = new Uint8Array([
++    1,  2,  3,  4,   // y y y y
++    5,  6,  7,  8,   // y y y y
++    9,  10, 11, 12,  // y y y y
++    13, 14, 15, 16,  // y y y y
++    17, 18,          // u u
++    19, 20,          // u u
++    21, 22,          // v v
++    23, 24,          // v v
++  ]);
++  const frame = new VideoFrame(i420_4x4, {
++    format: 'I420',
++    timestamp: 0,
++    codedWidth: 4,
++    codedHeight: 4,
++  });
++
++  const options = {
++    layout: [
++      {offset: 15, stride: 5},
++      {offset: 1, stride: 3},
++      {offset: 8, stride: 3},
++    ],
++  };
++  const PAD = 0xAA;  // Distinct padding value so we can check for it later
++  const expectedData = new Uint8Array([
++    PAD,                    // unused
++    17,  18, PAD,           // u u
++    19,  20, PAD,           // u u
++    PAD,                    // unused
++    21,  22, PAD,           // v v
++    23,  24, PAD,           // v v
++    PAD,                    // unused
++    1,   2,  3,   4,  PAD,  // y y y y
++    5,   6,  7,   8,  PAD,  // y y y y
++    9,   10, 11,  12, PAD,  // y y y y
++    13,  14, 15,  16, PAD,  // y y y y
++  ]);
++  const size = frame.allocationSize(options);
++  assert_equals(size, expectedData.length, 'allocationSize()');
++  const data = new Uint8Array(size);
++  data.fill(PAD);  // Initialize array with PAD before copying into it
++  const layout = await frame.copyTo(data, options);
++  assert_layout_equals(layout, options.layout);
++  assert_buffer_equals(data, expectedData);
++}, 'Test I420 copyTo does not modify destination stride/offset padding bytes.');
++
++promise_test(async t => {
++  const W = 4;
++  const H = 4;
++  const src = new OffscreenCanvas(W, H);
++  const g = src.getContext('2d');
++  g.fillStyle = '#00ff00';
++  g.fillRect(0, 0, W, H);  // Fill 4x4 source image with all green
++
++  const frame = new VideoFrame(src, {timestamp: 0});
++
++  const offset = 5;
++  const stride = 20;
++  const options = {
++    layout: [
++      {offset, stride},
++    ],
++  };
++  const PAD = 0xAA;  // Distinct padding value so we can check for it later
++
++  const size = frame.allocationSize(options);
++  assert_equals(size, offset + stride * H, 'allocationSize()');
++
++  const expectedData = new Uint8Array(size);
++  expectedData.fill(PAD);
++  for (let y = 0; y < H; ++y) {
++    for (let x = 0; x < W; ++x) {
++      expectedData[offset + y * stride + x * 4 + 0] = 0;    // R
++      expectedData[offset + y * stride + x * 4 + 1] = 255;  // G
++      expectedData[offset + y * stride + x * 4 + 2] = 0;    // B
++      expectedData[offset + y * stride + x * 4 + 3] = 255;  // A
++    }
++  }
++
++  const data = new Uint8Array(size);
++  data.fill(PAD);  // Initialize array with PAD before copying into it
++  const layout = await frame.copyTo(data, options);
++  assert_layout_equals(layout, options.layout);
++  assert_buffer_equals(data, expectedData);
++  frame.close();
++}, 'Test texture-backed RGBA copyTo does not modify destination stride/offset padding bytes.');

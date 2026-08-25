@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Thu, 16 Jul 2026 20:22:09 +0000
+Subject: [M150] GL: Fix robust init bypass for packed depth-stencil
+
+Original change's description:
+> GL: Fix robust init bypass for packed depth-stencil
+>
+> When robust resource initialization is enabled, FramebufferGL took a
+> fast path that cleared only one aspect of a packed depth-stencil
+> resource. This falsely marked the entire resource as initialized
+> due to shared InitState, potentially allowing the uncleared aspect
+> containing uninitialized VRAM to be read back.
+>
+> This CL fixes the issue by falling back to the default implementation
+> for partial clears of packed depth-stencil attachments, which correctly
+> initializes both aspects.
+>
+> Bug: b/535379043
+> Test: RobustResourceInitTestES3.PackedDepthStencilPartialClearLeaking
+> Change-Id: I63659d071a8bbf787cdc2bd961b8c5453f2546da
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8131158
+> Commit-Queue: Tzarial <zork@chromium.org>
+> Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+(cherry picked from commit dd6e3b30e15447d4ccc736d5e11d5b962afe65c0)
+
+Bug: chromium:538441451,b/535379043
+Change-Id: I63659d071a8bbf787cdc2bd961b8c5453f2546da
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8267835
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.cpp b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+index 6f76657b5f69df72da05189d1221cfccd474d406..7c9bdaeb0becea2a1a51b12877747cc6cb03d23e 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.cpp
++++ b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+@@ -1365,10 +1365,19 @@ angle::Result FramebufferGL::ensureAttachmentsInitialized(
+     bool depth,
+     bool stencil)
+ {
+-    if (colorAttachments != getState().getEnabledDrawBuffers())
++    const gl::FramebufferState &state                  = getState();
++    const gl::FramebufferAttachment *depthAttachment   = state.getDepthAttachment();
++    const gl::FramebufferAttachment *stencilAttachment = state.getStencilAttachment();
++
++    const bool isPartialDepthStencilInit =
++        depthAttachment && stencilAttachment &&
++        depthAttachment->getResource() == stencilAttachment->getResource() && depth != stencil;
++
++    if (colorAttachments != state.getEnabledDrawBuffers() || isPartialDepthStencilInit)
+     {
+         // Fall back to the default implementation when there are gaps in the enabled draw buffers
+-        // to avoid modifying the draw buffer state.
++        // to avoid modifying the draw buffer state, or when we are performing a partial clear of a
++        // packed depth-stencil attachment.
+         return FramebufferImpl::ensureAttachmentsInitialized(context, colorAttachments, depth,
+                                                              stencil);
+     }
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index cc0f7f1220a652bd1e650973fe02c3334304d779..ac37c5bf1685a2f1beb86ab91b9c4f45c822fd64 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -2603,6 +2603,85 @@ TEST_P(RobustResourceInitTestES3, MaskedStencilClearBuffer)
+     maskedStencilClear(clearFunc);
+ }
+ 
++// Test that performing a partial clear on a packed depth-stencil resource does not bypass robust
++// init for the other aspect.
++TEST_P(RobustResourceInitTestES3, PackedDepthStencilPartialClearLeaking)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr int kSize = 16;
++
++    GLRenderbuffer rb;
++    glBindRenderbuffer(GL_RENDERBUFFER, rb);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, kSize, kSize);
++
++    GLFramebuffer setupFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, setupFBO);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Poison stencil with 0x5A
++    glClearStencil(0x5A);
++    glClear(GL_STENCIL_BUFFER_BIT);
++    ASSERT_GL_NO_ERROR();
++
++    // Invalidate to force ANGLE to re-initialize it on next use.
++    const GLenum attachments[] = {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT};
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 2, attachments);
++    ASSERT_GL_NO_ERROR();
++
++    // Create a FBO with no color attachments, only depth-stencil.
++    GLFramebuffer dsOnlyFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, dsOnlyFBO);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Clear depth only.
++    // If bug is present, this clears depth natively, but marks both depth and stencil as
++    // initialized. Stencil is NOT cleared natively.
++    float depthClearValue = 1.0f;
++    glClearBufferfv(GL_DEPTH, 0, &depthClearValue);
++    ASSERT_GL_NO_ERROR();
++
++    // Bind to FBO with color attachment to verify stencil.
++    GLTexture colorBuffer;
++    glBindTexture(GL_TEXTURE_2D, colorBuffer);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer readFBO;
++    glBindFramebuffer(GL_FRAMEBUFFER, readFBO);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorBuffer, 0);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rb);
++    ASSERT_GL_NO_ERROR();
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Clear color to blue.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    ASSERT_GL_NO_ERROR();
++
++    glEnable(GL_STENCIL_TEST);
++    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
++
++    // Draw green if stencil is 0 (expected robust init value).
++    glStencilFunc(GL_EQUAL, 0, 0xFF);
++    ANGLE_GL_PROGRAM(drawGreen, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.0f);
++    ASSERT_GL_NO_ERROR();
++
++    // Draw red if stencil is 0x5A (poison value, indicates leak).
++    glStencilFunc(GL_EQUAL, 0x5A, 0xFF);
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.0f);
++    ASSERT_GL_NO_ERROR();
++
++    // We expect the stencil to be 0, so the final color should be green.
++    // If the bug is present, it might be red.
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ template <int Size, typename InitializedTest>
+ void VerifyRGBA8PixelRect(InitializedTest inInitialized)
+ {

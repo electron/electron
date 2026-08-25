@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 23 Jul 2026 15:36:06 -0400
+Subject: Translator: Handle comma and ternary for array checks
+
+... for gl_FragData and gl_ClipDistance and gl_CullDistance.
+
+Bug: chromium:537835609
+Bug: chromium:537835252
+Change-Id: Ib9d895c91b8f726a94184af8f7f3a1c135b9f3e0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8141939
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 74919d69ba2c83053723cdc9f21baebecdba70fd..14a4ccbe21815b936c1a09894dd74be089de8886 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -497,6 +497,27 @@ unsigned int GetTypeComponentCount(const TType &type)
+     components *= type.getArraySizeProduct();
+     return components;
+ }
++
++bool IsWholeArrayFragDataUsed(TIntermTyped *node)
++{
++    if (node->getQualifier() == EvqFragData)
++    {
++        return true;
++    }
++
++    TIntermBinary *asBinary = node->getAsBinaryNode();
++    if (asBinary != nullptr && asBinary->getOp() == EOpComma)
++    {
++        return IsWholeArrayFragDataUsed(asBinary->getRight());
++    }
++
++    // Either this is not ESSL 100 (where gl_FragData may be used), or gl_FragData is not used as a
++    // whole array.
++    //
++    // Note: ESSL 100 does not allow arrays in ternary operator, so there is no need to check for
++    // TIntermTernary here for a whole-array use of gl_FragData.
++    return false;
++}
+ }  // namespace
+ 
+ // This tracks each binding point's current default offset for inheritance of subsequent
+@@ -3228,7 +3249,7 @@ void TParseContext::functionCallFragDataCheck(const TFunction *fnCandidate,
+     for (size_t i = 0; i < fnCandidate->getParamCount(); ++i)
+     {
+         TIntermTyped *argument = (*fnCall->getSequence())[i]->getAsTyped();
+-        if (argument->getType().getQualifier() == EvqFragData)
++        if (IsWholeArrayFragDataUsed(argument))
+         {
+             // The whole array is passed to the function.  For validation purposes, assume all
+             // indices are accessed in the function.
+diff --git a/src/tests/compiler_tests/README.md b/src/tests/compiler_tests/README.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..925977d646c16681ad633e4b5c82277954ddafdc
+--- /dev/null
++++ b/src/tests/compiler_tests/README.md
+@@ -0,0 +1,34 @@
++# Translator Unit Tests
++
++This directory contains historical unit tests for the ANGLE translator.  Barring a few cases, they
++should be considered deprecated.  **Do not add new tests to this directory.**
++
++The existing translator tests are severely limited in what they test.  They often verify translation
++by asserting that a substring exists in the translated source or a node is found in the AST.
++However, neither is sufficient to ensure the transformations are done correctly.  Often issues are
++discovered only when the shaders are used in a draw call and the translated source is given to the
++native driver.
++
++Furthermore, with the built-in assumptions about the way the AST works, these tests are incompatible
++with the upcoming IR.
++
++Instead, add end-to-end tests:
++
++* They can be easily tested on every backend
++* Functional testing with a draw call ensures the transformations are correct
++* Using the `GL_ANGLE_translated_shader_source` extension, we can still verify the output is as
++  expected.  This is a maintenance burden however and best avoided unless there is no _functional_
++  way to verify the transformation is done correctly, e.g. if the transformation works around
++  undefined behavior which can't be reliably tested.
++
++To test translator validation, add new tests to `GLSLValidationTest.cpp`, which not only verifies
++that compilation fails, but also has facilities to ensure the failure reason is as expected (and
++not, for example, a typo in the test)
++
++To test transformations, add new tests to `GLSLTest.cpp` that would fail if the transformation in
++question is not done.  By using ANGLE features to control the translator flag in question, the
++transformation can be force-enabled in a test suite, e.g. by instantiating with
++`ES3_OPENGL().enable(Feature::ScalarizeVecAndMatConstructorArgs)`
++
++To test that the output includes a specific text, if there is no better form of verification, add
++new tests to `GLSLOutputTest.cpp`.
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 18cc533029a974f105657f426bd638fd6b6a432a..3e6a21eaf806c51cdfb3609ab3673c414e311b90 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -4921,6 +4921,34 @@ void main() {
+                   "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when gl_SecondaryFragDataEXT is used");
+ }
+ 
++// Shader that writes to SecondaryFragData and passes FragData to a function.
++TEST_P(GLSLValidationTest, BlendFuncExtendedPassFragDataToFunctionInCommaExpr)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_blend_func_extended"));
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    GLint maxDrawBuffers = 0, maxDualSourceDrawBuffers = 0;
++    glGetIntegerv(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT, &maxDualSourceDrawBuffers);
++    glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxDrawBuffers);
++    ANGLE_SKIP_TEST_IF(maxDualSourceDrawBuffers == maxDrawBuffers);
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++#extension GL_EXT_blend_func_extended : require
++precision mediump float;
++void f(vec4 fragData[gl_MaxDrawBuffers])
++{
++    fragData[0] = vec4(0.1);
++}
++void main() {
++    vec4 data[gl_MaxDrawBuffers];
++    f((data, gl_FragData));
++    gl_SecondaryFragDataEXT[0] = vec4(1.0);
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "array index for gl_FragData must be less than "
++                  "GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT when gl_SecondaryFragDataEXT is used");
++}
++
+ // Shader that writes to FragData at an index >= than gl_MaxDualSourceDrawBuffersEXT is fine if
+ // SecondaryFragData is not used.  Note that gl_MaxDualSourceDrawBuffersEXT is typically 1, while
+ // the size of gl_FragData (gl_MaxDrawBuffers) is larger.
