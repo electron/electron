@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Fri, 21 Aug 2026 23:40:21 -0700
+Subject: [M152] Fix overflow in crashpad
+
+Original change's description:
+> Fix overflow in crashpad
+>
+> Clamp retry of short reads on Windows to the correct size.
+>
+> Also, reject invalid sizes larger than the requested remaining size when
+> advancing the destination pointer or subtracting the returned count.
+>
+> Bug: 545820931
+> Change-Id: I6c78b1f9a1ea4eeb54e6e5c7069ca4ea24febb06
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8267322
+> Reviewed-by: Mark Mentovai <mark@chromium.org>
+> Commit-Queue: Will Harris <wfh@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1682346}
+
+(cherry picked from commit c155e094d71e6c6ca452e5140d6996bbd76b36f1)
+
+Bug: 549535306,545820931
+Change-Id: I6c78b1f9a1ea4eeb54e6e5c7069ca4ea24febb06
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8283259
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#1878}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/crashpad/crashpad/util/process/process_memory.cc b/third_party/crashpad/crashpad/util/process/process_memory.cc
+index 89837736a944ddc4446376a5644b14f0552a2fab..7e2c901f01ee6c7cc125d7b499ca1a6d4223ca02 100644
+--- a/third_party/crashpad/crashpad/util/process/process_memory.cc
++++ b/third_party/crashpad/crashpad/util/process/process_memory.cc
+@@ -20,6 +20,8 @@
+ 
+ #include "base/check_op.h"
+ #include "base/logging.h"
++#include "base/numerics/safe_conversions.h"
++#include "base/numerics/safe_math.h"
+ #include "util/numeric/safe_assignment.h"
+ 
+ namespace crashpad {
+@@ -41,8 +43,13 @@ bool ProcessMemory::Read(VMAddress address, VMSize size, void* buffer) const {
+       LOG(ERROR) << "short read";
+       return false;
+     }
+-    DCHECK_LE(static_cast<size_t>(bytes_read), local_size);
+-    local_size -= bytes_read;
++
++    base::CheckedNumeric<size_t> new_local_size = local_size;
++    new_local_size -= bytes_read;
++    if (!new_local_size.AssignIfValid(&local_size)) {
++      LOG(ERROR) << "read more bytes than requested";
++      return false;
++    }
+     address += bytes_read;
+     buffer_c += bytes_read;
+   }
+@@ -78,6 +85,13 @@ bool ProcessMemory::ReadCStringInternal(VMAddress address,
+       break;
+     }
+ 
++    base::CheckedNumeric<size_t> checked_read_size = read_size;
++    checked_read_size -= bytes_read;
++    if (!checked_read_size.IsValid()) {
++      LOG(ERROR) << "read more bytes than requested";
++      return false;
++    }
++
+     char* nul = static_cast<char*>(memchr(buffer, '\0', bytes_read));
+     if (nul != nullptr) {
+       string->append(buffer, nul - buffer);
+diff --git a/third_party/crashpad/crashpad/util/process/process_memory_test.cc b/third_party/crashpad/crashpad/util/process/process_memory_test.cc
+index 07b42535eebae6062d58d2203d28d6fbb5648564..82307c98e7a8b783b7b77d337ae65ecdc742cfa9 100644
+--- a/third_party/crashpad/crashpad/util/process/process_memory_test.cc
++++ b/third_party/crashpad/crashpad/util/process/process_memory_test.cc
+@@ -601,6 +601,38 @@ TEST(ProcessMemory, ReadCStringSizeLimitedUnmappedChild) {
+   test.RunAgainstChild();
+ }
+ 
++class MockProcessMemoryOverflow : public ProcessMemory {
++ public:
++  MockProcessMemoryOverflow() = default;
++  ~MockProcessMemoryOverflow() override = default;
++
++ protected:
++  ssize_t ReadUpTo(VMAddress address,
++                   size_t size,
++                   void* buffer) const override {
++    // Maliciously return more bytes than requested to test the bounds checking.
++    return size + 10;
++  }
++};
++
++TEST(ProcessMemory, ReadOverflowFailsSafely) {
++  MockProcessMemoryOverflow memory;
++  char buffer[16];
++  EXPECT_FALSE(memory.Read(0x1000, 16, buffer));
++}
++
++TEST(ProcessMemory, ReadCStringOverflowFailsSafely) {
++  MockProcessMemoryOverflow memory;
++  std::string result;
++  EXPECT_FALSE(memory.ReadCString(0x1000, &result));
++}
++
++TEST(ProcessMemory, ReadCStringSizeLimitedOverflowFailsSafely) {
++  MockProcessMemoryOverflow memory;
++  std::string result;
++  EXPECT_FALSE(memory.ReadCStringSizeLimited(0x1000, 16, &result));
++}
++
+ }  // namespace
+ }  // namespace test
+ }  // namespace crashpad
+diff --git a/third_party/crashpad/crashpad/util/process/process_memory_win.cc b/third_party/crashpad/crashpad/util/process/process_memory_win.cc
+index c120827ad7bcc0568f8b04d0b42fe3dc934c8267..21c2fd3cd9d9ad019235033a93af404ca809b513 100644
+--- a/third_party/crashpad/crashpad/util/process/process_memory_win.cc
++++ b/third_party/crashpad/crashpad/util/process/process_memory_win.cc
+@@ -60,8 +60,9 @@ ssize_t ProcessMemoryWin::ReadUpTo(VMAddress address,
+   if (GetLastError() == ERROR_PARTIAL_COPY) {
+     // If we can not read the entire section, perform a short read of the first
+     // page instead. This is necessary to support ReadCString().
+-    size_t short_read =
++    const size_t page_remainder =
+         base::GetPageSize() - (address & (base::GetPageSize() - 1));
++    const size_t short_read = std::min(size, page_remainder);
+     success = ReadProcessMemory(handle_,
+                                 reinterpret_cast<void*>(address),
+                                 buffer,
