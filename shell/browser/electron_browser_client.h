@@ -86,6 +86,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetApplicationLocale() override;
   bool* spare_renderer_compatible() { return &spare_renderer_compatible_; }
 
+  // Ids handed out as webRequest details.id, shared by every proxy and gate.
+  uint64_t NextWebRequestId() { return ++next_id_; }
+
   bool ShouldEnableStrictSiteIsolation() override;
   bool ShouldUseSpareRenderProcessHost(
       content::BrowserContext* browser_context,
