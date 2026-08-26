@@ -84,8 +84,8 @@ Returns:
 * `bound` boolean - Whether the portal accepted the bind request.
 
 Emitted on Linux Wayland when the `org.freedesktop.portal.GlobalShortcuts` portal resolves a
-registration request. On this path the bind is asynchronous and consent-gated, so the boolean
-returned by `register()` only means the request was submitted; this event reports the real outcome.
+registration request. The bind on this path is asynchronous and consent-gated, so the boolean
+returned by `register()` only refers to if the request was successfully submitted; this event reports the real outcome.
 `bound` is `false` when the portal denied the bind (for example an invalid app identity — see
 [`app.setDesktopName()`](app.md#appsetdesktopnamename-linux) — or a dismissed consent dialog) or the
 portal is unavailable.
@@ -121,6 +121,10 @@ the registered shortcut is pressed by the user.
 When the accelerator is already taken by other applications, this call will
 silently fail. This behavior is intended by operating systems, since they don't
 want applications to fight for global shortcuts.
+
+On Linux Wayland, the return value only indicates that the bind request was submitted to the
+desktop portal; the portal resolves it asynchronously and the actual outcome is reported by the
+[`registration-resolved`](#event-registration-resolved-linux) event.
 
 The following accelerators will not be registered successfully on macOS 10.14 Mojave unless
 the app has been authorized as a [trusted accessibility client](https://developer.apple.com/library/archive/documentation/Accessibility/Conceptual/AccessibilityMacOSX/OSXAXTestingApps.html):
