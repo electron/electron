@@ -441,7 +441,7 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index 7faf2cae029cb4748564a9ee55d6da9e7f388b51..89eeaf7206ebd7b6aa83cf80bcedc749c76a7b91 100644
+index b4715c2612b736ee7bcf74c4da3f90c85ed350f0..149164851887e2c5b2047c985c7c877a0e2b2dc2 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::

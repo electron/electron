@@ -93,6 +93,21 @@ jobs:
       uses: ./src/electron/.github/actions/restore-cache-aks
       with:
         target-platform: ${{ inputs.target-platform }}
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Fix hermetic Python (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: cpython3-host
+        deps-file: src/DEPS
+        installation-dir: src/third_party/cpython3/host
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/cpython3/${platform}
     - name: Run Electron Only Hooks
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
@@ -111,12 +126,6 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-    - name: Checkout Electron
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Default GN gen

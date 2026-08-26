@@ -297,7 +297,7 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     v8::Local<v8::External> v8_holder;
     CHECK(args->GetData(&v8_holder));
     CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
-        v8_holder->Value(gin::kGinInternalCallbackHolderBaseTag));
+        v8_holder->Value(v8::kExternalPointerTypeTagDefault));
 
     typedef CallbackHolder<ReturnType(ArgTypes...)> HolderT;
     HolderT* holder = static_cast<HolderT*>(holder_base);

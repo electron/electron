@@ -82,7 +82,6 @@ enable_pdf_save_to_drive = false
 # ever costs a cold-cache page load. Build the stub producer (as Android
 # does) instead.
 produce_v8_compile_hints = false
-
 # Track which grit resource IDs the linked binary actually references and
 # repack the locale .pak files with only those strings. Enabled for both
 # testing and release builds so that a reference to an unshipped resource
@@ -90,4 +89,7 @@ produce_v8_compile_hints = false
 # the next release build.
 # TODO: extend the allowlist consumption to Windows (PDB-based extraction);
 # there this only makes grit emit the (free) marker symbols today.
-enable_resource_allowlist_generation = true
+# Uncomment this condition once
+# fix_disable_enable_resource_allowlist_generation_on_windows.patch
+# is removed.
+# enable_resource_allowlist_generation = true
