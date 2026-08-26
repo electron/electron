@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Thomas Smith <thomsmit@google.com>
 Date: Tue, 21 Jul 2026 14:44:35 +0000
-Subject: [M151][GL]: workaround: Flush queries before deleting or unbinding
- FBOs on ARM
+Subject: [M151][GL]workaround: Flush queries before deleting or unbinding FBOs
+ on ARM
 
 Implement a workaround to prevent a driver crash on ARM Mali
 (Avalon/Valhall) devices. The crash is triggered when a framebuffer
