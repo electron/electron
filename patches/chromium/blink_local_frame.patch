@@ -49,10 +49,10 @@ index d69be19a1e4b2db98cfcecc6491da122117a7bc0..e18f84fcf109939f95239591af3242d4
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 5f67af821a0a6435a04745be2534a1447f3163e5..33ea5229ca0241291e0d8eb94849d3809abd57a7 100644
+index 297b374e8874e2734a2547823d001ade7c1f04b2..16f0ded5f914ef3b91481f5674a59771f3153f64 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -759,10 +759,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -778,10 +778,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -60,10 +60,10 @@ index 5f67af821a0a6435a04745be2534a1447f3163e5..33ea5229ca0241291e0d8eb94849d380
 -  // - FrameLoader::Detach() can fire XHR abort events
 -  // - Document::Shutdown() can dispose plugins which can run script.
 -  ScriptForbiddenScope forbid_script;
-   if (!Client())
+   if (!Client()) {
      return false;
- 
-@@ -821,6 +817,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+   }
+@@ -852,6 +848,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    DCHECK(!view_->IsAttached());
    Client()->WillBeDetached();
  

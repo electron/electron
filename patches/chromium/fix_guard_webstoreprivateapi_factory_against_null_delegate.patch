@@ -24,10 +24,10 @@ implementation instead.  Since Electron does not support the webstorePrivate
 API, it is more concise to carry this patch.
 
 diff --git a/extensions/browser/api/webstore_private/webstore_private_api.cc b/extensions/browser/api/webstore_private/webstore_private_api.cc
-index 7702598c7136bb482abaca5d58a84788e2d0469b..fe048d37126c5465a8d8aa8bb2539a86a013bde4 100644
+index ad5ac45ba49b5fcd3fe313c28fcc3c536b4825ea..04b504b2c7c35384bece9c2f39561a2eef994233 100644
 --- a/extensions/browser/api/webstore_private/webstore_private_api.cc
 +++ b/extensions/browser/api/webstore_private/webstore_private_api.cc
-@@ -478,6 +478,12 @@ WebstorePrivateApi::PopApprovalForTesting(  // IN-TEST
+@@ -520,6 +520,12 @@ WebstorePrivateApi::PopApprovalForTesting(  // IN-TEST
  
  // static
  void WebstorePrivateApi::EnsureAssociatedFactoryBuilt() {

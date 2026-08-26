@@ -49,6 +49,7 @@ class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
 class ElectronPreconnectManagerDelegate;
 class MediaDeviceIDSalt;
+class InterceptState;
 class ProtocolRegistry;
 class ResolveProxyHelper;
 class WebViewManager;
@@ -94,6 +95,11 @@ class ElectronBrowserContext : public content::BrowserContext {
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory() override;
+
+  // What the IO-thread URLLoaderFactoryGates route to the UI thread; kept in
+  // sync by api::WebRequest and ProtocolRegistry.
+  InterceptState* intercept_state() const { return intercept_state_.get(); }
+  void InterceptedProtocolsChanged();
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
       scoped_refptr<network::SharedURLLoaderFactory> factory);
 
@@ -222,6 +228,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  scoped_refptr<InterceptState> intercept_state_;
 
   // Subscription to Network Service process gone notifications.
   base::CallbackListSubscription network_service_gone_subscription_;

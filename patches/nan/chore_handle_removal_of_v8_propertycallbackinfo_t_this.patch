@@ -7,7 +7,7 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/7474608
 See https://issues.chromium.org/issues/455600234
 
 diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index 24979fb0d66595f5e80f493c78291d6600bfc34a..5cb6d98406ada00186289cc471726fa2a5ae711d 100644
+index 3abd7475c659dfda55c5efda7ee20a9efd4ec4be..6e4ff1d34f65ed82454f5aed34eeb4feae99e8d8 100644
 --- a/nan_callbacks_12_inl.h
 +++ b/nan_callbacks_12_inl.h
 @@ -176,7 +176,20 @@ class PropertyCallbackInfo {
@@ -23,12 +23,12 @@ index 24979fb0d66595f5e80f493c78291d6600bfc34a..5cb6d98406ada00186289cc471726fa2
 +       (V8_MINOR_VERSION > 6 ||                                                \
 +        (V8_MINOR_VERSION == 6 && defined(V8_BUILD_NUMBER) &&                  \
 +         V8_BUILD_NUMBER >= 40)))))
-+    return info_.HolderV2();
++    return info_.Holder();
 +#else
 +    return info_.This();
 +#endif
 +  }
 +
-   inline v8::Local<v8::Object> Holder() const { return info_.HolderV2(); }
+   inline v8::Local<v8::Object> Holder() const { return info_.Holder(); }
    inline ReturnValue<T> GetReturnValue() const {
      return ReturnValue<T>(info_.GetReturnValue());

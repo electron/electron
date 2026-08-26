@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 17fc744483e97584b75d7acf414097839c143037..8389b625f26b8008759983a373dda1f51e45cf6b 100644
+index 2b5b16f5040de4fc6b3f78fadf2e841201ab32cd..30d0de3d299e01492c61137a8960674074ff3016 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -3603,6 +3603,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
+@@ -3624,6 +3624,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
    }
  }
  
@@ -26,10 +26,10 @@ index 17fc744483e97584b75d7acf414097839c143037..8389b625f26b8008759983a373dda1f5
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index 345d1c40972ddecfd5668004ce4f12da36a7b4a6..658e7250fb083f26e69c196c212404a2f323488b 100644
+index 1f743053f8ca891d820f4dd1c4d93d84c2c4769c..aaabb5f1308a19d35fad27aa3be10cffc8432420 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
-@@ -682,6 +682,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+@@ -684,6 +684,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
        RenderWidgetHostViewBase* updated_view) override;
    void OnTextSelectionChanged(TextInputManager* text_input_mangager,
                                RenderWidgetHostViewBase* updated_view) override;
@@ -39,10 +39,10 @@ index 345d1c40972ddecfd5668004ce4f12da36a7b4a6..658e7250fb083f26e69c196c212404a2
    // Detaches |this| from the input method object.
    // is_removed flag is true if this is called while the window is
 diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
-index 65be78be7080129f776fc16122b9c97f1d03f438..19d369cd0b778f47e21770ad16ad4fd288d4c235 100644
+index c1100b4f152202e95552d929f4cafcf3487da0fd..0af1be25982f4a87b1509e166b87b13ca23ba1d5 100644
 --- a/content/browser/renderer_host/text_input_manager.cc
 +++ b/content/browser/renderer_host/text_input_manager.cc
-@@ -214,6 +214,7 @@ void TextInputManager::UpdateTextInputState(
+@@ -231,6 +231,7 @@ void TextInputManager::UpdateTextInputState(
  
    if (text_input_state.type == ui::TEXT_INPUT_TYPE_NONE &&
        active_view_ != view) {
@@ -50,7 +50,7 @@ index 65be78be7080129f776fc16122b9c97f1d03f438..19d369cd0b778f47e21770ad16ad4fd2
      // We reached here because an IPC is received to reset the TextInputState
      // for |view|. But |view| != |active_view_|, which suggests that at least
      // one other view has become active and we have received the corresponding
-@@ -517,6 +518,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
+@@ -534,6 +535,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
      observer.OnUpdateTextInputStateCalled(this, updated_view, did_update_state);
  }
  
@@ -87,10 +87,10 @@ index 6e07e5ef9d033aa6ac98e3f48966b560b0da115e..ee72a9bf160c10011a2d80f4023d1434
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 01c1f158bfc3cb108793d715a60c9d2617bdc049..36ba16b7eff9571c130501ba3c14a5d7a096af99 100644
+index ae1d1021c5d5ded752fa01b0851a5bb9251fe2be..51305f33cbde7484156e1b844be09401860e5b98 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10986,7 +10986,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -11071,7 +11071,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
      return;
    }
    RenderWidgetHostViewBase* root_view =

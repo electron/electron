@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 25 Aug 2026 10:00:00 +0200
+Subject: Revert "Only preload SwiftShader in GPU sandbox init when allowed"
+
+This reverts the gpu_init.cc change from
+https://chromium-review.googlesource.com/c/chromium/src/+/7636200.
+
+The GPU process enables MITIGATION_FORCE_MS_SIGNED_BINS once its sandbox
+is initialized, so vk_swiftshader.dll has to be loaded before that if it
+is going to be used at all. That CL made the preload conditional on
+SwiftShader being requested explicitly, but WebGPU's fallback adapter on
+Windows is SwiftShader over Vulkan (Dawn's D3D backends return no
+adapters for forceFallbackAdapter), and WebGPUDecoderImpl still asks for
+it when no D3D12 adapter is usable or the page passes
+forceFallbackAdapter. The late load is rejected by Code Integrity; for
+AppX/MSIX packaged apps the loader treats that as package tampering,
+terminates the GPU process and marks the package as needing repair.
+
+A narrower condition is proposed upstream at
+https://chromium-review.googlesource.com/c/chromium/src/+/8286976; this
+patch can be dropped once that or an equivalent lands.
+
+diff --git a/gpu/ipc/service/gpu_init.cc b/gpu/ipc/service/gpu_init.cc
+index 1a3ee6b9285bb9cea28e2cf157b36d41b3b9cee0..aa5bf8475fdae4e6701c02dec1f0653d7f958066 100644
+--- a/gpu/ipc/service/gpu_init.cc
++++ b/gpu/ipc/service/gpu_init.cc
+@@ -680,17 +680,7 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,
+ 
+     base::FilePath module_path;
+     if (base::PathService::Get(base::DIR_MODULE, &module_path)) {
+-      // Preload vk_swiftshader.dll when SwiftShader may be needed:
+-      // - IsSwiftShaderAllowed() covers ANGLE/GL flags like
+-      //   --enable-unsafe-swiftshader and --use-angle=swiftshader.
+-      // - use_webgpu_adapter covers --use-webgpu-adapter=swiftshader for
+-      //   WebGPU fallback adapter selection.
+-      // - DefaultForceFallbackAdapter() covers Graphite/Dawn using
+-      //   SwiftShader via --skia-graphite-dawn-backend=swiftshader.
+-      if (features::IsSwiftShaderAllowed(command_line) ||
+-          gpu_preferences_.use_webgpu_adapter ==
+-              WebGPUAdapterName::kSwiftShader ||
+-          DawnContextProvider::DefaultForceFallbackAdapter()) {
++      {
+         TRACE_EVENT("gpu,startup", "Load vk_swiftshader.dll");
+         base::LoadNativeLibrary(module_path.Append(L"vk_swiftshader.dll"),
+                                 nullptr);

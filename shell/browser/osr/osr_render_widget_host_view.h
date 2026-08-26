@@ -36,7 +36,6 @@
 class SkBitmap;
 
 namespace gfx {
-class Point;
 class PointF;
 class Rect;
 }  // namespace gfx
@@ -47,8 +46,6 @@ class CursorManager;
 
 namespace electron {
 
-class ElectronBeginFrameTimer;
-class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
 class OffScreenVideoConsumer;
@@ -235,7 +232,7 @@ class OffScreenRenderWidgetHostView
     return offscreen_shared_texture_pixel_format_;
   }
 
-  ui::LayerSolidColor* root_layer() const { return root_layer_.get(); }
+  ui::LayerSurface* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
     return delegated_frame_host_.get();
@@ -305,7 +302,7 @@ class OffScreenRenderWidgetHostView
   viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
-  std::unique_ptr<ui::LayerSolidColor> root_layer_;
+  std::unique_ptr<ui::LayerSurface> root_layer_;
 
   // depends-on: root_layer_
   std::unique_ptr<ui::Compositor> compositor_;

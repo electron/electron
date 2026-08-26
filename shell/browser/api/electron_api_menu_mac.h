@@ -15,9 +15,9 @@
 
 namespace electron {
 class NativeWindow;
-class WebFrameMain;
 
 namespace api {
+class WebFrameMain;
 
 class MenuMac : public Menu {
  public:

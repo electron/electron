@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 25 Aug 2026 14:11:51 +0900
+Subject: fix: disable enable_resource_allowlist_generation on windows
+
+Enabling generation activates the linker wrapper from https://crrev.com/c/8265068,
+which prevents siso from recognizing archive actions and leaves environment.<arch>
+as an undeclared input. The wrapper is expected to be removed after the LLVM fix
+from https://crrev.com/c/8280057 lands.
+
+Remove this patch once https://issues.chromium.org/issues/542981236 is
+fixed.
+
+diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
+index 78c1d0fcfd80b137d770a0064c4ffdf241f7a950..ed085954b928974f34894b42fdbfaf9735b1d1f3 100644
+--- a/build/toolchain/gcc_toolchain.gni
++++ b/build/toolchain/gcc_toolchain.gni
+@@ -18,13 +18,13 @@ declare_args() {
+   # Enables allowlist generation for IDR_ grit defines seen by the compiler.
+   # Currently works only on some platforms and enabled by default for official
+   # builds. Requires debug info.
++  # Don't enable for Android-on-Chrome OS.
++  # TODO(https://crbug.com/445896263): Consider whether Cronet should enable
++  # this.
+   enable_resource_allowlist_generation =
+-      is_official_build &&
+-      # Don't enable for Android-on-Chrome OS.
+-      (target_os == "android" || target_os == "win") &&
+-      # TODO(https://crbug.com/445896263): Consider whether Cronet should enable
+-      # this.
+-      !is_cronet_build
++      (is_electron_build && (target_os == "linux" || target_os == "mac")) ||
++      (!is_electron_build && is_official_build &&
++       (target_os == "android" || target_os == "win") && !is_cronet_build)
+ }
+ 
+ # When the arg is set via args.gn, it applies to all toolchains. In order to not

@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/auto_reset.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
@@ -54,6 +55,7 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
+#include "content/public/common/url_utils.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -108,6 +110,7 @@
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/net/proxying_websocket.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
@@ -532,6 +535,10 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::SiteInstance* pending_site_instance) {
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  auto* prefs = WebContentsPreferences::From(web_contents);
+  const bool compatible =
+      prefs ? prefs->CanUseSpareRenderer() : spare_renderer_compatible_;
+  base::AutoReset<bool> reset(&spare_renderer_compatible_, compatible);
   const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
   pending_processes_[pending_process_id] = web_contents;
 
@@ -663,6 +670,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
     content::ChildProcessId unsafe_process_id =
         content::ChildProcessId::FromUnsafeValue(process_id);
+    auto* render_process_host = content::RenderProcessHost::FromID(process_id);
     content::WebContents* web_contents =
         GetWebContentsFromProcessID(unsafe_process_id);
     if (web_contents) {
@@ -670,22 +678,14 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       if (web_preferences)
         web_preferences->AppendCommandLineSwitches(
             command_line, IsRendererSubFrame(unsafe_process_id));
+    } else if (render_process_host && render_process_host->IsSpare()) {
+      // Launched like a sandboxed window's renderer, which is the only kind
+      // ShouldUseSpareRenderProcessHost() hands it to.
+      command_line->AppendSwitch(switches::kEnableSandbox);
     }
 
     renderer_process_sandboxed_[unsafe_process_id] =
         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
-
-    // Service worker processes should only run preloads if one has been
-    // registered prior to startup.
-    auto* render_process_host = content::RenderProcessHost::FromID(process_id);
-    if (render_process_host) {
-      auto* browser_context = render_process_host->GetBrowserContext();
-      auto* session_prefs =
-          SessionPreferences::FromBrowserContext(browser_context);
-      if (session_prefs->HasServiceWorkerPreloadScript()) {
-        command_line->AppendSwitch(switches::kServiceWorkerPreload);
-      }
-    }
   }
 }
 
@@ -1538,6 +1538,25 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   auto [proxied_receiver, target_factory_remote] = factory_builder.Append();
 
+  // Renderer-facing factories get an IO-thread gate in front of the proxy, so
+  // requests only detour through this thread while something observes them.
+  if (frame_host && type != URLLoaderFactoryType::kNavigation) {
+    mojo::Remote<network::mojom::URLLoaderFactory> target(
+        std::move(target_factory_remote));
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_network;
+    target->Clone(gate_to_network.InitWithNewPipeAndPassReceiver());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_proxy;
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
+        gate_to_proxy.InitWithNewPipeAndPassReceiver();
+    CreateURLLoaderFactoryGate(
+        static_cast<ElectronBrowserContext*>(browser_context)
+            ->intercept_state(),
+        std::move(proxied_receiver), std::move(gate_to_network),
+        std::move(gate_to_proxy));
+    proxied_receiver = std::move(proxy_receiver);
+    target_factory_remote = target.Unbind();
+  }
+
   // Required by WebRequestInfoInitParams.
   //
   // Note that in Electron we allow webRequest to capture requests sent from
@@ -1766,6 +1785,30 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
   return BrowserThread::CurrentlyOn(BrowserThread::IO)
              ? *g_io_thread_application_locale
              : *g_application_locale;
+}
+
+bool ElectronBrowserClient::ShouldUseSpareRenderProcessHost(
+    content::BrowserContext* browser_context,
+    const GURL& site_url,
+    std::optional<
+        content::ContentBrowserClient::SpareProcessRefusedByEmbedderReason>&
+        refused_reason) {
+  // Extension and WebUI (chrome://, devtools://) frames get renderer switches
+  // and bindings of their own, whatever WebContents hosts them.
+  if (
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+      site_url.SchemeIs(extensions::kExtensionScheme) ||
+#endif
+      content::HasWebUIScheme(site_url)) {
+    refused_reason = content::ContentBrowserClient::
+        SpareProcessRefusedByEmbedderReason::ExtensionProcess;
+    return false;
+  }
+  if (spare_renderer_compatible_)
+    return true;
+  refused_reason = content::ContentBrowserClient::
+      SpareProcessRefusedByEmbedderReason::DefaultDisabled;
+  return false;
 }
 
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {

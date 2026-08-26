@@ -129,6 +129,8 @@ class BrowserProcessImpl : public BrowserProcess {
   UsbSystemTrayIcon* usb_system_tray_icon() override;
   void set_usb_system_tray_icon_for_test(
       std::unique_ptr<UsbSystemTrayIcon> icon) override;
+  speech::SpeechRecognitionSmallExpertModelInstaller*
+  speech_recognition_small_expert_model_installer() override;
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,
