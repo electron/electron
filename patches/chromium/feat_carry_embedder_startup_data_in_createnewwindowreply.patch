@@ -26,7 +26,7 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f4f1197db70b379eada2e0464b06ff50dee56db3..f4836a76ba5280b73c77765734a9d88897678fab 100644
+index bf65e1803e32af0b683da63eaab06044df5faacf..c2911e42d8d2ca7fc98ab1afdf2e6b4f170c4d0b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10823,7 +10823,12 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -71,10 +71,10 @@ index 4fba4300c9ac22f2937b080e518f723a4fc1a4a7..b475f17c360a04cfc3750c0e2cb5fa21
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 05e73c2f63cbc468eadc8c93a480cf646a092a73..29a5a21b06aed299fa3430f99a369c4a91a35e5f 100644
+index 988d83fdf70abec970f96188d3cb755ab885193f..1af71f5258dd95c2f51d51f52a1b7939baf70966 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -812,6 +812,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -818,6 +818,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index 05e73c2f63cbc468eadc8c93a480cf646a092a73..29a5a21b06aed299fa3430f99a369c4a
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7262f91eda90ae90091216c988ce0b78be8af6e2..515c65a0f50e7c4a959f9f7da8eda0e46d2eca60 100644
+index a4e03cb95c0dc0bafecd402251e9f52490538957..8345356f57cedad95d8b1aa4471068de4f67f990 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index 7262f91eda90ae90091216c988ce0b78be8af6e2..515c65a0f50e7c4a959f9f7da8eda0e4
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1276,6 +1277,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1281,6 +1282,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -148,10 +148,10 @@ index 51d460f9982489575e94ad3726a44f77800a44ba..84fb8167a48f033fd941cfcb6feabbc3
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f1240be55e912db31074a61c0cfd99481ae9eb0a..2f99118c7e4cef558cc8d70fc11bceed5c2eeb34 100644
+index 751f651fafe5de0ccbee442f76ee9dc42e087e30..e4536360abf01b7df54f25b64ec497d6a1511027 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7203,6 +7203,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7206,6 +7206,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
