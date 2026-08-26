@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Tue, 21 Jul 2026 15:17:29 -0700
+Subject: Vulkan: Fix UAF in DescriptorPoolHelper via unsafe WeakPtr upgrade
+
+When context runs into error during submission, we may bail out early,
+leaving some DescriptorSetHelpers has unsubmitted ResourceUse. This
+cause potential UAF later on when context is destroyed. This CL prevents
+such UAF possibility by force finish
+DescriptorPoolHelper::mPendingGarbageList. This should have no behavior
+change during normal context runs where submission went through
+successfully.
+
+Bug: b/536636648
+Change-Id: I608ed2e61796aefc86d1a806472cfd70c2b8c719
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8127746
+Commit-Queue: Charlie Lao <cclao@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 4e32d2889ac1c0c5888ed02d094809da2ea875db..2f42e34f6ffa4cfa06f9685aa1c539a8e7c6b117 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -3566,6 +3566,15 @@ void DescriptorPoolHelper::cleanupPendingGarbage()
+     }
+ }
+ 
++void DescriptorPoolHelper::forceFinishPendingGarbage()
++{
++    while (!mPendingGarbageList.empty())
++    {
++        mFinishedGarbageList.push_back(std::move(mPendingGarbageList.front()));
++        mPendingGarbageList.pop_front();
++    }
++}
++
+ bool DescriptorPoolHelper::recycleFromGarbage(Renderer *renderer,
+                                               DescriptorSetPointer *descriptorSetOut)
+ {
+@@ -3688,7 +3697,11 @@ void DynamicDescriptorPool::destroy(VkDevice device)
+ 
+     for (DescriptorPoolPointer &pool : mDescriptorPools)
+     {
+-        pool->cleanupPendingGarbage();
++        // Usually all pending garbage should have been finished when DynamicDescriptorPool is
++        // destroyed. But when context runs into error and submit code path early out, we could have
++        // unfinished garbage in the pending list. So force all pending garbage to be cleared rather
++        // than being left in place until the pool itself is deleted.
++        pool->forceFinishPendingGarbage();
+         pool->destroyGarbage();
+         ASSERT(pool.unique());
+     }
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 66b56848ae53514538b60540804e22995c6a9f40..bc1ee9362ed82f84b12882fe3dbb988c1eff202b 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -298,6 +298,7 @@ class DescriptorPoolHelper final : angle::NonCopyable
+     bool recycleFromGarbage(Renderer *renderer, DescriptorSetPointer *descriptorSetOut);
+     void destroyGarbage();
+     void cleanupPendingGarbage();
++    void forceFinishPendingGarbage();
+ 
+     bool hasValidDescriptorSet() const { return mValidDescriptorSets != 0; }
+     bool canDestroy() const { return mValidDescriptorSets == 0 && mPendingGarbageList.empty(); }
+diff --git a/src/tests/gl_tests/VulkanDescriptorSetTest.cpp b/src/tests/gl_tests/VulkanDescriptorSetTest.cpp
+index 72a57caa8a5771add8be8ce0c80eb529609011c0..af9adaf5af0899becaa5017eca49ad8a25541ad4 100644
+--- a/src/tests/gl_tests/VulkanDescriptorSetTest.cpp
++++ b/src/tests/gl_tests/VulkanDescriptorSetTest.cpp
+@@ -208,8 +208,43 @@ TEST_P(VulkanDescriptorSetLayoutDescTest, Basic)
+     mDescriptorSetLayoutCache.destroy(contextVk->getRenderer());
+ }
+ 
++// Verify that DynamicDescriptorPool::destroy tears down cleanly even when descriptor sets that
++// were returned to the pool are still tagged with an outstanding queue serial.
++TEST_P(VulkanDescriptorSetLayoutDescTest, DestroyWithPendingGarbage)
++{
++    rx::ContextVk *contextVk = hackANGLE();
++
++    rx::vk::DescriptorSetLayoutDesc desc;
++    addBindings({0}, &desc);
++
++    rx::vk::DescriptorSetLayoutPtr descriptorSetLayout;
++    angle::Result result =
++        mDescriptorSetLayoutCache.getDescriptorSetLayout(contextVk, desc, &descriptorSetLayout);
++    ASSERT_EQ(result, angle::Result::Continue);
++
++    VkDescriptorPoolSize poolSize = {VK_DESCRIPTOR_TYPE_SAMPLER, 1};
++    rx::vk::DynamicDescriptorPool dynamicPool;
++    result = dynamicPool.init(contextVk, &poolSize, 1, *descriptorSetLayout);
++    ASSERT_EQ(result, angle::Result::Continue);
++
++    rx::vk::DescriptorSetPointer descriptorSet;
++    result = dynamicPool.allocateDescriptorSet(contextVk, *descriptorSetLayout, &descriptorSet);
++    ASSERT_EQ(result, angle::Result::Continue);
++    ASSERT_TRUE(descriptorSet);
++
++    // Tag the descriptor set with a queue serial that has not been reached so that it stays on the
++    // pool's pending garbage list once released.
++    descriptorSet->setQueueSerial(rx::QueueSerial(0, rx::Serial::Infinite()));
++    descriptorSet.reset();
++
++    dynamicPool.destroy(contextVk->getDevice());
++
++    descriptorSetLayout.reset();
++    mDescriptorSetLayoutCache.destroy(contextVk->getRenderer());
++}
++
+ ANGLE_INSTANTIATE_TEST(VulkanDescriptorSetTest, ES31_VULKAN(), ES31_VULKAN_SWIFTSHADER());
+-ANGLE_INSTANTIATE_TEST(VulkanDescriptorSetLayoutDescTest, ES31_VULKAN());
++ANGLE_INSTANTIATE_TEST(VulkanDescriptorSetLayoutDescTest, ES31_VULKAN(), ES31_VULKAN_SWIFTSHADER());
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(VulkanDescriptorSetLayoutDescTest);
+ 
+ }  // namespace

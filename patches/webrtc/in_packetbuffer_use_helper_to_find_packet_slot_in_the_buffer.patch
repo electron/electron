@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Chapovalov <danilchap@webrtc.org>
+Date: Mon, 27 Jul 2026 10:36:29 +0200
+Subject: In PacketBuffer use helper to find packet slot in the buffer
+
+This is a preparation for using unwrapped int64_t instead of wrapped
+uint16_t RTP sequence number in PacketBuffer. Using modular works when
+sequence number is unsigned but produces incorrect result when signed
+sequence number happens to be negative.
+
+Bug: chromium:537233963
+Change-Id: I515cb7441d052a2823eee4891bb4e17b254d602f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/491920
+Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#48231}
+
+diff --git a/modules/video_coding/packet_buffer.cc b/modules/video_coding/packet_buffer.cc
+index 0efaa8749a18ee0878804df616092be0df03220d..815e0f4e45f0fa7c8248b68fd16a522fa8e8f872 100644
+--- a/modules/video_coding/packet_buffer.cc
++++ b/modules/video_coding/packet_buffer.cc
+@@ -68,7 +68,7 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
+   PacketBuffer::InsertResult result;
+ 
+   uint16_t seq_num = packet->seq_num();
+-  size_t index = seq_num % buffer_.size();
++  size_t index = Index(seq_num);
+ 
+   if (!first_packet_received_) {
+     first_seq_num_ = seq_num;
+@@ -98,9 +98,11 @@ PacketBuffer::InsertResult PacketBuffer::InsertPacket(
+     }
+ 
+     // The packet buffer is full, try to expand the buffer.
+-    while (ExpandBufferSize() && buffer_[seq_num % buffer_.size()] != nullptr) {
++    // Note that `ExpandBufferSize` changes `buffer_.size()` and thus `Index`
++    // has to be recalculated after it.
++    while (ExpandBufferSize() && buffer_[Index(seq_num)] != nullptr) {
+     }
+-    index = seq_num % buffer_.size();
++    index = Index(seq_num);
+ 
+     // Packet buffer is still full since we were unable to expand the buffer.
+     if (buffer_[index] != nullptr) {
+@@ -142,7 +144,7 @@ void PacketBuffer::ClearTo(uint16_t seq_num) {
+   size_t diff = ForwardDiff<uint16_t>(first_seq_num_, seq_num);
+   size_t iterations = std::min(diff, buffer_.size());
+   for (size_t i = 0; i < iterations; ++i) {
+-    auto& stored = buffer_[first_seq_num_ % buffer_.size()];
++    auto& stored = buffer_[Index(first_seq_num_)];
+     if (stored != nullptr && AheadOf<uint16_t>(seq_num, stored->seq_num())) {
+       stored = nullptr;
+     }
+@@ -204,7 +206,7 @@ bool PacketBuffer::ExpandBufferSize() {
+   std::vector<std::unique_ptr<Packet>> new_buffer(new_size);
+   for (std::unique_ptr<Packet>& entry : buffer_) {
+     if (entry != nullptr) {
+-      new_buffer[entry->seq_num() % new_size] = std::move(entry);
++      new_buffer[Index(entry->seq_num(), new_size)] = std::move(entry);
+     }
+   }
+   buffer_ = std::move(new_buffer);
+@@ -213,10 +215,8 @@ bool PacketBuffer::ExpandBufferSize() {
+ }
+ 
+ bool PacketBuffer::PotentialNewFrame(uint16_t seq_num) const {
+-  size_t index = seq_num % buffer_.size();
+-  int prev_index = index > 0 ? index - 1 : buffer_.size() - 1;
+-  const auto& entry = buffer_[index];
+-  const auto& prev_entry = buffer_[prev_index];
++  const auto& entry = buffer_[Index(seq_num)];
++  const auto& prev_entry = buffer_[Index(seq_num - 1)];
+ 
+   if (entry == nullptr)
+     return false;
+@@ -251,7 +251,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
+       break;
+     }
+ 
+-    size_t index = seq_num % buffer_.size();
++    size_t index = Index(seq_num);
+     buffer_[index]->continuous = true;
+ 
+     // If all packets of the frame is continuous, find the first packet of the
+@@ -363,7 +363,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
+         // Now that we have decided whether to treat this frame as a key frame
+         // or delta frame in the frame buffer, we update the field that
+         // determines if the RtpFrameObject is a key frame or delta frame.
+-        const size_t first_packet_index = start_seq_num % buffer_.size();
++        const size_t first_packet_index = Index(start_seq_num);
+         if (is_h264_keyframe) {
+           buffer_[first_packet_index]->video_header.frame_type =
+               VideoFrameType::kVideoFrameKey;
+@@ -392,7 +392,7 @@ std::vector<std::unique_ptr<PacketBuffer::Packet>> PacketBuffer::FindFrames(
+         uint16_t num_packets = end_seq_num - start_seq_num;
+         found_frames.reserve(found_frames.size() + num_packets);
+         for (uint16_t j = start_seq_num; j != end_seq_num; ++j) {
+-          std::unique_ptr<Packet>& packet = buffer_[j % buffer_.size()];
++          std::unique_ptr<Packet>& packet = buffer_[Index(j)];
+           RTC_DCHECK(packet);
+           RTC_DCHECK_EQ(j, packet->seq_num());
+           // Ensure frame boundary flags are properly set.
+diff --git a/modules/video_coding/packet_buffer.h b/modules/video_coding/packet_buffer.h
+index f17b00efb1dccf558df255bf6ff61f9420d94236..f8db43fe345f46aa9e2947f6bb58e5f9f0ceed43 100644
+--- a/modules/video_coding/packet_buffer.h
++++ b/modules/video_coding/packet_buffer.h
+@@ -11,6 +11,7 @@
+ #ifndef MODULES_VIDEO_CODING_PACKET_BUFFER_H_
+ #define MODULES_VIDEO_CODING_PACKET_BUFFER_H_
+ 
++#include <bit>
+ #include <cstddef>
+ #include <cstdint>
+ #include <memory>
+@@ -22,6 +23,7 @@
+ #include "api/video/video_codec_type.h"
+ #include "modules/rtp_rtcp/source/rtp_packet_received.h"
+ #include "modules/rtp_rtcp/source/rtp_video_header.h"
++#include "rtc_base/checks.h"
+ #include "rtc_base/copy_on_write_buffer.h"
+ #include "rtc_base/numerics/sequence_number_util.h"
+ 
+@@ -100,6 +102,16 @@ class PacketBuffer {
+ 
+   void UpdateMissingPackets(uint16_t seq_num);
+ 
++  static size_t Index(uint16_t seq_num, size_t buffer_size) {
++    RTC_DCHECK(std::has_single_bit(buffer_size));
++    size_t mask = buffer_size - 1;
++    return seq_num & mask;
++  }
++
++  size_t Index(uint16_t seq_num) const {
++    return Index(seq_num, buffer_.size());
++  }
++
+   // buffer_.size() and max_size_ must always be a power of two.
+   const size_t max_size_;
+ 

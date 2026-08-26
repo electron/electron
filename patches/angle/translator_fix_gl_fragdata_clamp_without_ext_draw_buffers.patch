@@ -1,0 +1,199 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 20 Jul 2026 16:23:13 -0400
+Subject: Translator: Fix gl_FragData clamp without EXT_draw_buffers
+
+For AST, this change clamps the indices to [0,0] if EXT_draw_buffers is
+not enabled.
+
+For IR, this was already correct because gl_FragData is sized early to
+one element during parse.
+
+Bug: chromium:536531630
+Change-Id: I02d3ba21ab0f5fef1119967538f6c66fbeedd7d8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8121717
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 3fc29174072087de9062f9ed2a1a26ae29c4df94..fa526097a58d4dbdbdc1a10cbe412a89a9c687e8 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -1149,7 +1149,7 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+ 
+         if (compileOptions.clampIndirectArrayBounds)
+         {
+-            if (!ClampIndirectIndices(this, root, &mSymbolTable))
++            if (!ClampIndirectIndices(this, root, &mSymbolTable, mExtensionBehavior))
+             {
+                 return false;
+             }
+diff --git a/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp b/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
+index 3d26653db336d92419b4d574ae6f3acdcf3322f7..d45c71a62891e521baa81167776968f8665a15c6 100644
+--- a/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
++++ b/src/compiler/translator/tree_ops/ClampIndirectIndices.cpp
+@@ -18,13 +18,28 @@ namespace sh
+ {
+ namespace
+ {
++enum class ExtDrawBuffers
++{
++    Disabled,
++    Enabled,
++};
++
++bool ClampIndirectIndicesImpl(TCompiler *compiler,
++                              TIntermNode *root,
++                              TSymbolTable *symbolTable,
++                              ExtDrawBuffers extDrawBuffers);
++
+ // Traverser that finds EOpIndexIndirect nodes and applies a clamp to their right-hand side
+ // expression.
+ class ClampIndirectIndicesTraverser : public TIntermTraverser
+ {
+   public:
+-    ClampIndirectIndicesTraverser(TCompiler *compiler, TSymbolTable *symbolTable)
+-        : TIntermTraverser(true, false, false, symbolTable), mCompiler(compiler)
++    ClampIndirectIndicesTraverser(TCompiler *compiler,
++                                  TSymbolTable *symbolTable,
++                                  ExtDrawBuffers extDrawBuffers)
++        : TIntermTraverser(true, false, false, symbolTable),
++          mCompiler(compiler),
++          mExtDrawBuffers(extDrawBuffers)
+     {}
+ 
+     bool visitBinary(Visit visit, TIntermBinary *node) override
+@@ -38,9 +53,11 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+         }
+ 
+         // Apply the transformation to the left and right nodes
+-        bool valid = ClampIndirectIndices(mCompiler, node->getLeft(), mSymbolTable);
++        bool valid =
++            ClampIndirectIndicesImpl(mCompiler, node->getLeft(), mSymbolTable, mExtDrawBuffers);
+         ASSERT(valid);
+-        valid = ClampIndirectIndices(mCompiler, node->getRight(), mSymbolTable);
++        valid =
++            ClampIndirectIndicesImpl(mCompiler, node->getRight(), mSymbolTable, mExtDrawBuffers);
+         ASSERT(valid);
+ 
+         // Generate clamp(right, 0, N), where N is the size of the array being indexed minus 1.  If
+@@ -68,8 +85,14 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+ 
+         if (leftType.isArray())
+         {
+-            max = createClampValue(static_cast<int>(leftType.getOutermostArraySize()) - 1,
+-                                   useFloatClamp);
++            int arraySize = static_cast<int>(leftType.getOutermostArraySize());
++            if (leftType.getQualifier() == EvqFragData &&
++                mExtDrawBuffers == ExtDrawBuffers::Disabled)
++            {
++                // When EXT_draw_buffers is disabled, only element 0 of gl_FragData may be accessed.
++                arraySize = 1;
++            }
++            max = createClampValue(arraySize - 1, useFloatClamp);
+         }
+         else
+         {
+@@ -123,14 +146,31 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
+     }
+ 
+     TCompiler *mCompiler;
++    const ExtDrawBuffers mExtDrawBuffers;
+ };
+-}  // anonymous namespace
+ 
+-bool ClampIndirectIndices(TCompiler *compiler, TIntermNode *root, TSymbolTable *symbolTable)
++bool ClampIndirectIndicesImpl(TCompiler *compiler,
++                              TIntermNode *root,
++                              TSymbolTable *symbolTable,
++                              ExtDrawBuffers extDrawBuffers)
+ {
+-    ClampIndirectIndicesTraverser traverser(compiler, symbolTable);
++    ClampIndirectIndicesTraverser traverser(compiler, symbolTable, extDrawBuffers);
+     root->traverse(&traverser);
+     return traverser.updateTree(compiler, root);
+ }
+ 
++}  // anonymous namespace
++
++bool ClampIndirectIndices(TCompiler *compiler,
++                          TIntermNode *root,
++                          TSymbolTable *symbolTable,
++                          const TExtensionBehavior &extensionBehavior)
++{
++    const ExtDrawBuffers extDrawBuffers =
++        IsExtensionEnabled(extensionBehavior, TExtension::EXT_draw_buffers)
++            ? ExtDrawBuffers::Enabled
++            : ExtDrawBuffers::Disabled;
++    return ClampIndirectIndicesImpl(compiler, root, symbolTable, extDrawBuffers);
++}
++
+ }  // namespace sh
+diff --git a/src/compiler/translator/tree_ops/ClampIndirectIndices.h b/src/compiler/translator/tree_ops/ClampIndirectIndices.h
+index eebbab02e69f082a68a3b94ee63f1fd078ec7238..64cb203eb4267809a3e59b76456a4e0d1ca79394 100644
+--- a/src/compiler/translator/tree_ops/ClampIndirectIndices.h
++++ b/src/compiler/translator/tree_ops/ClampIndirectIndices.h
+@@ -10,6 +10,7 @@
+ #define COMPILER_TRANSLATOR_TREEOPS_CLAMPINDIRECTINDICES_H_
+ 
+ #include "common/angleutils.h"
++#include "compiler/translator/ExtensionBehavior.h"
+ 
+ namespace sh
+ {
+@@ -20,7 +21,8 @@ class TSymbolTable;
+ 
+ [[nodiscard]] bool ClampIndirectIndices(TCompiler *compiler,
+                                         TIntermNode *root,
+-                                        TSymbolTable *symbolTable);
++                                        TSymbolTable *symbolTable,
++                                        const TExtensionBehavior &extensionBehavior);
+ 
+ }  // namespace sh
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 28bccb9371b995c6eb55a37a00139feb83cd22fc..d7cfb6ae52bb714ba6a8410cdbd1c6d3fc4b950f 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2851,3 +2851,6 @@
+ // Please do not add expectations below this line,
+ // so that TIMEOUT expectations above don't override more precise SKIP expectations
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
++537814733 MAC METAL : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
++537235694 PIXEL10 GLES : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
++42267100 WGPU : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 339dcbf20e57588cbd23b3330ca706a68bd2aaf1..e8fb1556153eb12cadf1118d3add3474d0fd01c9 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -23569,6 +23569,30 @@ void main()
+     drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
+ }
++
++// Test that indirect indices to gl_FragData get clamped to the right bounds when
++// GL_EXT_draw_buffers is not enabled.
++//
++// The same test for ES3 is not needed, because unlike gl_FragData in ESSL 100, it's not allowed to
++// index a fragment output variable with a non-constant index in ESSL 300+.
++TEST_P(WebGLGLSLTest, FragDataIndexClampWithoutDrawBuffers)
++{
++    constexpr char kFS[] = R"(precision mediump float;
++void main() {
++    // GL_EXT_draw_buffers is not enabled, which means only one output is valid.  Make sure all the
++    // following writes in the loop end up writing to gl_FragData[0].
++    gl_FragData[0] = vec4(1, 0, 0, 1);
++    for (int i = 0; i < 8; i++) {
++        gl_FragData[i] += vec4(-0.1, 0.05, 0.0, 0.0);
++    }
++})";
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f, 1.0f, true);
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(51, 102, 0, 255), 1);
++    ASSERT_GL_NO_ERROR();
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(

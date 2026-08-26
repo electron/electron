@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Wed, 22 Jul 2026 09:18:43 -0700
+Subject: Handle window destruction in RenderWidgetHostViewEventHandler
+
+- Reset window pointer in RenderWidgetHostViewEventHandler when
+  RenderWidgetHostViewAura is destroying its window.
+- Added null checks in RenderWidgetHostViewEventHandler to handle
+  cases where the window is destroyed.
+
+BUG=534591074
+TAG=agy
+CONV=7731470c-3827-45f1-b883-03aa42a07d4f
+
+Change-Id: I0c1775088afc3373ae3a6093d7cdb1b3c5264193
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8127703
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666382}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index de67e89b4f7c9cf2caee3a52a0c354b4636a0570..59d70baff573aca770bcd2f8a39542bd57c68e24 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -2342,6 +2342,8 @@ void RenderWidgetHostViewAura::OnDeviceScaleFactorChanged(
+ }
+ 
+ void RenderWidgetHostViewAura::OnWindowDestroying(aura::Window* window) {
++  event_handler_->set_window(nullptr);
++
+   // Make sure that the input method no longer references to this object before
+   // this object is removed from the root window (i.e. this object loses access
+   // to the input method).
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.cc b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+index a51a44a147e89c1f71bf31d7d13b150a6bc1faee..5eb13036de3e16aab63088ab29ab26631daa989e 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.cc
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+@@ -193,13 +193,18 @@ RenderWidgetHostViewEventHandler::ChangePointerLock(
+ void RenderWidgetHostViewEventHandler::UnlockPointer() {
+   delegate_->SetTooltipsEnabled(true);
+ 
+-  aura::Window* root_window = window_->GetRootWindow();
+-  if (!mouse_locked_ || !root_window)
++  if (!mouse_locked_) {
+     return;
++  }
+ 
+   mouse_locked_ = false;
+   mouse_locked_unadjusted_movement_.reset();
+ 
++  aura::Window* root_window = window_ ? window_->GetRootWindow() : nullptr;
++  if (!root_window) {
++    return;
++  }
++
+   window_->GetHost()->UnlockMouse(window_);
+ 
+   // Ensure that the global mouse position is updated here to its original
+@@ -207,7 +212,9 @@ void RenderWidgetHostViewEventHandler::UnlockPointer() {
+   // after the cursor is moved ends up getting a large movement delta which is
+   // not what sites expect. The delta is computed in the
+   // ModifyEventMovementAndCoords function.
+-  window_->MoveCursorTo(gfx::ToFlooredPoint(unlocked_mouse_position_));
++  if (window_) {
++    window_->MoveCursorTo(gfx::ToFlooredPoint(unlocked_mouse_position_));
++  }
+   synthetic_move_position_ =
+       gfx::ToFlooredPoint(unlocked_global_mouse_position_);
+ 
+@@ -318,6 +325,11 @@ void RenderWidgetHostViewEventHandler::HandleMouseWheelEvent(
+ void RenderWidgetHostViewEventHandler::OnMouseEvent(ui::MouseEvent* event) {
+   TRACE_EVENT0("input", "RenderWidgetHostViewBase::OnMouseEvent");
+ 
++  // A synthesized event may be generated during window destruction.
++  if (!window_) {
++    return;
++  }
++
+   // CrOS will send a mouse exit event to update hover state when mouse is
+   // hidden which we want to filter out in renderer. crbug.com/723535.
+   if (event->flags() & ui::EF_CURSOR_HIDE)

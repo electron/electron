@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 6 Jul 2026 15:48:32 -0400
+Subject: HLSL: Fix name collision between globals and locals
+
+Bug: chromium:523266585
+Change-Id: Icb973380fb3ccec63dfafa6f31bf6b1c66e5e359
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8047141
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/compiler/translator/hlsl/UtilsHLSL.cpp b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+index 53912e57eb136455add01888297c7db3ac7694cd..96ca73f980262ea485b3ee535a00f835df5714c0 100644
+--- a/src/compiler/translator/hlsl/UtilsHLSL.cpp
++++ b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+@@ -841,6 +841,7 @@ TString Decorate(const ImmutableString &string)
+ 
+ TString DecorateVariableIfNeeded(const TVariable &variable)
+ {
++    const TQualifier qualifier = variable.getType().getQualifier();
+     if (variable.symbolType() == SymbolType::AngleInternal ||
+         variable.symbolType() == SymbolType::BuiltIn || variable.symbolType() == SymbolType::Empty)
+     {
+@@ -854,7 +855,7 @@ TString DecorateVariableIfNeeded(const TVariable &variable)
+     // For user defined variables, combine variable name with unique id
+     // so variables of the same name in different scopes do not get overwritten.
+     else if (variable.symbolType() == SymbolType::UserDefined &&
+-             variable.getType().getQualifier() == EvqTemporary)
++             (qualifier == EvqTemporary || qualifier == EvqGlobal || qualifier == EvqConst))
+     {
+         return Decorate(variable.name()) + str(variable.uniqueId().get());
+     }
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index ff0f0072a481c1723f9cb270fee35cf1fcd5414e..f0fc2d138a716746d997b592f356cdf838d91431 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -23225,6 +23225,36 @@ TEST_P(GLSLTest, EmulateGLFragColorBroadcastInvariantFragColorUnused)
+     // Verify compilation only, as output is not written to.
+     ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+ }
++// Regression test for a bug in the HLSL generator where the global variable names could collide
++// with local variable names.  In particular, the local variables were suffixed with the symbol id,
++// starting from 3000 (kFirstUserDefinedSymbolId) but the global variables weren't.
++TEST_P(GLSLTest_ES3, HLSLGlobalNameCollisionWithLocalVar)
++{
++    // At the time this regression test was written, the ID of the local variable was 3003.  Try a
++    // few IDs starting at kFirstUserDefinedSymbolId so the test is not sensitive to small
++    // variations in the ID.
++    for (uint32_t id = 3000; id < 3010; ++id)
++    {
++        std::ostringstream fs;
++        fs << R"(precision highp float;
++float _a)" << id
++           << R"( = 0.5;
++void main()
++{
++  float a = 0.2;
++  a = _a)" << id
++           << R"(;
++  gl_FragColor = vec4(a);
++})";
++        std::cout << fs.str() << "\n";
++
++        ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), fs.str().c_str());
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 127, 127, 127), 1);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(

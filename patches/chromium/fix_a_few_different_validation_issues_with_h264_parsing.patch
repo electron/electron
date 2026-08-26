@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Tue, 21 Jul 2026 15:07:38 -0700
+Subject: Fix a few different validation issues with h264 parsing
+
+This adds range validation for a few different fields to avoid
+blindly passing potentially bad data out to drivers.
+
+Fixed: 536428615
+Change-Id: I8d945cc477ddca47b57dc28df7f66beb4442b106
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8128120
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1665828}
+
+diff --git a/media/parsers/h264_parser.cc b/media/parsers/h264_parser.cc
+index 8ae6bb03d9a9acb148ed1b5145907a4013d94292..8708264acd8364bc5054af8e983a28133f073b2c 100644
+--- a/media/parsers/h264_parser.cc
++++ b/media/parsers/h264_parser.cc
+@@ -1206,10 +1206,18 @@ H264Parser::Result H264Parser::ParseRefPicListModification(
+       case 0:
+       case 1:
+         READ_UE_OR_RETURN(&pic_num_mod->abs_diff_pic_num_minus1);
++        // H.264 Section 7.4.3.1: abs_diff_pic_num_minus1 shall be in
++        // [0, MaxPicNum - 1], MaxPicNum <= 65536.
++        IN_RANGE_IF_OR_RETURN(pic_num_mod->abs_diff_pic_num_minus1, 0, 65535,
++                              validate_extended_bitstream_);
+         break;
+ 
+       case 2:
+         READ_UE_OR_RETURN(&pic_num_mod->long_term_pic_num);
++        // H.264 Section 7.4.3.1: long_term_pic_num in [0, MaxLongTermFrameIdx],
++        // MaxLongTermFrameIdx <= max_num_ref_frames - 1 <= 15.
++        IN_RANGE_IF_OR_RETURN(pic_num_mod->long_term_pic_num, 0, 15,
++                              validate_extended_bitstream_);
+         break;
+ 
+       case 3:
+@@ -1351,18 +1359,40 @@ H264Parser::Result H264Parser::ParseDecRefPicMarking(H264SliceHeader* shdr) {
+           break;
+ 
+         if (marking->memory_mgmnt_control_operation == 1 ||
+-            marking->memory_mgmnt_control_operation == 3)
++            marking->memory_mgmnt_control_operation == 3) {
+           READ_UE_OR_RETURN(&marking->difference_of_pic_nums_minus1);
++          // H.264 Section 7.4.3.3: difference_of_pic_nums_minus1 shall be in
++          // [0, MaxPicNum - 1], MaxPicNum <= 65536.
++          IN_RANGE_IF_OR_RETURN(marking->difference_of_pic_nums_minus1, 0,
++                                65535, validate_extended_bitstream_);
++        }
+ 
+-        if (marking->memory_mgmnt_control_operation == 2)
++        if (marking->memory_mgmnt_control_operation == 2) {
+           READ_UE_OR_RETURN(&marking->long_term_pic_num);
++          // H.264 Section 7.4.3.3: long_term_pic_num in [0,
++          // MaxLongTermFrameIdx], MaxLongTermFrameIdx <= max_num_ref_frames - 1
++          // <= 15.
++          IN_RANGE_IF_OR_RETURN(marking->long_term_pic_num, 0, 15,
++                                validate_extended_bitstream_);
++        }
+ 
+         if (marking->memory_mgmnt_control_operation == 3 ||
+-            marking->memory_mgmnt_control_operation == 6)
++            marking->memory_mgmnt_control_operation == 6) {
+           READ_UE_OR_RETURN(&marking->long_term_frame_idx);
++          // H.264 Section 7.4.3.3: long_term_frame_idx in [0,
++          // MaxLongTermFrameIdx], MaxLongTermFrameIdx <= max_num_ref_frames - 1
++          // <= 15.
++          IN_RANGE_IF_OR_RETURN(marking->long_term_frame_idx, 0, 15,
++                                validate_extended_bitstream_);
++        }
+ 
+-        if (marking->memory_mgmnt_control_operation == 4)
++        if (marking->memory_mgmnt_control_operation == 4) {
+           READ_UE_OR_RETURN(&marking->max_long_term_frame_idx_plus1);
++          // H.264 Section 7.4.3.3: max_long_term_frame_idx_plus1 in [0,
++          // max_num_ref_frames], max_num_ref_frames <= 16.
++          IN_RANGE_IF_OR_RETURN(marking->max_long_term_frame_idx_plus1, 0, 16,
++                                validate_extended_bitstream_);
++        }
+ 
+         if (marking->memory_mgmnt_control_operation > 6)
+           return kInvalidStream;
+diff --git a/media/parsers/h264_parser_unittest.cc b/media/parsers/h264_parser_unittest.cc
+index a8953cf0b764d2da5498d7e901d4ebf5e33e096c..7a96b86acf9df6fc4aa5cbbfcb4f81a948182f7d 100644
+--- a/media/parsers/h264_parser_unittest.cc
++++ b/media/parsers/h264_parser_unittest.cc
+@@ -487,6 +487,118 @@ TEST(H264ParserTest, RangeChecks) {
+ 
+     EXPECT_EQ(H264Parser::kInvalidStream, parser.ParseSEI(&sei));
+   }
++
++  // SliceHeader: DecRefPicMarking and RefPicListModification range checks.
++  {
++    H264SPS sps;
++    sps.profile_idc = 66;  // Baseline
++    sps.level_idc = 10;
++    sps.log2_max_frame_num_minus4 = 0;
++    sps.pic_order_cnt_type = 0;
++    sps.log2_max_pic_order_cnt_lsb_minus4 = 0;
++    sps.max_num_ref_frames = 4;
++    sps.pic_width_in_mbs_minus1 = 1;
++    sps.pic_height_in_map_units_minus1 = 1;
++    sps.frame_mbs_only_flag = true;
++
++    H264PPS pps;
++    pps.pic_parameter_set_id = 0;
++    pps.seq_parameter_set_id = 0;
++
++    // Helper lambda to build a slice header with custom modification and
++    // marking ops.
++    auto build_slice = [&](uint32_t ref_mod_idc, uint32_t ref_mod_val,
++                           uint32_t mmco, uint32_t mmco_val1,
++                           uint32_t mmco_val2 = 0) {
++      H26xAnnexBBitstreamBuilder builder(
++          /*insert_emulation_prevention_bytes=*/true);
++      BuildPackedH264SPS(builder, sps);
++      BuildPackedH264PPS(builder, sps, pps);
++
++      builder.BeginNALU(H264NALU::kNonIDRSlice, 1);
++      builder.AppendUE(0);       // first_mb_in_slice
++      builder.AppendUE(0);       // slice_type (P slice)
++      builder.AppendUE(0);       // pic_parameter_set_id
++      builder.AppendBits(4, 0);  // frame_num
++      builder.AppendBits(4, 0);  // pic_order_cnt_lsb
++
++      builder.AppendBool(false);  // num_ref_idx_active_override_flag
++      if (ref_mod_idc != 3) {
++        builder.AppendBool(true);  // ref_pic_list_modification_flag_l0
++        builder.AppendUE(ref_mod_idc);
++        builder.AppendUE(ref_mod_val);
++        builder.AppendUE(3);  // end of modifications
++      } else {
++        builder.AppendBool(false);  // ref_pic_list_modification_flag_l0
++      }
++
++      if (mmco != 0) {
++        builder.AppendBool(true);  // adaptive_ref_pic_marking_mode_flag
++        builder.AppendUE(mmco);
++        if (mmco == 1 || mmco == 3) {
++          builder.AppendUE(mmco_val1);
++        }
++        if (mmco == 2) {
++          builder.AppendUE(mmco_val1);
++        }
++        if (mmco == 3 || mmco == 6) {
++          builder.AppendUE(mmco == 3 ? mmco_val2 : mmco_val1);
++        }
++        if (mmco == 4) {
++          builder.AppendUE(mmco_val1);
++        }
++        builder.AppendUE(0);  // end of MMCO
++      } else {
++        builder.AppendBool(false);  // adaptive_ref_pic_marking_mode_flag
++      }
++
++      builder.AppendSE(0);  // slice_qp_delta
++      builder.FinishNALU();
++      return std::vector<uint8_t>(builder.data().begin(), builder.data().end());
++    };
++
++    auto parse_slice = [&](const std::vector<uint8_t>& stream_data) {
++      H264Parser p;
++      p.SetStream(stream_data);
++      H264NALU n;
++      int sps_id_out, pps_id_out;
++      EXPECT_EQ(H264Parser::kOk, p.AdvanceToNextNALU(&n));  // SPS
++      EXPECT_EQ(H264Parser::kOk, p.ParseSPS(&sps_id_out));
++      EXPECT_EQ(H264Parser::kOk, p.AdvanceToNextNALU(&n));  // PPS
++      EXPECT_EQ(H264Parser::kOk, p.ParsePPS(&pps_id_out));
++      EXPECT_EQ(H264Parser::kOk, p.AdvanceToNextNALU(&n));  // Slice
++      H264SliceHeader sh;
++      return p.ParseSliceHeader(n, &sh);
++    };
++
++    // Valid slice header.
++    EXPECT_EQ(H264Parser::kOk, parse_slice(build_slice(3, 0, 0, 0)));
++
++    // MMCO 6: long_term_frame_idx = 16 (invalid, max 15).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(3, 0, 6, 16)));
++
++    // MMCO 2: long_term_pic_num = 16 (invalid, max 15).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(3, 0, 2, 16)));
++
++    // MMCO 1: difference_of_pic_nums_minus1 = 65536 (invalid, max 65535).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(3, 0, 1, 65536)));
++
++    // MMCO 4: max_long_term_frame_idx_plus1 = 17 (invalid, max 16).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(3, 0, 4, 17)));
++
++    // RefPicListModification 2: long_term_pic_num = 16 (invalid, max 15).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(2, 16, 0, 0)));
++
++    // RefPicListModification 0: abs_diff_pic_num_minus1 = 65536 (invalid, max
++    // 65535).
++    EXPECT_EQ(H264Parser::kInvalidStream,
++              parse_slice(build_slice(0, 65536, 0, 0)));
++  }
+ }
+ 
+ }  // namespace media

@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Fri, 24 Jul 2026 13:05:08 -0700
+Subject: [HiC] Add privacy flag for text clip
+
+Not really a bug since it's not an external resource, but it makes
+the AI happy and prevents further bug reports or potential problems
+if the code downstream ever paints cross origin content.
+
+Bug: 523095011
+Change-Id: Id6dea450cbea60a109dd67b1e2f53f8401e47015
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8139364
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Auto-Submit: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1668117}
+
+diff --git a/third_party/blink/renderer/core/paint/box_fragment_painter.cc b/third_party/blink/renderer/core/paint/box_fragment_painter.cc
+index 08c964c8ef94d59a1da202fca71ed5bf035f8ed7..6aa4c261cac4d28958a2329989d5b25dadebe185 100644
+--- a/third_party/blink/renderer/core/paint/box_fragment_painter.cc
++++ b/third_party/blink/renderer/core/paint/box_fragment_painter.cc
+@@ -2170,9 +2170,11 @@ void BoxFragmentPainter::PaintTextClipMask(const PaintInfo& paint_info,
+                                            const gfx::Rect& mask_rect,
+                                            const PhysicalOffset& paint_offset,
+                                            bool object_has_multiple_boxes) {
+-  PaintInfo mask_paint_info(paint_info.context, CullRect(mask_rect),
+-                            PaintPhase::kTextClip,
+-                            paint_info.DescendantPaintingBlocked());
++  PaintInfo mask_paint_info(
++      paint_info.context, CullRect(mask_rect), PaintPhase::kTextClip,
++      paint_info.DescendantPaintingBlocked(),
++      paint_info.IsPrivacyPreserving() ? PaintFlag::kPrivacyPreserving
++                                       : PaintFlag::kNoFlag);
+   if (!object_has_multiple_boxes) {
+     PaintObject(mask_paint_info, paint_offset);
+     return;

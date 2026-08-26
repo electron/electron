@@ -1,0 +1,455 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 14 Jul 2026 10:49:45 -0400
+Subject: Verify all cube faces when checking for enabled levels
+
+Initial tests and investigations credit Ran.
+
+Bug: chromium:523717796
+Change-Id: I25893273e81f5ff354d9c35f23a393914348b641
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8091778
+Reviewed-by: Ran Wang <wangra@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 028247694cd64605f89e872cab1e4c940f4c1145..197c188de961d588ec6151a22821b8a922a9e487 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -630,7 +630,7 @@ GLuint TextureState::getEnabledLevelCount() const
+     // In edge case where base level > max level, make sure to get at least one level.
+     maxLevel = std::max(baseLevel, maxLevel);
+ 
+-    // Note: for cube textures, we only check the first face.
++    // For cube textures, expect other faces to match the first face.
+     TextureTarget target         = TextureTypeToTarget(mType, 0);
+     const Format &expectedFormat = mImageDescs[GetImageDescIndex(target, baseLevel)].format;
+ 
+@@ -647,6 +647,33 @@ GLuint TextureState::getEnabledLevelCount() const
+         {
+             break;
+         }
++
++        // The cube map face checks are done for non-base levels only, because texture completeness
++        // rules already require base-level to be complete, and this function is used to know if any
++        // _additional_ levels are compatible with base.
++        if (enabledLevel != baseLevel && mType == gl::TextureType::CubeMap)
++        {
++            bool otherFacesValid                    = true;
++            angle::EnumIterator<TextureTarget> face = kCubeMapTextureTargetMin;
++            for (++face; face != kAfterCubeMapTextureTargetMax; ++face)
++            {
++                size_t otherFaceDescIndex          = GetImageDescIndex(*face, enabledLevel);
++                const Extents &otherFaceLevelSize  = mImageDescs[otherFaceDescIndex].size;
++                const Format &otherFaceLevelFormat = mImageDescs[otherFaceDescIndex].format;
++
++                if (otherFaceLevelSize != levelSize ||
++                    !Format::SameSized(otherFaceLevelFormat, levelFormat))
++                {
++                    otherFacesValid = false;
++                    break;
++                }
++            }
++            if (!otherFacesValid)
++            {
++                break;
++            }
++        }
++
+         if (expectedSize.valid())
+         {
+             Extents newSize = expectedSize.value();
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 42c89bed1bc84415b2587afb016e2262d1bb867f..d77dfebdaa671fc2ac5c2dc2e1331f83159f45a7 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -23,6 +23,12 @@
+ 377614665 VULKAN : GLSLValidationTest.StructSamplerVsComma/* = SKIP
+ 410584007 VULKAN : ImageTestES31.UseSourceTextureAsStorageImage/* = SKIP
+ 535696694 VULKAN : Texture2DTestES3_NonZeroBaseLevelGenMipmaps.UploadAfterDrawShouldNotCrash/* = SKIP
++514710696 : PbufferTest.BindTexImageAndGenerateMipmap/* = SKIP
++// Fails anywhere RGBA4 is emulated with RGBA8
++534823410 VULKAN : FramebufferTestWithFormatFallback.R4G4B4A4_CubeTexImageRedefinedFaceZero/ES3_Vulkan_SwiftShader_ForceRenderableFallbackFormat = SKIP
++534823410 VULKAN : FramebufferTestWithFormatFallback.R4G4B4A4_CubeTexImageRedefinedFaceOne/ES3_Vulkan_SwiftShader_ForceRenderableFallbackFormat = SKIP
++534823410 VULKAN NVIDIA : FramebufferTestWithFormatFallback.R4G4B4A4_CubeTexImageRedefinedFace*/* = SKIP
++534823410 VULKAN LINUX INTEL : FramebufferTestWithFormatFallback.R4G4B4A4_CubeTexImageRedefinedFace*/* = SKIP
+ // Fails in Android with EGL_BAD_ALLOC
+ 374797737 : EGLSurfaceTest.CreateMultiWindowsSurfaceNoDestroy/* = SKIP
+ 
+@@ -493,6 +499,7 @@
+ 518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColor/* = SKIP
+ 518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColorUnused/* = SKIP
+ 524008572 MAC METAL : VertexAttributeTestES3.LargeAttribPointerOffsetNoCrash/* = SKIP
++534815900 MAC METAL : TextureCubeTestES3.RedefinedCubemapLevelsOnlyFaceZeroCompatible/* = SKIP
+ 
+ // The workaround is not intended to be enabled in this configuration so
+ // skip it as the failure is likely a driver bug.
+@@ -1254,6 +1261,7 @@
+ 480069042 PIXEL10 GLES : Texture2DTestES3.DepthTexturesWithMipmaps/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.DrawWithLevelZeroUndefined/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.DrawWithLevelsOutsideRangeUndefined/* = SKIP
++480069042 PIXEL10 GLES : Texture2DTestES3.MipmapIncompleteMipmappingDisabled/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.TextureFormatChangesWithBaseLevel/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.UnpackOverlappingRowsFromUnpackBuffer/* = SKIP
+ 480069042 PIXEL10 GLES : Texture3DTestES2.CopySubImageAlpha/* = SKIP
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index 747efe9486b5bbf605a68c87ad1e608a6bf1868d..5bde9e485f8f2de6d84721eceb17d5958a34d3b9 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -2738,7 +2738,93 @@ TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImage)
+ 
+ // Test cube map texture format fallback after one face of a non-base level is incompatibly
+ // redefined.  When the image is reformatted, the other faces of that level must be preserved.
+-TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImageRedefinedFace)
++// The redefined face is face 0.
++TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImageRedefinedFaceZero)
++{
++    constexpr GLenum kInternalFormat = GL_RGBA4;
++    constexpr GLenum kType           = GL_UNSIGNED_SHORT_4_4_4_4;
++    const GLColor kColors[6]         = {GLColor::red,  GLColor::green,  GLColor::blue,
++                                        GLColor::cyan, GLColor::yellow, GLColor::magenta};
++
++    // Create a two-level cube map and upload distinct colors to every face.
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target     = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, kColors[face]);
++        std::vector<GLushort> pixels(kTexWidth * kTexHeight, u16Color);
++        glTexImage2D(target, 0, kInternalFormat, kTexWidth, kTexHeight, 0, GL_RGBA, kType,
++                     pixels.data());
++        glTexImage2D(target, 1, kInternalFormat, kTexWidth / 2, kTexHeight / 2, 0, GL_RGBA, kType,
++                     pixels.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Sample from the cube map so the backing image is allocated and committed.
++    constexpr char kFS[] = R"(precision highp float;
++    uniform samplerCube texCube;
++    void main()
++    {
++          gl_FragColor = textureCube(texCube, vec3(0, 0, 1));
++    })";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    ASSERT_GL_NO_ERROR();
++
++    // Incompatibly redefine one face of level 1 with a different size.
++    {
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, GLColor::white);
++        std::vector<GLushort> pixels(kTexWidth * kTexHeight, u16Color);
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 1, kInternalFormat, kTexWidth, kTexHeight, 0,
++                     GL_RGBA, kType, pixels.data());
++    }
++
++    // Attach a face of level 0 to a framebuffer and read it back.  This is the point at which the
++    // image may be reformatted.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                           cube, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, kColors[0]);
++
++    // Restore the redefined face to a compatible size, then verify every face of level 1.  The
++    // other five faces must still hold the data that was originally uploaded.
++    {
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, GLColor::white);
++        std::vector<GLushort> pixels((kTexWidth / 2) * (kTexHeight / 2), u16Color);
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 1, kInternalFormat, kTexWidth / 2,
++                     kTexHeight / 2, 0, GL_RGBA, kType, pixels.data());
++    }
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, cube, 1);
++        EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++        const GLColor expected =
++            target == GL_TEXTURE_CUBE_MAP_POSITIVE_X ? GLColor::white : kColors[face];
++        EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, expected) << "face " << face;
++    }
++
++    // Verify level 0 is also intact.
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, cube, 0);
++        EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, kColors[face]) << "face " << face;
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test cube map texture format fallback after one face of a non-base level is incompatibly
++// redefined.  When the image is reformatted, the other faces of that level must be preserved.
++// The redefined face is not face 0.
++TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImageRedefinedFaceOne)
+ {
+     constexpr GLenum kInternalFormat = GL_RGBA4;
+     constexpr GLenum kType           = GL_UNSIGNED_SHORT_4_4_4_4;
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 341e9dfae85cf247430492248230a199692804a5..a3b0fa9254335dec86b1a6cdea547b2792255b7b 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -14589,6 +14589,90 @@ TEST_P(Texture2DTestES3, SingleTextureMultipleSamplers)
+     EXPECT_PIXEL_NEAR(0, 0, 128, 0, 0, 255, 2);
+ }
+ 
++// Test that disabling mipmapping and creating a texture that is complete but not mip complete
++// works.
++TEST_P(Texture2DTestES3, MipmapIncompleteMipmappingDisabled)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    // Disable mipmapping
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Create two levels for the texture that are not compatible.
++    constexpr uint32_t kLevel0Size = 75;
++    constexpr uint32_t kLevel1Size = 123;
++    const std::vector<GLColor> kLevel0Data(kLevel0Size * kLevel0Size, GLColor::red);
++    const std::vector<GLColor> kLevel1Data(kLevel1Size * kLevel1Size, GLColor::green);
++
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kLevel0Size, kLevel0Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel0Data.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kLevel1Size, kLevel1Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel1Data.data());
++
++    // Set levels to [0, 1], while mipmapping is still disabled.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Sampling from the texture should work, sampling only from level 0.
++    ANGLE_GL_PROGRAM(drawTexture, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    drawQuad(drawTexture, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, kLevel0Data[0]);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that disabling mipmapping and recreating a texture that is complete but not mip complete
++// works.
++TEST_P(Texture2DTestES3, MipmapIncompleteAfterRecreateMipmappingDisabled)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    // Disable mipmapping
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Create two levels for the texture.
++    constexpr uint32_t kLevel0Size = 75;
++    constexpr uint32_t kLevel1Size = kLevel0Size >> 1;
++    const std::vector<GLColor> kLevel0Data(kLevel0Size * kLevel0Size, GLColor::red);
++    const std::vector<GLColor> kLevel1Data(kLevel1Size * kLevel1Size, GLColor::green);
++
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kLevel0Size, kLevel0Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel0Data.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kLevel1Size, kLevel1Size, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel1Data.data());
++
++    // Set levels to [0, 1], while mipmapping is still disabled.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Sample from the texture so it's synced.
++    ANGLE_GL_PROGRAM(drawTexture, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    drawQuad(drawTexture, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, kLevel0Data[0]);
++    ASSERT_GL_NO_ERROR();
++
++    // Change Base Level, then redefine level 0; it's changing a level that is out of
++    // range of [Base, Max] levels.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++
++    // Resize level 1 to be incompatible.
++    constexpr uint32_t kLevel1Resize = 123;
++    const std::vector<GLColor> kLevel1Data2(kLevel1Resize * kLevel1Resize, GLColor::blue);
++
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kLevel1Resize, kLevel1Resize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kLevel1Data2.data());
++
++    // Draw again, sampling should still be done from level 0 only.
++    glClear(GL_COLOR_BUFFER_BIT);
++    drawQuad(drawTexture, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, kLevel0Data[0]);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // The test is added to cover http://anglebug.com/42260889. Cubemap completeness checks used to
+ // start always at level 0 instead of the base level resulting in an incomplete texture if the faces
+ // at level 0 are not created. The test creates a cubemap texture, specifies the images only for mip
+@@ -15240,6 +15324,166 @@ TEST_P(TextureCubeTestES3,
+     incompatibleCubeFacesThenSingleFaceCompatibleUploadAndIncompatibleAgain(GL_ALPHA);
+ }
+ 
++// Test cube map redefinition vs changing the base level.
++TEST_P(TextureCubeTestES3, CubeMapRedefinedWithBaseLevelChange)
++{
++    constexpr GLuint kSize = 4;
++
++    const std::vector<GLColor> kRed(kSize * kSize, GLColor::red);
++    const std::vector<GLColor> kGreen(kSize * kSize, GLColor::green);
++
++    // Create a cubemap at level 1
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    for (GLenum face = 0; face < 6; face++)
++    {
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 1, GL_RGBA, kSize / 2, kSize / 2, 0,
++                     GL_RGBA, GL_UNSIGNED_BYTE, kRed.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Make sure the texture is synced.
++    constexpr char kFS[] = R"(precision highp float;
++uniform samplerCube texCube;
++void main()
++{
++    gl_FragColor = textureCube(texCube, vec3(0));
++})";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 1.0f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Define level 0 in a way that is mip-compatible with level 1, then set base level to 0.  While
++    // level 0 is being defined, it's outside the [base, max] levels of the texture.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glTexImage2D(cubeFace, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     kGreen.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
++
++    // Incompatibly redefine a face of level 1
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize, kSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kGreen.data());
++
++    // Attach a framebuffer to level 0.  This should work despite the invalid definition of level 1.
++    // Note also that MIN_FILTER does not enable mipmapping.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                           cube, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
++
++    // Redefine the face of level 1 to be compatible, then make sure that none of the data to the
++    // other levels are lost.
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize / 2, kSize / 2, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kGreen.data());
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 1);
++        EXPECT_PIXEL_RECT_EQ(
++            0, 0, kSize / 2, kSize / 2,
++            cubeFace == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ? GLColor::green : GLColor::red);
++    }
++
++    // For completeness, verify that level 0 is also intact.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 0);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
++    }
++
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that redefining a cubemap with a compatible size in level 1 but incompatible in other levels
++// works.
++// Regression test for a bug where only the first face was checked for compatibility.
++TEST_P(TextureCubeTestES3, RedefinedCubemapLevelsOnlyFaceZeroCompatible)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
++
++    // Disabling mipmapping
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    constexpr uint32_t kSize = 45;
++    const std::vector<GLColor> kLevel0Data(kSize * kSize, GLColor::red);
++    const std::vector<GLColor> kLevel1Data(kSize * kSize / 4, GLColor::green);
++
++    // Create two levels for the texture.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA8, kSize, kSize, 0, GL_RGBA,
++                     GL_UNSIGNED_BYTE, kLevel0Data.data());
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 1, GL_RGBA8, kSize >> 1, kSize >> 1, 0,
++                     GL_RGBA, GL_UNSIGNED_BYTE, kLevel1Data.data());
++    }
++
++    // Set levels to [0, 1], while mipmapping is still disabled.
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++
++    glUseProgram(mProgram);
++    glUniform1i(mTexture2DUniformLocation, 1);
++    glUniform1i(mTextureCubeUniformLocation, 0);
++
++    // Sample from the texture so it's synced.
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, kLevel0Data[0]);
++    ASSERT_GL_NO_ERROR();
++
++    // Redefine only the first face of level 1, to an incompatible size
++    constexpr uint32_t kSize2 = 33;
++    const std::vector<GLColor> kLevel0Data2(kSize2 * kSize2, GLColor::yellow);
++    const std::vector<GLColor> kLevel1Data2(kSize * kSize / 4, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 1, GL_RGBA8, kSize2 >> 1, kSize2 >> 1, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kLevel1Data2.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Make base level dirty.
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
++
++    // Redefine level 0 in a way that's compatible with the first face of level 1.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA8, kSize2, kSize2, 0, GL_RGBA,
++                     GL_UNSIGNED_BYTE, kLevel0Data2.data());
++    }
++    ASSERT_GL_NO_ERROR();
++
++    // Draw again, sampling should still be done from level 0 only.
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, kLevel0Data2[0]);
++    ASSERT_GL_NO_ERROR();
++
++    // Restore level 1's first face to its original size, verify the rest of the faces retain the
++    // originally uploaded data.
++    static_assert(kSize > kSize2,
++                  "kLevel1Data2 is sized based on kSize, and is used for both kSize and kSize2 "
++                  "texture levels");
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 1, GL_RGBA8, kSize >> 1, kSize >> 1, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kLevel1Data2.data());
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
++
++    for (uint32_t i = 0; i < 6; ++i)
++    {
++        glUniform1i(mTextureCubeFaceUniformLocation, i);
++        glClear(GL_COLOR_BUFFER_BIT);
++        drawQuad(mProgram, "position", 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, i == 0 ? kLevel1Data2[0] : kLevel1Data[0]);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
+ // Test that glCopyImageSubData works with GL_TEXTURE_CUBE_MAP_ARRAY layers unique to array cubes
+ TEST_P(TextureCubeTestES32, CopyImageSubDataCubeMapArray)
+ {

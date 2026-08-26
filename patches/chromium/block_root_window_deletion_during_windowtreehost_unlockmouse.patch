@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Wed, 22 Jul 2026 09:03:12 -0700
+Subject: Block root window deletion during WindowTreeHost::UnlockMouse
+
+Added ScopedDeleteBlocker to WindowTreeHost::UnlockMouse to prevent
+root window from being deleted during mouse unlock, which can happen
+re-entrantly if capture change triggers window destruction.
+
+Added a unit test to verify that attempting to delete the host
+during UnlockMouse triggers a crash (via ScopedDeleteBlocker check).
+
+Fixed=534591074
+TAG=agy
+CONV=7731470c-3827-45f1-b883-03aa42a07d4f
+
+Change-Id: Ib8585f97e6e35700b0cdcaaaec8c94ab0c29cd49
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8127155
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666362}
+
+diff --git a/ui/aura/window_tree_host.cc b/ui/aura/window_tree_host.cc
+index d2f51a75454c3efecbf788bb13560e3a609c306a..7d3ae00b693852b9a27f326a580c30ebbe526914 100644
+--- a/ui/aura/window_tree_host.cc
++++ b/ui/aura/window_tree_host.cc
+@@ -437,7 +437,9 @@ void WindowTreeHost::LockMouse(Window* window) {
+ 
+ void WindowTreeHost::UnlockMouse(Window* window) {
+   Window* root_window = window->GetRootWindow();
++  CHECK_EQ(root_window, window_);
+   DCHECK(root_window);
++  Window::ScopedDeleteBlocker blocker(root_window);
+ 
+   if (window->HasCapture())
+     window->ReleaseCapture();
+diff --git a/ui/aura/window_tree_host_unittest.cc b/ui/aura/window_tree_host_unittest.cc
+index dd13db53a5893737de6fdb52bd830909ca04491b..ac9e3e29e7aa4d799d5b0c0a1e3eedc383c7c3a6 100644
+--- a/ui/aura/window_tree_host_unittest.cc
++++ b/ui/aura/window_tree_host_unittest.cc
+@@ -7,6 +7,8 @@
+ #include "base/test/bind.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "build/build_config.h"
++#include "ui/aura/client/capture_client_observer.h"
++#include "ui/aura/client/default_capture_client.h"
+ #include "ui/aura/native_window_occlusion_tracker.h"
+ #include "ui/aura/test/aura_test_base.h"
+ #include "ui/aura/test/aura_test_utils.h"
+@@ -763,4 +765,47 @@ TEST_F(WindowTreeHostWithThrottleAndReleaseTest,
+ 
+ #endif  // BUILDFLAG(IS_WIN)
+ 
++class DeleteHostOnCaptureChangeObserver : public client::CaptureClientObserver {
++ public:
++  explicit DeleteHostOnCaptureChangeObserver(
++      std::unique_ptr<TestWindowTreeHost>* host_ptr)
++      : host_ptr_(host_ptr) {}
++
++  // client::CaptureClientObserver:
++  void OnCaptureChanged(Window* lost_capture, Window* gained_capture) override {
++    host_ptr_->reset();
++  }
++
++ private:
++  raw_ptr<std::unique_ptr<TestWindowTreeHost>> host_ptr_;
++};
++
++using WindowTreeHostDeathTest = WindowTreeHostTest;
++
++TEST_F(WindowTreeHostDeathTest, DeleteHostDuringUnlockMouse) {
++  std::unique_ptr<TestWindowTreeHost> host =
++      std::make_unique<TestWindowTreeHost>();
++  Window* root_window = host->window();
++  client::DefaultCaptureClient default_capture_client(root_window);
++  client::CaptureClient* capture_client = &default_capture_client;
++
++  std::unique_ptr<Window> child = std::make_unique<Window>(nullptr);
++  child->Init(ui::LAYER_NOT_DRAWN);
++  root_window->AddChild(child.get());
++  child->Show();
++
++  capture_client->SetCapture(child.get());
++  EXPECT_TRUE(child->HasCapture());
++
++  DeleteHostOnCaptureChangeObserver observer(&host);
++  capture_client->AddObserver(&observer);
++
++  // This should call ReleaseCapture, which triggers observer, which deletes
++  // host, which deletes root_window, which should crash because of
++  // ScopedDeleteBlocker.
++  EXPECT_DEATH(host->UnlockMouse(child.get()), "");
++
++  capture_client->RemoveObserver(&observer);
++}
++
+ }  // namespace aura

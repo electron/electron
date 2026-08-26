@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keren Zhu <kerenzhu@chromium.org>
+Date: Thu, 16 Jul 2026 13:23:00 -0700
+Subject: Protect MenuController from being deleted during mouse event
+ handling.
+
+Add checks using AsWeakPtr() in
+MenuController::UpdateSelectionWithEvent() and
+MenuController::OnMouseMoved() to ensure the MenuController instance is
+still valid after calls that might trigger accessibility notifications.
+These notifications can, as a side effect, cause the MenuController to
+be deleted. A new unit test is added to reproduce a crash scenario where
+the MenuController is destroyed by an accessibility observer during a
+mouse move event.
+
+Fixed: 517959443
+Change-Id: I2513d4c6e8a7dfc9a7f0213b4c34e151e81c8fa0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8104643
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1663466}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index 171d002956bbe6d48439aa613850feff542c4f5e..9ad3efe81940cddd0c2cf30325b44706f00c2e98 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -934,6 +934,9 @@ bool MenuController::OnMouseDragged(SubmenuView* source,
+     }
+     return true;
+   }
++  // Changing the selection or showing a sibling menu can cause `this` to be
++  // deleted as a side effect of accessibility notifications.
++  auto this_ref = AsWeakPtr();
+   MenuItemView* mouse_menu = nullptr;
+   if (part.type == MenuPartType::kMenuItem) {
+     // If there is no menu target, but a submenu target, then we are interacting
+@@ -961,6 +964,9 @@ bool MenuController::OnMouseDragged(SubmenuView* source,
+       }
+     }
+   }
++  if (!this_ref) {
++    return false;
++  }
+   UpdateActiveMouseView(source, event, mouse_menu);
+ 
+   return true;
+@@ -1091,7 +1097,13 @@ void MenuController::OnMouseMoved(SubmenuView* source,
+     new_hot_tracked_button = Button::AsButton(view);
+   }
+ 
++  // `HandleMouseLocation()` may change the selection, which can cause `this` to
++  // be deleted as a side effect of accessibility notifications.
++  auto this_ref = AsWeakPtr();
+   HandleMouseLocation(source, event.location());
++  if (!this_ref) {
++    return;
++  }
+ 
+   // Updating the hot tracked button should be after `HandleMouseLocation()`
+   // which may reset the current hot tracked button.
+diff --git a/ui/views/controls/menu/menu_controller_unittest.cc b/ui/views/controls/menu/menu_controller_unittest.cc
+index 11764ad1584fb9378ec65bc1f8271fadfb2da1f7..102e88c657abb600d457736740fe15573e50b97f 100644
+--- a/ui/views/controls/menu/menu_controller_unittest.cc
++++ b/ui/views/controls/menu/menu_controller_unittest.cc
+@@ -16,11 +16,13 @@
+ #include "base/functional/callback_helpers.h"
+ #include "base/i18n/rtl.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/scoped_observation.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/strings/to_string.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/current_thread.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "ui/accessibility/ax_action_data.h"
+ #include "ui/accessibility/ax_mode.h"
+@@ -42,6 +44,8 @@
+ #include "ui/events/types/event_type.h"
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/geometry/rect.h"
++#include "ui/views/accessibility/ax_update_notifier.h"
++#include "ui/views/accessibility/ax_update_observer.h"
+ #include "ui/views/accessibility/view_accessibility.h"
+ #include "ui/views/controls/button/label_button.h"
+ #include "ui/views/controls/menu/menu_controller_delegate.h"
+@@ -299,6 +303,32 @@ gfx::Size CancelMenuOnMousePressView::CalculatePreferredSize(
+ BEGIN_METADATA(CancelMenuOnMousePressView)
+ END_METADATA
+ 
++// Runs a callback the first time an accessibility event of `event_type` is
++// observed on any view.
++class CallbackOnAXEventObserver : public AXUpdateObserver {
++ public:
++  CallbackOnAXEventObserver(ax::mojom::Event event_type,
++                            base::OnceClosure callback)
++      : event_type_(event_type), callback_(std::move(callback)) {
++    observation_.Observe(AXUpdateNotifier::Get());
++  }
++
++  bool fired() const { return !callback_; }
++
++  // AXUpdateObserver:
++  void OnViewEvent(View* view, ax::mojom::Event event_type) override {
++    if (event_type == event_type_ && callback_) {
++      std::move(callback_).Run();
++    }
++  }
++
++ private:
++  const ax::mojom::Event event_type_;
++  base::OnceClosure callback_;
++  base::ScopedObservation<AXUpdateNotifier, AXUpdateObserver> observation_{
++      this};
++};
++
+ }  // namespace
+ 
+ struct MenuBoundsOptions {
+@@ -3043,6 +3073,28 @@ TEST_F(MenuControllerTest, NoUseAfterFreeWhenMenuCanceledOnMousePress) {
+   submenu->Close();
+ }
+ 
++// Tests that having the MenuController deleted from an accessibility observer
++// while handling a mouse move does not cause a crash. ASAN bots should not
++// detect use-after-free in MenuController.
++TEST_F(MenuControllerTest, MenuControllerDestroyedDuringMouseMove) {
++  ShowSubmenu();
++  SubmenuView* const submenu = menu_item()->GetSubmenu();
++  SetPendingStateItem(submenu->GetMenuItemAt(0));
++
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this] { DestroyMenuController(); }));
++
++  // Moving the mouse over a different item changes the selection, which fires
++  // accessibility events. The observer above synchronously deletes the
++  // controller while the move is being handled.
++  const gfx::Point location = submenu->GetMenuItemAt(1)->bounds().CenterPoint();
++  ProcessMouseMoved(
++      submenu, ui::MouseEvent(ui::EventType::kMouseMoved, location, location,
++                              ui::EventTimeForNow(), 0, 0));
++  EXPECT_TRUE(observer.fired());
++}
++
+ TEST_F(MenuControllerTest, SetSelectionIndices_MenuItemsOnly) {
+   SubmenuView* const submenu = menu_item()->GetSubmenu();
+   MenuItemView* const item1 = submenu->GetMenuItemAt(0);

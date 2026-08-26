@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Fri, 10 Jul 2026 18:51:31 -0700
+Subject: usb: Secure RESERVED control transfer generation and document blocks
+
+Aligns the Windows wire-protocol mapping for RESERVED requests with the
+USB Specification and updates DeviceImpl comments clarifying the
+fallback blocking unexposed request types.
+
+BUG=517742721
+
+Change-Id: Icfc544c8c9cb6b322239997c789c3c7529ca748a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8072277
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1660643}
+
+diff --git a/services/device/usb/usb_device_handle_win.cc b/services/device/usb/usb_device_handle_win.cc
+index f3c3d7c087546420e6c76a493f682f2f0c8d1442..c55c99a19118b5f2762a4adb1589263c71793f07 100644
+--- a/services/device/usb/usb_device_handle_win.cc
++++ b/services/device/usb/usb_device_handle_win.cc
+@@ -48,6 +48,10 @@ namespace {
+ 
+ const std::wstring_view kWinUsbDriverName = L"winusb";
+ 
++// Bits 6:5 of the bmRequestType byte in the USB specification define the
++// request type: 0=Standard, 1=Class, 2=Vendor, 3=Reserved.
++constexpr uint8_t kBmRequestReserved = 3;
++
+ uint8_t BuildRequestFlags(UsbTransferDirection direction,
+                           UsbControlTransferType request_type,
+                           UsbControlTransferRecipient recipient) {
+@@ -73,7 +77,8 @@ uint8_t BuildRequestFlags(UsbTransferDirection direction,
+       flags |= BMREQUEST_VENDOR << 5;
+       break;
+     case UsbControlTransferType::RESERVED:
+-      flags |= 4 << 5;  // Not defined by usbspec.h.
++      flags |= kBmRequestReserved
++               << 5;  // USB Spec reserved type (0x60 on the wire).
+       break;
+   }
+ 
