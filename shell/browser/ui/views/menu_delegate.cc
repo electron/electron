@@ -127,7 +127,6 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   ElectronMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
       button->GetID() != id_) {
-
     ScheduleSwitchToButton(button);
   }
 
