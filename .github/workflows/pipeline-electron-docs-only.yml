@@ -32,6 +32,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -48,6 +49,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Run TS/JS compile

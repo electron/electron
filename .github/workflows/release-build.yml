@@ -35,6 +35,8 @@ jobs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -63,6 +65,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -90,6 +93,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
@@ -116,6 +120,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:

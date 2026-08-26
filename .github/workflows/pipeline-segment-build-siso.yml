@@ -57,6 +57,7 @@ jobs:
         sparse-checkout: |
           DEPS
           .github/siso-patches
+        persist-credentials: false
     - name: Resolve siso revision from Chromium DEPS
       id: resolve
       run: |

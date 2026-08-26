@@ -63,6 +63,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     # The filters are evaluated per-pattern and OR'd together, so the src
     # exclusions must live inside a single negated brace pattern - a second
     # negated pattern would match (and re-include) every file the first one
@@ -176,6 +177,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -211,6 +213,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -243,6 +246,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:

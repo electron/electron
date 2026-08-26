@@ -24,6 +24,7 @@ jobs:
         with:
           sparse-checkout: .github/PULL_REQUEST_TEMPLATE.md
           sparse-checkout-cone-mode: false
+          persist-credentials: false
       - name: Check for required sections
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:

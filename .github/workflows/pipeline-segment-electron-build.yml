@@ -125,6 +125,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Setup SSH Debugging
       if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
       uses: ./src/electron/.github/actions/ssh-debug
@@ -201,6 +202,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Fix Sync
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/fix-sync
