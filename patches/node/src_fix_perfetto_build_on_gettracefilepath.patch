@@ -12,10 +12,10 @@ Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 8fbb5a6a0986584390d086454a2e3e565a656fca..904958120ed1e94d9cb006adc5b468baff6161a3 100644
+index 457bb5d9dc6fc5b5546b83e7ea9f661f8a0b490a..ffd76437551db556e05f3642f24043455eb70151 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -192,8 +192,6 @@
+@@ -193,8 +193,6 @@
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
        'src/tracing/agent_perfetto.cc',
@@ -24,7 +24,7 @@ index 8fbb5a6a0986584390d086454a2e3e565a656fca..904958120ed1e94d9cb006adc5b468ba
        'src/tracing/trace_event.cc',
        'src/tracing/trace_event_perfetto.cc',
        'src/tracing/traced_value.cc',
-@@ -330,10 +328,7 @@
+@@ -331,10 +329,7 @@
        'src/timers.h',
        'src/tracing/agent.h',
        'src/tracing/agent_perfetto.h',
