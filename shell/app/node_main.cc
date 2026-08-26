@@ -258,12 +258,13 @@ int NodeMain() {
     // idle in the kernel’s event provider .
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
-    // Initialize gin::IsolateHolder.
-    // Node.js now exposes fetch unconditionally, so WASM streaming (which
-    // relies on the fetch Response object) is always set up here.
     auto tracing_agent = NodeBindings::InitializeTracingAgent(
         /*use_standalone_perfetto_client=*/true);
     CHECK(tracing_agent);
+
+    // Initialize gin::IsolateHolder.
+    // Node.js now exposes fetch unconditionally, so WASM streaming (which
+    // relies on the fetch Response object) is always set up here.
     // When this build embeds a Node startup snapshot (native builds) the
     // isolate is created from it and no context exists yet; otherwise a fresh
     // context was created and entered.
