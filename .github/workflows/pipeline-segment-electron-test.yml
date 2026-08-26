@@ -170,13 +170,13 @@ jobs:
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
       run: |
-        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Load UBSan specific environment variables
       if: ${{ inputs.is-ubsan == true }}
       run: |
-        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_ubsan" >> $GITHUB_ENV
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_ubsan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_UBSAN=true" >> $GITHUB_ENV
     # Safe to parallelize: each step writes a disjoint location (src/electron
@@ -308,12 +308,18 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        DISPLAY_SERVER: ${{ inputs.display-server }}
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
+        SHARD: ${{ matrix.shard }}
+        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
-        if [ "${{ inputs.display-server }}" = "wayland" ]; then
+        tests_files=$(node script/split-tests "$SHARD" "$SHARD_COUNT")
+        if [ "$DISPLAY_SERVER" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
           for test_file in $tests_files; do
@@ -330,14 +336,14 @@ jobs:
         fi
 
         # Run tests
-        if [ "${{ inputs.target-platform }}" != "linux" ]; then
+        if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "win" ]; then
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            if [ "$TARGET_ARCH" = "arm64" ]; then
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          if [ "${{ inputs.is-ubsan }}" = "true" ]; then
+          if [ "$IS_UBSAN" = "true" ]; then
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
             node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
@@ -349,7 +355,7 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
-          if [ "${{ inputs.is-asan }}" == "true" ]; then
+          if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
             # symbolize=1 is required for leak suppressions to work: LSan can
@@ -366,14 +372,14 @@ jobs:
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
-          elif [ "${{ inputs.is-ubsan }}" == "true" ]; then
+          elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
-            if [ "${{ inputs.display-server }}" = "wayland" ]; then
+            if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             else
               runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
@@ -396,13 +402,15 @@ jobs:
     - name: Take screenshot on timeout or cancellation
       if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         screenshot_dir="src/electron/spec/artifacts"
         mkdir -p "$screenshot_dir"
         screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           screencapture -x "$screenshot_file" || true
-        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+        elif [ "$TARGET_PLATFORM" = "win" ]; then
           powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
         fi
 

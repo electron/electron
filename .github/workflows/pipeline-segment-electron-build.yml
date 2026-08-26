@@ -155,12 +155,15 @@ jobs:
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
+      env:
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
       run: |
-        if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+        if [ "$TARGET_ARCH" = "arm64" ]; then
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
-        elif [ "${{ inputs.is-asan }}" = true ]; then
+        elif [ "$IS_ASAN" = true ]; then
           GN_EXTRA_ARGS='is_asan=true is_lsan=true v8_enable_verify_heap=true'
-        elif [ "${{ inputs.is-ubsan }}" = true ]; then
+        elif [ "$IS_UBSAN" = true ]; then
           GN_EXTRA_ARGS='is_ubsan=true is_ubsan_no_recover=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
@@ -211,8 +214,10 @@ jobs:
       env:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE" --import "$GN_BUILD_TYPE" --target-cpu "$TARGET_ARCH" --remote-build siso
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"

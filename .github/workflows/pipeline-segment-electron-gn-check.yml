@@ -107,16 +107,18 @@ jobs:
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/cpython3/${platform}
     - name: Run Electron Only Hooks
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
           echo "target_os=['win']" >> tmpgclient
         fi
         e d gclient runhooks --gclientfile=tmpgclient
 
         # Fix VS Toolchain
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           rm -rf src/third_party/depot_tools/win_toolchain/vs_files
           e d python3 src/build/vs_toolchain.py update --force
         fi
@@ -138,20 +140,23 @@ jobs:
     # needed: gn gen only read_file()s the checked-in state files in
     # build/pgo_profiles, the profiles themselves are compile-time inputs.
     - name: Run GN Check for ${{ inputs.target-archs }}
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        TARGET_ARCHS: ${{ inputs.target-archs }}
       run: |
         for build_type in testing release
         do
-          for target_cpu in ${{ inputs.target-archs }}
+          for target_cpu in $TARGET_ARCHS
           do
             e init -f --root=$(pwd) --out=Default $build_type --import $build_type --target-cpu $target_cpu --remote-build none
             cd src/electron
             export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
-            if [ "${{ inputs.target-platform }}" = "linux" ]; then
+            if [ "$TARGET_PLATFORM" = "linux" ]; then
               if [ "$target_cpu" = "arm64" ]; then
                 export GN_EXTRA_ARGS="$GN_EXTRA_ARGS fatal_linker_warnings=false enable_linux_installer=false"
               fi
             fi
-            if [ "${{ inputs.target-platform }}" = "win" ]; then
+            if [ "$TARGET_PLATFORM" = "win" ]; then
               export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
             fi
 
@@ -161,7 +166,7 @@ jobs:
 
             # The publish matrix also builds a Mac App Store variant of every
             # macOS release, so check that graph too.
-            if [ "${{ inputs.target-platform }}" = "macos" ] && [ "$build_type" = "release" ]; then
+            if [ "$TARGET_PLATFORM" = "macos" ] && [ "$build_type" = "release" ]; then
               export GN_EXTRA_ARGS="$GN_EXTRA_ARGS is_mas_build=true"
 
               e build --gen=only

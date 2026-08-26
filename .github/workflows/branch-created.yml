@@ -278,9 +278,10 @@ jobs:
             }
       - name: Dump Release Project Board Contents
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq
+        run: gh project item-list "$BOARD_NUMBER" --owner electron --format json | jq
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          BOARD_NUMBER: ${{ steps.create-release-board.outputs.number }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
