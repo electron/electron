@@ -13,10 +13,6 @@
 #include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
 
-namespace content {
-class Client;
-}
-
 namespace tracing {
 class TracingSamplerProfiler;
 }

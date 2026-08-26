@@ -13,10 +13,6 @@ namespace base {
 class ProcessMetrics;
 }
 
-namespace blink {
-class WebLocalFrame;
-}
-
 namespace electron {
 
 class ElectronSandboxedRendererClient : public RendererClientBase {

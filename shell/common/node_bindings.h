@@ -27,7 +27,6 @@ class SingleThreadTaskRunner;
 
 namespace node {
 class Environment;
-class IsolateData;
 class MultiIsolatePlatform;
 }  // namespace node
 

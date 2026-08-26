@@ -13,10 +13,6 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
 
-namespace content {
-class RenderFrameHost;
-}
-
 namespace gin_helper {
 
 // Provide helpers to emit event in JavaScript.
