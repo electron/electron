@@ -18,10 +18,10 @@ Also adds some ignores for UB from upstream code that has been determined to be 
 Change-Id: Ic70cae72965656e31d957ca3cee85772ded70e42
 
 diff --git a/tools/ubsan/ignorelist.txt b/tools/ubsan/ignorelist.txt
-index 50c4c61efdf3427285071f3f613957b36ed2e51d..575a0f4f4fad56978344fcbcfb96b2d44fc87773 100644
+index 061d53c9ece182dc91ac6cb11ce4374d51c13ffe..bc3b819ea0ed8b3b64b7018b35c74025dd5cb8cb 100644
 --- a/tools/ubsan/ignorelist.txt
 +++ b/tools/ubsan/ignorelist.txt
-@@ -42,3 +42,17 @@ fun:*find_best_partition_order_*
+@@ -37,3 +37,17 @@ fun:*find_best_partition_order_*
  # https://crbug.com/451633108
  [builtin]
  fun:*_dispatch_once*
