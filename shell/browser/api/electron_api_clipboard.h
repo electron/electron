@@ -13,10 +13,6 @@
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-forward.h"
 
-namespace gin {
-class Arguments;
-}  // namespace gin
-
 namespace electron::api {
 
 class ClipboardItem;

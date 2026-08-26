@@ -17,7 +17,6 @@
 namespace node {
 class Environment;
 class IsolateData;
-struct ThreadId;
 
 namespace EnvironmentFlags {
 enum Flags : uint64_t;

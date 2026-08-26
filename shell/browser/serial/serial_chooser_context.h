@@ -23,10 +23,6 @@
 #include "url/gurl.h"
 #include "url/origin.h"
 
-namespace base {
-class Value;
-}
-
 namespace mojo {
 template <typename T>
 class PendingRemote;

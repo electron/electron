@@ -7,9 +7,6 @@
 
 #include "extensions/browser/process_manager_delegate.h"
 
-class Browser;
-class Profile;
-
 namespace extensions {
 
 // Support for ProcessManager. Controls cases where Electron wishes to disallow
