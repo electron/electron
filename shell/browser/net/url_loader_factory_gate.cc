@@ -16,6 +16,8 @@
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/http_request_headers_update_params.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -124,11 +126,6 @@ InterceptState::Route InterceptState::RouteFor(
   return Route::kDirect;
 }
 
-RequestObserverTarget::RequestObserverTarget() = default;
-RequestObserverTarget::RequestObserverTarget(const RequestObserverTarget&) =
-    default;
-RequestObserverTarget::~RequestObserverTarget() = default;
-
 namespace {
 
 base::AtomicSequenceNumber g_observed_request_key;
@@ -137,43 +134,91 @@ scoped_refptr<base::SequencedTaskRunner> UIThread() {
   return content::GetUIThreadTaskRunner({});
 }
 
-// Sits on a request's URLLoaderClient pipe on the IO thread, passing every
-// message straight to the renderer and telling api::WebRequest afterwards.
-class ObservedLoad : public network::mojom::URLLoaderClient {
+// Proxies both sides of an observed request on the IO thread.
+class ObservedURLLoader : public network::mojom::URLLoader,
+                          public network::mojom::URLLoaderClient {
  public:
-  ObservedLoad(const RequestObserverTarget& target,
-               int32_t request_id,
-               const network::ResourceRequest& request,
-               mojo::PendingReceiver<network::mojom::URLLoaderClient> receiver,
-               mojo::PendingRemote<network::mojom::URLLoaderClient> renderer)
-      : browser_context_(target.browser_context),
+  ObservedURLLoader(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      int render_process_id,
+      int frame_routing_id,
+      const network::ResourceRequest& request,
+      mojo::PendingReceiver<network::mojom::URLLoader> renderer_loader,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> renderer_client,
+      network::mojom::URLLoaderClientEndpointsPtr network_endpoints)
+      : browser_context_(std::move(browser_context)),
+        render_process_id_(render_process_id),
+        frame_routing_id_(frame_routing_id),
         key_(g_observed_request_key.GetNext()),
-        receiver_(this, std::move(receiver)),
-        renderer_(std::move(renderer)) {
-    receiver_.set_disconnect_handler(base::BindOnce(
-        &ObservedLoad::Finish, base::Unretained(this), std::nullopt));
-    renderer_.set_disconnect_handler(base::BindOnce(
-        &ObservedLoad::Finish, base::Unretained(this), std::nullopt));
+        request_(request),
+        renderer_loader_receiver_(this, std::move(renderer_loader)),
+        renderer_client_(std::move(renderer_client)),
+        network_loader_(std::move(network_endpoints->url_loader)),
+        network_client_receiver_(
+            this,
+            std::move(network_endpoints->url_loader_client)) {
+    auto on_disconnect = base::BindOnce(
+        &ObservedURLLoader::Finish, weak_factory_.GetWeakPtr(), std::nullopt);
+    renderer_loader_receiver_.set_disconnect_handler(base::BindOnce(
+        &ObservedURLLoader::Finish, weak_factory_.GetWeakPtr(), std::nullopt));
+    renderer_client_.set_disconnect_handler(std::move(on_disconnect));
+    network_client_receiver_.set_disconnect_handler(base::BindOnce(
+        &ObservedURLLoader::Finish, weak_factory_.GetWeakPtr(), std::nullopt));
     UIThread()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&api::WebRequest::ObservedRequestStarted,
-                       browser_context_, key_, target.render_process_id,
-                       target.frame_routing_id, request_id, request));
+        FROM_HERE, base::BindOnce(&api::WebRequest::ObservedRequestStarted,
+                                  browser_context_, key_, render_process_id_,
+                                  frame_routing_id_, request_));
   }
-  ~ObservedLoad() override = default;
+  ~ObservedURLLoader() override = default;
 
  private:
+  // network::mojom::URLLoader:
+  void FollowRedirect(
+      network::HttpRequestHeadersUpdateParams headers_update_params,
+      const std::optional<GURL>& new_url) override {
+    DCHECK(pending_redirect_);
+    if (pending_redirect_) {
+      bool should_clear_upload = false;
+      net::RedirectUtil::UpdateHttpRequest(
+          request_.url, request_.method, *pending_redirect_,
+          headers_update_params.removed_headers,
+          headers_update_params.modified_headers, &request_.headers,
+          &should_clear_upload);
+      request_.cors_exempt_headers.MergeFrom(
+          headers_update_params.modified_cors_exempt_headers);
+      for (const auto& removed_header : headers_update_params.removed_headers) {
+        request_.cors_exempt_headers.RemoveHeader(removed_header);
+      }
+      request_.UpdateOnRedirect(*pending_redirect_);
+      if (new_url)
+        request_.url = *new_url;
+      if (should_clear_upload)
+        request_.request_body = nullptr;
+      pending_redirect_.reset();
+      UIThread()->PostTask(
+          FROM_HERE,
+          base::BindOnce(&api::WebRequest::ObservedRequestFollowedRedirect,
+                         browser_context_, key_, request_));
+    }
+    network_loader_->FollowRedirect(std::move(headers_update_params), new_url);
+  }
+
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {
+    network_loader_->SetPriority(priority, intra_priority_value);
+  }
+
   // network::mojom::URLLoaderClient:
   void OnReceiveEarlyHints(network::mojom::EarlyHintsPtr early_hints) override {
-    renderer_->OnReceiveEarlyHints(std::move(early_hints));
+    renderer_client_->OnReceiveEarlyHints(std::move(early_hints));
   }
   void OnReceiveResponse(
       network::mojom::URLResponseHeadPtr head,
       mojo::ScopedDataPipeConsumerHandle body,
       std::optional<mojo_base::BigBuffer> cached_metadata) override {
     auto head_for_ui = head.Clone();
-    renderer_->OnReceiveResponse(std::move(head), std::move(body),
-                                 std::move(cached_metadata));
+    renderer_client_->OnReceiveResponse(std::move(head), std::move(body),
+                                        std::move(cached_metadata));
     UIThread()->PostTask(
         FROM_HERE,
         base::BindOnce(&api::WebRequest::ObservedRequestResponded,
@@ -181,8 +226,10 @@ class ObservedLoad : public network::mojom::URLLoaderClient {
   }
   void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
                          network::mojom::URLResponseHeadPtr head) override {
+    DCHECK(!pending_redirect_);
+    pending_redirect_ = redirect_info;
     auto head_for_ui = head.Clone();
-    renderer_->OnReceiveRedirect(redirect_info, std::move(head));
+    renderer_client_->OnReceiveRedirect(redirect_info, std::move(head));
     UIThread()->PostTask(
         FROM_HERE, base::BindOnce(&api::WebRequest::ObservedRequestRedirected,
                                   browser_context_, key_, redirect_info,
@@ -191,14 +238,14 @@ class ObservedLoad : public network::mojom::URLLoaderClient {
   void OnUploadProgress(int64_t current_position,
                         int64_t total_size,
                         OnUploadProgressCallback callback) override {
-    renderer_->OnUploadProgress(current_position, total_size,
-                                std::move(callback));
+    renderer_client_->OnUploadProgress(current_position, total_size,
+                                       std::move(callback));
   }
   void OnTransferSizeUpdated(int32_t transfer_size_diff) override {
-    renderer_->OnTransferSizeUpdated(transfer_size_diff);
+    renderer_client_->OnTransferSizeUpdated(transfer_size_diff);
   }
   void OnComplete(const network::URLLoaderCompletionStatus& status) override {
-    renderer_->OnComplete(status);
+    renderer_client_->OnComplete(status);
     Finish(status);
   }
 
@@ -213,23 +260,60 @@ class ObservedLoad : public network::mojom::URLLoaderClient {
   }
 
   const base::WeakPtr<ElectronBrowserContext> browser_context_;
+  const int render_process_id_;
+  const int frame_routing_id_;
   const uint64_t key_;
-  mojo::Receiver<network::mojom::URLLoaderClient> receiver_;
-  mojo::Remote<network::mojom::URLLoaderClient> renderer_;
+  network::ResourceRequest request_;
+  std::optional<net::RedirectInfo> pending_redirect_;
+  mojo::Receiver<network::mojom::URLLoader> renderer_loader_receiver_;
+  mojo::Remote<network::mojom::URLLoaderClient> renderer_client_;
+  mojo::Remote<network::mojom::URLLoader> network_loader_;
+  mojo::Receiver<network::mojom::URLLoaderClient> network_client_receiver_;
+  base::WeakPtrFactory<ObservedURLLoader> weak_factory_{this};
 };
+
+void CreateObservedLoaderAndStart(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    int render_process_id,
+    int frame_routing_id,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    int32_t request_id,
+    uint32_t options,
+    const network::ResourceRequest& request,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    network::mojom::URLLoaderFactory* target) {
+  mojo::PendingRemote<network::mojom::URLLoader> network_loader;
+  auto network_loader_receiver =
+      network_loader.InitWithNewPipeAndPassReceiver();
+  mojo::PendingRemote<network::mojom::URLLoaderClient> network_client;
+  auto network_endpoints = network::mojom::URLLoaderClientEndpoints::New(
+      std::move(network_loader),
+      network_client.InitWithNewPipeAndPassReceiver());
+  new ObservedURLLoader(std::move(browser_context), render_process_id,
+                        frame_routing_id, request, std::move(loader),
+                        std::move(client), std::move(network_endpoints));
+  target->CreateLoaderAndStart(std::move(network_loader_receiver), request_id,
+                               options, request, std::move(network_client),
+                               traffic_annotation);
+}
 
 class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
  public:
   URLLoaderFactoryGate(
       scoped_refptr<InterceptState> state,
-      RequestObserverTarget observer_target,
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      int render_process_id,
+      int frame_routing_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
       base::SelfDeletingPassKey key)
       : network::SelfDeletingURLLoaderFactory(std::move(receiver), key),
         state_(std::move(state)),
-        observer_target_(std::move(observer_target)),
+        browser_context_(std::move(browser_context)),
+        render_process_id_(render_process_id),
+        frame_routing_id_(frame_routing_id),
         target_(std::move(target)),
         interceptor_(std::move(interceptor)) {
     target_.set_disconnect_handler(
@@ -256,9 +340,11 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
                                            traffic_annotation);
         return;
       case InterceptState::Route::kObserve:
-        client = ObserveRequest(observer_target_, request_id, request,
-                                std::move(client));
-        [[fallthrough]];
+        CreateObservedLoaderAndStart(
+            browser_context_, render_process_id_, frame_routing_id_,
+            std::move(loader), request_id, options, request, std::move(client),
+            traffic_annotation, target_.get());
+        return;
       case InterceptState::Route::kDirect:
         target_->CreateLoaderAndStart(std::move(loader), request_id, options,
                                       request, std::move(client),
@@ -271,60 +357,77 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
   ~URLLoaderFactoryGate() override = default;
 
   const scoped_refptr<InterceptState> state_;
-  const RequestObserverTarget observer_target_;
+  const base::WeakPtr<ElectronBrowserContext> browser_context_;
+  const int render_process_id_;
+  const int frame_routing_id_;
   mojo::Remote<network::mojom::URLLoaderFactory> target_;
   mojo::Remote<network::mojom::URLLoaderFactory> interceptor_;
 };
 
 }  // namespace
 
-mojo::PendingRemote<network::mojom::URLLoaderClient> ObserveRequest(
-    const RequestObserverTarget& target,
+void CreateObservedLoaderAndStartOnIO(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    int render_process_id,
+    int frame_routing_id,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t request_id,
+    uint32_t options,
     const network::ResourceRequest& request,
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client) {
-  mojo::PendingRemote<network::mojom::URLLoaderClient> observer;
-  auto receiver = observer.InitWithNewPipeAndPassReceiver();
-  auto create =
-      [](RequestObserverTarget target, int32_t request_id,
-         network::ResourceRequest request,
-         mojo::PendingReceiver<network::mojom::URLLoaderClient> receiver,
-         mojo::PendingRemote<network::mojom::URLLoaderClient> client) {
-        // Deletes itself when the request completes or either side goes away.
-        new ObservedLoad(target, request_id, request, std::move(receiver),
-                         std::move(client));
-      };
-  if (content::BrowserThread::CurrentlyOn(content::BrowserThread::IO)) {
-    create(target, request_id, request, std::move(receiver), std::move(client));
-  } else {
-    content::GetIOThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(create, target, request_id, request,
-                                  std::move(receiver), std::move(client)));
-  }
-  return observer;
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> target) {
+  content::GetIOThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](base::WeakPtr<ElectronBrowserContext> browser_context,
+             int render_process_id, int frame_routing_id,
+             mojo::PendingReceiver<network::mojom::URLLoader> loader,
+             int32_t request_id, uint32_t options,
+             network::ResourceRequest request,
+             mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+             net::MutableNetworkTrafficAnnotationTag traffic_annotation,
+             mojo::PendingRemote<network::mojom::URLLoaderFactory> target) {
+            mojo::Remote<network::mojom::URLLoaderFactory> target_remote(
+                std::move(target));
+            CreateObservedLoaderAndStart(
+                std::move(browser_context), render_process_id, frame_routing_id,
+                std::move(loader), request_id, options, request,
+                std::move(client), traffic_annotation, target_remote.get());
+          },
+          std::move(browser_context), render_process_id, frame_routing_id,
+          std::move(loader), request_id, options, request, std::move(client),
+          traffic_annotation, std::move(target)));
 }
 
 void CreateURLLoaderFactoryGate(
-    scoped_refptr<InterceptState> state,
-    RequestObserverTarget observer_target,
+    ElectronBrowserContext* browser_context,
+    int render_process_id,
+    int frame_routing_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  scoped_refptr<InterceptState> state(browser_context->intercept_state());
+  auto weak_browser_context = browser_context->GetWeakPtr();
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(
           [](scoped_refptr<InterceptState> state,
-             RequestObserverTarget observer,
+             base::WeakPtr<ElectronBrowserContext> browser_context,
+             int render_process_id, int frame_routing_id,
              mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
              mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
              mojo::PendingRemote<network::mojom::URLLoaderFactory>
                  interceptor) {
             base::MakeSelfDeleting<URLLoaderFactoryGate>(
-                std::move(state), std::move(observer), std::move(receiver),
-                std::move(target), std::move(interceptor));
+                std::move(state), std::move(browser_context), render_process_id,
+                frame_routing_id, std::move(receiver), std::move(target),
+                std::move(interceptor));
           },
-          std::move(state), std::move(observer_target), std::move(receiver),
-          std::move(target), std::move(interceptor)));
+          std::move(state), std::move(weak_browser_context), render_process_id,
+          frame_routing_id, std::move(receiver), std::move(target),
+          std::move(interceptor)));
 }
 
 }  // namespace electron

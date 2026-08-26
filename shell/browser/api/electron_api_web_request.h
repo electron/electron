@@ -151,13 +151,16 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
       uint64_t key,
       int render_process_id,
       int frame_routing_id,
-      int32_t request_id,
       const network::ResourceRequest& request);
   static void ObservedRequestRedirected(
       base::WeakPtr<ElectronBrowserContext> browser_context,
       uint64_t key,
       const net::RedirectInfo& redirect_info,
       network::mojom::URLResponseHeadPtr head);
+  static void ObservedRequestFollowedRedirect(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      uint64_t key,
+      const network::ResourceRequest& request);
   static void ObservedRequestResponded(
       base::WeakPtr<ElectronBrowserContext> browser_context,
       uint64_t key,
