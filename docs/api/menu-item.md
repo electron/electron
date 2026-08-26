@@ -161,7 +161,7 @@ will turn off that property for all adjacent items in the same menu.
 
 You can add a `click` function for additional behavior.
 
-#### `menuItem.registerAccelerator`
+#### `menuItem.registerAccelerator` _Linux_ _Windows_
 
 A `boolean` indicating if the accelerator should be registered with the
 system or just displayed.
