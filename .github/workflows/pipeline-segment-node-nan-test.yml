@@ -49,7 +49,7 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -108,7 +108,7 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

@@ -66,7 +66,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     strategy:
       fail-fast: false
       matrix:

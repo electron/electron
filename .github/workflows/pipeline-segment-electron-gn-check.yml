@@ -40,7 +40,7 @@ jobs:
     runs-on: ${{ inputs.check-runs-on }}
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.check-container) }}
+    container: ${{ fromJSON(inputs.check-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

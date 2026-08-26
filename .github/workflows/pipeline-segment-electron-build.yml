@@ -110,7 +110,7 @@ jobs:
     runs-on: ${{ inputs.build-runs-on }}
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.build-container) }}
+    container: ${{ fromJSON(inputs.build-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
