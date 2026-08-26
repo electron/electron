@@ -16,7 +16,6 @@ class IsolateHolder;
 }  // namespace gin
 
 namespace node {
-class Environment;
 class MultiIsolatePlatform;
 struct SnapshotData;
 }  // namespace node
