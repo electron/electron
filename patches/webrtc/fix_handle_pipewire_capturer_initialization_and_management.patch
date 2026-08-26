@@ -35,19 +35,6 @@ X11 capturer is enabled, we should at minimum try to fallback to X11
 for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
-diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 243919ba101c637887b2a964e45be0096798873b..c1597ee84a3a84a1c5e556eb31c4d3e19a6e4c84 100644
---- a/modules/desktop_capture/desktop_capturer.cc
-+++ b/modules/desktop_capture/desktop_capturer.cc
-@@ -138,7 +138,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
-   std::unique_ptr<DesktopCapturer> capturer;
- 
- #if defined(WEBRTC_USE_PIPEWIRE)
--  if (options.allow_pipewire() && DesktopCapturer::IsRunningUnderWayland()) {
-+  if (options.allow_pipewire() && BaseCapturerPipeWire::IsSupported()) {
-     capturer = std::make_unique<BaseCapturerPipeWire>(
-         options, CaptureType::kAnyScreenContent);
-   }
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 index 7e64c86d84285bd3c68de57cc8fc998abd34a9ee..4a70b6f24433a0bc0b38f8f2e6ffbf35e2df4dcb 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc

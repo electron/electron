@@ -2,7 +2,7 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '153.0.8001.0',
+    '154.0.8015.0',
   'node_version':
     'v24.18.1',
   'nan_version':
@@ -223,14 +223,14 @@ hooks = [
     'pattern': 'src/electron/build/pgo_profiles',
     'condition': 'checkout_linux and process_deps',
     'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
-               '--targets', 'linux-x64,linux-arm,linux-arm64'],
+               '--targets', 'linux-x64,linux-arm64'],
   },
   {
     'name': 'electron_pgo_profiles_win',
     'pattern': 'src/electron/build/pgo_profiles',
     'condition': 'checkout_win and process_deps',
     'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
-               '--targets', 'win-x64,win-x86,win-arm64'],
+               '--targets', 'win-x64,win-arm64'],
   },
   {
     'name': 'electron_pgo_profiles_mac',

@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index b600d44bf153f9aabb16329c06eea671bd2f0714..8322a559ea539326ff3021a2b7279cc929c1fd9a 100644
+index 6a8ca3233d40714d183c67baf12bcbff16f18bdc..31d319ca34fd0f940e2bebe196794d9b01312d51 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -764,6 +764,16 @@ void MenuController::Run(Widget* parent,
+@@ -797,6 +797,16 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -26,7 +26,7 @@ index b600d44bf153f9aabb16329c06eea671bd2f0714..8322a559ea539326ff3021a2b7279cc9
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2613,18 +2623,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2684,18 +2694,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      // would be left in should it be allowed to continue.
      CHECK(weak_this);
  

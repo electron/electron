@@ -36,7 +36,8 @@ runs:
         INSTALLATION_DIR: ${{ inputs.installation-dir }}
         DEPENDENCY: ${{ inputs.dependency }}
       run: |
-        echo "$PACKAGE" $(e d gclient getdep --deps-file="$DEPS_FILE" -r "${INSTALLATION_DIR}:${PACKAGE}") > "${DEPENDENCY}_ensure_file"
+        version=$(e d gclient getdep --deps-file="$DEPS_FILE" -r "${INSTALLATION_DIR}:${PACKAGE}" | tail -n 1)
+        echo "$PACKAGE $version" > "${DEPENDENCY}_ensure_file"
         cat "${DEPENDENCY}_ensure_file"
 
     - name: Create ensure file for ${{ inputs.dependency }} from dependency-version

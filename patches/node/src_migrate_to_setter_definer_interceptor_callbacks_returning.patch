@@ -1,0 +1,239 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Fri, 21 Aug 2026 14:02:39 +0000
+Subject: src: migrate to setter/definer interceptor callbacks returning
+ v8::Boolean
+
+V8 removed the PropertyHandlerConfiguration constructors and
+SetNativeDataProperty overloads accepting setter/definer callbacks
+whose info type is PropertyCallbackInfo<void>. Switch interceptor and
+accessor setter/definer callbacks to PropertyCallbackInfo<Boolean> and
+register the non-deprecated callback types as external references.
+
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index bf7a41c149e89d3cd913eb010450124d3c3a8911..1c37d60329af852a53f352bfc8c53a37acf34ae1 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -577,7 +577,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
+ Intercepted ContextifyContext::PropertySetterCallback(
+     Local<Name> property,
+     Local<Value> value,
+-    const PropertyCallbackInfo<void>& args) {
++    const PropertyCallbackInfo<Boolean>& args) {
+   ContextifyContext* ctx = ContextifyContext::Get(args);
+ 
+   // Still initializing
+@@ -700,7 +700,7 @@ Intercepted ContextifyContext::PropertyDescriptorCallback(
+ Intercepted ContextifyContext::PropertyDefinerCallback(
+     Local<Name> property,
+     const PropertyDescriptor& desc,
+-    const PropertyCallbackInfo<void>& args) {
++    const PropertyCallbackInfo<Boolean>& args) {
+   ContextifyContext* ctx = ContextifyContext::Get(args);
+ 
+   // Still initializing
+@@ -909,7 +909,7 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
+ Intercepted ContextifyContext::IndexedPropertySetterCallback(
+     uint32_t index,
+     Local<Value> value,
+-    const PropertyCallbackInfo<void>& args) {
++    const PropertyCallbackInfo<Boolean>& args) {
+   ContextifyContext* ctx = ContextifyContext::Get(args);
+ 
+   // Still initializing
+@@ -938,7 +938,7 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
+ Intercepted ContextifyContext::IndexedPropertyDefinerCallback(
+     uint32_t index,
+     const PropertyDescriptor& desc,
+-    const PropertyCallbackInfo<void>& args) {
++    const PropertyCallbackInfo<Boolean>& args) {
+   ContextifyContext* ctx = ContextifyContext::Get(args);
+ 
+   // Still initializing
+diff --git a/src/node_contextify.h b/src/node_contextify.h
+index 4d6788b9705911e33d74f9d106374d7a5f58142b..0fe57da1b9c73c54d9f48a6e0108a0496a44fbf5 100644
+--- a/src/node_contextify.h
++++ b/src/node_contextify.h
+@@ -161,14 +161,14 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+   static v8::Intercepted PropertySetterCallback(
+       v8::Local<v8::Name> property,
+       v8::Local<v8::Value> value,
+-      const v8::PropertyCallbackInfo<void>& args);
++      const v8::PropertyCallbackInfo<v8::Boolean>& args);
+   static v8::Intercepted PropertyDescriptorCallback(
+       v8::Local<v8::Name> property,
+       const v8::PropertyCallbackInfo<v8::Value>& args);
+   static v8::Intercepted PropertyDefinerCallback(
+       v8::Local<v8::Name> property,
+       const v8::PropertyDescriptor& desc,
+-      const v8::PropertyCallbackInfo<void>& args);
++      const v8::PropertyCallbackInfo<v8::Boolean>& args);
+   static v8::Intercepted PropertyDeleterCallback(
+       v8::Local<v8::Name> property,
+       const v8::PropertyCallbackInfo<v8::Boolean>& args);
+@@ -181,13 +181,13 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+   static v8::Intercepted IndexedPropertySetterCallback(
+       uint32_t index,
+       v8::Local<v8::Value> value,
+-      const v8::PropertyCallbackInfo<void>& args);
++      const v8::PropertyCallbackInfo<v8::Boolean>& args);
+   static v8::Intercepted IndexedPropertyDescriptorCallback(
+       uint32_t index, const v8::PropertyCallbackInfo<v8::Value>& args);
+   static v8::Intercepted IndexedPropertyDefinerCallback(
+       uint32_t index,
+       const v8::PropertyDescriptor& desc,
+-      const v8::PropertyCallbackInfo<void>& args);
++      const v8::PropertyCallbackInfo<v8::Boolean>& args);
+   static v8::Intercepted IndexedPropertyDeleterCallback(
+       uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean>& args);
+   static void IndexedPropertyEnumeratorCallback(
+diff --git a/src/node_env_var.cc b/src/node_env_var.cc
+index b38c2f75a92f2d6c1b9c6e7b7aca924653f7494d..2afac129cc3e823f425da781be57b0f877e6d007 100644
+--- a/src/node_env_var.cc
++++ b/src/node_env_var.cc
+@@ -448,7 +448,7 @@ static Intercepted EnvGetter(Local<Name> property,
+ 
+ static Intercepted EnvSetter(Local<Name> property,
+                              Local<Value> value,
+-                             const PropertyCallbackInfo<void>& info) {
++                             const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   CHECK(env->has_run_bootstrapping_code());
+   // calling env->EmitProcessEnvWarning() sets a variable indicating that
+@@ -529,7 +529,7 @@ static void EnvEnumerator(const PropertyCallbackInfo<Array>& info) {
+ 
+ static Intercepted EnvDefiner(Local<Name> property,
+                               const PropertyDescriptor& desc,
+-                              const PropertyCallbackInfo<void>& info) {
++                              const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   if (desc.has_value()) {
+     if (!desc.has_writable() ||
+diff --git a/src/node_external_reference.h b/src/node_external_reference.h
+index e474b0dab727a7019aa146cac53816596e031331..649a54eea26e08f9dac3c724ff67244596e3db72 100644
+--- a/src/node_external_reference.h
++++ b/src/node_external_reference.h
+@@ -20,18 +20,18 @@ class ExternalReferenceRegistry {
+ #define ALLOWED_EXTERNAL_REFERENCE_TYPES(V)                                    \
+   V(v8::FunctionCallback)                                                      \
+   V(v8::AccessorNameGetterCallback)                                            \
+-  V(v8::AccessorNameSetterCallback)                                            \
++  V(v8::AccessorNameSetterCallbackV2)                                          \
+   V(v8::NamedPropertyGetterCallback)                                           \
+-  V(v8::NamedPropertyDefinerCallback)                                          \
++  V(v8::NamedPropertyDefinerCallbackV2)                                        \
+   V(v8::NamedPropertyDeleterCallback)                                          \
+   V(v8::NamedPropertyEnumeratorCallback)                                       \
+   V(v8::NamedPropertyQueryCallback)                                            \
+-  V(v8::NamedPropertySetterCallback)                                           \
+-  V(v8::IndexedPropertyGetterCallbackV2)                                       \
+-  V(v8::IndexedPropertySetterCallbackV2)                                       \
+-  V(v8::IndexedPropertyDefinerCallbackV2)                                      \
+-  V(v8::IndexedPropertyDeleterCallbackV2)                                      \
+-  V(v8::IndexedPropertyQueryCallbackV2)                                        \
++  V(v8::NamedPropertySetterCallbackV2)                                         \
++  V(v8::IndexedPropertyGetterCallback)                                         \
++  V(v8::IndexedPropertySetterCallback)                                         \
++  V(v8::IndexedPropertyDefinerCallback)                                        \
++  V(v8::IndexedPropertyDeleterCallback)                                        \
++  V(v8::IndexedPropertyQueryCallback)                                          \
+   V(const v8::String::ExternalStringResourceBase*)
+ 
+ #define V(ExternalReferenceType)                                               \
+diff --git a/src/node_process_object.cc b/src/node_process_object.cc
+index 5f5af63486a556f00b1cc3d44ec731f414904626..3132a96abb87f9275080ca0d8b2015b12bb7be38 100644
+--- a/src/node_process_object.cc
++++ b/src/node_process_object.cc
+@@ -12,6 +12,7 @@
+ #include <climits>  // PATH_MAX
+ 
+ namespace node {
++using v8::Boolean;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+ using v8::Function;
+@@ -40,7 +41,7 @@ static void ProcessTitleGetter(Local<Name> property,
+ 
+ static void ProcessTitleSetter(Local<Name> property,
+                                Local<Value> value,
+-                               const PropertyCallbackInfo<void>& info) {
++                               const PropertyCallbackInfo<Boolean>& info) {
+   node::Utf8Value title(info.GetIsolate(), value);
+   TRACE_EVENT_METADATA1(
+       "__metadata", "process_name", "name", TRACE_STR_COPY(*title));
+@@ -57,7 +58,7 @@ static void DebugPortGetter(Local<Name> property,
+ 
+ static void DebugPortSetter(Local<Name> property,
+                             Local<Value> value,
+-                            const PropertyCallbackInfo<void>& info) {
++                            const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   int32_t port = value->Int32Value(env->context()).FromMaybe(0);
+ 
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index b57a83c1d869d018db6212d8d9ff115c266b109a..68ce66e15c8f823d58d52db3638e67295ffa00ed 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -784,7 +784,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+ Intercepted DatabaseSyncLimits::LimitsSetter(
+     Local<Name> property,
+     Local<Value> value,
+-    const PropertyCallbackInfo<void>& info) {
++    const PropertyCallbackInfo<Boolean>& info) {
+   if (!property->IsString()) {
+     return Intercepted::kNo;
+   }
+diff --git a/src/node_sqlite.h b/src/node_sqlite.h
+index e7281ed266af5d27c2c60a3c65e8bd4fcbc0b8fb..fffa433d615461c7ecf2fd28e114a260610cc0f0 100644
+--- a/src/node_sqlite.h
++++ b/src/node_sqlite.h
+@@ -433,7 +433,7 @@ class DatabaseSyncLimits : public BaseObject {
+   static v8::Intercepted LimitsSetter(
+       v8::Local<v8::Name> property,
+       v8::Local<v8::Value> value,
+-      const v8::PropertyCallbackInfo<void>& info);
++      const v8::PropertyCallbackInfo<v8::Boolean>& info);
+   static v8::Intercepted LimitsQuery(
+       v8::Local<v8::Name> property,
+       const v8::PropertyCallbackInfo<v8::Integer>& info);
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index be5dccc2ac77799ae249ed388f9ebce000207ef3..51b1ba14bfb883e83c586ef598debb0bbcaea924 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -600,7 +600,7 @@ static Intercepted StorageGetter(Local<Name> property,
+ 
+ static Intercepted StorageSetter(Local<Name> property,
+                                  Local<Value> value,
+-                                 const PropertyCallbackInfo<void>& info) {
++                                 const PropertyCallbackInfo<Boolean>& info) {
+   Storage* storage;
+   ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+ 
+@@ -650,7 +650,7 @@ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
+ 
+ static Intercepted StorageDefiner(Local<Name> property,
+                                   const PropertyDescriptor& desc,
+-                                  const PropertyCallbackInfo<void>& info) {
++                                  const PropertyCallbackInfo<Boolean>& info) {
+   Storage* storage;
+   ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
+ 
+@@ -670,7 +670,7 @@ static Intercepted IndexedGetter(uint32_t index,
+ 
+ static Intercepted IndexedSetter(uint32_t index,
+                                  Local<Value> value,
+-                                 const PropertyCallbackInfo<void>& info) {
++                                 const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   Local<Name> name = Uint32ToString(env->context(), index);
+   return StorageSetter(name, value, info);
+@@ -692,7 +692,7 @@ static Intercepted IndexedDeleter(uint32_t index,
+ 
+ static Intercepted IndexedDefiner(uint32_t index,
+                                   const PropertyDescriptor& desc,
+-                                  const PropertyCallbackInfo<void>& info) {
++                                  const PropertyCallbackInfo<Boolean>& info) {
+   Environment* env = Environment::GetCurrent(info);
+   Local<Name> name = Uint32ToString(env->context(), index);
+   return StorageDefiner(name, desc, info);
