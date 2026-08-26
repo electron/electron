@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 0ff31abd00b150ffae9755717db20da8bb7c1d14..95bdf357f2516eb501c07b5e56abcf5d8a73ace8 100644
+index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc08485ea4 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -54,7 +54,7 @@ index 0ff31abd00b150ffae9755717db20da8bb7c1d14..95bdf357f2516eb501c07b5e56abcf5d
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
  #include "chrome/common/url_constants.h"
-@@ -284,10 +283,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -285,10 +284,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,7 +68,7 @@ index 0ff31abd00b150ffae9755717db20da8bb7c1d14..95bdf357f2516eb501c07b5e56abcf5d
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -501,11 +503,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -506,11 +508,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
@@ -83,7 +83,7 @@ index 0ff31abd00b150ffae9755717db20da8bb7c1d14..95bdf357f2516eb501c07b5e56abcf5d
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
+index 90c503d13692a9417deef60b76f3c298a3b79368..dc412feaa72b6b94646f09a098bb07ecb0207630 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@
@@ -122,11 +122,11 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 921d315735606b8b4c39ede9c96285ad6b448148..c739fa151c8e79ed725e4e4755449808b1f35953 100644
+index 4d538186fd804419f36c363d785376cbfbf9509d..93d81b0d1c37e7f4967bba16eb24c0db26773035 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -23,8 +23,10 @@
- #include "base/task/thread_pool.h"
+@@ -25,8 +25,10 @@
+ #include "base/timer/elapsed_timer.h"
  #include "base/values.h"
  #include "build/build_config.h"
 +#if 0
@@ -136,7 +136,7 @@ index 921d315735606b8b4c39ede9c96285ad6b448148..c739fa151c8e79ed725e4e4755449808
  #include "chrome/browser/search/search.h"
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
  #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
-@@ -73,7 +75,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+@@ -75,7 +77,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
@@ -147,7 +147,7 @@ index 921d315735606b8b4c39ede9c96285ad6b448148..c739fa151c8e79ed725e4e4755449808
  }
  
  }  // namespace
-@@ -504,11 +509,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+@@ -507,11 +512,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
        features::kInitialWebUIWithoutSpellCheck.Get()) {
      return;
    }

@@ -46,10 +46,10 @@ index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index dbdb3696b42e33b171fce69636f3ff5316dbc7c1..c92322e762084d7d34a8a9a7b5e0e3f822a521dc 100644
+index ab541cfc657edb7ee4daa618e31a3aa791ae24cc..5cca68cab99c690ec6780c3551d26524103a4410 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10337,6 +10337,27 @@
+@@ -10338,6 +10338,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -91,10 +91,10 @@ index d9983abcd27cb91c62c1a45689813bd01328b245..8bd8885d7d9c59d4059a3c33b6d3d6df
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index cf2783f49bff7a4531a7deb89682247cd3951fc9..2b08b5e92c240154f1c53c986cfade9d6dd1dad9 100644
+index 2fda33049b2f0d29b0dfef9b970c0d521037607f..26f4189f433b77685a6d41be5ee9b890ef6b3654 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12797,5 +12797,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12795,5 +12795,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -132,7 +132,7 @@ index cf2783f49bff7a4531a7deb89682247cd3951fc9..2b08b5e92c240154f1c53c986cfade9d
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 5c9dad814e73a9e5a0eb92aa4d8b4e72e9211ffb..91f646a8387868cf92cbed40a29452e34b704430 100644
+index 0a224a929d4597fec0c6b7460ba19c448461ae7c..cd6dd1e9097380e494ec6ef86946ef5fd5921d0b 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -4245,6 +4245,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
@@ -203,7 +203,7 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 9bfa9565f03f1aa56a491ac9e3b841bfe4f2e1be..36e809e6d71a182010a5b5d5c8ebf8c21ddf84b6 100644
+index 03b97d9f743b1ccab026b696318c75a47ce63ad4..0a64ebb921fb8dbe30f451e4a3cc0768f1e9149e 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1692,6 +1692,8 @@ component("platform") {
@@ -314,7 +314,7 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index a2a1572b754386330435ae1f1c15f2cc521dee93..57eb9d2b5c7b3ca826ddf3033e763850d77e5f17 100644
+index 1e1caf1bc24040e4080343af7bd8f1060c10e62a..a30c5577c2cf4402100bb0f06b04596a64fbd2d4 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@

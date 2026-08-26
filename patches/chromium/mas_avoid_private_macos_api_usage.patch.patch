@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4cf77f0834566a8abea3786434738556e09d2edf..1842a4879a584b4c2e3a54907a738bfd619e58c1 100644
+index 738071da942f8fbc99b556ee5e41876de3264f2b..42cb17e1327cf71965185cbe366db93f5941b7d3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1150,6 +1150,7 @@ component("base") {
@@ -640,7 +640,7 @@ index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d58ebe5f19 100644
+index 9de655b17ceae246ecc650e5432103fdd2c0636a..4025a23ea2bcb7ee7ba9eabd6a1d23fae80b145b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -22,6 +22,7 @@
@@ -750,10 +750,10 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  
 +#endif
 +
- // AppKit calls constrainFrameRect:toScreen: to clamp window frames to screen
- // boundaries. In headless mode or when a window move loop is active, suppress
- // this clamping so that the frame is not constrained to the physical display
-@@ -451,6 +481,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+ // Constrains the frame rect during an active window move loop so that the top
+ // of the window does not exceed the menu bar / visible top of the display,
+ // while allowing smooth unrestricted dragging across display boundaries without
+@@ -531,6 +561,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    return [super constrainFrameRect:frameRect toScreen:screen];
  }
  
@@ -762,7 +762,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  // AppKit's internal screen layout manager invokes
  // _setFrame:fromAdjustmentToScreen: and _setFrameAfterMove: asynchronously
  // during screen layout changes or display boundary transitions to adjust the
-@@ -499,6 +531,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
+@@ -579,6 +611,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
    }
  }
  
@@ -771,7 +771,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  - (NSWindow*)topmostVisibleChildModalWindow {
    if (!_bridge) {
      return nil;
-@@ -542,12 +576,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -622,12 +656,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -786,7 +786,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -861,9 +897,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -941,9 +977,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -798,7 +798,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -930,6 +968,7 @@ - (void)reallySaveRestorableState {
+@@ -1010,6 +1048,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -806,7 +806,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -942,6 +981,7 @@ - (void)invalidateRestorableState {
+@@ -1022,6 +1061,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -814,7 +814,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -1120,6 +1160,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1200,6 +1240,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -822,7 +822,7 @@ index 8503d439f53c321e0b781316cf8c66f07f6333f5..320424bc4a88fca7f0091d9e0f28e2d5
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -1137,6 +1178,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1217,6 +1258,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -957,7 +957,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 687c0deebed174ae7e00b78beb9c320411281676..ab4727b3e56e0ec89cc71809085a4d14672cc778 100644
+index 1f4f52db2cc37fd7383c432e09212e27df708732..ed4c62b6462684a79de8b69823f52ed7af46be53 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -968,7 +968,7 @@ index 687c0deebed174ae7e00b78beb9c320411281676..ab4727b3e56e0ec89cc71809085a4d14
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2411,15 +2412,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2415,15 +2416,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -991,7 +991,7 @@ index 687c0deebed174ae7e00b78beb9c320411281676..ab4727b3e56e0ec89cc71809085a4d14
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0359d275187a886c06a145d3efb8f0a2c9b6db2e..f9dd951843f329e6ebdd4597a396f453c181989b 100644
+index e7e168a10b7b9051b74d0964b1b51fe96b10f142..792bdc0566e1e492ca30a4f4e78bc406de1df544 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -381,6 +381,7 @@ source_set("browser") {
@@ -1003,7 +1003,7 @@ index 0359d275187a886c06a145d3efb8f0a2c9b6db2e..f9dd951843f329e6ebdd4597a396f453
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 82e539a2a42af04a5df2676dc30a76418e39627d..d4b47bcd49f41c00da64d9191ae15786d79cbbba 100644
+index 2bab8a9ee3a89694d6adc0996d61eda13ddba7cd..0d1461a0b25878664ffd97effdf3d2ee04b3ab57 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -26,6 +26,7 @@
@@ -1014,7 +1014,7 @@ index 82e539a2a42af04a5df2676dc30a76418e39627d..d4b47bcd49f41c00da64d9191ae15786
  #include "mojo/public/cpp/bindings/associated_receiver.h"
  #include "mojo/public/cpp/bindings/associated_remote.h"
  #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
-@@ -57,7 +58,9 @@ class CursorManager;
+@@ -58,7 +59,9 @@ class CursorManager;
  
  @protocol RenderWidgetHostViewMacDelegate;
  
@@ -1024,7 +1024,7 @@ index 82e539a2a42af04a5df2676dc30a76418e39627d..d4b47bcd49f41c00da64d9191ae15786
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -721,9 +724,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -723,9 +726,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    bool pointer_lock_unadjusted_movement_ = false;
  
  
@@ -1034,10 +1034,10 @@ index 82e539a2a42af04a5df2676dc30a76418e39627d..d4b47bcd49f41c00da64d9191ae15786
    NSAccessibilityRemoteUIElement* __strong remote_window_accessible_;
 +#endif
  
-   // Used to force the NSApplication's focused accessibility element to be the
-   // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
+   ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
+ 
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 5bcb6d94d79418ffa2e82c61ca11cc501148ccc1..316ce98ca9ab41e85dea15431b7de15f2e0c004a 100644
+index 749d207c359ebe621841fb7c0aae6272766b7236..a60a2d91998cb55771adaa44a108d6ad0502d6fa 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -58,6 +58,7 @@
@@ -1048,7 +1048,7 @@ index 5bcb6d94d79418ffa2e82c61ca11cc501148ccc1..316ce98ca9ab41e85dea15431b7de15f
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -359,8 +360,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
+@@ -361,8 +362,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1059,7 +1059,7 @@ index 5bcb6d94d79418ffa2e82c61ca11cc501148ccc1..316ce98ca9ab41e85dea15431b7de15f
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1862,10 +1865,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1873,10 +1876,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1072,7 +1072,7 @@ index 5bcb6d94d79418ffa2e82c61ca11cc501148ccc1..316ce98ca9ab41e85dea15431b7de15f
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1936,9 +1941,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1951,9 +1956,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1084,7 +1084,7 @@ index 5bcb6d94d79418ffa2e82c61ca11cc501148ccc1..316ce98ca9ab41e85dea15431b7de15f
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2489,20 +2496,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2504,20 +2511,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1206,7 +1206,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index fc7b7779fc20f08ada43f9a607ee785f1a0fb33d..411ccc3401743ef36db939c75779c2293d4ad165 100644
+index ec2ca2bec629ccd6465178280983b18ad8999ad8..d59580a9fe2c00c27adda601c0eafee1f8b1f7db 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -651,6 +651,7 @@ static_library("test_support") {
