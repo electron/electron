@@ -20,6 +20,9 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+    secrets:
+      ELECTRON_RBE_JWT:
+        required: false
 
 permissions: {}
 

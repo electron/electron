@@ -185,7 +185,17 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux:
     name: linux-${{ matrix.target-arch }}
@@ -210,7 +220,17 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   windows:
     name: windows-${{ matrix.target-arch }}
@@ -234,4 +254,14 @@ jobs:
       # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}

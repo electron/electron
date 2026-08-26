@@ -139,7 +139,8 @@ jobs:
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
       skip: ${{ needs.setup.outputs.pgo-only == 'true' }}
-    secrets: inherit
+    secrets:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
 
   # Docs Only Jobs
   docs-only:
@@ -150,7 +151,6 @@ jobs:
       contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-    secrets: inherit
 
   # Checkout Jobs
   checkout-macos:
@@ -295,7 +295,8 @@ jobs:
       target-platform: macos
       target-archs: x64 arm64
       check-runs-on: macos-15
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   linux-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -308,7 +309,8 @@ jobs:
       target-archs: x64 arm64
       check-runs-on: electron-arc-centralus-linux-amd64-8core
       check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   windows-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -320,7 +322,8 @@ jobs:
       target-archs: x64 arm64
       check-runs-on: electron-arc-centralus-linux-amd64-8core
       check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
@@ -340,7 +343,17 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   
   # macos-arm64, linux-x64, and windows-x64 carry the clang-tidy legs. When a
   # change touches no native code (per setup's native filter), run-clang-tidy
@@ -366,7 +379,17 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   macos-arm64-ubsan:
     permissions:
@@ -387,7 +410,17 @@ jobs:
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
       is-ubsan: true
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux-x64:
     permissions:
@@ -411,7 +444,17 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux-x64-asan:
     permissions:
@@ -433,7 +476,17 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       is-asan: true
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux-x64-ubsan:
     permissions:
@@ -455,7 +508,17 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       is-ubsan: true
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   
   linux-arm64:
     permissions:
@@ -476,7 +539,17 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
     
   test-linux-arm64-64k:
     uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
@@ -488,7 +561,6 @@ jobs:
     with:
       test-runs-on: ubuntu-22.04-arm
       test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
 
   windows-x64:
     permissions:
@@ -510,7 +582,17 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   windows-arm64:
     permissions:
@@ -529,7 +611,17 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   gha-done:
     name: GitHub Actions Completed

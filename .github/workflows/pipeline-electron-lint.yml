@@ -12,6 +12,9 @@ on:
         description: 'Skip the actual lint work but still report the lint / Lint check as skipped'
         type: boolean
         default: false
+    secrets:
+      CHROMIUM_GIT_COOKIE:
+        required: false
 
 permissions: {}
 

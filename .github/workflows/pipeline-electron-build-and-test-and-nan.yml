@@ -54,6 +54,27 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      ACTIONS_STEP_DEBUG:
+        required: false
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING:
+        required: false
+      CLOUDFLARE_TUNNEL_CERT:
+        required: false
+      CLOUDFLARE_USER_CA_CERT:
+        required: false
+      DD_API_KEY:
+        required: false
+      ELECTRON_ARTIFACTS_BLOB_STORAGE:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
+      SSH_DEBUG_AUTHORIZED_USERS:
+        required: false
+      SUDOWOODO_EXCHANGE_URL:
+        required: false
 
 permissions: {}
 
@@ -75,7 +96,17 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     permissions:
@@ -88,7 +119,15 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
-    secrets: inherit
+    secrets:
+      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
     permissions:
@@ -100,4 +139,6 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
       gn-build-type: ${{ inputs.gn-build-type }}
-    secrets: inherit
+    secrets:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}

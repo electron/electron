@@ -83,6 +83,27 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      ACTIONS_STEP_DEBUG:
+        required: false
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING:
+        required: false
+      CLOUDFLARE_TUNNEL_CERT:
+        required: false
+      CLOUDFLARE_USER_CA_CERT:
+        required: false
+      DD_API_KEY:
+        required: false
+      ELECTRON_ARTIFACTS_BLOB_STORAGE:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
+      SSH_DEBUG_AUTHORIZED_USERS:
+        required: false
+      SUDOWOODO_EXCHANGE_URL:
+        required: false
 
 permissions: {}
 

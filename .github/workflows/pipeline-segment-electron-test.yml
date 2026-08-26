@@ -40,6 +40,23 @@ on:
         required: false
         type: string
         default: x11
+    secrets:
+      ACTIONS_STEP_DEBUG:
+        required: false
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING:
+        required: false
+      CLOUDFLARE_TUNNEL_CERT:
+        required: false
+      CLOUDFLARE_USER_CA_CERT:
+        required: false
+      DD_API_KEY:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
+      SSH_DEBUG_AUTHORIZED_USERS:
+        required: false
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}

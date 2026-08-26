@@ -25,6 +25,11 @@ on:
         required: true
         type: string
         default: testing
+    secrets:
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
 
 permissions: {}
 
