@@ -1,0 +1,310 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Clark <daniec@microsoft.com>
+Date: Thu, 30 Jul 2026 13:15:02 -0700
+Subject: [M152] Protect against MenuController being destroyed due to
+ selection change
+
+Original change's description:
+> Protect against MenuController being destroyed due to selection change
+>
+> MenuController calls out to SetSelection in several places, and
+> the SetSelection call can cause accessibility events to be triggered
+> that can cause the MenuController to be destroyed.
+>
+> crbug.com/517515945 identifies this issue in OnDragUpdate and an
+> inspection of the code shows that there are several other spots that
+> are also affected.
+>
+> In these spots where MenuController functions continue doing work
+> after a call to SetSelection, fix the potential crashes by having the
+> MenuController grab a weak ref to itself and bail out if it's null
+> after the SetSelection call.
+>
+> Bug: 517515945
+> Change-Id: I0185d07633687593b147a0320ae73077b6a54d9f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8143939
+> Reviewed-by: Dana Fried <dfried@chromium.org>
+> Commit-Queue: Dan Clark <daniec@microsoft.com>
+> Cr-Commit-Position: refs/heads/main@{#1669578}
+
+(cherry picked from commit 265aa71a9761f1d9a1e7b3bcb45662d815671a5b)
+
+Bug: 540247524,517515945
+Change-Id: I0185d07633687593b147a0320ae73077b6a54d9f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8179883
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#188}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index 9ad3efe81940cddd0c2cf30325b44706f00c2e98..6c0de2fa4a4c3de6b933e74bf91a38124c4b0026 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -834,8 +834,15 @@ bool MenuController::IsContextMenu() const {
+ 
+ void MenuController::SelectItemAndOpenSubmenu(MenuItemView* item) {
+   DCHECK(item);
++  auto this_ref = AsWeakPtr();
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
++  // Accessibility events fired as a result of the selection changing may have
++  // closed the menu and deleted `this`. Guard against that.
++  if (!this_ref) {
++    return;
++  }
++
+   // If `item` has not a submenu, hot track `item`'s initial focusable button
+   // if any.
+   if (!item->HasSubmenu()) {
+@@ -1318,6 +1325,7 @@ int MenuController::OnDragUpdated(SubmenuView* source,
+   }
+   MenuDelegate::DropPosition drop_position = MenuDelegate::DropPosition::kNone;
+   int drop_operation = ui::DragDropTypes::DRAG_NONE;
++  auto this_ref = AsWeakPtr();
+   if (menu_item) {
+     gfx::Point menu_item_loc(event.location());
+     View::ConvertPointToTarget(source, menu_item, &menu_item_loc);
+@@ -1353,6 +1361,11 @@ int MenuController::OnDragUpdated(SubmenuView* source,
+   } else {
+     SetSelection(source->GetMenuItem(), SELECTION_OPEN_SUBMENU);
+   }
++  // Accessibility events fired as a result of the selection changing may have
++  // closed the menu and deleted `this`. Guard against that.
++  if (!this_ref) {
++    return drop_operation;
++  }
+   SetDropMenuItem(menu_item, drop_position);
+   last_drop_operation_ = drop_operation;
+   return drop_operation;
+@@ -2624,8 +2637,12 @@ void MenuController::MenuChildrenChanged(MenuItemView* item) {
+       return;
+     }
+   }
++  // Setting the selection can indirectly destroy this object via accessibility
++  // system callbacks and activation changes. This should be rare but must be
++  // protected against.
++  const auto weak_this = AsWeakPtr();
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+-  if (item->HasSubmenu()) {
++  if (weak_this && item->HasSubmenu()) {
+     OpenMenuImpl(item, false);
+   }
+ }
+@@ -3273,8 +3290,15 @@ void MenuController::OpenSubmenuChangeSelectionIfCan() {
+   }
+ 
+   // Show the sub-menu.
++  auto this_ref = AsWeakPtr();
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
++  // Accessibility events fired as a result of the selection changing may have
++  // closed the menu and deleted `this`. Guard against that.
++  if (!this_ref) {
++    return;
++  }
++
+   MenuItemView* to_select = nullptr;
+   if (!item->GetSubmenu()->GetMenuItems().empty()) {
+     to_select = FindInitialSelectableMenuItem(item, INCREMENT_SELECTION_DOWN);
+@@ -3730,7 +3754,14 @@ void MenuController::SetInitialHotTrackedView(
+   if (!item) {
+     return;
+   }
++  auto this_ref = AsWeakPtr();
+   SetSelection(item, SELECTION_DEFAULT);
++
++  // Accessibility events fired as a result of the selection changing may have
++  // closed the menu and deleted `this`. Guard against that.
++  if (!this_ref) {
++    return;
++  }
+   View* hot_view =
+       GetInitialFocusableView(item, direction == INCREMENT_SELECTION_DOWN);
+   SetHotTrackedButton(Button::AsButton(hot_view));
+diff --git a/ui/views/controls/menu/menu_controller_unittest.cc b/ui/views/controls/menu/menu_controller_unittest.cc
+index 102e88c657abb600d457736740fe15573e50b97f..cc6a7a839a5685632d93eb319e67ef9e81111d0d 100644
+--- a/ui/views/controls/menu/menu_controller_unittest.cc
++++ b/ui/views/controls/menu/menu_controller_unittest.cc
+@@ -428,7 +428,7 @@ class MenuControllerTest : public ViewsTestBase,
+                                MenuAnchorPosition menu_anchor);
+ 
+  protected:
+-  void SetPendingStateItem(MenuItemView* item);
++  void SetPendingStateItem(MenuItemView* item, bool submenu_open = true);
+ 
+   void SetState(MenuItemView* item);
+ 
+@@ -863,9 +863,10 @@ void MenuControllerTest::TestSubmenuFitsOnScreen(
+   submenu->Close();
+ }
+ 
+-void MenuControllerTest::SetPendingStateItem(MenuItemView* item) {
++void MenuControllerTest::SetPendingStateItem(MenuItemView* item,
++                                             bool submenu_open) {
+   menu_controller_->pending_state_.item = item;
+-  menu_controller_->pending_state_.submenu_open = true;
++  menu_controller_->pending_state_.submenu_open = submenu_open;
+ }
+ 
+ void MenuControllerTest::SetState(MenuItemView* item) {
+@@ -3095,6 +3096,158 @@ TEST_F(MenuControllerTest, MenuControllerDestroyedDuringMouseMove) {
+   EXPECT_TRUE(observer.fired());
+ }
+ 
++// Tests that OnDragUpdated handles the controller being synchronously
++// destroyed by an accessibility observer reacting to the selection change.
++// Should not crash in ASAN.
++TEST_F(MenuControllerTest, DragUpdateWithControllerDeletedDuringSelection) {
++  MenuItemView* const item_with_buttons =
++      AddButtonMenuItems(/*single_child=*/true);
++  SubmenuView* const submenu = menu_item()->GetSubmenu();
++  GET_CHILD_BUTTON(button, item_with_buttons, 0);
++
++  // Select the item containing the button and make the button hot-tracked so
++  // that the next selection change clears it and updates the submenu's active
++  // descendant.
++  SetPendingStateItem(item_with_buttons);
++  SetHotTrackedButton(button);
++
++  // Destroy the controller as a side effect of the active descendant changing
++  // during the selection update.
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this]() { DestroyMenuController(); }));
++
++  // Dispatch a drag update at a point outside any menu item so that
++  // OnDragUpdated selects the root item, triggering the selection change.
++  ui::OSExchangeData drop_data;
++  const gfx::PointF location(-1, -1);
++  const ui::DropTargetEvent target_event(drop_data, location, location,
++                                         ui::DragDropTypes::DRAG_MOVE);
++  menu_controller()->OnDragUpdated(submenu, target_event);
++
++  EXPECT_TRUE(observer.fired());
++  EXPECT_EQ(nullptr, menu_controller());
++}
++
++// Tests that SelectItemAndOpenSubmenu handles the controller being
++// synchronously destroyed by an accessibility observer reacting to the
++// selection change. Should not crash in ASAN.
++TEST_F(MenuControllerTest,
++       SelectItemAndOpenSubmenuWithControllerDeletedDuringSelection) {
++  MenuItemView* const item_with_buttons =
++      AddButtonMenuItems(/*single_child=*/true);
++  SubmenuView* const submenu = menu_item()->GetSubmenu();
++  GET_CHILD_BUTTON(button, item_with_buttons, 0);
++
++  // Select the item containing the button and make the button hot-tracked so
++  // that the next selection change clears it and updates the submenu's active
++  // descendant.
++  SetPendingStateItem(item_with_buttons);
++  SetHotTrackedButton(button);
++
++  // Destroy the controller as a side effect of the active descendant changing
++  // during the selection update.
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this]() { DestroyMenuController(); }));
++
++  // Selecting a different (leaf) item clears the hot-tracked button, firing the
++  // active descendant change that destroys the controller mid-selection.
++  menu_controller()->SelectItemAndOpenSubmenu(submenu->GetMenuItemAt(0));
++
++  EXPECT_TRUE(observer.fired());
++  EXPECT_EQ(nullptr, menu_controller());
++}
++
++// Tests that MenuChildrenChanged handles the controller being synchronously
++// destroyed by an accessibility observer reacting to the selection change.
++// Should not crash in ASAN.
++TEST_F(MenuControllerTest,
++       MenuChildrenChangedWithControllerDeletedDuringSelection) {
++  MenuItemView* const item_with_buttons =
++      AddButtonMenuItems(/*single_child=*/true);
++  GET_CHILD_BUTTON(button, item_with_buttons, 0);
++
++  SetPendingStateItem(item_with_buttons);
++  SetHotTrackedButton(button);
++
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this]() { DestroyMenuController(); }));
++
++  // Reselecting the changed item (the root) clears the hot-tracked button and
++  // fires the active descendant change that destroys the controller
++  // mid-selection.
++  MenuChildrenChanged(menu_item());
++
++  EXPECT_TRUE(observer.fired());
++  EXPECT_EQ(nullptr, menu_controller());
++}
++
++// Tests that SetInitialHotTrackedView (reached via keyboard navigation into an
++// open submenu) handles the controller being synchronously destroyed by an
++// accessibility observer reacting to the selection change. Should not crash in
++// ASAN.
++TEST_F(MenuControllerTest,
++       SetInitialHotTrackedViewWithControllerDeletedDuringSelection) {
++  // Give the root a submenu item with a child so arrow navigation moves the
++  // selection into the submenu via SetInitialHotTrackedView().
++  MenuItemView* const submenu_item = menu_item()->AppendSubMenu(10, u"Submenu");
++  submenu_item->AppendMenuItem(11, u"Child");
++  MenuItemView* const item_with_buttons =
++      AddButtonMenuItems(/*single_child=*/true);
++  GET_CHILD_BUTTON(button, item_with_buttons, 0);
++  ShowSubmenu(submenu_item->GetSubmenu());
++
++  // Select the submenu item (with its submenu open) and hot-track a sibling's
++  // button so the next selection change clears it and fires the active
++  // descendant change.
++  SetPendingStateItem(submenu_item);
++  SetHotTrackedButton(button);
++
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this]() { DestroyMenuController(); }));
++
++  // Arrow-down moves the selection into the open submenu, whose SetSelection()
++  // clears the hot-tracked button and destroys the controller mid-selection.
++  IncrementSelection();
++
++  EXPECT_TRUE(observer.fired());
++  EXPECT_EQ(nullptr, menu_controller());
++}
++
++// Tests that OpenSubmenuChangeSelectionIfCan (reached via the right-arrow key)
++// handles the controller being synchronously destroyed by an accessibility
++// observer reacting to the selection change. Should not crash in ASAN.
++TEST_F(MenuControllerTest,
++       OpenSubmenuChangeSelectionIfCanWithControllerDeletedDuringSelection) {
++  MenuItemView* const submenu_item = menu_item()->AppendSubMenu(10, u"Submenu");
++  submenu_item->AppendMenuItem(11, u"Child");
++  MenuItemView* const item_with_buttons =
++      AddButtonMenuItems(/*single_child=*/true);
++  GET_CHILD_BUTTON(button, item_with_buttons, 0);
++  ShowSubmenu(submenu_item->GetSubmenu());
++
++  // Select the submenu item without opening its submenu, and hot-track a
++  // sibling's button so that opening the submenu clears it and fires the active
++  // descendant change.
++  SetPendingStateItem(submenu_item, /*submenu_open=*/false);
++  SetHotTrackedButton(button);
++
++  CallbackOnAXEventObserver observer(
++      ax::mojom::Event::kActiveDescendantChanged,
++      base::BindLambdaForTesting([this]() { DestroyMenuController(); }));
++
++  // Right-arrow opens the submenu via OpenSubmenuChangeSelectionIfCan(), whose
++  // first SetSelection() clears the hot-tracked button and destroys the
++  // controller mid-selection.
++  DispatchKey(ui::VKEY_RIGHT);
++
++  EXPECT_TRUE(observer.fired());
++  EXPECT_EQ(nullptr, menu_controller());
++}
++
+ TEST_F(MenuControllerTest, SetSelectionIndices_MenuItemsOnly) {
+   SubmenuView* const submenu = menu_item()->GetSubmenu();
+   MenuItemView* const item1 = submenu->GetMenuItemAt(0);

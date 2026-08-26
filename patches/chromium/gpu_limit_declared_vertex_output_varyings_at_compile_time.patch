@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Mon, 20 Jul 2026 20:33:11 -0700
+Subject: [gpu] Limit declared vertex output varyings at compile time
+
+Enable the newly-introduced workaround in ANGLE's shader translator to
+limit the number of output varyings to 256 at compile time in the
+validating command decoder on Imagination GPUs.
+
+Verified manually with the test case from the bug report.
+
+TAG: agy
+CONV: 8ed05bff-eb25-4de9-92b8-d097e4c0abae
+Bug: 529991907
+Change-Id: Ia8a078ee3728f9549cd860cb02f88e677798d5b8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8115511
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1665159}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 9002e7dbd7fae141ab772245057416e187876453..d4dd6bace63b0825c67a2d6864992503130c11df 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -3836,6 +3836,9 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
+   if (workarounds().validate_max_per_stage_uniform_blocks_at_compile_time) {
+     driver_bug_workarounds.validatePerStageMaxUniformBlocks = true;
+   }
++  if (workarounds().limit_output_varyings_at_compile_time) {
++    driver_bug_workarounds.limitOutputVaryingsTo256 = true;
++  }
+ 
+   // Initialize uninitialized locals and shared variables by default
+   driver_bug_workarounds.initializeUninitializedLocals = true;
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index b209eb6f7a47f04851c8eb5a28d8ffda6b5a63ab..5e9d29dcfada369093d4fe8b14563b1abb9a5928 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3822,6 +3822,18 @@
+       "features": [
+         "split_level_0_pbo_full_sub_image_2d"
+       ]
++    },
++    {
++      "id": 485,
++      "cr_bugs": [529991907],
++      "description": "Limit the number of declared varying output components at compile time to work around a PowerVR driver bug.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "limit_output_varyings_at_compile_time"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index b97fa7ad102d6f73adb9d6ca3e6a2df2f6af4dba..f4cf8490a584f8b17c202b7cfcf44e4359ab27fa 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -101,6 +101,7 @@ force_update_scissor_state_when_binding_fbo0
+ gl_clear_broken
+ init_gl_position_in_vertex_shader
+ limit_d3d11_video_decoder_to_11_0
++limit_output_varyings_at_compile_time
+ max_3d_array_texture_size_1024
+ max_msaa_sample_count_2
+ max_msaa_sample_count_4

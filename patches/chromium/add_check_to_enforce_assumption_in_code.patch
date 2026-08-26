@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter <pkotwicz@google.com>
+Date: Thu, 13 Aug 2026 15:30:23 -0700
+Subject: Add CHECK to enforce assumption in code
+
+This CL adds a CHECK to enforce that the role of
+ax::mojom::Role::kInlineTextBox is never reassigned. The possibility
+of role reassignment was part of a fictitious exploit path described
+in https://b.corp.google.com/issues/498885920
+
+Specifically, BrowserAccessibilityManager::CollectChangedNodesAndParentsForAtomicUpdate()
+has ax::mojom::Role::kInlineTextBox-only behaviour.
+
+Bug:498885920
+
+Change-Id: I9e2e7197d6e188a7fc8d9b3077a1f29a8562d3f9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8018264
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Peter Kotwicz <pkotwicz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1679128}
+
+diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
+index c87c47f34a5f47e9cb7cec04d703335a57f250cd..59e663989dbf781f2467501bea48f085b454f719 100644
+--- a/ui/accessibility/ax_event_generator.cc
++++ b/ui/accessibility/ax_event_generator.cc
+@@ -395,6 +395,9 @@ void AXEventGenerator::OnRoleChanged(AXTree* tree,
+                                      ax::mojom::Role old_role,
+                                      ax::mojom::Role new_role) {
+   DCHECK_EQ(tree_, tree);
++  CHECK(new_role != ax::mojom::Role::kInlineTextBox &&
++        old_role != ax::mojom::Role::kInlineTextBox);
++
+   AddEvent(node, ui::IsAlert(new_role) ? Event::ALERT : Event::ROLE_CHANGED);
+ }
+ 

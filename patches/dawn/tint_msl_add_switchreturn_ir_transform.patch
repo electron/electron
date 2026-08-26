@@ -1,0 +1,594 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Natalie Chouinard <chouinard@google.com>
+Date: Thu, 16 Jul 2026 17:53:11 -0700
+Subject: [tint][msl] Add SwitchReturn IR transform
+
+Adds an MSL transform pass that wraps early returns nested inside switch
+blocks with a volatile-guarded conditional. This works around a driver
+bug in MTLCompilerService on macOS.
+
+Bug: 508638064
+Change-Id: I8c8b7cb0a3710f855499fdfa94872117a8d1bd23
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/325075
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Commit-Queue: Natalie Chouinard <chouinard@google.com>
+
+diff --git a/src/dawn/tests/end2end/ComputeFlowControlTests.cpp b/src/dawn/tests/end2end/ComputeFlowControlTests.cpp
+index 306e320d4936e2c3961cdd6d71440057518b92c9..7afe7204b662a7e2b59bad2e649f0f86911b9dd4 100644
+--- a/src/dawn/tests/end2end/ComputeFlowControlTests.cpp
++++ b/src/dawn/tests/end2end/ComputeFlowControlTests.cpp
+@@ -513,6 +513,47 @@ fn main() {
+     RunTest(shader, inputs, expected);
+ }
+ 
++// This is a regression test for a crash in MTLCompilerService on macOS (crbug.com/508638064).
++TEST_P(ComputeFlowControlTests, SwitchReturnMTLCompilerServiceCrash) {
++    const char* shader = R"(
++@group(0) @binding(0) var<uniform> u: i32;
++@group(0) @binding(1) var<storage, read_write> s: i32;
++
++fn foo(){
++    switch (s) {
++        case 0i: {}
++        case 2i: {
++            return;
++        }
++        case 4i: {}
++        default: {
++            s = s / u;
++        }
++    }
++    switch (s) {
++        case 0i: {
++            s = 0;
++        }
++        case 1i: {}
++        case 4i: {}
++        default: {
++            s = 0;
++        }
++    }
++}
++
++@compute @workgroup_size(1)
++fn main() {
++    foo();
++    foo();
++}
++)";
++
++    wgpu::ComputePipelineDescriptor csDesc;
++    csDesc.compute.module = utils::CreateShaderModule(device, shader);
++    device.CreateComputePipeline(&csDesc);
++}
++
+ DAWN_INSTANTIATE_TEST(ComputeFlowControlTests,
+                       D3D11Backend(),
+                       D3D12Backend(),
+diff --git a/src/tint/lang/msl/writer/raise/BUILD.bazel b/src/tint/lang/msl/writer/raise/BUILD.bazel
+index bf461c84e79292f6414eb464811473f517a96d5c..6b0646534ad57f2d01a57fc2fc454cc2f2d0863d 100644
+--- a/src/tint/lang/msl/writer/raise/BUILD.bazel
++++ b/src/tint/lang/msl/writer/raise/BUILD.bazel
+@@ -49,6 +49,7 @@ cc_library(
+     "raise.cc",
+     "shader_io.cc",
+     "simd_ballot.cc",
++    "switch_return.cc",
+     "validate_subgroup_matrix.cc",
+   ],
+   hdrs = [
+@@ -62,6 +63,7 @@ cc_library(
+     "raise.h",
+     "shader_io.h",
+     "simd_ballot.h",
++    "switch_return.h",
+     "validate_subgroup_matrix.h",
+   ],
+   deps = [
+@@ -110,6 +112,7 @@ cc_library(
+     "module_scope_vars_test.cc",
+     "shader_io_test.cc",
+     "simd_ballot_test.cc",
++    "switch_return_test.cc",
+     "validate_subgroup_matrix_test.cc",
+   ],
+   deps = [
+diff --git a/src/tint/lang/msl/writer/raise/BUILD.cmake b/src/tint/lang/msl/writer/raise/BUILD.cmake
+index 4c15e6192140e70cb656460033af7e917391e101..7f1af605343661a2a93e776785145aab1cb283fb 100644
+--- a/src/tint/lang/msl/writer/raise/BUILD.cmake
++++ b/src/tint/lang/msl/writer/raise/BUILD.cmake
+@@ -61,6 +61,8 @@ tint_add_target(tint_lang_msl_writer_raise lib
+   lang/msl/writer/raise/shader_io.h
+   lang/msl/writer/raise/simd_ballot.cc
+   lang/msl/writer/raise/simd_ballot.h
++  lang/msl/writer/raise/switch_return.cc
++  lang/msl/writer/raise/switch_return.h
+   lang/msl/writer/raise/validate_subgroup_matrix.cc
+   lang/msl/writer/raise/validate_subgroup_matrix.h
+ )
+@@ -117,6 +119,7 @@ tint_add_target(tint_lang_msl_writer_raise_test test
+   lang/msl/writer/raise/module_scope_vars_test.cc
+   lang/msl/writer/raise/shader_io_test.cc
+   lang/msl/writer/raise/simd_ballot_test.cc
++  lang/msl/writer/raise/switch_return_test.cc
+   lang/msl/writer/raise/validate_subgroup_matrix_test.cc
+ )
+ 
+diff --git a/src/tint/lang/msl/writer/raise/BUILD.gn b/src/tint/lang/msl/writer/raise/BUILD.gn
+index c4231bf23e1e1b51bbae838ec2bcd99701ce4837..e59de9c24798c6135da106846179e1d59f430ce6 100644
+--- a/src/tint/lang/msl/writer/raise/BUILD.gn
++++ b/src/tint/lang/msl/writer/raise/BUILD.gn
+@@ -65,6 +65,8 @@ if (tint_build_msl_writer) {
+       "shader_io.h",
+       "simd_ballot.cc",
+       "simd_ballot.h",
++      "switch_return.cc",
++      "switch_return.h",
+       "validate_subgroup_matrix.cc",
+       "validate_subgroup_matrix.h",
+     ]
+@@ -112,6 +114,7 @@ if (tint_build_unittests) {
+         "module_scope_vars_test.cc",
+         "shader_io_test.cc",
+         "simd_ballot_test.cc",
++        "switch_return_test.cc",
+         "validate_subgroup_matrix_test.cc",
+       ]
+       deps = [
+diff --git a/src/tint/lang/msl/writer/raise/raise.cc b/src/tint/lang/msl/writer/raise/raise.cc
+index 8e67cd12767ce5f58ddd8f5b0b7d554628f6ef20..ffa950f732d3c65322ce7e80cb0c7b9e2a090225 100644
+--- a/src/tint/lang/msl/writer/raise/raise.cc
++++ b/src/tint/lang/msl/writer/raise/raise.cc
+@@ -71,6 +71,7 @@
+ #include "src/tint/lang/msl/writer/raise/module_scope_vars.h"
+ #include "src/tint/lang/msl/writer/raise/shader_io.h"
+ #include "src/tint/lang/msl/writer/raise/simd_ballot.h"
++#include "src/tint/lang/msl/writer/raise/switch_return.h"
+ #include "src/tint/lang/msl/writer/raise/validate_subgroup_matrix.h"
+ 
+ namespace tint::msl::writer {
+@@ -300,6 +301,8 @@ Result<RaiseResult> Raise(core::ir::Module& module, const Options& options) {
+         options.workarounds.disable_module_constant_f16};
+     TINT_CHECK_RESULT(raise::ModuleConstant(module, module_const_config));
+ 
++    TINT_CHECK_RESULT(raise::SwitchReturn(module));
++
+     // These transforms need to be run last as various transforms introduce terminator arguments,
+     // naming conflicts, and expressions that need to be explicitly not inlined.
+     TINT_CHECK_RESULT(core::ir::transform::RemoveTerminatorArgs(module));
+diff --git a/src/tint/lang/msl/writer/raise/switch_return.cc b/src/tint/lang/msl/writer/raise/switch_return.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..531d433cbce9589e4f0ecc34a319e0dc1bd36f3d
+--- /dev/null
++++ b/src/tint/lang/msl/writer/raise/switch_return.cc
+@@ -0,0 +1,99 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/msl/writer/raise/switch_return.h"
++
++#include "src/tint/lang/msl/writer/raise/module_constant.h"
++
++#include "src/tint/lang/core/ir/builder.h"
++#include "src/tint/lang/core/ir/module.h"
++#include "src/tint/lang/core/ir/validator.h"
++#include "src/tint/lang/core/type/u32.h"
++#include "src/tint/lang/msl/ir/builtin_call.h"
++
++namespace tint::msl::writer::raise {
++
++namespace {
++
++/// PIMPL state for the transform.
++struct State {
++    /// The IR module.
++    core::ir::Module& ir;
++
++    /// The IR builder.
++    core::ir::Builder b{ir};
++
++    /// The type manager.
++    core::type::Manager& ty{ir.Types()};
++
++    /// Process the module.
++    void Process() {
++        // Find all return instructions inside switches.
++        Vector<core::ir::Return*, 8> returns_to_wrap;
++
++        for (auto* fn : ir.functions) {
++            fn->ForEachUseSorted([&](const core::ir::Usage& usage) {
++                if (auto* ret = usage.instruction->As<core::ir::Return>()) {
++                    auto* parent = ret->Block()->Parent();
++                    if (parent && parent->Is<core::ir::Switch>()) {
++                        returns_to_wrap.Push(ret);
++                    }
++                }
++            });
++        }
++
++        // Wrap return in volatile zero conditional to work around a driver bug
++        // (crbug.com/508638064).
++        for (auto* ret : returns_to_wrap) {
++            b.InsertBefore(ret, [&] {
++                auto* zero = b.Call<msl::ir::BuiltinCall>(ty.u32(), msl::BuiltinFn::kVolatileZero);
++                auto* cond = b.If(b.Equal(zero, b.Constant(core::u32(0))));
++                b.Append(cond->True(), [&] {
++                    if (ret->Value()) {
++                        b.Return(ret->Func(), ret->Value());
++                    } else {
++                        b.Return(ret->Func());
++                    }
++                });
++                b.Exit(ret->Block()->Parent());
++            });
++            ret->Destroy();
++        }
++    }
++};
++
++}  // namespace
++
++Result<SuccessType> SwitchReturn(core::ir::Module& ir) {
++    core::ir::AssertValid(ir, kModuleConstantCapabilities, "before msl.SwitchReturn");
++
++    State{ir}.Process();
++
++    return Success;
++}
++
++}  // namespace tint::msl::writer::raise
+diff --git a/src/tint/lang/msl/writer/raise/switch_return.h b/src/tint/lang/msl/writer/raise/switch_return.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..3d06f846ee27355ddad671eaaaa701a52e9d186f
+--- /dev/null
++++ b/src/tint/lang/msl/writer/raise/switch_return.h
+@@ -0,0 +1,49 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#ifndef SRC_TINT_LANG_MSL_WRITER_RAISE_SWITCH_RETURN_H_
++#define SRC_TINT_LANG_MSL_WRITER_RAISE_SWITCH_RETURN_H_
++
++#include "src/tint/utils/result.h"
++
++// Forward declarations
++namespace tint::core::ir {
++class Module;
++}  // namespace tint::core::ir
++
++namespace tint::msl::writer::raise {
++
++/// SwitchReturn is a transform that wraps early returns inside switches with a local
++/// volatile conditional block, to bypass a flow analyzer crash in Apple's MTLCompilerService
++/// (crbug.com/508638064).
++/// @param module the module to transform
++/// @returns success or failure
++Result<SuccessType> SwitchReturn(core::ir::Module& ir);
++
++}  // namespace tint::msl::writer::raise
++
++#endif  // SRC_TINT_LANG_MSL_WRITER_RAISE_SWITCH_RETURN_H_
+diff --git a/src/tint/lang/msl/writer/raise/switch_return_test.cc b/src/tint/lang/msl/writer/raise/switch_return_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ca6f943cd598ece6b2a8eb1a154107c64760249c
+--- /dev/null
++++ b/src/tint/lang/msl/writer/raise/switch_return_test.cc
+@@ -0,0 +1,152 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/msl/writer/raise/switch_return.h"
++
++#include <utility>
++
++#include "src/tint/lang/core/fluent_types.h"
++#include "src/tint/lang/core/ir/transform/helper_test.h"
++
++using namespace tint::core::fluent_types;     // NOLINT
++using namespace tint::core::number_suffixes;  // NOLINT
++
++namespace tint::msl::writer::raise {
++namespace {
++
++using MslWriter_SwitchReturnTest = core::ir::transform::TransformTest;
++
++TEST_F(MslWriter_SwitchReturnTest, ReturnInsideSwitch) {
++    auto* func = b.Function("foo", ty.void_());
++    b.Append(func->Block(), [&] {
++        auto* sw = b.Switch(1_i);
++        b.Append(b.Case(sw, {b.Constant(0_i)}), [&] { b.Return(func); });
++        b.Append(b.DefaultCase(sw), [&] { b.ExitSwitch(sw); });
++        b.Return(func);
++    });
++
++    auto* src = R"(
++%foo = func():void {
++  $B1: {
++    switch 1i [c: (0i, $B2), c: (default, $B3)] {  # switch_1
++      $B2: {  # case
++        ret
++      }
++      $B3: {  # case
++        exit_switch  # switch_1
++      }
++    }
++    ret
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func():void {
++  $B1: {
++    switch 1i [c: (0i, $B2), c: (default, $B3)] {  # switch_1
++      $B2: {  # case
++        %2:u32 = msl.volatile_zero
++        %3:bool = eq %2, 0u
++        if %3 [t: $B4] {  # if_1
++          $B4: {  # true
++            ret
++          }
++        }
++        exit_switch  # switch_1
++      }
++      $B3: {  # case
++        exit_switch  # switch_1
++      }
++    }
++    ret
++  }
++}
++)";
++
++    Run(SwitchReturn);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(MslWriter_SwitchReturnTest, ReturnValueInsideSwitch) {
++    auto* func = b.Function("foo", ty.i32());
++    b.Append(func->Block(), [&] {
++        auto* sw = b.Switch(1_i);
++        b.Append(b.Case(sw, {b.Constant(0_i)}), [&] { b.Return(func, 42_i); });
++        b.Append(b.DefaultCase(sw), [&] { b.ExitSwitch(sw); });
++        b.Return(func, 0_i);
++    });
++
++    auto* src = R"(
++%foo = func():i32 {
++  $B1: {
++    switch 1i [c: (0i, $B2), c: (default, $B3)] {  # switch_1
++      $B2: {  # case
++        ret 42i
++      }
++      $B3: {  # case
++        exit_switch  # switch_1
++      }
++    }
++    ret 0i
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func():i32 {
++  $B1: {
++    switch 1i [c: (0i, $B2), c: (default, $B3)] {  # switch_1
++      $B2: {  # case
++        %2:u32 = msl.volatile_zero
++        %3:bool = eq %2, 0u
++        if %3 [t: $B4] {  # if_1
++          $B4: {  # true
++            ret 42i
++          }
++        }
++        exit_switch  # switch_1
++      }
++      $B3: {  # case
++        exit_switch  # switch_1
++      }
++    }
++    ret 0i
++  }
++}
++)";
++
++    Run(SwitchReturn);
++
++    EXPECT_EQ(expect, str());
++}
++
++}  // namespace
++}  // namespace tint::msl::writer::raise
+diff --git a/test/tint/switch/switch.wgsl.expected.msl b/test/tint/switch/switch.wgsl.expected.msl
+index a85fb4af9c11068a262a711cfa5bf9026a44382e..96ce133e526a82ed2bf7bffc69c3f363e2a5e5e0 100644
+--- a/test/tint/switch/switch.wgsl.expected.msl
++++ b/test/tint/switch/switch.wgsl.expected.msl
+@@ -1,6 +1,8 @@
+ #include <metal_stdlib>
+ using namespace metal;
+ 
++volatile constexpr constant uint tint_volatile_zero = 0u;
++
+ [[max_total_threads_per_threadgroup(1)]]
+ kernel void a() {
+   int a_1 = 0;
+@@ -11,7 +13,10 @@ kernel void a() {
+     }
+     case 1:
+     {
+-      return;
++      if (( tint_volatile_zero == 0u)) {
++        return;
++      }
++      break;
+     }
+     default:
+     {
+diff --git a/test/tint/switch/switch_multi_selector.wgsl.expected.msl b/test/tint/switch/switch_multi_selector.wgsl.expected.msl
+index 20c9f4a55023691b3f318fdbacdff59c8f456777..a8e5df9e031825b9893de0d39fca2bd69509f78e 100644
+--- a/test/tint/switch/switch_multi_selector.wgsl.expected.msl
++++ b/test/tint/switch/switch_multi_selector.wgsl.expected.msl
+@@ -1,6 +1,8 @@
+ #include <metal_stdlib>
+ using namespace metal;
+ 
++volatile constexpr constant uint tint_volatile_zero = 0u;
++
+ [[max_total_threads_per_threadgroup(1)]]
+ kernel void a() {
+   int a_1 = 0;
+@@ -14,7 +16,10 @@ kernel void a() {
+     case 1:
+     default:
+     {
+-      return;
++      if (( tint_volatile_zero == 0u)) {
++        return;
++      }
++      break;
+     }
+   }
+ }
+diff --git a/test/tint/switch/switch_nested.wgsl.expected.msl b/test/tint/switch/switch_nested.wgsl.expected.msl
+index 4c56821f0eb6bafbf1de0620c8ff9ee60e706352..5ef2009bec14ab02f3a98ffb6287d412df73647e 100644
+--- a/test/tint/switch/switch_nested.wgsl.expected.msl
++++ b/test/tint/switch/switch_nested.wgsl.expected.msl
+@@ -1,6 +1,8 @@
+ #include <metal_stdlib>
+ using namespace metal;
+ 
++volatile constexpr constant uint tint_volatile_zero = 0u;
++
+ [[max_total_threads_per_threadgroup(1)]]
+ kernel void a() {
+   int a_1 = 0;
+@@ -28,10 +30,16 @@ kernel void a() {
+             }
+             default:
+             {
+-              return;
++              if (( tint_volatile_zero == 0u)) {
++                return;
++              }
++              break;
+             }
+           }
+-          return;
++          if (( tint_volatile_zero == 0u)) {
++            return;
++          }
++          break;
+         }
+       }
+       break;
+@@ -39,7 +47,10 @@ kernel void a() {
+     case 1:
+     default:
+     {
+-      return;
++      if (( tint_volatile_zero == 0u)) {
++        return;
++      }
++      break;
+     }
+   }
+ }
+diff --git a/test/tint/switch/switch_only_default.wgsl.expected.msl b/test/tint/switch/switch_only_default.wgsl.expected.msl
+index bf98158d27474755a79533f2c1cf49c2ea5b859d..ceed55988bab1d06e5a6509663592a7f75b5fcbd 100644
+--- a/test/tint/switch/switch_only_default.wgsl.expected.msl
++++ b/test/tint/switch/switch_only_default.wgsl.expected.msl
+@@ -1,13 +1,18 @@
+ #include <metal_stdlib>
+ using namespace metal;
+ 
++volatile constexpr constant uint tint_volatile_zero = 0u;
++
+ [[max_total_threads_per_threadgroup(1)]]
+ kernel void a() {
+   int a_1 = 0;
+   switch(a_1) {
+     default:
+     {
+-      return;
++      if (( tint_volatile_zero == 0u)) {
++        return;
++      }
++      break;
+     }
+   }
+   /* unreachable */

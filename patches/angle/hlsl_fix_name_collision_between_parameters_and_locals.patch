@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 20 Jul 2026 16:10:49 -0400
+Subject: HLSL: Fix name collision between parameters and locals
+
+Bug: chromium:536532605
+Change-Id: I8975daed303ab62745f7bfaf3da7667a87211749
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8127455
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/hlsl/OutputHLSL.cpp b/src/compiler/translator/hlsl/OutputHLSL.cpp
+index de5c184148e2bb9ff830c3c3cc1d02f52d7ac8e5..226a38f91768a3b22d0e9aafa95b68f63672416c 100644
+--- a/src/compiler/translator/hlsl/OutputHLSL.cpp
++++ b/src/compiler/translator/hlsl/OutputHLSL.cpp
+@@ -1987,12 +1987,12 @@ bool OutputHLSL::visitUnary(Visit visit, TIntermUnary *node)
+     return true;
+ }
+ 
+-ImmutableString OutputHLSL::samplerNamePrefixFromStruct(TIntermTyped *node)
++TString OutputHLSL::samplerNamePrefixFromStruct(TIntermTyped *node)
+ {
+     if (node->getAsSymbolNode())
+     {
+         ASSERT(node->getAsSymbolNode()->variable().symbolType() != SymbolType::Empty);
+-        return node->getAsSymbolNode()->getName();
++        return DecorateVariableIfNeeded(node->getAsSymbolNode()->variable());
+     }
+     TIntermBinary *nodeBinary = node->getAsBinaryNode();
+     switch (nodeBinary->getOp())
+@@ -2001,9 +2001,9 @@ ImmutableString OutputHLSL::samplerNamePrefixFromStruct(TIntermTyped *node)
+         {
+             int index = nodeBinary->getRight()->getAsConstantUnion()->getIConst(0);
+ 
+-            std::stringstream prefixSink = sh::InitializeStream<std::stringstream>();
++            TStringStream prefixSink = sh::InitializeStream<TStringStream>();
+             prefixSink << samplerNamePrefixFromStruct(nodeBinary->getLeft()) << "_" << index;
+-            return ImmutableString(prefixSink.str());
++            return prefixSink.str();
+         }
+         case EOpIndexDirectStruct:
+         {
+@@ -2011,14 +2011,14 @@ ImmutableString OutputHLSL::samplerNamePrefixFromStruct(TIntermTyped *node)
+             int index           = nodeBinary->getRight()->getAsConstantUnion()->getIConst(0);
+             const TField *field = s->fields()[index];
+ 
+-            std::stringstream prefixSink = sh::InitializeStream<std::stringstream>();
++            TStringStream prefixSink = sh::InitializeStream<TStringStream>();
+             prefixSink << samplerNamePrefixFromStruct(nodeBinary->getLeft()) << "_"
+                        << field->name();
+-            return ImmutableString(prefixSink.str());
++            return prefixSink.str();
+         }
+         default:
+             UNREACHABLE();
+-            return kEmptyImmutableString;
++            return "";
+     }
+ }
+ 
+@@ -2341,8 +2341,8 @@ bool OutputHLSL::visitAggregate(Visit visit, TIntermAggregate *node)
+                 {
+                     const TType &argType = typedArg->getType();
+                     TVector<const TVariable *> samplerSymbols;
+-                    ImmutableString structName = samplerNamePrefixFromStruct(typedArg);
+-                    std::string namePrefix     = "angle_";
++                    TString structName     = samplerNamePrefixFromStruct(typedArg);
++                    std::string namePrefix = "angle";
+                     namePrefix += structName.data();
+                     argType.createSamplerSymbols(ImmutableString(namePrefix), "", &samplerSymbols,
+                                                  nullptr, mSymbolTable);
+diff --git a/src/compiler/translator/hlsl/OutputHLSL.h b/src/compiler/translator/hlsl/OutputHLSL.h
+index 59915d7ade9c285cefd381f087fe13d4c04cb2e8..536e5ca8bc7477504093a7bee67e99d81fb8168c 100644
+--- a/src/compiler/translator/hlsl/OutputHLSL.h
++++ b/src/compiler/translator/hlsl/OutputHLSL.h
+@@ -284,7 +284,7 @@ class OutputHLSL : public TIntermTraverser
+ 
+   private:
+     TString generateStructMapping(const std::vector<MappedStruct> &std140Structs) const;
+-    ImmutableString samplerNamePrefixFromStruct(TIntermTyped *node);
++    TString samplerNamePrefixFromStruct(TIntermTyped *node);
+     bool ancestorEvaluatesToSamplerInStruct();
+     // We need to do struct mapping when pass the struct to a function or copy the struct via
+     // assignment.
+diff --git a/src/compiler/translator/hlsl/UtilsHLSL.cpp b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+index 96ca73f980262ea485b3ee535a00f835df5714c0..c1e7b38908a4929dc7f563bf43d05cf93dea1947 100644
+--- a/src/compiler/translator/hlsl/UtilsHLSL.cpp
++++ b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+@@ -855,7 +855,9 @@ TString DecorateVariableIfNeeded(const TVariable &variable)
+     // For user defined variables, combine variable name with unique id
+     // so variables of the same name in different scopes do not get overwritten.
+     else if (variable.symbolType() == SymbolType::UserDefined &&
+-             (qualifier == EvqTemporary || qualifier == EvqGlobal || qualifier == EvqConst))
++             (qualifier == EvqTemporary || qualifier == EvqGlobal || qualifier == EvqConst ||
++              qualifier == EvqParamIn || qualifier == EvqParamOut || qualifier == EvqParamInOut ||
++              qualifier == EvqParamConst))
+     {
+         return Decorate(variable.name()) + str(variable.uniqueId().get());
+     }
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 5fa71f54212d7499213f6141c875e7ae89ea36eb..339dcbf20e57588cbd23b3330ca706a68bd2aaf1 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -23330,8 +23330,6 @@ void main()
+            << R"(;
+   gl_FragColor = vec4(a);
+ })";
+-        std::cout << fs.str() << "\n";
+-
+         ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), fs.str().c_str());
+         drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
+         EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 127, 127, 127), 1);
+@@ -23339,6 +23337,37 @@ void main()
+     }
+ }
+ 
++// Regression test for a bug in the HLSL generator where the function parameter names could collide
++// with local variable names.  In particular, the local variables were suffixed with the symbol id,
++// starting from 3000 (kFirstUserDefinedSymbolId) but the function parameters weren't.
++TEST_P(GLSLTest_ES3, HLSLParameterNameCollisionWithLocalVar)
++{
++    // At the time this regression test was written, the ID of the local variable was 3003.  Try a
++    // few IDs starting at kFirstUserDefinedSymbolId so the test is not sensitive to small
++    // variations in the ID.
++    for (uint32_t id = 3000; id < 3010; ++id)
++    {
++        std::ostringstream fs;
++        fs << R"(precision highp float;
++float f(float _a)"
++           << id << R"()
++{
++    float a;
++    a = _a)"
++           << id << R"( + 0.5;
++    return a;
++}
++void main()
++{
++  gl_FragColor = vec4(f(0.2));
++})";
++        ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), fs.str().c_str());
++        drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(178, 178, 178, 178), 1);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
+ class GLSLTestPassthrough : public GLSLTest
+ {};
+ 

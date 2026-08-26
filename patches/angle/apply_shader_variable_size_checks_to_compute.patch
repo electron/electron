@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen White <senorblanco@chromium.org>
+Date: Wed, 8 Jul 2026 16:39:25 -0400
+Subject: Apply shader variable size checks to compute
+
+Apply the rejectWebglShadersWithLargeVariables test to compute shaders
+as well as fragment and vertex.
+Also fix a bug in TType: operator< should take qualifiers into account.
+Otherwise the TType Map used for mValidatedVariableTypeSizes will cause
+incorrect cache hits between uniform and storage buffer variables.
+
+Bug: chromium:525683797
+Change-Id: Ia3f2029818703323208704cbb1ce2ebbeaea3182
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8062498
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 9852c0c9cdf695f80603e2d12c7c82aa2d7be9f8..e41017457cda34be8abcd8da20aa2fb475c31840 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1736,14 +1736,15 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+     // shader should ever hit it.
+     //
+     // The size check does not take std430 into account as it is intended for WebGL shaders.  For
+-    // the same reason, other shader stages than vertex/fragment are ignored as defer-sized
++    // the same reason, other shader stages than vertex/fragment/compute are ignored as defer-sized
+     // variables e.g. in geometry shaders are not handled.
+     //
+     // Additionally, if the shader has already failed compilation, do not validate the type sizes.
+     // For example, if previously an error is generated due to too-deep struct nesting the
+     // calculation here could overflow the stack if performed.
+     if (!mCompileOptions.rejectWebglShadersWithLargeVariables || numErrors() > 0 ||
+-        (mShaderType != GL_VERTEX_SHADER && mShaderType != GL_FRAGMENT_SHADER))
++        (mShaderType != GL_VERTEX_SHADER && mShaderType != GL_FRAGMENT_SHADER &&
++         mShaderType != GL_COMPUTE_SHADER))
+     {
+         return true;
+     }
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 51d14640401120e189517f764694e363ee6a785a..0901eed0858a9cd8075e375c02f329fbc695636c 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -398,6 +398,12 @@ class HardenedContextTest : public ANGLETest<>
+     EGLContext mOriginalContext = EGL_NO_CONTEXT;
+ };
+ 
++class HardenedContextTestES31 : public HardenedContextTest
++{
++  protected:
++    HardenedContextTestES31() { setHardenedContextEnabled(true); }
++};
++
+ // Context creation would fail if EGL_ANGLE_create_context_webgl_compatibility was not available so
+ // the GL extension should always be present
+ TEST_P(WebGLCompatibilityTest, ExtensionStringExposed)
+@@ -6237,6 +6243,34 @@ void main()
+     destroyHardenedContext(hardenedContext);
+ }
+ 
++// Similar to HardendContextTest.ValidateTypeSizes, but validate size checks in compute shaders
++// in ES31.
++TEST_P(HardenedContextTestES31, ValidateTypeSizes)
++{
++    constexpr char kCSArrayBlockTooLarge[] = R"(#version 310 es
++layout(local_size_x=1, local_size_y=1, local_size_z=1) in;
++
++// 1 + the maximum size this implementation allows.
++uniform LargeArrayBlock {
++    vec4 large_array[134217729];
++};
++
++layout(binding = 1) buffer Output {
++    uint result[];
++} sb_out;
++
++void main()
++{
++    if (large_array[1].x == 2.0)
++        sb_out.result[0] = 42u;
++    else
++        sb_out.result[0] = 21u;
++})";
++
++    GLuint program = CompileComputeProgram(kCSArrayBlockTooLarge, true);
++    EXPECT_EQ(0u, program);
++}
++
+ // Similar to WebGL2GLSLTest.InitUninitializedLocals, but ensure the same validation is done in
+ // non-webgl contexts with the EGL_CONTEXT_HARDENED_ANGLE flag.
+ TEST_P(HardenedContextTest, InitUninitializedLocals)
+@@ -7320,4 +7354,6 @@ ANGLE_INSTANTIATE_TEST_ES3(WebGL2CompatibilityTest);
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(HardenedContextTest);
+ ANGLE_INSTANTIATE_TEST_ES3(HardenedContextTest);
++
++ANGLE_INSTANTIATE_TEST_ES31(HardenedContextTestES31);
+ }  // namespace angle
