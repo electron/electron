@@ -32,11 +32,6 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron {
 class ElectronBrowserContext;
 }  // namespace electron

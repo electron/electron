@@ -23,10 +23,10 @@ index b1f2c21911a15c51dffc183880b432edfbf132ab..977b6a9869aa45628aaa0aa7734ce568
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 2e18ac8ff7130f6e084a6eb90c72e01fdf03dfad..b26b14d4f58975e620b10a017de74369100988b6 100644
+index 44f3b299c2242aa19693685ed6e1f81f5b7bd7af..37cff9cef7de8daf39c8c2dc405c9f4b59c261bc 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -755,6 +755,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -752,6 +752,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -39,10 +39,10 @@ index 2e18ac8ff7130f6e084a6eb90c72e01fdf03dfad..b26b14d4f58975e620b10a017de74369
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 111c65d49cca4ee2ed966b7529b314f367fc2bc8..d7b5204fe74936943bc4871cce31a024b6e64c2e 100644
+index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd24a3e5e1 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -133,6 +133,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -134,6 +134,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    void EnablePreferredSizeMode() override;
    void WriteIntoTrace(perfetto::TracedProto<TraceProto> context) const override;
  
@@ -51,10 +51,10 @@ index 111c65d49cca4ee2ed966b7529b314f367fc2bc8..d7b5204fe74936943bc4871cce31a024
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 6e5ff020dd1b7e72b707737907dd69207582b69e..225d4eb249f17299288b5cbde220ab8e31ff238e 100644
+index 31df7a158a0b855dd18c8dee6c46d93f01ed7cba..2b5b16f5040de4fc6b3f78fadf2e841201ab32cd 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -684,8 +684,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -685,8 +685,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.

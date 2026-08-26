@@ -26,7 +26,6 @@
 #include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
 class DraggableRegionProvider;
 class PrefService;
 
