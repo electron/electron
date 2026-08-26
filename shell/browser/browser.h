@@ -33,7 +33,6 @@ class Arguments;
 }
 
 namespace gin_helper {
-class Arguments;
 template <typename T>
 class Promise;
 }  // namespace gin_helper
