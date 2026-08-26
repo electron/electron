@@ -1,0 +1,349 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Sun, 2 Aug 2026 16:13:12 -0700
+Subject: [HiC] Invalidate body background images in iframes
+
+When a iframe with a background image specified for the body (or
+html) is moved into a canvas subtree, the image is not invalidated
+and a cross-origin image may still be painted into the canvas. Fix
+this by invalidating the display item clients associated with the
+root background.
+
+Bug: 532914190
+Change-Id: I982af5f176d648472f8453e911cd4c32588c5f2a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8181706
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1672440}
+
+diff --git a/third_party/blink/renderer/core/html/html_frame_owner_element.cc b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+index 5aa78ab1c30d636dee5a4d105f1f273b9cc38980..1c0f5a2deb52fcf38c8a7d887f1026a200e64939 100644
+--- a/third_party/blink/renderer/core/html/html_frame_owner_element.cc
++++ b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+@@ -58,6 +58,7 @@
+ #include "third_party/blink/renderer/core/html/loading_attribute.h"
+ #include "third_party/blink/renderer/core/html_names.h"
+ #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
++#include "third_party/blink/renderer/core/layout/layout_view.h"
+ #include "third_party/blink/renderer/core/loader/document_loader.h"
+ #include "third_party/blink/renderer/core/loader/frame_load_request.h"
+ #include "third_party/blink/renderer/core/loader/frame_loader.h"
+@@ -65,6 +66,7 @@
+ #include "third_party/blink/renderer/core/loader/url_matcher.h"
+ #include "third_party/blink/renderer/core/page/page.h"
+ #include "third_party/blink/renderer/core/page/scrolling/root_scroller_controller.h"
++#include "third_party/blink/renderer/core/paint/object_paint_invalidator.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer.h"
+ #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
+ #include "third_party/blink/renderer/core/timing/resource_timing_context.h"
+@@ -262,6 +264,21 @@ void HTMLFrameOwnerElement::DidChangeIsCanvasOrInCanvasSubtree() {
+     if (Element* root = inner_document->documentElement()) {
+       SetIsCanvasOrInCanvasSubtreeRecursively(*root,
+                                               IsCanvasOrInCanvasSubtree());
++      if (auto* layout_view = inner_document->GetLayoutView()) {
++        layout_view->SetNeedsPaintPropertyUpdate();
++        layout_view->Layer()->SetNeedsRepaint();
++        // At this point we do not know if the layout view background etc.
++        // will be painted by the layout view itself or the scrollable area.
++        // So invalidate both display item clients.
++        ObjectPaintInvalidator(*layout_view)
++            .InvalidateDisplayItemClient(
++                *layout_view, PaintInvalidationReason::kUncacheable);
++        ObjectPaintInvalidator(*layout_view)
++            .InvalidateDisplayItemClient(
++                layout_view->GetScrollableArea()
++                    ->GetScrollingBackgroundDisplayItemClient(),
++                PaintInvalidationReason::kUncacheable);
++      }
+     }
+   }
+ }
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html
+index 5dc64d562baf1914e71b26d7931f15469c088d82..8558f9f4834938a5114b4429809ecd025d2d8e1d 100644
+--- a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html
+@@ -9,19 +9,15 @@
+ </head>
+ 
+ <body>
+-  <iframe id="iframe" src="support/subframe-cross-origin-background-image.https.sub.html"></iframe>
+   <canvas id="canvas" width="300" height="150" layoutsubtree>
+-    <div id="child"></div>
++    <div id="child">
++      <iframe id="iframe" src="support/subframe-cross-origin-background-image.https.sub.html"></iframe>
++    </div>
+   </canvas>
+ 
+   <script>
+   window.onload = () => {
+     promise_test(async function(t) {
+-      await waitForCanvasPaint(canvas);
+-
+-      // Atomically move the iframe into the canvas.
+-      child.moveBefore(iframe, null);
+-
+       await waitForCanvasPaint(canvas);
+       const context = canvas.getContext("2d");
+       context.drawElementImage(child, 0, 0);
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-moved-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-moved-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0c97599940b82d05f033010c4d5bcdf8f5ab93a4
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-moved-ignored.tentative.https.sub.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images when moved under canvas</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <iframe id="iframe" src="support/subframe-cross-origin-background-image.https.sub.html"></iframe>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child"></div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++
++      // Atomically move the iframe into the canvas.
++      child.moveBefore(iframe, null);
++
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..10c95a6c0cf005bae1df709296d645a84577287f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-ignored.tentative.https.sub.html
+@@ -0,0 +1,32 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images on the body</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child">
++      <iframe id="iframe" src="support/subframe-cross-origin-background-image-on-body.https.sub.html"></iframe>
++    </div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-moved-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-moved-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6ea6f56b2f2b5572f9d1467e1d6e93f7d38008a2
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-body-in-iframe-moved-ignored.tentative.https.sub.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images on the body when moved under canvas</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <iframe id="iframe" src="support/subframe-cross-origin-background-image-on-body.https.sub.html"></iframe>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child"></div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++
++      // Atomically move the iframe into the canvas.
++      child.moveBefore(iframe, null);
++
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..eda61db967bbbc41cb7886317ed05c1f823dcb97
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-ignored.tentative.https.sub.html
+@@ -0,0 +1,32 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images on the body</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child">
++      <iframe id="iframe" src="support/subframe-cross-origin-background-image-on-html.https.sub.html"></iframe>
++    </div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-moved-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-moved-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..27e79063fa27bb30e7520ebc96cfcfff74b29c84
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-on-html-in-iframe-moved-ignored.tentative.https.sub.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images on the body</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <iframe id="iframe" src="support/subframe-cross-origin-background-image-on-html.https.sub.html"></iframe>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child"></div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++
++      // Atomically move the iframe into the canvas.
++      child.moveBefore(iframe, null);
++
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-body.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-body.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..377692a43cbccb139810ac2b4a470dc7bee8f0b2
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-body.https.sub.html
+@@ -0,0 +1,24 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>subframe with cross-origin background image on the body</title>
++  <style>
++  body {
++    background-image: url("https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png");
++    background-repeat: repeat-x repeat-y;
++    background-color: rgb(0 128 0);
++  }
++  div {
++    position: absolute;
++    left: 0px;
++    top: 0px;
++    width: 100px;
++    height: 100px;
++    background: transparent;
++  }
++  </style>
++</head>
++
++<body><div></div></body>
++
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-html.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-html.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..cf24f0264b202fc4de732e598eba3eb315ee5ad4
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image-on-html.https.sub.html
+@@ -0,0 +1,24 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>subframe with cross-origin background image on the html element</title>
++  <style>
++  html {
++    background-image: url("https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png");
++    background-repeat: repeat-x repeat-y;
++    background-color: rgb(0 128 0);
++  }
++  div {
++    position: absolute;
++    left: 0px;
++    top: 0px;
++    width: 100px;
++    height: 100px;
++    background: transparent;
++  }
++  </style>
++</head>
++
++<body><div></div></body>
++
++</html>

@@ -1,0 +1,260 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Mon, 24 Aug 2026 12:26:31 -0700
+Subject: [M150][gpu] Add flush_queries_before_deleting_or_unbinding_fbo
+ workaround
+
+* Mirror workaround from ANGLE to prevent a driver
+crash on ARM Mali (Avalon/Valhall) devices. The
+crash is triggered when a framebuffer object is
+unbound or deleted while GPU queries are still
+pending.
+
+* On `run_gl_tests`, added tests crash reliably
+with `--use-gl=egl` and ANGLE workaround is
+disabled.
+
+* Tests pass when `--use-cmd-decoder=validating`
+is enabled
+
+(cherry picked from commit 41e01b272f6c8008f07af406e547a08ed7495c2f)
+
+TAG: agy
+CONV: 943a54c7-d5b8-43ec-9e1c-1cbd10344ac7
+Bug: chromium:534468209
+Fixed: chromium:546659565
+Change-Id: Ic4c85abf7170c8e22f6d4c7a20350bd417f194d8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8132737
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1678189}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8259070
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4329}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index d0d5e9a299888e840687c87c59ff7459deeeca0d..02eaf5fa67812ff2fbff1f5540db0e3a15ea9a2c 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -774,6 +774,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
+   void DeleteBuffersHelper(GLsizei n, const volatile GLuint* client_ids);
+   bool GenFramebuffersHelper(GLsizei n, const GLuint* client_ids);
+   void DeleteFramebuffersHelper(GLsizei n, const volatile GLuint* client_ids);
++  void FlushQueriesBeforeDeletingOrUnbindingFboWorkaround();
+   bool GenRenderbuffersHelper(GLsizei n, const GLuint* client_ids);
+   void DeleteRenderbuffersHelper(GLsizei n, const volatile GLuint* client_ids);
+   bool GenQueriesEXTHelper(GLsizei n, const GLuint* client_ids);
+@@ -3952,9 +3953,24 @@ void GLES2DecoderImpl::DeleteBuffersHelper(GLsizei n,
+   }
+ }
+ 
++void GLES2DecoderImpl::FlushQueriesBeforeDeletingOrUnbindingFboWorkaround() {
++  if (workarounds().flush_queries_before_deleting_or_unbinding_fbo &&
++      HasPendingQueries()) {
++    GLsync sync = api()->glFenceSyncFn(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
++    if (sync) {
++      api()->glClientWaitSyncFn(sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
++      api()->glDeleteSyncFn(sync);
++    } else {
++      api()->glFinishFn();
++    }
++  }
++}
++
+ void GLES2DecoderImpl::DeleteFramebuffersHelper(
+     GLsizei n,
+     const volatile GLuint* client_ids) {
++  // Flush queries that may be dependent on the FBO.
++  FlushQueriesBeforeDeletingOrUnbindingFboWorkaround();
+   for (GLsizei ii = 0; ii < n; ++ii) {
+     GLuint client_id = UNSAFE_TODO(client_ids[ii]);
+     Framebuffer* framebuffer = GetFramebuffer(client_id);
+@@ -5450,6 +5466,7 @@ void GLES2DecoderImpl::DoBindFramebuffer(GLenum target, GLuint client_id) {
+     service_id = GetBackbufferServiceId();
+   }
+ 
++  FlushQueriesBeforeDeletingOrUnbindingFboWorkaround();
+   BindFramebuffer(target, service_id);
+   OnFboChanged();
+ }
+diff --git a/gpu/command_buffer/tests/occlusion_query_unittest.cc b/gpu/command_buffer/tests/occlusion_query_unittest.cc
+index 823cfc8f239a8b0ff187d164e7877e4dcd57d0a1..a51edf7733d316bfc6caae3af0da3969dd5ca28c 100644
+--- a/gpu/command_buffer/tests/occlusion_query_unittest.cc
++++ b/gpu/command_buffer/tests/occlusion_query_unittest.cc
+@@ -146,6 +146,140 @@ TEST_F(OcclusionQueryTest, Occlusion) {
+   GLTestHelper::CheckGLError("no errors", __LINE__);
+ }
+ 
+-}  // namespace gpu
++// Test that deleting an FBO while a query result on that FBO is pending does
++// not crash the driver when retrieving query results.
++TEST_F(OcclusionQueryTest, DeleteFBOWithPendingQuery) {
++  if (!GLTestHelper::HasExtension("GL_EXT_occlusion_query_boolean")) {
++    return;
++  }
++
++  static const char* v_shader_str =
++      "attribute vec4 a_position;\n"
++      "void main()\n"
++      "{\n"
++      "   gl_Position = a_position;\n"
++      "}\n";
++  static const char* f_shader_str =
++      "precision mediump float;\n"
++      "void main()\n"
++      "{\n"
++      "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
++      "}\n";
++
++  GLuint program = GLTestHelper::LoadProgram(v_shader_str, f_shader_str);
++  GLint position_loc = glGetAttribLocation(program, "a_position");
++
++  GLuint texture = 0;
++  glGenTextures(1, &texture);
++  glBindTexture(GL_TEXTURE_2D, texture);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               nullptr);
++
++  GLuint fbo = 0;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         texture, 0);
++  EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
+ 
++  glViewport(0, 0, 64, 64);
++  glClear(GL_COLOR_BUFFER_BIT);
++
++  GLuint query = 0;
++  glGenQueriesEXT(1, &query);
++  glBeginQueryEXT(GL_ANY_SAMPLES_PASSED_EXT, query);
++
++  glUseProgram(program);
++  GLTestHelper::SetupUnitQuad(position_loc);
++  glDrawArrays(GL_TRIANGLES, 0, 6);
++
++  glEndQueryEXT(GL_ANY_SAMPLES_PASSED_EXT);
++
++  // Delete the FBO on which the query was executed while result is still
++  // pending.
++  glDeleteFramebuffers(1, &fbo);
++
++  // FORCE the driver to commit deletion/unbind and start a new render pass on
++  // default framebuffer
++  glDrawArrays(GL_TRIANGLES, 0, 6);
++
++  // Retrieve query result - flushes pending jobs referencing the deleted FBO.
++  GLuint result = 0;
++  glGetQueryObjectuivEXT(query, GL_QUERY_RESULT_EXT, &result);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  EXPECT_TRUE(result);
++
++  glDeleteQueriesEXT(1, &query);
++  glDeleteTextures(1, &texture);
++}
+ 
++// Test that unbinding an FBO while a query result on that FBO is pending does
++// not crash the driver when retrieving query results.
++TEST_F(OcclusionQueryTest, UnbindFBOWithPendingQuery) {
++  if (!GLTestHelper::HasExtension("GL_EXT_occlusion_query_boolean")) {
++    return;
++  }
++
++  static const char* v_shader_str =
++      "attribute vec4 a_position;\n"
++      "void main()\n"
++      "{\n"
++      "   gl_Position = a_position;\n"
++      "}\n";
++  static const char* f_shader_str =
++      "precision mediump float;\n"
++      "void main()\n"
++      "{\n"
++      "  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
++      "}\n";
++
++  GLuint program = GLTestHelper::LoadProgram(v_shader_str, f_shader_str);
++  GLint position_loc = glGetAttribLocation(program, "a_position");
++
++  GLuint texture = 0;
++  glGenTextures(1, &texture);
++  glBindTexture(GL_TEXTURE_2D, texture);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               nullptr);
++
++  GLuint fbo = 0;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         texture, 0);
++  EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  glViewport(0, 0, 64, 64);
++  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
++  glClear(GL_COLOR_BUFFER_BIT);
++
++  GLuint query = 0;
++  glGenQueriesEXT(1, &query);
++  glBeginQueryEXT(GL_ANY_SAMPLES_PASSED_EXT, query);
++
++  glUseProgram(program);
++  GLTestHelper::SetupUnitQuad(position_loc);
++  glDrawArrays(GL_TRIANGLES, 0, 6);
++
++  glEndQueryEXT(GL_ANY_SAMPLES_PASSED_EXT);
++
++  // Unbind user FBO by switching back to default framebuffer (0)
++  glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++  // FORCE the driver to commit the unbind and end the previous render pass.
++  glDrawArrays(GL_TRIANGLES, 0, 6);
++
++  // Retrieve query result
++  GLuint result = 0;
++  glGetQueryObjectuivEXT(query, GL_QUERY_RESULT_EXT, &result);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++  EXPECT_TRUE(result);
++
++  glDeleteQueriesEXT(1, &query);
++  glDeleteFramebuffers(1, &fbo);
++  glDeleteTextures(1, &texture);
++}
++
++}  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index c52a1b1eecbf8f35314341c6430d19cf99fc6f6c..28d2493e451ff5f8a3d2cd9c27b6f27a20a19359 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3849,6 +3849,15 @@
+       "features": [
+         "limit_output_varyings_at_compile_time"
+       ]
++    },
++    {
++      "id": 488,
++      "cr_bugs": [534468209],
++      "description": "Flush pending GPU jobs/queries before unbinding or deleting a user framebuffer object on ARM Mali Valhall/Avalon GPUs to avoid driver crash.",
++      "gl_vendor": "ARM.*",
++      "features": [
++        "flush_queries_before_deleting_or_unbinding_fbo"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index e9e5c8d36ac4b4db16b94e3a5570cae55ceaf004..ac00723c23121385c404618d33f3d2f9c4a53fb2 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -84,6 +84,7 @@ etc1_power_of_two_only
+ exit_on_context_lost
+ flush_before_create_fence
+ flush_on_framebuffer_change
++flush_queries_before_deleting_or_unbinding_fbo
+ force_cube_complete
+ force_cube_map_positive_x_allocation
+ force_dcomp_triple_buffer_video_swap_chain

@@ -1,0 +1,336 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Fri, 17 Jul 2026 15:24:36 -0700
+Subject: Reland "GL: Limit declared vertex output varying components"
+
+This reverts commit 3cf1a6c74785246ed0c29f58816632e05d7d6616.
+
+Add a workaround which, when enabled, tracks the number of output
+components from the vertex shader and fails the compile if there's an
+attempt to exceed a specific limit (1024).
+
+Relative to the original commit, apply a much higher compile time
+limit which is unlikely to be reached by any test or real-world
+application, and apply it to all context types, not just WebGL's.
+
+Apply this workaround on Imagination's PowerVR OpenGL ES drivers to
+work around a bug in the driver's shader compiler.
+
+Co-authored with Gemini.
+
+Test: angle_end2end_tests \
+  --gtest_filter=GLSLValidationTest_ES3_LimitOutputVaryings.\
+  TooManyDeclaredVertexOutputComponents
+TAG=agy
+CONV=8ed05bff-eb25-4de9-92b8-d097e4c0abae
+
+Bug: chromium:529991907
+Change-Id: I79d0bd117d6e0d6412011d361183484f088243e6
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8114814
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/include/GLSLANG/ShaderLang.h b/include/GLSLANG/ShaderLang.h
+index 6ff1943f55d260981786b39d81aa0cc952440300..0ac6c9cea675b3f2fcf996b7e09a9129fe1125f1 100644
+--- a/include/GLSLANG/ShaderLang.h
++++ b/include/GLSLANG/ShaderLang.h
+@@ -26,7 +26,7 @@
+ 
+ // Version number for shader translation API.
+ // It is incremented every time the API changes.
+-#define ANGLE_SH_VERSION 412
++#define ANGLE_SH_VERSION 418
+ 
+ enum ShShaderSpec
+ {
+@@ -185,6 +185,9 @@ struct ShCompileOptions
+     // specify this parameter when compiling for WebGL - it is implied.
+     uint64_t validateLoopIndexing : 1;
+ 
++    // Limit the number of output varyings allowed in vertex shaders to work around driver bugs.
++    uint64_t limitOutputVaryingsTo256 : 1;
++
+     // Emits #line directives in HLSL.
+     uint64_t lineDirectives : 1;
+ 
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index d03ae5d1956894e423d282f0c7c41b4d3c2f3e9c..908144faa4d529dd7d1018808f7e8377d490a450 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -752,6 +752,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo limitOutputVaryingsTo256AtCompileTime = {
++        "limitOutputVaryingsTo256AtCompileTime",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index f5b8641da3a1710a943d3450872a460440a08ce0..a45253aed618ba398c6fa5513c99fd8492b93e05 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -985,6 +985,14 @@
+                 "Split full-image level 0 PBO uploads via TexSubImage2D into two calls to work around driver bugs."
+             ],
+             "issue": "http://crbug.com/496807874"
++        },
++        {
++            "name": "limit_output_varyings_to_256_at_compile_time",
++            "category": "Workarounds",
++            "description": [
++                "Limit the number of declared varying components at compile time to work around a PowerVR driver bug."
++            ],
++            "issue": "http://crbug.com/529991907"
+         }
+     ]
+ }
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 15eec92237bf9e84caae8db1986f3c00521f3199..4079d4319365e3a58e9a2fd96a489178ac2c12ff 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -468,6 +468,30 @@ unsigned int GetMaxUniformBlocksForShaderType(sh::GLenum shaderType,
+             return 0;
+     }
+ }
++unsigned int GetTypeComponentCount(const TType &type)
++{
++    unsigned int components = 0;
++    if (type.getBasicType() == EbtInterfaceBlock)
++    {
++        for (const TField *field : type.getInterfaceBlock()->fields())
++        {
++            components += GetTypeComponentCount(*field->type());
++        }
++    }
++    else if (type.getStruct())
++    {
++        for (const TField *field : type.getStruct()->fields())
++        {
++            components += GetTypeComponentCount(*field->type());
++        }
++    }
++    else
++    {
++        components = static_cast<unsigned int>(type.getNominalSize()) * type.getSecondarySize();
++    }
++    components *= type.getArraySizeProduct();
++    return components;
++}
+ }  // namespace
+ 
+ // This tracks each binding point's current default offset for inheritance of subsequent
+@@ -547,6 +571,7 @@ TParseContext::TParseContext(TSymbolTable &symt,
+       mNumViews(-1),
+       mMaxUniformBlocks(GetMaxUniformBlocksForShaderType(mShaderType, options, resources)),
+       mNumUniformBlocks(0),
++      mNumOutputVaryingComponents(0),
+       mDeclaringFunction(false),
+       mDeclaringMain(false),
+       mMainFunction(nullptr),
+@@ -2267,6 +2292,7 @@ bool TParseContext::declareVariable(const TSourceLoc &line,
+         error(line, "redefinition", identifier);
+         return false;
+     }
++    addAndCheckOutputVaryings(**variable, line);
+ 
+     if (!checkIsNonVoid(line, identifier, type->getBasicType()))
+     {
+@@ -6958,6 +6984,7 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
+                 error(field->line(), "redefinition of an interface block member name",
+                       field->name());
+             }
++            addAndCheckOutputVaryings(*fieldVariable, field->line());
+ 
+             // Don't declare variables for fields of nameless interface blocks in the IR, just
+             // remember to implicitly index the instance variable when referenced.
+@@ -6987,6 +7014,7 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
+         {
+             error(instanceLine, "redefinition of an interface block instance name", instanceName);
+         }
++        addAndCheckOutputVaryings(*instanceVariable, instanceLine);
+     }
+ 
+     TIntermSymbol *blockSymbol = new TIntermSymbol(instanceVariable);
+@@ -10596,6 +10624,44 @@ bool TParseContext::postParseChecks()
+     return numErrors() == 0;
+ }
+ 
++void TParseContext::addAndCheckOutputVaryings(const TVariable &variable, const TSourceLoc &line)
++{
++    if (mShaderType != GL_VERTEX_SHADER)
++    {
++        return;
++    }
++
++    if (!mCompileOptions.limitOutputVaryingsTo256)
++    {
++        return;
++    }
++
++    if (variable.symbolType() == SymbolType::BuiltIn)
++    {
++        return;
++    }
++
++    if (!IsVaryingOut(variable.getType().getQualifier()))
++    {
++        return;
++    }
++
++    angle::CheckedNumeric<unsigned int> checkedNum = mNumOutputVaryingComponents;
++    checkedNum += GetTypeComponentCount(variable.getType());
++    mNumOutputVaryingComponents =
++        checkedNum.ValueOrDefault(std::numeric_limits<unsigned int>::max());
++
++    // The cap to 256 vec4s = 1024 components seems somewhat arbitrary, but this is intended as a
++    // workaround for a specific driver bug, and this limit being much
++    // higher than the device limits (mResources.MaxVertexOutputVectors *
++    // 4), it avoids regressing both tests and applications.
++    if (mNumOutputVaryingComponents > 1024)
++    {
++        error(line, "Too many declared shader output varying components for this device",
++              variable.name());
++    }
++}
++
+ //
+ // Parse an array of strings using yyparse.
+ //
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index 90520058d5efe7f4a78d4f750afbaf041b587c0d..bdae6e4044e0c56ab7a2dcc7abbd09c9dc983678 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -613,6 +613,7 @@ class TParseContext : angle::NonCopyable
+                          const TType *type,
+                          GeomTessArray sized,
+                          TVariable **variable);
++    void addAndCheckOutputVaryings(const TVariable &variable, const TSourceLoc &line);
+ 
+     void checkNestingLevel(const TSourceLoc &line);
+     bool checkCase(const TSourceLoc &line, int64_t caseValue, const char *caseOrDefault);
+@@ -893,6 +894,9 @@ class TParseContext : angle::NonCopyable
+     // Current count of declared uniform blocks.
+     unsigned int mNumUniformBlocks;
+ 
++    // Current count of declared output varying components.
++    unsigned int mNumOutputVaryingComponents;
++
+     // Keeps track of whether any of the built-ins that can be redeclared (see
+     // IsRedeclarableBuiltIn()) has been marked as invariant/precise before the possible
+     // redeclaration.
+diff --git a/src/libANGLE/renderer/gl/ShaderGL.cpp b/src/libANGLE/renderer/gl/ShaderGL.cpp
+index 3c894ae171dac311235aa93fc871011cbb0b29aa..792a279e87459e59922f17faef0e5020bef76583 100644
+--- a/src/libANGLE/renderer/gl/ShaderGL.cpp
++++ b/src/libANGLE/renderer/gl/ShaderGL.cpp
+@@ -276,6 +276,11 @@ std::shared_ptr<ShaderTranslateTask> ShaderGL::compile(const gl::Context *contex
+         options->expandFragmentOutputsToVec4 = true;
+     }
+ 
++    if (features.limitOutputVaryingsTo256AtCompileTime.enabled)
++    {
++        options->limitOutputVaryingsTo256 = true;
++    }
++
+     return std::shared_ptr<ShaderTranslateTask>(
+         new ShaderTranslateTaskGL(functions, mShaderID, contextGL->hasNativeParallelCompile()));
+ }
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 3f4737484c9e4f1982bb3f2a04b3b8abcebbc26a..4f6f006ae9a9477babc03a1ff36d2cb2cf0a4c23 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2860,6 +2860,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, reattachTextureToFboAfterLayerIncrease,
+                             IsPowerVR(vendor) && IsAndroid());
+ 
++    // Some drivers have compilation issues when shaders declare too many output varyings.
++    // crbug.com/529991907
++    ANGLE_FEATURE_CONDITION(features, limitOutputVaryingsTo256AtCompileTime, IsPowerVR(vendor));
++
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+     ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
+ }
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 80230c39cd966ff567649b0640a2c79ba3d5a7ab..cc933ef78d476e69ac3f7cdfad2302893321757a 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -9006,6 +9006,39 @@ void main() { big[0][0] = 1.0; col = vec4(big[0][0]); })";
+     validateError(GL_FRAGMENT_SHADER, kFS, "version");
+ }
+ 
++class GLSLValidationTest_ES3_LimitOutputVaryings : public GLSLValidationTest_ES3
++{};
++
++// Regression test for crbug.com/529991907.
++// Verify that compiling a shader with up to 1024 output varying components
++// succeeds, and exceeding 1024 components is rejected at compile time.
++TEST_P(GLSLValidationTest_ES3_LimitOutputVaryings, TooManyDeclaredVertexOutputComponents)
++{
++    ANGLE_SKIP_TEST_IF(
++        !getEGLWindow()->isFeatureEnabled(Feature::LimitOutputVaryingsTo256AtCompileTime));
++
++    constexpr int kMaxVectors = 1024 / 4;
++
++    std::stringstream vsValid;
++    vsValid << "#version 300 es\n";
++    for (int i = 0; i < kMaxVectors; ++i)
++    {
++        vsValid << "out highp vec4 v" << i << ";\n";
++    }
++    vsValid << "void main() { gl_Position = vec4(0.0); }\n";
++    validateSuccess(GL_VERTEX_SHADER, vsValid.str().c_str());
++
++    std::stringstream vsInvalid;
++    vsInvalid << "#version 300 es\n";
++    for (int i = 0; i < kMaxVectors + 1; ++i)
++    {
++        vsInvalid << "out highp vec4 v" << i << ";\n";
++    }
++    vsInvalid << "void main() { gl_Position = vec4(0.0); }\n";
++    validateError(GL_VERTEX_SHADER, vsInvalid.str().c_str(),
++                  "Too many declared shader output varying components for this device");
++}
++
+ }  // namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(GLSLValidationTest);
+@@ -9028,6 +9061,11 @@ ANGLE_INSTANTIATE_TEST_ES2(WebGLGLSLValidationTest);
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WebGL2GLSLValidationTest);
+ ANGLE_INSTANTIATE_TEST_ES3(WebGL2GLSLValidationTest);
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationTest_ES3_LimitOutputVaryings);
++ANGLE_INSTANTIATE_TEST(GLSLValidationTest_ES3_LimitOutputVaryings,
++                       ES3_OPENGL().enable(Feature::LimitOutputVaryingsTo256AtCompileTime),
++                       ES3_OPENGLES().enable(Feature::LimitOutputVaryingsTo256AtCompileTime));
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND(WebGLGLSLValidationExtensionDisableTest,
+                                ES2_OPENGL().enable(Feature::AllowExtensionDisableAfterNonPpTokens));
+ 
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index a2df336f533c9336751dfd3c5909517514e2104b..95f32879f13f989b07b294f7c86fca65ba9dc77d 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -245,6 +245,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::LimitMaxMSAASamplesTo4, "limitMaxMSAASamplesTo4"},
+     {Feature::LimitMaxStorageBufferSize, "limitMaxStorageBufferSize"},
+     {Feature::LimitMaxTextureBytesTo1MB, "limitMaxTextureBytesTo1MB"},
++    {Feature::LimitOutputVaryingsTo256AtCompileTime, "limitOutputVaryingsTo256AtCompileTime"},
+     {Feature::LimitSampleCountTo2, "limitSampleCountTo2"},
+     {Feature::LimitWebglMaxTextureSizeTo4096, "limitWebglMaxTextureSizeTo4096"},
+     {Feature::LimitWebglMaxTextureSizeTo8192, "limitWebglMaxTextureSizeTo8192"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index e8b89900812efaa9fd7c30651a4a34b75b4601d5..fd43211bf2d33bf5aac9ee8970742360554659c0 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -245,6 +245,7 @@ enum class Feature
+     LimitMaxMSAASamplesTo4,
+     LimitMaxStorageBufferSize,
+     LimitMaxTextureBytesTo1MB,
++    LimitOutputVaryingsTo256AtCompileTime,
+     LimitSampleCountTo2,
+     LimitWebglMaxTextureSizeTo4096,
+     LimitWebglMaxTextureSizeTo8192,

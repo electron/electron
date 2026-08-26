@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Sat, 25 Jul 2026 07:38:18 -0700
+Subject: aura: Handle window deletion during LockPointer
+
+Use an aura::Window::ScopedDeleteBlocker in
+RenderWidgetHostViewEventHandler::LockPointer to ensure that the window
+(and by extension, the event handler) are not deleted prematurely while
+executing.
+
+Just checking weakptr in
+RenderWidgetHostViewEventHandler and WindowTreeHostPlatform
+as suggested in the bug is not enough(see bug). If we find a valid
+use case for this deletion, we'll work on a different approach.
+
+Bug: 532921800
+Test: covered by unittest
+TAG=agy
+CONV=6a632318-b810-4c6e-a0e2-1135bf67758d
+
+Change-Id: Iffe955d91dd88a2f99bf36d83517dc64d36da7a7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8140414
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1668283}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.cc b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+index e05bedffbb38b2eee70f8a407cf607d859524b88..22345b64402bae759fe9eabe4ebfeb48d77146f3 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.cc
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+@@ -148,6 +148,7 @@ blink::mojom::PointerLockResult RenderWidgetHostViewEventHandler::LockPointer(
+   }
+   mouse_locked_ = true;
+ 
++  aura::Window::ScopedDeleteBlocker delete_blocker(window_);
+   window_->GetHost()->LockMouse(window_);
+ 
+   if (ShouldMoveToCenter(unlocked_global_mouse_position_))

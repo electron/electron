@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Emmanuele Bassi <ebassi@igalia.com>
+Date: Thu, 9 Jul 2026 04:09:31 -0700
+Subject: Protect ParseChunk against re-entrancy
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The chunk parser in libxml2 is not safe from re-entrancy: the parser
+context contains multiple arrays that can be reallocated if a callback
+happens to be invoked in the middle of an xmlParseChunk().
+
+Any fix inside libxml2 would require a fair amount of work to make the
+whole parser safe, so the easiest solution is to add a guard in the
+calling code.
+
+Bug: 501892500
+Change-Id: I814c0f2101b8f8a53808bb9184fc119b0f5044d3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7902291
+Commit-Queue: Dominik Röttsches <drott@chromium.org>
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1659452}
+
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+index bf19c392cf667f5eadbd9b024131b2157904b910..e4648b4c935af5fdeb6822b67ecbe685c398a3c1 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+@@ -394,7 +394,7 @@ void XMLDocumentParser::Append(const String& input_source) {
+   if (IsStopped() || saw_xsl_transform_)
+     return;
+ 
+-  if (parser_paused_) {
++  if (parser_paused_ || in_parse_chunk_) {
+     pending_src_.Append(source);
+     return;
+   }
+@@ -945,6 +945,13 @@ void XMLDocumentParser::DoWrite(const String& parse_string) {
+   // Protect the libxml context from deletion during a callback
+   scoped_refptr<XMLParserContext> context = context_;
+ 
++  // libxml2's push parser is not re-entrant: xmlParseEndTag2 holds multiple
++  // raw pointers inside ctxt, and a nested xmlParseChunk can xmlRealloc()
++  // those buffers. Crash safely rather than corrupt the heap. (Append()
++  // routes re-entrant data to pending_src_ so this should be unreachable.)
++  CHECK(!in_parse_chunk_);
++  base::AutoReset<bool> reentrancy_guard(&in_parse_chunk_, true);
++
+   // libXML throws an error if you try to switch the encoding for an empty
+   // string.
+   if (parse_string.length()) {
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser.h b/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
+index 6e09d4178ab13ac834487916d7428da2f3dc6611..b88e3d35f68438265ebf73e3006e9e4394eeb5df 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
+@@ -221,6 +221,10 @@ class XMLDocumentParser final : public ScriptableDocumentParser,
+   bool saw_first_element_;
+   bool is_xhtml_document_;
+   bool parser_paused_;
++  // Re-entrancy guard for DoWrite()/xmlParseChunk(). libxml2 push-parser
++  // contexts are not re-entrant; calling xmlParseChunk while already inside
++  // a SAX callback corrupts ctxt->pushTab/nsTab.
++  bool in_parse_chunk_ = false;
+   bool requesting_script_;
+   bool finish_called_;
+   bool waiting_for_stylesheets_ = false;

@@ -1,0 +1,679 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bryan Oltman <bryanoltman@google.com>
+Date: Tue, 21 Jul 2026 09:30:20 -0700
+Subject: Reland "Reland "[macOS] Make modal sheet presentation asynchronous to
+ prevent UAF bugs""
+
+This reverts commit d4c2f03a85a5eb43c9bb0f43088cfe3acfd0efec.
+
+Reason for revert: msan tests were failing, this failure has been fixed
+
+Original change's description:
+> Revert "Reland "[macOS] Make modal sheet presentation asynchronous to prevent UAF bugs""
+>
+> This reverts commit 3c030585436edb1989cd19af246f8e4db610ebeb.
+>
+> Reason for revert: Culprit of failure of
+> TailoredSecurityDesktopDialogManagerTest.OpeningANewDisableDialogWillCloseAnyOpenEnableDialogs
+>
+> Failure Link: https://ci.chromium.org/ui/p/chromium/builders/ci/Linux%20MSan%20Tests/64261/overview
+>
+> Original change's description:
+> > Reland "[macOS] Make modal sheet presentation asynchronous to prevent UAF bugs"
+> >
+> > This reverts commit 879c1fa69bbe9480b7aaaa1b8e4b16881642b266.
+> >
+> > Reason for revert: Rolling forward with fixes
+> >
+> > Original change's description:
+> > > Revert "[macOS] Make modal sheet presentation asynchronous to prevent UAF bugs"
+> > >
+> > > This reverts commit 90309b0d2c7d8f975a2e3cc672d3e59b3e19947e.
+> > >
+> > > Reason for revert:
+> > > LUCI Bisection has identified this change as the cause of a test failure. See the analysis: https://ci.chromium.org/ui/p/chromium/bisection/test-analysis/b/5250851556818944
+> > >
+> > > Sample build with failed test: https://ci.chromium.org/b/8676059972782943729
+> > > Affected test(s):
+> > > [://chrome/test\:browser_tests!gtest::BookmarkAccountStorageMoveDialogPixelTest#InvokeUi_ShowMoveBookmarkToAccount](https://ci.chromium.org/ui/test/chromium/:%2F%2Fchrome%2Ftest%5C:browser_tests%21gtest::BookmarkAccountStorageMoveDialogPixelTest%23InvokeUi_ShowMoveBookmarkToAccount?q=VHash%3A812306a38c719b85)
+> > > [://chrome/test\:browser_tests!gtest::BookmarkAccountStorageMoveDialogPixelTest#InvokeUi_ShowMoveFolderToAccount](https://ci.chromium.org/ui/test/chromium/:%2F%2Fchrome%2Ftest%5C:browser_tests%21gtest::BookmarkAccountStorageMoveDialogPixelTest%23InvokeUi_ShowMoveFolderToAccount?q=VHash%3A812306a38c719b85)
+> > > [://chrome/test\:browser_tests!gtest::ExtensionInstallBlockedByParentDialogTest#InvokeUi_app](https://ci.chromium.org/ui/test/chromium/:%2F%2Fchrome%2Ftest%5C:browser_tests%21gtest::ExtensionInstallBlockedByParentDialogTest%23InvokeUi_app?q=VHash%3A812306a38c719b85)
+> > > [://chrome/test\:browser_tests!gtest::ExtensionInstallBlockedByParentDialogTest#InvokeUi_extension](https://ci.chromium.org/ui/test/chromium/:%2F%2Fchrome%2Ftest%5C:browser_tests%21gtest::ExtensionInstallBlockedByParentDialogTest%23InvokeUi_extension?q=VHash%3A812306a38c719b85)
+> > > [://chrome/test\:browser_tests!gtest::SettingsOverriddenDialogBrowserTest#InvokeUi_SimpleDialog](https://ci.chromium.org/ui/test/chromium/:%2F%2Fchrome%2Ftest%5C:browser_tests%21gtest::SettingsOverriddenDialogBrowserTest%23InvokeUi_SimpleDialog?q=VHash%3A812306a38c719b85)
+> > > and 14 more ...
+> > >
+> > > If this is a false positive, please report it at http://b.corp.google.com/createIssue?component=1199205&description=Analysis%3A+https%3A%2F%2Fci.chromium.org%2Fui%2Fp%2Fchromium%2Fbisection%2Ftest-analysis%2Fb%2F5250851556818944&format=PLAIN&priority=P3&title=Wrongly+blamed+https%3A%2F%2Fchromium-review.googlesource.com%2Fc%2Fchromium%2Fsrc%2F%2B%2F8086464&type=BUG
+> > >
+> > > Original change's description:
+> > > > [macOS] Make modal sheet presentation asynchronous to prevent UAF bugs
+> > > >
+> > > > Modal sheet animations run a nested run loop synchronously in AppKit.
+> > > > During this loop, the main thread remains active, allowing the parent or
+> > > > child widget to be closed and its C++ bridge synchronously destroyed.
+> > > > This leads to Use-After-Free (UAF) bugs when the nested loop exits and
+> > > > execution resumes in the member functions of the deleted bridge.
+> > > >
+> > > > This CL runs modal sheet presentations asynchronously to prevent UAF:
+> > > > - Always post the sheet animation task to the message loop (previously
+> > > >   only done for remote cocoa).
+> > > > - Add the SetVisibilityStateBridgeDestruction regression test.
+> > > >
+> > > > This CL also removes a weak pointer check in
+> > > > FullscreenControllerTransitionComplete that is no longer necessary now
+> > > > that the modal sheet presentation is asynchronous.
+> > > >
+> > > > Include-Ci-Only-Tests: true
+> > > > Fixed: 518006007,502109333,502101200
+> > > > Change-Id: I9a911b80d087f79920cbd944af854dbf82c6f6ae
+> > > > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8086464
+> > > > Commit-Queue: Bryan Oltman <bryanoltman@google.com>
+> > > > Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> > > > Cr-Commit-Position: refs/heads/main@{#1663648}
+> > > >
+> > >
+> > > No-Presubmit: true
+> > > No-Tree-Checks: true
+> > > No-Try: true
+> > > Change-Id: I4604e56d435714b79d85c20029981319dd61c0e5
+> > > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8114268
+> > > Owners-Override: Kalvin Lee <kdlee@chromium.org>
+> > > Commit-Queue: Kalvin Lee <kdlee@chromium.org>
+> > > Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> > > Cr-Commit-Position: refs/heads/main@{#1663689}
+> >
+> > Fixed: 518006007,502109333,502101200
+> > Include-Ci-Only-Tests: chromium.mac:mac15-x64-rel-tests|browser_tests
+> > Cq-Include-Trybots: luci.chromium.try:mac15-x64-rel-tests
+> > Change-Id: I1ae6f9509f889b4b492c8ef4de0f27f90388913a
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8117687
+> > Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> > Reviewed-by: Avi Drissman <avi@chromium.org>
+> > Commit-Queue: Bryan Oltman <bryanoltman@google.com>
+> > Cr-Commit-Position: refs/heads/main@{#1664862}
+>
+> Bug: 518006007,502109333,502101200
+> Cq-Include-Trybots: luci.chromium.try:mac15-x64-rel-tests
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Change-Id: Ic23979a97b595e8a1ce8bb238acbdde41fd0b174
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8128775
+> Owners-Override: Eriko Kurimoto <elkurin@chromium.org>
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Cr-Commit-Position: refs/heads/main@{#1665037}
+
+Bug: 518006007,502109333,502101200
+Cq-Include-Trybots: luci.chromium.try:mac15-x64-rel-tests; luci.chromium.try:linux_chromium_msan_rel_ng
+Change-Id: I13a6db96aa0200411b93e2712340cb297cbac952
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8131917
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Bryan Oltman <bryanoltman@google.com>
+Cr-Commit-Position: refs/heads/main@{#1665550}
+
+diff --git a/chrome/browser/ui/cocoa/browser_window_mac_browsertest.mm b/chrome/browser/ui/cocoa/browser_window_mac_browsertest.mm
+index 10092171848b7099c2f648ef74911c81dd754569..7eee7364dbd1b61d5f28545f6bb72b325af14fc8 100644
+--- a/chrome/browser/ui/cocoa/browser_window_mac_browsertest.mm
++++ b/chrome/browser/ui/cocoa/browser_window_mac_browsertest.mm
+@@ -8,6 +8,7 @@
+ 
+ #include <memory>
+ 
++#include "base/test/run_until.h"
+ #include "chrome/app/chrome_command_ids.h"
+ #include "chrome/browser/app_controller_mac.h"
+ #include "chrome/browser/bookmarks/bookmark_model_factory.h"
+@@ -184,7 +185,8 @@ void SetUpCommandLine(base::CommandLine* command_line) override {
+       BookmarkEditor::SHOW_TREE, base::DoNothing());
+   editor->Show(browser()->window()->GetNativeWindow());
+   auto* editor_raw = editor.release();
+-  ASSERT_TRUE([AppController.sharedController keyWindowIsModal]);
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return [AppController.sharedController keyWindowIsModal]; }));
+ 
+   // These commands should be disabled when the sheet is attached.
+   EXPECT_FALSE([window validateUserInterfaceItem:bookmark_all_tabs_item]);
+@@ -193,7 +195,8 @@ void SetUpCommandLine(base::CommandLine* command_line) override {
+ 
+   // Close the sheet dialog.
+   editor_raw->GetWidget()->CloseNow();
+-  ASSERT_FALSE([AppController.sharedController keyWindowIsModal]);
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return ![AppController.sharedController keyWindowIsModal]; }));
+ 
+   // These commands should be enabled again when the sheet is removed.
+   EXPECT_TRUE([window validateUserInterfaceItem:bookmark_all_tabs_item]);
+diff --git a/chrome/browser/ui/signin/signin_view_controller_interactive_uitest.cc b/chrome/browser/ui/signin/signin_view_controller_interactive_uitest.cc
+index 481dd69ec0a018073142589bb06c19e9149a74de..d70b650b8dd4f1a56473ce4521827e740508731d 100644
+--- a/chrome/browser/ui/signin/signin_view_controller_interactive_uitest.cc
++++ b/chrome/browser/ui/signin/signin_view_controller_interactive_uitest.cc
+@@ -42,6 +42,7 @@
+ #include "components/signin/public/identity_manager/identity_manager.h"
+ #include "components/signin/public/identity_manager/identity_test_utils.h"
+ #include "components/sync/base/features.h"
++#include "content/public/browser/render_widget_host_view.h"
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/browser_test_utils.h"
+@@ -231,6 +232,14 @@ IN_PROC_BROWSER_TEST_F(SignInViewControllerBrowserTest,
+   EXPECT_TRUE(signin_view_controller->ShowsModalDialog());
+   content_observer.Wait();
+ 
++  // Wait for the modal dialog sheet window to be presented and receive focus.
++  ASSERT_TRUE(base::test::RunUntil([&]() {
++    auto* web_contents =
++        signin_view_controller->GetModalDialogWebContentsForTesting();
++    return web_contents && web_contents->GetRenderWidgetHostView() &&
++           web_contents->GetRenderWidgetHostView()->HasFocus();
++  }));
++
+   content::WebContentsDestroyedWatcher dialog_destroyed_watcher(
+       signin_view_controller->GetModalDialogWebContentsForTesting());
+ 
+diff --git a/chrome/browser/ui/test/test_browser_dialog.cc b/chrome/browser/ui/test/test_browser_dialog.cc
+index 3ca4d2f60651fc0d33d3ae510ab91be6575f4060..ef423174b7ba80a55f99ab9ffb41366995fe7a7a 100644
+--- a/chrome/browser/ui/test/test_browser_dialog.cc
++++ b/chrome/browser/ui/test/test_browser_dialog.cc
+@@ -28,6 +28,7 @@
+ 
+ #if defined(TOOLKIT_VIEWS)
+ #include "base/strings/strcat.h"
++#include "base/test/run_until.h"
+ #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "ui/display/display.h"
+ #include "ui/display/screen.h"
+@@ -119,6 +120,13 @@ bool TestBrowserDialog::VerifyUi() {
+   }
+ 
+   views::Widget* dialog_widget = *(added.begin());
++  if (ShouldWaitForDialogBeforeVerify()) {
++    if (!base::test::RunUntil([&]() { return dialog_widget->IsVisible(); })) {
++      LOG(ERROR) << "VerifyUi(): Widget failed to become visible.";
++      return false;
++    }
++  }
++
+   dialog_widget->SetBlockCloseForTesting(true);
+   // Deactivate before taking screenshot. Deactivated dialog pixel outputs
+   // is more predictable than activated dialog.
+@@ -200,6 +208,10 @@ bool TestBrowserDialog::AlwaysCloseAsynchronously() {
+   return false;
+ }
+ 
++bool TestBrowserDialog::ShouldWaitForDialogBeforeVerify() {
++  return BUILDFLAG(IS_MAC);
++}
++
+ std::string TestBrowserDialog::GetNonDialogName() {
+   return std::string();
+ }
+diff --git a/chrome/browser/ui/test/test_browser_dialog.h b/chrome/browser/ui/test/test_browser_dialog.h
+index 08da2610746bac6a40adc6c63c5b745c6d6cc715..80a3388c2101a4d874fe6b50b56ed45b333f9a77 100644
+--- a/chrome/browser/ui/test/test_browser_dialog.h
++++ b/chrome/browser/ui/test/test_browser_dialog.h
+@@ -65,6 +65,12 @@ class TestBrowserDialog : public TestBrowserUi {
+   // Widget::CanClose() and DialogDelegate::Close().
+   virtual bool AlwaysCloseAsynchronously();
+ 
++  // Whether to wait for the dialog widget to become visible in VerifyUi() by
++  // pumping the run loop. Subclasses that run blocking modal loops should
++  // return false to avoid deadlocks. Defaults to true on macOS to account for
++  // asynchronous modal sheet presentation, and false on other platforms.
++  virtual bool ShouldWaitForDialogBeforeVerify();
++
+   // Get the name of a non-dialog window that should be included in testing.
+   // VerifyUi() only considers dialog windows and windows with a matching name.
+   virtual std::string GetNonDialogName();
+diff --git a/chrome/browser/ui/views/policy/enterprise_startup_dialog_view_browsertest.cc b/chrome/browser/ui/views/policy/enterprise_startup_dialog_view_browsertest.cc
+index 6f8ecb5f15c14f920e1352fe09708af2cd31045b..2f276fb159f6956812f718bdd865caa897c67742 100644
+--- a/chrome/browser/ui/views/policy/enterprise_startup_dialog_view_browsertest.cc
++++ b/chrome/browser/ui/views/policy/enterprise_startup_dialog_view_browsertest.cc
+@@ -55,6 +55,10 @@ class EnterpriseStartupDialogViewBrowserTest : public DialogBrowserTest {
+   }
+ #endif
+ 
++  // EnterpriseStartupDialogView runs a blocking modal loop, so return false to
++  // avoid deadlocks when pumping the run loop in VerifyUi().
++  bool ShouldWaitForDialogBeforeVerify() override { return false; }
++
+  private:
+   raw_ptr<EnterpriseStartupDialogView, AcrossTasksDanglingUntriaged> dialog;
+ };
+diff --git a/chrome/browser/ui/views/relaunch_notification/relaunch_notification_controller_platform_impl_desktop_browsertest.cc b/chrome/browser/ui/views/relaunch_notification/relaunch_notification_controller_platform_impl_desktop_browsertest.cc
+index 1d7ca2b847341a48cfbc64571b3159d8c6246693..6e9981dbedf0ad9a8084a8e13602ce70cab52177 100644
+--- a/chrome/browser/ui/views/relaunch_notification/relaunch_notification_controller_platform_impl_desktop_browsertest.cc
++++ b/chrome/browser/ui/views/relaunch_notification/relaunch_notification_controller_platform_impl_desktop_browsertest.cc
+@@ -5,6 +5,7 @@
+ #include "chrome/browser/ui/views/relaunch_notification/relaunch_notification_controller_platform_impl_desktop.h"
+ 
+ #include "base/run_loop.h"
++#include "base/test/run_until.h"
+ #include "base/time/time.h"
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+ #include "chrome/test/base/in_process_browser_test.h"
+@@ -50,13 +51,18 @@ IN_PROC_BROWSER_TEST_F(
+   impl.NotifyRelaunchRequired(deadline,
+                               /*is_notification_style_ap_required=*/false,
+                               base::OnceCallback<base::Time()>());
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return impl.GetWidgetForTesting() != nullptr; }));
+   views::test::WidgetDestroyedWaiter fourth_destroyed_waiter(
+       impl.GetWidgetForTesting());
+   impl.CloseRelaunchNotification();
+   fourth_destroyed_waiter.Wait();
++
+   impl.NotifyRelaunchRequired(deadline,
+                               /*is_notification_style_ap_required=*/false,
+                               base::OnceCallback<base::Time()>());
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return impl.GetWidgetForTesting() != nullptr; }));
+   views::test::WidgetDestroyedWaiter fifth_destroyed_waiter(
+       impl.GetWidgetForTesting());
+   impl.CloseRelaunchNotification();
+@@ -66,6 +72,8 @@ IN_PROC_BROWSER_TEST_F(
+   impl.NotifyRelaunchRequired(deadline,
+                               /*is_notification_style_ap_required=*/true,
+                               base::OnceCallback<base::Time()>());
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return impl.GetWidgetForTesting() != nullptr; }));
+   views::test::WidgetDestroyedWaiter sixth_destroyed_waiter(
+       impl.GetWidgetForTesting());
+   impl.CloseRelaunchNotification();
+diff --git a/chrome/browser/ui/views/web_apps/web_app_update_review_dialog_browsertest.cc b/chrome/browser/ui/views/web_apps/web_app_update_review_dialog_browsertest.cc
+index 468b13a6c4b98e4ba2ae7efe707e7c389b620411..4e89e84d7ffcbc67f5f079b32ef1bc2416fa7766 100644
+--- a/chrome/browser/ui/views/web_apps/web_app_update_review_dialog_browsertest.cc
++++ b/chrome/browser/ui/views/web_apps/web_app_update_review_dialog_browsertest.cc
+@@ -16,6 +16,7 @@
+ #include "base/test/bind.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/metrics/user_action_tester.h"
++#include "base/test/run_until.h"
+ #include "base/test/test_future.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/time/time.h"
+@@ -448,6 +449,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests,
+   const webapps::AppId& app_id = InstallAppAndTriggerAppUpdateDialog();
+   views::Widget* dialog_widget = update_dialog_waiter.WaitIfNeededAndGet();
+   ASSERT_NE(nullptr, dialog_widget);
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return dialog_widget->IsVisible(); }));
+ 
+   // At this point, the update has not been triggered yet.
+   const WebApp* old_web_app = provider().registrar_unsafe().GetAppById(app_id);
+@@ -480,6 +483,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests, Accept) {
+   const webapps::AppId& app_id = InstallAppAndTriggerAppUpdateDialog();
+   views::Widget* dialog_widget = update_dialog_waiter.WaitIfNeededAndGet();
+   ASSERT_NE(nullptr, dialog_widget);
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return dialog_widget->IsVisible(); }));
+   EXPECT_EQ("Web app for updating",
+             provider().registrar_unsafe().GetAppShortName(app_id));
+ 
+@@ -525,6 +530,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests, CancelUninstall) {
+   const webapps::AppId& app_id = InstallAppAndTriggerAppUpdateDialog();
+   views::Widget* dialog_widget = update_dialog_waiter.WaitIfNeededAndGet();
+   ASSERT_NE(nullptr, dialog_widget);
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return dialog_widget->IsVisible(); }));
+ 
+   // This will trigger uninstallation of the app. Wait for the uninstallation
+   // dialog to show up.
+@@ -536,6 +543,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests, CancelUninstall) {
+       BucketsAre(base::Bucket(WebAppIdentityUpdateResult::kUninstallApp, 1)));
+   views::Widget* uninstall_dialog =
+       uninstall_dialog_waiter.WaitIfNeededAndGet();
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return uninstall_dialog->IsVisible(); }));
+ 
+   // Trigger uninstallation of the app by accepting the dialog and verify.
+   WebAppProvider* provider = WebAppProvider::GetForTest(profile());
+@@ -551,6 +560,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests, IgnoreRemovesMenuLabel) {
+   const webapps::AppId& app_id = InstallAppAndTriggerAppUpdateDialog();
+   views::Widget* dialog_widget = update_dialog_waiter.WaitIfNeededAndGet();
+   ASSERT_NE(nullptr, dialog_widget);
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return dialog_widget->IsVisible(); }));
+ 
+   BrowserWindowInterface* app_browser =
+       AppBrowserController::FindForWebApp(*profile(), app_id);
+@@ -589,6 +600,8 @@ IN_PROC_BROWSER_TEST_F(WebAppUpdateDialogBrowserTests,
+   const webapps::AppId& app_id = InstallAppAndTriggerAppUpdateDialog();
+   views::Widget* dialog_widget = update_dialog_waiter.WaitIfNeededAndGet();
+   ASSERT_NE(nullptr, dialog_widget);
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return dialog_widget->IsVisible(); }));
+ 
+   BrowserWindowInterface* app_browser =
+       AppBrowserController::FindForWebApp(*profile(), app_id);
+diff --git a/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc b/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
+index c5e3cb17340f5bcbfb299b750d039a5307f64dc8..8f02f92d8b20088ef76f15bdf66d2460523031d5 100644
+--- a/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
++++ b/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
+@@ -2,14 +2,13 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#include "ui/views/controls/webview/web_dialog_view.h"
+-
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/location.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/run_loop.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/run_until.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+@@ -27,6 +26,7 @@
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/test_utils.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
++#include "ui/views/controls/webview/web_dialog_view.h"
+ #include "ui/views/view_tracker.h"
+ #include "ui/views/widget/widget.h"
+ #include "ui/views/widget/widget_observer.h"
+@@ -113,6 +113,7 @@ void WebDialogBrowserTest::SetUpOnMainThread() {
+   auto* widget =
+       views::Widget::CreateWindowWithParent(std::move(view), parent_view);
+   widget->Show();
++  ASSERT_TRUE(base::test::RunUntil([&]() { return widget->IsVisible(); }));
+ }
+ 
+ void WebDialogBrowserTest::SimulateEscapeKey() {
+diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
+index 4f005f2fe24ecfe1962fc64782fb7187161cbd7a..8ecf7a4c0ef2163ce7fb19aa3f68c619109c9f2d 100644
+--- a/components/remote_cocoa/app_shim/application_bridge.mm
++++ b/components/remote_cocoa/app_shim/application_bridge.mm
+@@ -101,7 +101,6 @@ void GetWordAt(const gfx::Point& location_in_content,
+     // Text input doesn't work across mojo yet.
+     return nullptr;
+   }
+-  bool MustPostTaskToRunModalSheetAnimation() const override { return true; }
+ 
+   mojo::AssociatedRemote<mojom::NativeWidgetNSWindowHost> host_remote_;
+   mojo::AssociatedRemote<mojom::TextInputHost> text_input_host_remote_;
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index 3c3ae8a4526c10fce2d78f87a21b54b41dd231c8..3efbbece2a65b90cf78bbc9f36335707f7dffde9 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -1648,14 +1648,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   UpdateWindowDisplay();
+ 
+   // Add any children that were skipped during the fullscreen transition.
+-  // A weak pointer is needed because OrderChildren() can synchronously run a
+-  // modal sheet animation (ShowAsModalSheet), entering a nested run-loop during
+-  // which this bridge may be destroyed.
+-  base::WeakPtr<NativeWidgetNSWindowBridge> weak_ptr = factory_.GetWeakPtr();
+   OrderChildren();
+-  if (!weak_ptr) {
+-    return;
+-  }
+ 
+   host_->OnWindowFullscreenTransitionComplete(is_fullscreen);
+   if (is_fullscreen && immersive_mode_controller_) {
+@@ -2232,41 +2225,47 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+     return;
+   }
+ 
+-  auto begin_sheet_closure = base::BindOnce(^{
+-    [parent_window beginSheet:window_
+-            completionHandler:^(NSModalResponse return_code) {
+-              // This class, NativeWidgetNSWindowBridge, clears the window's
+-              // delegate as an indication of its death, in which case this
+-              // completion handler will no-op. This is necessary to handle
+-              // AppKit invoking this selector via a posted task. See
+-              // https://crbug.com/851376.
+-              NSWindow* window = weak_window;
+-              if (!window.delegate) {
+-                return;
+-              }
+-              // Make sure to mark ourselves as not wanting to be visible.
+-              // Otherwise if during the orderOut call our parent becomes the
+-              // key window, it would try to show us as a new modal sheet.
+-              wants_to_be_visible_ = false;
+-              [window orderOut:nil];
+-              OnWindowWillClose();
+-            }];
+-  });
+-
+-  if (host_helper_->MustPostTaskToRunModalSheetAnimation()) {
+-    // This function is called via mojo when using remote cocoa. Inside the
+-    // nested run loop, we will wait for a message providing the correctly-sized
+-    // frame for the new sheet. This message will not be processed until we
+-    // return from handling this message, because it will coming on the same
+-    // pipe. Avoid the resulting hang by posting a task to show the modal
+-    // sheet (which will be executed on a fresh stack, which will not block
+-    // the message).
+-    // https://crbug.com/1234509
+-    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+-        FROM_HERE, std::move(begin_sheet_closure));
+-  } else {
+-    std::move(begin_sheet_closure).Run();
+-  }
++  base::WeakPtr<NativeWidgetNSWindowBridge> weak_this = factory_.GetWeakPtr();
++  // AppKit's sheet presentation animation runs a nested run loop. We post
++  // this task to run the animation asynchronously for two reasons:
++  // 1. For remote cocoa (out-of-process), it prevents a deadlock by allowing
++  //    the sizing message to be processed before entering the nested run loop.
++  // 2. For in-process windows, it prevents Use-After-Free (UAF) bugs and
++  //    undefined behavior when returning from the nested run loop if the
++  //    window was closed during presentation, causing its bridge (this) to be
++  //    destroyed.
++  // https://crbug.com/40781530, https://crbug.com/517040438,
++  // https://crbug.com/518006007
++  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, base::BindOnce(^{
++        NativeWidgetNSWindowBridge* bridge = weak_this.get();
++        if (!bridge || !bridge->wants_to_be_visible_) {
++          return;
++        }
++        [parent_window beginSheet:bridge->ns_window()
++                completionHandler:^(NSModalResponse return_code) {
++                  // This class, NativeWidgetNSWindowBridge, clears the window's
++                  // delegate as an indication of its death, in which case this
++                  // completion handler will no-op. This is necessary to handle
++                  // AppKit invoking this selector via a posted task. See
++                  // https://crbug.com/41393772
++                  NSWindow* window = weak_window;
++                  if (!window.delegate) {
++                    return;
++                  }
++                  // Make sure to mark ourselves as not wanting to be visible.
++                  // Otherwise if during the orderOut call our parent becomes
++                  // the key window, it would try to show us as a new modal
++                  // sheet.
++                  if (weak_this) {
++                    weak_this->wants_to_be_visible_ = false;
++                  }
++                  [window orderOut:nil];
++                  if (weak_this) {
++                    weak_this->OnWindowWillClose();
++                  }
++                }];
++      }));
+ }
+ 
+ }  // namespace remote_cocoa
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_host_helper.h b/components/remote_cocoa/app_shim/native_widget_ns_window_host_helper.h
+index 298afa04bfcfebf0555322120823e302916c805c..0b0dd04f6c54b911e1ebfaaa368053bcaad7c32e 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_host_helper.h
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_host_helper.h
+@@ -60,10 +60,6 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowHostHelper {
+   // TODO(ccameron): Remove the needs for this call.
+   virtual ui::TextInputClient* GetTextInputClient() = 0;
+ 
+-  // Return whether or not the nested run loop to animate in a sheet must be
+-  // made on a fresh stack, produced by posting a task to make the call.
+-  // https://crbug.com/1234509
+-  virtual bool MustPostTaskToRunModalSheetAnimation() const = 0;
+ };
+ 
+ }  // namespace remote_cocoa
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+index 16e6c4b02aca7f1c4f2e80340898262be3b23f87..d8eaf18e81ba983dfa32df24e7df56b97a7e9f6b 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+@@ -328,7 +328,6 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+                  gfx::Point* baseline_point) override;
+   remote_cocoa::DragDropClient* GetDragDropClient() override;
+   ui::TextInputClient* GetTextInputClient() override;
+-  bool MustPostTaskToRunModalSheetAnimation() const override;
+ 
+   // remote_cocoa::ApplicationHost::Observer:
+   void OnApplicationHostDestroying(
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+index b92006768fd41c1df6cbb4244e53ee86a3ea4895..ff46c0afe1936c205968fc0b2dd04afd003335af 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+@@ -1075,10 +1075,6 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   return text_input_host_->GetTextInputClient();
+ }
+ 
+-bool NativeWidgetMacNSWindowHost::MustPostTaskToRunModalSheetAnimation() const {
+-  return false;
+-}
+-
+ ////////////////////////////////////////////////////////////////////////////////
+ // NativeWidgetMacNSWindowHost, remote_cocoa::ApplicationHost::Observer:
+ void NativeWidgetMacNSWindowHost::OnApplicationHostDestroying(
+diff --git a/ui/views/widget/native_widget_mac_unittest.mm b/ui/views/widget/native_widget_mac_unittest.mm
+index 7b74e5c96b7e1a31571ca098e1cf64b7b9c6bda8..67152c92654cbb17a4f6b31d74172a208fd70669 100644
+--- a/ui/views/widget/native_widget_mac_unittest.mm
++++ b/ui/views/widget/native_widget_mac_unittest.mm
+@@ -12,6 +12,7 @@
+ #include "base/functional/callback.h"
+ #include "base/mac/mac_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/run_loop.h"
+ #include "base/scoped_observation.h"
+ #include "base/strings/sys_string_conversions.h"
+@@ -1399,13 +1400,14 @@ void CallMethodInternal(id receiver, SEL selector) {
+   return modal_dialog_widget;
+ }
+ 
+-// Shows a window-modal Widget (as a sheet). No need to wait since the native
+-// sheet animation is blocking.
++// Shows a window-modal Widget (as a sheet).
+ Widget* ShowWindowModalWidget(NSWindow* native_parent) {
+   Widget* sheet_widget = views::DialogDelegate::CreateDialogWidget(
+       NativeWidgetMacTest::MakeModalDialog(ui::mojom::ModalType::kWindow),
+       gfx::NativeWindow(), gfx::NativeView(native_parent.contentView));
+   sheet_widget->Show();
++  NSWindow* sheet_window = sheet_widget->GetNativeWindow().GetNativeNSWindow();
++  EXPECT_TRUE(base::test::RunUntil([&]() { return [sheet_window isVisible]; }));
+   return sheet_widget;
+ }
+ 
+@@ -1751,43 +1753,50 @@ void CallMethodInternal(id receiver, SEL selector) {
+   }
+ }
+ 
+-// Test that if the bridge is destroyed synchronously during a modal sheet
+-// animation inside FullscreenControllerTransitionComplete(), the weak pointer
+-// check correctly prevents a Use-After-Free (UAF) upon return
+-// (https://crbug.com/517040438).
+-TEST_F(NativeWidgetMacTest, FullscreenTransitionCompleteBridgeDestruction) {
++// Test that SetVisibilityState() handles the bridge being destroyed during a
++// modal sheet animation entered via parent_->OrderChildren(). A non-sheet
++// child showing itself orders its parent's children, which can synchronously
++// present a deferred sibling sheet and spin a nested run-loop.
++TEST_F(NativeWidgetMacTest, SetVisibilityStateBridgeDestruction) {
+   NSWindow* native_parent = MakeClosableTitledNativeParent();
+-  @autoreleasepool {
+-    Widget* parent_widget =
+-        Widget::GetWidgetForNativeWindow(gfx::NativeWindow(native_parent));
+-    ASSERT_TRUE(parent_widget);
++  Widget* parent_widget =
++      Widget::GetWidgetForNativeWindow(gfx::NativeWindow(native_parent));
++  ASSERT_TRUE(parent_widget);
+ 
+-    Widget* sheet_widget = views::DialogDelegate::CreateDialogWidget(
+-        NativeWidgetMacTest::MakeModalDialog(ui::mojom::ModalType::kWindow),
+-        gfx::NativeWindow(), parent_widget->GetNativeView());
++  // A deferred window-modal sheet on the parent. OrderChildren() will present
++  // it via -[NSWindow beginSheet:], spinning a nested run-loop.
++  Widget* sheet_widget = views::DialogDelegate::CreateDialogWidget(
++      NativeWidgetMacTest::MakeModalDialog(ui::mojom::ModalType::kWindow),
++      gfx::NativeWindow(), parent_widget->GetNativeView());
++  BridgedNativeWidgetTestApi(sheet_widget).set_wants_to_be_visible(true);
+ 
+-    BridgedNativeWidgetTestApi(sheet_widget).set_wants_to_be_visible(true);
++  // A non-sheet sibling whose SetVisibilityState() will call
++  // parent_->OrderChildren() and find the deferred sheet above.
++  Widget* child_widget = views::DialogDelegate::CreateDialogWidget(
++      NativeWidgetMacTest::MakeModalDialog(ui::mojom::ModalType::kChild),
++      gfx::NativeWindow(), parent_widget->GetNativeView());
++  remote_cocoa::NativeWidgetNSWindowBridge* child_bridge =
++      BridgedNativeWidgetTestApi(child_widget).bridge();
+ 
+-    remote_cocoa::NativeWidgetNSWindowBridge* parent_bridge =
+-        NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+-            gfx::NativeWindow(native_parent))
+-            ->GetInProcessNSWindowBridge();
++  auto notification_received =
++      base::MakeRefCounted<base::RefCountedData<bool>>(false);
++  id observer = [[NSNotificationCenter defaultCenter]
++      addObserverForName:NSWindowWillBeginSheetNotification
++                  object:native_parent
++                   queue:nil
++              usingBlock:^(NSNotification* note) {
++                notification_received->data = true;
++                child_widget->CloseNow();
++              }];
+ 
+-    // Register an observer to close the parent widget synchronously when the
+-    // child modal sheet starts its presentation animation. This simulates the
+-    // synchronous bridge destruction during the on-stack beginSheet: call.
+-    id observer = [[NSNotificationCenter defaultCenter]
+-        addObserverForName:NSWindowWillBeginSheetNotification
+-                    object:native_parent
+-                     queue:nil
+-                usingBlock:^(NSNotification* note) {
+-                  parent_widget->CloseNow();
+-                }];
++  child_bridge->SetVisibilityState(
++      remote_cocoa::mojom::WindowVisibilityState::kShowAndActivateWindow);
+ 
+-    parent_bridge->FullscreenControllerTransitionComplete(true);
++  EXPECT_TRUE(
++      base::test::RunUntil([&]() { return notification_received->data; }));
+ 
+-    [[NSNotificationCenter defaultCenter] removeObserver:observer];
+-  }
++  [[NSNotificationCenter defaultCenter] removeObserver:observer];
++  [native_parent close];
+ }
+ 
+ // Exercise a scenario where the task posted in the asynchronous Close() could
+diff --git a/ui/views/widget/widget_interactive_uitest.cc b/ui/views/widget/widget_interactive_uitest.cc
+index 2593b4daefc6f3e010cc3826ea696381ff61b40d..5b371bd0feb95a5fc5ee228bc6df3674e6d05303 100644
+--- a/ui/views/widget/widget_interactive_uitest.cc
++++ b/ui/views/widget/widget_interactive_uitest.cc
+@@ -19,6 +19,7 @@
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/run_until.h"
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+ #include "build/build_config.h"
+@@ -1115,13 +1116,11 @@ TEST_F(DesktopWidgetTestInteractive, WindowModalWindowDestroyedActivationTest) {
+       dialog_delegate.release(), gfx::NativeWindow(),
+       top_level_widget->GetNativeView());
+   modal_dialog_widget->SetBounds(gfx::Rect(100, 100, 200, 200));
+-
+-  // Note the dialog widget doesn't need a ShowSync. Since it is modal, it gains
+-  // active status synchronously, even on Mac.
+   modal_dialog_widget->Show();
++  ASSERT_TRUE(
++      base::test::RunUntil([&]() { return focus_changes.size() == 3u; }));
+ 
+   gfx::NativeView modal_native_view = modal_dialog_widget->GetNativeView();
+-  ASSERT_EQ(3u, focus_changes.size());
+   EXPECT_EQ(gfx::NativeView(), focus_changes[1]);
+   EXPECT_EQ(modal_native_view, focus_changes[2]);
+ 

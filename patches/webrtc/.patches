@@ -1,1 +1,4 @@
 fix_handle_pipewire_capturer_initialization_and_management.patch
+cherry-pick-bf6f744d19a8.patch
+cherry-pick-5ecea9055081.patch
+cherry-pick-6395da1ed7da.patch

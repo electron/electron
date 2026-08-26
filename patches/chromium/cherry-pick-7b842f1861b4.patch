@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Mon, 20 Jul 2026 18:54:20 -0700
+Subject: Block the deletion of root window in OnWindowHidden
+
+The scenario in the bug should never happen. (It would cause a
+lot of other types of problems)
+
+Fixed: 517518019
+Change-Id: I5610b3b2366746a1c8511f029444f809eb5a5d39
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8126836
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1665117}
+
+diff --git a/ui/aura/window_event_dispatcher.cc b/ui/aura/window_event_dispatcher.cc
+index 4aebf94b6c636a39ba1cb017fade95218f88de09..8680b3d62e91a0aac2f0ce24fc9b479d205927e8 100644
+--- a/ui/aura/window_event_dispatcher.cc
++++ b/ui/aura/window_event_dispatcher.cc
+@@ -377,6 +377,9 @@ void WindowEventDispatcher::OnWindowHidden(Window* invisible,
+   if (invisible->Contains(old_dispatch_target_))
+     old_dispatch_target_ = nullptr;
+ 
++  // Block the deletion of the root window, its host thus this dispatcher.
++  aura::Window::ScopedDeleteBlocker blocker(host_->window());
++
+   // Cleaning up gesture state may end up destroying the hidden window. We use a
+   // weak pointer to detect this.
+   base::WeakPtr<aura::Window> invisible_weak = invisible->GetWeakPtrAsWindow();

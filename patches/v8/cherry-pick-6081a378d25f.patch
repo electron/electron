@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20Inf=C3=BChr?= <dinfuehr@chromium.org>
+Date: Thu, 2 Jul 2026 12:35:32 +0200
+Subject: [profiler] Skip shared objects in client isolates during verification
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+On client isolates in VerifyReference() we skip references into the
+shared heap. However, we didn't then skip them in
+CheckAllReferencesWereChecked(). In
+MarkingVisitorBase::VisitEphemeronHashTable we invoke
+AddWeakReferenceForReferenceSummarizer() for the value unconditionally
+before bailing out for shared objects on client isolates.
+
+Bug: 528397177
+Change-Id: I6593c2d3dfe146e2241d03ee04ec7cb957880d15
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8025611
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Auto-Submit: Dominik Inführ <dinfuehr@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108392}
+
+diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
+index 6834bd35f93c919196368e4b4dc731769c082f7b..c7b1c05aa0adb67f7f662957255f4faa89284bbe 100644
+--- a/src/profiler/heap-snapshot-generator.cc
++++ b/src/profiler/heap-snapshot-generator.cc
+@@ -64,6 +64,20 @@
+ namespace v8::internal {
+ 
+ #ifdef V8_ENABLE_HEAP_SNAPSHOT_VERIFY
++bool ShouldVerifyReferenceTo(Isolate* isolate, Tagged<HeapObject> obj) {
++  // We can't verify pointers into read-only space, because marking visitors
++  // might not mark those. For example, every Map has a pointer to the MetaMap,
++  // but marking visitors don't bother with following that link.
++  if (MemoryChunk::FromHeapObject(obj)->InReadOnlySpace()) return false;
++  // For client isolates we cannot verify references into the shared heap
++  // because the marking visitor doesn't follow such references.
++  if (isolate->has_shared_space() && !isolate->is_shared_space_isolate() &&
++      MemoryChunk::FromHeapObject(obj)->InWritableSharedSpace()) {
++    return false;
++  }
++  return true;
++}
++
+ class HeapEntryVerifier {
+  public:
+   HeapEntryVerifier(HeapSnapshotGenerator* generator, Tagged<HeapObject> obj)
+@@ -138,17 +152,15 @@ class HeapEntryVerifier {
+   // This ensures that there aren't retaining relationships found by the marking
+   // visitor which were omitted from the heap snapshot.
+   void CheckAllReferencesWereChecked() {
+-    // Both loops below skip pointers to read-only objects, because the heap
+-    // snapshot deliberately omits many of those (see IsEssentialObject).
+-    // Read-only objects can't ever retain normal read-write objects, so these
+-    // are fine to skip.
++    Isolate* isolate = generator_->heap()->isolate();
++
+     for (Tagged<HeapObject> obj : reference_summary_.strong_references()) {
+-      if (!MemoryChunk::FromHeapObject(obj)->InReadOnlySpace()) {
++      if (ShouldVerifyReferenceTo(isolate, obj)) {
+         CHECK_NE(checked_objects_.find(obj), checked_objects_.end());
+       }
+     }
+     for (Tagged<HeapObject> obj : reference_summary_.weak_references()) {
+-      if (!MemoryChunk::FromHeapObject(obj)->InReadOnlySpace()) {
++      if (ShouldVerifyReferenceTo(isolate, obj)) {
+         CHECK_NE(checked_objects_.find(obj), checked_objects_.end());
+       }
+     }
+@@ -325,17 +337,10 @@ void HeapEntry::VerifyReference(HeapGraphEdge::Type type, HeapEntry* entry,
+   }
+   Tagged<HeapObject> from_obj = Cast<HeapObject>(Tagged<Object>(from_address));
+   Tagged<HeapObject> to_obj = Cast<HeapObject>(Tagged<Object>(to_address));
+-  if (MemoryChunk::FromHeapObject(to_obj)->InReadOnlySpace() ||
+-      (!isolate()->is_shared_space_isolate() &&
+-       MemoryChunk::FromHeapObject(to_obj)->InWritableSharedSpace())) {
++  if (!ShouldVerifyReferenceTo(isolate(), to_obj)) {
+     // We can't verify pointers into read-only space or shared space (for client
+-    // isolates), because marking visitors might not mark those. For example,
+-    // every Map has a pointer to the MetaMap, but marking visitors don't bother
+-    // with following that link. Read-only and shared objects are immortal (or
+-    // managed externally) and can never point to things outside of their
+-    // respective spaces, so ignoring these objects is safe from the perspective
+-    // of ensuring accurate retaining paths for normal read-write objects.
+-    // Therefore, do nothing.
++    // isolates), because marking visitors might not mark those. See
++    // ShouldVerifyReferenceTo for more details. Therefore, do nothing.
+   } else if (verification == kEphemeron) {
+     // Ephemerons can't be verified because they aren't marked directly by the
+     // marking visitor.
+diff --git a/test/mjsunit/shared-memory/regress/regress-528397177.js b/test/mjsunit/shared-memory/regress/regress-528397177.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e0f2c0d3c69f3459d06064b5061001b3c49a9a99
+--- /dev/null
++++ b/test/mjsunit/shared-memory/regress/regress-528397177.js
+@@ -0,0 +1,13 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc --shared-string-table --cache
++
++const value = "some value";
++const map = new WeakMap();
++const key = () => {};
++map.set(key, value);
++gc({
++  type: 'major-snapshot',
++});
