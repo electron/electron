@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Tue, 25 Aug 2026 13:24:27 -0700
+Subject: fix: fall back to an unlocalized Touch ID prompt reason when the
+ string is empty
+
+-[LAContext evaluateAccessControl:operation:localizedReason:reply:] raises
+NSInvalidArgumentException ("Non-empty localizedReason must be provided.")
+when localizedReason is empty, and AppKit's uncaught-exception handler
+then terminates the browser process. The reason comes from
+IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON, which ResourceBundle returns as an
+empty string when no locale pak was loaded, so a WebAuthn request that
+needs user verification crashed the app instead of prompting.
+
+Fall back to a plain "verify your identity on <rp id>" when the localized
+string is empty so the prompt is shown rather than the process killed.
+
+diff --git a/device/fido/mac/get_assertion_operation.mm b/device/fido/mac/get_assertion_operation.mm
+index 492f0c4c485f9283bd6c43e2223dcfd4921f6089..7db481f512ac3d02a7d02ca1c93b495b2a2da0ce 100644
+--- a/device/fido/mac/get_assertion_operation.mm
++++ b/device/fido/mac/get_assertion_operation.mm
+@@ -71,9 +71,19 @@
+                                   return credential.RequiresUvForSignature();
+                                 });
+   if (require_uv) {
++    // -[LAContext evaluateAccessControl:operation:localizedReason:reply:]
++    // raises NSInvalidArgumentException on an empty localizedReason, which
++    // terminates the process. The localized string is empty if no locale pak
++    // was loaded, so fall back to an unlocalized reason instead of formatting
++    // an empty template.
++    std::u16string rp_id = base::UTF8ToUTF16(request_.rp_id);
++    std::u16string reason =
++        l10n_util::GetStringUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON).empty()
++            ? u"verify your identity on " + rp_id
++            : l10n_util::GetStringFUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
++                                         rp_id);
+     touch_id_context_->PromptTouchId(
+-        l10n_util::GetStringFUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
+-                                   base::UTF8ToUTF16(request_.rp_id)),
++        std::move(reason),
+         base::BindOnce(
+             &GetAssertionOperation::PromptTouchIdDone,
+             // Safe to use Unretained because `touch_id_context_` is owned by
+diff --git a/device/fido/mac/make_credential_operation.mm b/device/fido/mac/make_credential_operation.mm
+index 5f0b4888692c44d796e9bd6f081dd60ea6abf131..c4c62f91b0ed315e30d667c8d49d4106cfce2145 100644
+--- a/device/fido/mac/make_credential_operation.mm
++++ b/device/fido/mac/make_credential_operation.mm
+@@ -57,9 +57,19 @@
+       request_.user_verification,
+       device::fido::mac::DeviceHasBiometricsAvailable());
+   if (require_uv) {
++    // -[LAContext evaluateAccessControl:operation:localizedReason:reply:]
++    // raises NSInvalidArgumentException on an empty localizedReason, which
++    // terminates the process. The localized string is empty if no locale pak
++    // was loaded, so fall back to an unlocalized reason instead of formatting
++    // an empty template.
++    std::u16string rp_id = base::UTF8ToUTF16(request_.rp.id);
++    std::u16string reason =
++        l10n_util::GetStringUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON).empty()
++            ? u"verify your identity on " + rp_id
++            : l10n_util::GetStringFUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
++                                         rp_id);
+     touch_id_context_->PromptTouchId(
+-        l10n_util::GetStringFUTF16(IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
+-                                   base::UTF8ToUTF16(request_.rp.id)),
++        std::move(reason),
+         base::BindOnce(&MakeCredentialOperation::PromptTouchIdDone,
+                        base::Unretained(this)));
+     return;
