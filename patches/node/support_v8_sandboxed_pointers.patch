@@ -320,10 +320,10 @@ index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..8516615bb73813ddc96eb5ab34028874
  
 diff --git a/src/node_serdes_utils.h b/src/node_serdes_utils.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..18bbbeb18c6b5fdb826745aafe84f003690643f0
+index 0000000000000000000000000000000000000000..44bc180778a23ce611b570c91242a1b10c28a058
 --- /dev/null
 +++ b/src/node_serdes_utils.h
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,100 @@
 +#ifndef SRC_NODE_SERDES_UTILS_H_
 +#define SRC_NODE_SERDES_UTILS_H_
 +
@@ -343,7 +343,7 @@ index 0000000000000000000000000000000000000000..18bbbeb18c6b5fdb826745aafe84f003
 + public:
 +  explicit SerializerDelegate(v8::Isolate* isolate,
 +                              size_t minimum_buffer_capacity = 0)
-+      : allocator_(isolate->GetArrayBufferAllocator()),
++      : isolate_(isolate),
 +        minimum_buffer_capacity_(minimum_buffer_capacity) {}
 +
 +  void* ReallocateBufferMemory(void* old_buffer,
@@ -351,65 +351,71 @@ index 0000000000000000000000000000000000000000..18bbbeb18c6b5fdb826745aafe84f003
 +                               size_t* actual_size) override {
 +    const size_t new_capacity =
 +        std::max(minimum_buffer_capacity_, requested_size);
-+    void* new_buffer = old_buffer == nullptr
-+                           ? allocator_->Allocate(new_capacity)
-+                           : allocator_->AllocateUninitialized(new_capacity);
-+    if (new_buffer == nullptr) return nullptr;
++    const auto initialization_mode =
++        old_buffer == nullptr
++            ? v8::BackingStoreInitializationMode::kZeroInitialized
++            : v8::BackingStoreInitializationMode::kUninitialized;
++    std::unique_ptr<v8::BackingStore> new_backing_store =
++        v8::ArrayBuffer::NewBackingStore(
++            isolate_,
++            new_capacity,
++            initialization_mode,
++            v8::BackingStoreOnFailureMode::kReturnNull);
++    if (new_backing_store == nullptr) return nullptr;
 +
 +    if (old_buffer != nullptr) {
-+      const size_t bytes_to_copy =
-+          std::min(buffer_capacity_, new_capacity);
-+      memcpy(new_buffer,
++      CHECK_NOT_NULL(backing_store_);
++      CHECK_EQ(old_buffer, backing_store_->Data());
++      memcpy(new_backing_store->Data(),
 +             old_buffer,
-+             bytes_to_copy);
-+      if (new_capacity > bytes_to_copy) {
-+        memset(static_cast<uint8_t*>(new_buffer) + bytes_to_copy,
++             std::min(backing_store_->ByteLength(), new_capacity));
++      if (new_capacity > backing_store_->ByteLength()) {
++        memset(static_cast<uint8_t*>(new_backing_store->Data()) +
++                   backing_store_->ByteLength(),
 +               0,
-+               new_capacity - bytes_to_copy);
++               new_capacity - backing_store_->ByteLength());
 +      }
-+      allocator_->Free(old_buffer, buffer_capacity_);
 +    }
 +
-+    buffer_capacity_ = new_capacity;
++    backing_store_ = std::move(new_backing_store);
 +    *actual_size = new_capacity;
-+    return new_buffer;
++    return backing_store_->Data();
 +  }
 +
 +  void FreeBufferMemory(void* buffer) override {
-+    const size_t capacity = std::exchange(buffer_capacity_, 0);
-+    allocator_->Free(buffer, capacity);
++    CHECK_NOT_NULL(backing_store_);
++    CHECK_EQ(buffer, backing_store_->Data());
++    backing_store_.reset();
 +  }
 +
 +  v8::Local<v8::ArrayBuffer> AdoptReleasedBuffer(
 +      v8::Isolate* isolate,
 +      std::pair<uint8_t*, size_t> buffer) {
-+    auto deleter_data = std::make_unique<BackingStoreDeleterData>(
-+        BackingStoreDeleterData{
-+            allocator_, std::exchange(buffer_capacity_, 0)});
++    CHECK_EQ(isolate, isolate_);
++    if (buffer.first == nullptr) {
++      CHECK_EQ(buffer.second, 0);
++      CHECK_NULL(backing_store_);
++      return v8::ArrayBuffer::New(isolate, 0);
++    }
++
++    CHECK_NOT_NULL(backing_store_);
++    CHECK_EQ(buffer.first, backing_store_->Data());
 +    auto backing_store = v8::ArrayBuffer::NewBackingStore(
 +        buffer.first,
 +        buffer.second,
 +        [](void* data, size_t, void* deleter_data) {
-+          std::unique_ptr<BackingStoreDeleterData> state(
-+              static_cast<BackingStoreDeleterData*>(deleter_data));
-+          if (data != nullptr) {
-+            state->allocator->Free(data, state->capacity);
-+          }
++          std::unique_ptr<v8::BackingStore> allocation(
++              static_cast<v8::BackingStore*>(deleter_data));
++          CHECK_EQ(data, allocation->Data());
 +        },
-+        deleter_data.get());
-+    deleter_data.release();
++        backing_store_.release());
 +    return v8::ArrayBuffer::New(isolate, std::move(backing_store));
 +  }
 +
 + private:
-+  struct BackingStoreDeleterData {
-+    v8::ArrayBuffer::Allocator* allocator;
-+    size_t capacity;
-+  };
-+
-+  v8::ArrayBuffer::Allocator* allocator_;
++  v8::Isolate* isolate_;
 +  const size_t minimum_buffer_capacity_;
-+  size_t buffer_capacity_ = 0;
++  std::unique_ptr<v8::BackingStore> backing_store_;
 +};
 +
 +}  // namespace serdes
@@ -452,3 +458,47 @@ index 5e01f64a5039235447101d0d8cfbdba3da4ddbc1..49c457cae2b3da603a548874f63dbdf9
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
+diff --git a/test/parallel/test-worker-sharedarraybuffer-from-worker-thread.js b/test/parallel/test-worker-sharedarraybuffer-from-worker-thread.js
+index ce8410f6dd3d7531b12db2af5608085015a4bf07..e081a8efbaa62e240a27c26a7ec93c83f4e43da1 100644
+--- a/test/parallel/test-worker-sharedarraybuffer-from-worker-thread.js
++++ b/test/parallel/test-worker-sharedarraybuffer-from-worker-thread.js
+@@ -3,6 +3,7 @@
+ const common = require('../common');
+ const assert = require('assert');
+ const { Worker } = require('worker_threads');
++const v8 = require('v8');
+ 
+ // Regression test for https://github.com/nodejs/node/issues/28777
+ // Make sure that SharedArrayBuffers and transferred ArrayBuffers created in
+@@ -26,3 +27,31 @@ for (const ctor of ['ArrayBuffer', 'SharedArrayBuffer']) {
+     assert.deepStrictEqual(uint8array, new Uint8Array([42, 0, 0, 0]));
+   }));
+ }
++
++// Serialized buffers transferred from workers must retain their allocator.
++{
++  const expected = { payload: 'x'.repeat(1024 * 1024) };
++  const worker = new Worker(`
++    const assert = require('assert');
++    const v8 = require('v8');
++    const { parentPort } = require('worker_threads');
++
++    const serialized =
++      v8.serialize({ payload: 'x'.repeat(1024 * 1024) });
++
++    parentPort.postMessage(serialized, [serialized.buffer]);
++    assert.strictEqual(serialized.byteLength, 0);
++  `, { eval: true });
++
++  let serialized;
++
++  worker.once('message', common.mustCall((message) => {
++    serialized = message;
++  }));
++
++  worker.once('exit', common.mustCall((code) => {
++    assert.strictEqual(code, 0);
++    assert(serialized);
++    assert.deepStrictEqual(v8.deserialize(serialized), expected);
++  }));
++}
