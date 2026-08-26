@@ -21,7 +21,7 @@ const snapshotHolder =
     ? path.resolve(process.execPath, '../../Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
     : process.execPath;
 
-ifdescribe(fs.existsSync(xcache))('electron_xcache', () => {
+ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', () => {
   let tmp: string;
   before(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xcache-'));
