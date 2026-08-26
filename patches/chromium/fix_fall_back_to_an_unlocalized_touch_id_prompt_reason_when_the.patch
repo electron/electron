@@ -42,10 +42,10 @@ index 492f0c4c485f9283bd6c43e2223dcfd4921f6089..7db481f512ac3d02a7d02ca1c93b495b
              &GetAssertionOperation::PromptTouchIdDone,
              // Safe to use Unretained because `touch_id_context_` is owned by
 diff --git a/device/fido/mac/make_credential_operation.mm b/device/fido/mac/make_credential_operation.mm
-index 21560e3704279e7720e0651262934d3b39f71775..0d6b25e513f5361b6c188ba18f41ef0dd3868a8f 100644
+index 5f0b4888692c44d796e9bd6f081dd60ea6abf131..c4c62f91b0ed315e30d667c8d49d4106cfce2145 100644
 --- a/device/fido/mac/make_credential_operation.mm
 +++ b/device/fido/mac/make_credential_operation.mm
-@@ -56,9 +56,19 @@
+@@ -57,9 +57,19 @@
        request_.user_verification,
        device::fido::mac::DeviceHasBiometricsAvailable());
    if (require_uv) {
