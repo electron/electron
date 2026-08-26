@@ -273,3 +273,4 @@ cherry-pick-ffb3d5c5df87.patch
 cherry-pick-4e17fa56c471.patch
 cherry-pick-0c2b2640e6fb.patch
 cherry-pick-7cf589757eab.patch
+revert_only_preload_swiftshader_in_gpu_sandbox_init_when_allowed.patch
