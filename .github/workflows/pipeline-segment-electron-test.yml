@@ -327,8 +327,6 @@ jobs:
         NPM_CONFIG_MSVS_VERSION: '2022'
         TARGET_PLATFORM: ${{ inputs.target-platform }}
         DISPLAY_SERVER: ${{ inputs.display-server }}
-        IS_ASAN: ${{ inputs.is-asan }}
-        IS_UBSAN: ${{ inputs.is-ubsan }}
         SHARD: ${{ matrix.shard }}
         SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
