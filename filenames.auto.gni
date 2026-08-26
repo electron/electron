@@ -342,6 +342,7 @@ auto_filenames = {
     "../third_party/electron_node/src/node_revert.h",
     "../third_party/electron_node/src/node_root_certs.h",
     "../third_party/electron_node/src/node_sea.h",
+    "../third_party/electron_node/src/node_serdes_utils.h",
     "../third_party/electron_node/src/node_shadow_realm.h",
     "../third_party/electron_node/src/node_snapshot_builder.h",
     "../third_party/electron_node/src/node_snapshotable.h",

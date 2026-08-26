@@ -48,10 +48,10 @@ index 72dde5271c2bc923c0f538115f9f36d6b846c819..a58dcebc6cfd1c5d3befe133c73d7834
    o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
    o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
 diff --git a/node.gyp b/node.gyp
-index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..54ee17622bc979af7c55336206a272852a13ebdd 100644
+index ce50ee1c831a3d186b812bdd51feeb8bf65561d9..b3ae470516db2b6f7ca55e22c1f7b128c80d26d2 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -1378,6 +1378,14 @@
+@@ -1379,6 +1379,14 @@
          }, {
            'sources!': [ '<@(node_cctest_quic_sources)' ],
          }],
@@ -66,7 +66,7 @@ index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..54ee17622bc979af7c55336206a27285
          ['v8_enable_inspector==1', {
            'defines': [
              'HAVE_INSPECTOR=1',
-@@ -1641,6 +1649,14 @@
+@@ -1642,6 +1650,14 @@
              'NODE_USE_NODE_CODE_CACHE=1',
            ],
          }],

@@ -10,10 +10,10 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 54ee17622bc979af7c55336206a272852a13ebdd..8fbb5a6a0986584390d086454a2e3e565a656fca 100644
+index b3ae470516db2b6f7ca55e22c1f7b128c80d26d2..457bb5d9dc6fc5b5546b83e7ea9f661f8a0b490a 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -191,10 +191,11 @@
+@@ -192,10 +192,11 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -26,7 +26,7 @@ index 54ee17622bc979af7c55336206a272852a13ebdd..8fbb5a6a0986584390d086454a2e3e56
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -328,11 +329,12 @@
+@@ -329,11 +330,12 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',

@@ -6,6 +6,18 @@ Subject: support V8 sandboxed pointers
 This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
+diff --git a/node.gyp b/node.gyp
+index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..ce50ee1c831a3d186b812bdd51feeb8bf65561d9 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -152,6 +152,7 @@
+       'src/node_sea.cc',
+       'src/node_sea_bin.cc',
+       'src/node_serdes.cc',
++      'src/node_serdes_utils.h',
+       'src/node_shadow_realm.cc',
+       'src/node_snapshotable.cc',
+       'src/node_sockaddr.cc',
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe266f828d1 100644
 --- a/src/crypto/crypto_util.cc
@@ -205,58 +217,66 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_ipc_serdes.cc b/src/node_ipc_serdes.cc
-index 05d5ae7ccffeb2fa7e9b4bb79c6d397186e264fd..00a8bcddd37cd10812ad8ddc8345912c813e47ee 100644
+index 05d5ae7ccffeb2fa7e9b4bb79c6d397186e264fd..43c1a65fdd3ccc47ba1305965ca081d7e4769a55 100644
 --- a/src/node_ipc_serdes.cc
 +++ b/src/node_ipc_serdes.cc
-@@ -333,8 +333,14 @@ static void Serialize(const FunctionCallbackInfo<Value>& args) {
+@@ -3,6 +3,7 @@
+ #include "node_errors.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
++#include "node_serdes_utils.h"
+ #include "util-inl.h"
+ 
+ #include <cstring>
+@@ -163,10 +164,12 @@ static MaybeLocal<Object> MakeView(Environment* env,
+   return result;
+ }
+ 
+-class IPCSerializerDelegate : public ValueSerializer::Delegate {
++class IPCSerializerDelegate : public serdes::SerializerDelegate {
+  public:
+   IPCSerializerDelegate(Environment* env, Local<Value> buffer_constructor)
+-      : env_(env), buffer_constructor_(buffer_constructor) {}
++      : serdes::SerializerDelegate(env->isolate()),
++        env_(env),
++        buffer_constructor_(buffer_constructor) {}
+ 
+   void set_serializer(ValueSerializer* serializer) { serializer_ = serializer; }
+ 
+@@ -333,8 +336,10 @@ static void Serialize(const FunctionCallbackInfo<Value>& args) {
    buf[2] = (payload_length >> 8) & 0xFF;
    buf[3] = payload_length & 0xFF;
  
 -  Local<Object> out;
 -  if (Buffer::New(env, reinterpret_cast<char*>(buf), size).ToLocal(&out)) {
-+  std::shared_ptr<BackingStore> backing_store =
-+      ArrayBuffer::NewBackingStore(isolate, size);
-+  memcpy(backing_store->Data(), buf, size);
-+  free(buf);
 +  Local<ArrayBuffer> array_buffer =
-+      ArrayBuffer::New(isolate, std::move(backing_store));
++      delegate.AdoptReleasedBuffer(isolate, result);
 +  Local<Uint8Array> out;
 +  if (Buffer::New(env, array_buffer, 0, size).ToLocal(&out)) {
      args.GetReturnValue().Set(out);
    }
  }
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
+index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..8516615bb73813ddc96eb5ab340288743b626cb9 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
-@@ -29,6 +29,26 @@ using v8::ValueSerializer;
+@@ -3,6 +3,7 @@
+ #include "node_errors.h"
+ #include "node_external_reference.h"
+ #include "node_internals.h"
++#include "node_serdes_utils.h"
+ #include "util-inl.h"
  
+ namespace node {
+@@ -30,18 +31,18 @@ using v8::ValueSerializer;
  namespace serdes {
  
-+v8::ArrayBuffer::Allocator* GetAllocator() {
-+  static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-+  return allocator;
-+}
-+
-+void* Reallocate(void* data, size_t old_length,
-+                 size_t new_length) {
-+  if (old_length == new_length) return data;
-+  uint8_t* new_data =
-+      reinterpret_cast<uint8_t*>(GetAllocator()->AllocateUninitialized(new_length));
-+  if (new_data == nullptr) return nullptr;
-+  size_t bytes_to_copy = std::min(old_length, new_length);
-+  memcpy(new_data, data, bytes_to_copy);
-+  if (new_length > bytes_to_copy) {
-+    memset(new_data + bytes_to_copy, 0, new_length - bytes_to_copy);
-+  }
-+  GetAllocator()->Free(data, old_length);
-+  return new_data;
-+}
-+
  class SerializerContext : public BaseObject,
-                           public ValueSerializer::Delegate {
+-                          public ValueSerializer::Delegate {
++                          public SerializerDelegate {
   public:
-@@ -37,10 +57,15 @@ class SerializerContext : public BaseObject,
+   SerializerContext(Environment* env,
+                     Local<Object> wrap);
  
    ~SerializerContext() override = default;
  
@@ -265,60 +285,31 @@ index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d
    Maybe<bool> WriteHostObject(Isolate* isolate, Local<Object> object) override;
    Maybe<uint32_t> GetSharedArrayBufferId(
        Isolate* isolate, Local<SharedArrayBuffer> shared_array_buffer) override;
-+  void* ReallocateBufferMemory(void* old_buffer,
-+                               size_t old_length,
-+                               size_t* new_length) override;
-+  void FreeBufferMemory(void* buffer) override;
- 
+-
    static void SetTreatArrayBufferViewsAsHostObjects(
        const FunctionCallbackInfo<Value>& args);
-@@ -61,6 +86,7 @@ class SerializerContext : public BaseObject,
  
-  private:
-   ValueSerializer serializer_;
-+  size_t last_length_ = 0;
- };
+@@ -97,6 +98,7 @@ class DeserializerContext : public BaseObject,
  
- class DeserializerContext : public BaseObject,
-@@ -145,6 +171,24 @@ Maybe<uint32_t> SerializerContext::GetSharedArrayBufferId(
-   return id->Uint32Value(env()->context());
+ SerializerContext::SerializerContext(Environment* env, Local<Object> wrap)
+   : BaseObject(env, wrap),
++    SerializerDelegate(env->isolate(), 4096),
+     serializer_(env->isolate(), this) {
+   MakeWeak();
  }
+@@ -208,13 +210,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+   SerializerContext* ctx;
+   ASSIGN_OR_RETURN_UNWRAP(&ctx, args.This());
  
-+void* SerializerContext::ReallocateBufferMemory(void* old_buffer,
-+                                                size_t requested_size,
-+                                                size_t* new_length) {
-+  *new_length = std::max(static_cast<size_t>(4096), requested_size);
-+  if (old_buffer) {
-+    void* ret = Reallocate(old_buffer, last_length_, *new_length);
-+    last_length_ = *new_length;
-+    return ret;
-+  } else {
-+    last_length_ = *new_length;
-+    return GetAllocator()->Allocate(*new_length);
-+  }
-+}
-+
-+void SerializerContext::FreeBufferMemory(void* buffer) {
-+  GetAllocator()->Free(buffer, last_length_);
-+}
-+
- Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
-                                                Local<Object> input) {
-   Local<Value> args[1] = { input };
-@@ -211,10 +255,17 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
-   // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
-   // as the underlying allocator.
+-  // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
+-  // as the underlying allocator.
    std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
 -  Local<Object> buf;
 -  if (Buffer::New(ctx->env(), reinterpret_cast<char*>(ret.first), ret.second)
 -          .ToLocal(&buf)) {
 -    args.GetReturnValue().Set(buf);
-+  std::unique_ptr<v8::BackingStore> bs =
-+      v8::ArrayBuffer::NewBackingStore(reinterpret_cast<char*>(ret.first), ret.second,
-+        [](void* data, size_t length, void* deleter_data) {
-+          if (data) GetAllocator()->Free(reinterpret_cast<char*>(data), length);
-+        }, nullptr);
-+  Local<ArrayBuffer> ab = v8::ArrayBuffer::New(ctx->env()->isolate(), std::move(bs));
++  Local<ArrayBuffer> ab =
++      ctx->AdoptReleasedBuffer(ctx->env()->isolate(), ret);
 +
 +  auto buf = Buffer::New(ctx->env(), ab, 0, ret.second);
 +
@@ -327,6 +318,106 @@ index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d
    }
  }
  
+diff --git a/src/node_serdes_utils.h b/src/node_serdes_utils.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..18bbbeb18c6b5fdb826745aafe84f003690643f0
+--- /dev/null
++++ b/src/node_serdes_utils.h
+@@ -0,0 +1,94 @@
++#ifndef SRC_NODE_SERDES_UTILS_H_
++#define SRC_NODE_SERDES_UTILS_H_
++
++#if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
++
++#include "v8.h"
++
++#include <algorithm>
++#include <cstring>
++#include <memory>
++#include <utility>
++
++namespace node {
++namespace serdes {
++
++class SerializerDelegate : public v8::ValueSerializer::Delegate {
++ public:
++  explicit SerializerDelegate(v8::Isolate* isolate,
++                              size_t minimum_buffer_capacity = 0)
++      : allocator_(isolate->GetArrayBufferAllocator()),
++        minimum_buffer_capacity_(minimum_buffer_capacity) {}
++
++  void* ReallocateBufferMemory(void* old_buffer,
++                               size_t requested_size,
++                               size_t* actual_size) override {
++    const size_t new_capacity =
++        std::max(minimum_buffer_capacity_, requested_size);
++    void* new_buffer = old_buffer == nullptr
++                           ? allocator_->Allocate(new_capacity)
++                           : allocator_->AllocateUninitialized(new_capacity);
++    if (new_buffer == nullptr) return nullptr;
++
++    if (old_buffer != nullptr) {
++      const size_t bytes_to_copy =
++          std::min(buffer_capacity_, new_capacity);
++      memcpy(new_buffer,
++             old_buffer,
++             bytes_to_copy);
++      if (new_capacity > bytes_to_copy) {
++        memset(static_cast<uint8_t*>(new_buffer) + bytes_to_copy,
++               0,
++               new_capacity - bytes_to_copy);
++      }
++      allocator_->Free(old_buffer, buffer_capacity_);
++    }
++
++    buffer_capacity_ = new_capacity;
++    *actual_size = new_capacity;
++    return new_buffer;
++  }
++
++  void FreeBufferMemory(void* buffer) override {
++    const size_t capacity = std::exchange(buffer_capacity_, 0);
++    allocator_->Free(buffer, capacity);
++  }
++
++  v8::Local<v8::ArrayBuffer> AdoptReleasedBuffer(
++      v8::Isolate* isolate,
++      std::pair<uint8_t*, size_t> buffer) {
++    auto deleter_data = std::make_unique<BackingStoreDeleterData>(
++        BackingStoreDeleterData{
++            allocator_, std::exchange(buffer_capacity_, 0)});
++    auto backing_store = v8::ArrayBuffer::NewBackingStore(
++        buffer.first,
++        buffer.second,
++        [](void* data, size_t, void* deleter_data) {
++          std::unique_ptr<BackingStoreDeleterData> state(
++              static_cast<BackingStoreDeleterData*>(deleter_data));
++          if (data != nullptr) {
++            state->allocator->Free(data, state->capacity);
++          }
++        },
++        deleter_data.get());
++    deleter_data.release();
++    return v8::ArrayBuffer::New(isolate, std::move(backing_store));
++  }
++
++ private:
++  struct BackingStoreDeleterData {
++    v8::ArrayBuffer::Allocator* allocator;
++    size_t capacity;
++  };
++
++  v8::ArrayBuffer::Allocator* allocator_;
++  const size_t minimum_buffer_capacity_;
++  size_t buffer_capacity_ = 0;
++};
++
++}  // namespace serdes
++}  // namespace node
++
++#endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
++
++#endif  // SRC_NODE_SERDES_UTILS_H_
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
 index 5e01f64a5039235447101d0d8cfbdba3da4ddbc1..49c457cae2b3da603a548874f63dbdf9f50580d9 100644
 --- a/src/node_trace_events.cc
