@@ -12,7 +12,7 @@ Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 457bb5d9dc6fc5b5546b83e7ea9f661f8a0b490a..ffd76437551db556e05f3642f24043455eb70151 100644
+index 76d289ef572255b3d7d9526f0a0f8d80f2178b78..24a65ccac72373f1aa50fb93fb04d6a376aace86 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -193,8 +193,6 @@
