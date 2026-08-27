@@ -34,6 +34,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -258,8 +259,7 @@ int NodeMain() {
     // idle in the kernel’s event provider .
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
-    auto tracing_agent = NodeBindings::InitializeTracingAgent(
-        /*use_standalone_perfetto_client=*/true);
+    auto tracing_agent = node::tracing::Agent::CreateDefault();
     CHECK(tracing_agent);
 
     // Initialize gin::IsolateHolder.
