@@ -48,6 +48,7 @@ PATHS_TO_SKIP = [
   'pyproto',
   # Skip because these are outputs that we don't need.
   'resources/inspector',
+  'gen/third_party/chromium-bidi/src',
   'gen/third_party/devtools-frontend/src',
   'gen/ui/webui',
   # Skip because these get zipped separately in script/zip-symbols.py

@@ -12,7 +12,7 @@ accessor setter/definer callbacks to PropertyCallbackInfo<Boolean> and
 register the non-deprecated callback types as external references.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index bf7a41c149e89d3cd913eb010450124d3c3a8911..1c37d60329af852a53f352bfc8c53a37acf34ae1 100644
+index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de5093dd52 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -577,7 +577,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
@@ -111,7 +111,7 @@ index b38c2f75a92f2d6c1b9c6e7b7aca924653f7494d..2afac129cc3e823f425da781be57b0f8
    if (desc.has_value()) {
      if (!desc.has_writable() ||
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index e474b0dab727a7019aa146cac53816596e031331..649a54eea26e08f9dac3c724ff67244596e3db72 100644
+index 235f74ce0e624233afbc18f1dabf7a5272d7bf60..ecc5c3f429d2d6458fb82cf7916e9bffcc33edd2 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
 @@ -20,18 +20,18 @@ class ExternalReferenceRegistry {
@@ -172,7 +172,7 @@ index 5f5af63486a556f00b1cc3d44ec731f414904626..3132a96abb87f9275080ca0d8b2015b1
    int32_t port = value->Int32Value(env->context()).FromMaybe(0);
  
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index b57a83c1d869d018db6212d8d9ff115c266b109a..68ce66e15c8f823d58d52db3638e67295ffa00ed 100644
+index 5d61435c1f525a6c48f8c564c997ca15983c87a8..8e5d0bc9f1d41e8397ed5db03f68a2711c0da422 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -784,7 +784,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -198,10 +198,10 @@ index e7281ed266af5d27c2c60a3c65e8bd4fcbc0b8fb..fffa433d615461c7ecf2fd28e114a260
        v8::Local<v8::Name> property,
        const v8::PropertyCallbackInfo<v8::Integer>& info);
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index be5dccc2ac77799ae249ed388f9ebce000207ef3..51b1ba14bfb883e83c586ef598debb0bbcaea924 100644
+index 3856e9cdaa305f4919c315060bae8d1a5f17cb80..681208276eb18a86b268b29d6ddeb304947cdbfc 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -600,7 +600,7 @@ static Intercepted StorageGetter(Local<Name> property,
+@@ -601,7 +601,7 @@ static Intercepted StorageGetter(Local<Name> property,
  
  static Intercepted StorageSetter(Local<Name> property,
                                   Local<Value> value,
@@ -210,7 +210,7 @@ index be5dccc2ac77799ae249ed388f9ebce000207ef3..51b1ba14bfb883e83c586ef598debb0b
    Storage* storage;
    ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
  
-@@ -650,7 +650,7 @@ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
+@@ -651,7 +651,7 @@ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
  
  static Intercepted StorageDefiner(Local<Name> property,
                                    const PropertyDescriptor& desc,
@@ -219,7 +219,7 @@ index be5dccc2ac77799ae249ed388f9ebce000207ef3..51b1ba14bfb883e83c586ef598debb0b
    Storage* storage;
    ASSIGN_OR_RETURN_UNWRAP(&storage, info.Holder(), Intercepted::kNo);
  
-@@ -670,7 +670,7 @@ static Intercepted IndexedGetter(uint32_t index,
+@@ -671,7 +671,7 @@ static Intercepted IndexedGetter(uint32_t index,
  
  static Intercepted IndexedSetter(uint32_t index,
                                   Local<Value> value,
@@ -228,7 +228,7 @@ index be5dccc2ac77799ae249ed388f9ebce000207ef3..51b1ba14bfb883e83c586ef598debb0b
    Environment* env = Environment::GetCurrent(info);
    Local<Name> name = Uint32ToString(env->context(), index);
    return StorageSetter(name, value, info);
-@@ -692,7 +692,7 @@ static Intercepted IndexedDeleter(uint32_t index,
+@@ -693,7 +693,7 @@ static Intercepted IndexedDeleter(uint32_t index,
  
  static Intercepted IndexedDefiner(uint32_t index,
                                    const PropertyDescriptor& desc,

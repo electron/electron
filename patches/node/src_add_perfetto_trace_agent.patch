@@ -1,0 +1,1131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <legendecas@gmail.com>
+Date: Fri, 19 Jun 2026 17:50:27 -0400
+Subject: src: add perfetto trace agent
+
+Signed-off-by: Chengzhong Wu <cwu631@bloomberg.net>
+PR-URL: https://github.com/nodejs/node/pull/64565
+Refs: https://github.com/nodejs/diagnostics/issues/654
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
+
+diff --git a/node.gyp b/node.gyp
+index b3ae470516db2b6f7ca55e22c1f7b128c80d26d2..457bb5d9dc6fc5b5546b83e7ea9f661f8a0b490a 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -192,10 +192,11 @@
+       'src/timers.cc',
+       'src/timer_wrap.cc',
+       'src/tracing/agent.cc',
+-      'src/tracing/agent_legacy.cc',
++      'src/tracing/agent_perfetto.cc',
+       'src/tracing/node_trace_buffer.cc',
+       'src/tracing/node_trace_writer.cc',
+       'src/tracing/trace_event.cc',
++      'src/tracing/trace_event_perfetto.cc',
+       'src/tracing/traced_value.cc',
+       'src/tty_wrap.cc',
+       'src/udp_wrap.cc',
+@@ -329,11 +330,12 @@
+       'src/tcp_wrap.h',
+       'src/timers.h',
+       'src/tracing/agent.h',
+-      'src/tracing/agent_legacy.h',
++      'src/tracing/agent_perfetto.h',
+       'src/tracing/node_trace_buffer.h',
+       'src/tracing/node_trace_writer.h',
+       'src/tracing/trace_event.h',
+       'src/tracing/trace_event_common.h',
++      'src/tracing/trace_event_perfetto.h',
+       'src/tracing/traced_value.h',
+       'src/timer_wrap.h',
+       'src/timer_wrap-inl.h',
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index c81ef82c5a23d30ec7430b8726bd28e1be2f225e..75fc97a581b79c87a51adcbe999b937262b422db 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -759,14 +759,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+   return env->platform();
+ }
+ 
+-MultiIsolatePlatform* CreatePlatform(
+-    int thread_pool_size,
+-    node::tracing::TracingController* tracing_controller) {
+-  return CreatePlatform(
+-      thread_pool_size,
+-      static_cast<v8::TracingController*>(tracing_controller));
+-}
+-
+ MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+     v8::TracingController* tracing_controller) {
+diff --git a/src/inspector/node_inspector.gypi b/src/inspector/node_inspector.gypi
+index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41ecccf43d0 100644
+--- a/src/inspector/node_inspector.gypi
++++ b/src/inspector/node_inspector.gypi
+@@ -24,8 +24,6 @@
+       'src/inspector/protocol_helper.h',
+       'src/inspector/runtime_agent.cc',
+       'src/inspector/runtime_agent.h',
+-      'src/inspector/tracing_agent.cc',
+-      'src/inspector/tracing_agent.h',
+       'src/inspector/worker_agent.cc',
+       'src/inspector/worker_agent.h',
+       'src/inspector/network_inspector.cc',
+@@ -51,6 +49,10 @@
+       'src/inspector/notification_emitter.h',
+       'src/inspector/notification_emitter.cc',
+     ],
++    'node_inspector_without_perfetto_sources': [
++      'src/inspector/tracing_agent.cc',
++      'src/inspector/tracing_agent.h',
++    ],
+     'node_inspector_generated_sources': [
+       '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Forward.h',
+       '<(SHARED_INTERMEDIATE_DIR)/src/node/inspector/protocol/Protocol.cpp',
+@@ -185,4 +187,11 @@
+       ],
+     },
+   ],
++  'conditions': [
++    ['v8_use_perfetto!=1', {
++      'sources': [
++        '<@(node_inspector_without_perfetto_sources)',
++      ],
++    }],
++  ],
+ }
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index 7329990ebf6a0bcb64b18069b67a61d45b56c60b..37c86da997097240e381c79dbfd00b17937167af 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -14,7 +14,9 @@
+ #include "inspector/runtime_agent.h"
+ #include "inspector/storage_agent.h"
+ #include "inspector/target_agent.h"
++#if !defined(V8_USE_PERFETTO)
+ #include "inspector/tracing_agent.h"
++#endif  // !defined(V8_USE_PERFETTO)
+ #include "inspector/worker_agent.h"
+ #include "inspector/worker_inspector.h"
+ #include "inspector_io.h"
+@@ -286,9 +288,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+                                   StringView(),
+                                   V8Inspector::ClientTrustLevel::kFullyTrusted);
+     node_dispatcher_ = std::make_unique<UberDispatcher>(this);
++#if !defined(V8_USE_PERFETTO)
+     tracing_agent_ =
+         std::make_unique<protocol::TracingAgent>(env, main_thread_);
+     tracing_agent_->Wire(node_dispatcher_.get());
++#endif  // !defined(V8_USE_PERFETTO)
+     if (worker_manager) {
+       worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
+       worker_agent_->Wire(node_dispatcher_.get());
+@@ -322,8 +326,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+   }
+ 
+   ~ChannelImpl() override {
++#if !defined(V8_USE_PERFETTO)
+     tracing_agent_->disable();
+     tracing_agent_.reset();  // Dispose before the dispatchers
++#endif  // !defined(V8_USE_PERFETTO)
+     if (worker_agent_) {
+       worker_agent_->disable();
+       worker_agent_.reset();  // Dispose before the dispatchers
+@@ -472,7 +478,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+   }
+ 
+   std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
++#if !defined(V8_USE_PERFETTO)
+   std::unique_ptr<protocol::TracingAgent> tracing_agent_;
++#endif  // !defined(V8_USE_PERFETTO)
+   std::unique_ptr<protocol::WorkerAgent> worker_agent_;
+   std::shared_ptr<protocol::TargetAgent> target_agent_;
+   std::unique_ptr<NetworkInspector> network_inspector_;
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233bb2943a9 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -315,6 +315,7 @@ class ThreadPoolWork {
+   const char* type_;
+ };
+ 
++#if !defined(V8_USE_PERFETTO)
+ #define TRACING_CATEGORY_NODE "node"
+ #define TRACING_CATEGORY_NODE1(one)                                           \
+     TRACING_CATEGORY_NODE ","                                                 \
+@@ -323,6 +324,7 @@ class ThreadPoolWork {
+     TRACING_CATEGORY_NODE ","                                                 \
+     TRACING_CATEGORY_NODE "." #one ","                                        \
+     TRACING_CATEGORY_NODE "." #one "." #two
++  #endif  // !defined(V8_USE_PERFETTO)
+ 
+ // Functions defined in node.cc that are exposed via the bootstrapper object
+ 
+diff --git a/src/node_options.h b/src/node_options.h
+index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9ff90e0960 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -328,7 +328,11 @@ class PerProcessOptions : public Options {
+ 
+   std::string title;
+   std::string trace_event_categories;
++#if defined(V8_USE_PERFETTO)
++  std::string trace_event_file_pattern = "node_trace.${rotation}.pftrace";
++#else
+   std::string trace_event_file_pattern = "node_trace.${rotation}.log";
++#endif
+   int64_t v8_thread_pool_size = 4;
+   bool zero_fill_all_buffers = false;
+   bool debug_arraybuffer_allocations = false;
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 47cafc6634c14ea3d656e8819ca8351356d09254..668046e56b25465d8ffae85ccb0c42a49b107243 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
+   if (tracing_controller != nullptr) {
+     tracing_controller_ = tracing_controller;
+   } else {
+-    tracing_controller_ = new v8::TracingController();
++    owned_tracing_controller_ = std::make_unique<v8::TracingController>();
++    tracing_controller_ = owned_tracing_controller_.get();
+   }
+ 
+   // V8 will default to its built in allocator if none is provided.
+@@ -496,6 +497,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
+ 
+ NodePlatform::~NodePlatform() {
+   Shutdown();
++  if (node::GetTracingController() == tracing_controller_) {
++    node::SetTracingController(nullptr);
++  }
+ }
+ 
+ void NodePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+diff --git a/src/node_platform.h b/src/node_platform.h
+index f47e2a46b66b84938bcbf5b34ffc4a4a4a39af3f..665d2a467e08084837217482f65bb62673e4ebbe 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -272,6 +272,7 @@ class NodePlatform : public MultiIsolatePlatform {
+                                  std::shared_ptr<PerIsolatePlatformData>>;
+   std::unordered_map<v8::Isolate*, DelegatePair> per_isolate_;
+ 
++  std::unique_ptr<v8::TracingController> owned_tracing_controller_;
+   v8::TracingController* tracing_controller_;
+   v8::PageAllocator* page_allocator_;
+   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
+diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
+index 69b956e9bc9d68cab6076dff661b8f8877007ec8..6d80a4797461683315f9f51266a34a2c00e4c937 100644
+--- a/src/tracing/agent.cc
++++ b/src/tracing/agent.cc
+@@ -1,5 +1,5 @@
+ #include "tracing/agent.h"
+-#include "tracing/agent_legacy.h"
++#include "tracing/agent_perfetto.h"
+ #include "tracing/trace_event.h"
+ 
+ namespace node {
+@@ -23,7 +23,7 @@ void Agent::Deleter::operator()(Agent* agent) {
+ std::unique_ptr<Agent, Agent::Deleter> Agent::CreateDefault() {
+   CHECK_NULL(g_agent);
+ 
+-  auto agent = new LegacyTracingAgent();
++  auto agent = new PerfettoTracingAgent();
+ 
+   g_agent = agent;
+   TraceEventHelper::SetTracingController(agent->GetTracingController());
+diff --git a/src/tracing/agent.h b/src/tracing/agent.h
+index 78203154c099a56d0d9256f9cade9742dffb141c..51d8a992342b54addd892fb77b21a66d09ada486 100644
+--- a/src/tracing/agent.h
++++ b/src/tracing/agent.h
+@@ -43,9 +43,9 @@ class Agent {
+   virtual AgentWriterHandle* GetDefaultWriterHandle() = 0;
+ 
+   virtual void AddTraceStateObserver(
+-      v8::TracingController::TraceStateObserver* observer) = 0;
++      v8::TracingController::TraceStateObserver* observer) {}
+   virtual void RemoveTraceStateObserver(
+-      v8::TracingController::TraceStateObserver* observer) = 0;
++      v8::TracingController::TraceStateObserver* observer) {}
+ 
+   struct Deleter {
+     void operator()(Agent* agent);
+@@ -87,7 +87,7 @@ class AgentWriterHandle {
+   int id_ = 0;
+ 
+   friend class Agent;
+-  friend class LegacyTracingAgent;
++  friend class PerfettoTracingAgent;
+ };
+ 
+ void AgentWriterHandle::reset() {
+diff --git a/src/tracing/agent_perfetto.cc b/src/tracing/agent_perfetto.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..1b1f3852a634919716b9a6760d982a03c8049a75
+--- /dev/null
++++ b/src/tracing/agent_perfetto.cc
+@@ -0,0 +1,440 @@
++#include "tracing/agent_perfetto.h"
++
++#include <cstdio>
++#include <string>
++#include "debug_utils-inl.h"
++#include "env-inl.h"
++#include "node_options.h"
++#include "trace_event.h"
++
++#include "trace_event_perfetto.h"
++
++namespace node {
++namespace tracing {
++namespace {
++
++// Perfetto's file writer drains buffers on a fixed period (default 5s) instead
++// of continuously; mirror that cadence here.
++constexpr uint64_t kReadPeriodMs = 5000;
++
++// Rotate to a new file once the current one reaches this size, so no single
++// trace file grows without bound.
++constexpr uint64_t kMaxFileSizeBytes = 64 * 1024 * 1024;  // 64 MiB
++
++void replace_substring(std::string* target,
++                       std::string_view search,
++                       std::string_view insert) {
++  size_t pos = target->find(search);
++  for (; pos != std::string::npos; pos = target->find(search, pos)) {
++    target->replace(pos, search.size(), insert);
++    pos += insert.size();
++  }
++}
++
++std::set<std::string> flatten(
++    const std::unordered_map<int, std::multiset<std::string>>& map) {
++  std::set<std::string> result;
++  for (const auto& id_value : map)
++    result.insert(id_value.second.begin(), id_value.second.end());
++  return result;
++}
++
++}  // namespace
++
++// Writes trace chunks to a file, rotating by size. It deliberately uses the
++// synchronous uv_fs_* APIs, mirroring Perfetto's internal file writer which
++// does blocking writev() on its own service thread.
++//
++// Synchronous writes are the right fit here, not just simpler:
++//   - These writes run on the dedicated tracing loop thread, so blocking on
++//     disk stalls neither the application's main thread nor Perfetto's internal
++//     thread.
++//   - The buffer is drained periodically (see kReadPeriodMs) and each chunk is
++//     already contiguous, so there is little I/O to overlap; the thread-pool
++//     offload of async uv_fs_* would buy little.
++//   - It keeps buffer lifetime, write ordering, flushing, rotation, and
++//     shutdown trivial. Async writes would require keeping each buffer alive
++//     until its callback, serializing to one in-flight write per fd, and a
++//     condition-variable wait for blocking Flush() (see NodeTraceWriter).
++class SimpleWriter : public TraceWriter {
++ public:
++  explicit SimpleWriter(std::string log_file_pattern)
++      : log_file_pattern_(std::move(log_file_pattern)) {}
++
++  ~SimpleWriter() override {
++    if (fd_ < 0) return;
++    uv_fs_t req;
++    uv_fs_close(loop_, &req, fd_, nullptr);
++    uv_fs_req_cleanup(&req);
++  }
++
++  void InitializeOnThread(uv_loop_t* loop) override {
++    loop_ = loop;
++    OpenNewFileForStreaming();
++  }
++
++  // Synchronously writes a chunk, rotating to a new file once it grows too
++  // large. See the class comment for why the write is synchronous.
++  void AppendTraceChunk(std::vector<char> chunk) override {
++    if (fd_ < 0) return;
++    uv_buf_t buf =
++        uv_buf_init(chunk.data(), static_cast<unsigned int>(chunk.size()));
++    uv_fs_t req;
++    int written = uv_fs_write(loop_, &req, fd_, &buf, 1, -1, nullptr);
++    uv_fs_req_cleanup(&req);
++    if (written < 0) return;
++
++    bytes_written_ += written;
++    // Each chunk holds only whole trace packets, so rotating on a chunk
++    // boundary leaves every file a self-contained, valid trace.
++    if (bytes_written_ >= kMaxFileSizeBytes) OpenNewFileForStreaming();
++  }
++
++  void Flush(bool blocking) override {
++    if (fd_ < 0) return;
++    uv_fs_t req;
++    uv_fs_fsync(loop_, &req, fd_, nullptr);
++    uv_fs_req_cleanup(&req);
++  }
++
++ private:
++  // Opens the next rotation file, evaluating a JS-style template that accepts
++  // ${pid} and ${rotation}, mirroring NodeTraceWriter::OpenNewFileForStreaming.
++  void OpenNewFileForStreaming() {
++    ++file_num_;
++    uv_fs_t req;
++
++    std::string filepath(log_file_pattern_);
++    replace_substring(&filepath, "${pid}", std::to_string(uv_os_getpid()));
++    replace_substring(&filepath, "${rotation}", std::to_string(file_num_));
++
++    if (fd_ >= 0) {
++      uv_fs_close(loop_, &req, fd_, nullptr);
++      uv_fs_req_cleanup(&req);
++    }
++
++    fd_ = uv_fs_open(loop_,
++                     &req,
++                     filepath.c_str(),
++                     UV_FS_O_CREAT | UV_FS_O_WRONLY | UV_FS_O_TRUNC,
++                     0644,
++                     nullptr);
++    uv_fs_req_cleanup(&req);
++    if (fd_ < 0) {
++      fprintf(stderr,
++              "Could not open trace file %s: %s\n",
++              filepath.c_str(),
++              uv_strerror(fd_));
++      fd_ = -1;
++    }
++    bytes_written_ = 0;
++  }
++
++  std::string log_file_pattern_;
++  uv_loop_t* loop_ = nullptr;
++  uv_file fd_ = -1;
++  int file_num_ = 0;
++  uint64_t bytes_written_ = 0;
++};
++
++void PerfettoSessionReader::Deleter::operator()(
++    PerfettoSessionReader* ptr) const noexcept {
++  ptr->tracing_session_->FlushBlocking();
++  ptr->Read();
++  ptr->tracing_session_->Stop();
++}
++
++PerfettoSessionReader::PerfettoSessionReader(
++    perfetto::TraceConfig config, std::unique_ptr<TraceWriter> writer)
++    : writer_(std::move(writer)) {
++  tracing_session_ =
++      perfetto::Tracing::NewTrace(perfetto::BackendType::kUnspecifiedBackend);
++  tracing_session_->Setup(config);
++  tracing_session_->SetOnStopCallback(
++      std::bind(&PerfettoSessionReader::SessionStopCallback, this));
++  tracing_session_->StartBlocking();
++}
++
++PerfettoSessionReader::~PerfettoSessionReader() {}
++
++void PerfettoSessionReader::ChangeTraceConfig(perfetto::TraceConfig config) {
++  tracing_session_->ChangeTraceConfig(config);
++}
++
++void PerfettoSessionReader::InitializeOnThread(uv_loop_t* loop) {
++  tracing_loop_ = loop;
++  CHECK_EQ(uv_async_init(tracing_loop_, &read_async_, OnReadAsync), 0);
++  read_async_.data = this;
++  CHECK_EQ(uv_timer_init(tracing_loop_, &read_timer_), 0);
++  read_timer_.data = this;
++  writer_->InitializeOnThread(loop);
++
++  // Drain the trace buffer periodically instead of continuously, mirroring
++  // Perfetto's file writer which reschedules ReadBuffersIntoFile() every
++  // write_period_ms.
++  CHECK_EQ(
++      uv_timer_start(&read_timer_, OnReadTimer, kReadPeriodMs, kReadPeriodMs),
++      0);
++}
++
++void PerfettoSessionReader::Read() {
++  if (stop_requested_) return;
++  // Skip if a previous periodic read is still draining the buffer.
++  bool expected = false;
++  if (!read_in_progress_.compare_exchange_strong(expected, true)) return;
++  tracing_session_->ReadTrace(std::bind(
++      &PerfettoSessionReader::ReadTraceCallback, this, std::placeholders::_1));
++}
++
++void PerfettoSessionReader::ReadTraceCallback(
++    perfetto::TracingSession::ReadTraceCallbackArgs args) {
++  // On Perfetto internal thread.
++  {
++    Mutex::ScopedLock lock(chunks_mutex_);
++    if (args.size > 0)
++      pending_chunks_.emplace_back(args.data, args.data + args.size);
++  }
++  // A single ReadTrace() cycle can yield multiple callbacks; the last one has
++  // has_more == false, which clears read_in_progress_ so the next timer tick
++  // can start a new read.
++  read_in_progress_ = args.has_more;
++  uv_async_send(&read_async_);
++}
++
++void PerfettoSessionReader::SessionStopCallback() {
++  stop_requested_ = true;
++  uv_async_send(&read_async_);
++}
++
++// static
++void PerfettoSessionReader::OnReadAsync(uv_async_t* async) {
++  PerfettoSessionReader* reader =
++      static_cast<PerfettoSessionReader*>(async->data);
++  std::list<std::vector<char>> chunks_to_write;
++  {
++    Mutex::ScopedLock lock(reader->chunks_mutex_);
++    std::swap(chunks_to_write, reader->pending_chunks_);
++  }
++
++  while (!chunks_to_write.empty()) {
++    std::vector<char>& chunk = chunks_to_write.front();
++    reader->writer_->AppendTraceChunk(std::move(chunk));
++    chunks_to_write.pop_front();
++  }
++
++  if (reader->stop_requested_ && reader->handles_pending_close_ == 0) {
++    reader->writer_->Flush(true);
++
++    reader->handles_pending_close_ = 2;
++    uv_timer_stop(&reader->read_timer_);
++    uv_close(reinterpret_cast<uv_handle_t*>(&reader->read_async_),
++             OnHandleClose);
++    uv_close(reinterpret_cast<uv_handle_t*>(&reader->read_timer_),
++             OnHandleClose);
++  }
++}
++
++// static
++void PerfettoSessionReader::OnReadTimer(uv_timer_t* timer) {
++  PerfettoSessionReader* reader =
++      static_cast<PerfettoSessionReader*>(timer->data);
++  reader->Read();
++}
++
++// static
++void PerfettoSessionReader::OnHandleClose(uv_handle_t* handle) {
++  PerfettoSessionReader* reader =
++      static_cast<PerfettoSessionReader*>(handle->data);
++  if (--reader->handles_pending_close_ == 0) delete reader;
++}
++
++PerfettoTracingAgent::PerfettoTracingAgent() {
++  CHECK_EQ(uv_loop_init(&tracing_loop_), 0);
++  CHECK_EQ(uv_async_init(&tracing_loop_,
++                         &initialize_writer_async_,
++                         [](uv_async_t* async) {
++                           PerfettoTracingAgent* agent = ContainerOf(
++                               &PerfettoTracingAgent::initialize_writer_async_,
++                               async);
++                           agent->InitializeWritersOnThread();
++                         }),
++           0);
++
++  // Set up the in-process backend that the tracing controller will connect
++  // to.
++  perfetto::TracingInitArgs init_args;
++  init_args.backends = perfetto::BackendType::kInProcessBackend;
++  perfetto::Tracing::Initialize(init_args);
++
++  node::TrackEvent::Register();
++}
++
++void PerfettoTracingAgent::InitializeWritersOnThread() {
++  Mutex::ScopedLock lock(initialize_writer_mutex_);
++  while (!to_be_initialized_.empty()) {
++    auto head = *to_be_initialized_.begin();
++    head->InitializeOnThread(&tracing_loop_);
++    to_be_initialized_.erase(head);
++  }
++  initialize_writer_condvar_.Broadcast(lock);
++
++  uv_unref(reinterpret_cast<uv_handle_t*>(&initialize_writer_async_));
++}
++
++PerfettoTracingAgent::~PerfettoTracingAgent() {
++  StopTracing();
++
++  categories_.clear();
++  writers_.clear();
++
++  uv_close(reinterpret_cast<uv_handle_t*>(&initialize_writer_async_), nullptr);
++  uv_run(&tracing_loop_, UV_RUN_ONCE);
++  CheckedUvLoopClose(&tracing_loop_);
++}
++
++void PerfettoTracingAgent::Start() {
++  if (started_) return;
++
++  // This thread should be created *after* async handles are created
++  // (within NodeTraceWriter and NodeTraceBuffer constructors).
++  // Otherwise the thread could shut down prematurely.
++  CHECK_EQ(0,
++           uv_thread_create(
++               &thread_,
++               [](void* arg) {
++                 uv_thread_setname("TraceEventWorker");
++                 PerfettoTracingAgent* agent =
++                     static_cast<PerfettoTracingAgent*>(arg);
++                 uv_run(&agent->tracing_loop_, UV_RUN_DEFAULT);
++               },
++               this));
++
++  started_ = true;
++}
++
++AgentWriterHandle* PerfettoTracingAgent::GetDefaultWriterHandle() {
++  return tracing_file_writer_.has_value() ? &tracing_file_writer_.value()
++                                          : nullptr;
++}
++
++AgentWriterHandle PerfettoTracingAgent::AddClient(
++    const std::set<std::string>& categories,
++    std::unique_ptr<TraceWriter> writer,
++    enum UseDefaultCategoryMode mode) {
++  Start();
++
++  const std::set<std::string>* use_categories = &categories;
++
++  std::set<std::string> categories_with_default;
++  if (mode == kUseDefaultCategories) {
++    categories_with_default.insert(categories.begin(), categories.end());
++    categories_with_default.insert(categories_[kDefaultHandleId].begin(),
++                                   categories_[kDefaultHandleId].end());
++    use_categories = &categories_with_default;
++  }
++
++  int id = next_writer_id_++;
++  PerfettoSessionReader::Ptr reader = PerfettoSessionReader::Create(
++      CreateTraceConfig({use_categories->begin(), use_categories->end()}),
++      std::move(writer));
++
++  auto* raw = reader.get();
++  writers_[id] = std::move(reader);
++  categories_[id] = {use_categories->begin(), use_categories->end()};
++
++  {
++    Mutex::ScopedLock lock(initialize_writer_mutex_);
++    to_be_initialized_.insert(raw);
++    uv_async_send(&initialize_writer_async_);
++    while (to_be_initialized_.count(raw) > 0)
++      initialize_writer_condvar_.Wait(lock);
++  }
++
++  return AgentWriterHandle(this, id);
++}
++
++void PerfettoTracingAgent::StartTracing(const std::string& categories) {
++  if (tracing_file_writer_.has_value()) return;
++
++  using std::operator""sv;
++  auto parts = std::views::split(categories, ","sv);
++
++  std::set<std::string> categories_set;
++  for (const auto& s : parts) {
++    categories_set.emplace(std::string(s.data(), s.size()));
++  }
++
++  tracing_file_writer_ =
++      AddClient(categories_set,
++                std::make_unique<SimpleWriter>(
++                    per_process::cli_options->trace_event_file_pattern),
++                kUseDefaultCategories);
++}
++
++void PerfettoTracingAgent::StopTracing() {
++  if (!started_) return;
++  // Perform final Flush on TraceBuffer. We don't want the tracing controller
++  // to flush the buffer again on destruction of the V8::Platform.
++  writers_.clear();
++  started_ = false;
++
++  // Thread should finish when the tracing loop is stopped.
++  uv_thread_join(&thread_);
++}
++
++void PerfettoTracingAgent::Disconnect(int client) {
++  if (client == kDefaultHandleId) return;
++  {
++    Mutex::ScopedLock lock(initialize_writer_mutex_);
++    to_be_initialized_.erase(writers_[client].get());
++  }
++
++  writers_.erase(client);
++  categories_.erase(client);
++}
++
++void PerfettoTracingAgent::Enable(int id,
++                                  const std::set<std::string>& categories) {
++  if (categories.empty()) return;
++
++  categories_[id].insert(categories.begin(), categories.end());
++
++  writers_[id]->ChangeTraceConfig(CreateTraceConfig(categories_[id]));
++}
++
++void PerfettoTracingAgent::Disable(int id,
++                                   const std::set<std::string>& categories) {
++  std::multiset<std::string>& writer_categories = categories_[id];
++  for (const std::string& category : categories) {
++    auto it = writer_categories.find(category);
++    if (it != writer_categories.end()) writer_categories.erase(it);
++  }
++
++  writers_[id]->ChangeTraceConfig(CreateTraceConfig(writer_categories));
++}
++
++std::string PerfettoTracingAgent::GetEnabledCategories() const {
++  std::string categories;
++  for (const std::string& category : flatten(categories_)) {
++    if (!categories.empty()) categories += ',';
++    categories += category;
++  }
++  return categories;
++}
++
++perfetto::TraceConfig PerfettoTracingAgent::CreateTraceConfig(
++    std::multiset<std::string> categories) const {
++  perfetto::TraceConfig perfetto_trace_config;
++  perfetto_trace_config.add_buffers()->set_size_kb(4096);
++  auto ds_config = perfetto_trace_config.add_data_sources()->mutable_config();
++  ds_config->set_name("track_event");
++  perfetto::protos::gen::TrackEventConfig te_config;
++  te_config.add_disabled_categories("*");
++  for (const auto& category : categories)
++    te_config.add_enabled_categories(category);
++  ds_config->set_track_event_config_raw(te_config.SerializeAsString());
++  return perfetto_trace_config;
++}
++
++}  // namespace tracing
++}  // namespace node
+diff --git a/src/tracing/agent_perfetto.h b/src/tracing/agent_perfetto.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..0d74ca5332b018e28182f7181289099ee8bc75d5
+--- /dev/null
++++ b/src/tracing/agent_perfetto.h
+@@ -0,0 +1,147 @@
++#ifndef SRC_TRACING_AGENT_PERFETTO_H_
++#define SRC_TRACING_AGENT_PERFETTO_H_
++
++#if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
++
++#include "perfetto/tracing.h"
++#include "perfetto/tracing/core/trace_config.h"
++#include "node_mutex.h"
++#include "tracing/agent.h"
++#include "tracing/trace_event_perfetto.h"
++#include "util.h"
++#include "uv.h"
++#include "v8-platform.h"
++
++#include <list>
++#include <set>
++#include <string>
++#include <unordered_map>
++
++namespace node::tracing {
++
++// Consumes trace data produced by a PerfettoSessionReader. All methods run on
++// the agent's dedicated background tracing thread (the loop passed to
++// InitializeOnThread), never on the application's main thread or Perfetto's
++// internal thread, so implementations may block (e.g. do synchronous I/O).
++class TraceWriter {
++ public:
++  virtual ~TraceWriter() = default;
++  // 'chunk' is guaranteed to contain 1 or more full trace packets, which
++  // can be decoded using trace.proto. No partial or truncated packets are
++  // exposed.
++  virtual void AppendTraceChunk(std::vector<char> chunk) = 0;
++  virtual void Flush(bool blocking) = 0;
++  virtual void InitializeOnThread(uv_loop_t* loop) {}
++};
++
++// Owns one Perfetto tracing session and pumps its trace data out to a
++// TraceWriter using the consumer ReadTrace() API, reading on a fixed period.
++//
++// Threading: two threads are involved.
++//   - Perfetto's internal thread invokes ReadTraceCallback. It only copies the
++//     borrowed chunk into pending_chunks_ (under chunks_mutex_) and signals
++//     read_async_; it never touches the writer or the file.
++//   - The agent's dedicated tracing loop thread runs everything else. A
++//     repeating timer (read_timer_) starts a read every kReadPeriodMs, and
++//     OnReadAsync drains pending_chunks_ into the writer there. This is why the
++//     writer can safely block on synchronous I/O (see TraceWriter).
++// read_in_progress_ prevents a timer tick from starting a new read while a
++// previous ReadTrace() cycle is still delivering chunks.
++class PerfettoSessionReader final {
++ public:
++  struct Deleter {
++    void operator()(PerfettoSessionReader* ptr) const noexcept;
++  };
++  using Ptr = std::unique_ptr<PerfettoSessionReader, Deleter>;
++  static Ptr Create(perfetto::TraceConfig config,
++                    std::unique_ptr<TraceWriter> writer) {
++    return Ptr(new PerfettoSessionReader(config, std::move(writer)));
++  }
++
++  void ChangeTraceConfig(perfetto::TraceConfig config);
++
++  void InitializeOnThread(uv_loop_t* loop);
++
++ private:
++  explicit PerfettoSessionReader(perfetto::TraceConfig config,
++                                 std::unique_ptr<TraceWriter> writer);
++  ~PerfettoSessionReader();
++  void ReadTraceCallback(perfetto::TracingSession::ReadTraceCallbackArgs args);
++  void SessionStopCallback();
++  void Read();
++
++  static void OnReadAsync(uv_async_t* async);
++  static void OnReadTimer(uv_timer_t* timer);
++  static void OnHandleClose(uv_handle_t* handle);
++
++  uv_loop_t* tracing_loop_;
++  uv_async_t read_async_;
++  uv_timer_t read_timer_;
++  int handles_pending_close_ = 0;
++  std::atomic<bool> stop_requested_ = false;
++  std::atomic<bool> read_in_progress_ = false;
++
++  Mutex chunks_mutex_;
++  std::list<std::vector<char>> pending_chunks_;
++  std::unique_ptr<perfetto::TracingSession> tracing_session_ = nullptr;
++
++  std::unique_ptr<TraceWriter> writer_;
++};
++
++class PerfettoTracingAgent final : public Agent {
++ public:
++  enum UseDefaultCategoryMode {
++    kUseDefaultCategories,
++    kIgnoreDefaultCategories
++  };
++
++  PerfettoTracingAgent();
++  ~PerfettoTracingAgent() override;
++
++  v8::TracingController* GetTracingController() override { return nullptr; }
++
++  AgentWriterHandle AddClient(const std::set<std::string>& categories,
++                              std::unique_ptr<TraceWriter> writer,
++                              enum UseDefaultCategoryMode mode);
++  std::string GetEnabledCategories() const override;
++
++  void StartTracing(const std::string& categories) override;
++  void StopTracing() override;
++  AgentWriterHandle* GetDefaultWriterHandle() override;
++
++ private:
++  static constexpr int kDefaultHandleId = -1;
++
++  void Disconnect(int client) override;
++
++  void Enable(int id, const std::set<std::string>& categories) override;
++  void Disable(int id, const std::set<std::string>& categories) override;
++
++  void InitializeWritersOnThread();
++  void Start();
++
++  perfetto::TraceConfig CreateTraceConfig(
++      std::multiset<std::string> categories) const;
++
++  uv_thread_t thread_;
++  uv_loop_t tracing_loop_;
++
++  bool started_ = false;
++
++  int next_writer_id_ = 1;
++  std::unordered_map<int, std::multiset<std::string>> categories_;
++  std::unordered_map<int, PerfettoSessionReader::Ptr> writers_;
++
++  Mutex initialize_writer_mutex_;
++  ConditionVariable initialize_writer_condvar_;
++  uv_async_t initialize_writer_async_;
++  std::set<PerfettoSessionReader*> to_be_initialized_;
++
++  std::optional<AgentWriterHandle> tracing_file_writer_;
++};
++
++}  // namespace node::tracing
++
++#endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
++
++#endif  // SRC_TRACING_AGENT_PERFETTO_H_
+diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
+index a0f8c695ea0160e5282679e2a15905863731fffe..81608796814522863ff2d9d0a085638729c7960f 100644
+--- a/src/tracing/trace_event.h
++++ b/src/tracing/trace_event.h
+@@ -5,10 +5,33 @@
+ #ifndef SRC_TRACING_TRACE_EVENT_H_
+ #define SRC_TRACING_TRACE_EVENT_H_
+ 
++#if defined(V8_USE_PERFETTO)
++
+ #include "v8-platform.h"
++#include "tracing/agent.h"
++
++namespace node::tracing {
++
++class TraceEventHelper {
++ public:
++  static v8::TracingController* GetTracingController();
++  static void SetTracingController(v8::TracingController* controller);
++};
++
++}  // namespace node::tracing
++
++#define TRACING_CATEGORY_NODE "node"
++#define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
++#define TRACING_CATEGORY_NODE2(one, two) TRACING_CATEGORY_NODE "." #one "." #two
++
++#include "tracing/trace_event_perfetto.h"
++
++#else
++
++#include <atomic>
++
+ #include "tracing/agent_legacy.h"
+ #include "trace_event_common.h"
+-#include <atomic>
+ 
+ // This header file defines implementation details of how the trace macros in
+ // trace_event_common.h collect and store trace events. Anything not
+@@ -717,4 +740,6 @@ class ScopedTracer {
+ }  // namespace tracing
+ }  // namespace node
+ 
++#endif  // defined(V8_USE_PERFETTO)
++
+ #endif  // SRC_TRACING_TRACE_EVENT_H_
+diff --git a/src/tracing/trace_event_perfetto.cc b/src/tracing/trace_event_perfetto.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..87227b95fd56162a9f577bed4d44bafd0f6a8701
+--- /dev/null
++++ b/src/tracing/trace_event_perfetto.cc
+@@ -0,0 +1,5 @@
++#include "tracing/trace_event_perfetto.h"
++
++#if defined(V8_USE_PERFETTO)
++PERFETTO_TRACK_EVENT_STATIC_STORAGE_IN_NAMESPACE(node);
++#endif
+diff --git a/src/tracing/trace_event_perfetto.h b/src/tracing/trace_event_perfetto.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..3765d931f8e17b33e2201ff3a0e4be84a3216356
+--- /dev/null
++++ b/src/tracing/trace_event_perfetto.h
+@@ -0,0 +1,51 @@
++#ifndef SRC_TRACING_TRACE_EVENT_PERFETTO_H_
++#define SRC_TRACING_TRACE_EVENT_PERFETTO_H_
++
++#if !defined(V8_USE_PERFETTO)
++#error Perfetto is not enabled.
++#endif
++
++// For now most of Node.js uses legacy trace events.
++#define PERFETTO_ENABLE_LEGACY_TRACE_EVENTS 1
++
++#include "perfetto/tracing/traced_value.h"
++#include "perfetto/tracing/track_event.h"
++#include "perfetto/tracing/track_event_legacy.h"
++
++#define TRACING_CATEGORY_NODE "node"
++#define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
++#define TRACING_CATEGORY_NODE2(one, two) TRACING_CATEGORY_NODE "." #one "." #two
++
++#ifndef BASE_TRACE_EVENT_BUILTIN_CATEGORIES_H_
++// List of categories used by built-in Node.js trace events.
++// clang-format off
++PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
++    node,
++    perfetto::Category("__metadata"),  // TODO(legendecas): remove this
++    perfetto::Category("node"),
++    perfetto::Category("node.async_hooks"),
++    perfetto::Category("node.environment"),
++    perfetto::Category("node.realm"),
++    perfetto::Category("node.bootstrap"),
++    perfetto::Category("node.dns.native"),
++    perfetto::Category("node.net.native"),
++    perfetto::Category("node.vm.script"),
++    perfetto::Category("node.fs_dir.sync"),
++    perfetto::Category("node.fs_dir.async"),
++    perfetto::Category("node.fs.sync"),
++    perfetto::Category("node.fs.async"),
++    perfetto::Category("node.perf.event_loop"),
++    perfetto::Category("node.promises.rejections"),
++    perfetto::Category("node.threadpoolwork.sync"),
++    perfetto::Category("node.threadpoolwork.async"),
++// JavaScript namespaces
++    perfetto::Category("node.console"),
++    perfetto::Category("node.http"),
++    perfetto::Category("node.module_timer"),
++  );  // NOLINT(whitespace/parens)
++// clang-format on
++
++PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(node);
++#endif
++
++#endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
+diff --git a/src/tracing/traced_value.cc b/src/tracing/traced_value.cc
+index a7c9b9b5b30ac17160e4dd2659502708f0dfdc5c..dcecbfd976ad16f0e0b45e8273873f7e70f0844c 100644
+--- a/src/tracing/traced_value.cc
++++ b/src/tracing/traced_value.cc
+@@ -258,5 +258,21 @@ std::unique_ptr<v8::ConvertableToTraceFormat> ProcessMeta::Cast() const {
+   return trace_process;
+ }
+ 
++#if defined(V8_USE_PERFETTO)
++void ProcessMeta::WriteIntoTrace(perfetto::TracedValue context) const {
++  auto dict = std::move(context).WriteDictionary();
++  auto versions_dict = dict.AddDictionary("versions");
++  for (const auto& version : per_process::metadata.versions.pairs()) {
++    versions_dict.Add(perfetto::DynamicString(std::string(version.first)),
++                      version.second);
++  }
++  dict.Add("arch", per_process::metadata.arch.c_str());
++  dict.Add("platform", per_process::metadata.platform.c_str());
++
++  auto release_dict = dict.AddDictionary("release");
++  release_dict.Add("name", per_process::metadata.release.name.c_str());
++}
++#endif
++
+ }  // namespace tracing
+ }  // namespace node
+diff --git a/src/tracing/traced_value.h b/src/tracing/traced_value.h
+index 0bc9df81d87562243817a6618641a49b602654e3..e04ffff48efbc55cc2221c22be7fd2e0b7d957f1 100644
+--- a/src/tracing/traced_value.h
++++ b/src/tracing/traced_value.h
+@@ -11,13 +11,24 @@
+ #include <span>
+ #include <string>
+ 
++#if defined(V8_USE_PERFETTO)
++#include "tracing/trace_event_perfetto.h"
++#endif
++
+ namespace node {
+ namespace tracing {
+ 
++#if defined(V8_USE_PERFETTO)
++template <typename T>
++T CastTracedValue(const T& value) {
++  return value;
++}
++#else
+ template <typename T>
+ std::unique_ptr<v8::ConvertableToTraceFormat> CastTracedValue(const T& value) {
+   return value.Cast();
+ }
++#endif
+ 
+ class EnvironmentArgs {
+  public:
+@@ -27,6 +38,20 @@ class EnvironmentArgs {
+ 
+   std::unique_ptr<v8::ConvertableToTraceFormat> Cast() const;
+ 
++#if defined(V8_USE_PERFETTO)
++  void WriteIntoTrace(perfetto::TracedValue context) const {
++    auto dict = std::move(context).WriteDictionary();
++    auto args_array = dict.AddArray("args");
++    for (const auto& arg : args_) {
++      args_array.Append(arg);
++    }
++    auto exec_args_array = dict.AddArray("exec_args");
++    for (const auto& arg : exec_args_) {
++      exec_args_array.Append(arg);
++    }
++  }
++#endif
++
+  private:
+   std::span<const std::string> args_;
+   std::span<const std::string> exec_args_;
+@@ -40,6 +65,15 @@ class AsyncWrapArgs {
+ 
+   std::unique_ptr<v8::ConvertableToTraceFormat> Cast() const;
+ 
++#if defined(V8_USE_PERFETTO)
++  void WriteIntoTrace(perfetto::TracedValue context) const {
++    auto dict = std::move(context).WriteDictionary();
++    dict.Add("executionAsyncId", execution_async_id_);
++    dict.Add("triggerAsyncId", trigger_async_id_);
++    dict.Add("foo", "bar");
++  }
++#endif
++
+  private:
+   int64_t execution_async_id_;
+   int64_t trigger_async_id_;
+@@ -48,6 +82,10 @@ class AsyncWrapArgs {
+ class ProcessMeta {
+  public:
+   std::unique_ptr<v8::ConvertableToTraceFormat> Cast() const;
++
++#if defined(V8_USE_PERFETTO)
++  void WriteIntoTrace(perfetto::TracedValue context) const;
++#endif
+ };
+ 
+ // Do not use this class directly. Define a custom structured class to provide
+diff --git a/test/parallel/test-trace-events-perfetto-pftrace.js b/test/parallel/test-trace-events-perfetto-pftrace.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa2f06f0d3
+--- /dev/null
++++ b/test/parallel/test-trace-events-perfetto-pftrace.js
+@@ -0,0 +1,28 @@
++'use strict';
++const common = require('../common');
++
++if (!process.config.variables.v8_use_perfetto)
++  common.skip('perfetto tracing is not enabled');
++
++const assert = require('assert');
++const cp = require('child_process');
++const fs = require('fs');
++
++const CODE =
++  'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1)';
++
++const tmpdir = require('../common/tmpdir');
++tmpdir.refresh();
++// Perfetto builds default the file pattern to a .pftrace extension.
++const FILE_NAME = tmpdir.resolve('node_trace.1.pftrace');
++
++const proc = cp.spawn(process.execPath,
++                      [ '--trace-events-enabled', '-e', CODE ],
++                      { cwd: tmpdir.path });
++
++proc.once('exit', common.mustCall(() => {
++  assert(fs.existsSync(FILE_NAME));
++  // The perfetto trace is a binary protobuf, so just check it has content.
++  const stat = fs.statSync(FILE_NAME);
++  assert(stat.size > 0);
++}));
+diff --git a/unofficial.gni b/unofficial.gni
+index 92f1c9379ee87734e279e33e39241aad3771db44..21290af4119ebe9cef1ab193dfb852daa5d4ad8c 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -156,6 +156,7 @@ template("node_gn_build") {
+   source_set("libnode") {
+     configs += [
+       ":node_internal_config",
++      "$node_v8_path:v8_tracing_config",
+       "//build/config/compiler:no_exit_time_destructors"
+     ]
+     public_configs = [
+@@ -192,6 +193,7 @@ template("node_gn_build") {
+       "//third_party/zstd:headers",
+       "$node_simdutf_path",
+       "$node_v8_path:v8_libplatform",
++      "$node_v8_path:v8_tracing",
+     ]
+ 
+     cflags_cc = [
