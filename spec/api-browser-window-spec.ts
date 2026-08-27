@@ -6,6 +6,7 @@ import {
   BrowserView,
   dialog,
   ipcMain,
+  Menu,
   OnBeforeSendHeadersListenerDetails,
   net,
   protocol,
@@ -2050,7 +2051,60 @@ describe('BrowserWindow module', () => {
         // There would be also DCHECK in resize_utils.cc on
         // debug build.
         w.setAspectRatio(1.0);
-        expectBoundsEqual(w.getSize(), [400, 400]);
+        if (process.platform === 'win32') {
+          // Windows applies the ratio to the content area, so a framed window
+          // narrows to keep the content square. It must still stay within the
+          // maximum size, which is what this test guards.
+          const [width, height] = w.getSize();
+          expect(width).to.be.at.most(400);
+          expect(height).to.be.at.most(400);
+          const [contentWidth, contentHeight] = w.getContentSize();
+          expect(contentWidth - contentHeight).to.be.closeTo(0, 1);
+        } else {
+          expectBoundsEqual(w.getSize(), [400, 400]);
+        }
+      });
+
+      // Windows applies the aspect ratio to the window as soon as it is set,
+      // so the effect of |extraSize| is observable without an interactive
+      // resize. macOS only consults it from windowWillResize:, which a test
+      // cannot drive.
+      describe('extraSize', () => {
+        let aspectWindow: BrowserWindow;
+
+        afterEach(async () => {
+          await closeWindow(aspectWindow, { assertNotWindows: false });
+          aspectWindow = null as unknown as BrowserWindow;
+        });
+
+        ifit(process.platform === 'win32')('is not excluded when omitted', () => {
+          aspectWindow = new BrowserWindow({ show: false, frame: false, width: 600, height: 400 });
+          aspectWindow.setAspectRatio(1.0);
+          expectBoundsEqual(aspectWindow.getSize(), [400, 400]);
+        });
+
+        ifit(process.platform === 'win32')('is excluded from the aspect ratio calculation', () => {
+          // 600x400 minus 200px of extra width is already 1:1, so the window
+          // should keep its size instead of being squared off to 400x400.
+          aspectWindow = new BrowserWindow({ show: false, frame: false, width: 600, height: 400 });
+          aspectWindow.setAspectRatio(1.0, { width: 200, height: 0 });
+          expectBoundsEqual(aspectWindow.getSize(), [600, 400]);
+        });
+
+        ifit(process.platform === 'win32')('survives the menu bar being hidden', () => {
+          // The margin excluded on Windows covers the menu bar too, so hiding
+          // it has to recompute the margin rather than leave a stale one.
+          aspectWindow = new BrowserWindow({ show: false, width: 600, height: 400 });
+          aspectWindow.setMenu(Menu.buildFromTemplate([{ label: 'File', submenu: [{ role: 'quit' }] }]));
+          aspectWindow.setAspectRatio(1.0, { width: 200, height: 0 });
+
+          const [beforeWidth, beforeHeight] = aspectWindow.getContentSize();
+          expect(beforeWidth - beforeHeight).to.be.closeTo(200, 2);
+
+          aspectWindow.setMenuBarVisibility(false);
+          const [afterWidth, afterHeight] = aspectWindow.getContentSize();
+          expect(afterWidth - afterHeight).to.be.closeTo(200, 2);
+        });
       });
     });
 
