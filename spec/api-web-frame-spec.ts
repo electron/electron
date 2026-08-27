@@ -369,6 +369,18 @@ describe('webFrame module', () => {
           2
         );
       });
+
+      it('executeJavaScriptInIsolatedWorld() rejects when worldId is not an integer', async () => {
+        const result = await w.executeJavaScript(`
+          webFrame.executeJavaScriptInIsolatedWorld('1234', [{code: '1 + 1'}]).then(
+            () => ({ rejected: false }),
+            (error) => ({ rejected: true, name: error.name, message: error.message })
+          )
+        `);
+        expect(result.rejected).to.be.true();
+        expect(result.name).to.equal('TypeError');
+        expect(result.message).to.equal('worldId must be an integer');
+      });
     });
 
     describe('isolated world discovery', () => {
