@@ -3,6 +3,7 @@ import { ipcMain, net, protocol, session, WebContents, webContents } from 'elect
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
 
+import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -824,6 +825,107 @@ describe('webRequest module', () => {
         expect(details.error).to.equal('net::ERR_BLOCKED_BY_CLIENT');
       });
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
+    });
+  });
+
+  describe('requests that no blocking listener can match', () => {
+    // Served from another process: these tests block the main process on purpose.
+    let server: childProcess.ChildProcess;
+    let serverURL: string;
+    before(async () => {
+      server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
+      [{ url: serverURL }] = await once(server, 'message');
+    });
+    after(() => server.kill());
+    afterEach(() => {
+      ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onHeadersReceived(null);
+      ses.webRequest.onSendHeaders(null);
+      ses.webRequest.onBeforeRedirect(null);
+      ses.webRequest.onCompleted(null);
+      ses.webRequest.onErrorOccurred(null);
+    });
+
+    // Starts a fetch from the page, then keeps the main process busy; a request
+    // that had to visit the main process could not finish before the busy loop.
+    async function fetchWhileMainIsBusy(url: string, busyMs = 600) {
+      await contents.executeJavaScript(
+        `window.fetchTiming = new Promise(r => setTimeout(() => { const t = performance.now(); fetch(${JSON.stringify(url)}).then(x => x.text()).then(() => r(performance.now() - t)); }, 50)); true`
+      );
+      const end = Date.now() + busyMs;
+      while (Date.now() < end) {
+        /* busy */
+      }
+      return contents.executeJavaScript('window.fetchTiming');
+    }
+
+    it('reach the network without the main process when only observers listen', async () => {
+      const completed: string[] = [];
+      ses.webRequest.onCompleted((details) => {
+        completed.push(details.url);
+      });
+      ses.webRequest.onErrorOccurred(() => {});
+      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/observed`);
+      expect(elapsed).to.be.lessThan(300);
+      expect(completed).to.include(`${serverURL}/observed`);
+    });
+
+    it('reach the network without the main process when blocking listeners filter them out by type', async () => {
+      let calls = 0;
+      ses.webRequest.onBeforeRequest(
+        { urls: ['<all_urls>'], types: ['mainFrame', 'subFrame'] },
+        (details, callback) => {
+          calls++;
+          callback({});
+        }
+      );
+      ses.webRequest.onHeadersReceived({ urls: ['<all_urls>'], types: ['mainFrame'] }, (details, callback) => {
+        calls++;
+        callback({});
+      });
+      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/typed`);
+      expect(elapsed).to.be.lessThan(300);
+      expect(calls).to.equal(0);
+    });
+
+    it('still wait for a blocking listener whose type filter matches', async () => {
+      ses.webRequest.onBeforeRequest({ urls: ['<all_urls>'], types: ['xhr'] }, (details, callback) => {
+        callback({});
+      });
+      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/blocked`);
+      expect(elapsed).to.be.greaterThan(400);
+    });
+
+    it('report redirect, response and completion details to observers', async () => {
+      const events: string[] = [];
+      ses.webRequest.onSendHeaders((d) => {
+        events.push(`send ${new URL(d.url).pathname}`);
+      });
+      ses.webRequest.onBeforeRedirect((d) => {
+        events.push(`redirect ${new URL(d.url).pathname} -> ${new URL(d.redirectURL).pathname} ${d.statusCode}`);
+      });
+      ses.webRequest.onCompleted((d) => {
+        events.push(`completed ${new URL(d.url).pathname} ${d.statusCode} ${d.resourceType}`);
+      });
+      const { data } = await ajax(`${serverURL}/redirect`);
+      expect(data).to.equal('/landed');
+      expect(events).to.deep.equal([
+        'send /redirect',
+        'redirect /redirect -> /landed 301',
+        'send /landed',
+        'completed /landed 200 xhr'
+      ]);
+    });
+
+    it('report failures to onErrorOccurred', async () => {
+      const closed = http.createServer((req) => {
+        req.socket.destroy();
+      });
+      const { url } = await listen(closed);
+      const error = new Promise<string>((resolve) => ses.webRequest.onErrorOccurred((d) => resolve(d.error)));
+      await expect(ajax(`${url}/`)).to.eventually.be.rejected();
+      expect(await error).to.match(/^net::ERR_/);
+      closed.close();
     });
   });
 
