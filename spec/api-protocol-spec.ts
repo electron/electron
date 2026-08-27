@@ -17,7 +17,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer, ifit } from './lib/spec-helpers';
+import { listen, defer } from './lib/spec-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
@@ -2215,32 +2215,49 @@ describe('protocol module', () => {
       expect(response).to.be.string("hello to it's-a me! Mario!");
     });
 
-    // TODO(nornagon): this test doesn't pass on Linux currently, investigate.
-    // test is also flaky on CI on macOS so it is currently disabled there as well.
-    ifit(process.platform !== 'linux' && (!process.env.CI || process.platform !== 'darwin'))('is fast', async () => {
-      // 128 MB of spaces.
+    it('is fast', async () => {
+      // 128 MB payload.
       const chunk = new Uint8Array(128 * 1024 * 1024);
-      chunk.fill(' '.charCodeAt(0));
+      await contents.loadURL('about:blank');
 
       const server = http.createServer((req, res) => {
-        // The sniffed mime type for the space-filled chunk will be
-        // text/plain, which chews up all its performance in the renderer
-        // trying to wrap lines. Setting content-type to text/html measures
-        // something closer to just the raw cost of getting the bytes over
-        // the wire.
-        res.setHeader('content-type', 'text/html');
+        res.setHeader('access-control-allow-origin', '*');
+        res.setHeader('cache-control', 'no-store');
+        res.setHeader('content-type', 'application/octet-stream');
         res.end(chunk);
       });
       defer(() => server.close());
       const { url } = await listen(server);
 
-      const rawTime = await (async () => {
-        await contents.loadURL(url); // warm
+      const fetchPayload = async () => {
         const begin = Date.now();
-        await contents.loadURL(url);
+        const length = await contents.executeJavaScript(`
+          fetch(${JSON.stringify(url)}).then(async response => {
+            const reader = response.body.getReader();
+            let length = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) return length;
+              length += value.byteLength;
+            }
+          })
+        `);
         const end = Date.now();
+        expect(length).to.equal(chunk.byteLength);
         return end - begin;
-      })();
+      };
+
+      const measurePayload = async () => {
+        const samples = [];
+        for (let i = 0; i < 3; i++) {
+          samples.push(await fetchPayload());
+        }
+        samples.sort((a, b) => a - b);
+        return samples[1];
+      };
+
+      await fetchPayload(); // Warm the direct network path.
+      const rawTime = await measurePayload();
 
       // Fetching through an intercepted handler should not be too much slower
       // than it would be if the protocol hadn't been intercepted.
@@ -2252,13 +2269,11 @@ describe('protocol module', () => {
         protocol.unhandle('http');
       });
 
-      const interceptedTime = await (async () => {
-        const begin = Date.now();
-        await contents.loadURL(url);
-        const end = Date.now();
-        return end - begin;
-      })();
-      expect(interceptedTime).to.be.lessThan(rawTime * 1.6);
+      await fetchPayload(); // Warm the protocol handler path.
+      const interceptedTime = await measurePayload();
+      // Interception adds another response body pipeline; allow headroom above
+      // its expected ~2x cost while still catching substantial regressions.
+      expect(interceptedTime).to.be.lessThan(rawTime * 3);
     });
   });
 });

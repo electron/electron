@@ -34,10 +34,10 @@ index f6771b8b6c1db5f00cde78877a3c2bdf5a38d61a..800eb200f8a9e4b7b44a4d22c0cf169c
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index df1ec3d96d73ea5dd6a93ea7f30a819736c12bcb..f1240be55e912db31074a61c0cfd99481ae9eb0a 100644
+index 8238ff2ab588e2619fa21cabda9a4cccc4facc7a..751f651fafe5de0ccbee442f76ee9dc42e087e30 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4985,10 +4985,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4988,10 +4988,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -245,10 +245,10 @@ index 2381b103b6a77519eeacb0edd18465f9d79feba9..30c1da16453b564e19b4675e5e6f5aff
  
    bool HasWebView() const override;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index efc37656aeb434d08833f11732f0d112b5e8d464..f3a5ed58f33970dbbeff05e6d95290acf3d4c95a 100644
+index e174b694f33c4ac9e99ac37fe545a04debc3fc99..1712497a502653de69ceba1ee8eda9b765e2927e 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -430,7 +430,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -431,7 +431,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}
