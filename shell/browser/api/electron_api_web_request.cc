@@ -17,15 +17,20 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/common/api/web_request/web_request_resource_type.h"
 #include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "net/url_request/redirect_info.h"
+#include "services/network/public/cpp/url_loader_completion_status.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
@@ -257,6 +262,15 @@ bool WebRequest::RequestFilter::MatchesRequest(
   return MatchesURL(info->url, include_url_patterns_) &&
          !MatchesURL(info->url, exclude_url_patterns_) &&
          MatchesType(info->web_request_type);
+}
+
+uint32_t WebRequest::RequestFilter::TypeMask() const {
+  if (types_.empty())
+    return kAllResourceTypes;
+  uint32_t mask = 0;
+  for (auto type : types_)
+    mask |= 1u << static_cast<int>(type);
+  return mask;
 }
 
 void WebRequest::RequestFilter::AddUrlPatterns(
@@ -747,10 +761,140 @@ void WebRequest::SetListener(Event event,
     listeners->erase(event);
   else
     (*listeners)[event] = {std::move(filter), std::move(listener)};
-  if (browser_context_) {
-    browser_context_->intercept_state()->SetHasWebRequestListeners(
-        HasListener());
+  UpdateInterceptState();
+}
+
+void WebRequest::UpdateInterceptState() {
+  if (!browser_context_)
+    return;
+  uint32_t blocking = 0, observers = 0;
+  for (const auto& [event, info] : response_listeners_)
+    blocking |= info.filter.TypeMask();
+  for (const auto& [event, info] : simple_listeners_)
+    observers |= info.filter.TypeMask();
+  browser_context_->intercept_state()->SetListenerTypes(blocking, observers);
+}
+
+struct WebRequest::ObservedRequest {
+  ObservedRequest(uint64_t id,
+                  content::GlobalRenderFrameHostId frame,
+                  const network::ResourceRequest& request)
+      : id(id), frame(frame), request(request) {
+    RebuildInfo();
   }
+
+  // WebRequestInfo is immutable; like ProxyingURLLoaderFactory, build a fresh
+  // one (same id) when a redirect changes the request.
+  void RebuildInfo() {
+    info = std::make_unique<extensions::WebRequestInfo>(
+        extensions::WebRequestInfoInitParams(
+            id, frame, nullptr, request, /*is_download=*/false,
+            /*is_async=*/true, /*is_service_worker_script=*/false,
+            /*navigation_id=*/std::nullopt));
+  }
+
+  const uint64_t id;
+  const content::GlobalRenderFrameHostId frame;
+  network::ResourceRequest request;
+  std::unique_ptr<extensions::WebRequestInfo> info;
+};
+
+namespace {
+
+WebRequest* ForObservedRequest(
+    const base::WeakPtr<ElectronBrowserContext>& browser_context) {
+  if (!browser_context)
+    return nullptr;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  return WebRequest::FromOrCreate(isolate, browser_context.get());
+}
+
+}  // namespace
+
+// static
+void WebRequest::ObservedRequestStarted(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    uint64_t key,
+    int render_process_id,
+    int frame_routing_id,
+    int32_t request_id,
+    const network::ResourceRequest& request) {
+  auto* self = ForObservedRequest(browser_context);
+  if (!self)
+    return;
+  auto observed = std::make_unique<ObservedRequest>(
+      ElectronBrowserClient::Get()->NextWebRequestId(),
+      content::GlobalRenderFrameHostId(render_process_id, frame_routing_id),
+      request);
+  auto& entry = *observed;
+  self->observed_requests_.emplace(key, std::move(observed));
+  self->OnSendHeaders(entry.info.get(), entry.request, entry.request.headers);
+}
+
+// static
+void WebRequest::ObservedRequestRedirected(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    uint64_t key,
+    const net::RedirectInfo& redirect_info,
+    network::mojom::URLResponseHeadPtr head) {
+  auto* self = ForObservedRequest(browser_context);
+  if (!self)
+    return;
+  auto it = self->observed_requests_.find(key);
+  if (it == self->observed_requests_.end())
+    return;
+  ObservedRequest& observed = *it->second;
+  observed.info->AddResponseInfoFromResourceResponse(*head);
+  self->OnBeforeRedirect(observed.info.get(), observed.request,
+                         redirect_info.new_url);
+  observed.request.url = redirect_info.new_url;
+  observed.request.method = redirect_info.new_method;
+  observed.request.site_for_cookies = redirect_info.new_site_for_cookies;
+  observed.request.referrer = GURL(redirect_info.new_referrer);
+  observed.RebuildInfo();
+  // The renderer follows the redirect on its own; report the next leg's send
+  // like ProxyingURLLoaderFactory does after FollowRedirect().
+  self->OnSendHeaders(observed.info.get(), observed.request,
+                      observed.request.headers);
+}
+
+// static
+void WebRequest::ObservedRequestResponded(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    uint64_t key,
+    network::mojom::URLResponseHeadPtr head) {
+  auto* self = ForObservedRequest(browser_context);
+  if (!self)
+    return;
+  auto it = self->observed_requests_.find(key);
+  if (it == self->observed_requests_.end())
+    return;
+  ObservedRequest& observed = *it->second;
+  observed.info->AddResponseInfoFromResourceResponse(*head);
+  self->OnResponseStarted(observed.info.get(), observed.request);
+}
+
+// static
+void WebRequest::ObservedRequestFinished(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    uint64_t key,
+    const network::URLLoaderCompletionStatus& status) {
+  auto* self = ForObservedRequest(browser_context);
+  if (!self)
+    return;
+  auto it = self->observed_requests_.find(key);
+  if (it == self->observed_requests_.end())
+    return;
+  auto observed = std::move(it->second);
+  self->observed_requests_.erase(it);
+  if (status.error_code == net::OK)
+    self->OnCompleted(observed->info.get(), observed->request,
+                      status.error_code);
+  else
+    self->OnErrorOccurred(observed->info.get(), observed->request,
+                          status.error_code);
+  self->OnRequestWillBeDestroyed(observed->info.get());
 }
 
 template <typename... Args>

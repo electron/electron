@@ -24,7 +24,9 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
@@ -864,8 +866,21 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
-  if (!web_request_->HasListener()) {
-    // Pass-through to the original factory.
+  // Requests that no blocking listener can match do not need an
+  // InProgressRequest on this thread; observers hear about them from the IO
+  // thread (see URLLoaderFactoryGate, which does the same for renderer
+  // subresources before they get here).
+  const auto route =
+      browser_context_ ? browser_context_->intercept_state()->RouteFor(request)
+                       : InterceptState::Route::kProxy;
+  if (route != InterceptState::Route::kProxy || !web_request_->HasListener()) {
+    if (route == InterceptState::Route::kObserve) {
+      RequestObserverTarget target;
+      target.render_process_id = render_process_id_;
+      target.frame_routing_id = frame_routing_id_;
+      target.browser_context = browser_context_;
+      client = ObserveRequest(target, request_id, request, std::move(client));
+    }
     auto& target_factory = override_target_factory.is_bound()
                                ? override_target_factory
                                : target_factory_;
