@@ -9,10 +9,10 @@ Adds MenuDelegate::SwitchToSiblingMenu, invoked from MenuController when the use
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c063a152f8 100644
+index 31d319ca34fd0f940e2bebe196794d9b01312d51..178df8b17f9ab6cf7e89ebfd160f0cb9e89cbea5 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -1995,9 +1995,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2069,9 +2069,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -24,7 +24,7 @@ index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c0
        }
        break;
  
-@@ -2006,9 +2006,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -2080,9 +2080,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -36,7 +36,7 @@ index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c0
        }
        break;
  
-@@ -3360,6 +3360,52 @@ void MenuController::CloseSubmenu() {
+@@ -3431,6 +3431,52 @@ void MenuController::CloseSubmenu() {
    }
  }
  
@@ -90,10 +90,10 @@ index 8322a559ea539326ff3021a2b7279cc929c1fd9a..2f2ae21e55f8883cb46ba7e05be377c0
      MenuItemView* parent,
      char16_t key,
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 1e7dd4cc0d23bede368884fad833928188109370..dd4366188b8e415afe82cc1da8fb8a4829e1f9c2 100644
+index 263f2fa8c226f801c7b76ba943298df26b3a93db..3d8bd78a58b6559bb67dd3b808f9737ea637f092 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
-@@ -567,6 +567,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+@@ -577,6 +577,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
    // If possible, closes the submenu.
    void CloseSubmenu();
  
@@ -110,7 +110,7 @@ index 1e7dd4cc0d23bede368884fad833928188109370..dd4366188b8e415afe82cc1da8fb8a48
    // Triggered by keyboard events, e.g., APPS key, Shift+F10.
    void ShowContextMenu();
 diff --git a/ui/views/controls/menu/menu_delegate.cc b/ui/views/controls/menu/menu_delegate.cc
-index 2cee3df99c5d62e00262eb2267871bcd033d3fd4..ef0945f3b5acf4b2a98f03b84d4a10707e368349 100644
+index 2cee3df99c5d62e00262eb2267871bcd033d3fd4..9e6aa4f50b8e2d3e85879c6c3a907fed07072b43 100644
 --- a/ui/views/controls/menu/menu_delegate.cc
 +++ b/ui/views/controls/menu/menu_delegate.cc
 @@ -146,6 +146,10 @@ MenuItemView* MenuDelegate::GetSiblingMenu(MenuItemView* menu,
@@ -125,7 +125,7 @@ index 2cee3df99c5d62e00262eb2267871bcd033d3fd4..ef0945f3b5acf4b2a98f03b84d4a1070
    // NOTE: this needs to be large enough to accommodate the wrench menu with
    // big fonts.
 diff --git a/ui/views/controls/menu/menu_delegate.h b/ui/views/controls/menu/menu_delegate.h
-index 93b78fd05676badc4f459f2100155747c85fbdb2..eecad3f755783f01932b4a6402ff327618fe147c 100644
+index 93b78fd05676badc4f459f2100155747c85fbdb2..1e9dd4b95feb81a3d41ed5f05311bac37bc3777e 100644
 --- a/ui/views/controls/menu/menu_delegate.h
 +++ b/ui/views/controls/menu/menu_delegate.h
 @@ -201,6 +201,13 @@ class VIEWS_EXPORT MenuDelegate {
