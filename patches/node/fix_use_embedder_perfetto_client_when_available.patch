@@ -73,6 +73,36 @@ index 0d55a07a01519718098ac1b041ff984f68a6087b..4494eea9c108b96e1edb7352c8841775
      tracing::EnvironmentArgs traced_value(args, exec_args);
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
+diff --git a/src/node.cc b/src/node.cc
+index dcb0ee4dece17406be5afc7313a35c921fd0d6ef..5f7103dffef71955f728256352105a5ac3761e88 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -47,6 +47,10 @@
+ #include "node_v8_platform-inl.h"
+ #include "node_version.h"
+ 
++#if defined(V8_USE_PERFETTO)
++#include "tracing/trace_event_perfetto.h"
++#endif
++
+ #if HAVE_OPENSSL
+ #include "ncrypto.h"
+ #include "node_crypto.h"
+@@ -1136,6 +1140,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+     }
+   }
+ 
++#if defined(V8_USE_PERFETTO)
++  // Register Node's TrackEvent data source when tracing is provided by the
++  // embedder. The standalone tracing agent initializes and registers it later.
++  if (perfetto::Tracing::IsInitialized()) {
++    tracing::RegisterPerfettoTrackEvent();
++  }
++#endif
++
+   if (!(flags & ProcessInitializationFlags::kNoUseLargePages) &&
+       (per_process::cli_options->use_largepages == "on" ||
+        per_process::cli_options->use_largepages == "silent")) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
 index b34026bb088ca966cf4a0752ed4dbd80d13f016a..ef4075729539cb0c53f7f2cabfcf435c4f76f4e2 100644
 --- a/src/node_contextify.cc

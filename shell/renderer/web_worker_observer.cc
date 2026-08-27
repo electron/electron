@@ -95,13 +95,6 @@ void WebWorkerObserver::InitializeNewEnvironment(
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();
 
-  // Setup node tracing controller.
-  static const node::tracing::Agent* const tracing_agent =
-      NodeBindings::InitializeTracingAgent(
-          /*use_standalone_perfetto_client=*/false)
-          .release();
-  CHECK_EQ(tracing_agent, nullptr);
-
   // The renderer main thread normally installed the process-wide builtin code
   // cache already (NodeBindings::Initialize); make sure before this thread's
   // per-context BuiltinLoader is constructed by InitializeContext. Idempotent.

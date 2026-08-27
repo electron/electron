@@ -19,7 +19,6 @@
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
 #include "shell/common/uv_includes.h"
-#include "third_party/electron_node/src/tracing/agent.h"
 #include "v8/include/v8-forward.h"
 
 namespace base {
@@ -122,8 +121,6 @@ class NodeBindings {
   static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env,
                                               uv_loop_t* loop);
   static void RegisterBuiltinBindings();
-  static std::unique_ptr<node::tracing::Agent, node::tracing::Agent::Deleter>
-  InitializeTracingAgent(bool use_standalone_perfetto_client);
   static bool IsInitialized();
 
   // Undo node::InitializeOncePerProcess() for this process. Must run before
