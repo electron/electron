@@ -8,7 +8,9 @@ permissions: {}
 
 jobs:
   check-issue-template:
-    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    # Issues opened by maintainers or by the Claude bot (which files
+    # maintainer-requested issues, e.g. tracking issues) are exempt.
+    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) && github.event.issue.user.login != 'claude[bot]' }}
     name: Check Issue Template
     runs-on: ubuntu-latest
     permissions:
