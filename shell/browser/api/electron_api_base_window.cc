@@ -97,6 +97,11 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
+  // make sure we don't override title on back/forward navigation
+  // if the title is provided
+  if (std::string title; options.Get(options::kTitle, &title))
+    title_set_from_api_ = true;
+
   // The parent window.
   gin_helper::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
