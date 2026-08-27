@@ -170,6 +170,9 @@ WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) 
   );
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
+  if (!Number.isInteger(worldId)) {
+    throw new TypeError('worldId must be an integer');
+  }
   await waitTillCanExecuteJavaScript(this);
   return ipcMainUtils.invokeInWebContents(
     this,
