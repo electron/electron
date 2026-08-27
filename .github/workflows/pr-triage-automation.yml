@@ -42,11 +42,12 @@ jobs:
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 118
+          field: Status
           fail-if-item-not-found: false
       - name: Set status to Needs Review
         if: >-
-          (steps.get-item.outputs.field-status == '🛑 Needs Submitter Response'
-          || steps.get-item.outputs.field-status == '🟡 WIP')
+          (steps.get-item.outputs.field-value == '🛑 Needs Submitter Response'
+          || steps.get-item.outputs.field-value == '🟡 WIP')
         uses: dsanders11/project-actions/edit-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
