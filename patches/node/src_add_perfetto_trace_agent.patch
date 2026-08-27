@@ -179,10 +179,10 @@ index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9f
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 4a345d6cc321d4f5969a76a1a800f3e517528fcb..558f8b73e33404f166cc1ee41311dc5ef9b9a6c7 100644
+index 47cafc6634c14ea3d656e8819ca8351356d09254..668046e56b25465d8ffae85ccb0c42a49b107243 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -473,7 +473,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
+@@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
    if (tracing_controller != nullptr) {
      tracing_controller_ = tracing_controller;
    } else {
@@ -192,7 +192,7 @@ index 4a345d6cc321d4f5969a76a1a800f3e517528fcb..558f8b73e33404f166cc1ee41311dc5e
    }
  
    // V8 will default to its built in allocator if none is provided.
-@@ -492,6 +493,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
+@@ -496,6 +497,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
  
  NodePlatform::~NodePlatform() {
    Shutdown();
