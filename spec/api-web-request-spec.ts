@@ -12,6 +12,7 @@ import { Socket } from 'node:net';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
+import { setTimeout as delay } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
@@ -1053,6 +1054,206 @@ describe('webRequest module', () => {
       await expect(ajax(`${url}/`)).to.eventually.be.rejected();
       expect(await error).to.match(/^net::ERR_/);
       closed.close();
+    });
+  });
+
+  describe('webRequest.setHeaderRules', () => {
+    let server: childProcess.ChildProcess;
+    let base: string; // http://127.0.0.1:port
+    let other: string; // same server as http://localhost:port
+    before(async () => {
+      server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
+      [{ url: base }] = await once(server, 'message');
+      other = base.replace('127.0.0.1', 'localhost');
+    });
+    after(() => server.kill());
+    afterEach(() => {
+      ses.webRequest.setHeaderRules(null);
+      ses.webRequest.onBeforeSendHeaders(null);
+      ses.webRequest.onHeadersReceived(null);
+    });
+
+    let counter = 0;
+    const token = () => `t${process.pid}-${++counter}`;
+    const fetchFromPage = (url: string) =>
+      contents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.text())`);
+    const received = async (t: string) => {
+      const response = await net.fetch(`${base}/log/${t}`);
+      return (await response.json()) as Array<{
+        leg: string;
+        host: string;
+        token: string | null;
+        extra: string | null;
+      }>;
+    };
+    const tokenRule = { urls: ['http://127.0.0.1/*'], requestHeaders: { 'X-Token': 'secret' } };
+
+    // The same policy written as a blocking listener, for the differential cases.
+    const equivalentListener = (
+      details: Electron.OnBeforeSendHeadersListenerDetails,
+      callback: (r: Electron.BeforeSendResponse) => void
+    ) => {
+      const requestHeaders = { ...details.requestHeaders };
+      for (const name of Object.keys(requestHeaders)) {
+        if (name.toLowerCase() === 'x-token') delete requestHeaders[name];
+      }
+      if (new URL(details.url).hostname === '127.0.0.1') requestHeaders['X-Token'] = 'secret';
+      callback({ requestHeaders });
+    };
+
+    const runChain = async (firstHost: string, hops: string[]) => {
+      // hops: hosts of the following legs; every leg is recorded as /r/<token>/<n>.
+      const t = token();
+      const hostURL = (h: string) => (h === '127.0.0.1' ? base : other);
+      let url = `${hostURL(hops.length ? hops[hops.length - 1] : firstHost)}/r/${t}/${hops.length}`;
+      for (let i = hops.length - 1; i >= 0; i--) {
+        const from = i === 0 ? firstHost : hops[i - 1];
+        url = `${hostURL(from)}/r/${t}/${i}?to=${encodeURIComponent(url)}`;
+      }
+      await fetchFromPage(url);
+      return (await received(t)).map((l) => `${l.leg}:${l.host}:${l.token ?? '-'}`);
+    };
+
+    for (const [name, install] of [
+      ['a rule', () => ses.webRequest.setHeaderRules([tokenRule])],
+      ['an equivalent onBeforeSendHeaders listener', () => ses.webRequest.onBeforeSendHeaders(equivalentListener)]
+    ] as const) {
+      describe(`with ${name}`, () => {
+        beforeEach(install);
+
+        it('sets the header on a matching request', async () => {
+          expect(await runChain('127.0.0.1', [])).to.deep.equal(['0:127.0.0.1:secret']);
+        });
+
+        it('does not set it on a non-matching request', async () => {
+          expect(await runChain('localhost', [])).to.deep.equal(['0:localhost:-']);
+        });
+
+        it('keeps it across a same-host redirect', async () => {
+          expect(await runChain('127.0.0.1', ['127.0.0.1'])).to.deep.equal([
+            '0:127.0.0.1:secret',
+            '1:127.0.0.1:secret'
+          ]);
+        });
+
+        it('drops it when redirected to a non-matching host', async () => {
+          expect(await runChain('127.0.0.1', ['localhost'])).to.deep.equal(['0:127.0.0.1:secret', '1:localhost:-']);
+        });
+
+        it('drops it on the non-matching leg of a matching -> non-matching -> matching chain', async () => {
+          expect(await runChain('127.0.0.1', ['localhost', '127.0.0.1'])).to.deep.equal([
+            '0:127.0.0.1:secret',
+            '1:localhost:-',
+            '2:127.0.0.1:secret'
+          ]);
+        });
+
+        it('adds it when a non-matching request redirects into scope', async () => {
+          expect(await runChain('localhost', ['127.0.0.1'])).to.deep.equal(['0:localhost:-', '1:127.0.0.1:secret']);
+        });
+      });
+    }
+
+    it('removes a header it injected when the rules change before the next leg', async () => {
+      ses.webRequest.setHeaderRules([tokenRule]);
+      const t = token();
+      const done = fetchFromPage(
+        `${base}/r/${t}/0?to=${encodeURIComponent(`${base}/slow-hop?to=${encodeURIComponent(`${base}/r/${t}/1`)}`)}`
+      );
+      await delay(150);
+      ses.webRequest.setHeaderRules(null);
+      await done;
+      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}`)).to.deep.equal(['0:secret', '1:-']);
+    });
+
+    it('removes headers and honors excludeUrls and types', async () => {
+      ses.webRequest.setHeaderRules([
+        { urls: ['<all_urls>'], requestHeaders: { 'X-Extra': null } },
+        {
+          urls: ['http://127.0.0.1/*'],
+          excludeUrls: ['*://*/r/*/skip*'],
+          types: ['xhr'],
+          requestHeaders: { 'X-Token': 'typed' }
+        }
+      ]);
+      const t = token();
+      await contents.executeJavaScript(
+        `fetch(${JSON.stringify(`${base}/r/${t}/a`)}, { headers: { 'X-Extra': 'from-page' } }).then(r => r.text())`
+      );
+      await contents.executeJavaScript(`fetch(${JSON.stringify(`${base}/r/${t}/skipped`)}).then(r => r.text())`);
+      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}:${l.extra ?? '-'}`)).to.deep.equal([
+        'a:typed:-',
+        'skipped:-:-'
+      ]);
+    });
+
+    it('lets an onBeforeSendHeaders listener see and override what a rule set', async () => {
+      ses.webRequest.setHeaderRules([tokenRule]);
+      let seen = '';
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        seen = details.requestHeaders['X-Token'];
+        callback({ requestHeaders: { ...details.requestHeaders, 'X-Token': 'listener' } });
+      });
+      expect(await runChain('127.0.0.1', [])).to.deep.equal(['0:127.0.0.1:listener']);
+      expect(seen).to.equal('secret');
+    });
+
+    it('rewrites response headers for the page and for onHeadersReceived', async () => {
+      ses.webRequest.setHeaderRules([
+        {
+          urls: ['http://127.0.0.1/*'],
+          responseHeaders: {
+            'Access-Control-Expose-Headers': 'x-reply, x-original',
+            'X-Reply': ['1'],
+            'X-Original': null
+          }
+        }
+      ]);
+      let seenByListener: Record<string, string[]> | undefined;
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        seenByListener = details.responseHeaders;
+        callback({});
+      });
+      const headers = await contents.executeJavaScript(
+        `fetch(${JSON.stringify(`${base}/r/${token()}/x`)}).then(r => [r.headers.get('x-reply'), r.headers.get('x-original')])`
+      );
+      expect(headers).to.deep.equal(['1', null]);
+      expect(seenByListener!['X-Reply'] ?? seenByListener!['x-reply']).to.deep.equal(['1']);
+    });
+
+    it('applies without the main process when no blocking listener matches', async () => {
+      ses.webRequest.setHeaderRules([tokenRule]);
+      const t = token();
+      await contents.executeJavaScript(
+        `window.fetchTiming = new Promise(r => setTimeout(() => { const s = performance.now(); fetch(${JSON.stringify(`${base}/r/${t}/busy`)}).then(x => x.text()).then(() => r(performance.now() - s)); }, 50)); true`
+      );
+      const end = Date.now() + 600;
+      while (Date.now() < end) {
+        /* busy */
+      }
+      expect(await contents.executeJavaScript('window.fetchTiming')).to.be.lessThan(300);
+      expect((await received(t))[0].token).to.equal('secret');
+    });
+
+    it('round-trips through getHeaderRules and clears with null', () => {
+      ses.webRequest.setHeaderRules([tokenRule]);
+      expect(ses.webRequest.getHeaderRules()).to.deep.equal([tokenRule]);
+      ses.webRequest.setHeaderRules(null);
+      expect(ses.webRequest.getHeaderRules()).to.deep.equal([]);
+    });
+
+    it('rejects rules that could broadcast a request header', () => {
+      expect(() =>
+        ses.webRequest.setHeaderRules([{ urls: ['<all_urls>'], requestHeaders: { 'X-Token': 'x' } }])
+      ).to.throw(/hosts/);
+      expect(() => ses.webRequest.setHeaderRules([{ urls: ['*://*/*'], requestHeaders: { 'X-Token': 'x' } }])).to.throw(
+        /hosts/
+      );
+      expect(() => ses.webRequest.setHeaderRules([{ requestHeaders: { 'X-Token': 'x' } } as any])).to.throw(/urls/);
+      expect(() => ses.webRequest.setHeaderRules([{ urls: ['nope'], requestHeaders: {} }])).to.throw(/pattern/i);
+      expect(() =>
+        ses.webRequest.setHeaderRules([{ urls: ['<all_urls>'], requestHeaders: { 'X-Token': null } }])
+      ).to.not.throw();
     });
   });
 
