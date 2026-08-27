@@ -269,9 +269,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   }
 #endif
 
-  NodeBindings::InitializeTracingAgent(
-      /*use_standalone_perfetto_client=*/false);
-
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());

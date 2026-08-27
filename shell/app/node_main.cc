@@ -37,6 +37,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -265,8 +266,7 @@ int NodeMain() {
         node::per_process::cli_options->get_per_isolate_options()
             ->get_per_env_options()
             ->experimental_fetch;
-    auto tracing_agent = NodeBindings::InitializeTracingAgent(
-        /*use_standalone_perfetto_client=*/true);
+    auto tracing_agent = node::tracing::Agent::CreateDefault();
     CHECK(tracing_agent);
 
     // Initialize gin::IsolateHolder.
