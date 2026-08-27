@@ -508,6 +508,12 @@ describe('webContents module', () => {
       expect(isolatedResult).to.equal(123);
       expect(mainWorldResult).to.equal(undefined);
     });
+
+    it('rejects when worldId is not an integer', async () => {
+      await expect(
+        w.webContents.executeJavaScriptInIsolatedWorld('1234' as any, [{ code: '1+1' }])
+      ).to.eventually.be.rejectedWith(TypeError, 'worldId must be an integer');
+    });
   });
 
   describe('loadURL() promise API', () => {

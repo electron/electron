@@ -700,11 +700,20 @@ class WebFrameRenderer final
   //   worldId, scripts[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
       gin::Arguments* const args,
-      const int world_id,
+      v8::Local<v8::Value> world_id_value,
       const std::vector<gin_helper::Dictionary>& scripts) {
     v8::Isolate* const isolate = args->isolate();
     gin_helper::Promise<v8::Local<v8::Value>> promise{isolate};
     v8::Local<v8::Promise> handle = promise.GetHandle();
+
+    // Take the raw value: gin's int converter never entered this method, so a
+    // non-integer worldId resolved undefined instead of rejecting.
+    if (!world_id_value->IsInt32()) {
+      promise.Reject(v8::Exception::TypeError(v8::String::NewFromUtf8Literal(
+          isolate, "worldId must be an integer")));
+      return handle;
+    }
+    const int world_id = world_id_value.As<v8::Int32>()->Value();
 
     content::RenderFrame* render_frame;
     std::string error_msg;
