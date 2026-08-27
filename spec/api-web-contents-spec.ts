@@ -3097,6 +3097,19 @@ describe('webContents module', () => {
   describe('zoom mode', () => {
     afterEach(closeAllWindows);
 
+    const devicePixelRatio = (w: BrowserWindow) => w.webContents.executeJavaScript('window.devicePixelRatio');
+
+    // A zoom level reaches the renderer in the widget's visual properties, which
+    // the page can apply after a plain read of it has already answered. Resizing
+    // the window and waiting for the page to see it closes that gap: the size
+    // travels in the same visual properties, so it cannot overtake the level
+    const settleVisualProperties = async (w: BrowserWindow) => {
+      const width = await w.webContents.executeJavaScript('window.innerWidth');
+      const [contentWidth, contentHeight] = w.getContentSize();
+      w.setContentSize(contentWidth - 10, contentHeight);
+      await waitUntil(async () => (await w.webContents.executeJavaScript('window.innerWidth')) !== width);
+    };
+
     it('defaults to "default" zoom mode', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
@@ -3403,6 +3416,201 @@ describe('webContents module', () => {
       await w.loadURL(crossSiteUrl);
 
       expect(w.webContents.getZoomMode()).to.equal('isolated');
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+    });
+
+    it('applies a zoom level set before the first navigation in isolated mode', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'isolated'
+        }
+      });
+      w.webContents.setZoomLevel(2.0);
+
+      // Reported before the level has reached HostZoomMap, and applied after
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+    });
+
+    it('applies a zoom level set before the first navigation in manual mode', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'manual'
+        }
+      });
+      w.webContents.setZoomLevel(2.0);
+
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+    });
+
+    it('reports a pending zoom level while the first navigation is in flight', async () => {
+      // Answer slowly, so that the level can be sampled between the frame
+      // going live (when the navigation request is created) and the commit
+      // that puts the level into HostZoomMap
+      const server = http.createServer(async (req, res) => {
+        await setTimeout(200);
+        res.end('hello');
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'isolated'
+        }
+      });
+      w.webContents.setZoomLevel(2.0);
+
+      const samples: number[] = [];
+      const sampler = setInterval(() => samples.push(w.webContents.getZoomLevel()), 1);
+      defer(() => clearInterval(sampler));
+
+      await w.loadURL(serverUrl);
+      clearInterval(sampler);
+
+      expect(samples).to.not.be.empty();
+      expect(
+        samples.every((sample) => sample === 2.0),
+        'zoom level dipped mid-navigation'
+      ).to.be.true();
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+    });
+
+    it('does not zoom the page in manual mode when the level is set before the first navigation', async () => {
+      const control = new BrowserWindow({ show: false });
+      await control.loadURL('about:blank');
+      const unzoomed = await devicePixelRatio(control);
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'manual'
+        }
+      });
+      w.webContents.setZoomLevel(2.0);
+      await w.loadURL('about:blank');
+      await settleVisualProperties(w);
+
+      // Manual mode tracks the level without ever rescaling the page
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+      expect(await devicePixelRatio(w)).to.equal(unzoomed);
+    });
+
+    it('does not zoom the page in manual mode when webPreferences.zoomFactor is set', async () => {
+      const control = new BrowserWindow({ show: false });
+      await control.loadURL('about:blank');
+      const unzoomed = await devicePixelRatio(control);
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'manual',
+          zoomFactor: 1.5
+        }
+      });
+      await w.loadURL('about:blank');
+      await settleVisualProperties(w);
+
+      // The factor is tracked, but manual mode still must not rescale the page
+      expect(w.webContents.getZoomFactor()).to.be.closeTo(1.5, 0.0001);
+      expect(await devicePixelRatio(w)).to.equal(unzoomed);
+    });
+
+    it('zooms the page in isolated mode when the level is set before the first navigation', async () => {
+      const control = new BrowserWindow({ show: false });
+      await control.loadURL('about:blank');
+      const unzoomed = await devicePixelRatio(control);
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'isolated'
+        }
+      });
+      w.webContents.setZoomLevel(2.0);
+      await w.loadURL('about:blank');
+      await settleVisualProperties(w);
+
+      // Unlike manual mode, isolated mode does rescale the page - a zoom level
+      // of 2 is a factor of 1.2^2
+      expect(await devicePixelRatio(w)).to.be.closeTo(unzoomed * 1.44, 0.01);
+    });
+
+    it('does not zoom the page in manual mode after a cross-document navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const unzoomed = await devicePixelRatio(w);
+
+      w.webContents.setZoomMode('manual');
+      w.webContents.setZoomLevel(2.0);
+
+      await w.loadURL('about:blank');
+      await settleVisualProperties(w);
+
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+      expect(await devicePixelRatio(w)).to.equal(unzoomed);
+    });
+
+    it('does not restore a pre-disabled zoom level on navigation after returning to isolated mode', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      w.webContents.setZoomMode('isolated');
+      w.webContents.setZoomLevel(2.0);
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+
+      w.webContents.setZoomMode('disabled');
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+
+      w.webContents.setZoomMode('isolated');
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+
+      // The disabled mode reset the level, so navigating must not bring it back
+      await w.loadURL('about:blank');
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+    });
+
+    it('tracks the current level when switching from disabled to manual mode', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      w.webContents.setZoomMode('isolated');
+      w.webContents.setZoomLevel(2.0);
+
+      w.webContents.setZoomMode('disabled');
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+
+      // Manual mode tracks the level the page is actually at on entry
+      w.webContents.setZoomMode('manual');
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+    });
+
+    it('applies a zoom level set on a crashed tab when it next loads', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          zoomMode: 'isolated'
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const crashed = once(w.webContents, 'render-process-gone');
+      w.webContents.forcefullyCrashRenderer();
+      await crashed;
+
+      // No live frame, so the level is recorded for the next navigation
+      w.webContents.setZoomLevel(2.0);
+      expect(w.webContents.getZoomLevel()).to.equal(2.0);
+
+      await w.loadURL('about:blank');
       expect(w.webContents.getZoomLevel()).to.equal(2.0);
     });
 
