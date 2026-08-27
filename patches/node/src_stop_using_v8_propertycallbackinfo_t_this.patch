@@ -19,7 +19,7 @@ index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 4aa790405fcdb028146c6e24baeedb9cf822ed50..a896e918f85731c3084385d94a3bbdf6cfa779d9 100644
+index 1caa202e7c4a957e0ab58e5012ae424a5ff701a9..6efb4ec8391356f1141990e8f49aa2d3da3a8b0c 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -456,7 +456,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
@@ -76,7 +76,7 @@ index 20338324dfaaf3de977027ab7f9028aba0925050..541c1580f7b29cb2bdd4bbdc5e056b46
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 0c0c8833bf636411292d8635928c82715cb28689..f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de 100644
+index fb765922dc372953efe4aea9ac92aaec17540ea9..f68e986b18e24aceca0848efb17ed88a0db17c5d 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -111,10 +111,10 @@ index fbfda9c1551e071132e35b90fc3676a9b493abee..065ed602b314f367c2e7dec94019521f
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6acbe38d6 100644
+index afd17511610cc0977874190aeca9e5e63e1db4e7..8a058f19834134ca65b7a763b7c41fe850642980 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -564,7 +564,7 @@ template <typename T>
+@@ -565,7 +565,7 @@ template <typename T>
  static bool ShouldIntercept(Local<Name> property,
                              const PropertyCallbackInfo<T>& info) {
    Environment* env = Environment::GetCurrent(info);
@@ -123,7 +123,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
  
    if (proto->IsObject()) {
      bool has_prop;
-@@ -588,7 +588,7 @@ static Intercepted StorageGetter(Local<Name> property,
+@@ -589,7 +589,7 @@ static Intercepted StorageGetter(Local<Name> property,
    }
  
    Storage* storage;
@@ -132,7 +132,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
    Local<Value> result;
  
    if (storage->Load(property).ToLocal(&result) && !result->IsNull()) {
-@@ -602,7 +602,7 @@ static Intercepted StorageSetter(Local<Name> property,
+@@ -603,7 +603,7 @@ static Intercepted StorageSetter(Local<Name> property,
                                   Local<Value> value,
                                   const PropertyCallbackInfo<void>& info) {
    Storage* storage;
@@ -141,7 +141,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
  
    if (storage->Store(property, value).IsNothing()) {
      info.GetReturnValue().SetFalse();
-@@ -618,7 +618,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -619,7 +619,7 @@ static Intercepted StorageQuery(Local<Name> property,
    }
  
    Storage* storage;
@@ -150,7 +150,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
    Local<Value> result;
    if (!storage->Load(property).ToLocal(&result) || result->IsNull()) {
      return Intercepted::kNo;
-@@ -631,7 +631,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -632,7 +632,7 @@ static Intercepted StorageQuery(Local<Name> property,
  static Intercepted StorageDeleter(Local<Name> property,
                                    const PropertyCallbackInfo<Boolean>& info) {
    Storage* storage;
@@ -159,7 +159,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
  
    info.GetReturnValue().Set(storage->Remove(property).IsJust());
  
-@@ -640,7 +640,7 @@ static Intercepted StorageDeleter(Local<Name> property,
+@@ -641,7 +641,7 @@ static Intercepted StorageDeleter(Local<Name> property,
  
  static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
    Storage* storage;
@@ -168,7 +168,7 @@ index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6
    Local<Array> result;
    if (!storage->Enumerate().ToLocal(&result)) {
      return;
-@@ -652,7 +652,7 @@ static Intercepted StorageDefiner(Local<Name> property,
+@@ -653,7 +653,7 @@ static Intercepted StorageDefiner(Local<Name> property,
                                    const PropertyDescriptor& desc,
                                    const PropertyCallbackInfo<void>& info) {
    Storage* storage;

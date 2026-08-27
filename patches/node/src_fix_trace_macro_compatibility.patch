@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <legendecas@gmail.com>
+Date: Thu, 18 Jun 2026 21:43:19 -0400
+Subject: src: fix trace macro compatibility
+
+Signed-off-by: Chengzhong Wu <cwu631@bloomberg.net>
+PR-URL: https://github.com/nodejs/node/pull/64565
+Refs: https://github.com/nodejs/diagnostics/issues/654
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
+
+diff --git a/src/node_dir.cc b/src/node_dir.cc
+index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..952161d9e2cf1c92c3600fc2da0af594cc3f53bd 100644
+--- a/src/node_dir.cc
++++ b/src/node_dir.cc
+@@ -63,16 +63,10 @@ static const char* get_dir_func_name_by_type(uv_fs_type req_type) {
+ #define GET_TRACE_ENABLED                                                      \
+   (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+        TRACING_CATEGORY_NODE2(fs_dir, sync)) != 0)
+-#define FS_DIR_SYNC_TRACE_BEGIN(syscall, ...)                                  \
+-  if (GET_TRACE_ENABLED)                                                       \
+-    TRACE_EVENT_BEGIN(TRACING_CATEGORY_NODE2(fs_dir, sync),                    \
+-                      TRACE_NAME(syscall),                                     \
+-                      ##__VA_ARGS__);
+-#define FS_DIR_SYNC_TRACE_END(syscall, ...)                                    \
+-  if (GET_TRACE_ENABLED)                                                       \
+-    TRACE_EVENT_END(TRACING_CATEGORY_NODE2(fs_dir, sync),                      \
+-                    TRACE_NAME(syscall),                                       \
+-                    ##__VA_ARGS__);
++#define FS_DIR_SYNC_TRACE(syscall)                                             \
++  if (GET_TRACE_ENABLED) {                                                     \
++    TRACE_EVENT0(TRACING_CATEGORY_NODE2(fs_dir, sync), TRACE_NAME(syscall));   \
++  }
+ 
+ #define FS_DIR_ASYNC_TRACE_BEGIN0(fs_type, id)                                 \
+   TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs_dir, async),     \
+@@ -138,9 +132,11 @@ void DirHandle::MemoryInfo(MemoryTracker* tracker) const {
+ inline void DirHandle::GCClose() {
+   if (closed_) return;
+   uv_fs_t req;
+-  FS_DIR_SYNC_TRACE_BEGIN(closedir);
+-  int ret = uv_fs_closedir(nullptr, &req, dir_, nullptr);
+-  FS_DIR_SYNC_TRACE_END(closedir);
++  int ret;
++  {
++    FS_DIR_SYNC_TRACE(closedir);
++    ret = uv_fs_closedir(nullptr, &req, dir_, nullptr);
++  }
+   uv_fs_req_cleanup(&req);
+   closing_ = false;
+   closed_ = true;
+@@ -201,9 +197,8 @@ void DirHandle::Close(const FunctionCallbackInfo<Value>& args) {
+               uv_fs_closedir, dir->dir());
+   } else {  // close()
+     FSReqWrapSync req_wrap_sync("closedir");
+-    FS_DIR_SYNC_TRACE_BEGIN(closedir);
++    FS_DIR_SYNC_TRACE(closedir);
+     SyncCallAndThrowOnError(env, &req_wrap_sync, uv_fs_closedir, dir->dir());
+-    FS_DIR_SYNC_TRACE_END(closedir);
+   }
+ }
+ 
+@@ -299,10 +294,12 @@ void DirHandle::Read(const FunctionCallbackInfo<Value>& args) {
+               AfterDirRead, uv_fs_readdir, dir->dir());
+   } else {  // dir.read(encoding, bufferSize)
+     FSReqWrapSync req_wrap_sync("readdir");
+-    FS_DIR_SYNC_TRACE_BEGIN(readdir);
+-    int err =
+-        SyncCallAndThrowOnError(env, &req_wrap_sync, uv_fs_readdir, dir->dir());
+-    FS_DIR_SYNC_TRACE_END(readdir);
++    int err;
++    {
++      FS_DIR_SYNC_TRACE(readdir);
++      err = SyncCallAndThrowOnError(
++          env, &req_wrap_sync, uv_fs_readdir, dir->dir());
++    }
+     if (err < 0) {
+       return;  // syscall failed, no need to continue, error is already thrown
+     }
+@@ -377,10 +374,12 @@ static void OpenDir(const FunctionCallbackInfo<Value>& args) {
+     THROW_IF_INSUFFICIENT_PERMISSIONS(
+         env, permission::PermissionScope::kFileSystemRead, path.ToStringView());
+     FSReqWrapSync req_wrap_sync("opendir", *path);
+-    FS_DIR_SYNC_TRACE_BEGIN(opendir);
+-    int result =
+-        SyncCallAndThrowOnError(env, &req_wrap_sync, uv_fs_opendir, *path);
+-    FS_DIR_SYNC_TRACE_END(opendir);
++    int result;
++    {
++      FS_DIR_SYNC_TRACE(opendir);
++      result =
++          SyncCallAndThrowOnError(env, &req_wrap_sync, uv_fs_opendir, *path);
++    }
+     if (result < 0) {
+       return;  // syscall failed, no need to continue, error is already thrown
+     }
+@@ -407,9 +406,11 @@ static void OpenDirSync(const FunctionCallbackInfo<Value>& args) {
+ 
+   uv_fs_t req;
+   auto make = OnScopeLeave([&req]() { uv_fs_req_cleanup(&req); });
+-  FS_DIR_SYNC_TRACE_BEGIN(opendir);
+-  int err = uv_fs_opendir(nullptr, &req, *path, nullptr);
+-  FS_DIR_SYNC_TRACE_END(opendir);
++  int err;
++  {
++    FS_DIR_SYNC_TRACE(opendir);
++    err = uv_fs_opendir(nullptr, &req, *path, nullptr);
++  }
+   if (err < 0) {
+     return env->ThrowUVException(err, "opendir");
+   }
+diff --git a/src/node_file.cc b/src/node_file.cc
+index c24c952538cfd28d46209299550bae0bfa7317dc..7f9ed234f3bc94973e358fe8cf96821e2dc3b73f 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -153,10 +153,16 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_BEGIN(                                                         \
+         TRACING_CATEGORY_NODE2(fs, sync), TRACE_NAME(syscall), ##__VA_ARGS__);
++#ifdef V8_USE_PERFETTO
++#define FS_SYNC_TRACE_END(syscall, ...)                                        \
++  if (GET_TRACE_ENABLED)                                                       \
++    TRACE_EVENT_END(TRACING_CATEGORY_NODE2(fs, sync), ##__VA_ARGS__);
++#else
+ #define FS_SYNC_TRACE_END(syscall, ...)                                        \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_END(                                                           \
+         TRACING_CATEGORY_NODE2(fs, sync), TRACE_NAME(syscall), ##__VA_ARGS__);
++#endif
+ 
+ #define FS_ASYNC_TRACE_BEGIN0(fs_type, id)                                     \
+   TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs, async),         \

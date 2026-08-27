@@ -41,10 +41,10 @@ index a4b3a1c0907c9d50baf6c8cd473cb4c7369d0a5c..bc42b512af065cb1f1b848dc29661276
    return principal_realm_->has_run_bootstrapping_code();
  }
 diff --git a/src/env.cc b/src/env.cc
-index 17fb7dcbbf5838b7448ea29a82c2dcbab532b4ea..728db1810aedb6cde4c5166c208a51fe726fbde6 100644
+index d990a31b53ea78988c01b768be062fdff7d67567..ad3fe3e168882dcd8dce22cbaaeb81a626efb182 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1481,7 +1481,9 @@ void Environment::RequestInterruptFromV8() {
+@@ -1478,7 +1478,9 @@ void Environment::RequestInterruptFromV8() {
        return;
      }
      env->interrupt_data_.store(nullptr);
