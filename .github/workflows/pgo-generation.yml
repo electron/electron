@@ -198,7 +198,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -228,7 +228,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -258,7 +258,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -288,7 +288,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -317,7 +317,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -346,7 +346,7 @@ jobs:
       generate-test-artifacts: false
       upload-to-storage: '0'
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}

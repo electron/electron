@@ -69,7 +69,9 @@ on:
         type: boolean
         default: false
     secrets:
-      ACTIONS_STEP_DEBUG:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
         required: false
       CHROMIUM_GIT_COOKIE:
         required: false
@@ -112,7 +114,7 @@ jobs:
       upload-to-storage: ${{ inputs.upload-to-storage }}
       upload-out-gen-artifacts: true
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -146,7 +148,7 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -169,7 +171,7 @@ jobs:
       test-container: ${{ inputs.test-container }}
       display-server: wayland
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}

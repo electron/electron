@@ -41,7 +41,9 @@ on:
         type: string
         default: x11
     secrets:
-      ACTIONS_STEP_DEBUG:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
         required: false
       CHROMIUM_GIT_COOKIE:
         required: false
@@ -69,7 +71,7 @@ env:
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
   # @sentry/cli is only needed by release upload-symbols.py; skip the ~17MB CDN download on test jobs
   SENTRYCLI_SKIP_DOWNLOAD: 1
 

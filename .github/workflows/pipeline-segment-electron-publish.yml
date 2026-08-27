@@ -88,7 +88,9 @@ on:
         type: boolean
         default: false
     secrets:
-      ACTIONS_STEP_DEBUG:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
         required: false
       CHROMIUM_GIT_COOKIE:
         required: false
@@ -130,7 +132,7 @@ env:
     inputs.target-platform == 'win' && '--custom-var=checkout_win=True' ||
     '--custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
-  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
   RUNNER_LABEL: ${{ inputs.build-runs-on }}
 
 jobs:

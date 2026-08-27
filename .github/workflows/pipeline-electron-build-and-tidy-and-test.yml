@@ -74,7 +74,9 @@ on:
         type: boolean
         default: false
     secrets:
-      ACTIONS_STEP_DEBUG:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
         required: false
       CHROMIUM_GIT_COOKIE:
         required: false
@@ -119,7 +121,7 @@ jobs:
       enable-ssh: ${{ inputs.enable-ssh }}
       upload-out-gen-artifacts: true
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
@@ -155,7 +157,7 @@ jobs:
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets:
-      ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CI_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
       CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
