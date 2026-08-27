@@ -208,6 +208,15 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
   return std::make_pair(modified_request_headers, deleted_request_headers);
 }
 
+WebRequest* ForObservedRequest(
+    const base::WeakPtr<ElectronBrowserContext>& browser_context) {
+  if (!browser_context)
+    return nullptr;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  return WebRequest::FromOrCreate(isolate, browser_context.get());
+}
+
 }  // namespace
 
 const gin::WrapperInfo WebRequest::kWrapperInfo =
@@ -799,26 +808,12 @@ struct WebRequest::ObservedRequest {
   std::unique_ptr<extensions::WebRequestInfo> info;
 };
 
-namespace {
-
-WebRequest* ForObservedRequest(
-    const base::WeakPtr<ElectronBrowserContext>& browser_context) {
-  if (!browser_context)
-    return nullptr;
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  return WebRequest::FromOrCreate(isolate, browser_context.get());
-}
-
-}  // namespace
-
 // static
 void WebRequest::ObservedRequestStarted(
     base::WeakPtr<ElectronBrowserContext> browser_context,
     uint64_t key,
     int render_process_id,
     int frame_routing_id,
-    int32_t request_id,
     const network::ResourceRequest& request) {
   auto* self = ForObservedRequest(browser_context);
   if (!self)
@@ -848,13 +843,22 @@ void WebRequest::ObservedRequestRedirected(
   observed.info->AddResponseInfoFromResourceResponse(*head);
   self->OnBeforeRedirect(observed.info.get(), observed.request,
                          redirect_info.new_url);
-  observed.request.url = redirect_info.new_url;
-  observed.request.method = redirect_info.new_method;
-  observed.request.site_for_cookies = redirect_info.new_site_for_cookies;
-  observed.request.referrer = GURL(redirect_info.new_referrer);
+}
+
+// static
+void WebRequest::ObservedRequestFollowedRedirect(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    uint64_t key,
+    const network::ResourceRequest& request) {
+  auto* self = ForObservedRequest(browser_context);
+  if (!self)
+    return;
+  auto it = self->observed_requests_.find(key);
+  if (it == self->observed_requests_.end())
+    return;
+  ObservedRequest& observed = *it->second;
+  observed.request = request;
   observed.RebuildInfo();
-  // The renderer follows the redirect on its own; report the next leg's send
-  // like ProxyingURLLoaderFactory does after FollowRedirect().
   self->OnSendHeaders(observed.info.get(), observed.request,
                       observed.request.headers);
 }

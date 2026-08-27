@@ -1523,16 +1523,11 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_proxy;
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
         gate_to_proxy.InitWithNewPipeAndPassReceiver();
-    RequestObserverTarget observer_target;
-    observer_target.render_process_id = render_process_id;
-    observer_target.frame_routing_id = frame_host->GetRoutingID();
-    observer_target.browser_context =
-        static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr();
     CreateURLLoaderFactoryGate(
-        static_cast<ElectronBrowserContext*>(browser_context)
-            ->intercept_state(),
-        std::move(observer_target), std::move(proxied_receiver),
-        std::move(gate_to_network), std::move(gate_to_proxy));
+        static_cast<ElectronBrowserContext*>(browser_context),
+        render_process_id, frame_host->GetRoutingID(),
+        std::move(proxied_receiver), std::move(gate_to_network),
+        std::move(gate_to_proxy));
     proxied_receiver = std::move(proxy_receiver);
     target_factory_remote = target.Unbind();
   }

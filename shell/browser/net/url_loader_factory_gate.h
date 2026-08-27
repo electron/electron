@@ -29,6 +29,10 @@ namespace network {
 struct ResourceRequest;
 }
 
+namespace net {
+struct MutableNetworkTrafficAnnotationTag;
+}
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -71,33 +75,28 @@ class InterceptState : public base::RefCountedThreadSafe<InterceptState> {
   std::vector<std::string> ignore_connections_limit_domains_ GUARDED_BY(lock_);
 };
 
-// Where observed requests are reported: the frame's ids and the session whose
-// api::WebRequest hears about them, dereferenced on the UI thread only.
-struct RequestObserverTarget {
-  RequestObserverTarget();
-  RequestObserverTarget(const RequestObserverTarget&);
-  ~RequestObserverTarget();
-  int render_process_id = 0;
-  int frame_routing_id = 0;
-  base::WeakPtr<ElectronBrowserContext> browser_context;
-};
-
-// Wraps `client` so that the redirect, response and completion of the request
-// it belongs to are reported to `target`'s webRequest observers from the IO
-// thread; the returned client is the one to hand to the network factory.
-mojo::PendingRemote<network::mojom::URLLoaderClient> ObserveRequest(
-    const RequestObserverTarget& target,
+// Starts a request on the IO thread with both URLLoader endpoints proxied so
+// observer only webRequest events can be reported without blocking the load.
+void CreateObservedLoaderAndStartOnIO(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    int render_process_id,
+    int frame_routing_id,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t request_id,
+    uint32_t options,
     const network::ResourceRequest& request,
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client);
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> target);
 
 // Bound on the IO thread between a renderer's factory pipe and the network:
 // requests go straight to `target` unless `state` wants them on the UI thread,
 // in which case `interceptor` (a ProxyingURLLoaderFactory) gets them. Lives as
 // long as its receivers and both remotes do.
 void CreateURLLoaderFactoryGate(
-    scoped_refptr<InterceptState> state,
-    RequestObserverTarget observer_target,
+    ElectronBrowserContext* browser_context,
+    int render_process_id,
+    int frame_routing_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor);
