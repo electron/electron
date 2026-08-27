@@ -262,3 +262,47 @@ completed.
     * `error` string - The error description.
 
 The `listener` will be called with `listener(details)` when an error occurs.
+
+#### `webRequest.setHeaderRules(rules)`
+
+* `rules` [HeaderRule[]](structures/header-rule.md) | null
+
+Declares request and response header changes that Electron applies itself, per
+network transaction, without calling into JavaScript and without routing the
+request through the main process. Passing a new array replaces the previous
+rules; `null` removes them. Use this instead of an `onBeforeSendHeaders`
+listener when the change does not depend on anything but the request's URL and
+resource type, for example attaching an authorization header to every request
+sent to a service the app owns.
+
+Rules are evaluated again for every redirect: a request header set by a rule
+is removed on any later leg of the same request whose URL the rules do not
+cover, so it is never forwarded to a redirect target outside `urls`. A rule
+that sets a request header must name the hosts it applies to; `<all_urls>` and
+wildcard-only hosts are accepted only for rules that remove request headers or
+change response headers. When a `webRequest` listener also matches the request, the
+rules are applied first and the listener sees, and may change, the result.
+Rules apply to `http:`, `https:`, `ws:` and `wss:` requests made through the
+session, including those from `net.fetch`; they do not apply to protocols
+handled with `protocol.handle`.
+
+```js @ts-type={token:string}
+const { session } = require('electron')
+
+session.defaultSession.webRequest.setHeaderRules([
+  {
+    urls: ['https://api.example.com/*'],
+    requestHeaders: { Authorization: `Bearer ${token}` }
+  },
+  {
+    urls: ['https://*.example.com/*'],
+    types: ['mainFrame', 'subFrame'],
+    responseHeaders: { 'X-Frame-Options': null }
+  }
+])
+```
+
+#### `webRequest.getHeaderRules()`
+
+Returns [`HeaderRule[]`](structures/header-rule.md) - The rules last passed to
+`setHeaderRules`, or an empty array.

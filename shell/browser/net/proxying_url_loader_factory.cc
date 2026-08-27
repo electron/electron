@@ -27,6 +27,7 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/header_rules.h"
 #include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -89,9 +90,10 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       current_response_(network::mojom::URLResponseHead::New()),
       // "extraHeaders" mode (two round trips per request) only while
       // webRequest has listeners; see has_any_extra_headers_listeners_.
-      has_any_extra_headers_listeners_(network_service_request_id != 0 &&
-                                       factory->web_request_ &&
-                                       factory->web_request_->HasListener()) {
+      has_any_extra_headers_listeners_(
+          network_service_request_id != 0 && factory->web_request_ &&
+          (factory->web_request_->HasListener() ||
+           factory->web_request_->header_rules())) {
   // If there is a client error, clean up the request.
   target_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -479,6 +481,18 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
   if (proxied_client_receiver_.is_bound())
     proxied_client_receiver_.Resume();
 
+  if (const auto* rules = factory_->web_request_->header_rules();
+      rules || !rule_injected_headers_.empty()) {
+    if (rules) {
+      rules->ApplyToRequest(request_.url, info_->web_request_type,
+                            &request_.headers, &rule_injected_headers_);
+    } else {
+      for (const auto& name : rule_injected_headers_)
+        request_.headers.RemoveHeader(name);
+      rule_injected_headers_.clear();
+    }
+  }
+
   auto continuation = base::BindRepeating(
       &InProgressRequest::ContinueToSendHeaders, weak_factory_.GetWeakPtr());
   // Note: In Electron onBeforeSendHeaders is called for all protocols.
@@ -740,6 +754,16 @@ void ProxyingURLLoaderFactory::InProgressRequest::
     HandleResponseOrRedirectHeaders(net::CompletionOnceCallback continuation) {
   override_headers_ = nullptr;
   redirect_url_ = GURL();
+
+  if (const auto* rules = factory_->web_request_->header_rules();
+      rules && current_response_->headers) {
+    if (auto rewritten =
+            rules->ApplyToResponse(request_.url, info_->web_request_type,
+                                   *current_response_->headers)) {
+      current_response_->headers = rewritten;
+      override_headers_ = rewritten;
+    }
+  }
 
   info_->AddResponseInfoFromResourceResponse(*current_response_);
 

@@ -1540,6 +1540,11 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   // Renderer-facing factories get an IO-thread gate in front of the proxy, so
   // requests only detour through this thread while something observes them.
+  mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client_receiver;
+  if (header_client)
+    header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
+
   if (frame_host && type != URLLoaderFactoryType::kNavigation) {
     mojo::Remote<network::mojom::URLLoaderFactory> target(
         std::move(target_factory_remote));
@@ -1548,13 +1553,23 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> gate_to_proxy;
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
         gate_to_proxy.InitWithNewPipeAndPassReceiver();
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+        gate_to_proxy_header_client;
+    mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+        proxy_header_client_receiver;
+    if (header_client_receiver) {
+      proxy_header_client_receiver =
+          gate_to_proxy_header_client.InitWithNewPipeAndPassReceiver();
+    }
     CreateURLLoaderFactoryGate(
         static_cast<ElectronBrowserContext*>(browser_context),
         render_process_id, frame_host->GetRoutingID(),
         std::move(proxied_receiver), std::move(gate_to_network),
-        std::move(gate_to_proxy));
+        std::move(gate_to_proxy), std::move(header_client_receiver),
+        std::move(gate_to_proxy_header_client));
     proxied_receiver = std::move(proxy_receiver);
     target_factory_remote = target.Unbind();
+    header_client_receiver = std::move(proxy_header_client_receiver);
   }
 
   // Required by WebRequestInfoInitParams.
@@ -1567,11 +1582,6 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     navigation_ui_data =
         std::make_unique<extensions::ExtensionNavigationUIData>();
   }
-
-  mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
-      header_client_receiver;
-  if (header_client)
-    header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
