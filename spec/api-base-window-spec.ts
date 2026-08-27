@@ -4,18 +4,9 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
+import { isScaleFactorRounding } from './lib/screen-helpers';
 import { ifdescribe, isWayland } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-
-// Is the display's scale factor possibly causing rounding of pixel coordinate
-// values?
-const isScaleFactorRounding = () => {
-  const { scaleFactor } = screen.getPrimaryDisplay();
-  // Return true if scale factor is non-integer value
-  if (Math.round(scaleFactor) !== scaleFactor) return true;
-  // Return true if scale factor is odd number above 2
-  return scaleFactor > 2 && scaleFactor % 2 === 1;
-};
 
 const expectBoundsEqual = (actual: any, expected: any) => {
   if (!isScaleFactorRounding()) {
