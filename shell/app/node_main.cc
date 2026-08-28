@@ -37,6 +37,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -261,15 +262,19 @@ int NodeMain() {
     // idle in the kernel’s event provider .
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
-    // Initialize gin::IsolateHolder.
     bool setup_wasm_streaming =
         node::per_process::cli_options->get_per_isolate_options()
             ->get_per_env_options()
             ->experimental_fetch;
+    auto tracing_agent = node::tracing::Agent::CreateDefault();
+    CHECK(tracing_agent);
+
+    // Initialize gin::IsolateHolder.
     // When this build embeds a Node startup snapshot (native builds) the
     // isolate is created from it and no context exists yet; otherwise a fresh
     // context was created and entered.
-    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
+    JavascriptEnvironment gin_env(loop, setup_wasm_streaming,
+                                  tracing_agent->GetTracingController());
     const node::SnapshotData* const snapshot =
         JavascriptEnvironment::NodeSnapshot();
 

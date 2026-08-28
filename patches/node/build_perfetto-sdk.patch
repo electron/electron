@@ -1,0 +1,237 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <legendecas@gmail.com>
+Date: Sun, 2 Nov 2025 21:43:58 +0000
+Subject: build: perfetto-sdk
+
+Signed-off-by: Chengzhong Wu <cwu631@bloomberg.net>
+PR-URL: https://github.com/nodejs/node/pull/64565
+Refs: https://github.com/nodejs/diagnostics/issues/654
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
+
+diff --git a/common.gypi b/common.gypi
+index c8c7170c4308e855d3edf7765bf264612f72c34c..ecaecba9a921fa35058edf5d68ec99534f7c1d59 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -89,7 +89,7 @@
+     'v8_enable_sandbox%': 0,
+     'v8_enable_v8_checks%': 0,
+     'v8_enable_zone_compression%': 0,
+-    'v8_use_perfetto': 0,
++    'v8_use_perfetto%': 0,
+     'tsan%': 0,
+ 
+     'using_electron_config_gypi%': 0,
+diff --git a/configure.py b/configure.py
+index 90acb7a92e0b2f10afb9adff15d0e3f090760009..2037250382c547a6e12e21e9ee441a8b74a5e9aa 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1031,6 +1031,12 @@ parser.add_argument('--without-inspector',
+     default=None,
+     help='disable the V8 inspector protocol')
+ 
++parser.add_argument('--with-perfetto',
++    action='store_true',
++    dest='with_perfetto',
++    default=None,
++    help='enable perfetto support')
++
+ parser.add_argument('--shared',
+     action='store_true',
+     dest='shared',
+@@ -1968,6 +1974,7 @@ def configure_v8(o, configs):
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_extensible_ro_snapshot'] = 0
+   o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
++  o['variables']['v8_use_perfetto'] = 1 if options.with_perfetto else 0
+   o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)
+   o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
+   o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
+diff --git a/node.gyp b/node.gyp
+index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..54ee17622bc979af7c55336206a272852a13ebdd 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -1378,6 +1378,14 @@
+         }, {
+           'sources!': [ '<@(node_cctest_quic_sources)' ],
+         }],
++        [ 'v8_use_perfetto==1', {
++          'defines': [
++            'PERFETTO_ENABLE_LEGACY_TRACE_EVENTS=1'
++          ],
++          'dependencies': [
++            'deps/perfetto/perfetto.gyp:perfetto_sdk',
++          ],
++        }],
+         ['v8_enable_inspector==1', {
+           'defines': [
+             'HAVE_INSPECTOR=1',
+@@ -1641,6 +1649,14 @@
+             'NODE_USE_NODE_CODE_CACHE=1',
+           ],
+         }],
++        [ 'v8_use_perfetto==1', {
++          'defines': [
++            'PERFETTO_ENABLE_LEGACY_TRACE_EVENTS=1'
++          ],
++          'dependencies': [
++            'deps/perfetto/perfetto.gyp:perfetto_sdk',
++          ],
++        }],
+         ['v8_enable_inspector==1', {
+           'defines': [
+             'HAVE_INSPECTOR=1',
+diff --git a/tools/v8_gypfiles/features.gypi b/tools/v8_gypfiles/features.gypi
+index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea640114eb09 100644
+--- a/tools/v8_gypfiles/features.gypi
++++ b/tools/v8_gypfiles/features.gypi
+@@ -205,8 +205,7 @@
+     # Enable seeded array index hash.
+     'v8_enable_seeded_array_index_hash%': 1,
+ 
+-    # Use Perfetto (https://perfetto.dev) as the default TracingController. Not
+-    # currently implemented.
++    # Use Perfetto (https://perfetto.dev) as the default TracingController.
+     'v8_use_perfetto%': 0,
+ 
+     # Enable map packing & unpacking (sets -dV8_MAP_PACKING).
+@@ -465,7 +464,10 @@
+         'defines': ['ENABLE_VERIFY_CSA',],
+       }],
+       ['v8_use_perfetto==1', {
+-        'defines': ['V8_USE_PERFETTO',],
++        'defines': [
++          'V8_USE_PERFETTO',
++          'V8_USE_PERFETTO_SDK',
++        ],
+       }],
+       ['v8_enable_map_packing==1', {
+         'defines': ['V8_MAP_PACKING',],
+diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
+index 95194aca28fc3beb5d5ad0e11bc676142bf50c99..7a3b85a4f15916712eeafc9a903b121b6e27b77b 100644
+--- a/tools/v8_gypfiles/v8.gyp
++++ b/tools/v8_gypfiles/v8.gyp
+@@ -33,6 +33,7 @@
+         ],
+       }],
+     ],
++    'perfetto_gyp_file': '../../deps/perfetto/perfetto.gyp',
+   },
+   'includes': ['toolchain.gypi', 'features.gypi'],
+   'target_defaults': {
+@@ -288,6 +289,13 @@
+       'sources': [
+         '<(V8_ROOT)/src/init/setup-isolate-full.cc',
+       ],
++      'conditions': [
++        ['v8_use_perfetto==1', {
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
++      ],
+     },  # v8_init
+     {
+       # This target is used to work around a GCC issue that causes the
+@@ -339,6 +347,11 @@
+         '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_initializers.*?sources = ")',
+       ],
+       'conditions': [
++        ['v8_use_perfetto==1', {
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
+         ['v8_enable_webassembly==1', {
+           'dependencies': [
+             'v8_initializers_slow',
+@@ -501,6 +514,11 @@
+         },
+       ],
+       'conditions': [
++        ['v8_use_perfetto==1', {
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
+         ['want_separate_host_toolset', {
+           'dependencies': [
+             'generate_bytecode_builtins_list',
+@@ -682,6 +700,14 @@
+               }],
+             ],
+           }],
++          ['v8_use_perfetto==1', {
++            'sources!': [
++              '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?v8_use_perfetto.*?sources \\-= ")',
++            ],
++            'sources': [
++              '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?v8_use_perfetto.*?sources \\+= ")',
++            ],
++          }],
+           ['v8_enable_webassembly==1', {
+             'sources': [
+               '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?v8_enable_webassembly.*?sources \\+= ")',
+@@ -965,6 +991,11 @@
+         'abseil.gyp:abseil',
+       ],
+       'conditions': [
++        ['v8_use_perfetto==1', {
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
+         ['v8_enable_maglev==0', {
+           'sources': [
+             '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_header_set.\\"v8_internal_headers\\".*?!v8_enable_maglev.*?sources \\+= ")',
+@@ -1097,6 +1128,14 @@
+         '<@(inspector_all_sources)',
+       ],
+       'conditions': [
++        ['v8_use_perfetto==1', {
++          'sources': [
++            '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_base_without_compiler.*?v8_use_perfetto.*?sources \\+= ")',
++          ],
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
+         ['v8_enable_snapshot_compression==1', {
+           'sources': [
+             '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_base_without_compiler.*?v8_enable_snapshot_compression.*?sources \\+= ")',
+@@ -1687,8 +1726,7 @@
+             '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "\\"v8_libplatform.*?v8_use_perfetto.*?sources += ")',
+           ],
+           'dependencies': [
+-            '<(V8_ROOT)/third_party/perfetto:libperfetto',
+-            '<(V8_ROOT)/third_party/perfetto/protos/perfetto/trace:lite',
++            '<(perfetto_gyp_file):perfetto_sdk',
+           ],
+         }],
+         ['v8_enable_system_instrumentation==1 and is_win', {
+@@ -1799,6 +1837,11 @@
+         },
+       },
+       'conditions': [
++        ['v8_use_perfetto==1', {
++          'dependencies': [
++            '<(perfetto_gyp_file):perfetto_sdk',
++          ],
++        }],
+         ['want_separate_host_toolset', {
+           'toolsets': ['host'],
+         }],
+@@ -2009,6 +2052,13 @@
+         'sources': [
+           '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_source_set.\\"cppgc_base.*?sources = ")',
+         ],
++        'conditions': [
++          ['v8_use_perfetto==1', {
++            'sources': [
++              '<!@pymod_do_main(GN-scraper "<(V8_ROOT)/BUILD.gn"  "v8_source_set.\\"cppgc_base.*?if .v8_use_perfetto.*?sources \\+= ")',
++            ],
++          }],
++        ],
+       },
+     },  # cppgc_base
+     {

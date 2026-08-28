@@ -141,12 +141,6 @@ void ElectronRendererClient::DidCreateScriptContext(
       electron_bindings_.get());
   NodeBindings* node_bindings = frame_env->node_bindings;
 
-  // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent()) {
-    auto* tracing_agent = new node::tracing::Agent();
-    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  }
-
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
