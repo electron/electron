@@ -433,8 +433,13 @@ void UtilityAILanguageModel::OnResponderDisconnect(
   if (it != abort_controllers_.end()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope{isolate};
-    gin_helper::CallMethod(isolate, it->second.Get(isolate), "abort");
+    // abort() runs the signal's listeners and then a microtask checkpoint,
+    // which may settle the pending append() promise and erase this entry
+    // from |abort_controllers_|. Take the controller out of the map first so
+    // we are not holding an iterator across the call.
+    v8::Local<v8::Object> abort_controller = it->second.Get(isolate);
     abort_controllers_.erase(it);
+    gin_helper::CallMethod(isolate, abort_controller, "abort");
   }
 }
 
