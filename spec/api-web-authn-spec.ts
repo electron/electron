@@ -454,6 +454,32 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.userHandle).to.equal(bob.userHandle);
   });
 
+  it('does not crash when the listener invokes the callback and then throws', async () => {
+    await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
+    await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });
+
+    const error = new Error('boom');
+    const listeners = process.listeners('uncaughtException');
+    process.removeAllListeners('uncaughtException');
+    const thrown = new Promise<Error>((resolve) => process.once('uncaughtException', resolve));
+
+    try {
+      (w.webContents.session as NodeJS.EventEmitter).on('select-webauthn-account', (event, details, callback) => {
+        callback(details.accounts[0].credentialId);
+        throw error;
+      });
+
+      const result = await getAssertion();
+      expect(await thrown).to.equal(error);
+      expect(result.ok).to.be.true();
+    } finally {
+      process.removeAllListeners('uncaughtException');
+      for (const listener of listeners) {
+        process.on('uncaughtException', listener);
+      }
+    }
+  });
+
   it('cancels the request when the callback is invoked with an unknown credentialId', async () => {
     await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
     await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });

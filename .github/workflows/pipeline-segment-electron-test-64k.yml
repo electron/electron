@@ -42,6 +42,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -61,7 +62,8 @@ jobs:
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
+        TEST_CONTAINER: ${{ inputs.test-container }}
       run: |
-        container=$(echo '${{ inputs.test-container }}' | jq -r '.image')
+        container=$(echo "$TEST_CONTAINER" | jq -r '.image')
         src/electron/script/run-qemu-64k.sh --container $container --testfiles "`pwd`/src"
         

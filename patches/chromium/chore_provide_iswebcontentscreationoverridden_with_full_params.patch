@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-index b5fad89a577e8a3d7322656a0f29b56d7adf621a..97753f5806571d8882183774b4793ab5eaf30131 100644
+index b7db7938af9dba708ee46fbd883b7c967d0a1204..b63b0dae79cc5839ecfcfb4ac4b9f256434cf978 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-@@ -1000,8 +1000,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -998,8 +998,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index b5fad89a577e8a3d7322656a0f29b56d7adf621a..97753f5806571d8882183774b4793ab5
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1024,7 +1023,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -1022,7 +1021,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(browser_->GetProfile(),
                                           source_site_instance, opener_url,
@@ -385,10 +385,10 @@ index f459dddeb3f8f3a33ffead0e96fba791d18a0108..f7a229b186774ca3a01f2d747eab139a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index fa8b5b91e88d91a615006d6809883418eb289430..dbe0974d2f22a166d3ac44ea0267d6c50c22eded 100644
+index a8d8983d2d0ae1c73cfd5251da441caff6d9b9db..d4f8c1d5720bdfa9aa27e6bafc7884ad8d342428 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -592,8 +592,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -598,8 +598,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -399,7 +399,7 @@ index fa8b5b91e88d91a615006d6809883418eb289430..dbe0974d2f22a166d3ac44ea0267d6c5
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
-index 57122c5c70655e1e9c75546c175925ac399cec9f..2ee2f5338d522f04cfaf0758a08ac8254ddc50de 100644
+index 43b46dac8989818606009abfaab7523b6beddfc0..a058b5a8a15fae1aca52883ad27cddd334ace46e 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.h
 +++ b/fuchsia_web/webengine/browser/frame_impl.h
 @@ -308,8 +308,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
