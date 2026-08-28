@@ -219,3 +219,4 @@ cherry-pick-1e6fb5edb520.patch
 cherry-pick-d383873942e2.patch
 revert_only_preload_swiftshader_in_gpu_sandbox_init_when_allowed.patch
 fix_fall_back_to_an_unlocalized_touch_id_prompt_reason_when_the.patch
+fix_wayland_window_stuck_maximized_after_early_maximize.patch
