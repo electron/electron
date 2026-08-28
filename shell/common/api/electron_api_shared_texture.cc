@@ -427,6 +427,11 @@ void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
       info.Data().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
+  if (wrapper->IsReferenceReleased()) {
+    LOG(WARNING) << "This imported shared texture is already released.";
+    return;
+  }
+
   auto cb = info[0];
   if (cb->IsFunction()) {
     auto* isolate = info.GetIsolate();
@@ -497,8 +502,16 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   auto* wrapper = new ImportedSharedTextureWrapper();
   wrapper->ist = base::WrapRefCounted(imported);
 
+  // Every method below carries |imported_wrapped| as its [[Data]], so the
+  // external stays alive for as long as any of them is reachable. Tie the
+  // lifetime of |wrapper| to the external rather than to the returned
+  // dictionary so that a retained method can never observe a freed wrapper.
   auto imported_wrapped =
       v8::External::New(isolate, wrapper, v8::kExternalPointerTypeTagDefault);
+  auto* persistent = wrapper->CreatePersistent(isolate, imported_wrapped);
+  persistent->SetWeak(wrapper, PersistentCallbackPass1,
+                      v8::WeakCallbackType::kParameter);
+
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
   auto releaser = v8::Function::New(isolate->GetCurrentContext(),
@@ -533,13 +546,7 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   root.Set("getFrameCreationSyncToken", get_frame_creation_sync_token);
   root.Set("setReleaseSyncToken", set_release_sync_token);
 
-  auto root_local = gin::ConvertToV8(isolate, root);
-  auto* persistent = wrapper->CreatePersistent(isolate, root_local);
-
-  persistent->SetWeak(wrapper, PersistentCallbackPass1,
-                      v8::WeakCallbackType::kParameter);
-
-  return root_local;
+  return gin::ConvertToV8(isolate, root);
 }
 
 struct ImportSharedTextureInfoPlane {
