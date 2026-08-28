@@ -27,6 +27,7 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_util.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/picture_in_picture/video_overlay_window.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
@@ -846,7 +847,7 @@ ElectronBrowserClient::GetServiceWorkerStartupData(
 std::unique_ptr<content::VideoOverlayWindow>
 ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
     content::VideoPictureInPictureWindowController* controller) {
-  auto overlay_window = content::VideoOverlayWindow::Create(controller);
+  auto overlay_window = CreateVideoOverlayWindow(controller);
 #if BUILDFLAG(IS_WIN)
   std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
