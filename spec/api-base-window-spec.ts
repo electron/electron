@@ -1,8 +1,9 @@
+import { nativeImage } from 'electron/common';
 import { BaseWindow, Menu, View, screen } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 
 import { isScaleFactorRounding } from './lib/screen-helpers';
 import { ifdescribe, isWayland } from './lib/spec-helpers';
@@ -52,6 +53,38 @@ describe('BaseWindow module', () => {
       const w = new BaseWindow({ show: false, ...requested });
       expectBoundsEqual(w.getBounds(), requested);
     });
+  });
+
+  const eventSubscriptionTests = (eventNames: string[]) => {
+    afterEach(closeAllWindows);
+
+    for (const eventName of eventNames) {
+      it(`supports the '${eventName}' event`, () => {
+        const w = new BaseWindow({ show: false });
+        const emitter: EventEmitter = w;
+        const listener = () => {};
+        emitter.on(eventName, listener);
+        expect(emitter.listeners(eventName)).to.include(listener);
+        emitter.off(eventName, listener);
+        expect(emitter.listeners(eventName)).to.not.include(listener);
+      });
+    }
+  };
+
+  ifdescribe(process.platform === 'win32')('Windows events', () => {
+    eventSubscriptionTests(['query-session-end', 'session-end']);
+  });
+
+  ifdescribe(process.platform === 'darwin' || process.platform === 'win32')('macOS and Windows events', () => {
+    eventSubscriptionTests(['will-resize', 'will-move']);
+  });
+
+  ifdescribe(process.platform === 'win32' || process.platform === 'linux')('Windows and Linux events', () => {
+    eventSubscriptionTests(['app-command']);
+  });
+
+  ifdescribe(process.platform === 'darwin')('macOS events', () => {
+    eventSubscriptionTests(['swipe', 'rotate-gesture', 'new-window-for-tab']);
   });
 
   describe('BaseWindow.close()', () => {
@@ -342,6 +375,15 @@ describe('BaseWindow module', () => {
         await move;
         expect(w.getPosition()).to.deep.equal(pos);
       });
+
+      ifdescribe(process.platform === 'darwin' || process.platform === 'win32')('moved event', () => {
+        it('emits after the window has moved', async () => {
+          const [x, y] = w.getPosition();
+          const moved = once(w, 'moved');
+          w.setPosition(x + 10, y + 10);
+          await moved;
+        });
+      });
     });
 
     describe('BaseWindow.getNormalBounds()', () => {
@@ -533,6 +575,33 @@ describe('BaseWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'darwin' || process.platform === 'win32')('focusable state', () => {
+      it('can be changed', () => {
+        const w = new BaseWindow({ show: false });
+        w.focusable = false;
+        expect(w.focusable).to.be.false('focusable');
+        w.focusable = true;
+        expect(w.focusable).to.be.true('focusable');
+      });
+    });
+
+    ifdescribe(process.platform === 'darwin')('excludedFromShownWindowsMenu state', () => {
+      it('can be changed', () => {
+        const w = new BaseWindow({ show: false });
+        expect(w.excludedFromShownWindowsMenu).to.be.false('excludedFromShownWindowsMenu');
+        w.excludedFromShownWindowsMenu = true;
+        expect(w.excludedFromShownWindowsMenu).to.be.true('excludedFromShownWindowsMenu');
+      });
+    });
+
+    ifdescribe(process.platform === 'win32')('snapped state', () => {
+      it('matches isSnapped()', () => {
+        const w = new BaseWindow({ show: false });
+        expect(w.snapped).to.be.a('boolean');
+        expect(w.snapped).to.equal(w.isSnapped());
+      });
+    });
+
     // On Linux these setters are no-ops and the getters always return true.
     ifdescribe(process.platform === 'linux')('minimizable/maximizable/closable/movable state on Linux', () => {
       it('the getters return true and the setters are no-ops', () => {
@@ -635,6 +704,79 @@ describe('BaseWindow module', () => {
         w.flashFrame(true);
         w.flashFrame(false);
       }).to.not.throw();
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin' || process.platform === 'win32')('BaseWindow.setSkipTaskbar(skip)', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when changing taskbar visibility', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => {
+        w.setSkipTaskbar(true);
+        w.setSkipTaskbar(false);
+      }).to.not.throw();
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('Windows-specific methods', () => {
+    afterEach(closeAllWindows);
+
+    it('BaseWindow.isTabletMode() returns a boolean', () => {
+      const w = new BaseWindow({ show: false });
+      expect(w.isTabletMode()).to.be.a('boolean');
+    });
+
+    it('hooks and unhooks window messages', () => {
+      const w = new BaseWindow({ show: false });
+      const firstMessage = 0x0400;
+      const secondMessage = 0x0401;
+
+      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
+      w.hookWindowMessage(firstMessage, () => {});
+      w.hookWindowMessage(secondMessage, () => {});
+      expect(w.isWindowMessageHooked(firstMessage)).to.be.true('first message is hooked');
+      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+
+      w.unhookWindowMessage(firstMessage);
+      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
+      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+
+      w.unhookAllWindowMessages();
+      expect(w.isWindowMessageHooked(secondMessage)).to.be.false('second message is hooked');
+    });
+
+    it('BaseWindow.setOverlayIcon() accepts an image and null', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => {
+        w.setOverlayIcon(nativeImage.createEmpty(), 'test overlay');
+        w.setOverlayIcon(null, '');
+      }).to.not.throw();
+    });
+
+    it('BaseWindow.setThumbarButtons() accepts an empty list', () => {
+      const w = new BaseWindow({ show: false });
+      expect(w.setThumbarButtons([])).to.be.a('boolean');
+    });
+
+    it('sets the thumbnail clip and tooltip', () => {
+      const w = new BaseWindow({ show: false });
+      expect(w.setThumbnailClip({ x: 0, y: 0, width: 100, height: 100 })).to.be.a('boolean');
+      expect(w.setThumbnailToolTip('BaseWindow thumbnail')).to.be.a('boolean');
+    });
+
+    it('BaseWindow.setBackgroundMaterial() accepts a supported material', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => w.setBackgroundMaterial('none')).to.not.throw();
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('BaseWindow.invalidateShadow()', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw', () => {
+      const w = new BaseWindow({ show: false });
+      expect(() => w.invalidateShadow()).to.not.throw();
     });
   });
 
