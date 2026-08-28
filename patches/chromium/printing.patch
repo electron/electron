@@ -607,10 +607,10 @@ index eeb4f72448319d0c8a498cc41ea7b17289a60424..c4fb52c4c5b99c6c603f6da5c188f963
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index 1e160aab45a5beccd1c25e8dcb23e1cd021b5231..5111a41714401c5e7231e531005b7e4032c26708 100644
+index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..49efb2d2b621063ed94d6d17fa563f341495f965 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
-@@ -126,7 +126,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+@@ -127,7 +127,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
      std::unique_ptr<PrintSettings> new_settings,
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -619,7 +619,7 @@ index 1e160aab45a5beccd1c25e8dcb23e1cd021b5231..5111a41714401c5e7231e531005b7e40
      // Want the same PrintBackend service as the query so that we use the same
      // device context.
      print_document_client_id_ =
-@@ -189,6 +189,28 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
+@@ -190,6 +190,28 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
    //       browser process.
    //   - Other platforms don't have a system print UI or do not use OOP
    //     printing, so this does not matter.
