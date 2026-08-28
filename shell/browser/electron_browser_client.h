@@ -14,6 +14,7 @@
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/frame_tree_node_id.h"
@@ -384,7 +385,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool spare_renderer_compatible_ = false;
 
   // pending_render_process => web contents.
-  base::flat_map<content::ChildProcessId, content::WebContents*>
+  base::flat_map<content::ChildProcessId, base::WeakPtr<content::WebContents>>
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
