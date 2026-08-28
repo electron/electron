@@ -160,7 +160,11 @@ void HidChooserController::OnDeviceRemoved(
                                         .Set("device", device.Clone())
                                         .Set("frame", rfh)
                                         .Build();
+    // The handler may destroy the requesting frame, which deletes |this|.
+    base::WeakPtr<HidChooserController> weak_this = weak_factory_.GetWeakPtr();
     session->Get()->Emit("hid-device-removed", details);
+    if (!weak_this)
+      return;
   }
   RemoveDeviceInfo(device);
 }
@@ -243,10 +247,14 @@ void HidChooserController::OnGotDevices(
                                         .Set("deviceList", devicesToDisplay)
                                         .Set("frame", rfh)
                                         .Build();
+    // The handler may destroy the requesting frame, which deletes |this|.
+    base::WeakPtr<HidChooserController> weak_this = weak_factory_.GetWeakPtr();
     prevent_default = session->Get()->Emit(
         "select-hid-device", details,
         base::BindRepeating(&HidChooserController::OnDeviceChosen,
                             weak_factory_.GetWeakPtr()));
+    if (!weak_this)
+      return;
   }
   if (!prevent_default) {
     RunCallback({});
