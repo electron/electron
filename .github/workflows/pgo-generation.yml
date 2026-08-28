@@ -50,6 +50,8 @@ jobs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -80,6 +82,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
@@ -106,6 +109,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -136,6 +140,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -192,7 +197,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-linux-arm64:
     permissions:
@@ -212,7 +227,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-macos-x64:
     permissions:
@@ -232,7 +257,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-macos-arm64:
     permissions:
@@ -252,7 +287,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-windows-x64:
     permissions:
@@ -271,7 +316,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-windows-arm64:
     permissions:
@@ -290,7 +345,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   # ---------------------------------------------------------------------------
   # V8 builtins PGO: instrumented d8 + JetStream 2 -> block-hint profile.
@@ -321,6 +386,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
@@ -340,6 +406,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -408,7 +475,6 @@ jobs:
       artifact-key: linux_x64
       collect-runs-on: electron-arc-centralus-linux-amd64-8core
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
 
   collect-linux-arm64:
     permissions:
@@ -422,7 +488,6 @@ jobs:
       # Instrumented arm64 crashes on GitHub-hosted arm64 runners; ARC nodes work.
       collect-runs-on: electron-arc-centralus-linux-arm64-4core
       collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
 
   collect-macos-x64:
     permissions:
@@ -434,7 +499,6 @@ jobs:
       target-arch: x64
       artifact-key: darwin_x64
       collect-runs-on: macos-15-large
-    secrets: inherit
 
   collect-macos-arm64:
     permissions:
@@ -446,7 +510,6 @@ jobs:
       target-arch: arm64
       artifact-key: darwin_arm64
       collect-runs-on: macos-15
-    secrets: inherit
 
   collect-windows-x64:
     permissions:
@@ -458,7 +521,6 @@ jobs:
       target-arch: x64
       artifact-key: win_x64
       collect-runs-on: windows-latest
-    secrets: inherit
 
   collect-windows-arm64:
     permissions:
@@ -470,7 +532,6 @@ jobs:
       target-arch: arm64
       artifact-key: win_arm64
       collect-runs-on: windows-11-arm
-    secrets: inherit
 
   # ---------------------------------------------------------------------------
   # Merge: .profraw sets -> named .profdata (one x64 job, in-tree clang tooling)
@@ -499,6 +560,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -512,6 +574,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Download llvm-profdata
       run: |
         # --output-dir is required: the default location replaces the clang install.

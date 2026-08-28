@@ -5,7 +5,8 @@ runs:
   steps:
   - name: Install Build Tools
     shell: bash
-    run: |
+    # zizmor: ignore[adhoc-packages] the latest @electron/build-tools CLI is installed by design; it then pins depot_tools itself
+    run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, paths are fixed depot_tools locations
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         git config --global core.filemode false
         git config --global core.autocrlf false

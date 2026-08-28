@@ -7,6 +7,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     labels:
       - "no-backport"
       - "semver/none"
@@ -18,6 +20,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "no-backport"
     open-pull-requests-limit: 2
@@ -29,6 +33,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
@@ -40,6 +46,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
@@ -51,6 +59,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
@@ -62,6 +72,8 @@ updates:
       - /npm
     schedule:
       interval: daily
+    cooldown:
+      default-days: 7
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
