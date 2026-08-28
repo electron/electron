@@ -141,37 +141,37 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 // Objective-C object, which allows it to be stored in the representedObject
 // field of an NSMenuItem. It also stores the identity of the original menu item
 // so copies created by AppKit can be distinguished from ones created by us.
-@interface WeakPtrToElectronMenuModelAsNSObject : NSObject
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model
-                       menuItem:(NSMenuItem*)menuItem;
+@interface ElectronMenuItemMetadata : NSObject
++ (instancetype)metadataForModel:(electron::ElectronMenuModel*)model
+                  sourceMenuItem:(NSMenuItem*)sourceMenuItem;
 + (instancetype)metadataFromRepresentedObject:(id)representedObject;
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model
-                     menuItem:(NSMenuItem*)menuItem;
+               sourceMenuItem:(NSMenuItem*)sourceMenuItem;
 - (electron::ElectronMenuModel*)menuModel;
 - (BOOL)isSourceMenuItem:(NSMenuItem*)menuItem;
 @end
 
-@implementation WeakPtrToElectronMenuModelAsNSObject {
+@implementation ElectronMenuItemMetadata {
   base::WeakPtr<electron::ElectronMenuModel> _model;
-  NSMenuItem* __weak _menuItem;
+  NSMenuItem* __weak _sourceMenuItem;
 }
 
-+ (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model
-                       menuItem:(NSMenuItem*)menuItem {
-  return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model
-                                                            menuItem:menuItem];
++ (instancetype)metadataForModel:(electron::ElectronMenuModel*)model
+                  sourceMenuItem:(NSMenuItem*)sourceMenuItem {
+  return [[ElectronMenuItemMetadata alloc] initWithModel:model
+                                          sourceMenuItem:sourceMenuItem];
 }
 
 + (instancetype)metadataFromRepresentedObject:(id)representedObject {
-  return base::apple::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(
+  return base::apple::ObjCCastStrict<ElectronMenuItemMetadata>(
       representedObject);
 }
 
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model
-                     menuItem:(NSMenuItem*)menuItem {
+               sourceMenuItem:(NSMenuItem*)sourceMenuItem {
   if ((self = [super init])) {
     _model = model->GetWeakPtr();
-    _menuItem = menuItem;
+    _sourceMenuItem = sourceMenuItem;
   }
   return self;
 }
@@ -181,7 +181,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 }
 
 - (BOOL)isSourceMenuItem:(NSMenuItem*)menuItem {
-  return _menuItem == menuItem;
+  return _sourceMenuItem == menuItem;
 }
 
 @end
@@ -447,8 +447,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     item.submenu = submenu;
     item.tag = index;
     item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model
-                                                     menuItem:item];
+        [ElectronMenuItemMetadata metadataForModel:model sourceMenuItem:item];
     submenu.delegate = self;
 
     // Set submenu's role.
@@ -466,8 +465,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     // in validation of the menu items.
     item.tag = index;
     item.representedObject =
-        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model
-                                                     menuItem:item];
+        [ElectronMenuItemMetadata metadataForModel:model sourceMenuItem:item];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -531,12 +529,11 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   if (!represented)
     return;
 
-  if (![represented
-          isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
+  if (![represented isKindOfClass:[ElectronMenuItemMetadata class]]) {
     return;
   }
 
-  auto* metadata = [WeakPtrToElectronMenuModelAsNSObject
+  auto* metadata = [ElectronMenuItemMetadata
       metadataFromRepresentedObject:represented];
   electron::ElectronMenuModel* model = [metadata menuModel];
   if (!model)
@@ -637,7 +634,7 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 // item chosen.
 - (void)itemSelected:(id)sender {
   NSInteger modelIndex = [sender tag];
-  auto* metadata = [WeakPtrToElectronMenuModelAsNSObject
+  auto* metadata = [ElectronMenuItemMetadata
       metadataFromRepresentedObject:[sender representedObject]];
   electron::ElectronMenuModel* model = [metadata menuModel];
   DCHECK(model);
