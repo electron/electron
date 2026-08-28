@@ -285,6 +285,11 @@ class NativeWindow : public views::WidgetDelegate {
   }
   virtual void SetAspectRatio(double aspect_ratio, const gfx::Size& extra_size);
 
+  // Called when something the excluded margin is derived from changes, e.g.
+  // the menu bar being shown or hidden or the size constraints being altered,
+  // for platforms whose aspect ratio has to account for it.
+  virtual void UpdateAspectRatio() {}
+
   // File preview APIs.
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name) {}

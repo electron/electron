@@ -367,6 +367,7 @@ void NativeWindow::SetSizeConstraints(
     const extensions::SizeConstraints& window_constraints) {
   size_constraints_ = window_constraints;
   content_size_constraints_.reset();
+  UpdateAspectRatio();
 }
 
 extensions::SizeConstraints NativeWindow::GetSizeConstraints() const {
@@ -393,6 +394,7 @@ void NativeWindow::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   content_size_constraints_ = size_constraints;
   size_constraints_.reset();
+  UpdateAspectRatio();
 }
 
 // Windows/Linux:

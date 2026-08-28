@@ -245,6 +245,8 @@ class NativeWindowViews : public NativeWindow,
   void OnWidgetMove() override;
 
 #if BUILDFLAG(IS_WIN)
+  void UpdateAspectRatio() override;
+
   bool ExecuteWindowsCommand(int command_id) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();

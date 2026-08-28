@@ -1084,12 +1084,79 @@ bool NativeWindowViews::IsResizable() const {
   return CanResize();
 }
 
+#if BUILDFLAG(IS_WIN)
+void NativeWindowViews::UpdateAspectRatio() {
+  if (aspect_ratio() <= 0.0)
+    return;
+
+  // The ratio is not enforced while maximized or in fullscreen, and pushing it
+  // then compares the restored rect against the current constraints.
+  if (IsMaximized() || IsFullscreen())
+    return;
+
+  // Chromium CHECKs when it is asked to keep a ratio for a window that does
+  // not satisfy its own size constraints. That is reachable on its own by
+  // calling setAspectRatio() in such a state, so do not surface it from here.
+  const gfx::Size size = GetSize();
+  const gfx::Size min_size = GetMinimumSize();
+  const gfx::Size max_size = GetMaximumSize();
+  if (size.width() < min_size.width() || size.height() < min_size.height() ||
+      (max_size.width() > 0 && size.width() > max_size.width()) ||
+      (max_size.height() > 0 && size.height() > max_size.height())) {
+    return;
+  }
+
+  SetAspectRatio(aspect_ratio(), aspect_ratio_extra_size());
+}
+#endif
+
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
                                        const gfx::Size& extra_size) {
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
   gfx::SizeF aspect(aspect_ratio, 1.0);
   // Scale up because SetAspectRatio() truncates aspect value to int
   aspect.Scale(100);
+
+#if BUILDFLAG(IS_WIN)
+  // Windows sizes the whole window rect to |aspect|, so everything that isn't
+  // part of the content view has to be excluded from it: |extra_size| plus the
+  // window/content difference. views::Widget::SetAspectRatio() derives that
+  // difference from the non-client view, which is empty for the native frame
+  // Electron uses, so compute it the way the macOS delegate does and hand it
+  // to the host directly.
+  //
+  // The content size is only correct once a pending layout has run: the menu
+  // bar merely invalidates the layout when it is added or removed.
+  widget()->LayoutRootViewIfNecessary();
+
+  // Chromium applies the ratio to the real window rect. GetSize() reports the
+  // logical size, which for frameless windows excludes the invisible resize
+  // border, so use the widget bounds to keep the margin in the same space.
+  gfx::Size excluded_margin = extra_size;
+  const gfx::Size window_size = widget()->GetWindowBoundsInScreen().size();
+  const gfx::Size content_size = GetContentSize();
+  excluded_margin.Enlarge(window_size.width() - content_size.width(),
+                          window_size.height() - content_size.height());
+
+  // A margin larger than the window is ever allowed to grow to is
+  // unsatisfiable, and Chromium CHECKs rather than sorting it out, so keep it
+  // within the maximum size. Either axis may be unconstrained (zero).
+  const gfx::Size max_size = GetMaximumSize();
+  if (max_size.width() > 0) {
+    excluded_margin.set_width(
+        std::min(excluded_margin.width(), max_size.width()));
+  }
+  if (max_size.height() > 0) {
+    excluded_margin.set_height(
+        std::min(excluded_margin.height(), max_size.height()));
+  }
+
+  if (auto* host = static_cast<ElectronDesktopWindowTreeHostWin*>(
+          GetNativeWindow()->GetHost())) {
+    host->SetAspectRatio(aspect, excluded_margin);
+    return;
+  }
+#endif
 
   widget()->SetAspectRatio(aspect);
 }
@@ -1527,6 +1594,10 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
     // Resize the window to make sure content size is not changed.
     SetContentSize(content_size);
   }
+
+  // Adding or removing the menu bar changes the content size, and with it the
+  // margin excluded from the aspect ratio.
+  UpdateAspectRatio();
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
