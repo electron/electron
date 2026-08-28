@@ -5,6 +5,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import { emittedUntil } from './lib/events-helpers';
 import { listen, waitUntil } from './lib/spec-helpers';
@@ -40,6 +41,15 @@ describe('debugger module', () => {
     it('attaches when no protocol version is specified', () => {
       w.webContents.debugger.attach();
       expect(w.webContents.debugger.isAttached()).to.be.true();
+    });
+
+    it('throws when the webContents has been destroyed', async () => {
+      const { debugger: dbg } = w.webContents;
+      w.webContents.destroy();
+      await once(w.webContents, 'destroyed');
+      await setTimeout(50);
+      expect(() => dbg.attach()).to.throw('No target available');
+      expect(dbg.isAttached()).to.be.false();
     });
   });
 
