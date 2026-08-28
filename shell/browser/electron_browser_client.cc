@@ -1524,8 +1524,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> proxy_receiver =
         gate_to_proxy.InitWithNewPipeAndPassReceiver();
     CreateURLLoaderFactoryGate(
-        static_cast<ElectronBrowserContext*>(browser_context)
-            ->intercept_state(),
+        static_cast<ElectronBrowserContext*>(browser_context),
+        render_process_id, frame_host->GetRoutingID(),
         std::move(proxied_receiver), std::move(gate_to_network),
         std::move(gate_to_proxy));
     proxied_receiver = std::move(proxy_receiver);
