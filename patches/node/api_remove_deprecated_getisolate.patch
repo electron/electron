@@ -85,10 +85,10 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 078efcf5716d6ff617bef047d78903f9011e225f..af01ce3c22c30968326e1fb2baf39663de2113f4 100644
+index 60ec48a68abeac1ef2a5ca7b54be71cfefa7581c..55cdd9acc0dd957de7f1c404d2ee295840506097 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1104,7 +1104,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+@@ -1107,7 +1107,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
                             Local<Array> cert_array,
                             std::vector<X509*>* certs) {
    ClearErrorOnReturn clear_error_on_return;
@@ -98,10 +98,10 @@ index 078efcf5716d6ff617bef047d78903f9011e225f..af01ce3c22c30968326e1fb2baf39663
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 6b7e4211a8969351168fc982fe3466a2096bed3a..76c84dd516719849a44e7d67f42ea16dd315b190 100644
+index 49a022204773219f97bda25268f7e49c2a297da7..91ae1ec2c550f5ec4398934c6b145617af0a7cdb 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -109,7 +109,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
+@@ -110,7 +110,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
    if (!mem) [[unlikely]]
      return {};
    Local<Value> ret;
@@ -110,7 +110,7 @@ index 6b7e4211a8969351168fc982fe3466a2096bed3a..76c84dd516719849a44e7d67f42ea16d
                             mem->data,
                             NewStringType::kNormal,
                             mem->length)
-@@ -125,7 +125,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+@@ -126,7 +126,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
    if (!mem) [[unlikely]]
      return {};
    Local<Value> ret;
@@ -133,10 +133,10 @@ index 31277621e92b4d3583a67140f4ab8a74a9c6df3b..caa109871b71926f3355491767b8064b
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index dd8be35de7c447c9a77f8b9849a6a3de19bc55af..79a309661aff7ebb18f96e64d0d2b860ab80dc57 100644
+index dace5b3ca4c1c386c5d529b56f1d56da83290297..9b67143ce4707b175d607237bdea137149a9935a 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1763,10 +1763,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1760,10 +1760,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index dd8be35de7c447c9a77f8b9849a6a3de19bc55af..79a309661aff7ebb18f96e64d0d2b860
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1806,7 +1806,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1803,7 +1803,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -283,10 +283,10 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 4fab58689aa360a34d8b51d13f72c162701195f3..cf776248b9deef41e34eae8bdf000c66d9606172 100644
+index 9d42692040941f7ed2813a9fb329722f70939638..9ad4985f284255cf2d1fbab411dd5e0e11a78d7c 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1158,7 +1158,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1150,7 +1150,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_CONSTANT(target, constant)                                 \
    do {                                                                         \
@@ -295,7 +295,7 @@ index 4fab58689aa360a34d8b51d13f72c162701195f3..cf776248b9deef41e34eae8bdf000c66
      v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
-@@ -1174,7 +1174,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1166,7 +1166,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
    do {                                                                         \
@@ -388,7 +388,7 @@ index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c933
  
    CHECK(
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 0a692075dfeab6fb880b2ca6d52c2d45ce527276..c69ff16bd85427d3c26d8b42029c8ebb618dea41 100644
+index 211bc074161b5fd4ac6f2d9a23b201d79ae362ef..469c85642e995024b354abaa67dd865933867fc7 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -109,6 +109,8 @@ using v8::Value;
@@ -409,7 +409,7 @@ index 0a692075dfeab6fb880b2ca6d52c2d45ce527276..c69ff16bd85427d3c26d8b42029c8ebb
  
    PropertyAttribute attributes = PropertyAttribute::None;
    bool is_declared =
-@@ -1667,7 +1669,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
+@@ -1668,7 +1670,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
      bool* cache_rejected,
      bool is_cjs_scope,
      ScriptCompiler::CachedData* cached_data) {
@@ -463,10 +463,10 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 0bd206a6b4f423a67b6fedc0790faa6eb35d5b97..83d02f0e9cc56025d37247d6323b154052f94e63 100644
+index d828e7e78f9b41e053c306b01a71ad3ad847aaf6..c24c952538cfd28d46209299550bae0bfa7317dc 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3906,7 +3906,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -3899,7 +3899,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -590,10 +590,10 @@ index 41b0773f4c37a016cfa55aff6bb03baf50905b32..c3e995adf437413fe956e45c2ccc704d
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 76fa65c4bd3d475c65af9591a8448ddfa9452279..0c0c8833bf636411292d8635928c82715cb28689 100644
+index d506d33ace4f9dd19211ca31a439661c1bdccb56..fb765922dc372953efe4aea9ac92aaec17540ea9 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2596,7 +2596,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
+@@ -2612,7 +2612,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
  
    if (args[0]->IsObject() && !args[0]->IsArrayBufferView()) {
      Local<Object> obj = args[0].As<Object>();
@@ -666,10 +666,10 @@ index 370221d3cddc201180260ecb3a222bc831c91093..f5aff2f65fe6b9f48cf970ab3e7c57cf
      THROW_ERR_WASI_NOT_STARTED(isolate);
      return EinvalError<R>();
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index d8078241e81310eb838d3b7fd63d1c7ceada9e52..e5b3d2be2144ab23e7630f6713bbaf407a7a54e8 100644
+index 9bebd4fb1b86b97df59aa2a04106c1916ca658bc..afd17511610cc0977874190aeca9e5e63e1db4e7 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -59,7 +59,7 @@ using v8::Value;
+@@ -60,7 +60,7 @@ using v8::Value;
    } while (0)
  
  static void ThrowQuotaExceededException(Local<Context> context) {
@@ -678,7 +678,7 @@ index d8078241e81310eb838d3b7fd63d1c7ceada9e52..e5b3d2be2144ab23e7630f6713bbaf40
    auto dom_exception_str = FIXED_ONE_BYTE_STRING(isolate, "DOMException");
    auto err_name = FIXED_ONE_BYTE_STRING(isolate, "QuotaExceededError");
    auto err_message =
-@@ -467,6 +467,8 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
+@@ -468,6 +468,8 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
    return JustVoid();
  }
  

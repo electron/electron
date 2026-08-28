@@ -39,10 +39,10 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..10266fd1233d9b117eefbbbb4f455289b002785a 100644
+index 9b67143ce4707b175d607237bdea137149a9935a..e67efbe92e1ab53346c659ed918dade2a073887b 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -2266,4 +2266,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+@@ -2263,4 +2263,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
    return profile;
  }
  
@@ -87,7 +87,7 @@ index d2375ecd32483ff57840d30f804100372f2e12db..396f7848952e941b3e667b47424c5166
  #endif
  
 diff --git a/src/memory_tracker-inl.h b/src/memory_tracker-inl.h
-index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4acf2c709ec 100644
+index a59452fd994c33c263da9ff0865ef6717d4a81b4..be72ac5f3102b2915eff3fcbcfb51b8af7eafd32 100644
 --- a/src/memory_tracker-inl.h
 +++ b/src/memory_tracker-inl.h
 @@ -63,7 +63,7 @@ class MemoryRetainerNode : public v8::EmbedderGraph::Node {
