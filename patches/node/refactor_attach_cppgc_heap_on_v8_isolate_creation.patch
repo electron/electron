@@ -75,6 +75,24 @@ index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903
    return ptr;
  }
  
+diff --git a/src/cppgc_helpers.cc b/src/cppgc_helpers.cc
+index 7c557a822d2028aa88adbdca63677a44afd1a120..ae7e45fbc26317a53207c267865ea4db553f5a8a 100644
+--- a/src/cppgc_helpers.cc
++++ b/src/cppgc_helpers.cc
+@@ -4,11 +4,12 @@
+ namespace node {
+ 
+ void CppgcWrapperList::Cleanup() {
+-  for (auto node : *this) {
++  while (CppgcWrapperListNode* node = PopFront()) {
+     CppgcMixin* ptr = node->persistent.Get();
+     if (ptr != nullptr) {
+       ptr->Finalize();
+     }
++    delete node;
+   }
+ }
+ 
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
 index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c2133041d1b0 100644
 --- a/src/cppgc_helpers.h
@@ -89,10 +107,10 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index ef6e14245fa668d04d0e9b1f71fcce48ec267f4e..dd8be35de7c447c9a77f8b9849a6a3de19bc55af 100644
+index d155e6e80e29235eccab5b9b5080d0803f93a057..dace5b3ca4c1c386c5d529b56f1d56da83290297 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -610,7 +610,7 @@ IsolateData::~IsolateData() {}
+@@ -609,7 +609,7 @@ IsolateData::~IsolateData() {}
  // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
@@ -102,7 +120,7 @@ index ef6e14245fa668d04d0e9b1f71fcce48ec267f4e..dd8be35de7c447c9a77f8b9849a6a3de
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 51f8b0cdc8858c7d8e39d2e31215dd2b9027510e..4fab58689aa360a34d8b51d13f72c162701195f3 100644
+index fc7751813343cf36a7597c514525499cec3b71e3..9d42692040941f7ed2813a9fb329722f70939638 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -113,7 +131,7 @@ index 51f8b0cdc8858c7d8e39d2e31215dd2b9027510e..4fab58689aa360a34d8b51d13f72c162
  
  #include "v8-platform.h"  // NOLINT(build/include_order)
  #include "node_version.h"  // NODE_MODULE_VERSION
-@@ -605,7 +606,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -597,7 +598,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -123,7 +141,7 @@ index 51f8b0cdc8858c7d8e39d2e31215dd2b9027510e..4fab58689aa360a34d8b51d13f72c162
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1718,9 +1720,10 @@ void RegisterSignalHandler(int signal,
+@@ -1710,9 +1712,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",
