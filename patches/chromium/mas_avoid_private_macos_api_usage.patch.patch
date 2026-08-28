@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b2d45d2723787e0f5ca542f310ab2b0ef013ff05..0917d09cc1a64cb90e6967df0961d0ed4b5df48d 100644
+index 86038de345c8ef3489f9a4805e87bd7591a4d509..03c0f593b4221f95bf02e8075ad69089441619d8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1152,6 +1152,7 @@ component("base") {
@@ -1124,10 +1124,10 @@ index 7af4d8bb3493245297407f662b130e8f581aa14b..2f424ceaae13b01dce075d227b3e68db
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 5a4051158ce35d281eeaff71f3505321925b73ac..1c8e7aa5ac69c274076d551b065bf94cac243a1c 100644
+index 9e7c9d9aa5cf5c170dbd6ad8cbe7d20ff2b249d9..97e2a8eecd59caa45c7902f292d08f32ae716499 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
+@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1206,7 +1206,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 771d6cf746b4a89d2c484ce161505561448dfdc9..f2b4b22f0ec5868dfd6524e21c3cb9c2982be845 100644
+index 63067b596bd6aafc68199207f8f3711f004c537e..817b295c0d06edf6046b15b49d47049ea32566c8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -651,6 +651,7 @@ static_library("test_support") {
@@ -2309,7 +2309,7 @@ index cf4c30f417f9a7689f02ceec3b9326e9ca9989b7..ed8059a069757b5d0ce4fd8b0925e89d
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index ea56d1861d2bcf4d4514b5136d7a0fd0a2f121b2..9121fc1f13219f2c1ee58f1806cedb7c6a83edb0 100644
+index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc9d246b8b 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -29,6 +29,7 @@
@@ -2320,7 +2320,7 @@ index ea56d1861d2bcf4d4514b5136d7a0fd0a2f121b2..9121fc1f13219f2c1ee58f1806cedb7c
  #include "ui/display/display.h"
  #include "ui/display/display_change_notifier.h"
  #include "ui/display/mac/screen_mac_headless.h"
-@@ -179,7 +180,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+@@ -181,7 +182,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
