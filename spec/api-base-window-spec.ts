@@ -376,7 +376,8 @@ describe('BaseWindow module', () => {
         expect(w.getPosition()).to.deep.equal(pos);
       });
 
-      ifdescribe(process.platform === 'darwin' || process.platform === 'win32')('moved event', () => {
+      // On Windows the moved event is only emitted when a user drag ends (WM_EXITSIZEMOVE), never for programmatic setPosition.
+      ifdescribe(process.platform === 'darwin')('moved event', () => {
         it('emits after the window has moved', async () => {
           const [x, y] = w.getPosition();
           const moved = once(w, 'moved');
