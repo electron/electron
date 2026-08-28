@@ -391,37 +391,6 @@ jobs:
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
-  macos-arm64-ubsan:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-macos, build-siso-macos]
-    with:
-      build-runs-on: macos-15-xlarge
-      test-runs-on: macos-15
-      target-platform: macos
-      target-arch: arm64
-      target-variant: darwin
-      is-release: false
-      gn-build-type: testing
-      generate-symbols: false
-      upload-to-storage: '0'
-      enable-ssh: ${{ inputs.enable-ssh || false }}
-      is-ubsan: true
-    secrets:
-      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
-      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
-      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
-      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
-      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
-
   linux-x64:
     permissions:
       contents: read
@@ -628,7 +597,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, macos-arm64-ubsan, linux-x64, linux-x64-asan, linux-x64-ubsan, linux-arm64, build-siso-macos, build-siso-linux, build-siso-windows, windows-x64, windows-arm64]
+    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-x64-ubsan, linux-arm64, build-siso-macos, build-siso-linux, build-siso-windows, windows-x64, windows-arm64]
     if: always() && github.repository == 'electron/electron'
     steps:
     - name: Fail if any needed job failed or was cancelled
