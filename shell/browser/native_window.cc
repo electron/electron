@@ -84,9 +84,10 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
       is_modal_{parent != nullptr &&
                 options.ValueOrDefault(options::kModal, false)},
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
-                 title_bar_style_ == TitleBarStyle::kNormal},
-      parent_{parent} {
+                 title_bar_style_ == TitleBarStyle::kNormal} {
   DCHECK_NE(base_window_id_, 0);
+  if (parent)
+    parent_ = parent->GetWeakPtr();
 
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
@@ -426,7 +427,10 @@ bool NativeWindow::IsFocusable() const {
 }
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
-  parent_ = parent;
+  if (parent)
+    parent_ = parent->GetWeakPtr();
+  else
+    parent_.reset();
 }
 
 bool NativeWindow::AddTabbedWindow(NativeWindow* window) {

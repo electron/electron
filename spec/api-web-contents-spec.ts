@@ -1326,6 +1326,20 @@ describe('webContents module', () => {
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
     });
+
+    it('falls back to the built-in devtools when the assigned webContents has been destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      devtools.webContents.destroy();
+      await once(devtools.webContents, 'destroyed');
+      await setTimeout(50);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.devToolsWebContents).to.not.be.null();
+    });
   });
 
   describe('isFocused() API', () => {
@@ -3917,6 +3931,36 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+
+    it('does not crash when the webContents is destroyed while an auth request is in flight', async () => {
+      const w = new BrowserWindow({ show: false });
+      const wc = w.webContents;
+      const dbg = wc.debugger;
+      dbg.attach('1.3');
+      const destroyed = once(wc, 'destroyed');
+      dbg.on('message', (_e, method, params) => {
+        if (method === 'Fetch.requestPaused') {
+          dbg.sendCommand('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {});
+        } else if (method === 'Fetch.authRequired') {
+          // Destroying here queues the WebContents deletion right before the
+          // task that emits 'login' for the resumed auth challenge.
+          wc.destroy();
+          dbg
+            .sendCommand('Fetch.continueWithAuth', {
+              requestId: params.requestId,
+              authChallengeResponse: { response: 'Default' }
+            })
+            .catch(() => {});
+        }
+      });
+      await dbg.sendCommand('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+        handleAuthRequests: true
+      });
+      wc.loadURL(serverUrl).catch(() => {});
+      await destroyed;
+      await setTimeout(100);
     });
   });
 
