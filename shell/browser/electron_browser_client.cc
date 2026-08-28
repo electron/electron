@@ -403,10 +403,14 @@ ElectronBrowserClient::~ElectronBrowserClient() {
 content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
     content::ChildProcessId process_id) {
   // If the process is a pending process, we should use the web contents
-  // for the frame host passed into RegisterPendingProcess.
+  // for the frame host passed into RegisterPendingProcess. The entry can
+  // outlive that WebContents when the process is shared, so it is held weakly.
   const auto iter = pending_processes_.find(process_id);
-  if (iter != std::end(pending_processes_))
-    return iter->second;
+  if (iter != std::end(pending_processes_)) {
+    if (content::WebContents* web_contents = iter->second.get())
+      return web_contents;
+    pending_processes_.erase(iter);
+  }
 
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
@@ -507,7 +511,7 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
-  pending_processes_[pending_process_id] = web_contents;
+  pending_processes_[pending_process_id] = web_contents->GetWeakPtr();
 
   if (rfh->GetParent())
     renderer_is_subframe_.insert(pending_process_id);
