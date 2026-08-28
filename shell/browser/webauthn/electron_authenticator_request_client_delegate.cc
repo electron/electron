@@ -148,12 +148,19 @@ void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
                                            ->GetWrapper(isolate)
                                            .ToLocalChecked();
 
+  // A listener that runs the callback synchronously completes the request,
+  // which may destroy |this| before EmitEvent returns.
+  base::WeakPtr<ElectronAuthenticatorRequestClientDelegate> weak_this =
+      weak_factory_.GetWeakPtr();
   v8::Local<v8::Value> emit_result = gin_helper::EmitEvent(
       isolate, session_wrapper, "select-webauthn-account", event_object,
       details,
       base::BindRepeating(
           &ElectronAuthenticatorRequestClientDelegate::OnAccountSelected,
           weak_factory_.GetWeakPtr()));
+  if (!weak_this) {
+    return;
+  }
 
   // EventEmitter.prototype.emit() returns true iff there was at least one
   // listener. With no listener there is no way for the app to choose an
