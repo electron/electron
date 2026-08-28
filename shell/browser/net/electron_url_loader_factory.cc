@@ -205,6 +205,83 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
   write_data->client->OnComplete(status);
 }
 
+// Forwards the post response URLLoaderClient messages after the original body
+// pipe has been handed to a protocol request.
+class TransferredURLLoaderClient final
+    : public network::mojom::URLLoaderClient {
+ public:
+  TransferredURLLoaderClient(
+      mojo::PendingReceiver<network::mojom::URLLoaderClient> source,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> destination)
+      : source_(this), destination_(std::move(destination)) {
+    destination_.set_disconnect_handler(base::BindOnce(
+        &TransferredURLLoaderClient::Delete, base::Unretained(this)));
+    source_.Bind(std::move(source));
+    source_.set_disconnect_handler(
+        base::BindOnce(&TransferredURLLoaderClient::OnSourceDisconnected,
+                       base::Unretained(this)));
+  }
+
+  TransferredURLLoaderClient(const TransferredURLLoaderClient&) = delete;
+  TransferredURLLoaderClient& operator=(const TransferredURLLoaderClient&) =
+      delete;
+
+  void OnReceiveEarlyHints(network::mojom::EarlyHintsPtr early_hints) override {
+    destination_->OnReceiveEarlyHints(std::move(early_hints));
+  }
+
+  void OnReceiveResponse(
+      network::mojom::URLResponseHeadPtr head,
+      mojo::ScopedDataPipeConsumerHandle body,
+      std::optional<mojo_base::BigBuffer> cached_metadata) override {
+    destination_->OnReceiveResponse(std::move(head), std::move(body),
+                                    std::move(cached_metadata));
+  }
+
+  void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
+                         network::mojom::URLResponseHeadPtr head) override {
+    destination_->OnReceiveRedirect(redirect_info, std::move(head));
+  }
+
+  void OnUploadProgress(int64_t current_position,
+                        int64_t total_size,
+                        OnUploadProgressCallback callback) override {
+    destination_->OnUploadProgress(current_position, total_size,
+                                   std::move(callback));
+  }
+
+  void OnTransferSizeUpdated(int32_t transfer_size_diff) override {
+    destination_->OnTransferSizeUpdated(transfer_size_diff);
+  }
+
+  void OnComplete(const network::URLLoaderCompletionStatus& status) override {
+    source_.set_disconnect_handler(base::OnceClosure());
+    destination_.set_disconnect_handler(base::OnceClosure());
+    destination_->OnComplete(status);
+    delete this;
+  }
+
+ private:
+  ~TransferredURLLoaderClient() override = default;
+
+  void OnSourceDisconnected() {
+    source_.set_disconnect_handler(base::OnceClosure());
+    destination_.set_disconnect_handler(base::OnceClosure());
+    destination_->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    delete this;
+  }
+
+  void Delete() {
+    source_.set_disconnect_handler(base::OnceClosure());
+    destination_.set_disconnect_handler(base::OnceClosure());
+    delete this;
+  }
+
+  mojo::Receiver<network::mojom::URLLoaderClient> source_;
+  mojo::Remote<network::mojom::URLLoaderClient> destination_;
+};
+
 // Read data from URL and pipe it to NetworkService.
 //
 // Different from creating a new loader for the URL directly, protocol handlers
@@ -718,17 +795,13 @@ void ElectronURLLoaderFactory::StartLoading(
       else
         data = response;
 
-      // |data| can be either a string, a buffer or a stream; |loader| relays
+      // |data| can be either a string, a buffer or a stream; |loader| transfers
       // an untouched net.fetch response's body without going through JS.
       api::SimpleURLLoaderWrapper* fetch_loader = nullptr;
       if (!dict.IsEmpty() && dict.Get("loader", &fetch_loader) &&
           fetch_loader) {
-        std::string prefix;
-        if (data->IsArrayBufferView()) {
-          prefix.assign(node::Buffer::Data(data), node::Buffer::Length(data));
-        }
         StartLoadingRelay(std::move(client), std::move(loader), std::move(head),
-                          fetch_loader, std::move(prefix));
+                          fetch_loader);
       } else if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
@@ -855,31 +928,29 @@ void ElectronURLLoaderFactory::StartLoadingRelay(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::mojom::URLResponseHeadPtr head,
-    api::SimpleURLLoaderWrapper* fetch_loader,
-    std::string prefix) {
-  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-      std::move(client));
-  // Grow the pipe for a body the upstream declared large; never below mojo's
-  // 64 KB default, since the declared length may describe an encoded body.
-  constexpr int64_t kMojoDefaultPipeSize = 64 * 1024;
-  const int64_t length = fetch_loader->content_length();
-  const uint32_t pipe_size =
-      length > kMojoDefaultPipeSize
-          ? base::saturated_cast<uint32_t>(std::min<int64_t>(
-                length, network::GetDataPipeDefaultAllocationSize()))
-          : 0;
-  mojo::ScopedDataPipeProducerHandle producer;
-  mojo::ScopedDataPipeConsumerHandle consumer;
-  if (mojo::CreateDataPipe(pipe_size, producer, consumer) != MOJO_RESULT_OK) {
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
-    fetch_loader->Cancel();
+    api::SimpleURLLoaderWrapper* fetch_loader) {
+  auto response = fetch_loader->TakeResponse();
+  if (!response) {
+    mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
+        ->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
-  client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
-                                   std::nullopt);
-  fetch_loader->RelayTo(client_remote.Unbind(), std::move(loader),
-                        std::move(producer), std::move(prefix));
+
+  CHECK(mojo::FusePipes(std::move(loader),
+                        std::move(response->endpoints->url_loader)));
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
+  client_remote->OnReceiveResponse(std::move(head), std::move(response->body),
+                                   std::move(response->cached_metadata));
+  for (int32_t transfer_size_diff : response->transfer_size_updates)
+    client_remote->OnTransferSizeUpdated(transfer_size_diff);
+  if (response->completion_status) {
+    client_remote->OnComplete(*response->completion_status);
+    return;
+  }
+  new TransferredURLLoaderClient(
+      std::move(response->endpoints->url_loader_client),
+      client_remote.Unbind());
 }
 
 // static

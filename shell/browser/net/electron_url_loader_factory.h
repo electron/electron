@@ -180,8 +180,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       network::mojom::URLResponseHeadPtr head,
-      api::SimpleURLLoaderWrapper* fetch_loader,
-      std::string prefix);
+      api::SimpleURLLoaderWrapper* fetch_loader);
   static void StartLoadingStream(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,

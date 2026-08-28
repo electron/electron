@@ -46,6 +46,7 @@
 #include "shell/browser/net/client_certificate_responder_delegate.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/common/api/electron_api_fetch_response_body_reader.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -496,9 +497,11 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
     int options,
+    bool transferable_response,
     JSChunkedDataPipeGetter* chunk_pipe_getter)
     : browser_context_(browser_context),
       request_options_(options),
+      transferable_response_(transferable_response),
       request_(std::move(request)),
       chunk_pipe_getter_(chunk_pipe_getter) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
@@ -526,6 +529,11 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
 }
 
 void SimpleURLLoaderWrapper::Start() {
+  if (transferable_body_) {
+    transferable_body_->Cancel();
+    transferable_body_.reset();
+  }
+
   // Make a copy of the request; we'll need to re-send it if we get redirected.
   auto request = std::make_unique<network::ResourceRequest>();
   *request = *request_;
@@ -567,7 +575,13 @@ void SimpleURLLoaderWrapper::Start() {
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
   body_ = std::make_unique<ResponseBody>(this);
-  loader_->DownloadAsStream(url_loader_factory_.get(), client_.get());
+  if (transferable_response_) {
+    transferable_body_ = base::MakeRefCounted<TransferableURLLoader>(
+        this, url_loader_factory_, request_ref->url);
+    loader_->DownloadAsStream(transferable_body_.get(), client_.get());
+  } else {
+    loader_->DownloadAsStream(url_loader_factory_.get(), client_.get());
+  }
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
@@ -625,10 +639,11 @@ void SimpleURLLoaderWrapper::OnCertificateRequested(
 }
 
 void SimpleURLLoaderWrapper::Cancel() {
+  if (transferable_body_)
+    transferable_body_->Cancel();
   loader_.reset();
+  transferable_body_.reset();
   url_loader_factory_.reset();
-  if (body_)
-    body_->Abort();
   if (chunk_pipe_getter_)
     chunk_pipe_getter_->Abort();
   keep_alive_.Clear();
@@ -757,6 +772,8 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
 
   bool credentials_specified =
       opts.Get("credentials", &request->credentials_mode);
+  const bool transferable_response =
+      opts.ValueOrDefault("transferableResponse", false);
   std::vector<std::pair<std::string, std::string>> extra_headers;
   if (opts.Get("extraHeaders", &extra_headers)) {
     for (const auto& it : extra_headers) {
@@ -872,146 +889,45 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
 
   return cppgc::MakeGarbageCollected<SimpleURLLoaderWrapper>(
       args->isolate()->GetCppHeap()->GetAllocationHandle(), browser_context,
-      std::move(request), options, chunk_pipe_getter);
+      std::move(request), options, transferable_response, chunk_pipe_getter);
 }
 
 ResponseBody::ResponseBody(Delegate* delegate) : delegate_(delegate) {}
 
 ResponseBody::~ResponseBody() = default;
 
-void ResponseBody::Hold() {
-  held_ = true;
-}
-
-void ResponseBody::RelayTo(
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    mojo::ScopedDataPipeProducerHandle producer,
-    std::string prefix) {
-  DCHECK(held_);
-  client_.Bind(std::move(client));
-  client_.set_disconnect_handler(base::BindOnce(
-      &ResponseBody::Finish, weak_factory_.GetWeakPtr(), net::ERR_ABORTED));
-  if (loader)
-    receiver_.Bind(std::move(loader));
-  producer_ = std::move(producer);
-  pending_.insert(0, prefix);
-  watcher_ = std::make_unique<mojo::SimpleWatcher>(
-      FROM_HERE, mojo::SimpleWatcher::ArmingPolicy::MANUAL,
-      base::SequencedTaskRunner::GetCurrentDefault());
-  watcher_->Watch(producer_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
-                  base::BindRepeating(&ResponseBody::OnWritable,
-                                      weak_factory_.GetWeakPtr()));
-  Pump();
-}
-
-void ResponseBody::Abort() {
-  if (!result_)
-    result_ = net::ERR_ABORTED;
-  watcher_.reset();
-  producer_.reset();
-  client_.reset();
-  receiver_.reset();
-}
-
 void ResponseBody::OnDataReceived(std::string_view chunk,
                                   base::OnceClosure resume) {
-  if (!held_) {
-    delegate_->OnBodyData(chunk, std::move(resume));
-    return;
-  }
-  // Not resuming until the pipe has taken the chunk is the backpressure, both
-  // while waiting for RelayTo() and while the relay client is slow.
-  resume_ = std::move(resume);
-  if (producer_.is_valid() && pending_.empty())
-    chunk.remove_prefix(WriteSome(chunk));
-  pending_.append(chunk);
-  if (producer_.is_valid())
-    Pump();
+  delegate_->OnBodyData(chunk, std::move(resume));
 }
 
 void ResponseBody::OnComplete(bool success) {
-  result_ = delegate_->OnBodyComplete(success);
-  if (held_ && producer_.is_valid() && pending_.empty())
-    Finish(*result_);
+  delegate_->OnBodyComplete(success);
 }
 
-// Writes as much of |bytes| as the pipe takes right now; returns how much.
-size_t ResponseBody::WriteSome(std::string_view bytes) {
-  size_t written = 0;
-  while (written < bytes.size()) {
-    base::span<uint8_t> buffer;
-    MojoResult result = producer_->BeginWriteData(
-        bytes.size() - written, MOJO_BEGIN_WRITE_DATA_FLAG_NONE, buffer);
-    if (result == MOJO_RESULT_SHOULD_WAIT) {
-      watcher_->ArmOrNotify();
-      break;
-    }
-    if (result != MOJO_RESULT_OK) {
-      Finish(net::ERR_ABORTED);
-      break;
-    }
-    size_t n = std::min(buffer.size(), bytes.size() - written);
-    buffer.first(n).copy_from(base::as_byte_span(bytes).subspan(written, n));
-    producer_->EndWriteData(n);
-    written += n;
-  }
-  written_ += written;
-  return written;
+bool SimpleURLLoaderWrapper::CanTransferResponse() const {
+  return transferable_body_ && transferable_body_->CanTransfer();
 }
 
-void ResponseBody::Pump() {
-  pending_.erase(0, WriteSome(pending_));
-  if (!pending_.empty() || !producer_.is_valid())
-    return;
-  if (resume_) {
-    std::move(resume_).Run();
-  } else if (result_) {
-    Finish(*result_);
-  }
+std::optional<PendingURLLoaderResponse> SimpleURLLoaderWrapper::TakeResponse() {
+  if (!transferable_body_)
+    return std::nullopt;
+  auto response = transferable_body_->TakeResponse();
+  if (!response)
+    return std::nullopt;
+  loader_.reset();
+  transferable_body_->Cancel();
+  transferable_body_.reset();
+  url_loader_factory_.reset();
+  keep_alive_.Clear();
+  return response;
 }
 
-void ResponseBody::OnWritable(MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    Finish(net::ERR_ABORTED);
-    return;
-  }
-  Pump();
-}
-
-void ResponseBody::Finish(int net_error) {
-  watcher_.reset();
-  producer_.reset();
-  if (client_.is_bound() && client_.is_connected()) {
-    network::URLLoaderCompletionStatus status(net_error);
-    status.completion_time = base::TimeTicks::Now();
-    status.encoded_data_length = base::ByteSize(written_);
-    status.encoded_body_length = base::ByteSize(written_);
-    status.decoded_body_length = base::ByteSize(written_);
-    client_->OnComplete(status);
-  }
-  client_.reset();
-  receiver_.reset();
-  delegate_->OnRelayDone();
-}
-
-void SimpleURLLoaderWrapper::Hold() {
-  if (body_)
-    body_->Hold();
-}
-
-void SimpleURLLoaderWrapper::RelayTo(
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    mojo::ScopedDataPipeProducerHandle producer,
-    std::string prefix) {
-  keep_alive_ = this;
-  body_->RelayTo(std::move(client), std::move(loader), std::move(producer),
-                 std::move(prefix));
-}
-
-void SimpleURLLoaderWrapper::OnRelayDone() {
-  Cancel();
+FetchResponseBodyReader* SimpleURLLoaderWrapper::CreateResponseBodyReader(
+    v8::Isolate* isolate) {
+  if (!transferable_body_)
+    return nullptr;
+  return FetchResponseBodyReader::Create(isolate, transferable_body_);
 }
 
 void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
@@ -1028,19 +944,30 @@ void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
 
 int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
   const int net_error = success ? net::OK : loader_->NetError();
-  if (!body_->held()) {
-    if (success) {
-      Emit("complete");
-    } else {
-      Emit("error", net::ErrorToString(net_error));
-    }
-    keep_alive_.Clear();
+  if (success) {
+    Emit("complete");
+  } else {
+    Emit("error", net::ErrorToString(net_error));
   }
+  keep_alive_.Clear();
   loader_.reset();
   url_loader_factory_.reset();
   if (chunk_pipe_getter_)
     chunk_pipe_getter_->Abort();
   return net_error;
+}
+
+void SimpleURLLoaderWrapper::OnTransferableResponseStarted(
+    const GURL& final_url,
+    const network::mojom::URLResponseHead& response_head) {
+  OnResponseStarted(final_url, response_head);
+  // OnResponseStarted synchronously emits "response-started". Before it
+  // returns, net.fetch creates the response body reader and its JS object graph
+  // retains this wrapper. The wrapper must stop self rooting at that ownership
+  // handoff, an unread response can fill its body pipe and never complete, but
+  // if the response is abandoned, GC should be able to release this wrapper
+  // and close the upstream request.
+  keep_alive_.Clear();
 }
 
 void SimpleURLLoaderWrapper::OnResponseStarted(
@@ -1055,7 +982,6 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("headers", response_head.headers.get());
   dict.Set("rawHeaders", response_head.raw_response_headers);
   dict.Set("mimeType", response_head.mime_type);
-  content_length_ = response_head.content_length;
   Emit("response-started", final_url, dict);
 }
 
@@ -1128,7 +1054,10 @@ gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
   return gin_helper::EventEmitterMixin<
              SimpleURLLoaderWrapper>::GetObjectTemplateBuilder(isolate)
       .SetMethod("cancel", &SimpleURLLoaderWrapper::Cancel)
-      .SetMethod("hold", &SimpleURLLoaderWrapper::Hold);
+      .SetMethod("createResponseBodyReader",
+                 &SimpleURLLoaderWrapper::CreateResponseBodyReader)
+      .SetMethod("canTransferResponse",
+                 &SimpleURLLoaderWrapper::CanTransferResponse);
 }
 
 const gin::WrapperInfo* SimpleURLLoaderWrapper::wrapper_info() const {

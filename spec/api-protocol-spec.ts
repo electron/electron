@@ -1822,6 +1822,8 @@ describe('protocol module', () => {
       let server: http.Server;
       let base: string;
       let tmpDir: string;
+      let endlessResponse: http.ServerResponse | undefined;
+      let onEndlessClosed: (() => void) | undefined;
       before(async () => {
         server = http.createServer((req, res) => {
           if (req.url === '/big') {
@@ -1846,6 +1848,21 @@ describe('protocol module', () => {
           } else if (req.url === '/empty') {
             res.writeHead(204);
             res.end();
+          } else if (req.url === '/error') {
+            res.writeHead(200, { 'content-length': '100' });
+            res.write('partial');
+            setImmediate(() => res.destroy());
+          } else if (req.url === '/endless') {
+            endlessResponse = res;
+            res.writeHead(200);
+            const timer = setInterval(() => res.write(big), 10);
+            res.once('close', () => {
+              clearInterval(timer);
+              endlessResponse = undefined;
+              const callback = onEndlessClosed;
+              onEndlessClosed = undefined;
+              callback?.();
+            });
           } else {
             res.writeHead(200);
             res.end('small body');
@@ -1856,6 +1873,7 @@ describe('protocol module', () => {
         fs.writeFileSync(path.join(tmpDir, 'big.bin'), big);
       });
       after(() => {
+        endlessResponse?.destroy();
         server.close();
         fs.rmSync(tmpDir, { recursive: true, force: true });
       });
@@ -1925,6 +1943,16 @@ describe('protocol module', () => {
         expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
       });
 
+      it('transfers a response that completed while the handler was pending', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/small', { bypassCustomProtocolHandlers: true });
+          await setTimeout(50);
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/delayed');
+        expect(await r.text()).to.equal('small body');
+      });
+
       it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {
         protocol.handle('test-scheme', async (req) => {
           const which = new URL(req.url).pathname;
@@ -1941,6 +1969,49 @@ describe('protocol module', () => {
           const r = await net.fetch('test-scheme://host' + which);
           expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.equal(true, which);
         }
+      });
+
+      it('commits to JS streaming after the handler reads part of the body', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/big', { bypassCustomProtocolHandlers: true });
+          const reader = r.body!.getReader();
+          const first = await reader.read();
+          expect(first.done).to.be.false();
+          reader.releaseLock();
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/partial');
+        const remainder = Buffer.from(await r.arrayBuffer());
+        expect(remainder.length).to.be.lessThan(big.length);
+        expect(remainder.equals(big.subarray(big.length - remainder.length))).to.be.true();
+      });
+
+      it('preserves an upstream failure after response headers', async () => {
+        proxy((u) => base + u.pathname);
+        const r = await net.fetch('test-scheme://host/error');
+        await expect(r.text()).to.eventually.be.rejected();
+      });
+
+      it('cancels an unread response after it becomes unreachable', async () => {
+        proxy((u) => base + u.pathname);
+        const closed = new Promise<void>((resolve) => {
+          onEndlessClosed = resolve;
+        });
+        await (async () => {
+          await net.fetch('test-scheme://host/endless');
+        })();
+
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        for (let i = 0; i < 5; ++i) {
+          v8Util.requestGarbageCollectionForTesting();
+          await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+        }
+        await Promise.race([
+          closed,
+          setTimeout(5000).then(() => {
+            throw new Error('unread response was not cancelled');
+          })
+        ]);
       });
 
       it('lets the client abort mid-body', async () => {
