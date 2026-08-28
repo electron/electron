@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_utility_process.h"
 
+#include <array>
 #include <map>
 #include <unordered_map>
 #include <utility>
@@ -552,17 +553,23 @@ UtilityProcessWrapper* UtilityProcessWrapper::Create(
     opts.Get("cwd", &current_working_directory);
     opts.Get("respondToAuthRequestsFromMainProcess", &create_network_observer);
 
-    std::vector<std::string> stdio_arr{"ignore", "inherit", "inherit"};
+    constexpr std::array default_stdio{
+        IOType::IO_IGNORE,
+        IOType::IO_INHERIT,
+        IOType::IO_INHERIT,
+    };
+    std::vector<std::string> stdio_arr;
     opts.Get("stdio", &stdio_arr);
-    for (size_t i = 0; i < 3; i++) {
-      IOType type;
-      if (stdio_arr[i] == "ignore")
-        type = IOType::IO_IGNORE;
-      else if (stdio_arr[i] == "inherit")
-        type = IOType::IO_INHERIT;
-      else if (stdio_arr[i] == "pipe")
-        type = IOType::IO_PIPE;
-
+    for (size_t i = 0; i < default_stdio.size(); ++i) {
+      IOType type = default_stdio[i];
+      if (i < stdio_arr.size()) {
+        if (stdio_arr[i] == "ignore")
+          type = IOType::IO_IGNORE;
+        else if (stdio_arr[i] == "inherit")
+          type = IOType::IO_INHERIT;
+        else if (stdio_arr[i] == "pipe")
+          type = IOType::IO_PIPE;
+      }
       stdio.emplace(static_cast<IOHandle>(i), type);
     }
 
