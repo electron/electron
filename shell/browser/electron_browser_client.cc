@@ -1522,7 +1522,11 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   DCHECK(web_request);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (!web_request->HasListener()) {
+  // Factories for requests made from the main process (e.g. net.fetch) have
+  // no frame and are not routed through extensions.
+  const bool is_browser_process_request =
+      type == URLLoaderFactoryType::kNavigation && !frame_host;
+  if (!web_request->HasListener() && !is_browser_process_request) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
 
