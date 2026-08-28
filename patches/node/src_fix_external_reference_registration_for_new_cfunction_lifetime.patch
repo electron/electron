@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyeec9h3@gmail.com>
+Date: Tue, 2 Jun 2026 16:33:56 +0200
+Subject: src: fix external reference registration for new CFunction lifetime
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/7828135
+Signed-off-by: Joyee Cheung <joyeec9h3@gmail.com>
+PR-URL: https://github.com/nodejs/node/pull/63679
+Reviewed-By: René <contact.9a5d6388@renegade334.me.uk>
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+(cherry picked from commit 0401a2d083bbfa2a816cb2906597a3df7d69b20a)
+
+diff --git a/src/node_wasi.cc b/src/node_wasi.cc
+index f5aff2f65fe6b9f48cf970ab3e7c57cfe4885f85..3a5108db01568649089c08ee6e3a34d91f136e3f 100644
+--- a/src/node_wasi.cc
++++ b/src/node_wasi.cc
+@@ -234,7 +234,7 @@ void WASI::New(const FunctionCallbackInfo<Value>& args) {
+ template <typename FT, FT F, typename R, typename... Args>
+ void WASI::WasiFunction<FT, F, R, Args...>::SetFunction(
+     Environment* env, const char* name, Local<FunctionTemplate> tmpl) {
+-  auto c_function = CFunction::Make(FastCallback);
++  static auto c_function = CFunction::Make(FastCallback);
+   Local<FunctionTemplate> t =
+       FunctionTemplate::New(env->isolate(),
+                             SlowCallback,
