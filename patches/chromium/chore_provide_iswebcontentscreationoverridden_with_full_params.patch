@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-index b7db7938af9dba708ee46fbd883b7c967d0a1204..b63b0dae79cc5839ecfcfb4ac4b9f256434cf978 100644
+index 8c14dc878b81b80d97bf42d1a3615b56c7785cb0..8b3c1187c7ac5a0d1b1124efef4ecab8eec21d2a 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-@@ -998,8 +998,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -991,8 +991,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index b7db7938af9dba708ee46fbd883b7c967d0a1204..b63b0dae79cc5839ecfcfb4ac4b9f256
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1022,7 +1021,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -1015,7 +1014,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(browser_->GetProfile(),
                                           source_site_instance, opener_url,
@@ -251,7 +251,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c0165675be06b49c612fe999894c5c3f7ab232e7..f28f107e689f044d683bfeda944947ba8aa77d9e 100644
+index ef5291544a95a491ff26b4ba4383d58ba799e0c4..3f6adff654507ff6fbc20e5f238268d57ad7f0a3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5641,8 +5641,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

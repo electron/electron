@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f28f107e689f044d683bfeda944947ba8aa77d9e..90766c60eca36903e7dc9fe5b26c08ae527a76a1 100644
+index 3f6adff654507ff6fbc20e5f238268d57ad7f0a3..d6e96d9b8ff3fc4a09da9a3c88caec7f8514b570 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4440,6 +4440,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,7 +35,7 @@ index f28f107e689f044d683bfeda944947ba8aa77d9e..90766c60eca36903e7dc9fe5b26c08ae
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 7f7bc1de14745476dc88787dbad9d65b5914c46d..d08d5d7475e79671e819e0908abf9037961ffa61 100644
+index 5bb53e8ecfffa77ef7a101d7058f1ed2876cb052..2fb5495799a7c1f991f84183174a61644478a8e1 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -138,12 +138,15 @@ class PrerenderHandle;
