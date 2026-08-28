@@ -374,7 +374,7 @@ content::WebContents* InspectableWebContents::GetWebContents() const {
 
 content::WebContents* InspectableWebContents::GetDevToolsWebContents() const {
   if (external_devtools_web_contents_)
-    return external_devtools_web_contents_;
+    return external_devtools_web_contents_.get();
   else
     return managed_devtools_web_contents_.get();
 }
@@ -415,8 +415,12 @@ void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
 
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
-  if (!managed_devtools_web_contents_)
-    external_devtools_web_contents_ = devtools;
+  if (managed_devtools_web_contents_)
+    return;
+  if (devtools)
+    external_devtools_web_contents_ = devtools->GetWeakPtr();
+  else
+    external_devtools_web_contents_.reset();
 }
 
 void InspectableWebContents::ShowDevTools(bool activate) {

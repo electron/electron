@@ -31,7 +31,7 @@ gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
 
 Debugger::Debugger(content::WebContents* web_contents)
-    : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
+    : content::WebContentsObserver{web_contents} {}
 
 Debugger::~Debugger() = default;
 
@@ -125,7 +125,14 @@ void Debugger::Attach(gin::Arguments* args) {
     return;
   }
 
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents_);
+  // web_contents() is reset to null by WebContentsObserver once the
+  // observed WebContents has been destroyed.
+  if (!web_contents()) {
+    args->ThrowTypeError("No target available");
+    return;
+  }
+
+  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents());
   if (!agent_host_) {
     args->ThrowTypeError("No target available");
     return;
