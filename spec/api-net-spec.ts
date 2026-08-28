@@ -1905,7 +1905,7 @@ describe('net module', () => {
       let eventWebContents: unknown = 'unset';
       const handler = (
         event: Electron.Event,
-        webContents: Electron.WebContents,
+        webContents: Electron.WebContents | null,
         _url: string,
         _list: Electron.Certificate[],
         callback: (cert?: Electron.Certificate) => void
