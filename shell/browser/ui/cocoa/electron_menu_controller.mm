@@ -559,6 +559,9 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   // menu item created by AppKit and not by ourselves.
   if (![metadata isSourceMenuItem:item] &&
       model->GetRoleAt(index) == u"togglefullscreen") {
+    [(id)item
+        setAllowsKeyEquivalentWhenHidden:(model->IsVisibleAt(index) ||
+                                          model->WorksWhenHiddenAt(index))];
     return;
   }
 
