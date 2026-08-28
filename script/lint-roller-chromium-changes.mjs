@@ -19,6 +19,11 @@ const PATCHES_UPDATE_MSG = 'chore: update patches';
 const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
 const LIBCXX_FILENAMES_FILE = 'filenames.libcxx.gni';
 
+function getCLLabel(cl) {
+  const [owner, repo] = cl.fullRepo.split('/');
+  return `${owner === 'chromium' ? '' : `${repo} `}CL ${cl.clNumber}`;
+}
+
 function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
   if (process.env.GITHUB_HEAD_REF) {
@@ -453,9 +458,12 @@ async function main() {
     }
 
     for (const cl of cls) {
+      const repo = cl.fullRepo.split('/')[0];
+      const clLabel = getCLLabel(cl);
+
       // Skip CLs annotated with #nolint
       if (cl.fragment === '#nolint') {
-        console.log(`  ⏭️  CL ${cl.clNumber}: skipped (#nolint)`);
+        console.log(`  ⏭️  ${clLabel}: skipped (#nolint)`);
         continue;
       }
 
@@ -463,15 +471,13 @@ async function main() {
       if (checkedCLs.has(cl.url)) {
         const cached = checkedCLs.get(cl.url);
         if (cached.valid) {
-          console.log(`  ✅ CL ${cl.clNumber}: (already validated)`);
+          console.log(`  ✅ ${clLabel}: (already validated)`);
         } else {
-          console.error(`  ❌ CL ${cl.clNumber}: ${cached.error}`);
+          console.error(`  ❌ ${clLabel}: ${cached.error}`);
           hasErrors = true;
         }
         continue;
       }
-
-      const repo = cl.fullRepo.split('/')[0];
 
       // Fetch Gerrit details to get commit SHA
       const gerritDetails = await getGerritPatchDetails(cl.url);
@@ -479,7 +485,7 @@ async function main() {
       if (!gerritDetails) {
         const error = 'Could not fetch CL details from Gerrit';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
@@ -490,7 +496,7 @@ async function main() {
       if (!dashDetails) {
         const error = 'Could not fetch commit details from Chromium Dash';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
@@ -500,37 +506,25 @@ async function main() {
       if (!clEarliestVersion) {
         const error = 'CL has no earliest version (may not be merged yet)';
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
 
-      // For non-Chromium CLs, we need to find the corresponding Chromium commit
-      let chromiumVersion = clEarliestVersion;
-      if (repo !== 'chromium' && dashDetails.relations) {
-        const chromiumRelation = dashDetails.relations.find((rel) => rel.from_commit === gerritDetails.commitSha);
-        if (chromiumRelation) {
-          const chromiumDash = await fetchChromiumDashCommit(chromiumRelation.to_commit, 'chromium');
-          if (chromiumDash?.earliest) {
-            chromiumVersion = chromiumDash.earliest;
-          }
-        }
-      }
-
       // CL should have landed after the base version and at or before the new version
       const isInRange =
-        compareVersions(chromiumVersion, baseVersion) > 0 && compareVersions(chromiumVersion, newVersion) <= 0;
+        compareVersions(clEarliestVersion, baseVersion) > 0 && compareVersions(clEarliestVersion, newVersion) <= 0;
 
       if (!isInRange) {
-        const error = `CL earliest version ${chromiumVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
+        const error = `CL earliest version ${clEarliestVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
         checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ CL ${cl.clNumber}: ${error}`);
+        console.error(`  ❌ ${clLabel}: ${error}`);
         hasErrors = true;
         continue;
       }
 
       checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
-      console.log(`  ✅ CL ${cl.clNumber}: version ${chromiumVersion} is within range`);
+      console.log(`  ✅ ${clLabel}: version ${clEarliestVersion} is within range`);
     }
 
     // If exactly one CL is referenced (excluding #nolint), the commit title
@@ -538,17 +532,18 @@ async function main() {
     const enforceableCLs = cls.filter((cl) => cl.fragment !== '#nolint');
     if (enforceableCLs.length === 1) {
       const cl = enforceableCLs[0];
+      const clLabel = getCLLabel(cl);
       const cached = checkedCLs.get(cl.url);
       const clSubject = cached?.subject;
       if (clSubject) {
         const expectedTitle = `${cl.clNumber}: ${clSubject}`;
         if (firstLine !== expectedTitle) {
-          console.error(`  ❌ Commit title does not match the expected format for referenced CL ${cl.clNumber}`);
+          console.error(`  ❌ Commit title does not match the expected format for referenced ${clLabel}`);
           console.error(`     Expected: "${expectedTitle}"`);
           console.error(`     Got:      "${firstLine}"`);
           hasErrors = true;
         } else {
-          console.log(`  ✅ Commit title matches CL ${cl.clNumber} subject`);
+          console.log(`  ✅ Commit title matches ${clLabel} subject`);
         }
       }
     }
