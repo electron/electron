@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bf65e1803e32af0b683da63eaab06044df5faacf..c2911e42d8d2ca7fc98ab1afdf2e6b4f170c4d0b 100644
+index 8b784147d4320c45d03f111907886b6e2deafd1b..a890bdbdf46c6583f044a15cda527af961d2a46a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10823,7 +10823,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10835,7 +10835,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -89,7 +89,7 @@ index 988d83fdf70abec970f96188d3cb755ab885193f..1af71f5258dd95c2f51d51f52a1b7939
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a4e03cb95c0dc0bafecd402251e9f52490538957..8345356f57cedad95d8b1aa4471068de4f67f990 100644
+index 9ed4e7934b3fdf3cc2f27d29cc799c07050cded4..a11c741da924d7b4bea632865dad89fa805cbd77 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index a4e03cb95c0dc0bafecd402251e9f52490538957..8345356f57cedad95d8b1aa4471068de
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1281,6 +1282,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1283,6 +1284,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -148,10 +148,10 @@ index 51d460f9982489575e94ad3726a44f77800a44ba..84fb8167a48f033fd941cfcb6feabbc3
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 751f651fafe5de0ccbee442f76ee9dc42e087e30..e4536360abf01b7df54f25b64ec497d6a1511027 100644
+index 540aa229335c567fc4fe2c2776899199c8a0e761..503b81896ed65fa312071a49d1c26ed1e8cdc8f5 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7206,6 +7206,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7207,6 +7207,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
