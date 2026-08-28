@@ -164,13 +164,17 @@ void UtilityAIManager::OnCreateLanguageModelClientDisconnect(
   if (it != abort_controllers_.end()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope{isolate};
-    if (description.empty()) {
-      gin_helper::CallMethod(isolate, it->second.Get(isolate), "abort");
-    } else {
-      gin_helper::CallMethod(isolate, it->second.Get(isolate), "abort",
-                             description);
-    }
+    // abort() runs the signal's listeners and then a microtask checkpoint,
+    // which may settle the pending create() promise and erase this entry
+    // from |abort_controllers_|. Take the controller out of the map first so
+    // we are not holding an iterator across the call.
+    v8::Local<v8::Object> abort_controller = it->second.Get(isolate);
     abort_controllers_.erase(it);
+    if (description.empty()) {
+      gin_helper::CallMethod(isolate, abort_controller, "abort");
+    } else {
+      gin_helper::CallMethod(isolate, abort_controller, "abort", description);
+    }
   }
 }
 

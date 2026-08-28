@@ -423,6 +423,25 @@ describe('webFrame module', () => {
         expect(worlds).to.not.include(0);
         expect(worlds).to.not.include(999);
       });
+
+      it('does not crash when a listener registers more listeners while being notified', async () => {
+        const worlds = await w.executeJavaScript(`new Promise(resolve => {
+          const mk = () => webFrame.findFrameByToken(webFrame.frameToken);
+          const seen = [];
+          const a = mk();
+          const b = mk();
+          a.once('isolated-world-created', (worldId) => {
+            seen.push(worldId);
+            for (let i = 0; i < 256; i++) mk().on('isolated-world-created', () => {});
+          });
+          b.once('isolated-world-created', (worldId) => {
+            seen.push(worldId);
+            resolve(seen);
+          });
+          webFrame.executeJavaScriptInIsolatedWorld(1107, [{ code: 'void 0' }]);
+        })`);
+        expect(worlds).to.deep.equal([1107, 1107]);
+      });
     });
   });
 });

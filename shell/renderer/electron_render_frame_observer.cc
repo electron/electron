@@ -105,7 +105,10 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       !electron::is_isolated_world(world_id)) {
     const auto [_, inserted] = isolated_worlds_.insert(world_id);
     if (inserted) {
-      for (const auto& callback : isolated_world_created_callbacks_) {
+      // The callbacks run JS which may register further callbacks and
+      // reallocate the vector, so iterate over a copy.
+      auto callbacks = isolated_world_created_callbacks_;
+      for (const auto& callback : callbacks) {
         if (!callback.is_null())
           callback.Run(world_id);
       }
