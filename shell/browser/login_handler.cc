@@ -8,6 +8,7 @@
 
 #include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/web_contents.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -36,12 +37,18 @@ LoginHandler::LoginHandler(
     : auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
+  // The WebContents may be destroyed before the posted task runs, so only
+  // carry a weak reference to it across the hop.
+  base::WeakPtr<content::WebContents> weak_web_contents;
+  if (web_contents)
+    weak_web_contents = web_contents->GetWeakPtr();
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
-      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
-                     auth_info, web_contents, is_request_for_primary_main_frame,
-                     is_request_for_navigation, process_id, url,
-                     response_headers, first_auth_attempt));
+      base::BindOnce(
+          &LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(), auth_info,
+          web_contents != nullptr, std::move(weak_web_contents),
+          is_request_for_primary_main_frame, is_request_for_navigation,
+          process_id, url, response_headers, first_auth_attempt));
 }
 
 LoginHandler::LoginHandler(
@@ -63,7 +70,8 @@ LoginHandler::LoginHandler(
 
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,
-    content::WebContents* web_contents,
+    bool has_web_contents,
+    base::WeakPtr<content::WebContents> web_contents,
     bool is_request_for_primary_main_frame,
     bool is_request_for_navigation,
     base::ProcessId process_id,
@@ -74,8 +82,11 @@ void LoginHandler::EmitEvent(
   v8::HandleScope scope(isolate);
 
   raw_ptr<api::WebContents> api_web_contents = nullptr;
-  if (web_contents) {
-    api_web_contents = api::WebContents::From(web_contents);
+  if (has_web_contents) {
+    // Cancel the request if the WebContents (or its JS wrapper) that issued
+    // it has since been destroyed.
+    if (web_contents)
+      api_web_contents = api::WebContents::From(web_contents.get());
     if (!api_web_contents) {
       std::move(auth_required_callback_).Run(std::nullopt);
       return;
