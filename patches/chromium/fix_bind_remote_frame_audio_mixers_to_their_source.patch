@@ -16,9 +16,9 @@ their existing sharing behavior.
 
 The regression tests verify same-source alias sharing, separation and
 independent teardown for sibling sources under a remote main frame, and
-strict ordering around the communications device. The observable playback
-regression has been reproduced on Windows, while the sink ownership rule
-corrected here is platform-independent.
+strict ordering around the communications device. The playback stall and
+owner-dependent sink teardown have been reproduced on Windows and macOS,
+matching the platform-independent sink ownership rule corrected here.
 
 This patch is intended to be upstreamed to Chromium and removed after the
 fix rolls into Electron.
