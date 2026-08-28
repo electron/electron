@@ -56,6 +56,7 @@ jobs:
         cd src/electron
         node script/yarn.js create-typescript-definitions
         node script/yarn.js tsc -p tsconfig.default_app.json --noEmit
+        node script/yarn.js tsc -p tsconfig.spec.json --noEmit
         for f in build/webpack/*.js
         do
             out="${f:29}"
