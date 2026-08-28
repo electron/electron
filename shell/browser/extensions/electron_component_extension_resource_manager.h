@@ -5,11 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_COMPONENT_EXTENSION_RESOURCE_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_COMPONENT_EXTENSION_RESOURCE_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <string>
 
-#include "base/memory/weak_ptr.h"
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "extensions/buildflags/buildflags.h"
 #include "extensions/common/extension_id.h"
@@ -42,40 +40,23 @@ class ElectronComponentExtensionResourceManager
                                     int* resource_id) const override;
   const ui::TemplateReplacements* GetTemplateReplacementsForExtension(
       const ExtensionId& extension_id,
-      const content::BrowserContext* context) const override;
+      content::BrowserContext* context) const override;
   bool IsDynamicComponentExtensionResource(
       const ExtensionId& extension_id,
       const std::string& path,
-      const content::BrowserContext* context) const override;
+      content::BrowserContext* context) const override;
   std::string GetDynamicResourceContent(
       const ExtensionId& extension_id,
       const std::string& path,
-      const content::BrowserContext* context) const override;
-
-  [[nodiscard]] base::ScopedClosureRunner RegisterTemplateDataProvider(
-      const ExtensionId& extension_id,
-      const content::BrowserContext* context,
-      TemplateDataProvider provider) const override;
+      content::BrowserContext* context) const override;
 
  private:
   class Data;
-
-  using ExtensionIdAndContext =
-      std::pair<ExtensionId, const content::BrowserContext*>;
-  void OnTemplateDataProviderRemoved(const ExtensionIdAndContext& key) const;
 
   void LazyInitData() const;
 
   // Logically const. Initialized on demand to keep browser start-up fast.
   mutable std::unique_ptr<const Data> data_;
-
-  mutable std::map<ExtensionIdAndContext, TemplateDataProvider>
-      template_data_providers_;
-  mutable std::map<ExtensionIdAndContext, ui::TemplateReplacements>
-      template_replacements_;
-
-  mutable base::WeakPtrFactory<const ElectronComponentExtensionResourceManager>
-      weak_factory_{this};
 };
 
 }  // namespace extensions
