@@ -1334,6 +1334,20 @@ describe('webContents module', () => {
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
     });
+
+    it('falls back to the built-in devtools when the assigned webContents has been destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      devtools.webContents.destroy();
+      await once(devtools.webContents, 'destroyed');
+      await setTimeout(50);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.devToolsWebContents).to.not.be.null();
+    });
   });
 
   describe('isFocused() API', () => {

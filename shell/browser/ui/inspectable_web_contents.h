@@ -282,8 +282,10 @@ class InspectableWebContents
   // The default devtools created by this class when we don't have an external
   // one assigned by SetDevToolsWebContents.
   std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
-  // The external devtools assigned by SetDevToolsWebContents.
-  raw_ptr<content::WebContents> external_devtools_web_contents_ = nullptr;
+  // The external devtools assigned by SetDevToolsWebContents. Not owned by
+  // us and only observed once ShowDevTools() runs, so hold it weakly in case
+  // it is destroyed before then.
+  base::WeakPtr<content::WebContents> external_devtools_web_contents_;
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
