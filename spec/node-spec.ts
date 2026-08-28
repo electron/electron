@@ -1408,6 +1408,25 @@ describe('node feature', () => {
     });
   });
 
+  describe('node:wasi', () => {
+    it('does not crash when a wasiImport call is optimized', async () => {
+      const child = childProcess.spawn(
+        process.execPath,
+        [path.join(fixtures, 'module', 'wasi-optimized-import-call.js')],
+        {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        }
+      );
+      let output = '';
+      child.stdout.on('data', (data) => {
+        output += data;
+      });
+      const [code] = await once(child, 'exit');
+      expect(output).to.equal('ok');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('type stripping', () => {
     it('strips TypeScript types automatically in the main process', async () => {
       const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'basic.ts')]);
