@@ -4782,6 +4782,36 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
     });
+
+    it('does not crash when the webContents is destroyed while an auth request is in flight', async () => {
+      const w = new BrowserWindow({ show: false });
+      const wc = w.webContents;
+      const dbg = wc.debugger;
+      dbg.attach('1.3');
+      const destroyed = once(wc, 'destroyed');
+      dbg.on('message', (_e, method, params) => {
+        if (method === 'Fetch.requestPaused') {
+          dbg.sendCommand('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {});
+        } else if (method === 'Fetch.authRequired') {
+          // Destroying here queues the WebContents deletion right before the
+          // task that emits 'login' for the resumed auth challenge.
+          wc.destroy();
+          dbg
+            .sendCommand('Fetch.continueWithAuth', {
+              requestId: params.requestId,
+              authChallengeResponse: { response: 'Default' }
+            })
+            .catch(() => {});
+        }
+      });
+      await dbg.sendCommand('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+        handleAuthRequests: true
+      });
+      wc.loadURL(serverUrl).catch(() => {});
+      await destroyed;
+      await setTimeout(100);
+    });
   });
 
   describe('page-title-updated event', () => {
