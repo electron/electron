@@ -656,6 +656,48 @@ describe('protocol module', () => {
         await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
         await hasClosedPromise;
       });
+
+      it('does not crash when the stream emits end synchronously from on()', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          const data: any = {
+            on(event: string, listener: () => void) {
+              if (event === 'end') listener();
+              return data;
+            },
+            removeListener() {
+              return data;
+            }
+          };
+          callback({ statusCode: 200, headers: { 'Content-Type': 'text/plain' }, data });
+        });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal('');
+      });
+
+      it('does not crash when removeListener re-invokes a listener during teardown', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          const listeners: Record<string, () => void> = {};
+          let calls = 0;
+          const data: any = {
+            on(event: string, listener: () => void) {
+              listeners[event] = listener;
+              if (event === 'readable') setImmediate(() => listeners.end());
+              return data;
+            },
+            removeListener(event: string, listener: () => void) {
+              if (event === 'end' && calls++ < 2) listener();
+              return data;
+            },
+            read: () => null,
+            destroy() {},
+            pause() {},
+            resume() {}
+          };
+          callback({ statusCode: 200, headers: { 'Content-Type': 'text/plain' }, data });
+        });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal('');
+      });
     });
   }
 

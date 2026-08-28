@@ -34,6 +34,12 @@ NodeStreamLoader::NodeStreamLoader(
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
+  // The "removeListener" and "destroy" calls below run user JS which may
+  // invoke the handlers we are unsubscribing. Invalidate weak pointers first
+  // so those handlers, which are bound weakly, become no-ops instead of
+  // re-entering NotifyComplete() on a partially destroyed object.
+  weak_factory_.InvalidateWeakPtrs();
+
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
@@ -75,9 +81,15 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   client_->OnReceiveResponse(std::move(head), std::move(consumer),
                              std::nullopt);
 
+  // Subscribing runs the emitter's "on" method, which may invoke the handler
+  // synchronously and delete |this|, so check |weak| between each call.
   auto weak = weak_factory_.GetWeakPtr();
   On("end", base::BindRepeating(&NodeStreamLoader::NotifyEnd, weak));
+  if (!weak)
+    return;
   On("error", base::BindRepeating(&NodeStreamLoader::NotifyError, weak));
+  if (!weak)
+    return;
   On("readable", base::BindRepeating(&NodeStreamLoader::NotifyReadable, weak));
 }
 
