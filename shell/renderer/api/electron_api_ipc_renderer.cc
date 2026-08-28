@@ -259,10 +259,13 @@ gin::WrapperInfo IPCBase<IPCRenderFrame>::kWrapperInfo =
 
 class IPCServiceWorker final : public IPCBase<IPCServiceWorker>,
                                public content::WorkerThread::Observer {
+  CPPGC_USING_PRE_FINALIZER(IPCServiceWorker, Dispose);
+
  public:
   explicit IPCServiceWorker(v8::Isolate* isolate) {
     DCHECK(IsWorkerThread());
     content::WorkerThread::AddObserver(this);
+    observing_worker_thread_ = true;
 
     electron::ServiceWorkerData* service_worker_data =
         electron::preload_realm::GetServiceWorkerData(
@@ -272,11 +275,28 @@ class IPCServiceWorker final : public IPCBase<IPCServiceWorker>,
         electron_ipc_remote_.BindNewEndpointAndPassReceiver());
   }
 
-  void WillStopCurrentWorkerThread() override { electron_ipc_remote_.reset(); }
+  // Deregister from the worker thread's observer list before cppgc reclaims
+  // this object, otherwise thread shutdown would notify a swept observer.
+  void Dispose() {
+    if (observing_worker_thread_) {
+      observing_worker_thread_ = false;
+      content::WorkerThread::RemoveObserver(this);
+    }
+  }
+
+  void WillStopCurrentWorkerThread() override {
+    // The per-thread observer list is destroyed right after this returns, so
+    // there is nothing left to deregister from in Dispose().
+    observing_worker_thread_ = false;
+    electron_ipc_remote_.reset();
+  }
 
   const char* GetHumanReadableName() const override {
     return "Electron / IPCServiceWorker";
   }
+
+ private:
+  bool observing_worker_thread_ = false;
 };
 
 template <>
