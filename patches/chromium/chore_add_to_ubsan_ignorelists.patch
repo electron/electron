@@ -7,9 +7,6 @@ Add ignores for false positives:
 * `memcpy` with a nullptr dest and zero length is now well-defined per C2y (N3322)
   but glibc still unilaterally marks the dest parameter as `__nonnull`
 
-Add ignores for build failures:
-* `AutoPipSettingOverlayView` lacks type info but is pulled into the build via chromium_src
-
 Re-enables coverage:
 * `RenderWidgetHostViewMac` is a specific subclass that had coverage removed via a broader ignore
 
@@ -40,10 +37,10 @@ index 061d53c9ece182dc91ac6cb11ce4374d51c13ffe..bc3b819ea0ed8b3b64b7018b35c74025
 +[alignment]
 +fun:*v8*internal*Script*Iterator*Next*
 diff --git a/tools/ubsan/vptr_ignorelist.txt b/tools/ubsan/vptr_ignorelist.txt
-index 20c4222c780951af064a10f64264db958b1b8009..c48a255010e9710d6b765d92cab8389f5e7f8ee5 100644
+index 20c4222c780951af064a10f64264db958b1b8009..cce4da5bda4004ec7a345b061de621843df68dbf 100644
 --- a/tools/ubsan/vptr_ignorelist.txt
 +++ b/tools/ubsan/vptr_ignorelist.txt
-@@ -126,3 +126,14 @@ type:*StartPageService*
+@@ -126,3 +126,13 @@ type:*StartPageService*
  # Remove once function attribute level ignorelisting is implemented.
  # See crbug.com/476063.
  fun:*forbidGCDuringConstruction*
@@ -51,7 +48,6 @@ index 20c4222c780951af064a10f64264db958b1b8009..c48a255010e9710d6b765d92cab8389f
 +#############################################################################
 +# Electron-specific ignores
 +#
-+type:*AutoPipSettingOverlayView*
 +
 +# Re-enable checks for RenderWidgetHostViewMac
 +type:*RenderWidgetHostViewMac*=sanitize
