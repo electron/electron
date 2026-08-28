@@ -83,7 +83,7 @@ localAIHandler.setPromptAPIHandler((details) => {
     }
 
     async prompt() {
-      return 'Hello World';
+      return `Hello to ${this.details.securityOrigin}`;
     }
   };
 });
