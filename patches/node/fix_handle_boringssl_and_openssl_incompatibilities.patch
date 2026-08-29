@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 9802153f6d1679469a6ff72cfb74b1da82c5cac0..2f9d83a0a64f481bb8fb2ed085de8bf0d6b841d9 100644
+index 9802153f6d1679469a6ff72cfb74b1da82c5cac0..c53fd9066a4e3e569325697115aa1b6843fc2f9b 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -17,6 +17,7 @@
@@ -28,6 +28,22 @@ index 9802153f6d1679469a6ff72cfb74b1da82c5cac0..2f9d83a0a64f481bb8fb2ed085de8bf0
  #if OPENSSL_VERSION_MAJOR >= 3
  #include <openssl/core_names.h>
  #include <openssl/params.h>
+@@ -3335,6 +3336,7 @@ constexpr bool IsASN1Sequence(const unsigned char* data,
+   return true;
+ }
+ 
++#if NCRYPTO_USE_OPENSSL3_PROVIDER
+ constexpr bool ReadASN1Element(const unsigned char* data,
+                                size_t size,
+                                unsigned char tag,
+@@ -3362,6 +3364,7 @@ constexpr bool ReadASN1Element(const unsigned char* data,
+   *total_size = offset + length;
+   return true;
+ }
++#endif  // NCRYPTO_USE_OPENSSL3_PROVIDER
+ 
+ constexpr bool IsEncryptedPrivateKeyInfo(
+     const Buffer<const unsigned char>& buffer) {
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7dd53326f 100644
 --- a/src/crypto/crypto_common.cc
