@@ -8,12 +8,26 @@ Upstream sqlite compares signed 'int nBuf' against 'sizeof(aCopy)'
 nBuf to size_t to silence the warning. Callers always pass a
 non-negative value so this preserves behavior.
 
-This patch can be removed once sqlite fixes the comparison upstream.
+rbuDeltaApply has the same shape of comparison: 'unsigned int cnt'
+against 'int lenDelta'. lenDelta is checked to be positive before
+every decrement in that loop so it is never negative there; cast it
+to unsigned int to silence the warning.
+
+This patch can be removed once sqlite fixes the comparisons upstream.
 
 diff --git a/deps/sqlite/sqlite3.c b/deps/sqlite/sqlite3.c
-index 0644a39f8734fdef1506609af760147454e15389..9d5ea078a1b466202e6c56683afb5d1621ee8c18 100644
+index 0644a39f8734fdef1506609af760147454e15389..7f7a526462a241e36dfd505ad40265b4612b35d9 100644
 --- a/deps/sqlite/sqlite3.c
 +++ b/deps/sqlite/sqlite3.c
+@@ -226963,7 +226963,7 @@ static int rbuDeltaApply(
+           /* ERROR:  insert command gives an output larger than predicted */
+           return -1;
+         }
+-        if( cnt>lenDelta ){
++        if( cnt>(unsigned int)lenDelta ){
+           /* ERROR: insert count exceeds size of delta */
+           return -1;
+         }
 @@ -234111,7 +234111,7 @@ static int sessionVarintGetSafe(const u8 *aBuf, int nBuf, int *piVal){
    u8 aCopy[9];
    const u8 *aRead = aBuf;
