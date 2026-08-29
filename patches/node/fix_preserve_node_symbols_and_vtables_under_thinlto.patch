@@ -39,10 +39,10 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 9b67143ce4707b175d607237bdea137149a9935a..e67efbe92e1ab53346c659ed918dade2a073887b 100644
+index bfa419e0d57a610381cf9de4017e6f173b77c6d7..05d0ea621f9683d9cd7fdb2cf9b8b8251670403e 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -2263,4 +2263,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+@@ -2266,4 +2266,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
    return profile;
  }
  
@@ -100,10 +100,10 @@ index a59452fd994c33c263da9ff0865ef6717d4a81b4..be72ac5f3102b2915eff3fcbcfb51b8a
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 8ce9c5c5fcf55dfc711363fe652ae3cbe17a480e..1c5465fc09fa480258c928deb7871fcd9e34878a 100644
+index f4094b05b0122377c826828457a842cde0acb2e8..a6a0ffb0ed272b9b05acc9cb32aa7951a780443e 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -1015,6 +1015,21 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -1017,6 +1017,21 @@ void BuiltinLoader::RegisterExternalReferences(
  }
  
  }  // namespace builtins

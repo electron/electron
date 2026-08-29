@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/lib/internal/console/constructor.js b/lib/internal/console/constructor.js
-index bb79678001ec66d27b1fb710c99d2a7778f8a034..9fb0a8d4e23f7ebbdbd350095391a3d955b93810 100644
+index 0b71abc98f700fec597e603a1785929f74ec30b9..9d653793f133dbff300cdbd44b256cacc53d399b 100644
 --- a/lib/internal/console/constructor.js
 +++ b/lib/internal/console/constructor.js
 @@ -35,7 +35,7 @@ const {
@@ -22,7 +22,7 @@ index bb79678001ec66d27b1fb710c99d2a7778f8a034..9fb0a8d4e23f7ebbdbd350095391a3d9
  const {
    codes: {
      ERR_CONSOLE_WRITABLE_STREAM,
-@@ -58,9 +58,6 @@ const {
+@@ -59,9 +59,6 @@ const {
  const {
    isTypedArray, isSet, isMap, isSetIterator, isMapIterator,
  } = require('internal/util/types');
@@ -32,7 +32,7 @@ index bb79678001ec66d27b1fb710c99d2a7778f8a034..9fb0a8d4e23f7ebbdbd350095391a3d9
  const kCounts = Symbol('counts');
  const { time, timeLog, timeEnd, kNone } = require('internal/util/debuglog');
  const { channel } = require('diagnostics_channel');
-@@ -71,7 +68,7 @@ const onError = channel('console.error');
+@@ -72,7 +69,7 @@ const onError = channel('console.error');
  const onInfo = channel('console.info');
  const onDebug = channel('console.debug');
  
@@ -333,10 +333,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1cb3ba4df520e782037d63bf1aeaef8b
    let debugLogCategoryEnabled = false;
    let timerFlags = kNone;
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 08bfe9e8f98ef69911a7fe245dd792493743166a..caf6a3aeaa5e8554c5f0a05b320acba05fef0430 100644
+index e15501e174f1e04d2f58e8ec3f2d032390774dc1..278c7f96e12460e8a00ed37ce6ddad54c9815dbf 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1268,9 +1268,6 @@ void DefineTraceConstants(Local<Object> target) {
+@@ -1318,9 +1318,6 @@ void DefineTraceConstants(Local<Object> target) {
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MEMORY_DUMP);
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MARK);
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_CLOCK_SYNC);
@@ -366,10 +366,10 @@ index 49c457cae2b3da603a548874f63dbdf9f50580d9..73ef9f99167154f6fbb3ef857b8ce3b5
  
  void NodeCategorySet::RegisterExternalReferences(
 diff --git a/test/parallel/test-bootstrap-modules.js b/test/parallel/test-bootstrap-modules.js
-index 69f1d9f44c9c6cc174a123e02443f7cf4c6c5f9b..5016d3abc6799503d4f8747449c4bfcdc3906063 100644
+index 01b7ba07cf6151be43658f855711cf2f67e5a13f..099f8d2eaf057eea5ddd9812e6b18dd6933fcf7d 100644
 --- a/test/parallel/test-bootstrap-modules.js
 +++ b/test/parallel/test-bootstrap-modules.js
-@@ -117,6 +117,7 @@ expected.beforePreExec = new Set([
+@@ -118,6 +118,7 @@ expected.beforePreExec = new Set([
    'NativeModule internal/net',
    'NativeModule internal/dns/utils',
    'NativeModule internal/modules/esm/get_format',

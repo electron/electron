@@ -17,11 +17,11 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e2b9e46c1776b3b369442d3e9db3d5574db7e84f..6faeb8a07e7008e091f56dae440aeb3e24c787d7 100644
+index 9802153f6d1679469a6ff72cfb74b1da82c5cac0..2f9d83a0a64f481bb8fb2ed085de8bf0d6b841d9 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -16,6 +16,7 @@
- #include <array>
+@@ -17,6 +17,7 @@
+ #include <climits>
  #include <cstring>
  #include <string_view>
 +#include <vector>
@@ -29,7 +29,7 @@ index e2b9e46c1776b3b369442d3e9db3d5574db7e84f..6faeb8a07e7008e091f56dae440aeb3e
  #include <openssl/core_names.h>
  #include <openssl/params.h>
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 9d8d6b89b38d98141b713b70fafb84dd989d31ce..fdcffb13f0d96d279a36aa39bf44bdf6d9da048d 100644
+index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7dd53326f 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
@@ -51,10 +51,10 @@ index 9d8d6b89b38d98141b713b70fafb84dd989d31ce..fdcffb13f0d96d279a36aa39bf44bdf6
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cfefa7581c 100644
+index 05fc2a00b362e45b16f4364401edca8f1ea699e6..e04a769b67505ee082d98cee8ccbf694e85507a8 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -146,7 +146,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -169,7 +169,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -63,7 +63,7 @@ index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cf
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2262,7 +2262,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2348,7 +2348,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -73,10 +73,10 @@ index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cf
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 81ec6c8f928829fde54aaaacd5de72264b072e03..e5d75b3c27cabaa0c67e95afe56190c4f17c439b 100644
+index 40f21fcc3437dc57e94ef1d515066b09512dd446..f8ebea753218a80b542ff04992754bb7436fdd41 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -449,11 +449,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -460,11 +460,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!dh) return {};
  
      key_params = EVPKeyPointer::NewDH(std::move(dh));
@@ -93,10 +93,10 @@ index 81ec6c8f928829fde54aaaacd5de72264b072e03..e5d75b3c27cabaa0c67e95afe56190c4
      }
  
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
-index 946f6850d5e68f0c9197e05625e100b323889a35..bb7ed07f19593ce4c33e602b1881fea85b2a471b 100644
+index f1a7bab16967b0b6e94e859d9a0af65ad65fd008..d250ee36017449b5081890a3af686e4ad45a1e42 100644
 --- a/src/crypto/crypto_hash.cc
 +++ b/src/crypto/crypto_hash.cc
-@@ -271,7 +271,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
+@@ -282,7 +282,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
    enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
  
    bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
@@ -132,7 +132,7 @@ index 8703e4315a999df505ff322aea05a268e017831e..18ddb44400f90f2fbea4ffad09cc1a8f
  #include <quic/guard.h>
  #ifndef OPENSSL_NO_QUIC
 diff --git a/src/node_options.h b/src/node_options.h
-index b1b5a1f6de78d88a6027884285e09a395c88e4ac..ea75cca72d8c4cf247828414dc08dd0082d3e93c 100644
+index 579860f7a3f0f6f362620a1f5d87228c33e3c309..1f9a53d80e8d8ac70241563d2dfcf4a863030fb6 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

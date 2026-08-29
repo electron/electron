@@ -7,7 +7,7 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index cf7f8d42e867eb1bc5c228a670e3017e21f33ebd..b38a46449c1aa63a3031062ebd4afc2a6c5d6ace 100644
+index e4c82da4d61711b66138f6477cdcb1e334559892..ac88dc27f480e0de3959420d8be0c7ff5ef258de 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -5,6 +5,19 @@ prefix parallel
@@ -31,7 +31,7 @@ index cf7f8d42e867eb1bc5c228a670e3017e21f33ebd..b38a46449c1aa63a3031062ebd4afc2a
  test-shadow-realm-gc: SKIP
  test-shadow-realm-gc-module: SKIP
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 627e61911d15cad151bfdf5af83c6ada93e62ba8..01e820390ecc039c7ae104a94e88c36c209eed36 100644
+index 01a021130c15ca92b6074d42eefaaa11aefc884a..dc9ec3c410f285d05bc27d87d4d5f9b667605f08 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential

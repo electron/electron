@@ -7,10 +7,10 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 3526c8ae7eba4ffd6f290ce67d1e8cb546b994f1..ce06f520e1a4670c7dd72a4b5b139509153fb5a7 100644
+index 7c15bf9cec387ede0ba30a96c3c9bc2428d30834..364928d344097a40032d81673ab243184bc45b9c 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -92,6 +92,8 @@
+@@ -93,6 +93,8 @@
      'v8_use_perfetto': 0,
      'tsan%': 0,
  
@@ -19,7 +19,7 @@ index 3526c8ae7eba4ffd6f290ce67d1e8cb546b994f1..ce06f520e1a4670c7dd72a4b5b139509
      ##### end V8 defaults #####
  
      # When building native modules using 'npm install' with the system npm,
-@@ -360,7 +362,8 @@
+@@ -361,7 +363,8 @@
        '_GLIBCXX_USE_CXX11_ABI=1',
        # This help forks when building Node.js on a 32-bit arch as
        # libuv is always compiled with _FILE_OFFSET_BITS=64
@@ -29,7 +29,7 @@ index 3526c8ae7eba4ffd6f290ce67d1e8cb546b994f1..ce06f520e1a4670c7dd72a4b5b139509
      ],
  
      # Forcibly disable -Werror.  We support a wide range of compilers, it's
-@@ -517,6 +520,11 @@
+@@ -518,6 +521,11 @@
            }],
          ],
        }],
@@ -42,10 +42,10 @@ index 3526c8ae7eba4ffd6f290ce67d1e8cb546b994f1..ce06f520e1a4670c7dd72a4b5b139509
        # list in v8/BUILD.gn.
        ['node_enable_experimentals == "true"', {
 diff --git a/configure.py b/configure.py
-index 960c6023950bfd507e3d4553139a069086e3d14c..90acb7a92e0b2f10afb9adff15d0e3f090760009 100755
+index 979f50cd92898500108daa343cbefa00c590c776..f7577d93244e4543db732f7e4c1f0db14f0565b2 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1930,6 +1930,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1959,6 +1959,7 @@ def configure_library(lib, output, pkgname=None):
  def configure_v8(o, configs):
    set_configuration_variable(configs, 'v8_enable_v8_checks', release=0, debug=1)
  
