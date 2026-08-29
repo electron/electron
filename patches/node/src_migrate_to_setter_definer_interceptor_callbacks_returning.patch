@@ -172,7 +172,7 @@ index 5f5af63486a556f00b1cc3d44ec731f414904626..3132a96abb87f9275080ca0d8b2015b1
    int32_t port = value->Int32Value(env->context()).FromMaybe(0);
  
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 5d61435c1f525a6c48f8c564c997ca15983c87a8..8e5d0bc9f1d41e8397ed5db03f68a2711c0da422 100644
+index 1b9fdd75da8ce7207b0b41a439e1b0f1e3e0cf4f..3c458634b16fd5a3d1db5349e63244370c075fc9 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -784,7 +784,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -185,10 +185,10 @@ index 5d61435c1f525a6c48f8c564c997ca15983c87a8..8e5d0bc9f1d41e8397ed5db03f68a271
      return Intercepted::kNo;
    }
 diff --git a/src/node_sqlite.h b/src/node_sqlite.h
-index e7281ed266af5d27c2c60a3c65e8bd4fcbc0b8fb..fffa433d615461c7ecf2fd28e114a260610cc0f0 100644
+index 48463b215cb319bd4c0d3eefcc1eb095f5b47a86..bb634465624be83593d4530730b50e4dd403d4be 100644
 --- a/src/node_sqlite.h
 +++ b/src/node_sqlite.h
-@@ -433,7 +433,7 @@ class DatabaseSyncLimits : public BaseObject {
+@@ -436,7 +436,7 @@ class DatabaseSyncLimits : public BaseObject {
    static v8::Intercepted LimitsSetter(
        v8::Local<v8::Name> property,
        v8::Local<v8::Value> value,

@@ -6,10 +6,10 @@ Subject: src: stop using `v8::PropertyCallbackInfo<T>::This()`
 Refs: https://github.com/nodejs/node/issues/60616
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc995f02d74 100644
+index 9490d7514bb01ff2557a489c4a4258ddebbb1fd3..8004c8ed06cac33853b227df377b8e2bef2af7e2 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1000,7 +1000,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
+@@ -986,7 +986,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
    Isolate* isolate = args.GetIsolate();
    Environment* env = Environment::GetCurrent(isolate);
    ModuleWrap* obj;
@@ -76,7 +76,7 @@ index 20338324dfaaf3de977027ab7f9028aba0925050..541c1580f7b29cb2bdd4bbdc5e056b46
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index fb765922dc372953efe4aea9ac92aaec17540ea9..f68e986b18e24aceca0848efb17ed88a0db17c5d 100644
+index 784621a14fae6d20bd6c8b1584df8577180888a2..272e6ffd0aebac5b8f075d6ba9911f96347bc2a4 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -98,7 +98,7 @@ index fb765922dc372953efe4aea9ac92aaec17540ea9..f68e986b18e24aceca0848efb17ed88a
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
 diff --git a/src/node_util.cc b/src/node_util.cc
-index fbfda9c1551e071132e35b90fc3676a9b493abee..065ed602b314f367c2e7dec94019521fd5d23bf4 100644
+index 027f668c21944308d021e8eb10ee3898c8b482a7..ce381c00888b032c281938a7bab334058e075ec8 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
 @@ -366,7 +366,7 @@ static void DefineLazyPropertiesGetter(
