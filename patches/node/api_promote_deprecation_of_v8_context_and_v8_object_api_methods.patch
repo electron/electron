@@ -72,7 +72,7 @@ index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/env.cc b/src/env.cc
-index 9b67143ce4707b175d607237bdea137149a9935a..325fbb0c727bb41cb163ce0384b378aa4c285cd7 100644
+index bfa419e0d57a610381cf9de4017e6f173b77c6d7..20e001bb870ceb118a4f95d2e8dbcedd9717365a 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -665,13 +665,16 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {

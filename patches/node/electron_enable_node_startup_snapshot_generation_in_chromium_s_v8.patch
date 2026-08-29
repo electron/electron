@@ -124,10 +124,10 @@ index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e646
      isolate->SetCaptureStackTraceForUncaughtExceptions(
          true,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e7e95ffd1eb19e3fbf6a0f65338c5f3fbd4d6302..8ce9c5c5fcf55dfc711363fe652ae3cbe17a480e 100644
+index c1816d483d421135c265a08ca45d42e4b8423f29..f4094b05b0122377c826828457a842cde0acb2e8 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -684,12 +684,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -686,12 +686,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
  
  void BuiltinLoader::RefreshCodeCache(const std::vector<CodeCacheInfo>& in) {
    RwLock::ScopedLock lock(code_cache_->mutex);

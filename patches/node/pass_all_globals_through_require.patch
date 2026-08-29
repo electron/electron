@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 5382be9b10390fe8ad6bac764ed2c35a36116b3a..bc144664b02443c0c366bf355fe062bc2ebd3b7e 100644
+index 4bd752be19b6cc7b52d930a199ce6a94b671b1b8..f778487e8a5786143ac6090f977077bf29950b01 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -209,6 +209,13 @@ const {
+@@ -215,6 +215,13 @@ const {
    CHAR_FORWARD_SLASH,
  } = require('internal/constants');
  
@@ -23,7 +23,7 @@ index 5382be9b10390fe8ad6bac764ed2c35a36116b3a..bc144664b02443c0c366bf355fe062bc
  const {
    isProxy,
  } = require('internal/util/types');
-@@ -1867,9 +1874,12 @@ Module.prototype._compile = function(content, filename, format) {
+@@ -1924,9 +1931,12 @@ Module.prototype._compile = function(content, filename, format) {
    if (this[kIsMainSymbol] && getOptionValue('--inspect-brk')) {
      const { callAndPauseOnStart } = internalBinding('inspector');
      result = callAndPauseOnStart(compiledWrapper, thisValue, exports,
