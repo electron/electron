@@ -645,11 +645,13 @@ const updatesItem = new MenuItem({
   label: 'Updates',
   badge: { type: 'updates', count: 10 }
 });
+console.log(updatesItem.badge);
 
 const newItemsBadge = new MenuItem({
   label: 'New Items',
   badge: { type: 'new-items', count: 1 }
 });
+console.log(newItemsBadge.badge);
 
 // menu
 // https://github.com/electron/electron/blob/main/docs/api/menu.md
