@@ -359,10 +359,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // v8::Message includes some pretext that can get duplicated each time it
     // crosses the bridge we fallback to the v8::Message approach if we can't
     // pull "message" for some reason
-    v8::MaybeLocal<v8::Value> maybe_message = value.As<v8::Object>()->Get(
-        source_context, gin::ConvertToV8(isolate, "message"));
+    // Reading "message" can run a user-defined accessor which may throw; if it
+    // does, bail out and let the pending exception propagate to the caller.
     v8::Local<v8::Value> message;
-    if (maybe_message.ToLocal(&message) && message->IsString()) {
+    if (!value.As<v8::Object>()
+             ->Get(source_context, gin::ConvertToV8(isolate, "message"))
+             .ToLocal(&message))
+      return {};
+    if (message->IsString()) {
       return v8::MaybeLocal<v8::Value>(
           v8::Exception::Error(message.As<v8::String>()));
     }
@@ -697,11 +701,14 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         }
       }
 
+      // Reading the property can run a user-defined accessor which may throw;
+      // if it does, bail out and let the pending exception propagate to the
+      // caller like any other conversion failure.
       v8::Local<v8::Value> value;
       {
         v8::Context::Scope source_context_scope(source_context);
-        if (!api.Get(key, &value))
-          continue;
+        if (!api.GetHandle()->Get(source_context, key).ToLocal(&value))
+          return {};
       }
 
       auto passed_value = PassValueToOtherContextInner(

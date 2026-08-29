@@ -182,7 +182,7 @@ index 88f0095ed2552640f43a989e4688ec1af0ca32aa..e5475ab2d62b2121a7b8f8705b8a1643
    // content analysis should happen right before the document is to be printed.
    // This method is virtual for testing purposes.
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index 1e160aab45a5beccd1c25e8dcb23e1cd021b5231..4d83834263a5e24ec098216e25dfa9fef3c87ced 100644
+index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..4d83834263a5e24ec098216e25dfa9fef3c87ced 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
 @@ -24,7 +24,14 @@ namespace printing {
@@ -210,7 +210,7 @@ index 1e160aab45a5beccd1c25e8dcb23e1cd021b5231..4d83834263a5e24ec098216e25dfa9fe
      // Want the same PrintBackend service as the query so that we use the same
      // device context.
      print_document_client_id_ =
-@@ -189,6 +196,28 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
+@@ -190,6 +197,28 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
    //       browser process.
    //   - Other platforms don't have a system print UI or do not use OOP
    //     printing, so this does not matter.

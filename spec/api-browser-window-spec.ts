@@ -6099,6 +6099,21 @@ describe('BrowserWindow module', () => {
         await createTwo();
       });
 
+      it('does not crash when the parent is destroyed before the modal child', async () => {
+        const parent = new BrowserWindow({ show: false });
+        const child = new BrowserWindow({ parent, modal: true, show: false });
+        parent.destroy();
+        await setTimeout(300);
+        // On Windows the child is owned by the parent HWND and is destroyed
+        // with it; elsewhere it survives and must not touch the freed parent.
+        if (!child.isDestroyed()) {
+          child.hide();
+          child.show();
+          child.hide();
+          child.destroy();
+        }
+      });
+
       ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
         it('can disable and enable a window', () => {
           const w = new BrowserWindow({ show: false });

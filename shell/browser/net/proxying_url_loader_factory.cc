@@ -516,6 +516,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
   }
 
   if (current_request_uses_header_client_ && !redirect_url_.is_empty()) {
+    if (for_cors_preflight_) {
+      // CORS preflight doesn't support redirect.
+      OnRequestError(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+      return;
+    }
     HandleBeforeRequestRedirect();
     return;
   }

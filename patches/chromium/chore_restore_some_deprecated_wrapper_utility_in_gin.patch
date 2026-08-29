@@ -371,7 +371,7 @@ index 01d3606a5b50e3ff5b8a4869e1c0c3bd1878e495..cb175a02eb36fef484e863b1825407b0
 +
  }  // namespace gin
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index d6e34c5155434e8d6330fe6a3912aaebf7c15955..9b93715ec88ebbd3dd58eb253468f5b8dd8aff51 100644
+index 5ab0ea8757fed4cdd036606edaf13f16205ef253..a4b5e6c6d20279c7d3dfe83d3adf35210d4521ed 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
 @@ -63,6 +63,9 @@ static_assert(sizeof(v8::CppHeapPointerTag) == sizeof(WrappablePointerTag),
@@ -384,7 +384,7 @@ index d6e34c5155434e8d6330fe6a3912aaebf7c15955..9b93715ec88ebbd3dd58eb253468f5b8
  
  }  // namespace internal
  
-@@ -162,6 +165,75 @@ struct Converter<T*> {
+@@ -160,6 +163,75 @@ struct Converter<T*> {
    }
  };
  

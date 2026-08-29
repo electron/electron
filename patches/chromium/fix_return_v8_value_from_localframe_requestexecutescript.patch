@@ -210,7 +210,7 @@ index 6d4a2d197c2341853956339f2690f885827a7356..aae5d5a61b3da2b5caf1b29eef8c12f8
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 80148079507dd074a92326af7ce0ca17dee20f8c..28bf65314d7aaaa5db736b69ebe8c323b221ddbe 100644
+index 2fc6be7b6bbbeaa654e334daeba14a87728320fa..a369140404dbbab877d2d847f247493dfcc08bf2 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -308,6 +308,7 @@ void ExecuteScriptsInMainWorld(

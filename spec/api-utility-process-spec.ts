@@ -52,6 +52,25 @@ describe('utilityProcess module', () => {
         });
       }).to.throw(/stdin value other than ignore is not supported/);
     });
+
+    it('does not crash when options.stdio shrinks while being read', async () => {
+      const stdio: any = ['ignore', 'inherit', 'inherit'];
+      let reads = 0;
+      Object.defineProperty(stdio, 2, {
+        configurable: true,
+        enumerable: true,
+        get() {
+          if (reads++ === 0) {
+            delete stdio[2];
+            stdio.length = 2;
+          }
+          return 'pipe';
+        }
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], { stdio });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('lifecycle events', () => {

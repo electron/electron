@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_utility_process.h"
 
+#include <array>
 #include <map>
 #include <unordered_map>
 #include <utility>
@@ -351,7 +352,7 @@ void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
-  if (!node_service_remote_.is_connected())
+  if (!connector_ || connector_closed_)
     return;
 
   blink::TransferableMessage transferable_message;
@@ -448,7 +449,7 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
 }
 
 void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
-  if (!node_service_remote_.is_connected())
+  if (!node_service_remote_.is_bound() || !node_service_remote_.is_connected())
     return;
 
   node_service_remote_->UpdateURLLoaderFactory(CreateURLLoaderFactoryParams());
@@ -573,17 +574,23 @@ UtilityProcessWrapper* UtilityProcessWrapper::Create(
     opts.Get("cwd", &current_working_directory);
     opts.Get("respondToAuthRequestsFromMainProcess", &create_network_observer);
 
-    std::vector<std::string> stdio_arr{"ignore", "inherit", "inherit"};
+    constexpr std::array default_stdio{
+        IOType::IO_IGNORE,
+        IOType::IO_INHERIT,
+        IOType::IO_INHERIT,
+    };
+    std::vector<std::string> stdio_arr;
     opts.Get("stdio", &stdio_arr);
-    for (size_t i = 0; i < 3; i++) {
-      IOType type;
-      if (stdio_arr[i] == "ignore")
-        type = IOType::IO_IGNORE;
-      else if (stdio_arr[i] == "inherit")
-        type = IOType::IO_INHERIT;
-      else if (stdio_arr[i] == "pipe")
-        type = IOType::IO_PIPE;
-
+    for (size_t i = 0; i < default_stdio.size(); ++i) {
+      IOType type = default_stdio[i];
+      if (i < stdio_arr.size()) {
+        if (stdio_arr[i] == "ignore")
+          type = IOType::IO_IGNORE;
+        else if (stdio_arr[i] == "inherit")
+          type = IOType::IO_INHERIT;
+        else if (stdio_arr[i] == "pipe")
+          type = IOType::IO_PIPE;
+      }
       stdio.emplace(static_cast<IOHandle>(i), type);
     }
 
