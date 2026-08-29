@@ -348,7 +348,7 @@ void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
-  if (!node_service_remote_.is_connected())
+  if (!connector_ || connector_closed_)
     return;
 
   blink::TransferableMessage transferable_message;
@@ -445,7 +445,7 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
 }
 
 void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
-  if (!node_service_remote_.is_connected())
+  if (!node_service_remote_.is_bound() || !node_service_remote_.is_connected())
     return;
 
   node_service_remote_->UpdateURLLoaderFactory(CreateURLLoaderFactoryParams());
