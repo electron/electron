@@ -474,6 +474,43 @@ describe('contextBridge', () => {
         expect(result).equal('oh no');
       });
 
+      it('should throw when an object argument has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            check: (_: any) => {
+              (globalThis as any).called = true;
+            },
+            called: () => (globalThis as any).called === true
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return (e as Error).message;
+            }
+            return null;
+          };
+          class CustomError extends Error {
+            get message(): string {
+              throw new Error('error boom');
+            }
+          }
+          const objectError = getError(() =>
+            root.example.check({
+              a: 1,
+              get b() {
+                throw new Error('object boom');
+              }
+            })
+          );
+          const errorError = getError(() => root.example.check(new CustomError()));
+          return [objectError, errorError, root.example.called()];
+        });
+        expect(result).to.deep.equal(['object boom', 'error boom', false]);
+      });
+
       it('should proxy methods that are callable multiple times', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
