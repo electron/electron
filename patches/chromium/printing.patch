@@ -182,10 +182,10 @@ index 88f0095ed2552640f43a989e4688ec1af0ca32aa..e5475ab2d62b2121a7b8f8705b8a1643
    // content analysis should happen right before the document is to be printed.
    // This method is virtual for testing purposes.
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..4d83834263a5e24ec098216e25dfa9fef3c87ced 100644
+index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..ddca50d1369553523dd0e215d19e0d0e8ff7301a 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
-@@ -24,7 +24,14 @@ namespace printing {
+@@ -25,7 +25,14 @@ namespace printing {
  PrinterQueryOop::PrinterQueryOop(content::GlobalRenderFrameHostId rfh_id)
      : PrinterQuery(rfh_id) {}
  
@@ -201,7 +201,7 @@ index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..4d83834263a5e24ec098216e25dfa9fe
  
  std::unique_ptr<PrintJobWorker> PrinterQueryOop::TransferContextToNewWorker(
      PrintJob* print_job) {
-@@ -126,7 +133,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+@@ -127,7 +134,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
      std::unique_ptr<PrintSettings> new_settings,
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -239,7 +239,7 @@ index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..4d83834263a5e24ec098216e25dfa9fe
    PrinterQuery::GetSettingsWithUI(
        document_page_count, has_selection, is_scripted,
        base::BindOnce(&PrinterQueryOop::OnDidAskUserForSettings,
-@@ -392,8 +421,8 @@ std::unique_ptr<PrintJobWorkerOop> PrinterQueryOop::CreatePrintJobWorkerOop(
+@@ -393,8 +422,8 @@ std::unique_ptr<PrintJobWorkerOop> PrinterQueryOop::CreatePrintJobWorkerOop(
      PrintJob* print_job) {
    return std::make_unique<PrintJobWorkerOop>(
        std::move(printing_context_delegate_), std::move(printing_context_),
