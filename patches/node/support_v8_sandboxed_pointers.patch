@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/node.gyp b/node.gyp
-index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..ce50ee1c831a3d186b812bdd51feeb8bf65561d9 100644
+index c58f4812e2e1c0f9ba5c3b285e9d73c1501d2361..72dd7525473c96293374019dc1626ec8798b2e09 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -152,6 +152,7 @@
@@ -19,10 +19,10 @@ index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..ce50ee1c831a3d186b812bdd51feeb8b
        'src/node_snapshotable.cc',
        'src/node_sockaddr.cc',
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe266f828d1 100644
+index 17248bef7d9675bbb3cf76dc90103530d216ab16..77e8cc3f6786790d31c8db21450ddf4a97e32dc5 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -373,24 +373,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -387,24 +387,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -69,7 +69,7 @@ index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe2
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -763,19 +769,13 @@ namespace {
+@@ -781,19 +787,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -95,10 +95,10 @@ index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe2
  
    auto data = DataPointer::SecureAlloc(len);
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 711316f92918c7beeb067d0b3c356801dabde60c..49a022204773219f97bda25268f7e49c2a297da7 100644
+index be4067df0e226636cb6d876c41aa830343069f86..82da68d8eef06c57aae76f2b54eeb09db5b41ecf 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -142,19 +142,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
    if (!mem) [[unlikely]]
      return {};
  #ifdef V8_ENABLE_SANDBOX
@@ -129,10 +129,10 @@ index 711316f92918c7beeb067d0b3c356801dabde60c..49a022204773219f97bda25268f7e49c
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b8568ace6 100644
+index ebf5dd91750018664c86c4b643ecd782a018c62d..01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1545,7 +1545,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1590,7 +1590,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -141,7 +141,7 @@ index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b
  #endif
    return size;
  }
-@@ -1568,6 +1568,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1613,6 +1613,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -168,7 +168,7 @@ index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1578,6 +1598,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1623,6 +1643,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }
