@@ -46,10 +46,10 @@ index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 8b836b1f586e4c444976d68ea9918b7add15e6bb..a964c3e8c80fe652358b20502b537b4f2037ce33 100644
+index 358aa3e48092530dc70d054c738ba36d154de316..bdcaad3bae3123f9318d7b9c2ca7f837bba19be8 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10300,6 +10300,27 @@
+@@ -10299,6 +10299,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -91,10 +91,10 @@ index d9983abcd27cb91c62c1a45689813bd01328b245..8bd8885d7d9c59d4059a3c33b6d3d6df
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 80ce0cb2575100175ebc9b4bfd31f6561fe1e6ae..45cc1e9524f00806f1fa44bbc6c57b271f486f33 100644
+index 6c141550b40e2879a8c01ef590ddefcfea0a28fd..80e1937d46ce1011d25f97dbd8088ef2327a9652 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12788,5 +12788,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12787,5 +12787,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -132,10 +132,10 @@ index 80ce0cb2575100175ebc9b4bfd31f6561fe1e6ae..45cc1e9524f00806f1fa44bbc6c57b27
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 6acdae63ef23c9b1faea35b0ac4ba118704b8d18..7794bdd2f3466a09038ef0b3703b438ea575531d 100644
+index 5ce330adf9c576bf2ece98ff7a0964abf1685ed0..db372f47d321341291be583fde04d593b5e57bbd 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4241,6 +4241,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4235,6 +4235,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -152,7 +152,7 @@ index 6acdae63ef23c9b1faea35b0ac4ba118704b8d18..7794bdd2f3466a09038ef0b3703b438e
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index b84001ffee926adb9a6e09447d7ddfad45465973..5a2aff4dddab3153b83799467693fa902c3918c7 100644
+index fa5c8716759cc482f6d68ba90a5fadbb51a1bb46..0f02a1cc9c5cbed510fd2ce8335cda7b4fa58dfa 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 @@ -470,6 +470,7 @@ class StyleBuilderConverter {
@@ -314,7 +314,7 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index ce4a2bcb322755dc8fb59d60b09df393af6ff9c0..f2ba4a559b9838cc744e5d67bc0bec52e0fbb553 100644
+index ec3bed45d1a5768cda6f52ddb30025d024e8dade..d16a128464b6b22599c930930be4240b58296bec 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@
