@@ -44,7 +44,6 @@
 class SkBitmap;
 
 namespace gfx {
-class Point;
 class PointF;
 class Rect;
 }  // namespace gfx
@@ -55,8 +54,6 @@ class CursorManager;
 
 namespace electron {
 
-class ElectronBeginFrameTimer;
-class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
 

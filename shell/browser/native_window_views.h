@@ -39,7 +39,6 @@ class FrameViewLinux;
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
-class NativeFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 

@@ -41,10 +41,6 @@ class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
 
-namespace net {
-class ProxyConfig;
-}
-
 namespace electron {
 
 class ElectronBrowserContext;

@@ -34,7 +34,6 @@ class ClientCertificateDelegate;
 class NavigationHandle;
 class PlatformNotificationService;
 class NavigationThrottleRegistry;
-class QuotaPermissionContext;
 }  // namespace content
 
 namespace net {
@@ -44,7 +43,6 @@ class SSLCertRequestInfo;
 namespace electron {
 
 class ElectronBluetoothDelegate;
-class ElectronBrowserMainParts;
 class ElectronHidDelegate;
 class ElectronSerialDelegate;
 class ElectronUsbDelegate;
