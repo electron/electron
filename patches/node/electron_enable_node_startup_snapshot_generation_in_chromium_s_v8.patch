@@ -157,10 +157,10 @@ index e7e95ffd1eb19e3fbf6a0f65338c5f3fbd4d6302..8ce9c5c5fcf55dfc711363fe652ae3cb
    code_cache_->has_code_cache = true;
  }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 82999148a9ee740deb13ed4cc7968f2300299b1a..1dba37d373218b791aa73c14cb41f7f9d057d0bf 100644
+index c9588880d05435ab9f4e23fcff74c93309664270..972f341a0559e37d8f6aaa70554bfdd33cdde76e 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1075,6 +1075,18 @@ void DefineCryptoConstants(Local<Object> target) {
+@@ -1025,6 +1025,18 @@ void DefineCryptoConstants(Local<Object> target) {
  #endif
  }
  
