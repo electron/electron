@@ -166,10 +166,10 @@ index 0c7e2e0f7b1c53030957f18e8ade81786b05e449..1c5465fc09fa480258c928deb7871fcd
    code_cache_->has_code_cache = true;
  }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 82999148a9ee740deb13ed4cc7968f2300299b1a..1dba37d373218b791aa73c14cb41f7f9d057d0bf 100644
+index c9588880d05435ab9f4e23fcff74c93309664270..972f341a0559e37d8f6aaa70554bfdd33cdde76e 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1075,6 +1075,18 @@ void DefineCryptoConstants(Local<Object> target) {
+@@ -1025,6 +1025,18 @@ void DefineCryptoConstants(Local<Object> target) {
  #endif
  }
  
@@ -340,11 +340,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-<<<<<<< HEAD
-index 504dd46249425a8e8396332bf061f1f75cdd9401..714e9937fb9eef33b6fead8d3a4aa3b85f718903 100644
-=======
-index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
->>>>>>> af2dcbc7f0 (fix: serialize the target's fs constants into the Node.js startup snapshot on cross-arch Linux builds (#53316))
+index 504dd46249425a8e8396332bf061f1f75cdd9401..8ddc543c828e844d22f8cdbd89f12a211e109290 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {

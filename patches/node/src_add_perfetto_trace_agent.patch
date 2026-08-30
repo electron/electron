@@ -1110,10 +1110,10 @@ index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa
 +  assert(stat.size > 0);
 +}));
 diff --git a/unofficial.gni b/unofficial.gni
-index 714e9937fb9eef33b6fead8d3a4aa3b85f718903..31565559059954112d4311239e420d1ffdf0421d 100644
+index 8ddc543c828e844d22f8cdbd89f12a211e109290..52ce63a777b0f470a579a09082e61fdc9a209c5f 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -150,6 +150,7 @@ template("node_gn_build") {
+@@ -160,6 +160,7 @@ template("node_gn_build") {
    source_set("libnode") {
      configs += [
        ":node_internal_config",
@@ -1121,7 +1121,7 @@ index 714e9937fb9eef33b6fead8d3a4aa3b85f718903..31565559059954112d4311239e420d1f
        "//build/config/compiler:no_exit_time_destructors"
      ]
      public_configs = [
-@@ -186,6 +187,7 @@ template("node_gn_build") {
+@@ -196,6 +197,7 @@ template("node_gn_build") {
        "//third_party/zstd:headers",
        "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
