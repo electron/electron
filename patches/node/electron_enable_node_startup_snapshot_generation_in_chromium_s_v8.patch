@@ -157,10 +157,10 @@ index c1816d483d421135c265a08ca45d42e4b8423f29..f4094b05b0122377c826828457a842cd
    code_cache_->has_code_cache = true;
  }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index e60d2f610f320a93e793a26ad35d30eb861d8557..caf6a3aeaa5e8554c5f0a05b320acba05fef0430 100644
+index 82999148a9ee740deb13ed4cc7968f2300299b1a..1dba37d373218b791aa73c14cb41f7f9d057d0bf 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1025,6 +1025,18 @@ void DefineCryptoConstants(Local<Object> target) {
+@@ -1075,6 +1075,18 @@ void DefineCryptoConstants(Local<Object> target) {
  #endif
  }
  
@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..b5a9ed2cc2a9576178effb93102b09592844963b 100644
+index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
