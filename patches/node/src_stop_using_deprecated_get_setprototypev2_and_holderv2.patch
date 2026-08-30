@@ -96,10 +96,10 @@ index 01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5..2543d6f3b5e357cf9090f2f7d51d67d0
      return MaybeLocal<Uint8Array>();
    }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 82999148a9ee740deb13ed4cc7968f2300299b1a..6b743eb9f5ba40557f25ff5bac130cf07878ede7 100644
+index 1dba37d373218b791aa73c14cb41f7f9d057d0bf..e15501e174f1e04d2f58e8ec3f2d032390774dc1 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1319,7 +1319,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1331,7 +1331,7 @@ void CreatePerContextProperties(Local<Object> target,
    Environment* env = Environment::GetCurrent(context);
  
    CHECK(
