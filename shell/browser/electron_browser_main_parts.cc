@@ -78,6 +78,8 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include <dlfcn.h>
+
 #include "base/environment.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
@@ -207,7 +209,49 @@ ElectronBrowserMainParts::ElectronBrowserMainParts()
   self_ = this;
 }
 
-ElectronBrowserMainParts::~ElectronBrowserMainParts() = default;
+#if BUILDFLAG(IS_LINUX)
+namespace {
+
+// Resolved via dlsym: a direct reference would bind to Chromium's bundled
+// FontConfig rather than the system copy GTK and Pango use.
+void* SystemFontConfigSymbol(const char* name) {
+  void* lib = dlopen("libfontconfig.so.1", RTLD_NOW);
+  return lib ? dlsym(lib, name) : nullptr;
+}
+
+// Pango >= 1.52 calls FcInit() from its own thread while the main thread does
+// the same during GTK init, corrupting FontConfig state (pango#784). Doing it
+// once beforehand makes both later calls no-ops.
+class SystemFontConfigInit : public base::PlatformThread::Delegate {
+ public:
+  void ThreadMain() override {
+    if (auto fc_init =
+            reinterpret_cast<int (*)()>(SystemFontConfigSymbol("FcInit"))) {
+      fc_init();
+    }
+  }
+};
+
+// Read by FontConfig at load; an app may set these from its main script.
+constexpr base::cstring_view kFontConfigEnvVars[] = {
+    "FONTCONFIG_FILE", "FONTCONFIG_PATH", "FONTCONFIG_SYSROOT"};
+
+std::vector<std::optional<std::string>> SnapshotFontConfigEnv() {
+  auto env = base::Environment::Create();
+  std::vector<std::optional<std::string>> values;
+  for (base::cstring_view name : kFontConfigEnvVars)
+    values.push_back(env->GetVar(name));
+  return values;
+}
+
+}  // namespace
+#endif  // BUILDFLAG(IS_LINUX)
+
+ElectronBrowserMainParts::~ElectronBrowserMainParts() {
+#if BUILDFLAG(IS_LINUX)
+  JoinSystemFontConfigInit();
+#endif
+}
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
@@ -270,6 +314,15 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
   node_bindings_->Initialize(isolate, context);
+
+#if BUILDFLAG(IS_LINUX)
+  // Runs during Node.js environment creation and is joined before any app
+  // code can run, so nothing else touches FontConfig or the environment.
+  const auto fontconfig_env = SnapshotFontConfigEnv();
+  static base::NoDestructor<SystemFontConfigInit> system_fontconfig_init;
+  base::PlatformThread::Create(0, system_fontconfig_init.get(),
+                               &system_fontconfig_thread_);
+#endif
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
       isolate, context, js_env_->platform(),
@@ -296,11 +349,25 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Wrap the uv loop with global env.
   node_bindings_->set_uv_env(node_env_.get());
 
+#if BUILDFLAG(IS_LINUX)
+  JoinSystemFontConfigInit();
+#endif
+
   // Load everything.
   node_bindings_->LoadEnvironment(node_env_.get());
 
   // Wait for app
   node_bindings_->JoinAppCode();
+
+#if BUILDFLAG(IS_LINUX)
+  // Reload if the app's main script changed the FontConfig environment.
+  if (fontconfig_env != SnapshotFontConfigEnv()) {
+    if (auto fc_reinit = reinterpret_cast<int (*)()>(
+            SystemFontConfigSymbol("FcInitReinitialize"))) {
+      fc_reinit();
+    }
+  }
+#endif
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
@@ -486,6 +553,15 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   views_delegate_ = std::make_unique<ViewsDelegate>();
 #endif
 }
+
+#if BUILDFLAG(IS_LINUX)
+void ElectronBrowserMainParts::JoinSystemFontConfigInit() {
+  if (system_fontconfig_thread_.is_null())
+    return;
+  base::PlatformThread::Join(system_fontconfig_thread_);
+  system_fontconfig_thread_ = base::PlatformThreadHandle();
+}
+#endif  // BUILDFLAG(IS_LINUX)
 
 int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Run user's main script before most things get initialized, so we can have
