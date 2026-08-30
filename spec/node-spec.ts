@@ -1508,7 +1508,7 @@ describe('Node.js startup snapshot', () => {
     child.stdout.on('data', (chunk) => {
       stdout += chunk;
     });
-    const [code] = await once(child, 'exit');
+    const [code] = await once(child, 'close');
     expect(code).to.equal(0);
     expect(comparable(stdout)).to.deep.equal(await fromFreshEnvironment());
   });
