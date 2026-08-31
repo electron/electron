@@ -58,10 +58,10 @@ ProxyingAIManager::GetAIManagerRemote() {
     gin::WeakCell<api::Session>* session =
         api::Session::FromBrowserContext(browser_context_);
 
-    if (session && session->Get() && session->Get()->LocalAIHandler()) {
-      auto* rfh = rfh_.AsRenderFrameHostIfValid();
-      DCHECK(rfh);
-
+    // Requests that don't come from a live document (e.g. workers) are not
+    // routed to the handler; callers treat an unbound remote as unavailable.
+    auto* rfh = rfh_.AsRenderFrameHostIfValid();
+    if (rfh && session && session->Get() && session->Get()->LocalAIHandler()) {
       auto* web_contents = electron::api::WebContents::From(
           content::WebContents::FromRenderFrameHost(rfh));
       std::optional<int32_t> web_contents_id;

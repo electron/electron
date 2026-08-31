@@ -31,15 +31,21 @@ struct Converter<on_device_model::mojom::ResponseConstraintPtr> {
     if (val.is_null())
       return v8::Undefined(isolate);
 
+    v8::Local<v8::Value> result;
     if (val->is_json_schema()) {
-      return v8::JSON::Parse(isolate->GetCurrentContext(),
-                             StringToV8(isolate, val->get_json_schema()))
-          .ToLocalChecked();
+      if (v8::JSON::Parse(isolate->GetCurrentContext(),
+                          StringToV8(isolate, val->get_json_schema()))
+              .ToLocal(&result)) {
+        return result;
+      }
     } else if (val->is_regex()) {
-      return v8::RegExp::New(isolate->GetCurrentContext(),
-                             StringToV8(isolate, val->get_regex()),
-                             v8::RegExp::kNone)
-          .ToLocalChecked();
+      v8::Local<v8::RegExp> regexp;
+      if (v8::RegExp::New(isolate->GetCurrentContext(),
+                          StringToV8(isolate, val->get_regex()),
+                          v8::RegExp::kNone)
+              .ToLocal(&regexp)) {
+        return regexp;
+      }
     }
 
     return v8::Undefined(isolate);
@@ -168,10 +174,12 @@ bool IsReadableStream(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   }
 
   v8::Local<v8::Value> args[] = {val};
-  v8::Local<v8::Value> result =
-      is_readable_stream->Get(isolate)
-          ->Call(context, v8::Null(isolate), std::size(args), args)
-          .ToLocalChecked();
+  v8::Local<v8::Value> result;
+  if (!is_readable_stream->Get(isolate)
+           ->Call(context, v8::Null(isolate), std::size(args), args)
+           .ToLocal(&result)) {
+    return false;
+  }
 
   return result->IsBoolean() && result.As<v8::Boolean>()->Value();
 }
@@ -179,9 +187,11 @@ bool IsReadableStream(v8::Isolate* isolate, v8::Local<v8::Value> val) {
 uint64_t GetContextUsage(v8::Isolate* isolate,
                          v8::Local<v8::Object> language_model) {
   auto context = isolate->GetCurrentContext();
-  v8::Local<v8::Value> val =
-      language_model->Get(context, gin::StringToV8(isolate, "contextUsage"))
-          .ToLocalChecked();
+  v8::Local<v8::Value> val;
+  if (!language_model->Get(context, gin::StringToV8(isolate, "contextUsage"))
+           .ToLocal(&val)) {
+    return 0;
+  }
   uint64_t token_count = 0;
   if (val->IsNumber()) {
     gin::ConvertFromV8(isolate, val, &token_count);
@@ -295,14 +305,19 @@ class PromptResponder {
         [](base::WeakPtr<PromptResponder> weak_ptr, v8::Isolate* isolate,
            v8::Local<v8::Value> result) {
           if (weak_ptr) {
-            CHECK(result->IsObject());
-
-            v8::Local<v8::Value> done =
-                result.As<v8::Object>()
-                    ->Get(isolate->GetCurrentContext(),
-                          gin::StringToV8(isolate, "done"))
-                    .ToLocalChecked();
-            CHECK(done->IsBoolean());
+            // The stream is app-provided JS, so the chunk can be anything;
+            // bail out with an error instead of crashing the process.
+            v8::Local<v8::Value> done;
+            if (!result->IsObject() ||
+                !result.As<v8::Object>()
+                     ->Get(isolate->GetCurrentContext(),
+                           gin::StringToV8(isolate, "done"))
+                     .ToLocal(&done) ||
+                !done->IsBoolean()) {
+              weak_ptr->SendError();
+              weak_ptr->DeleteThis();
+              return;
+            }
 
             if (done.As<v8::Boolean>()->Value()) {
               uint64_t token_count = GetContextUsage(
@@ -312,11 +327,15 @@ class PromptResponder {
               weak_ptr->completed_ = true;
               weak_ptr->DeleteThis();
             } else {
-              v8::Local<v8::Value> val =
-                  result.As<v8::Object>()
-                      ->Get(isolate->GetCurrentContext(),
-                            gin::StringToV8(isolate, "value"))
-                      .ToLocalChecked();
+              v8::Local<v8::Value> val;
+              if (!result.As<v8::Object>()
+                       ->Get(isolate->GetCurrentContext(),
+                             gin::StringToV8(isolate, "value"))
+                       .ToLocal(&val)) {
+                weak_ptr->SendError();
+                weak_ptr->DeleteThis();
+                return;
+              }
 
               std::string value;
 
@@ -414,8 +433,13 @@ void UtilityAILanguageModel::OnResponderDisconnect(
   if (it != abort_controllers_.end()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope{isolate};
-    gin_helper::CallMethod(isolate, it->second.Get(isolate), "abort");
+    // abort() runs the signal's listeners and then a microtask checkpoint,
+    // which may settle the pending append() promise and erase this entry
+    // from |abort_controllers_|. Take the controller out of the map first so
+    // we are not holding an iterator across the call.
+    v8::Local<v8::Object> abort_controller = it->second.Get(isolate);
     abort_controllers_.erase(it);
+    gin_helper::CallMethod(isolate, abort_controller, "abort");
   }
 }
 
@@ -437,10 +461,12 @@ bool UtilityAILanguageModel::IsLanguageModel(v8::Isolate* isolate,
   }
 
   v8::Local<v8::Value> args[] = {val};
-  v8::Local<v8::Value> result =
-      is_language_model->Get(isolate)
-          ->Call(context, v8::Null(isolate), std::size(args), args)
-          .ToLocalChecked();
+  v8::Local<v8::Value> result;
+  if (!is_language_model->Get(isolate)
+           ->Call(context, v8::Null(isolate), std::size(args), args)
+           .ToLocal(&result)) {
+    return false;
+  }
 
   return result->IsBoolean() && result.As<v8::Boolean>()->Value();
 }
@@ -458,10 +484,12 @@ bool UtilityAILanguageModel::IsLanguageModelClass(v8::Isolate* isolate,
   }
 
   v8::Local<v8::Value> args[] = {val};
-  v8::Local<v8::Value> result =
-      is_language_model_class->Get(isolate)
-          ->Call(context, v8::Null(isolate), std::size(args), args)
-          .ToLocalChecked();
+  v8::Local<v8::Value> result;
+  if (!is_language_model_class->Get(isolate)
+           ->Call(context, v8::Null(isolate), std::size(args), args)
+           .ToLocal(&result)) {
+    return false;
+  }
 
   return result->IsBoolean() && result.As<v8::Boolean>()->Value();
 }

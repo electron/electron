@@ -80,6 +80,7 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.h",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.cc",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.h",
+    "//chrome/browser/picture_in_picture/video_overlay_window.h",
     "//chrome/browser/platform_util.cc",
     "//chrome/browser/platform_util.h",
     "//chrome/browser/predictors/predictors_features.cc",

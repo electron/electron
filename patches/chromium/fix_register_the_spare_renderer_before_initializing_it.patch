@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 24 Aug 2026 07:19:20 +0000
+Subject: fix: register the spare renderer before initializing it
+
+SpareRenderProcessHostManagerImpl added a new spare to spare_rphs_ only
+after RenderProcessHost::Init(), so RenderProcessHost::IsSpare() was
+false while the process launched, including in
+ContentBrowserClient::AppendExtraCommandLineSwitches(). Electron decides
+a renderer's switches per WebContents there and needs to recognise the
+spare, which has none. Push it onto the list first; nothing between the
+two calls reads the list.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8283216;
+remove once it lands and rolls in.
+
+diff --git a/content/browser/renderer_host/spare_render_process_host_manager_impl.cc b/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
+index bda3feda2c6496ae1e4d03b31dd174764a1214c3..6c5e743478a3898251080142225dd6354b92fd63 100644
+--- a/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
++++ b/content/browser/renderer_host/spare_render_process_host_manager_impl.cc
+@@ -558,8 +558,8 @@ RenderProcessHost* SpareRenderProcessHostManagerImpl::WarmupSpare(
+       RenderProcessHostImpl::CreateSpareRenderProcessHost(
+           browser_context, nullptr /* site_instance */);
+   new_spare_rph->AddObserver(this);
+-  new_spare_rph->Init();
+   spare_rphs_.push_back(new_spare_rph);
++  new_spare_rph->Init();
+ 
+   // Use the new timeout if there is no previous renderer or
+   // the specified timeout will be triggered after the current timeout
+@@ -1063,8 +1063,8 @@ void SpareRenderProcessHostManagerImpl::MaybeCreateExtraSpare() {
+       RenderProcessHostImpl::CreateSpareRenderProcessHost(
+           browser_context, nullptr /* site_instance */);
+   new_spare_rph->AddObserver(this);
+-  new_spare_rph->Init();
+   spare_rphs_.push_back(new_spare_rph);
++  new_spare_rph->Init();
+ }
+ 
+ void SpareRenderProcessHostManagerImpl::OnMetricsHeartbeatTimerFired() {

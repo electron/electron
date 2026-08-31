@@ -15,6 +15,7 @@ const args = minimist(process.argv.slice(2), {
 const BASE = path.resolve(__dirname, '../..');
 
 const ROOT_PACKAGE_JSON = path.resolve(BASE, 'package.json');
+const OUT_PACKAGE_JSON = path.resolve(path.dirname(utils.getAbsoluteElectronExec()), 'package.json');
 const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node');
 const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null;
 const TAP_FILE_NAME = 'test.tap';
@@ -39,36 +40,41 @@ const defaultOptions = [
   '-J'
 ];
 
-// The upstream Node.js test suite assumes there is no package.json above the
-// test tree. In Electron, third_party/electron_node lives under Chromium's
-// src/, whose package.json ("type": "module") is always an ancestor. That
-// changes how Node resolves the module type of test files and fixtures: it
-// disables module-syntax detection (breaking e.g.
-// test-compile-cache-typescript-esm) and emits MODULE_TYPELESS_PACKAGE_JSON
+// The upstream Node.js test suite assumes there is no package.json above its
+// test files or virtual files rooted at process.execPath. Electron has
+// "type": "module" package files at both Chromium's src/ root and in the
+// selected output directory. They change how Node resolves the module type of
+// test files and fixtures: they disable module-syntax detection (breaking e.g.
+// test-compile-cache-typescript-esm) and emit MODULE_TYPELESS_PACKAGE_JSON
 // warnings that break tests asserting clean stderr (e.g. test-esm-detect-
-// ambiguous, test-esm-import-meta-main-eval, test-output-coverage-with-mock).
+// ambiguous, test-esm-import-meta-main-eval, test-output-coverage-with-mock),
+// and make virtual CommonJS files under process.execPath load as ESM.
 //
-// While the suite runs we move src/package.json aside so the environment
-// matches upstream exactly, then restore it when done. The original contents
-// are kept in a sibling backup file so an interrupted/killed run self-heals on
-// the next invocation rather than leaving src/package.json missing.
-const ROOT_PACKAGE_JSON_BACKUP = `${ROOT_PACKAGE_JSON}.spec-runner-backup`;
+// While the suite runs we move both package files aside so the environment
+// matches upstream exactly, then restore them when done. Original contents are
+// kept in sibling backup files so an interrupted run self-heals next time.
+const PACKAGE_JSON_PATHS = [ROOT_PACKAGE_JSON, OUT_PACKAGE_JSON];
 
 const stashPackageJson = () => {
-  // This won't always exist in CI.
-  if (!fs.existsSync(ROOT_PACKAGE_JSON)) {
-    return;
+  for (const packageJson of PACKAGE_JSON_PATHS) {
+    // These won't always exist in CI.
+    if (!fs.existsSync(packageJson)) {
+      continue;
+    }
+    fs.copyFileSync(packageJson, `${packageJson}.spec-runner-backup`);
+    fs.rmSync(packageJson);
   }
-  fs.copyFileSync(ROOT_PACKAGE_JSON, ROOT_PACKAGE_JSON_BACKUP);
-  fs.rmSync(ROOT_PACKAGE_JSON);
 };
 
 const restorePackageJson = () => {
-  if (!fs.existsSync(ROOT_PACKAGE_JSON_BACKUP)) {
-    return;
+  for (const packageJson of PACKAGE_JSON_PATHS) {
+    const backup = `${packageJson}.spec-runner-backup`;
+    if (!fs.existsSync(backup)) {
+      continue;
+    }
+    fs.copyFileSync(backup, packageJson);
+    fs.rmSync(backup);
   }
-  fs.copyFileSync(ROOT_PACKAGE_JSON_BACKUP, ROOT_PACKAGE_JSON);
-  fs.rmSync(ROOT_PACKAGE_JSON_BACKUP);
 };
 
 const getCustomOptions = () => {

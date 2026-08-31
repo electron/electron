@@ -95,12 +95,6 @@ void WebWorkerObserver::InitializeNewEnvironment(
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();
 
-  // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent()) {
-    auto* tracing_agent = new node::tracing::Agent();
-    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  }
-
   // The renderer main thread normally installed the process-wide builtin code
   // cache already (NodeBindings::Initialize); make sure before this thread's
   // per-context BuiltinLoader is constructed by InitializeContext. Idempotent.
@@ -157,15 +151,23 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
   v8::Local<v8::Object> original_global = original_context->Global();
   v8::Local<v8::Object> new_global = worker_context->Global();
 
+  // Script in the original context can redefine these globals with accessors
+  // that throw, so read them defensively and fall back to the environment's
+  // own process object / undefined rather than crashing the worker.
+  v8::TryCatch try_catch(isolate);
   v8::Local<v8::Value> process_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "process"))
-            .ToLocal(&process_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "process"))
+           .ToLocal(&process_value)) {
+    process_value = env->process_object();
+  }
 
   v8::Local<v8::Value> require_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "require"))
-            .ToLocal(&require_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "require"))
+           .ToLocal(&require_value)) {
+    require_value = v8::Undefined(isolate);
+  }
 
   // Set up 'global' as an alias for globalThis. Node.js bootstrapping normally
   // does this during LoadEnvironment, but we skip full bootstrap for shared

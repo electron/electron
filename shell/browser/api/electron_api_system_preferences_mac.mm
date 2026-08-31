@@ -409,7 +409,7 @@ void SystemPreferences::SetUserDefault(const std::string& name,
 }
 
 std::string SystemPreferences::GetAccentColor() {
-  NSColor* sysColor = sysColor = [NSColor controlAccentColor];
+  NSColor* sysColor = [NSColor controlAccentColor];
   return ToRGBAHex(NSSystemColorToSkColor(sysColor), false /* include_hash */);
 }
 

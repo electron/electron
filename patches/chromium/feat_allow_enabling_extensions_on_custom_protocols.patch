@@ -44,7 +44,7 @@ index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbf
  // Keys of the webRequest.RequestFilter dictionary.
  inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 9413abec978e122b83a2f144d26e62187c33412c..d32e116803a6fe48e8fb674884d18d2d5516a3f8 100644
+index 28a3cac3756c7dab50819987ab0a924678042a43..12852d59969c81b75c26f678ae13f5fcb51b3e85 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
 @@ -218,7 +218,8 @@ const int Extension::kValidHostPermissionSchemes =
@@ -58,10 +58,10 @@ index 9413abec978e122b83a2f144d26e62187c33412c..d32e116803a6fe48e8fb674884d18d2d
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c218f0fd4 100644
+index 28af0f6c60bfd00a8667cf2071bd55bd76161390..de68c0f9de6ef5e8d8d75e4c249a80d2746f0abd 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
-@@ -137,6 +137,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+@@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
        return true;
      }
    }
@@ -73,7 +73,7 @@ index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c
    return false;
  }
  
-@@ -398,6 +403,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
      }
    }
  
@@ -89,7 +89,7 @@ index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c
  }
  
 diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
-index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c0522b00f 100644
+index 8a71102f2c040e32475221ef77a32231f3943ec3..0694c94d839c3b9e2356e7d3f1e81496aad89d89 100644
 --- a/extensions/common/url_pattern.h
 +++ b/extensions/common/url_pattern.h
 @@ -64,6 +64,9 @@ class URLPattern {

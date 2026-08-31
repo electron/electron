@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Thu, 13 Aug 2026 13:55:12 +0000
+Subject: fix: include format_element.h for FormatElement completeness
+
+language.cc calls empty() on the std::vector<FormatElement> returned by
+Rule::GetLatinFormat(), but rule.h only forward-declares FormatElement.
+libc++ now implements vector::empty() as size() == 0, which performs
+pointer arithmetic that requires a complete element type under the
+pointer-based (stable ABI) vector layout Electron builds with.
+
+diff --git a/cpp/src/language.cc b/cpp/src/language.cc
+index fa32ccba6a2f8bdc7d27fac45ccae9c97a5a2bbf..e87b35016fa033ccbe355075cc9d29ddd68c2699 100644
+--- a/cpp/src/language.cc
++++ b/cpp/src/language.cc
+@@ -19,6 +19,7 @@
+ #include <string>
+ #include <vector>
+ 
++#include "format_element.h"
+ #include "rule.h"
+ #include "util/string_split.h"
+ 

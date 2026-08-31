@@ -8,7 +8,9 @@ permissions: {}
 
 jobs:
   check-issue-template:
-    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    # Issues opened by maintainers or by the Claude bot (which files
+    # maintainer-requested issues, e.g. tracking issues) are exempt.
+    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) && github.event.issue.user.login != 'claude[bot]' }}
     name: Check Issue Template
     runs-on: ubuntu-latest
     permissions:
@@ -25,6 +27,7 @@ jobs:
             ${{ env.ISSUE_TEMPLATE_DIR }}
             .github/workflows
             .yarn
+          persist-credentials: false
       - run: yarn workspaces focus @electron/gha-workflows
       - name: Check for required sections
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

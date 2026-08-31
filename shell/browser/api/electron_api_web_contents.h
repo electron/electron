@@ -428,6 +428,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);
+  void SetConsoleMessageObserved(bool observed) {
+    console_message_observed_ = observed;
+  }
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
   void SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window);
@@ -838,6 +841,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  // Kept by JS while 'console-message' has listeners.
+  bool console_message_observed_ = false;
 
   // Whether this WebContents currently contributes to the process-wide caret
   // browsing refcount.

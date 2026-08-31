@@ -45,9 +45,11 @@ template("electron_repack_percent") {
     sources += [
       "$root_gen_dir/chrome/renderer_resources_${percent}_percent.pak",
       "$root_gen_dir/chrome/theme_resources_${percent}_percent.pak",
+      "$root_gen_dir/chrome/webui_theme_resources_${percent}_percent.pak",
     ]
     deps += [
       "//chrome/app/theme:theme_resources",
+      "//chrome/app/theme:webui_theme_resources",
       "//chrome/renderer:resources",
     ]
 

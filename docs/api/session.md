@@ -984,27 +984,53 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 
 * `handler` Function | null
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
-  * `permission` string - The type of requested permission.
+  * `permission` string - The type of requested permission. Electron forwards every permission type that Chromium requests, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
+    * `ar` - Request access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `automatic-fullscreen` - Request to enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
+    * `background-fetch` - Request to download resources in the background via the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API).
+    * `background-sync` - Request to defer work until the user has connectivity via the [Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API).
+    * `captured-surface-control` - Request to forward wheel events to, and control the zoom level of, a captured tab via the [Captured Surface Control API](https://developer.mozilla.org/en-US/docs/Web/API/Captured_Surface_Control_API).
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
-    * `display-capture` - Request access to capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`.
+    * `display-capture` - Request access to capture the screen, a window or a tab via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API) (`navigator.mediaDevices.getDisplayMedia`) or via `getUserMedia` with the `chromeMediaSource` constraints described in [desktopCapturer](desktop-capturer.md). Requests for camera or microphone devices are reported as `media` instead.
+    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
     * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
     * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `geolocation-approximate` - Request access to a coarse approximation of the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).
+    * `hand-tracking` - Request access to hand tracking data in WebXR sessions via the [WebXR Hand Input API](https://developer.mozilla.org/en-US/docs/Web/API/XRHand).
+    * `hid` - Request access to HID devices via the [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API).
     * `idle-detection` - Request access to the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
-    * `media` -  Request access to media devices such as camera, microphone and speakers.
+    * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
+    * `local-fonts` - Request access to the user's locally installed fonts via the [Local Font Access API](https://developer.mozilla.org/en-US/docs/Web/API/Local_Font_Access_API).
+    * `local-network` - Request access to devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `local-network-access` - Request access to devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access). This is the original permission type; newer Chromium versions split it into `local-network` and `loopback-network`.
+    * `loopback-network` - Request access to loopback (localhost) addresses via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `media` - Request access to media devices such as camera, microphone and speakers. Screen, window and tab capture is reported as `display-capture` instead.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `midi` - Request MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
     * `midiSysex` - Request the use of system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+    * `nfc` - Request access to NFC tags via the [Web NFC API](https://developer.mozilla.org/en-US/docs/Web/API/Web_NFC_API).
     * `notifications` - Request notification creation and the ability to display them in the user's system tray using the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification)
-    * `pointerLock` - Request to directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
-    * `keyboardLock` - Request capture of keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
     * `openExternal` - Request to open links in external applications.
+    * `payment-handler` - Request to handle payment requests via the [Payment Handler API](https://developer.mozilla.org/en-US/docs/Web/API/Payment_Handler_API).
+    * `periodic-background-sync` - Request to run periodic tasks in the background via the [Web Periodic Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Periodic_Background_Synchronization_API).
+    * `persistent-storage` - Request that the origin's storage is not cleared under storage pressure via [`StorageManager.persist()`](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist).
+    * `pointerLock` - Request to directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
+    * `screen-wake-lock` - Request to keep the screen awake via the [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
+    * `sensors` - Request access to device sensors such as the accelerometer and gyroscope via the [Sensor APIs](https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs).
+    * `serial` - Request access to serial devices via the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+    * `smart-card` - Request access to smart card readers via the [Web Smart Card API](https://github.com/WICG/web-smart-card).
     * `speaker-selection` - Request to enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
-    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `system-wake-lock` - Request to keep the system awake without keeping the screen on (a system wake lock).
+    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `usb` - Request access to USB devices via the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
+    * `vr` - Request access to virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `web-app-installation` - Request to install a web app via the [Web Install API](https://github.com/WICG/web-install).
+    * `web-printing` - Request access to printers via the [Web Printing API](https://github.com/WICG/web-printing).
     * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request.
-    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
@@ -1027,30 +1053,82 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 })
 ```
 
+Both `media` and `display-capture` requests carry a
+[MediaAccessPermissionRequest](structures/media-access-permission-request.md) as
+`details`. A `media` request is for camera and/or microphone devices, while a
+`display-capture` request is for the screen, a window or a tab (whether made
+through `getDisplayMedia` or through `getUserMedia` with `chromeMediaSource`
+constraints). Applications that allow camera and microphone access but want to
+control screen sharing separately should handle the two permissions
+individually:
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback, details) => {
+  if (permission === 'media') {
+    // Camera / microphone. `details.mediaTypes` lists which of them was requested.
+    return callback(true)
+  }
+  if (permission === 'display-capture') {
+    // Screen, window or tab capture.
+    return callback(new URL(details.requestingUrl).origin === 'https://meet.example.com')
+  }
+  callback(false)
+})
+```
+
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function\<boolean> | null
   * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
-  * `permission` string - Type of permission check.
+  * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
+    * `ar` - Access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
+    * `background-fetch` - Download resources in the background via the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API).
+    * `background-sync` - Defer work until the user has connectivity via the [Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API).
+    * `captured-surface-control` - Forward wheel events to, and control the zoom level of, a captured tab via the [Captured Surface Control API](https://developer.mozilla.org/en-US/docs/Web/API/Captured_Surface_Control_API).
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
-    * `geolocation` - Access the user's geolocation data via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
+    * `display-capture` - Capture the screen via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API).
+    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
     * `fullscreen` - Control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
+    * `geolocation` - Access the user's geolocation data via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+    * `geolocation-approximate` - Access a coarse approximation of the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).
+    * `hand-tracking` - Access hand tracking data in WebXR sessions via the [WebXR Hand Input API](https://developer.mozilla.org/en-US/docs/Web/API/XRHand).
     * `hid` - Access the HID protocol to manipulate HID devices via the [WebHID API](https://developer.mozilla.org/en-US/docs/Web/API/WebHID_API).
     * `idle-detection` - Access the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
+    * `keyboardLock` - Capture keypresses for any or all of the keys on the physical keyboard via the [Keyboard Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Keyboard/lock). These requests always appear to originate from the main frame.
+    * `local-fonts` - Access the user's locally installed fonts via the [Local Font Access API](https://developer.mozilla.org/en-US/docs/Web/API/Local_Font_Access_API).
+    * `local-network` - Access devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
+    * `local-network-access` - Access devices on the user's local network via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access). This is the original permission type; newer Chromium versions split it into `local-network` and `loopback-network`.
+    * `loopback-network` - Access loopback (localhost) addresses via [Local Network Access](https://github.com/explainers-by-googlers/local-network-access).
     * `media` - Access to media devices such as camera, microphone and speakers.
     * `mediaKeySystem` - Access to DRM protected content.
     * `midi` - Enable MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
     * `midiSysex` - Use system exclusive messages in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
+    * `nfc` - Access NFC tags via the [Web NFC API](https://developer.mozilla.org/en-US/docs/Web/API/Web_NFC_API).
     * `notifications` - Configure and display desktop notifications to the user with the [Notifications API](https://developer.mozilla.org/en-US/docs/Web/API/notification).
     * `openExternal` - Open links in external applications.
+    * `payment-handler` - Handle payment requests via the [Payment Handler API](https://developer.mozilla.org/en-US/docs/Web/API/Payment_Handler_API).
+    * `periodic-background-sync` - Run periodic tasks in the background via the [Web Periodic Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Periodic_Background_Synchronization_API).
+    * `persistent-storage` - Keep the origin's storage from being cleared under storage pressure via [`StorageManager.persist()`](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist).
     * `pointerLock` - Directly interpret mouse movements as an input method via the [Pointer Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API). These requests always appear to originate from the main frame.
+    * `screen-wake-lock` - Keep the screen awake via the [Screen Wake Lock API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Wake_Lock_API).
+    * `sensors` - Access device sensors such as the accelerometer and gyroscope via the [Sensor APIs](https://developer.mozilla.org/en-US/docs/Web/API/Sensor_APIs).
     * `serial` - Read from and write to serial devices with the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
+    * `smart-card` - Access smart card readers via the [Web Smart Card API](https://github.com/WICG/web-smart-card).
+    * `speaker-selection` - Enumerate and select audio output devices via the [speaker-selection permissions policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Permissions-Policy/speaker-selection).
     * `storage-access` - Allows content loaded in a third-party context to request access to third-party cookies using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
-    * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
+    * `system-wake-lock` - Keep the system awake without keeping the screen on (a system wake lock).
+    * `top-level-storage-access` - Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
-    * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
-    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+    * `vr` - Access virtual reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
+    * `web-app-installation` - Install a web app via the [Web Install API](https://github.com/WICG/web-install).
+    * `web-printing` - Access printers via the [Web Printing API](https://github.com/WICG/web-printing).
+    * `window-management` - Enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
+    * `unknown` - An unrecognized permission check.
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.

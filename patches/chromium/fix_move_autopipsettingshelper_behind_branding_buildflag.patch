@@ -162,10 +162,21 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index fe1fa0df448bf9011a1a6439768cd75b3d9f2763..da1db8a5f527fa1b2636cd5c06b863b7e0495061 100644
+index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6b0753da0 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -417,11 +417,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -115,8 +115,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
+ 
+ constexpr int kOverlayBorderThickness = 10;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ // Minimum padding between the overlay view, if shown, and the window.
+ constexpr gfx::Size kOverlayViewPadding(64, 46);
++#endif
+ 
+ // Size for action buttons.
+ constexpr gfx::Size kActionButtonSize(28, 28);
+@@ -416,11 +418,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -179,3 +190,234 @@ index fe1fa0df448bf9011a1a6439768cd75b3d9f2763..da1db8a5f527fa1b2636cd5c06b863b7
  
    return overlay_window;
  }
+@@ -453,9 +457,11 @@ VideoOverlayWindowViews::VideoOverlayWindowViews(
+ }
+ 
+ VideoOverlayWindowViews::~VideoOverlayWindowViews() {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     overlay_view_->RemoveObserver(this);
+   }
++#endif
+   display::Screen::Get()->RemoveObserver(this);
+   PictureInPictureWindowManager::GetInstance()->OnPictureInPictureWindowHidden(
+       this);
+@@ -553,6 +559,7 @@ void VideoOverlayWindowViews::OnNativeBlur() {
+ }
+ 
+ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (IsOverlayViewShown()) {
+     // Make sure that our minimum is sufficiently large to enclose the bubble,
+     // plus some margin to make it look nicer.
+@@ -561,6 +568,7 @@ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
+     overlay_size.SetToMax(min_size_);
+     return overlay_size;
+   }
++#endif
+   return min_size_;
+ }
+ 
+@@ -919,6 +927,7 @@ void VideoOverlayWindowViews::OnDisplayMetricsChanged(
+   }
+ }
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void VideoOverlayWindowViews::OnViewVisibilityChanged(
+     views::View* observed_view,
+     views::View* starting_view,
+@@ -932,6 +941,7 @@ void VideoOverlayWindowViews::OnViewVisibilityChanged(
+   // The visibility of `overlay_view_` affects our minimum size.
+   OnSizeConstraintsChanged();
+ }
++#endif
+ 
+ void VideoOverlayWindowViews::SetForcedTucking(bool tuck) {
+   if (!tucker_) {
+@@ -951,10 +961,12 @@ void VideoOverlayWindowViews::OnAnyBrowserEnteredFullscreen() {
+ }
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ void VideoOverlayWindowViews::OnAutoPipSettingOverlayViewHidden() {
+   // If there is an existing overlay view, remove it now.
+   RemoveOverlayViewIfExists();
+ }
++#endif
+ 
+ gfx::Rect VideoOverlayWindowViews::GetWorkAreaForWindow() const {
+   return display::Screen::Get()
+@@ -1008,6 +1020,7 @@ void VideoOverlayWindowViews::UpdateMaxSize(const gfx::Rect& work_area) {
+ 
+ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
+     const gfx::Point& point) {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     // Let the overlay view consume this event if it wants to.  If not, then
+     // ignore any of our controls as well.  This will still permit dragging the
+@@ -1016,6 +1029,7 @@ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
+         views::View::ConvertPointToScreen(non_client_view(), point);
+     return overlay_view_->WantsEvent(point_in_screen);
+   }
++#endif
+ 
+   if (!AreControlsVisible()) {
+     return false;
+@@ -1479,9 +1493,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
+   video_view_->SetBoundsRect(video_bounds);
+   video_view_->layer()->AsSurface()->SetSurfaceSize(video_bounds.size());
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (IsOverlayViewShown()) {
+     overlay_view_->SetBoundsRect(gfx::Rect(GetBounds().size()));
+   }
++#endif
+ 
+   // Notify the controller that the bounds have changed.
+   controller_->UpdateLayerBounds();
+@@ -1754,6 +1770,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+   non_client_view()->frame_view()->UpdateWindowRoundedCorners();
+ #endif
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // If there is an existing overlay view, remove it now.
+   RemoveOverlayViewIfExists();
+ 
+@@ -1775,6 +1792,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+     overlay_view_->ShowBubble(GetNativeView());
+     SetBounds(CalculateAndUpdateWindowBounds());
+   }
++#endif
+ 
+   // When the window is first shown, make the title and top controls
+   // visible for a few seconds.
+@@ -2366,10 +2384,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+ }
+ 
+ bool VideoOverlayWindowViews::IsOverlayViewShown() const {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   return overlay_view_ && overlay_view_->GetVisible();
++#else
++  return false;
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (overlay_view_) {
+     // Remove and delete the outgoing view.  Note the trailing `T` on the method
+     // name -- this removes `overlay_view_` and returns a unique_ptr to it which
+@@ -2378,6 +2401,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+     GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
+     OnSizeConstraintsChanged();
+   }
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::OnProgressDragStateChanged(
+diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.h b/chrome/browser/ui/views/overlay/video_overlay_window_views.h
+index 222a5167b5e719403268e672372acd809a043263..9d5a0af231d95830013d87d6fdc104a304d3d730 100644
+--- a/chrome/browser/ui/views/overlay/video_overlay_window_views.h
++++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.h
+@@ -10,7 +10,10 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/timer/timer.h"
++#include "build/branding_buildflags.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
++#endif
+ #include "chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
+ #include "components/global_media_controls/public/views/media_progress_view.h"
+@@ -20,7 +23,9 @@
+ #include "ui/display/display.h"
+ #include "ui/display/display_observer.h"
+ #include "ui/gfx/geometry/size.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "ui/views/view_observer.h"
++#endif
+ #include "ui/views/widget/widget.h"
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -58,12 +63,16 @@ class ToggleMuteButton;
+ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+                                 public views::Widget,
+                                 public display::DisplayObserver,
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+                                 public views::ViewObserver,
+-                                public PictureInPictureWindow,
+-                                public AutoPipSettingOverlayView::Delegate {
++                                public AutoPipSettingOverlayView::Delegate,
++#endif
++                                public PictureInPictureWindow {
+  public:
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   using GetOverlayViewCb =
+       base::RepeatingCallback<std::unique_ptr<AutoPipSettingOverlayView>()>;
++#endif
+ 
+   static std::unique_ptr<VideoOverlayWindowViews> Create(
+       content::VideoPictureInPictureWindowController* controller);
+@@ -132,10 +141,12 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   void OnDisplayMetricsChanged(const display::Display& display,
+                                uint32_t changed_metrics) override;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // views::ViewObserver:
+   void OnViewVisibilityChanged(views::View* observed_view,
+                                views::View* starting_view,
+                                bool visible) override;
++#endif
+ 
+   // PictureInPictureWindow:
+   void SetForcedTucking(bool tuck) override;
+@@ -143,8 +154,10 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   void OnAnyBrowserEnteredFullscreen() override;
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // AutoPipSettingOverlayView::Delegate:
+   void OnAutoPipSettingOverlayViewHidden() override;
++#endif
+ 
+   bool ControlsHitTestContainsPoint(const gfx::Point& point);
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -249,6 +262,7 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+ 
+   void FireEnableControlsAfterMoveTimerForTesting();
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   void set_overlay_view_cb_for_testing(GetOverlayViewCb get_overlay_view_cb) {
+     get_overlay_view_cb_ = std::move(get_overlay_view_cb);
+   }
+@@ -256,6 +270,7 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   AutoPipSettingOverlayView* get_overlay_view_for_testing() {
+     return overlay_view_;
+   }
++#endif
+ 
+   PictureInPictureWidgetFadeAnimator* get_fade_animator_for_testing() {
+     return fade_animator_.get();
+@@ -500,7 +515,9 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   raw_ptr<views::Label> live_status_ = nullptr;
+   raw_ptr<OverlayWindowLiveCaptionButton> live_caption_button_ = nullptr;
+   raw_ptr<OverlayWindowLiveCaptionDialog> live_caption_dialog_ = nullptr;
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   raw_ptr<AutoPipSettingOverlayView> overlay_view_ = nullptr;
++#endif
+   raw_ptr<views::View> title_view_ = nullptr;
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -566,9 +583,11 @@ class VideoOverlayWindowViews : public content::VideoOverlayWindow,
+   std::unique_ptr<OverlayControlsFadeAnimation>
+       title_and_top_scrim_fade_animation_;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Callback to get / create an overlay view.  This is a callback to let tests
+   // provide alternate implementations.
+   GetOverlayViewCb get_overlay_view_cb_;
++#endif
+ 
+   // Used to animate the Picture-in-Picture window creation.
+   std::unique_ptr<PictureInPictureWidgetFadeAnimator> fade_animator_;

@@ -326,7 +326,7 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md) (optional)
+* `webContents` [WebContents](web-contents.md) | null
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
@@ -361,7 +361,7 @@ app.on('select-client-certificate', (event, webContents, url, list, callback) =>
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md) (optional)
+* `webContents` [WebContents](web-contents.md) | null
 * `authenticationResponseDetails` Object
   * `url` URL
   * `pid` number

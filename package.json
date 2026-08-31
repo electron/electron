@@ -6,7 +6,7 @@
   "devDependencies": {
     "@azure/storage-blob": "^12.28.0",
     "@datadog/datadog-ci": "^5.17.0",
-    "@electron/asar": "^4.0.1",
+    "@electron/asar": "^4.3.0",
     "@electron/docs-parser": "^3.0.1",
     "@electron/fiddle-core": "^1.3.4",
     "@electron/github-app-auth": "^3.2.0",
@@ -15,7 +15,7 @@
     "@hurdlegroup/robotjs": "^0.12.3",
     "@octokit/rest": "^22.0.1",
     "@primer/octicons": "^10.0.0",
-    "@sentry/cli": "1.72.0",
+    "@sentry/cli": "3.6.2",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.9.0",
     "@types/semver": "^7.5.8",

@@ -63,6 +63,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) build'
+        required: false
+        type: boolean
+        default: false
       upload-out-gen-artifacts:
         description: 'Whether to upload the src/gen artifacts'
         required: false
@@ -78,11 +83,34 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
+        required: false
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING:
+        required: false
+      CLOUDFLARE_TUNNEL_CERT:
+        required: false
+      CLOUDFLARE_USER_CA_CERT:
+        required: false
+      DD_API_KEY:
+        required: false
+      ELECTRON_ARTIFACTS_BLOB_STORAGE:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
+      SSH_DEBUG_AUTHORIZED_USERS:
+        required: false
+      SUDOWOODO_EXCHANGE_URL:
+        required: false
 
 permissions: {}
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
@@ -94,7 +122,7 @@ env:
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || inputs.target-platform == 'win' && '--custom-var=checkout_win=True' || '--custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
-  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
   RUNNER_LABEL: ${{ inputs.build-runs-on }}
 
 jobs:
@@ -105,7 +133,7 @@ jobs:
     runs-on: ${{ inputs.build-runs-on }}
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.build-container) }}
+    container: ${{ fromJSON(inputs.build-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -120,6 +148,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Setup SSH Debugging
       if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
       uses: ./src/electron/.github/actions/ssh-debug
@@ -149,13 +178,22 @@ jobs:
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
+      env:
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
       run: |
-        if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+        if [ "$TARGET_ARCH" = "arm64" ]; then
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
-        elif [ "${{ inputs.is-asan }}" = true ]; then
+        elif [ "$IS_ASAN" = true ]; then
           GN_EXTRA_ARGS='is_asan=true is_lsan=true v8_enable_verify_heap=true'
+        elif [ "$IS_UBSAN" = true ]; then
+          GN_EXTRA_ARGS='is_ubsan=true is_ubsan_no_recover=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
+    - name: Set GN_EXTRA_ARGS for macOS UBSan
+      if: ${{ inputs.target-platform == 'macos' && inputs.is-ubsan }}
+      run: |
+        echo "GN_EXTRA_ARGS=is_ubsan=true is_ubsan_no_recover=true" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
@@ -190,6 +228,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Fix Sync
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/fix-sync
@@ -198,8 +237,10 @@ jobs:
       env:
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE" --import "$GN_BUILD_TYPE" --target-cpu "$TARGET_ARCH" --remote-build siso
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -293,6 +334,7 @@ jobs:
         generate-test-artifacts: '${{ inputs.generate-test-artifacts }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
+        is-ubsan: '${{ inputs.is-ubsan }}'
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
         publish: '${{ inputs.publish }}'
     - name: Set GN_EXTRA_ARGS for MAS Build

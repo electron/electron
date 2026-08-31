@@ -430,6 +430,45 @@ describe('WebContentsView', () => {
     });
   });
 
+  describe('setBounds', () => {
+    it('sizes the page when the view is not attached to a window', async () => {
+      const v = new WebContentsView();
+      v.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      await v.webContents.loadURL('data:text/html,<script>initialSize = [innerWidth, innerHeight]</script>');
+      expect(await v.webContents.executeJavaScript('initialSize')).to.deep.equal([400, 300]);
+      expect(await v.webContents.executeJavaScript('[innerWidth, innerHeight]')).to.deep.equal([400, 300]);
+    });
+
+    it('resizes the page when bounds are set after loading', async () => {
+      const v = new WebContentsView();
+      v.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      await v.webContents.loadURL('about:blank');
+      v.setBounds({ x: 0, y: 0, width: 500, height: 400 });
+      await expect(
+        waitUntil(async () => {
+          const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
+          return size[0] === 500 && size[1] === 400;
+        })
+      ).to.eventually.be.fulfilled();
+    });
+
+    it('resizes the page after the view is removed from a window', async () => {
+      const w = new BaseWindow({ width: 400, height: 300 });
+      const v = new WebContentsView();
+      w.contentView.addChildView(v);
+      v.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      await v.webContents.loadURL('about:blank');
+      w.contentView.removeChildView(v);
+      v.setBounds({ x: 0, y: 0, width: 500, height: 400 });
+      await expect(
+        waitUntil(async () => {
+          const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
+          return size[0] === 500 && size[1] === 400;
+        })
+      ).to.eventually.be.fulfilled();
+    });
+  });
+
   describe('setBorderRadius', () => {
     ifdescribe(hasCapturableScreen())('capture', () => {
       let w: Electron.BaseWindow;

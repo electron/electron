@@ -64,9 +64,19 @@ void AutoUpdater::SetFeedURL(gin::Arguments* const args) {
   if (!delegate)
     return;
 
-  GetFeedURL() = feed;
+  NSString* feed_string = base::SysUTF8ToNSString(feed);
+  if (!feed_string) {
+    args->ThrowTypeError("Expected 'url' to be a valid URL");
+    return;
+  }
 
-  NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
+  NSURL* url = [NSURL URLWithString:feed_string];
+  if (!url) {
+    args->ThrowTypeError("Expected 'url' to be a valid URL");
+    return;
+  }
+
+  GetFeedURL() = feed;
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];
 
   for (const auto& it : requestHeaders) {

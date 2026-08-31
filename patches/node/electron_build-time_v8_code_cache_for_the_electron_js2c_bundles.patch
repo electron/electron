@@ -39,7 +39,7 @@ a builtin code cache to environments that are not created from a
 snapshot.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 180fefa046d9a070fc31fbb0a3555817823332a2..e7e95ffd1eb19e3fbf6a0f65338c5f3fbd4d6302 100644
+index a4c62510ad9f8c2c77986ead1e17afd319adc496..c1816d483d421135c265a08ca45d42e4b8423f29 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -1,4 +1,5 @@
@@ -104,7 +104,7 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..e7e95ffd1eb19e3fbf6a0f65338c5f3f
  #ifdef NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH
    AddExternalizedBuiltin("internal/deps/undici/undici",
                           STRINGIFY(NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH));
-@@ -401,6 +444,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
+@@ -403,6 +446,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
      DCHECK_EQ(this, optional_realm->env()->builtin_loader());
      RecordResult(builtin_source->id, result, optional_realm);
    }
@@ -112,7 +112,7 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..e7e95ffd1eb19e3fbf6a0f65338c5f3f
  
    if (has_cache) {
      per_process::Debug(DebugCategory::CODE_CACHE,
-@@ -474,13 +518,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -476,13 +520,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    Local<String> filename = OneByteString(isolate, filename_s);
    Local<String> source = builtin_source->source.ToStringChecked(isolate);
    ScriptOrigin origin(filename, 0, 0, true);
@@ -168,7 +168,7 @@ index 180fefa046d9a070fc31fbb0a3555817823332a2..e7e95ffd1eb19e3fbf6a0f65338c5f3f
  
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..bea6aa2e57e4961edc273c742ef4caa44df08154 100644
+index 65b49b3469b83639a8b37469f24cd9208c70f47a..53bd0f168ba13deb58eb15a82450dad658df9622 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -11,6 +11,8 @@
@@ -213,10 +213,10 @@ index 05b1c5bbc38f851b11383b7e3e48c1c92f47aba1..bea6aa2e57e4961edc273c742ef4caa4
  
  }  // namespace node
 diff --git a/unofficial.gni b/unofficial.gni
-index 59bb1eddde665a4cd2086c632109d0112daf33a3..3ee9dafd548df94b442903ed4eabf84ee1aa45b6 100644
+index 76ed323dbc47da0fd3da5df271b58649630d8a51..504dd46249425a8e8396332bf061f1f75cdd9401 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -159,6 +159,11 @@ template("node_gn_build") {
+@@ -158,6 +158,11 @@ template("node_gn_build") {
        "//electron:electron_js2c",
        "deps/simdjson",
        "$node_v8_path",

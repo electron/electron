@@ -11,21 +11,25 @@ const target = path.resolve(__dirname, '../.github/workflows/pipeline-segment-el
 
 const baseContents = fs.readFileSync(base, 'utf-8');
 
-const parsedBase = yaml.parse(baseContents);
-parsedBase.name = 'Pipeline Segment - Electron Publish';
-parsedBase.jobs.build.permissions = {
+// parseDocument (rather than parse + stringify) keeps the base workflow's
+// comments, including the zizmor ignore annotations, in the generated file.
+const doc = yaml.parseDocument(baseContents);
+doc.set('name', 'Pipeline Segment - Electron Publish');
+doc.setIn(['jobs', 'build', 'permissions'], {
   'artifact-metadata': 'write',
   attestations: 'write',
   contents: 'read',
   'id-token': 'write'
-};
+});
+
+const generated = PREFIX + doc.toString();
 
 if (process.argv.includes('--check')) {
-  if (fs.readFileSync(target, 'utf-8') !== PREFIX + yaml.stringify(parsedBase)) {
+  if (fs.readFileSync(target, 'utf-8') !== generated) {
     console.error(`${target} is out of date`);
     console.error('Please run "copy-pipeline-segment-publish.js" to update it');
     process.exit(1);
   }
 } else {
-  fs.writeFileSync(target, PREFIX + yaml.stringify(parsedBase));
+  fs.writeFileSync(target, generated);
 }

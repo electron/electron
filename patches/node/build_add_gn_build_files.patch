@@ -15,10 +15,10 @@ was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
 diff --git a/configure.py b/configure.py
-index 9c426b3f8f9cbf2ce086fce2fe1ee7c7bd636f89..bdf0d19292bf32e3e5621d7af2c93618c85dc6a4 100755
+index 7fd64a9620e3365c9bb8cb2aae19b7b376bf0d52..979f50cd92898500108daa343cbefa00c590c776 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1947,7 +1947,7 @@ def configure_v8(o, configs):
+@@ -1987,7 +1987,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
@@ -72,10 +72,10 @@ index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a9
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488feec2c41b 100644
+index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f1022a678 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -458,6 +458,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -460,6 +460,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    return value.As<Function>();
  }
  
@@ -106,7 +106,7 @@ index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488f
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
-@@ -744,7 +768,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
+@@ -746,7 +770,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
    // Pre-fetch all dependencies.
    if (requests->Length() > 0) {
      for (int i = 0; i < requests->Length(); i++) {
@@ -115,7 +115,7 @@ index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488f
        std::string specifier =
            Utf8Value(isolate, req->GetSpecifier()).ToString();
        std::string resolved_id = ResolveRequestForBuiltin(specifier);
-@@ -903,6 +927,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -905,6 +929,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -124,7 +124,7 @@ index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488f
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index e4af1f42f4442b4c1ec94cf25d8d811f0e82d89e..490f429986e43653e0dd2048d9e3bd2e99ae44b2 100644
+index b51b85ff6f2389d431890da3a39a406aeb8552e3..8cf93ffc86d5f186bf630aa95a304d5e457d9e97 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -82,6 +82,8 @@ using BuiltinCodeCacheMap =

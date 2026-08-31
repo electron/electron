@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/compiler_specific.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
@@ -76,6 +77,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
     auto* asar_url_loader = new AsarURLLoader;
     asar_url_loader->Start(request, std::move(loader), std::move(client),
                            std::move(extra_response_headers));
+    // Tell analyzer to ignore the leak of the self-owned AsarURLLoader
+    ANALYZER_SKIP_THIS_PATH();
   }
 
   // network::mojom::URLLoader:

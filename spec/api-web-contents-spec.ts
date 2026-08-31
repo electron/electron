@@ -23,7 +23,15 @@ import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
-import { ifdescribe, defer, waitUntil, listen, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  defer,
+  waitUntil,
+  listen,
+  ifit,
+  isTestingBindingAvailable,
+  startRemoteControlApp
+} from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -500,6 +508,12 @@ describe('webContents module', () => {
       expect(isolatedResult).to.equal(123);
       expect(mainWorldResult).to.equal(undefined);
     });
+
+    it('rejects when worldId is not an integer', async () => {
+      await expect(
+        w.webContents.executeJavaScriptInIsolatedWorld('1234' as any, [{ code: '1+1' }])
+      ).to.eventually.be.rejectedWith(TypeError, 'worldId must be an integer');
+    });
   });
 
   describe('loadURL() promise API', () => {
@@ -866,6 +880,28 @@ describe('webContents module', () => {
         w.webContents.navigationHistory.goBack();
         await back2;
         expect(w.getTitle()).to.equal('My own Title');
+      });
+
+      it('should not update page title if there was no title update and window was created with title on back nav', async () => {
+        // page has no <title> tag to preserve the one from BrowserWindow options
+        const page = `<html><head></head><body>Test</body></html>`;
+        w = new BrowserWindow({ show: false, title: 'Our custom title' });
+
+        const pushed = once(w.webContents, 'did-navigate-in-page');
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+        await w.webContents.executeJavaScript("history.pushState({}, '', '#test')", true);
+        await pushed;
+
+        // we need to wait for both events to make sure all the relevant
+        // code runs for the BaseWindow and title logic
+        const back = once(w.webContents, 'did-navigate-in-page');
+        const titleUpdated = once(w.webContents, 'page-title-updated');
+
+        w.webContents.navigationHistory.goBack();
+
+        await Promise.all([back, titleUpdated]);
+
+        expect(w.getTitle()).to.equal('Our custom title');
       });
     });
 
@@ -1297,6 +1333,20 @@ describe('webContents module', () => {
       const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name');
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
+    });
+
+    it('falls back to the built-in devtools when the assigned webContents has been destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      devtools.webContents.destroy();
+      await once(devtools.webContents, 'destroyed');
+      await setTimeout(50);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.devToolsWebContents).to.not.be.null();
     });
   });
 
@@ -2156,10 +2206,81 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.getOSProcessId()).to.equal(0);
-
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+
+    it('returns 0 before a renderer has been assigned', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: false } });
+      expect(w.webContents.getOSProcessId()).to.equal(0);
+    });
+
+    describe('pre-warmed renderer', () => {
+      const tabPidsAroundFirstWindow = (
+        rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
+        firstPrefs: Electron.WebPreferences
+      ) => {
+        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+          const { app, BrowserWindow, session } = require('electron');
+          const tabPids = () =>
+            app
+              .getAppMetrics()
+              .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
+              .map((m: Electron.ProcessMetric) => m.pid);
+          session.defaultSession.getUserAgent();
+          const deadline = Date.now() + 10000;
+          while (tabPids().length === 0 && Date.now() < deadline) {
+            await new Promise((resolve) => global.setTimeout(resolve, 20));
+          }
+          const warmed = tabPids();
+          const first = new BrowserWindow({ show: false, webPreferences: prefs });
+          const firstPidBeforeLoad = first.webContents.getOSProcessId();
+          await first.loadURL('about:blank');
+          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          const second = new BrowserWindow({ show: false });
+          const secondPidBeforeLoad = second.webContents.getOSProcessId();
+          await second.loadURL('about:blank');
+          const result = {
+            warmed,
+            firstPidBeforeLoad,
+            firstPid: first.webContents.getOSProcessId(),
+            secondPidBeforeLoad,
+            secondPid: second.webContents.getOSProcessId(),
+            tabsAfter: tabPids()
+          };
+          first.destroy();
+          second.destroy();
+          return result;
+        }, firstPrefs);
+      };
+
+      it('is handed to the first sandboxed window only', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.firstPid).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('is discarded when the first window cannot use it', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(0);
+        expect(r.firstPid).to.not.equal(r.warmed[0]);
+        expect(r.tabsAfter).to.not.include(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
+        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.not.equal(0);
+        expect(r.secondPidBeforeLoad).to.not.equal(r.firstPid);
+        expect(r.secondPid).to.equal(r.secondPidBeforeLoad);
+      });
     });
   });
 
@@ -4698,6 +4819,36 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+
+    it('does not crash when the webContents is destroyed while an auth request is in flight', async () => {
+      const w = new BrowserWindow({ show: false });
+      const wc = w.webContents;
+      const dbg = wc.debugger;
+      dbg.attach('1.3');
+      const destroyed = once(wc, 'destroyed');
+      dbg.on('message', (_e, method, params) => {
+        if (method === 'Fetch.requestPaused') {
+          dbg.sendCommand('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {});
+        } else if (method === 'Fetch.authRequired') {
+          // Destroying here queues the WebContents deletion right before the
+          // task that emits 'login' for the resumed auth challenge.
+          wc.destroy();
+          dbg
+            .sendCommand('Fetch.continueWithAuth', {
+              requestId: params.requestId,
+              authChallengeResponse: { response: 'Default' }
+            })
+            .catch(() => {});
+        }
+      });
+      await dbg.sendCommand('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+        handleAuthRequests: true
+      });
+      wc.loadURL(serverUrl).catch(() => {});
+      await destroyed;
+      await setTimeout(100);
     });
   });
 

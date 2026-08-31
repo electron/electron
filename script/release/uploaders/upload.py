@@ -126,6 +126,11 @@ def main():
   shutil.copy2(ffmpeg_build_path, ffmpeg_zip)
   upload_electron(release, ffmpeg_zip, args)
 
+  if get_platform_key() != 'mas':
+    xcache_zip = os.path.join(OUT_DIR, get_zip_name('xcache', ELECTRON_VERSION))
+    shutil.copy2(os.path.join(OUT_DIR, 'xcache.zip'), xcache_zip)
+    upload_electron(release, xcache_zip, args)
+
   chromedriver = get_zip_name('chromedriver', ELECTRON_VERSION)
   chromedriver_zip = os.path.join(OUT_DIR, chromedriver)
   shutil.copy2(os.path.join(OUT_DIR, 'chromedriver.zip'), chromedriver_zip)

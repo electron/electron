@@ -20,18 +20,6 @@ index ac87f68f7ed7cb3eb20d505a59b5edb9f74b4280..9499f2415cbda98b00e1d6c9ca8a58fb
    ]
  
    if (use_partition_alloc) {
-diff --git a/gin/function_template.h b/gin/function_template.h
-index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb215139b7f258 100644
---- a/gin/function_template.h
-+++ b/gin/function_template.h
-@@ -90,6 +90,7 @@ class GIN_EXPORT CallbackHolderBase {
-                     CallbackHolderBase* holder);
-     ~DisposeObserver() override;
-     void OnBeforeDispose(v8::Isolate* isolate) override;
-+    void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {}
-     void OnDisposed() override;
- 
-    private:
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
 index b07da3a191cd0424fe76ee762de091a9ec24d5a4..49ecd470ce29078418ccb490caa8cfde17a6944e 100644
 --- a/gin/object_template_builder.cc
@@ -208,10 +196,10 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index beb1b4282beeed69d169df20fae3a908748c7127..e870a2ca8762cbb1c174fd1d2aa2f8241a03f110 100644
+index 109e60f47987d306067f37363e0f9f58bffc11bc..f8774d369a37750e864f658e231cff13db401ff5 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
-@@ -25,9 +25,13 @@ enum GinEmbedder : uint16_t {
+@@ -23,9 +23,13 @@ enum GinEmbedder : uint16_t {
  };
  
  enum EmbedderDataTag : uint16_t {
@@ -224,8 +212,8 @@ index beb1b4282beeed69d169df20fae3a908748c7127..e870a2ca8762cbb1c174fd1d2aa2f824
 -  kDefaultEmbedderDataTag,
 +  kDefaultEmbedderDataTag = kDeprecatedData,
    kBlinkScriptState,
-   kGinPerContextData,
  };
+ 
 diff --git a/gin/public/wrapper_info.h b/gin/public/wrapper_info.h
 index 34b5f1c30c05152122f23708a1df62f00296fcd6..d80cec1b5f6d045638039aac907811a296b897ba 100644
 --- a/gin/public/wrapper_info.h
@@ -254,18 +242,18 @@ index 34b5f1c30c05152122f23708a1df62f00296fcd6..d80cec1b5f6d045638039aac907811a2
    const WrappablePointerTag pointer_tag;
  };
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 4baa19667e9002a2917094ebed587f884f4f457a..6a975025bc1ba6e97892032a9f57471f675a99ff 100644
+index 01d3606a5b50e3ff5b8a4869e1c0c3bd1878e495..cb175a02eb36fef484e863b1825407b01273c263 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -52,6 +52,7 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
-     CHECK(!templ.IsEmpty());
-     data->SetObjectTemplate(info, templ);
+@@ -63,6 +63,7 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+       data->SetObjectTemplate(info, templ);
+     }
    }
 +  CHECK_EQ(kNumberOfInternalFields, templ->InternalFieldCount());
    v8::Local<v8::Object> wrapper;
    // |wrapper| may be empty in some extreme cases, e.g., when
    // Object.prototype.constructor is overwritten.
-@@ -59,6 +60,12 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+@@ -70,6 +71,13 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
      return {};
    }
  
@@ -275,10 +263,11 @@ index 4baa19667e9002a2917094ebed587f884f4f457a..6a975025bc1ba6e97892032a9f57471f
 +                                            kDeprecatedData);
 +  wrapper->SetAlignedPointerInInternalField(kEncodedValueIndex, nullptr,
 +                                            kDeprecatedData);
- 
++
    AssociateWithWrapper(isolate, wrapper);
    return wrapper;
-@@ -70,4 +77,102 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
+ }
+@@ -80,4 +88,102 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
    AssociateWithWrapper(isolate, wrapper);
  }
  
@@ -382,7 +371,7 @@ index 4baa19667e9002a2917094ebed587f884f4f457a..6a975025bc1ba6e97892032a9f57471f
 +
  }  // namespace gin
 diff --git a/gin/wrappable.h b/gin/wrappable.h
-index d6e34c5155434e8d6330fe6a3912aaebf7c15955..9b93715ec88ebbd3dd58eb253468f5b8dd8aff51 100644
+index 5ab0ea8757fed4cdd036606edaf13f16205ef253..a4b5e6c6d20279c7d3dfe83d3adf35210d4521ed 100644
 --- a/gin/wrappable.h
 +++ b/gin/wrappable.h
 @@ -63,6 +63,9 @@ static_assert(sizeof(v8::CppHeapPointerTag) == sizeof(WrappablePointerTag),
@@ -395,7 +384,7 @@ index d6e34c5155434e8d6330fe6a3912aaebf7c15955..9b93715ec88ebbd3dd58eb253468f5b8
  
  }  // namespace internal
  
-@@ -162,6 +165,75 @@ struct Converter<T*> {
+@@ -160,6 +163,75 @@ struct Converter<T*> {
    }
  };
  

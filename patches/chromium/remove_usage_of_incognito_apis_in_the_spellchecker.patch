@@ -23,7 +23,7 @@ index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 25b15408665dc95702e7f1382fb8e7c0bb493599..bc0bad82ebcdceadc505e912ff27202b452fefab 100644
+index 8beaafd1c6cdcbaa2219662982252e91d8c02fc8..90c503d13692a9417deef60b76f3c298a3b79368 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -132,6 +132,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
@@ -32,9 +32,9 @@ index 25b15408665dc95702e7f1382fb8e7c0bb493599..bc0bad82ebcdceadc505e912ff27202b
  
 +#if 0
    // Treat other off the record profiles as Incognito (primary otr) Profiles.
-   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
-       profile_metrics::GetBrowserProfileType(profile) ==
-@@ -148,6 +149,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   // TODO(b/540249284): Temporarily Isolated mode is treated as Incognito. This
+   // should be revisited when deciding on the final integration of Isolated
+@@ -152,6 +153,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  
    NOTREACHED();
