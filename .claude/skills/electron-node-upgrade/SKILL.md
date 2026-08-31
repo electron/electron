@@ -41,6 +41,7 @@ Run these once at the start of each upgrade session:
 
 1. **Clear rerere cache** (if enabled): `git rerere clear` in both the electron and `../third_party/electron_node` repos. Stale recorded resolutions from a prior attempt can silently apply wrong merges.
 2. **Ensure pre-commit hooks are installed**: Check that `.git/hooks/pre-commit` exists. If not, run `yarn husky` to install it. The hook runs `lint-staged` which handles clang-format for C++ files.
+3. **Look for the same roll on other branches**: fetch `roller/node/main` and any sibling `roller/node/{N}-x-y` branch for the same Node.js version. If they already carry fixes, reuse them verbatim (patch names, content, commit titles, `Ref:` lines) rather than re-deriving them. See "Reuse Fixes From Sibling Roller Branches" in `references/phase-one-commit-guidelines.md`.
 
 ## Workflow
 
