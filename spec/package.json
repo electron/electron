@@ -35,6 +35,7 @@
     "mocha-multi-reporters": "^1.1.7",
     "pdfjs-dist": "4.10.38",
     "plist": "^3.1.0",
+    "protobufjs": "^8.7.2",
     "ps-list": "^7.0.0",
     "resedit": "^2.0.3",
     "send": "^1.2.0",
