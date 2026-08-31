@@ -170,9 +170,6 @@ def parse_args():
   parser.add_argument('-o', '--overwrite',
                       help='Overwrite a published release',
                       action='store_true')
-  parser.add_argument('-p', '--publish-release',
-                      help='Publish the release',
-                      action='store_true')
   parser.add_argument('-s', '--upload_to_storage',
                       help='Upload assets to azure bucket',
                       dest='upload_to_storage',
