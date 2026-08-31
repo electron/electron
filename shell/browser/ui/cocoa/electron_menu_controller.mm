@@ -446,8 +446,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     submenu.title = item.title;
     item.submenu = submenu;
     item.tag = index;
-    item.representedObject =
-        [ElectronMenuItemMetadata metadataForModel:model sourceMenuItem:item];
+    item.representedObject = [ElectronMenuItemMetadata metadataForModel:model
+                                                         sourceMenuItem:item];
     submenu.delegate = self;
 
     // Set submenu's role.
@@ -464,8 +464,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     // model. Setting the target to |self| allows this class to participate
     // in validation of the menu items.
     item.tag = index;
-    item.representedObject =
-        [ElectronMenuItemMetadata metadataForModel:model sourceMenuItem:item];
+    item.representedObject = [ElectronMenuItemMetadata metadataForModel:model
+                                                         sourceMenuItem:item];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -533,8 +533,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     return;
   }
 
-  auto* metadata = [ElectronMenuItemMetadata
-      metadataFromRepresentedObject:represented];
+  auto* metadata =
+      [ElectronMenuItemMetadata metadataFromRepresentedObject:represented];
   electron::ElectronMenuModel* model = [metadata menuModel];
   if (!model)
     return;
