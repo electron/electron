@@ -16,6 +16,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (45.0)
 
+### Removed: `contentTracing.enableHeapProfiling()`
+
+The experimental `contentTracing.enableHeapProfiling()` API has been removed.
+Chromium removed the memlog implementation that backed this API and replaced it
+with a Perfetto heap-profiling data source. Heap profiling through Electron's
+`contentTracing` API is unavailable until that data source is integrated.
+
 ### Behavior Changed: screen capture requests are reported as `display-capture` in `setPermissionRequestHandler`
 
 Requests to capture the screen, a window or a tab -- made through
