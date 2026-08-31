@@ -1061,7 +1061,6 @@ void WebContents::InitWithSessionAndOptions(
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
-  WebContentsPermissionHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
@@ -1120,6 +1119,9 @@ void WebContents::InitWithWebContents(
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
+  // As the delegate we route permission checks through this helper, so every
+  // adopted WebContents (including extension background pages) needs one.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
 
   // TODO: This works for main frames, but does not work for child frames.
   // See: https://github.com/electron/electron/issues/49256
