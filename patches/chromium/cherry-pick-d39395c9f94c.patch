@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 8 Jul 2026 11:26:47 -0700
+Subject: [M150] gtk: Sanitize theme and icon-theme names at write time
+
+> A compromised GPU process with an active pre-sandbox connection can send
+> malicious path-traversal sequences inside settings such as
+> gtk-icon-theme-name or gtk-theme-name via XSETTINGS. This forces the
+> browser process to resolve and parse arbitrary attacker-controlled SVG
+> files in the browser process context.
+>
+> This CL prevents the issue by:
+> 1. Extending the GtkSettings set_property interceptor to cover both
+>    gtk-icon-theme-name and gtk-theme-name on both GTK3 and GTK4.
+> 2. Replacing any invalid theme name containing path traversal sequences
+>    or absolute paths with safe defaults (Adwaita/hicolor) before GTK
+>    processes them or early notify observers can see them.
+> 3. Factoring the validator and fallback policy into gtk_util to make
+>    them unit-testable.
+> 4. Adding coverage for validation, fallbacks, and end-to-end check that
+>    notify observers never see unsanitized themes.
+>
+> Fixed: 519731111
+> Change-Id: Ie391c1577524a585cf72d50b4fc1595829649c7b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7980058
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1653501}
+
+R=thestig
+
+Bug: 519731111
+Change-Id: I0e8662bc69dba3b053d6ca4d27a59c147acf1ea9
+Fixed: 530454247
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8061149
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#3027}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497bd873c263 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -290,22 +290,23 @@ bool IsValidSchema(ui::LinuxUiBackend backend) {
+   return true;
+ }
+ 
+-bool IsValidIconThemeName(const std::string& theme) {
+-  base::FilePath theme_path(theme);
+-  return !theme.empty() && theme != "." && !theme_path.IsAbsolute() &&
+-         !theme_path.ReferencesParent() && theme_path.BaseName() == theme_path;
++std::string GetSettingsStringProperty(const char* property_name) {
++  gchar* prop_value = nullptr;
++  g_object_get(gtk_settings_get_default(), property_name, &prop_value, nullptr);
++  std::string prop_string;
++  if (prop_value) {
++    prop_string = prop_value;
++    g_free(prop_value);
++  }
++  return prop_string;
+ }
+ 
+ std::string GetIconThemeName() {
+-  gchar* theme = nullptr;
+-  g_object_get(gtk_settings_get_default(), "gtk-icon-theme-name", &theme,
+-               nullptr);
+-  std::string theme_string;
+-  if (theme) {
+-    theme_string = theme;
+-    g_free(theme);
+-  }
+-  return theme_string;
++  return GetSettingsStringProperty("gtk-icon-theme-name");
++}
++
++std::string GetThemeName() {
++  return GetSettingsStringProperty("gtk-theme-name");
+ }
+ 
+ }  // namespace
+@@ -369,8 +370,10 @@ bool GtkUi::Initialize() {
+   // to prevent XSETTINGS updates from loading GTK modules.
+   g_object_set(settings, "gtk-modules", "", nullptr);
+   SanitizeIconThemeName();
++  SanitizeThemeName();
+   SanitizeCursorThemeName();
+   SanitizeCursorThemeSize();
++  InstallGtkSettingsInterceptor();
+   connect(settings, "notify::gtk-theme-name", &GtkUi::OnThemeChanged);
+   connect(settings, "notify::gtk-icon-theme-name", &GtkUi::OnThemeChanged);
+   connect(settings, "notify::gtk-application-prefer-dark-theme",
+@@ -521,7 +524,8 @@ void GtkUi::GetInactiveSelectionFgColor(SkColor* color) const {
+ gfx::Image GtkUi::GetIconForContentType(const std::string& content_type,
+                                         int dip_size,
+                                         float scale) const {
+-  if (!IsValidIconThemeName(GetIconThemeName())) {
++  if (!IsValidThemeName(ThemeProperty::kIconThemeName,
++                        GetIconThemeName().c_str())) {
+     return gfx::Image();
+   }
+ 
+@@ -801,7 +805,7 @@ std::string GtkUi::GetCursorThemeName() {
+ 
+ bool GtkUi::SanitizeIconThemeName() {
+   std::string theme = GetIconThemeName();
+-  if (!IsValidIconThemeName(theme)) {
++  if (!IsValidThemeName(ThemeProperty::kIconThemeName, theme.c_str())) {
+     g_object_set(gtk_settings_get_default(), "gtk-icon-theme-name", "hicolor",
+                  nullptr);
+     return true;
+@@ -809,6 +813,16 @@ bool GtkUi::SanitizeIconThemeName() {
+   return false;
+ }
+ 
++bool GtkUi::SanitizeThemeName() {
++  std::string theme = GetThemeName();
++  if (!IsValidThemeName(ThemeProperty::kThemeName, theme.c_str())) {
++    g_object_set(gtk_settings_get_default(), "gtk-theme-name", "Adwaita",
++                 nullptr);
++    return true;
++  }
++  return false;
++}
++
+ bool GtkUi::SanitizeCursorThemeName() {
+   std::string theme = GetCursorThemeName();
+   if (!ui::IsValidCursorThemeName(theme)) {
+@@ -879,7 +893,7 @@ gfx::Size GtkUi::GetPdfPaperSize(printing::PrintingContextLinux* context) {
+ #endif
+ 
+ void GtkUi::OnThemeChanged(GtkSettings* settings, GtkParamSpec* param) {
+-  if (SanitizeIconThemeName()) {
++  if (SanitizeIconThemeName() || SanitizeThemeName()) {
+     return;  // Exit early; modifying the setting re-triggered this function
+   }
+   colors_.clear();
+diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
+index 63e704c25d88fa504d4231010be26c36b50bd1b5..9f80d750e6e49e9b56f12ac63b4705fa65f2232a 100644
+--- a/ui/gtk/gtk_ui.h
++++ b/ui/gtk/gtk_ui.h
+@@ -121,6 +121,10 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   // Returns true if the setting was modified.
+   bool SanitizeIconThemeName();
+ 
++  // Sanitizes the "gtk-theme-name" setting in GtkSettings if it is unsafe.
++  // Returns true if the setting was modified.
++  bool SanitizeThemeName();
++
+   // Sanitizes the "gtk-cursor-theme-name" setting in GtkSettings if it is
+   // unsafe. Returns true if the setting was modified.
+   bool SanitizeCursorThemeName();
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index 0c660a5c555d9f230d6a06f05d398cab5de01951..bf31a7daa9c66e2a48ec4e8d989aa4e4ea4e2992 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -8,11 +8,14 @@
+ #include <stddef.h>
+ 
+ #include <memory>
++#include <optional>
+ #include <string_view>
+ 
+ #include "base/compiler_specific.h"
+ #include "base/environment.h"
++#include "base/files/file_path.h"
+ #include "base/functional/callback.h"
++#include "base/notreached.h"
+ #include "base/strings/string_split.h"
+ #include "base/strings/string_tokenizer.h"
+ #include "base/strings/string_util.h"
+@@ -732,4 +735,93 @@ double GetOpacityFromContext(GtkStyleContext* context) {
+   return opacity;
+ }
+ 
++bool IsValidThemeName(ThemeProperty property, const char* theme) {
++  const bool is_key_theme = property == ThemeProperty::kKeyThemeName;
++  if (!theme) {
++    return is_key_theme;
++  }
++  std::string_view theme_str(theme);
++  if (theme_str.empty()) {
++    return is_key_theme;
++  }
++  base::FilePath theme_path(theme_str);
++  return theme_str != "." && !theme_path.IsAbsolute() &&
++         !theme_path.ReferencesParent() && theme_path.BaseName() == theme_path;
++}
++
++const char* GetThemeFallback(ThemeProperty property) {
++  switch (property) {
++    case ThemeProperty::kIconThemeName:
++      return "hicolor";
++    case ThemeProperty::kThemeName:
++      return "Adwaita";
++    case ThemeProperty::kKeyThemeName:
++      return nullptr;
++  }
++  NOTREACHED();
++}
++
++namespace {
++
++void (*g_orig_set_property)(GObject* object,
++                            guint property_id,
++                            const GValue* value,
++                            GParamSpec* pspec) = nullptr;
++
++DISABLE_CFI_ICALL
++void GtkSettingsSetProperty(GObject* object,
++                            guint property_id,
++                            const GValue* value,
++                            GParamSpec* pspec) {
++  if (pspec && pspec->name) {
++    std::string_view prop_name(pspec->name);
++    std::optional<ThemeProperty> property;
++    if (prop_name == "gtk-theme-name") {
++      property = ThemeProperty::kThemeName;
++    } else if (prop_name == "gtk-icon-theme-name") {
++      property = ThemeProperty::kIconThemeName;
++    } else if (prop_name == "gtk-key-theme-name") {
++      property = ThemeProperty::kKeyThemeName;
++    }
++    if (property) {
++      const gchar* name = g_value_get_string(value);
++      if (!IsValidThemeName(*property, name)) {
++        GValue sanitized_value = G_VALUE_INIT;
++        g_value_init(&sanitized_value, G_TYPE_STRING);
++        g_value_set_string(&sanitized_value, GetThemeFallback(*property));
++        g_orig_set_property(object, property_id, &sanitized_value, pspec);
++        g_value_unset(&sanitized_value);
++        return;
++      }
++    }
++  }
++  g_orig_set_property(object, property_id, value, pspec);
++}
++
++}  // namespace
++
++void InstallGtkSettingsInterceptor() {
++  if (!g_orig_set_property) {
++    GObjectClass* gobject_class =
++        G_OBJECT_CLASS(g_type_class_ref(GTK_TYPE_SETTINGS));
++    g_orig_set_property = gobject_class->set_property;
++    gobject_class->set_property = GtkSettingsSetProperty;
++    g_type_class_unref(gobject_class);
++  }
++}
++
++void UninstallGtkSettingsInterceptor() {
++  if (g_orig_set_property) {
++    GObjectClass* gobject_class =
++        G_OBJECT_CLASS(g_type_class_ref(GTK_TYPE_SETTINGS));
++    gobject_class->set_property = g_orig_set_property;
++    g_orig_set_property = nullptr;
++    g_type_class_unref(gobject_class);
++  }
++}
++
++GtkSettings* GetDefaultGtkSettings() {
++  return gtk_settings_get_default();
++}
++
+ }  // namespace gtk
+diff --git a/ui/gtk/gtk_util.h b/ui/gtk/gtk_util.h
+index 72679e0fb557885886cd1092ab76299e1034b782..cc90d10548256d0c8f6b4d8dc18c19f4ed87f8c2 100644
+--- a/ui/gtk/gtk_util.h
++++ b/ui/gtk/gtk_util.h
+@@ -196,6 +196,33 @@ GdkTexture* GetTextureFromRenderNode(GskRenderNode* node);
+ 
+ double GetOpacityFromContext(GtkStyleContext* context);
+ 
++enum class ThemeProperty {
++  kThemeName,
++  kIconThemeName,
++  kKeyThemeName,
++};
++
++// Returns true if `theme` is a safe, valid theme name for `property`.
++// If `theme` is null, returns true only for kKeyThemeName.
++COMPONENT_EXPORT(GTK)
++bool IsValidThemeName(ThemeProperty property, const char* theme);
++
++// Returns the safe fallback value for the given theme-related property.
++COMPONENT_EXPORT(GTK)
++const char* GetThemeFallback(ThemeProperty property);
++
++// Hook the `GtkSettings` `set_property` method to sanitize theme names.
++COMPONENT_EXPORT(GTK) void InstallGtkSettingsInterceptor();
++
++// Unhook the `GtkSettings` `set_property` method.
++COMPONENT_EXPORT(GTK) void UninstallGtkSettingsInterceptor();
++
++// Returns the default `GtkSettings` instance. This wrapper is required because
++// in component builds, raw GTK symbols loaded via stubs (including
++// `gtk_settings_get_default`) are not exported, preventing direct usage in
++// non-component targets like tests.
++COMPONENT_EXPORT(GTK) GtkSettings* GetDefaultGtkSettings();
++
+ }  // namespace gtk
+ 
+ #endif  // UI_GTK_GTK_UTIL_H_

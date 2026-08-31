@@ -1,0 +1,282 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 13 Jul 2026 09:40:07 -0700
+Subject: [M150] [X11] Guard XDragDropClient and X11Window against destruction
+ during DnD
+
+Original change's description:
+> [X11] Guard XDragDropClient and X11Window against destruction during DnD
+>
+> X11Window owns XDragDropClient. During drag-and-drop event handling,
+> callbacks into target/delegate drop handlers (such as PerformDrop,
+> OnBeforeDragLeave, and UpdateDrag) can spin nested run loops. If the
+> associated window is closed/destroyed while the nested loop is running,
+> both X11Window and XDragDropClient are destroyed.
+>
+> When the nested loop unwinds, continuing execution in the outer stack
+> frames of XDragDropClient and X11Window leads to Use-After-Free (UAF)
+> vulnerabilities from raw pointer dereferences and virtual method calls.
+>
+> This CL fixes the issue by adding base::WeakPtr liveness guards around
+> every re-entrant delegate callback in XDragDropClient and X11Window.
+>
+> Fixed: 532929679
+> Change-Id: I5d3e89014993df43cf45db1ff2f1b7825b57ebe5
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8071147
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1660006}
+
+(cherry picked from commit e4ce9e74fdba5992af9d41349ca3644cfed78c98)
+
+Bug: 533660933,532929679
+Change-Id: I5d3e89014993df43cf45db1ff2f1b7825b57ebe5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8086914
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3339}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/base/x/x11_drag_drop_client.cc b/ui/base/x/x11_drag_drop_client.cc
+index f1c43001fec27c0881cc6e66baee61b30dd82e8d..4a9fb4d7be85f1a786dc98349074dabf337ac71a 100644
+--- a/ui/base/x/x11_drag_drop_client.cc
++++ b/ui/base/x/x11_drag_drop_client.cc
+@@ -234,8 +234,12 @@ std::vector<x11::Atom> XDragDropClient::GetOfferedDragOperations() const {
+ 
+ void XDragDropClient::CompleteXdndPosition(x11::Window source_window,
+                                            const gfx::Point& screen_point) {
++  base::WeakPtr<XDragDropClient> alive = weak_factory_.GetWeakPtr();
+   DragOperation drag_operation =
+       PreferredDragOperation(delegate_->UpdateDrag(screen_point));
++  if (!alive) {
++    return;
++  }
+ 
+   // Sends an XdndStatus message back to the source_window. l[2,3]
+   // theoretically represent an area in the window where the current action is
+@@ -428,7 +432,11 @@ void XDragDropClient::OnXdndStatus(const x11::ClientMessageEvent& event) {
+ 
+ void XDragDropClient::OnXdndLeave(const x11::ClientMessageEvent& event) {
+   DVLOG(1) << "OnXdndLeave";
++  base::WeakPtr<XDragDropClient> alive = weak_factory_.GetWeakPtr();
+   delegate_->OnBeforeDragLeave();
++  if (!alive) {
++    return;
++  }
+   ResetDragContext();
+ }
+ 
+@@ -437,7 +445,11 @@ void XDragDropClient::OnXdndDrop(const x11::ClientMessageEvent& event) {
+ 
+   auto source_window = static_cast<x11::Window>(event.data.data32[0]);
+ 
++  base::WeakPtr<XDragDropClient> alive = weak_factory_.GetWeakPtr();
+   DragOperation drag_operation = delegate_->PerformDrop();
++  if (!alive) {
++    return;
++  }
+ 
+   auto xev = PrepareXdndClientMessage(kXdndFinished, source_window);
+   xev.data.data32[1] = (drag_operation != DragOperation::kNone) ? 1 : 0;
+diff --git a/ui/base/x/x11_drag_drop_client.h b/ui/base/x/x11_drag_drop_client.h
+index 88360078bbcdb2a9d5c16cd2254b83cfda4c5781..f5f7717c641117b2f883419b4e0f07c46764ace4 100644
+--- a/ui/base/x/x11_drag_drop_client.h
++++ b/ui/base/x/x11_drag_drop_client.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/component_export.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/timer/timer.h"
+ #include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
+ #include "ui/base/x/selection_utils.h"
+@@ -251,6 +252,8 @@ class COMPONENT_EXPORT(UI_BASE_X) XDragDropClient {
+   // only if we have previously received a status message from
+   // |source_current_window_|.
+   bool status_received_since_enter_ = false;
++
++  base::WeakPtrFactory<XDragDropClient> weak_factory_{this};
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/ozone/platform/x11/test/x11_drag_drop_client_unittest.cc b/ui/ozone/platform/x11/test/x11_drag_drop_client_unittest.cc
+index 225d83cf8ceecfcd714f0a0bcd228d953866b8a8..aa0299e4f5d2ced8e92488a604524e93cc4a2f09 100644
+--- a/ui/ozone/platform/x11/test/x11_drag_drop_client_unittest.cc
++++ b/ui/ozone/platform/x11/test/x11_drag_drop_client_unittest.cc
+@@ -15,6 +15,7 @@
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/scoped_refptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/run_loop.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/single_thread_task_runner.h"
+@@ -510,6 +511,7 @@ class X11DragDropClientTest : public testing::Test {
+   }
+ 
+   TestDragDropClient* client() { return client_.get(); }
++  gfx::AcceleratedWidget GetWidget() { return window_->GetWidget(); }
+ 
+  private:
+   std::unique_ptr<base::test::TaskEnvironment> task_env_;
+@@ -831,4 +833,100 @@ TEST_F(X11DragDropClientTest, RejectAfterMouseRelease) {
+   EXPECT_EQ(DragOperation::kNone, result);
+ }
+ 
++class OwningDelegate : public XDragDropClient::Delegate {
++ public:
++  OwningDelegate() = default;
++  ~OwningDelegate() override = default;
++
++  void SetClient(std::unique_ptr<XDragDropClient> client) {
++    client_ = std::move(client);
++  }
++
++  XDragDropClient* client() { return client_.get(); }
++
++  // XDragDropClient::Delegate:
++  std::optional<gfx::AcceleratedWidget> GetDragWidget() override {
++    return std::nullopt;
++  }
++
++  int UpdateDrag(const gfx::Point& screen_point) override {
++    if (destroy_during_update_drag_) {
++      client_.reset();
++    }
++    return 0;
++  }
++
++  void UpdateCursor(mojom::DragOperation negotiated_operation) override {}
++  void OnBeginForeignDrag(x11::Window window) override {}
++  void OnEndForeignDrag() override {}
++
++  void OnBeforeDragLeave() override {
++    if (destroy_during_before_drag_leave_) {
++      client_.reset();
++    }
++  }
++
++  mojom::DragOperation PerformDrop() override {
++    if (destroy_during_perform_drop_) {
++      client_.reset();
++    }
++    return mojom::DragOperation::kNone;
++  }
++
++  void EndDragLoop() override {}
++
++  bool destroy_during_update_drag_ = false;
++  bool destroy_during_before_drag_leave_ = false;
++  bool destroy_during_perform_drop_ = false;
++
++ private:
++  std::unique_ptr<XDragDropClient> client_;
++};
++
++TEST_F(X11DragDropClientTest, ClientDestroyedDuringPerformDrop) {
++  OwningDelegate delegate;
++  auto client = std::make_unique<XDragDropClient>(
++      &delegate, static_cast<x11::Window>(GetWidget()));
++  delegate.SetClient(std::move(client));
++  delegate.destroy_during_perform_drop_ = true;
++
++  x11::ClientMessageEvent event;
++  event.type = x11::GetAtom("XdndDrop");
++  event.format = 32;
++  event.data.data32[0] = 1;  // dummy source_window
++
++  // This should not crash!
++  delegate.client()->HandleXdndEvent(event);
++  EXPECT_EQ(delegate.client(), nullptr);
++}
++
++TEST_F(X11DragDropClientTest, ClientDestroyedDuringOnBeforeDragLeave) {
++  OwningDelegate delegate;
++  auto client = std::make_unique<XDragDropClient>(
++      &delegate, static_cast<x11::Window>(GetWidget()));
++  delegate.SetClient(std::move(client));
++  delegate.destroy_during_before_drag_leave_ = true;
++
++  x11::ClientMessageEvent event;
++  event.type = x11::GetAtom("XdndLeave");
++  event.format = 32;
++
++  // This should not crash!
++  delegate.client()->HandleXdndEvent(event);
++  EXPECT_EQ(delegate.client(), nullptr);
++}
++
++TEST_F(X11DragDropClientTest, ClientDestroyedDuringUpdateDrag) {
++  OwningDelegate delegate;
++  auto client = std::make_unique<XDragDropClient>(
++      &delegate, static_cast<x11::Window>(GetWidget()));
++  delegate.SetClient(std::move(client));
++  delegate.destroy_during_update_drag_ = true;
++
++  // CompleteXdndPosition is called to trigger UpdateDrag
++  // Let's call CompleteXdndPosition(1, {}) on the client.
++  delegate.client()->CompleteXdndPosition(static_cast<x11::Window>(1), {});
++  EXPECT_EQ(delegate.client(), nullptr);
++}
++
+ }  // namespace ui
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index 8c574a193674ec55e0b54d0b694e4fcbf43a22ae..42a1e756d1b0b3405f0e63f03a8804f088fcdb89 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -1694,17 +1694,28 @@ int X11Window::UpdateDrag(const gfx::Point& connection_point) {
+       XDragDropClient::GetForWindow(target_current_context->source_window());
+   gfx::PointF local_point_in_dip =
+       platform_window_delegate_->ConvertScreenPointToLocalDIP(connection_point);
++  base::WeakPtr<X11Window> alive = weak_ptr_factory_.GetWeakPtr();
+   if (!notified_enter_) {
+     drop_handler->OnDragEnter(local_point_in_dip, suggested_operations,
+                               GetKeyModifiers(source_client));
++    if (!alive) {
++      return DragDropTypes::DRAG_NONE;
++    }
+ 
+     // TODO(crbug.com/40073696): Factor DataFetched out of Enter callback.
+     drop_handler->OnDragDataAvailable(std::move(data));
++    if (!alive) {
++      return DragDropTypes::DRAG_NONE;
++    }
+ 
+     notified_enter_ = true;
+   }
+-  allowed_drag_operations_ = drop_handler->OnDragMotion(
++  int allowed_operations = drop_handler->OnDragMotion(
+       local_point_in_dip, suggested_operations, GetKeyModifiers(source_client));
++  if (!alive) {
++    return DragDropTypes::DRAG_NONE;
++  }
++  allowed_drag_operations_ = allowed_operations;
+   return allowed_drag_operations_;
+ }
+ 
+@@ -1728,7 +1739,11 @@ void X11Window::OnBeforeDragLeave() {
+   if (!drop_handler) {
+     return;
+   }
++  base::WeakPtr<X11Window> alive = weak_ptr_factory_.GetWeakPtr();
+   drop_handler->OnDragLeave();
++  if (!alive) {
++    return;
++  }
+   notified_enter_ = false;
+ }
+ 
+@@ -1743,8 +1758,12 @@ DragOperation X11Window::PerformDrop() {
+     return DragOperation::kNone;
+   }
+ 
++  base::WeakPtr<X11Window> alive = weak_ptr_factory_.GetWeakPtr();
+   drop_handler->OnDragDrop(GetKeyModifiers(
+       XDragDropClient::GetForWindow(target_current_context->source_window())));
++  if (!alive) {
++    return DragOperation::kNone;
++  }
+   notified_enter_ = false;
+   return PreferredDragOperation(allowed_drag_operations_);
+ }

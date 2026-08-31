@@ -25,3 +25,6 @@ m152_compiler_invalidate_tracked_fields_on_checkmaps_with.patch
 7922_169_wasm_sandbox_fix_call_indirect_feedback_and_module.patch
 7922_169_reland_wasm_sandbox_post_async_compilation_tasks_as.patch
 7922_169_native_builtins_are_strict.patch
+cherry-pick-24134ecc1d1a.patch
+cherry-pick-8120dd10e82d.patch
+cherry-pick-303a64b51072.patch

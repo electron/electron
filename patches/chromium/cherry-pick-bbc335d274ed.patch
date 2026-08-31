@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Test User <chikamune@google.com>
+Date: Wed, 8 Jul 2026 17:15:53 -0700
+Subject: [M150] Reject redirects from blob: URL navigations
+
+Original change's description:
+> Reject redirects from blob: URL navigations
+>
+> NavigationURLLoaderImpl already assumes that requests to the blob:
+> scheme are never redirected and skips interceptor setup on that basis.
+> Make that assumption explicit in OnReceiveRedirect: if a redirect
+> arrives while loading a blob: URL, fail the navigation with
+> ERR_UNSAFE_REDIRECT instead of consulting bypass_redirect_checks from
+> the response head, since the underlying Blob endpoint may live outside
+> the browser process and a real blob load never produces a redirect.
+>
+> Add a content_browsertest that registers a blink::mojom::Blob whose
+> Load() responds with OnReceiveRedirect and verifies that navigating to
+> its blob: URL fails rather than following the redirect.
+>
+> TAG=agy
+> CONV=51d0251b-c784-4f07-b4fe-93b5087402df
+>
+> Fixed: 513795122
+> Change-Id: I8525501812232c2aa2bef9422d282ad4c12112e0
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8028880
+> Commit-Queue: Minoru Chikamune <chikamune@chromium.org>
+> Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1656964}
+
+(cherry picked from commit d103c7ce9b9d0fd34a59c0b46647c6db6da5aaa5)
+
+Bug: 532001785,513795122
+Change-Id: I8525501812232c2aa2bef9422d282ad4c12112e0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8067416
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3049}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/blob_storage/blob_url_browsertest.cc b/content/browser/blob_storage/blob_url_browsertest.cc
+index 03a79efea0c99d715d447da001a90ff3b159ef39..8e96df818ac4a7ee2af2f62d30817ca6aeb45f9c 100644
+--- a/content/browser/blob_storage/blob_url_browsertest.cc
++++ b/content/browser/blob_storage/blob_url_browsertest.cc
+@@ -15,6 +15,7 @@
+ #include "content/browser/devtools/render_frame_devtools_agent_host.h"
+ #include "content/browser/permissions/permission_controller_impl.h"
+ #include "content/browser/renderer_host/render_frame_host_impl.h"
++#include "content/browser/storage_partition_impl.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/common/content_switches.h"
+@@ -24,17 +25,26 @@
+ #include "content/public/test/content_browser_test.h"
+ #include "content/public/test/content_browser_test_content_browser_client.h"
+ #include "content/public/test/content_browser_test_utils.h"
++#include "content/public/test/navigation_handle_observer.h"
+ #include "content/public/test/test_devtools_protocol_client.h"
+ #include "content/public/test/test_utils.h"
+ #include "content/shell/browser/shell.h"
+ #include "content/test/content_browser_test_utils_internal.h"
++#include "mojo/public/cpp/bindings/receiver_set.h"
++#include "mojo/public/cpp/bindings/remote.h"
+ #include "net/base/net_errors.h"
+ #include "net/dns/mock_host_resolver.h"
++#include "net/http/http_response_headers.h"
+ #include "net/test/embedded_test_server/embedded_test_server.h"
++#include "net/url_request/redirect_info.h"
++#include "services/network/public/mojom/url_loader.mojom.h"
++#include "services/network/public/mojom/url_response_head.mojom.h"
++#include "storage/browser/blob/blob_url_registry.h"
+ #include "storage/browser/blob/features.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/common/features.h"
++#include "third_party/blink/public/mojom/blob/blob.mojom.h"
+ #include "url/gurl.h"
+ #include "url/origin.h"
+ 
+@@ -229,6 +239,108 @@ IN_PROC_BROWSER_TEST_F(BlobUrlBrowserTest, ReplaceStateToAddAuthorityToBlob) {
+   EXPECT_FALSE(base::MatchPattern(window_location, "*spoof*"));
+ }
+ 
++namespace {
++
++// A blink::mojom::Blob implementation that, when Load() is called, responds
++// with a redirect to `redirect_target_` instead of a blob body. This simulates
++// a Blob endpoint that does not behave like a real blob.
++class RedirectingBlob : public blink::mojom::Blob {
++ public:
++  explicit RedirectingBlob(const GURL& redirect_target)
++      : redirect_target_(redirect_target) {}
++
++  mojo::PendingRemote<blink::mojom::Blob> BindNewPipeAndPassRemote() {
++    mojo::PendingRemote<blink::mojom::Blob> remote;
++    receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());
++    return remote;
++  }
++
++  // blink::mojom::Blob:
++  void Clone(mojo::PendingReceiver<blink::mojom::Blob> receiver) override {
++    receivers_.Add(this, std::move(receiver));
++  }
++  void AsDataPipeGetter(
++      mojo::PendingReceiver<network::mojom::DataPipeGetter>) override {
++    NOTREACHED();
++  }
++  void ReadAll(mojo::ScopedDataPipeProducerHandle,
++               mojo::PendingRemote<blink::mojom::BlobReaderClient>) override {
++    NOTREACHED();
++  }
++  void ReadRange(uint64_t,
++                 uint64_t,
++                 mojo::ScopedDataPipeProducerHandle,
++                 mojo::PendingRemote<blink::mojom::BlobReaderClient>) override {
++    NOTREACHED();
++  }
++  void Load(
++      mojo::PendingReceiver<network::mojom::URLLoader> loader,
++      const std::string& method,
++      const net::HttpRequestHeaders&,
++      mojo::PendingRemote<network::mojom::URLLoaderClient> client) override {
++    loader_receiver_ = std::move(loader);
++    client_.reset();
++    client_.Bind(std::move(client));
++    net::RedirectInfo redirect_info;
++    redirect_info.status_code = net::HTTP_FOUND;
++    redirect_info.new_method = method;
++    redirect_info.new_url = redirect_target_;
++    redirect_info.new_site_for_cookies =
++        net::SiteForCookies::FromUrl(redirect_target_);
++    auto head = network::mojom::URLResponseHead::New();
++    head->headers = net::HttpResponseHeaders::TryToCreate(
++        "HTTP/1.1 302 Found\r\nLocation: " + redirect_target_.spec() + "\r\n");
++    head->encoded_data_length = 0;
++    head->bypass_redirect_checks = true;
++    client_->OnReceiveRedirect(redirect_info, std::move(head));
++  }
++  void ReadSideData(ReadSideDataCallback) override { NOTREACHED(); }
++  void CaptureSnapshot(CaptureSnapshotCallback callback) override {
++    std::move(callback).Run(0, std::nullopt);
++  }
++  void GetInternalUUID(GetInternalUUIDCallback callback) override {
++    std::move(callback).Run("");
++  }
++
++ private:
++  const GURL redirect_target_;
++  mojo::ReceiverSet<blink::mojom::Blob> receivers_;
++  mojo::PendingReceiver<network::mojom::URLLoader> loader_receiver_;
++  mojo::Remote<network::mojom::URLLoaderClient> client_;
++};
++
++}  // namespace
++
++// A blob never serves a redirect, so a navigation to a blob URL whose
++// underlying Blob endpoint replies with OnReceiveRedirect must not follow the
++// redirect, regardless of any flags carried in the response head.
++IN_PROC_BROWSER_TEST_F(BlobUrlBrowserTest,
++                       NavigationToBlobUrlDoesNotFollowRedirect) {
++  GURL url = embedded_test_server()->GetURL("a.test", "/title1.html");
++  url::Origin origin = url::Origin::Create(url);
++  ASSERT_TRUE(NavigateToURL(shell(), url));
++
++  RenderFrameHostImpl* rfh = static_cast<RenderFrameHostImpl*>(
++      shell()->web_contents()->GetPrimaryMainFrame());
++
++  const GURL redirect_target("data:text/html,redirected");
++  RedirectingBlob blob(redirect_target);
++
++  const GURL blob_url("blob:" + origin.Serialize() +
++                      "/33221100-0000-0000-0000-000000000000");
++  static_cast<StoragePartitionImpl*>(rfh->GetStoragePartition())
++      ->GetBlobUrlRegistry()
++      ->AddUrlMapping(blob_url, blob.BindNewPipeAndPassRemote(),
++                      blink::StorageKey::CreateFirstParty(origin), origin,
++                      rfh->GetProcess()->GetDeprecatedID());
++
++  NavigationHandleObserver observer(shell()->web_contents(), blob_url);
++  EXPECT_FALSE(NavigateToURL(shell(), blob_url));
++  EXPECT_TRUE(observer.is_error());
++  EXPECT_EQ(net::ERR_UNSAFE_REDIRECT, observer.net_error_code());
++  EXPECT_NE(redirect_target, shell()->web_contents()->GetLastCommittedURL());
++}
++
+ IN_PROC_BROWSER_TEST_F(BlobUrlBrowserTest,
+                        TestUseCounterForCrossPartitionSameOriginBlobURLFetch) {
+   GURL main_url = embedded_test_server()->GetURL(
+diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
+index 33d730f5c532eb7e5aef57ae0ee2a49e89d56ae2..315d0f0a366110661be28b970c090ad66a775f04 100644
+--- a/content/browser/loader/navigation_url_loader_impl.cc
++++ b/content/browser/loader/navigation_url_loader_impl.cc
+@@ -1574,8 +1574,11 @@ void NavigationURLLoaderImpl::OnReceiveRedirect(
+           ? head->bypass_redirect_checks
+           : bypass_redirect_checks_;
+ 
+-  if (!bypass_redirect_checks &&
+-      !IsSafeRedirectTarget(url_, redirect_info.new_url)) {
++  if (url_.SchemeIsBlob()) {
++    // Loading a blob URL never produces a redirect.
++    error = net::ERR_UNSAFE_REDIRECT;
++  } else if (!bypass_redirect_checks &&
++             !IsSafeRedirectTarget(url_, redirect_info.new_url)) {
+     error = net::ERR_UNSAFE_REDIRECT;
+   } else if (--redirect_limit_ == 0) {
+     error = net::ERR_TOO_MANY_REDIRECTS;

@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wan-Teh Chang <wtc@google.com>
+Date: Wed, 1 Jul 2026 13:03:11 -0700
+Subject: I010ToNV12: dispatch Convert16To8Row on halfwidth
+
+The Convert16To8Row function pointer in I010ToNV12 is only ever called
+with halfwidth for the chroma planes (the Y plane goes through
+Convert16To8Plane which has its own dispatch), but its SIMD variants
+were selected based on the alignment of the full luma width. When width
+is a multiple of 32 but halfwidth is not, the bare AVX2 kernel was
+selected and over-read the chroma sources and over-wrote the temporary
+row buffer. Match the MergeUVRow dispatch in the same function and key
+on halfwidth.
+
+Bug: chromium:514748734
+Change-Id: I4c2a42857828cdcc6505ebaa65d5b6a95b0f7e55
+Reviewed-on: https://chromium-review.googlesource.com/c/libyuv/libyuv/+/8031724
+Reviewed-by: Frank Barchard <fbarchard@google.com>
+Commit-Queue: Wan-Teh Chang <wtc@google.com>
+
+diff --git a/source/convert.cc b/source/convert.cc
+index 4231b532be9739d904032c0236f8ef7f6621c307..322dccab66057a7fa7eaa252c72fa10ffa787aeb 100644
+--- a/source/convert.cc
++++ b/source/convert.cc
+@@ -676,7 +676,7 @@ int I010ToNV12(const uint16_t* src_y,
+ #if defined(HAS_CONVERT16TO8ROW_NEON)
+   if (TestCpuFlag(kCpuHasNEON)) {
+     Convert16To8Row = Convert16To8Row_Any_NEON;
+-    if (IS_ALIGNED(width, 16)) {
++    if (IS_ALIGNED(halfwidth, 16)) {
+       Convert16To8Row = Convert16To8Row_NEON;
+     }
+   }
+@@ -689,7 +689,7 @@ int I010ToNV12(const uint16_t* src_y,
+ #if defined(HAS_CONVERT16TO8ROW_SSSE3)
+   if (TestCpuFlag(kCpuHasSSSE3)) {
+     Convert16To8Row = Convert16To8Row_Any_SSSE3;
+-    if (IS_ALIGNED(width, 16)) {
++    if (IS_ALIGNED(halfwidth, 16)) {
+       Convert16To8Row = Convert16To8Row_SSSE3;
+     }
+   }
+@@ -697,7 +697,7 @@ int I010ToNV12(const uint16_t* src_y,
+ #if defined(HAS_CONVERT16TO8ROW_AVX2)
+   if (TestCpuFlag(kCpuHasAVX2)) {
+     Convert16To8Row = Convert16To8Row_Any_AVX2;
+-    if (IS_ALIGNED(width, 32)) {
++    if (IS_ALIGNED(halfwidth, 32)) {
+       Convert16To8Row = Convert16To8Row_AVX2;
+     }
+   }
+@@ -705,7 +705,7 @@ int I010ToNV12(const uint16_t* src_y,
+ #if defined(HAS_CONVERT16TO8ROW_AVX512BW)
+   if (TestCpuFlag(kCpuHasAVX512BW)) {
+     Convert16To8Row = Convert16To8Row_Any_AVX512BW;
+-    if (IS_ALIGNED(width, 64)) {
++    if (IS_ALIGNED(halfwidth, 64)) {
+       Convert16To8Row = Convert16To8Row_AVX512BW;
+     }
+   }

@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Fri, 1 May 2026 16:11:53 +0000
+Subject: Defer marking stencil as cleared until after render pass creation
+ succeeds
+
+Bug: b/501861921
+Change-Id: I822d7560c3f51c0e0a49dfb1a7d3a526e5f2c0e6
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1223896
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/ganesh/ops/OpsTask.cpp b/src/gpu/ganesh/ops/OpsTask.cpp
+index 1bd578b9fec3cef67f099145bac36f0bb33c6ddd..d7e49fe50b62f09658c338551609cfeea1a1de5c 100644
+--- a/src/gpu/ganesh/ops/OpsTask.cpp
++++ b/src/gpu/ganesh/ops/OpsTask.cpp
+@@ -585,6 +585,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+         stencil = renderTarget->getStencilAttachment(fUsesMSAASurface);
+     }
+ 
++    bool markStencilCleared = false;
+     GrLoadOp stencilLoadOp;
+     switch (fInitialStencilContent) {
+         case StencilContent::kDontCare:
+@@ -602,7 +603,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+             }
+             if (!stencil->hasPerformedInitialClear()) {
+                 stencilLoadOp = GrLoadOp::kClear;
+-                stencil->markHasPerformedInitialClear();
++                markStencilCleared = true;
+                 break;
+             }
+             // SurfaceDrawContexts are required to leave the user stencil bits in a cleared state
+@@ -643,6 +644,9 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+     if (!renderPass) {
+         return false;
+     }
++    if (markStencilCleared) {
++        stencil->markHasPerformedInitialClear();
++    }
+     flushState->setOpsRenderPass(renderPass);
+     renderPass->begin();
+ 

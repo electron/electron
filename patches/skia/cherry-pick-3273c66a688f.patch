@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Fri, 3 Jul 2026 15:03:41 +0000
+Subject: [M150] Fix Use-After-Free in SubRunAllocator
+
+Original change's description:
+> Fix Use-After-Free in SubRunAllocator
+>
+> The destruction order of `std::tuple` members is not specified by the
+> C++ standard. This is the root cause of a Use-After-Free (UAF) in
+> SubRunAllocator. Replacing the tuple with a custom struct resolves the
+> issue by guaranteeing the correct destruction order.
+>
+> The Bug:
+> During deserialization of a Slug (specifically in
+> SlugImpl::MakeFromBuffer), if the input buffer is invalid or corrupted,
+> Skia detects this and returns nullptr early.
+>
+> This early return destroys the temporary return value. In the old code
+> (using `std::tuple`), `SubRunInitializer` (index 0) was destructed
+> first and freed the backing memory.
+>
+> `SubRunAllocator` (index 2) was destructed next. Its destructor
+> (~BagOfBytes) then attempted to access fEndByte (which points inside
+> the freed memory), resulting in a UAF (read) followed by a wild-free
+> or double-free.
+>
+> The Fix:
+> We replaced the `std::tuple` with a custom helper struct
+> `AllocateAndArenaResult`:
+>
+> struct AllocateAndArenaResult {
+>     SubRunInitializer<T> initializer; // Destructed last
+>     int totalMemorySize;
+>     SubRunAllocator alloc;            // Destructed first
+> };
+>
+> Since struct members are guaranteed to be destructed in the reverse
+> order of their declaration, declaring `alloc` last guarantees it is
+> destructed before `SubRunInitializer` frees the memory.
+>
+> Additionally, this CL refactors `SubRunInitializer` to use
+> `std::unique_ptr` with a custom deleter to manage the raw memory,
+> removing the need for a manual destructor and making the ownership
+> transfer explicit via `release()`.
+>
+> Bug: skia:530646115
+> Change-Id: I80cba4fdb9eebfe16e5ec837d70b5646422fbcff
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1284796
+> Commit-Queue: Kaylee Lubick <kjlubick@google.com>
+> Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+
+(cherry picked from commit 014a77e8a6cd4abbd5952fd4a1815ec3a521f300)
+
+Bug: 532102500,skia:530646115
+Change-Id: I80cba4fdb9eebfe16e5ec837d70b5646422fbcff
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1288679
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+
+diff --git a/src/text/gpu/SubRunAllocator.h b/src/text/gpu/SubRunAllocator.h
+index ef71c3044403e965fd5d8a61aa7e545ab0cdf6b3..ff4cd0a86baf7af878a4ba8fe4fb37369d06fa14 100644
+--- a/src/text/gpu/SubRunAllocator.h
++++ b/src/text/gpu/SubRunAllocator.h
+@@ -188,23 +188,30 @@ private:
+ template <typename T>
+ class SubRunInitializer {
+ public:
+-    SubRunInitializer(void* memory) : fMemory{memory} { SkASSERT(memory != nullptr); }
+-    ~SubRunInitializer() {
+-        ::operator delete(fMemory);
+-    }
++    explicit SubRunInitializer(void* memory) : fMemory{memory} { SkASSERT(memory != nullptr); }
++
+     template <typename... Args>
+     T* initialize(Args&&... args) {
+         // Warn on more than one initialization.
+         SkASSERT(fMemory != nullptr);
+-        return new (std::exchange(fMemory, nullptr)) T(std::forward<Args>(args)...);
++        return new (fMemory.release()) T(std::forward<Args>(args)...);
+     }
+ 
+ private:
+-    void* fMemory;
++    struct Deleter {
++        // Frees the heap memory without calling a destructor.
++        // We must use `::operator delete(p)` instead of `delete p` because `p` is `void*`.
++        // Deleting a `void*` is undefined behavior in C++.
++        // This is paired with the placement `::operator new` in AllocateClassMemoryAndArena.
++        void operator()(void* p) const { ::operator delete(p); }
++    };
++    std::unique_ptr<void, Deleter> fMemory;
+ };
+ 
+-// GrSubRunAllocator provides fast allocation where the user takes care of calling the destructors
+-// of the returned pointers, and GrSubRunAllocator takes care of deleting the storage. The
++template <typename T> struct AllocateAndArenaResult;
++
++// SubRunAllocator provides fast allocation where the user takes care of calling the destructors
++// of the returned pointers, and SubRunAllocator takes care of deleting the storage. The
+ // unique_ptrs returned, are to assist in assuring the object's destructor is called.
+ // A note on zero length arrays: according to the standard a pointer must be returned, and it
+ // can't be a nullptr. In such a case, SkArena allocates one byte, but does not initialize it.
+@@ -234,20 +241,8 @@ public:
+     SubRunAllocator& operator=(SubRunAllocator&&) = default;
+ 
+     template <typename T>
+-    static std::tuple<SubRunInitializer<T>, int, SubRunAllocator>
+-    AllocateClassMemoryAndArena(int allocSizeHint) {
+-        SkASSERT_RELEASE(allocSizeHint >= 0);
+-        // Round the size after the object the optimal amount.
+-        int extraSize = BagOfBytes::PlatformMinimumSizeWithOverhead(allocSizeHint, alignof(T));
+-
+-        // Don't overflow or die.
+-        SkASSERT_RELEASE(INT_MAX - SkTo<int>(sizeof(T)) > extraSize);
+-        int totalMemorySize = sizeof(T) + extraSize;
+-
+-        void* memory = ::operator new (totalMemorySize);
+-        SubRunAllocator alloc{SkTAddOffset<char>(memory, sizeof(T)), extraSize, extraSize/2};
+-        return {memory, totalMemorySize, std::move(alloc)};
+-    }
++    static AllocateAndArenaResult<T>
++    AllocateClassMemoryAndArena(int allocSizeHint);
+ 
+     template <typename T, typename... Args> T* makePOD(Args&&... args) {
+         static_assert(HasNoDestructor<T>, "This is not POD. Use makeUnique.");
+@@ -328,6 +323,34 @@ private:
+     BagOfBytes fAlloc;
+ };
+ 
++// Members are destroyed in the reverse order of their declaration:
++// https://isocpp.org/wiki/faq/dtors#order-dtors-for-members
++// `alloc` must be destroyed first because it may contain pointers to memory owned by `initializer`.
++// `initializer` must be destroyed last because it owns the backing memory.
++// See also: https://issues.skia.org/issues/530646115
++template <typename T>
++struct AllocateAndArenaResult {
++    SubRunInitializer<T> initializer;
++    int totalMemorySize;
++    SubRunAllocator alloc;
++};
++
++template <typename T>
++inline AllocateAndArenaResult<T>
++SubRunAllocator::AllocateClassMemoryAndArena(int allocSizeHint) {
++    SkASSERT_RELEASE(allocSizeHint >= 0);
++    // Round the size after the object the optimal amount.
++    int extraSize = BagOfBytes::PlatformMinimumSizeWithOverhead(allocSizeHint, alignof(T));
++
++    // Don't overflow or die.
++    SkASSERT_RELEASE(INT_MAX - SkTo<int>(sizeof(T)) > extraSize);
++    int totalMemorySize = sizeof(T) + extraSize;
++
++    void* memory = ::operator new (totalMemorySize);
++    SubRunAllocator alloc{SkTAddOffset<char>(memory, sizeof(T)), extraSize, extraSize/2};
++    return {SubRunInitializer<T>{memory}, totalMemorySize, std::move(alloc)};
++}
++
+ // Helper for defining allocators with inline/reserved storage.
+ // For argument declarations, stick to the base type (SubRunAllocator).
+ // Note: Inheriting from the storage first means the storage will outlive the

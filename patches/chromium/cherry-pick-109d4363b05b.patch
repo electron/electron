@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kramer Ge <fangzhoug@chromium.org>
+Date: Mon, 13 Jul 2026 10:48:22 -0700
+Subject: [M144-LTS][Ozone/Wayland]Guard all delegate() calls with weak_this
+
+delegate() calls may implicitly destroy WaylandWindow. Guard direct and
+indirect calls to delegate() state changes with weak_this if such calls
+are followed by potential deref of WaylandWindow members.
+
+(cherry picked from commit 87abcfa5b16b689587f94f40e6e7de88db11313a)
+
+Fixed: 518007484
+Change-Id: I9fe00496ee807f3416c9a9a2dedeef352e4a63e6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8043107
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1657588}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8068557
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7559@{#5086}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_bubble.cc b/ui/ozone/platform/wayland/host/wayland_bubble.cc
+index ef876a70515d7969f5966d076d59c519d84f6b02..99379bf16a5182dafd33df1d45d83bffc314ccfb 100644
+--- a/ui/ozone/platform/wayland/host/wayland_bubble.cc
++++ b/ui/ozone/platform/wayland/host/wayland_bubble.cc
+@@ -34,8 +34,15 @@ void WaylandBubble::Show(bool inactive) {
+     return;
+   }
+ 
++  auto weak_this = AsWeakPtr();
+   UpdateWindowScale(false);
++  if (!weak_this) {
++    return;
++  }
+   AddToParentAsSubsurface();
++  if (!weak_this) {
++    return;
++  }
+   WaylandWindow::Show(inactive);
+ }
+ 
+@@ -96,7 +103,11 @@ void WaylandBubble::Deactivate() {
+ }
+ 
+ void WaylandBubble::UpdateWindowScale(bool update_bounds) {
++  auto weak_this = AsWeakPtr();
+   WaylandWindow::UpdateWindowScale(update_bounds);
++  if (!weak_this) {
++    return;
++  }
+   if (subsurface_) {
+     SetSubsurfacePosition();
+   }
+@@ -131,7 +142,11 @@ void WaylandBubble::AddToParentAsSubsurface() {
+   CHECK(parent_window());
+ 
+   // We need to make sure that window scale matches the parent window.
++  auto weak_this = AsWeakPtr();
+   UpdateWindowScale(true);
++  if (!weak_this) {
++    return;
++  }
+ 
+   subsurface_ =
+       root_surface()->CreateSubsurface(parent_window()->root_surface());
+diff --git a/ui/ozone/platform/wayland/host/wayland_frame_manager.cc b/ui/ozone/platform/wayland/host/wayland_frame_manager.cc
+index 96448ba03b1bffd662299950d68e61db3e02395b..8e544d7a2f37585a64bd51a80d34945c2dbdf063 100644
+--- a/ui/ozone/platform/wayland/host/wayland_frame_manager.cc
++++ b/ui/ozone/platform/wayland/host/wayland_frame_manager.cc
+@@ -198,7 +198,11 @@ void WaylandFrameManager::MaybeProcessPendingFrame() {
+     if (!ValidateRect(config.bounds_rect)) {
+       fatal_error_message_ = kBoundsRectNanOrInf;
+     } else {
++      auto weak_this = weak_factory_.GetWeakPtr();
+       window_->OnSequencePoint(frame->seq);
++      if (!weak_this) {
++        return;
++      }
+       // During a tab dragging session, OnSequencePoint() can implicitly invoke
+       // Hide(). |pending_frames_| will be cleared and we should return
+       // directly.
+diff --git a/ui/ozone/platform/wayland/host/wayland_popup.cc b/ui/ozone/platform/wayland/host/wayland_popup.cc
+index 8b5b03e7579b43b496909f1fc0a909ab9f614f60..75c74757a552d5038eff6292bcef64ba350faf87 100644
+--- a/ui/ozone/platform/wayland/host/wayland_popup.cc
++++ b/ui/ozone/platform/wayland/host/wayland_popup.cc
+@@ -57,7 +57,11 @@ bool WaylandPopup::CreateShellPopup() {
+       parent_window()->applied_state().window_scale) {
+     // If scale changed while this was hidden (when WaylandPopup hides, parent
+     // window's child is reset), update buffer scale accordingly.
++    auto weak_this = AsWeakPtr();
+     UpdateWindowScale(true);
++    if (!weak_this) {
++      return false;
++    }
+   }
+ 
+   auto bounds_dip =
+@@ -123,13 +127,21 @@ void WaylandPopup::Show(bool inactive) {
+   // Map parent window as WaylandPopup cannot become a visible child of a
+   // window that is not mapped.
+   DCHECK(parent_window());
+-  if (!parent_window()->IsVisible())
++  auto weak_this = AsWeakPtr();
++  if (!parent_window()->IsVisible()) {
+     parent_window()->Show(false);
++  }
++  if (!weak_this) {
++    return;
++  }
+ 
+-  if (!CreateShellPopup()) {
++  if (!CreateShellPopup() && weak_this) {
+     Close();
+     return;
+   }
++  if (!weak_this) {
++    return;
++  }
+ 
+   connection()->Flush();
+   WaylandWindow::Show(inactive);
+@@ -250,7 +262,11 @@ void WaylandPopup::HandlePopupConfigure(const gfx::Rect& bounds_dip) {
+ 
+ void WaylandPopup::HandleSurfaceConfigure(uint32_t serial) {
+   if (schedule_redraw_) {
++    auto weak_this = AsWeakPtr();
+     delegate()->OnDamageRect(gfx::Rect{applied_state().size_px});
++    if (!weak_this) {
++      return;
++    }
+     schedule_redraw_ = false;
+   }
+   ProcessPendingConfigureState(serial);
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index 77bfc42bb211d138dd9c88fbf7627a8146ffa847..be83f61c2b36ead50e8ff93eccd11de756a53d04 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -530,7 +530,11 @@ void WaylandToplevelWindow::HandleToplevelConfigureWithOrigin(
+   if (window_states.tiled_edges != applied_state().tiled_edges) {
+     // This configure changes the decoration insets.  We should adjust the
+     // bounds appropriately.
++    auto weak_this = AsWeakPtr();
+     delegate()->OnWindowTiledStateChanged(window_states.tiled_edges);
++    if (!weak_this) {
++      return;
++    }
+   }
+ 
+   pending_configure_state_.tiled_edges = window_states.tiled_edges;
+@@ -868,7 +872,11 @@ void WaylandToplevelWindow::TriggerStateChanges(
+   // TODO(crbug.com/40276379): Remove this once this is async.
+   auto previous_state = applied_state().window_state;
+   ForceApplyWindowStateDoNotUse(window_state);
++  auto weak_this = AsWeakPtr();
+   delegate()->OnWindowStateChanged(previous_state, window_state);
++  if (!weak_this) {
++    return;
++  }
+   connection()->Flush();
+ }
+ 
+diff --git a/ui/ozone/platform/wayland/host/wayland_window.cc b/ui/ozone/platform/wayland/host/wayland_window.cc
+index 36bf67c904288289ec05090631ac74ab518cb70b..3cb0cc54ce4cb52229ebba90c4d0ce1897585905 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window.cc
+@@ -163,7 +163,11 @@ void WaylandWindow::UpdateWindowScale(bool update_bounds) {
+   const auto window_scale = connection_->UsePerSurfaceScaling()
+                                 ? GetPreferredScaleFactor()
+                                 : GetScaleFactorFromEnteredOutputs();
++  auto weak_this = AsWeakPtr();
+   SetWindowScale(window_scale.value_or(1.0f));
++  if (!weak_this) {
++    return;
++  }
+ 
+   // Propagate update to the popups.
+   if (child_popup_) {
+diff --git a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+index 4eeaf54d3adfa7d46ec143e7c7a4f0148d69e3c7..b0c9f538c7d8ffeed9737bcf4c3f690505b530cc 100644
+--- a/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_window_unittest.cc
+@@ -5432,6 +5432,102 @@ TEST_P(WaylandWindowTest, HandleToplevelConfigureSyncCloseOnDeactivate) {
+   EXPECT_FALSE(window_);
+ }
+ 
++TEST_P(WaylandWindowTest, WaylandBubbleUpdateWindowScaleUaf) {
++  MockWaylandPlatformWindowDelegate bubble_delegate(connection_.get());
++  gfx::Rect bubble_bounds(10, 10, 50, 50);
++  auto wayland_bubble =
++      CreateWaylandWindowWithParams(PlatformWindowType::kBubble, bubble_bounds,
++                                    &bubble_delegate, window_->GetWidget());
++  ASSERT_TRUE(wayland_bubble);
++
++  bubble_delegate.set_on_state_update_callback(
++      base::BindLambdaForTesting([&]() {
++        wayland_bubble.reset();
++        return true;
++      }));
++
++  // This should not crash.
++  wayland_bubble->UpdateWindowScale(true);
++}
++
++TEST_P(WaylandWindowTest, WaylandBubbleShowUaf) {
++  MockWaylandPlatformWindowDelegate bubble_delegate(connection_.get());
++  PlatformWindowInitProperties properties;
++  properties.bounds = gfx::Rect(10, 10, 50, 50);
++  properties.type = PlatformWindowType::kBubble;
++  properties.parent_widget = window_->GetWidget();
++  auto wayland_bubble = bubble_delegate.CreateWaylandWindow(
++      connection_.get(), std::move(properties));
++  ASSERT_TRUE(wayland_bubble);
++
++  bubble_delegate.set_on_state_update_callback(
++      base::BindLambdaForTesting([&]() {
++        wayland_bubble.reset();
++        return true;
++      }));
++
++  // This should not crash.
++  wayland_bubble->Show(false);
++}
++
++TEST_P(WaylandWindowTest, WaylandPopupShowUaf) {
++  MockWaylandPlatformWindowDelegate popup_delegate(connection_.get());
++  PlatformWindowInitProperties properties;
++  properties.bounds = gfx::Rect(10, 10, 50, 50);
++  properties.type = PlatformWindowType::kPopup;
++  properties.parent_widget = window_->GetWidget();
++  auto wayland_popup = popup_delegate.CreateWaylandWindow(
++      connection_.get(), std::move(properties));
++  ASSERT_TRUE(wayland_popup);
++
++  popup_delegate.set_on_state_update_callback(base::BindLambdaForTesting([&]() {
++    wayland_popup.reset();
++    return true;
++  }));
++
++  // This should not crash.
++  wayland_popup->Show(false);
++}
++
++TEST_P(WaylandWindowTest, WaylandToplevelWindowOnPaintAsActiveChangedUaf) {
++  testing::NiceMock<MockWaylandPlatformWindowDelegate> toplevel_delegate(
++      connection_.get());
++  PlatformWindowInitProperties properties;
++  properties.bounds = gfx::Rect(10, 10, 100, 100);
++  properties.type = PlatformWindowType::kWindow;
++  auto toplevel_window = toplevel_delegate.CreateWaylandWindow(
++      connection_.get(), std::move(properties));
++  ASSERT_TRUE(toplevel_window);
++
++  EXPECT_CALL(toplevel_delegate, OnPaintAsActiveChanged(::testing::_))
++      .WillOnce(
++          ::testing::InvokeWithoutArgs([&]() { toplevel_window.reset(); }));
++
++  WaylandWindow::WindowStates window_states;
++  window_states.is_activated = true;
++  // This should not crash.
++  toplevel_window->HandleToplevelConfigure(100, 100, window_states);
++}
++
++TEST_P(WaylandWindowTest, WaylandToplevelWindowTriggerStateChangesUaf) {
++  testing::NiceMock<MockWaylandPlatformWindowDelegate> toplevel_delegate(
++      connection_.get());
++  PlatformWindowInitProperties properties;
++  properties.bounds = gfx::Rect(10, 10, 100, 100);
++  properties.type = PlatformWindowType::kWindow;
++  auto toplevel_window = toplevel_delegate.CreateWaylandWindow(
++      connection_.get(), std::move(properties));
++  ASSERT_TRUE(toplevel_window);
++
++  EXPECT_CALL(toplevel_delegate,
++              OnWindowStateChanged(::testing::_, ::testing::_))
++      .WillOnce(
++          ::testing::InvokeWithoutArgs([&]() { toplevel_window.reset(); }));
++
++  // This should not crash.
++  toplevel_window->Maximize();
++}
++
+ INSTANTIATE_TEST_SUITE_P(XdgVersionStableTest,
+                          WaylandWindowTest,
+                          Values(wl::ServerConfig{}));

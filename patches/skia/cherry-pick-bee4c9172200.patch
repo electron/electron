@@ -1,0 +1,292 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Mon, 13 Jul 2026 13:21:46 -0400
+Subject: Check clipped renderpass bounds against cleared stencil area
+
+* If only a portion of the stencil attachment is cleared, we should not mark the entire attachment as cleared. This CL makes it such that we check which area has most recently been cleared to make an informed decision.
+
+Bug: 514010477
+Fixed: 532408601
+Change-Id: I3800ca3125f25341dffd818f6c557692020027be
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1255256
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1292316
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Auto-Submit: Greg Daniel <egdaniel@google.com>
+
+diff --git a/src/gpu/ganesh/GrAttachment.h b/src/gpu/ganesh/GrAttachment.h
+index 7508c32deb59bb575bddcc18f0a01d7077233cb0..23fdaa7ff30606c280a030b69d9b7e210630ce3d 100644
+--- a/src/gpu/ganesh/GrAttachment.h
++++ b/src/gpu/ganesh/GrAttachment.h
+@@ -53,8 +53,11 @@ public:
+ 
+     skgpu::Mipmapped mipmapped() const { return fMipmapped; }
+ 
+-    bool hasPerformedInitialClear() const { return fHasPerformedInitialClear; }
+-    void markHasPerformedInitialClear() { fHasPerformedInitialClear = true; }
++    SkIRect clearedArea() const { return fClearedArea; }
++    bool hasAreaBeenCleared(SkIRect attachmentArea) const {
++        return fClearedArea.contains(attachmentArea);
++    }
++    void markAreaCleared(SkIRect area) { fClearedArea = area; }
+ 
+     // This unique key is used for attachments of the same dimensions, usage, and sample cnt which
+     // are shared between multiple render targets at the same time. Only one usage flag may be
+@@ -117,7 +120,9 @@ private:
+     UsageFlags fSupportedUsages;
+     int fSampleCnt;
+     skgpu::Mipmapped fMipmapped;
+-    bool fHasPerformedInitialClear = false;
++    // Track which area of the attachment has already been cleared to cut down on unnecessary clear
++    // operations, which can be more expensive on desktop GPUs than loads.
++    SkIRect fClearedArea = SkIRect::MakeEmpty();
+     GrMemoryless fMemoryless;
+ 
+     using INHERITED = GrSurface;
+diff --git a/src/gpu/ganesh/GrCaps.cpp b/src/gpu/ganesh/GrCaps.cpp
+index f449c35940d6833ff0ced739116c886a26857ebf..5f8e13c20bccfa7ba8abbd7131d195bfc543351f 100644
+--- a/src/gpu/ganesh/GrCaps.cpp
++++ b/src/gpu/ganesh/GrCaps.cpp
+@@ -43,6 +43,8 @@ GrCaps::GrCaps(const GrContextOptions& options) {
+     fUsePrimitiveRestart = false;
+     fPreferClientSideDynamicBuffers = false;
+     fPreferFullscreenClears = false;
++    fDiscardStencilValuesAfterRenderPass = false;
++    fClearsAreFasterThanLoads = false;
+     fTwoSidedStencilRefsAndMasksMustMatch = false;
+     fMustClearUploadedBufferData = false;
+     fShouldInitializeTextures = false;
+@@ -227,7 +229,10 @@ void GrCaps::dumpJSON(SkJSONWriter* writer) const {
+     writer->appendBool("MSAA Resolves Automatically", fMSAAResolvesAutomatically);
+     writer->appendBool("Use primitive restart", fUsePrimitiveRestart);
+     writer->appendBool("Prefer client-side dynamic buffers", fPreferClientSideDynamicBuffers);
+-    writer->appendBool("Prefer fullscreen clears (and stencil discard)", fPreferFullscreenClears);
++    writer->appendBool("Prefer fullscreen clears", fPreferFullscreenClears);
++    writer->appendBool("Discard stencil values after renderpass",
++                       fDiscardStencilValuesAfterRenderPass);
++    writer->appendBool("Clears are faster than loads", fClearsAreFasterThanLoads);
+     writer->appendBool("Two-sided Stencil Refs And Masks Must Match",
+                        fTwoSidedStencilRefsAndMasksMustMatch);
+     writer->appendBool("Must clear buffer memory", fMustClearUploadedBufferData);
+diff --git a/src/gpu/ganesh/GrCaps.h b/src/gpu/ganesh/GrCaps.h
+index 5a3b6a72336631385868b52b385b61a9f8e9682d..ce1a863baa7cc27c628a6811d4c5423a20599d29 100644
+--- a/src/gpu/ganesh/GrCaps.h
++++ b/src/gpu/ganesh/GrCaps.h
+@@ -114,10 +114,11 @@ public:
+ 
+     bool preferClientSideDynamicBuffers() const { return fPreferClientSideDynamicBuffers; }
+ 
+-    // On tilers, an initial fullscreen clear is an OPTIMIZATION. It allows the hardware to
+-    // initialize each tile with a constant value rather than loading each pixel from memory.
++    // The following 3 methods provide information that enables performance optimizations for tiler
++    // GPUs. Full clear operations (followed by discarding the content when finished) are more
++    // performant than load operations on these GPUs as they enable the hardware to initialize each
++    // tile with a constant value as opposed to loading each pixel from memory.
+     bool preferFullscreenClears() const { return fPreferFullscreenClears; }
+-
+     // Should we discard stencil values after a render pass? (Tilers get better performance if we
+     // always load stencil buffers with a "clear" op, and then discard the content when finished.)
+     bool discardStencilValuesAfterRenderPass() const {
+@@ -126,10 +127,15 @@ public:
+ #if 0
+         // This method is actually just a duplicate of preferFullscreenClears(), with a descriptive
+         // name for the sake of readability.
+-        return this->preferFullscreenClears();
++        return fDiscardStencilValuesAfterRenderPass;
+ #endif
+     }
+ 
++    // Returns whether clearing an attachment is faster than loading the attachment. This is useful
++    // when you know the values are already cleared so it doesn't matter if we load or clear at the
++    // start of a render pass.
++    bool clearsAreFasterThanLoads() const { return fClearsAreFasterThanLoads; }
++
+     // D3D does not allow the refs or masks to differ on a two-sided stencil draw.
+     bool twoSidedStencilRefsAndMasksMustMatch() const {
+         return fTwoSidedStencilRefsAndMasksMustMatch;
+@@ -605,6 +611,8 @@ protected:
+     bool fUsePrimitiveRestart                        : 1;
+     bool fPreferClientSideDynamicBuffers             : 1;
+     bool fPreferFullscreenClears                     : 1;
++    bool fDiscardStencilValuesAfterRenderPass        : 1;
++    bool fClearsAreFasterThanLoads                   : 1;
+     bool fTwoSidedStencilRefsAndMasksMustMatch       : 1;
+     bool fMustClearUploadedBufferData                : 1;
+     bool fBuffersAreInitiallyZero                    : 1;
+diff --git a/src/gpu/ganesh/gl/GrGLCaps.cpp b/src/gpu/ganesh/gl/GrGLCaps.cpp
+index c1c7c035a8e2b76740ebab3db17fe14552637f01..724c5d0dc598546da45f68639092a0e2cf39965c 100644
+--- a/src/gpu/ganesh/gl/GrGLCaps.cpp
++++ b/src/gpu/ganesh/gl/GrGLCaps.cpp
+@@ -118,6 +118,13 @@ static bool angle_backend_is_metal(GrGLANGLEBackend backend) {
+     return backend == GrGLANGLEBackend::kMetal;
+ }
+ 
++namespace {
++bool is_tiler_gpu(GrGLVendor vendor) {
++    return vendor == GrGLVendor::kARM         ||
++           vendor == GrGLVendor::kImagination ||
++           vendor == GrGLVendor::kQualcomm;
++}
++} // anonymous namespace
+ void GrGLCaps::init(const GrContextOptions& contextOptions,
+                     const GrGLContextInfo& ctxInfo,
+                     const GrGLInterface* gli) {
+@@ -221,10 +228,10 @@ void GrGLCaps::init(const GrContextOptions& contextOptions,
+         }
+     }
+ 
+-    if (ctxInfo.vendor() == GrGLVendor::kARM         ||
+-        ctxInfo.vendor() == GrGLVendor::kImagination ||
+-        ctxInfo.vendor() == GrGLVendor::kQualcomm ) {
++    if (is_tiler_gpu(ctxInfo.vendor())) {
+         fPreferFullscreenClears = true;
++        fDiscardStencilValuesAfterRenderPass = true;
++        fClearsAreFasterThanLoads = true;
+     }
+ 
+     if (GR_IS_GR_GL(standard)) {
+diff --git a/src/gpu/ganesh/ops/OpsTask.cpp b/src/gpu/ganesh/ops/OpsTask.cpp
+index d7e49fe50b62f09658c338551609cfeea1a1de5c..9f8984b69fe340b1bd34ba15ed1b380c02e9c83f 100644
+--- a/src/gpu/ganesh/ops/OpsTask.cpp
++++ b/src/gpu/ganesh/ops/OpsTask.cpp
+@@ -585,27 +585,67 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+         stencil = renderTarget->getStencilAttachment(fUsesMSAASurface);
+     }
+ 
+-    bool markStencilCleared = false;
+     GrLoadOp stencilLoadOp;
++    // Determine whether the stencil attachment's cleared area should be updated.
++    bool updateClearedStencilArea = false;
++    SkIRect boundsRequiredByStencil = fClippedContentBounds;
+     switch (fInitialStencilContent) {
+         case StencilContent::kDontCare:
+-            stencilLoadOp = GrLoadOp::kDiscard;
+-            break;
++            if (!stencil || caps.performStencilClearsAsDraws()) {
++                // This should only intentionally happen for the AtlasRenderTask which
++                // immediately inserts a clear.
++                stencilLoadOp = GrLoadOp::kDiscard;
++                break;
++            }
++            // This OpTask has a stencil, doesn't care about its contents, isn't clearing it with
++            // draws, and is going to store the result. In that case, we fallthrough to clear it so
++            // that uninitialized data won't creep into the stencil buffer.
++            [[fallthrough]];
+         case StencilContent::kUserBitsCleared:
+             SkASSERT(!caps.performStencilClearsAsDraws());
+             SkASSERT(stencil);
++            // Based upon Caps, determine which stencil load operation to use and perform any
++            // necessary updates to the renderpass's bounds and the stencil's cleared area.
++
++            // If the user bits are meant to be cleared we either do that via an initial clear the
++            // first time the area of the stencil is used, or we assume previous draws left the
++            // stencil cleared so we just load the current values. However, on some devices it is
++            // faster to just clear the stencil each time instead of doing a load.
++            //
++            // Since we'll never end up loading the stencil in this case there is no reason for us
++            // to do the clear rect tracking below, so we just break.
++            if (caps.clearsAreFasterThanLoads()) {
++                stencilLoadOp = GrLoadOp::kClear;
++                break;
++            }
++            // If stencil values are discarded after every renderpass, then we do not need to track
++            // which portion of the stencil attachment has already been cleared.
+             if (caps.discardStencilValuesAfterRenderPass()) {
+-                // Always clear the stencil if it is being discarded after render passes. This is
+-                // also an optimization because we are on a tiler and it avoids loading the values
+-                // from memory.
+                 stencilLoadOp = GrLoadOp::kClear;
+                 break;
+             }
+-            if (!stencil->hasPerformedInitialClear()) {
++
++            // If the area of the stencil attachment corresponding to this renderpass's
++            // boundsRequiredByStencil has not already been cleared, calculate new, expanded
++            // renderpass bounds by joining boundsRequiredByStencil with the cleared stencil area.
++            // Using this joint area simplifies tracking of cleared areas on the stencil attachment.
++            if (!stencil->hasAreaBeenCleared(boundsRequiredByStencil)) {
+                 stencilLoadOp = GrLoadOp::kClear;
+-                markStencilCleared = true;
++                if (!stencil->clearedArea().isEmpty()) {
++                    boundsRequiredByStencil.join(stencil->clearedArea());
++                    // We need to also intersect the bounds with the color attachment's bounds since
++                    // the stencil may be bigger. This could mean that we end up "forgetting" we
++                    // cleared the user bits in the portion of the stencil that doesn't overlap with
++                    // the color attachment - but that shouldn't have a large performance impact if
++                    // we later on need to reclear that area.
++                    boundsRequiredByStencil.intersect(
++                        SkIRect::MakeSize(renderTarget->dimensions()));
++                }
++                // We should update the stencil's cleared area if renderpass creation succeeds.
++                updateClearedStencilArea = true;
+                 break;
+             }
++
+             // SurfaceDrawContexts are required to leave the user stencil bits in a cleared state
+             // once finished, meaning the stencil values will always remain cleared after the
+             // initial clear. Just fall through to reloading the existing (cleared) stencil values
+@@ -615,6 +655,8 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+             SkASSERT(stencil);
+             stencilLoadOp = GrLoadOp::kLoad;
+             break;
++        default:
++            SkUNREACHABLE;
+     }
+ 
+     // NOTE: If fMustPreserveStencil is set, then we are executing a surfaceDrawContext that split
+@@ -633,7 +675,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+                                                      fUsesMSAASurface,
+                                                      stencil,
+                                                      fTargetOrigin,
+-                                                     fClippedContentBounds,
++                                                     boundsRequiredByStencil,
+                                                      fColorLoadOp,
+                                                      fLoadClearColor,
+                                                      stencilLoadOp,
+@@ -644,8 +686,8 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+     if (!renderPass) {
+         return false;
+     }
+-    if (markStencilCleared) {
+-        stencil->markHasPerformedInitialClear();
++    if (updateClearedStencilArea) {
++        stencil->markAreaCleared(boundsRequiredByStencil);
+     }
+     flushState->setOpsRenderPass(renderPass);
+     renderPass->begin();
+diff --git a/src/gpu/ganesh/vk/GrVkCaps.cpp b/src/gpu/ganesh/vk/GrVkCaps.cpp
+index b805a79ca262ba606d6f29828b8a215e8202da5a..6f9a17c48dc8a2a3fe9b5dba9a6faf723c64564d 100644
+--- a/src/gpu/ganesh/vk/GrVkCaps.cpp
++++ b/src/gpu/ganesh/vk/GrVkCaps.cpp
+@@ -302,6 +302,13 @@ bool GrVkCaps::onCanCopySurface(const GrSurfaceProxy* dst, const SkIRect& dstRec
+ 
+ }
+ 
++namespace {
++bool is_tiler_gpu(uint32_t vendorId) {
++    return vendorId == skgpu::kARM_VkVendor ||
++           vendorId == skgpu::kQualcomm_VkVendor ||
++           vendorId == skgpu::kImagination_VkVendor;
++}
++} // anonymous namespace
+ void GrVkCaps::init(const GrContextOptions& contextOptions,
+                     const skgpu::VulkanInterface* vkInterface,
+                     VkPhysicalDevice physDev,
+@@ -415,12 +422,12 @@ void GrVkCaps::init(const GrContextOptions& contextOptions,
+     this->initGrCaps(vkInterface, physDev, properties, memoryProperties, features, extensions);
+     this->initShaderCaps(properties, features);
+ 
+-    if (skgpu::kQualcomm_VkVendor == properties.vendorID) {
+-        // A "clear" load for atlases runs faster on QC than a "discard" load followed by a
++    if (is_tiler_gpu(properties.vendorID)) {
++        // A "clear" load for atlases runs faster on tiler GPUs than a "discard" load followed by a
+         // scissored clear.
+-        // On NVIDIA and Intel, the discard load followed by clear is faster.
+-        // TODO: Evaluate on ARM, Imagination, and ATI.
+         fPreferFullscreenClears = true;
++        fDiscardStencilValuesAfterRenderPass = true;
++        fClearsAreFasterThanLoads = true;
+     }
+ 
+     if (properties.vendorID == skgpu::kNvidia_VkVendor ||
