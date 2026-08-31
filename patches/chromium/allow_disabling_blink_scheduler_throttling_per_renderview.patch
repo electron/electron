@@ -51,7 +51,7 @@ index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 6f41be18825d5ccf38e43673dfef687d402224d1..4a98ad648ab5399974ac15978064bc01f962ae9d 100644
+index 7c2de5c89b45d24fe8b33a1c9d3a96afb7949e09..39cbf896c84550a0f5a9c8c7b08a7c6c7e13ea2c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -686,8 +686,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -116,7 +116,7 @@ index 0d1d81ec7d6b27891a5135961f4c630df82819df..325d2691357372b31df78781b6e453e2
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 675026b5bb72bcbbda8da1b26bb8cde3821b1592..d019d4fe54ce81b6844f522575eb3d097f4d7c6a 100644
+index b24669cc62b9c4b1a9d9ee84609832ae52ceffed..64e0aeaf03ba9a6e6f0342b93bb716dd550eb985 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2569,6 +2569,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -130,7 +130,7 @@ index 675026b5bb72bcbbda8da1b26bb8cde3821b1592..d019d4fe54ce81b6844f522575eb3d09
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4259,10 +4263,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4265,10 +4269,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
