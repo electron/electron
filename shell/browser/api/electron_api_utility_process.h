@@ -23,6 +23,7 @@
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
+#include "v8/include/cppgc/prefinalizer.h"
 #include "v8/include/v8-forward.h"
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
@@ -52,6 +53,8 @@ class UtilityProcessWrapper final
       private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
+  CPPGC_USING_PRE_FINALIZER(UtilityProcessWrapper, Dispose);
+
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
@@ -98,6 +101,7 @@ class UtilityProcessWrapper final
   void CloseConnectorPort();
 
   void HandleTermination(uint32_t exit_code);
+  void Dispose();
 
   void PostMessage(gin::Arguments* args);
   bool Kill();

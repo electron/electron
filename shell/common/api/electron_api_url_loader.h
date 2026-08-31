@@ -26,6 +26,7 @@
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "url/gurl.h"
 #include "v8/include/cppgc/member.h"
+#include "v8/include/cppgc/prefinalizer.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -56,6 +57,8 @@ class SimpleURLLoaderWrapper final
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
       private network::SimpleURLLoaderStreamConsumer,
       private network::mojom::URLLoaderNetworkServiceObserver {
+  CPPGC_USING_PRE_FINALIZER(SimpleURLLoaderWrapper, Dispose);
+
  public:
   ~SimpleURLLoaderWrapper() override;
   static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
@@ -147,6 +150,7 @@ class SimpleURLLoaderWrapper final
   void OnDownloadProgress(uint64_t current);
 
   void Start();
+  void Dispose();
 
   SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;

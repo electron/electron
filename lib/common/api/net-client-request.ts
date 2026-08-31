@@ -369,6 +369,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._chunkedEncoding = !!value;
     if (this._chunkedEncoding) {
       this._body = new ChunkedBodyStream(this);
+      // A write that fails because the request ended first is reported
+      // through the write callback on this request; the body stream must not
+      // also raise it as an unhandled 'error' of its own.
+      this._body.on('error', () => {});
       this._urlLoaderOptions.body = (pipe: NodeJS.DataPipe) => {
         (this._body! as ChunkedBodyStream).startReading(pipe);
       };

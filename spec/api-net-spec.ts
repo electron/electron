@@ -834,7 +834,79 @@ describe('net module', () => {
         const aborted = once(urlRequest, 'abort');
         urlRequest.abort();
         await aborted;
-        await expect(pendingRead).to.eventually.be.rejectedWith('ERR_ABORTED');
+        await expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+      });
+
+      it('should preserve the request error when settling a pending upload stream read', async () => {
+        let failRequest: (() => void) | undefined;
+        let pendingRead: Promise<number> | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            failRequest = () => callback({ error: -2 } as any);
+            (async () => {
+              const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+              if (!streamElement) {
+                callback({ statusCode: 400, data: null as any });
+                reject(new Error('request had no stream upload element'));
+                return;
+              }
+              const body: any = (streamElement as any).body;
+              await body.read(new Uint8Array(1024));
+              pendingRead = body.read(new Uint8Array(1024));
+              resolve();
+            })().catch(reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://failed-pending-upload-read' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        urlRequest.write('hello');
+        await reached;
+
+        const readError = expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+        failRequest!();
+        await readError;
+      });
+
+      it('should settle an in-flight upload write when the response completes early', async () => {
+        let completeRequest: (() => void) | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            completeRequest = () => callback({ statusCode: 200, data: null as any });
+            const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+            if (!streamElement) {
+              callback({ statusCode: 400, data: null as any });
+              reject(new Error('request had no stream upload element'));
+              return;
+            }
+            const body: any = (streamElement as any).body;
+            body.read(new Uint8Array(1)).then(() => resolve(), reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://early-upload-response' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        const responseReceived = once(urlRequest, 'response');
+        let writeCallbackCalled = false;
+        const writeCompleted = new Promise<Error | undefined>((resolve) => {
+          urlRequest.write(Buffer.alloc(4 * kOneMegaByte), 'buffer', (error?: Error | null) => {
+            writeCallbackCalled = true;
+            resolve(error || undefined);
+          });
+        });
+        await reached;
+        expect(writeCallbackCalled).to.equal(false);
+
+        completeRequest!();
+        const [response] = await responseReceived;
+        await collectStreamBody(response);
+        const writeError = await writeCompleted;
+        expect(writeError).to.be.an.instanceOf(Error);
+        expect(writeError!.message).to.contain('ERR_ABORTED');
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {
