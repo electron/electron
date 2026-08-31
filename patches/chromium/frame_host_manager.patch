@@ -6,10 +6,10 @@ Subject: frame_host_manager.patch
 Allows embedder to intercept site instances created by chromium.
 
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index dab87ad0f62eeea5786335010f6c2f31e8606001..c0b016e7719cc18bf4c29bf1e4c8dc210a5cb24b 100644
+index 37f163f0a4b8aebe6d36f07b123298e201c7e863..f9dbcdec16b3153117315bd8d92e7443b90ad6a1 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
-@@ -5044,6 +5044,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -5045,6 +5045,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
