@@ -22,7 +22,7 @@ Mirrors the upstream fix in https://chromium-review.googlesource.com/c/chromium/
 which is present in main and 44-x-y but was never merged to Chromium 150.
 
 diff --git a/components/dbus/xdg/systemd.cc b/components/dbus/xdg/systemd.cc
-index 03250c4411fae1db02a7a675bff7ae669cce097d..3ead083d9648a64371dff332206ee49d51c86d99 100644
+index 03250c4411fae1db02a7a675bff7ae669cce097d..20c4e95edcc2a0bc4130f1e57c421aa00af920fb 100644
 --- a/components/dbus/xdg/systemd.cc
 +++ b/components/dbus/xdg/systemd.cc
 @@ -192,7 +192,9 @@ void OnNameHasOwnerResponse(scoped_refptr<dbus::Bus> bus,
@@ -65,9 +65,8 @@ index 03250c4411fae1db02a7a675bff7ae669cce097d..3ead083d9648a64371dff332206ee49d
  void SetSystemdScopeUnitNameForXdgPortal(dbus::Bus* bus,
                                           SystemdUnitCallback callback) {
  #if DCHECK_IS_ON()
-
 diff --git a/components/dbus/xdg/systemd.h b/components/dbus/xdg/systemd.h
-index 5d53d3bb72dddbbe0d8824215a51909adac3f732..52944d93a365c318dbc52b51cb45f824c95f515b 100644
+index 5d53d3bb72dddbbe0d8824215a51909adac3f732..dc630f10c24f11d10d8509d433e7147c84ad532f 100644
 --- a/components/dbus/xdg/systemd.h
 +++ b/components/dbus/xdg/systemd.h
 @@ -5,6 +5,9 @@
@@ -90,9 +89,8 @@ index 5d53d3bb72dddbbe0d8824215a51909adac3f732..52944d93a365c318dbc52b51cb45f824
  }  // namespace dbus_xdg::internal
  
  #endif  // COMPONENTS_DBUS_XDG_SYSTEMD_H_
-
 diff --git a/components/dbus/xdg/systemd_unittest.cc b/components/dbus/xdg/systemd_unittest.cc
-index 4a925983fa84d8dec1d260f96d79d58132de2fb7..5ca114ce94eb9b6c39122ceb2d7536e803f6b931 100644
+index 4a925983fa84d8dec1d260f96d79d58132de2fb7..7f5c603fec96e7690c452128d93f6c2ff85d4a25 100644
 --- a/components/dbus/xdg/systemd_unittest.cc
 +++ b/components/dbus/xdg/systemd_unittest.cc
 @@ -54,6 +54,19 @@ std::unique_ptr<dbus::Response> CreateActiveStateGetAllResponse(
