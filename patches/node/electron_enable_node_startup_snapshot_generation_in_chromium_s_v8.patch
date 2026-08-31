@@ -16,9 +16,15 @@ eliminating the Node bootstrap recompile.
   host_os == target_os except V8's default mac clang_arm64_v8_x64
   toolchain, which emits x64 code from an arm64 binary with no simulator.
   Neither the snapshot nor the code cache contains machine code, so what a
-  cross node_mksnapshot produces is valid on the target.
+  cross node_mksnapshot produces is valid on the target -- except for what
+  its host-compiled C++ serializes: node_constants.cc's O_* flags come
+  from the host's headers, and arm/arm64 Linux override O_DIRECTORY,
+  O_NOFOLLOW and O_DIRECT. unofficial.gni defines
+  NODE_SNAPSHOT_TARGET_LINUX_ARM for the snapshot toolchain on those
+  cross builds and node_constants.cc serializes the target's values.
 - unofficial.gni: node_mksnapshot host tool (no_chromium_code,
-  zstd:compress, NODE_USE_V8_PLATFORM=1 in v8_snapshot_toolchain,
+  zstd:compress, NODE_USE_V8_PLATFORM=1 wherever the snapshot is on, since
+  the shipped libnode deserializes what the tool's build of libnode baked,
   external_startup_data config, --electron-v8-snapshot-blob arg);
   GetEmbeddedSnapshotData() moves out of libnode into two source_sets,
   ":node_snapshot" (the generated snapshot, linked by the shipped
@@ -150,6 +156,29 @@ index e7e95ffd1eb19e3fbf6a0f65338c5f3fbd4d6302..8ce9c5c5fcf55dfc711363fe652ae3cb
    }
    code_cache_->has_code_cache = true;
  }
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index c9588880d05435ab9f4e23fcff74c93309664270..972f341a0559e37d8f6aaa70554bfdd33cdde76e 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1025,6 +1025,18 @@ void DefineCryptoConstants(Local<Object> target) {
+ #endif
+ }
+ 
++// Electron: node_mksnapshot runs on the build host, so on cross-arch builds
++// the O_* values below are the host's. arm and arm64 Linux define these three
++// differently (arch/arm64/include/uapi/asm/fcntl.h); serialize the target's.
++#if defined(NODE_SNAPSHOT_TARGET_LINUX_ARM)
++#undef O_DIRECTORY
++#define O_DIRECTORY 040000
++#undef O_NOFOLLOW
++#define O_NOFOLLOW 0100000
++#undef O_DIRECT
++#define O_DIRECT 0200000
++#endif
++
+ void DefineFsConstants(Local<Object> target) {
+   NODE_DEFINE_CONSTANT(target, UV_FS_SYMLINK_DIR);
+   NODE_DEFINE_CONSTANT(target, UV_FS_SYMLINK_JUNCTION);
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
 index b274dccdc36baae76d3a416cff19aa5aca88b892..235f74ce0e624233afbc18f1dabf7a5272d7bf60 100644
 --- a/src/node_external_reference.h
@@ -289,24 +318,34 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..b5a9ed2cc2a9576178effb93102b09592844963b 100644
+index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -32,7 +32,12 @@ template("node_gn_build") {
+@@ -32,7 +32,22 @@ template("node_gn_build") {
      } else {
        defines += [ "HAVE_AMARO=0" ]
      }
 -    if (node_use_v8_platform) {
++    # node_mksnapshot is a host tool, but the values node_constants.cc
++    # compiles in end up in the snapshot the target deserializes. arm and
++    # arm64 Linux override three open(2) flags, so tell it what it targets.
++    if (is_linux && current_toolchain == v8_snapshot_toolchain &&
++        current_cpu != target_cpu &&
++        (target_cpu == "arm" || target_cpu == "arm64")) {
++      defines += [ "NODE_SNAPSHOT_TARGET_LINUX_ARM=1" ]
++    }
 +    # Embedded in Electron, gin/Chromium owns the V8 platform (node must not
 +    # init its own -> stub V8Platform). But the standalone node_mksnapshot
-+    # host tool (v8_snapshot_toolchain, no gin) MUST own the platform or
-+    # SnapshotBuilder gets a null platform. Force the real platform in that
-+    # toolchain only; shipped libnode (default toolchain) unchanged.
-+    if (node_use_v8_platform || current_toolchain == v8_snapshot_toolchain) {
++    # host tool MUST own the platform or SnapshotBuilder gets a null
++    # platform, and the snapshot it produces bakes this macro's effects
++    # (config.hasTracing, the trace_events builtin) into the heap the
++    # shipped libnode deserializes -- so every toolchain must agree on it.
++    # Electron never initializes Node's platform (kNoInitializeNodeV8Platform).
++    if (node_use_v8_platform || node_use_node_snapshot) {
        defines += [ "NODE_USE_V8_PLATFORM=1" ]
      } else {
        defines += [ "NODE_USE_V8_PLATFORM=0" ]
-@@ -189,7 +194,10 @@ template("node_gn_build") {
+@@ -189,7 +204,10 @@ template("node_gn_build") {
      ]
  
      sources = [
@@ -318,7 +357,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..b5a9ed2cc2a9576178effb93102b0959
        "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
-@@ -279,20 +287,12 @@ template("node_gn_build") {
+@@ -279,20 +297,12 @@ template("node_gn_build") {
      sources = [ "src/node_main.cc" ]
      deps = [
        ":libnode",
@@ -343,7 +382,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..b5a9ed2cc2a9576178effb93102b0959
      output_name = "node"
  
      if (is_apple) {
-@@ -308,12 +308,36 @@ template("node_gn_build") {
+@@ -308,12 +318,36 @@ template("node_gn_build") {
    if (node_use_node_snapshot) {
      if (current_toolchain == v8_snapshot_toolchain) {
        executable("node_mksnapshot") {
@@ -385,7 +424,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..b5a9ed2cc2a9576178effb93102b0959
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +352,121 @@ template("node_gn_build") {
+@@ -328,26 +362,121 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
