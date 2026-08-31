@@ -225,6 +225,7 @@ void* SystemFontConfigSymbol(const char* name) {
 class SystemFontConfigInit : public base::PlatformThread::Delegate {
  public:
   void ThreadMain() override {
+    base::PlatformThread::SetName("SystemFontConfigInit");
     if (auto fc_init =
             reinterpret_cast<int (*)()>(SystemFontConfigSymbol("FcInit"))) {
       fc_init();
@@ -319,6 +320,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Runs during Node.js environment creation and is joined before any app
   // code can run, so nothing else touches FontConfig or the environment.
   const auto fontconfig_env = SnapshotFontConfigEnv();
+  // If the thread cannot be created the handle stays null, the join is a
+  // no-op and GTK initializes FontConfig itself as before.
   static base::NoDestructor<SystemFontConfigInit> system_fontconfig_init;
   base::PlatformThread::Create(0, system_fontconfig_init.get(),
                                &system_fontconfig_thread_);
