@@ -75,12 +75,12 @@ void AutoUpdater::OnError(const std::string& message,
 
     // add two new params for better error handling
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "code"),
-              v8::Integer::New(isolate, code))
+        ->CreateDataProperty(context, gin::StringToV8(isolate, "code"),
+                             v8::Integer::New(isolate, code))
         .Check();
     errorObject
-        ->Set(context, gin::StringToV8(isolate, "domain"),
-              gin::StringToV8(isolate, domain))
+        ->CreateDataProperty(context, gin::StringToV8(isolate, "domain"),
+                             gin::StringToV8(isolate, domain))
         .Check();
 
     gin_helper::EmitEvent(isolate, wrapper, "error", errorObject, message);
