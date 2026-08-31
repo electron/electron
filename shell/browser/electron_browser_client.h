@@ -98,6 +98,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::optional<network::CrossOriginEmbedderPolicy>
   MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
       content::NavigationHandle* navigation_handle) override;
+  bool IsCrossOriginSubframeAllowedToShowFilePicker(
+      content::RenderFrameHost* render_frame_host,
+      const url::Origin& requesting_origin) override;
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
                                        const GURL& effective_site_url) override;
