@@ -67,10 +67,10 @@ index 4025a23ea2bcb7ee7ba9eabd6a1d23fae80b145b..80f1ff1833e481e81e8e4e1576c486ea
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index e042422e337f7b4fb64110d5b1519629c0becd7a..3fe773985862626070d51eb282211dfddc9de2fb 100644
+index f7ec5823e1c8e8fbb2672cf5464d35c42200a843..42b51daf6b7bb167474b38c42c95b1a31be4c2be 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -589,7 +589,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -603,7 +603,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    is_translucent_window_ = params->is_translucent;
    pending_restoration_data_ = params->state_restoration_data.Clone();
  
@@ -139,10 +139,10 @@ index ec371b4676ba3f91a3c8198db00facb9c926b869..719cae31fb885d12ffdd4c3a6ecf91dd
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index c8c6adbd56070f01d09a7e12f5481ee2703718c6..17955f684f8aeb17d2a2a2a75763e3e33a78dfbb 100644
+index 95f532e14b779b71e8b596459b3d28833d74aec3..dc8063ba415b3cd40fbb325eca0bf6da331a52ef 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
-@@ -268,6 +268,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+@@ -263,6 +263,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
    }
  }
  
@@ -161,7 +161,7 @@ index c8c6adbd56070f01d09a7e12f5481ee2703718c6..17955f684f8aeb17d2a2a2a75763e3e3
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -535,6 +547,7 @@ void Widget::Init(InitParams params) {
+@@ -530,6 +542,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
