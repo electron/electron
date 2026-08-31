@@ -151,15 +151,23 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
   v8::Local<v8::Object> original_global = original_context->Global();
   v8::Local<v8::Object> new_global = worker_context->Global();
 
+  // Script in the original context can redefine these globals with accessors
+  // that throw, so read them defensively and fall back to the environment's
+  // own process object / undefined rather than crashing the worker.
+  v8::TryCatch try_catch(isolate);
   v8::Local<v8::Value> process_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "process"))
-            .ToLocal(&process_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "process"))
+           .ToLocal(&process_value)) {
+    process_value = env->process_object();
+  }
 
   v8::Local<v8::Value> require_value;
-  CHECK(original_global
-            ->Get(original_context, gin::StringToV8(isolate, "require"))
-            .ToLocal(&require_value));
+  if (!original_global
+           ->Get(original_context, gin::StringToV8(isolate, "require"))
+           .ToLocal(&require_value)) {
+    require_value = v8::Undefined(isolate);
+  }
 
   // Set up 'global' as an alias for globalThis. Node.js bootstrapping normally
   // does this during LoadEnvironment, but we skip full bootstrap for shared
