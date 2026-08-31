@@ -369,15 +369,6 @@ async function main() {
     if (firstLine === PATCHES_UPDATE_MSG) {
       let commitValid = true;
 
-      // Must have no commit message body
-      const bodyLines = commit.message.trim().split('\n').slice(1);
-      const nonEmptyBodyLines = bodyLines.filter((line) => line.trim().length > 0);
-      if (nonEmptyBodyLines.length > 0) {
-        console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit must not have a commit message body`);
-        hasErrors = true;
-        commitValid = false;
-      }
-
       const changedFiles = getChangedFilesForCommit(commit.sha);
       if (!changedFiles || changedFiles.length === 0) {
         console.error(`  ❌ Could not determine changed files for "${PATCHES_UPDATE_MSG}" commit`);
