@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Thu, 9 Jul 2026 17:00:27 +0200
+Subject: [M150] [regexp] Hard Check that index + 1 is a Smi in
+ AdvanceStringIndex
+
+Original change's description:
+> [regexp] Hard Check that index + 1 is a Smi in AdvanceStringIndex
+>
+> Bug: 532595489
+> Change-Id: I3fb2a3246ebbf801b883cc9fe22a7903cf7b1edd
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8070079
+> Reviewed-by: Jakob Linke <jgruber@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Auto-Submit: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108562}
+
+(cherry picked from commit de11d56041d5aa9c5e69b031990ad17068dbef7a)
+
+Bug: 533661562,532595489
+Change-Id: I3fb2a3246ebbf801b883cc9fe22a7903cf7b1edd
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8085182
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#37}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/builtins/builtins-regexp-gen.cc b/src/builtins/builtins-regexp-gen.cc
+index ba969a0acbb15acc07cd1d9d174245d4a4e01c78..4ae55363edb751e95308fe3880e4c1e72779b161 100644
+--- a/src/builtins/builtins-regexp-gen.cc
++++ b/src/builtins/builtins-regexp-gen.cc
+@@ -1536,7 +1536,8 @@ TNode<Number> RegExpBuiltinsAssembler::AdvanceStringIndex(
+     // Must be in Smi range on the fast path. We control the value of {index}
+     // on all call-sites and can never exceed the length of the string.
+     static_assert(String::kMaxLength + 2 < Smi::kMaxValue);
+-    CSA_DCHECK(this, TaggedIsPositiveSmi(index_plus_one));
++    // TODO(532595489): Hard CHECK for now as a quick fix.
++    CSA_CHECK(this, TaggedIsPositiveSmi(index_plus_one));
+   }
+ 
+   Label if_isunicode(this), out(this);
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 9dd7aa47dc87da0c144f76edbb9694e38ead0596..27f78d6c5eedb21adb58cf7fe197484095113f17 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -85,6 +85,9 @@
+   # Ensures that %VerifyGetJSBuiltinState() machinery works as expected.
+   'regress/regress-435630464-verification-failure': [['mode == release', SKIP], ['mode != release', FAIL]],
+ 
++  # https://crbug.com/532595489
++  'regress/regress-532595489': [FAIL, CRASH, NO_VARIANTS, ['not pointer_compression', SKIP]],
++
+   ##############################################################################
+   # Tests where variants make no sense.
+   'd8/enable-tracing': [PASS, NO_VARIANTS],
+diff --git a/test/mjsunit/regress/regress-532595489.js b/test/mjsunit/regress/regress-532595489.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c80f7e089bc6c0a2d00d742165e47378ffe398a6
+--- /dev/null
++++ b/test/mjsunit/regress/regress-532595489.js
+@@ -0,0 +1,17 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const re = /(?:)/;
++
++function Species() {
++  return re;
++}
++
++const pseudo_re = {
++  flags: 'g',
++  lastIndex: 1073741823,
++  constructor: { [Symbol.species]: Species },
++};
++
++RegExp.prototype[Symbol.matchAll].call(pseudo_re, '').next();

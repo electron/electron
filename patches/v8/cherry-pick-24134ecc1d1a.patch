@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Parker <sam.parker@arm.com>
+Date: Tue, 7 Jul 2026 10:11:14 +0100
+Subject: [M150] [compiler][arm64][arm] IsOnlyUserOfNodeInSameBlock
+
+Original change's description:
+> [compiler][arm64][arm] IsOnlyUserOfNodeInSameBlock
+>
+> Don't try to use IsOnlyUserOfNodeInSameBlock when the continuation is
+> anything but a branch or set as it's possible that we've already
+> explored through the original conditional setting instruction and are
+> trying to optimise a binop that would then have to be pulled past a
+> use to be tied to the continuation.
+>
+> Bug: 524792614
+> Change-Id: I94a3c46799197c152873ea9f09e99ff4db4efccd
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8024753
+> Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+> Commit-Queue: Sam Parker-Haynes <sam.parker@arm.com>
+> Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108482}
+
+(cherry picked from commit 78afe7b553f2befacffd4fe882e0947484b093d2)
+
+Bug: 532842962,524792614
+Change-Id: I94a3c46799197c152873ea9f09e99ff4db4efccd
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8074498
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#31}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/backend/arm/instruction-selector-arm.cc b/src/compiler/backend/arm/instruction-selector-arm.cc
+index 11a4d0e2856cd27c415b963d88066cc8644173d7..d6d739c0e80a7b04e987f3df413d773bf80f7c08 100644
+--- a/src/compiler/backend/arm/instruction-selector-arm.cc
++++ b/src/compiler/backend/arm/instruction-selector-arm.cc
+@@ -2057,10 +2057,13 @@ void MaybeReplaceCmpZeroWithFlagSettingBinop(InstructionSelector* selector,
+     cont->Overwrite(MapForFlagSettingBinop(cond));
+     *opcode = no_output_opcode;
+     *node = binop;
+-  } else if (selector->IsOnlyUserOfNodeInSameBlock(*node, binop)) {
+-    // We can also handle the case where the {node} and the comparison are in
+-    // the same basic block, and the comparison is the only user of {node} in
+-    // this basic block ({node} has users in other basic blocks).
++  } else if ((cont->IsBranch() || cont->IsSet()) &&
++             selector->IsOnlyUserOfNodeInSameBlock(*node, binop)) {
++    // We can also handle the case where the add and the compare are in the
++    // same basic block, and the compare is the only use of add in this basic
++    // block (the add has users in other basic blocks). We only do this for
++    // branches and sets as they can't end up breaking the schedule by pulling
++    // the flag-setting instruction past its users.
+     cont->Overwrite(MapForFlagSettingBinop(cond));
+     *opcode = binop_opcode;
+     *node = binop;
+diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+index 163bcd6cee626d28ac213507a4237f4eeaf44b24..9792b21923bf368008e11bab9a4ab3cdb42fd3c6 100644
+--- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
++++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+@@ -3362,10 +3362,13 @@ void MaybeReplaceCmpZeroWithFlagSettingBinop(InstructionSelector* selector,
+     *opcode = no_output_opcode;
+     *node = binop;
+     *immediate_mode = binop_immediate_mode;
+-  } else if (selector->IsOnlyUserOfNodeInSameBlock(*node, binop)) {
++  } else if ((cont->IsBranch() || cont->IsSet()) &&
++             selector->IsOnlyUserOfNodeInSameBlock(*node, binop)) {
+     // We can also handle the case where the add and the compare are in the
+     // same basic block, and the compare is the only use of add in this basic
+-    // block (the add has users in other basic blocks).
++    // block (the add has users in other basic blocks). We only do this for
++    // branches and sets as they can't end up breaking the schedule by pulling
++    // the flag-setting instruction past its users.
+     cont->Overwrite(MapForFlagSettingBinop(cond));
+     *opcode = binop_opcode;
+     *node = binop;
+diff --git a/test/mjsunit/regress/wasm/regress-524792614.js b/test/mjsunit/regress/wasm/regress-524792614.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9a90f23076c844e2a3360a77b8b78181eba83d21
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-524792614.js
+@@ -0,0 +1,61 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++const g = builder.addGlobal(kWasmI32, true);
++
++builder.addFunction('main', makeSig([kWasmI32], [kWasmI32, kWasmI32]))
++    .exportAs('main')
++    .addLocals(kWasmI32, 2)
++    .addBody([
++      // v2 = param 0 + 1
++      kExprLocalGet,
++      0,
++      kExprI32Const,
++      1,
++      kExprI32Add,
++      kExprLocalSet,
++      1,
++
++      // v27 = 0 - v2
++      kExprI32Const,
++      0,
++      kExprLocalGet,
++      1,
++      kExprI32Sub,
++      kExprLocalSet,
++      2,
++
++      // select(v27, 0, v27)
++      kExprLocalGet,
++      2,
++      kExprI32Const,
++      0,
++      kExprLocalGet,
++      2,
++      kExprSelect,
++
++      // If block to split the block (pushes Return use to next block)
++      kExprLocalGet,
++      0,
++      kExprIf,
++      kWasmVoid,
++      kExprI32Const,
++      0,
++      kExprGlobalSet,
++      g.index,
++      kExprEnd,
++
++      // Return v6, v2
++      kExprLocalGet,
++      1,
++    ]);
++
++const instance = builder.instantiate()
++instance.exports.main();
++%WasmTierUpFunction(instance.exports.main);

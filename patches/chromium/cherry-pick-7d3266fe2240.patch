@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xinchao Tian <xinchaotian@microsoft.com>
+Date: Fri, 10 Jul 2026 04:43:01 -0700
+Subject: [M150] Guard against re-entrant destruction in CreateNewWindow
+
+Original change's description:
+> Guard against re-entrant destruction in CreateNewWindow
+>
+> CreateNewWindow() (opener-suppressed path) calls
+> delegate_->AddNewContents() and then continues using state owned by this
+> (opener, delegate_, primary frame tree).
+>
+> On Windows, AddNewContents() may enter a nested message loop while
+> showing a new browser window. A window-close message can destroy the
+> opener WebContents during this call, causing use-after-free.
+>
+> Fix by capturing a WeakPtr to this before calling AddNewContents() and
+> aborting if it is invalidated, similar to existing weak_new_contents
+> logic.
+>
+> Add a browsertest that destroys the opener inside AddNewContents() to
+> prevent regressions.
+>
+> Bug: 527676561
+> Change-Id: If224916a349113845cce68c438b04f451126d6ee
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8003496
+> Commit-Queue: Xinchao Tian <xinchaotian@microsoft.com>
+> Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+> Reviewed-by: Bo Liu <boliu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1653497}
+
+(cherry picked from commit c889717537a805003583d4f5d88fd45204b58c67)
+
+Bug: 533270856,527676561
+Change-Id: If224916a349113845cce68c438b04f451126d6ee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8074598
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3145}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 44ff26546c1c8f498784afca1c26deb45ccb9e87..a756cf1eaa598dc3d237b62fa7d7f1f5e548182d 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -10365,9 +10365,16 @@ void RenderFrameHostImpl::CreateNewWindow(
+ 
+   // The non-owning pointer |new_frame_tree| is valid in this stack frame at
+   // least until the call to ShowCreatedWindow() below.
++  base::WeakPtr<RenderFrameHostImpl> weak_self = GetWeakPtr();
+   FrameTree* new_frame_tree =
+       delegate_->CreateNewWindow(this, *params, is_new_browsing_instance,
+                                  was_consumed, cloned_namespace.get());
++  if (!weak_self) {
++    // This RFH may be deleted after CreateNewWindow() due to a nested message
++    // loop (e.g. showing the new window closes the window hosting `this`). See
++    // crbug.com/527676561.
++    return;
++  }
+ 
+   transient_allow_popup_.Deactivate();
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 8fcea8528de4c10a6a2b730f130f6c5fdc9c92a8..e24c2cd92be8f49703f2782409e2f2b88ffa0afa 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -5639,12 +5639,20 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   bool was_blocked = false;
+   base::WeakPtr<WebContentsImpl> weak_new_contents =
+       new_contents_impl->weak_factory_.GetWeakPtr();
++  base::WeakPtr<WebContentsImpl> weak_this = weak_factory_.GetWeakPtr();
+   WebContentsImpl* contents_to_load = new_contents_impl;
+   if (delegate_) {
+     WebContents* web_contents_navigated = delegate_->AddNewContents(
+         this, std::move(new_contents), params.target_url, params.disposition,
+         *params.features, has_user_gesture, &was_blocked);
+ 
++    if (!weak_this) {
++      // `this` may be deleted after AddNewContents() due to a nested message
++      // loop (e.g. the window hosting the opener is closed). See
++      // crbug.com/527676561.
++      return nullptr;
++    }
++
+     if (base::FeatureList::IsEnabled(features::kPwaNavigationCapturing)) {
+       // The delegate may delete |new_contents_impl| during AddNewContents().
+       // If that occurs and there isn't a replacement contents returned, exit.
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 25244d502fc72239075aa8a5c18afa97d198988a..1766bf3c4b767ad2f8521318dff85751968de64b 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -3600,6 +3600,94 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, TitleUpdateOnRestore) {
+ 
+ namespace {
+ 
++// A WebContentsDelegate whose AddNewContents() runs a caller-provided closure
++// before returning. The closure is used to destroy the opener WebContents
++// synchronously, simulating the re-entrant destruction that can happen when
++// AddNewContents() spins a nested run loop (e.g. on Windows, showing the new
++// browser window dispatches native messages that can close the opener window).
++class DestroyOpenerOnAddNewContentsDelegate : public WebContentsDelegate {
++ public:
++  explicit DestroyOpenerOnAddNewContentsDelegate(base::OnceClosure on_add)
++      : on_add_(std::move(on_add)) {}
++
++  WebContents* AddNewContents(
++      WebContents* source,
++      std::unique_ptr<WebContents> new_contents,
++      const GURL& target_url,
++      WindowOpenDisposition disposition,
++      const blink::mojom::WindowFeatures& window_features,
++      bool user_gesture,
++      bool* was_blocked) override {
++    // Keep the new popup alive so that CreateNewWindow()'s `weak_new_contents`
++    // guard does NOT short-circuit. Otherwise the function would return early
++    // before reaching the code that dereferences the (now destroyed) opener,
++    // and the regression would not be exercised.
++    new_contents_ = std::move(new_contents);
++    WebContents* raw_new_contents = new_contents_.get();
++    if (on_add_) {
++      std::move(on_add_).Run();
++    }
++    return raw_new_contents;
++  }
++
++ private:
++  base::OnceClosure on_add_;
++  std::unique_ptr<WebContents> new_contents_;
++};
++
++}  // namespace
++
++// Regression test for a use-after-free where the opener WebContents is
++// destroyed re-entrantly while WebContentsImpl::CreateNewWindow() is calling
++// WebContentsDelegate::AddNewContents(). With an opener-suppressed
++// (`noopener`) window.open(), CreateNewWindow() drives the new window through
++// the delegate and then keeps using `this` (and `delegate_`/`opener`) after
++// AddNewContents() returns. If the opener is torn down during that call, the
++// trailing code used to run on freed memory. See crbug.com/527676561.
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       CreateNewWindowOpenerDestroyedInAddNewContents) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  // Create an opener WebContents owned by the test, so the delegate can destroy
++  // it from within AddNewContents().
++  WebContents::CreateParams create_params(
++      shell()->web_contents()->GetBrowserContext());
++  create_params.desired_renderer_state =
++      WebContents::CreateParams::kInitializeAndWarmupRendererProcess;
++  std::unique_ptr<WebContents> opener(WebContents::Create(create_params));
++  WebContents* opener_ptr = opener.get();
++
++  base::RunLoop run_loop;
++  DestroyOpenerOnAddNewContentsDelegate delegate(
++      base::BindLambdaForTesting([&]() {
++        // Destroy the opener (`this` inside CreateNewWindow()) synchronously.
++        opener.reset();
++        run_loop.Quit();
++      }));
++  opener_ptr->SetDelegate(&delegate);
++
++  const GURL opener_url(
++      embedded_test_server()->GetURL("a.com", "/title1.html"));
++  ASSERT_TRUE(NavigateToURL(opener_ptr, opener_url));
++
++  // Open a new window with `noopener` so CreateNewWindow() takes the
++  // opener-suppressed path that shows/navigates the window via the delegate.
++  // The script is run fire-and-forget because the opener frame is destroyed
++  // while the window.open() IPC is being handled.
++  const GURL popup_url(
++      embedded_test_server()->GetURL("a.com", "/title2.html"));
++  ExecuteScriptAsync(
++      opener_ptr,
++      JsReplace("window.open($1, '_blank', 'noopener');", popup_url));
++
++  // The opener is destroyed during AddNewContents(). The test passes if this
++  // completes without a use-after-free (caught under ASAN).
++  run_loop.Run();
++  EXPECT_FALSE(opener);
++}
++
++namespace {
++
+ class OutgoingSetRendererPrefsMojoWatcher {
+  public:
+   explicit OutgoingSetRendererPrefsMojoWatcher(RenderViewHostImpl* rvh)

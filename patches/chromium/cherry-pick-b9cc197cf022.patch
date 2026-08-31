@@ -1,0 +1,258 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Thu, 27 Aug 2026 02:24:00 -0700
+Subject: [M144] [agy][gpu] Fix FBO delete-while-bound bug
+
+Original change's description:
+> [agy][gpu] Fix FBO delete-while-bound bug
+>
+> Ensure the previous framebuffer is restored before deleting the
+> temporary framebuffer in GLTextureHolder::ReadbackToMemory.
+>
+> Some drivers retain an internal reference to the previously bound FBO
+> across bind transitions; deleting it while bound and then rebinding
+> can dereference freed driver state.
+>
+> Fixed: 525317502
+> Test: gpu_unittests --gtest_filter=GLTextureHolderTest.*
+> Change-Id: I359330bb3d1d07c7605b85039081a5f70d8c10c4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8015318
+> Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+> Reviewed-by: Colin Blundell <blundell@chromium.org>
+> Commit-Queue: Tzarial <zork@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1657204}
+
+(cherry picked from commit a5d9f9795433c7ca292222bfa1f894eb584c0c6a)
+
+Bug: 539302213,525317502
+Change-Id: I359330bb3d1d07c7605b85039081a5f70d8c10c4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8156763
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7559@{#5285}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/gpu/BUILD.gn b/gpu/BUILD.gn
+index c2416a21bb3799e0d2e3969df4969f6ce5d064ff..55833ad9a10f098e5f1c679c24f1f794a371eac0 100644
+--- a/gpu/BUILD.gn
++++ b/gpu/BUILD.gn
+@@ -489,6 +489,7 @@ test("gpu_unittests") {
+     "command_buffer/service/shared_context_state_unittest.cc",
+     "command_buffer/service/shared_image/compound_image_backing_unittest.cc",
+     "command_buffer/service/shared_image/gl_repack_utils_unittest.cc",
++    "command_buffer/service/shared_image/gl_texture_holder_unittest.cc",
+     "command_buffer/service/shared_memory_region_wrapper_unittest.cc",
+     "command_buffer/service/sync_point_manager_unittest.cc",
+     "command_buffer/service/task_graph_unittest.cc",
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index 0ca351e125917dcf36839c246fe8e4cdadef298e..54423f38d59426c81b7c0c2383256449256baa5a 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -5,6 +5,7 @@
+ #include "gpu/command_buffer/service/shared_image/gl_texture_holder.h"
+ 
+ #include "base/bits.h"
++#include "base/memory/raw_ptr.h"
+ #include "build/build_config.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ #include "gpu/command_buffer/service/shared_image/gl_repack_utils.h"
+@@ -52,6 +53,29 @@ constexpr int ComputeBestAlignment(size_t bytes_per_pixel, size_t stride) {
+   return bytes_per_pixel;
+ }
+ 
++class ScopedTemporaryFramebuffer {
++ public:
++  explicit ScopedTemporaryFramebuffer(gl::GLApi* api) : api_(api) {
++    api_->glGenFramebuffersEXTFn(1, &id_);
++  }
++
++  ScopedTemporaryFramebuffer(const ScopedTemporaryFramebuffer&) = delete;
++  ScopedTemporaryFramebuffer& operator=(const ScopedTemporaryFramebuffer&) =
++      delete;
++
++  ~ScopedTemporaryFramebuffer() {
++    if (id_ != 0) {
++      api_->glDeleteFramebuffersEXTFn(1, &id_);
++    }
++  }
++
++  GLuint id() const { return id_; }
++
++ private:
++  const raw_ptr<gl::GLApi> api_;
++  GLuint id_ = 0;
++};
++
+ }  // anonymous namespace
+ 
+ // static
+@@ -357,9 +381,15 @@ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+   }
+ 
+   gl::GLApi* api = gl::g_current_gl_context;
+-  GLuint framebuffer;
+-  api->glGenFramebuffersEXTFn(1, &framebuffer);
+-  gl::ScopedFramebufferBinder scoped_framebuffer_binder(framebuffer);
++  // ScopedTemporaryFramebuffer must be declared before ScopedFramebufferBinder
++  // so that when this scope exits, ScopedFramebufferBinder is destroyed first
++  // (restoring the previous framebuffer binding) before the temporary FBO is
++  // deleted. Some drivers retain an internal reference to the previously bound
++  // FBO across bind transitions; deleting it while bound can trigger a
++  // driver UAF (see https://crbug.com/525317502).
++  ScopedTemporaryFramebuffer temp_fbo(api);
++  gl::ScopedFramebufferBinder scoped_framebuffer_binder(temp_fbo.id());
++
+   // This uses GL_FRAMEBUFFER instead of GL_READ_FRAMEBUFFER as the target for
+   // GLES2 compatibility.
+   api->glFramebufferTexture2DEXTFn(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+@@ -438,8 +468,6 @@ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+                         pixels);
+   }
+ 
+-  api->glDeleteFramebuffersEXTFn(1, &framebuffer);
+-
+   if (!unpack_buffer.empty()) {
+     DCHECK_GT(dst_stride, expected_stride);
+     UnpackPixelDataWithStride(size_, unpack_buffer, expected_stride, pixmap);
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.h b/gpu/command_buffer/service/shared_image/gl_texture_holder.h
+index e2db72f3e2409046dd61579a4e68a6d4a3308cda..7a4a1d42191ea2239dce07778165d4d255706afc 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.h
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.h
+@@ -7,6 +7,7 @@
+ 
+ #include "gpu/command_buffer/service/shared_image/gl_common_image_backing_factory.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_format_service_utils.h"
++#include "gpu/gpu_gles2_export.h"
+ #include "ui/gl/progress_reporter.h"
+ 
+ class GrPromiseImageTexture;
+@@ -17,7 +18,7 @@ class SharedContextState;
+ 
+ // Helper class that holds a single GL texture, that works with either
+ // validating or passthrough command decoder.
+-class GLTextureHolder {
++class GPU_GLES2_EXPORT GLTextureHolder {
+  public:
+   // Returns the equivalent SharedImageFormat for plane specified by
+   // `plane_index`.
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder_unittest.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e48dbd4e318136abfa1e8053dac70bbcf3fe679c
+--- /dev/null
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder_unittest.cc
+@@ -0,0 +1,113 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "gpu/command_buffer/service/shared_image/gl_texture_holder.h"
++
++#include "base/memory/scoped_refptr.h"
++#include "components/viz/common/resources/shared_image_format.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_format_service_utils.h"
++#include "gpu/command_buffer/service/texture_manager.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "ui/gl/gl_bindings.h"
++#include "ui/gl/gl_context_stub.h"
++#include "ui/gl/gl_mock.h"
++#include "ui/gl/gl_surface_stub.h"
++#include "ui/gl/test/gl_surface_test_support.h"
++
++namespace gpu {
++namespace {
++
++using ::testing::_;
++using ::testing::InSequence;
++using ::testing::Ne;
++using ::testing::NiceMock;
++using ::testing::Pointee;
++using ::testing::Return;
++using ::testing::SetArgPointee;
++
++class GLTextureHolderTest : public ::testing::Test {
++ protected:
++  void SetUp() override {
++    gl::SetGLGetProcAddressProc(gl::MockGLInterface::GetGLProcAddress);
++    display_ = gl::GLSurfaceTestSupport::InitializeOneOffWithMockBindings();
++    gl_ = std::make_unique<NiceMock<gl::MockGLInterface>>();
++    gl::MockGLInterface::SetGLInterface(gl_.get());
++
++    surface_ = base::MakeRefCounted<gl::GLSurfaceStub>();
++    context_ = base::MakeRefCounted<gl::GLContextStub>();
++    context_->SetGLVersionString("OpenGL ES 2.0");
++    context_->SetExtensionsString("");
++    context_->Initialize(surface_.get(), {});
++    context_->MakeCurrent(surface_.get());
++
++    ON_CALL(*gl_, CheckFramebufferStatusEXT(_))
++        .WillByDefault(Return(GL_FRAMEBUFFER_COMPLETE));
++  }
++
++  void TearDown() override {
++    context_ = nullptr;
++    surface_ = nullptr;
++    gl::MockGLInterface::SetGLInterface(nullptr);
++    gl_.reset();
++    gl::GLSurfaceTestSupport::ShutdownGL(display_);
++  }
++
++  std::unique_ptr<NiceMock<gl::MockGLInterface>> gl_;
++  scoped_refptr<gl::GLContextStub> context_;
++  scoped_refptr<gl::GLSurfaceStub> surface_;
++  raw_ptr<gl::GLDisplay> display_ = nullptr;
++};
++
++// ReadbackToMemory creates a temporary FBO for glReadPixels. The previous
++// framebuffer binding must be restored before the temporary FBO is deleted so
++// that the temporary FBO is never the previously bound FBO at the next bind
++// transition. Some drivers retain an internal reference to the previously
++// bound FBO across bind transitions; see the
++// ensure_previous_framebuffer_not_deleted driver workaround.
++TEST_F(GLTextureHolderTest, ReadbackToMemoryRestoresFramebufferBeforeDelete) {
++  constexpr GLuint kTextureId = 11;
++  constexpr GLuint kTempFboId = 22;
++  constexpr GLint kPrevFboId = 33;
++  constexpr gfx::Size kSize(4, 4);
++
++  GLTextureHolder holder(viz::SinglePlaneFormat::kRGBA_8888, kSize,
++                         /*is_passthrough=*/true,
++                         /*progress_reporter=*/nullptr);
++  GLFormatDesc format_desc;
++  format_desc.data_format = GL_RGBA;
++  format_desc.data_type = GL_UNSIGNED_BYTE;
++  format_desc.target = GL_TEXTURE_2D;
++  auto texture = base::MakeRefCounted<gles2::TexturePassthrough>(kTextureId,
++                                                                 GL_TEXTURE_2D);
++  holder.InitializeWithTexture(format_desc, texture);
++
++  ON_CALL(*gl_, GetIntegerv(GL_FRAMEBUFFER_BINDING, _))
++      .WillByDefault(SetArgPointee<1>(kPrevFboId));
++
++  {
++    InSequence seq;
++    EXPECT_CALL(*gl_, GenFramebuffersEXT(1, _))
++        .WillOnce(SetArgPointee<1>(kTempFboId));
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kTempFboId));
++    EXPECT_CALL(*gl_, ReadPixels(0, 0, kSize.width(), kSize.height(), GL_RGBA,
++                                 GL_UNSIGNED_BYTE, _));
++    // The previous framebuffer binding must be restored before the temporary
++    // FBO is deleted.
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kPrevFboId));
++    EXPECT_CALL(*gl_, DeleteFramebuffersEXT(1, Pointee(kTempFboId)));
++  }
++
++  SkBitmap bitmap;
++  bitmap.allocPixels(SkImageInfo::Make(kSize.width(), kSize.height(),
++                                       kRGBA_8888_SkColorType,
++                                       kPremul_SkAlphaType));
++  EXPECT_TRUE(holder.ReadbackToMemory(bitmap.pixmap()));
++
++  texture->MarkContextLost();
++}
++
++}  // namespace
++}  // namespace gpu

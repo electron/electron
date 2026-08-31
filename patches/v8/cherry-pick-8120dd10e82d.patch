@@ -1,0 +1,209 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 10 Jul 2026 11:34:05 +0200
+Subject: [M150] [stack-traces] Make .stack accessors look only at receiver
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [stack-traces] Make .stack accessors look only at receiver
+>
+> ... when reading internal stack trace or message (i.e. [[ErrorData]]
+> slot). Update tests accordingly.
+>
+> This is a first step towards implementing Error Stack Accessor proposal
+> https://tc39.es/proposal-error-stack-accessor/#sec-get-error.prototype-stack.
+>
+> Fixed: 531319201
+> Bug: 512450179
+> Change-Id: I333769d61d20c99b59250b8cbd2dcf3172b56640
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8064992
+> Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108587}
+
+(cherry picked from commit 9cfa2ca3fee87bd2919978d73d0ea28b93493be8)
+
+Bug: 533661026,531319201,512450179
+Change-Id: I333769d61d20c99b59250b8cbd2dcf3172b56640
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8086200
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#35}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/execution/messages.cc b/src/execution/messages.cc
+index 00ad664760c8c4076f6be70703d4c074e3b2572a..9764ad68e225fa2cb69ce9236758e8eb97674a52 100644
+--- a/src/execution/messages.cc
++++ b/src/execution/messages.cc
+@@ -699,8 +699,8 @@ MaybeHandle<String> ErrorUtils::ToString(Isolate* isolate,
+     // is accessed the first time.
+     //
+     // If |recv| was not constructed with %Error%, use the "message" property.
+-    LookupIterator it(isolate, LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR,
+-                      recv, isolate->factory()->error_message_symbol());
++    LookupIterator it(isolate, recv, isolate->factory()->error_message_symbol(),
++                      LookupIterator::OWN_SKIP_INTERCEPTOR);
+     Handle<Object> result = JSReceiver::GetDataProperty(&it);
+     if (it.IsFound() && IsUndefined(*result, isolate)) {
+       msg = msg_default;
+@@ -1140,9 +1140,9 @@ bool ErrorUtils::HasErrorStackSymbolOwnProperty(Isolate* isolate,
+ // static
+ ErrorUtils::StackPropertyLookupResult ErrorUtils::GetErrorStackProperty(
+     Isolate* isolate, DirectHandle<JSReceiver> maybe_error_object) {
+-  LookupIterator it(isolate, LookupIterator::PROTOTYPE_CHAIN_SKIP_INTERCEPTOR,
+-                    maybe_error_object,
+-                    isolate->factory()->error_stack_symbol());
++  LookupIterator it(isolate, maybe_error_object,
++                    isolate->factory()->error_stack_symbol(),
++                    LookupIterator::OWN_SKIP_INTERCEPTOR);
+   Handle<Object> result = JSReceiver::GetDataProperty(&it);
+ 
+   if (!it.IsFound()) {
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index b3b071d327bc9234f79f09da15f1043f80b1fe6b..67c1107c7ff0844f5b6ceb3839083b8e1b03468c 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -113,24 +113,6 @@ LookupIterator::LookupIterator(Isolate* isolate, DirectHandle<JSAny> receiver,
+   }
+ }
+ 
+-LookupIterator::LookupIterator(Isolate* isolate, Configuration configuration,
+-                               DirectHandle<JSAny> receiver,
+-                               DirectHandle<Symbol> name)
+-    : configuration_(configuration),
+-      isolate_(isolate),
+-      name_(name),
+-      receiver_(receiver),
+-      lookup_start_object_(receiver),
+-      index_(kInvalidIndex) {
+-  // This is the only lookup configuration allowed by this constructor because
+-  // it's special case allowing lookup of the private symbols on the prototype
+-  // chain. Usually private symbols are limited to OWN_SKIP_INTERCEPTOR lookups.
+-  DCHECK(*name_ == *isolate->factory()->error_stack_symbol() ||
+-         *name_ == *isolate->factory()->error_message_symbol());
+-  DCHECK_EQ(configuration, PROTOTYPE_CHAIN_SKIP_INTERCEPTOR);
+-  Start<false>();
+-}
+-
+ PropertyKey::PropertyKey(Isolate* isolate, double index) {
+   DCHECK_EQ(index, static_cast<uint64_t>(index));
+ #if V8_TARGET_ARCH_32_BIT
+diff --git a/src/objects/lookup.h b/src/objects/lookup.h
+index 8214b0e2fa288595358cd2af6a2545684266b803..7b17f0cec9c2e640f8f0efb24841780b800babff 100644
+--- a/src/objects/lookup.h
++++ b/src/objects/lookup.h
+@@ -141,13 +141,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
+                         DirectHandle<JSAny> lookup_start_object,
+                         Configuration configuration = DEFAULT);
+ 
+-  // Special case for lookup of the |error_stack_trace| private symbol in
+-  // prototype chain (usually private symbols are limited to
+-  // OWN_SKIP_INTERCEPTOR lookups).
+-  inline LookupIterator(Isolate* isolate, Configuration configuration,
+-                        DirectHandle<JSAny> receiver,
+-                        DirectHandle<Symbol> name);
+-
+   inline InternalIndex descriptor_number() const;
+   inline InternalIndex dictionary_entry() const;
+ 
+diff --git a/test/cctest/heap/test-heap.cc b/test/cctest/heap/test-heap.cc
+index bee43e6102eeaa50b0b065f951bc7498636fb785..30d026961a22d15b6d6037efeb0094f463bf2366 100644
+--- a/test/cctest/heap/test-heap.cc
++++ b/test/cctest/heap/test-heap.cc
+@@ -3798,39 +3798,13 @@ UNINITIALIZED_TEST(ReleaseStackTraceData) {
+         "} catch (e) {                "
+         "  error = e;                 "
+         "}                            ";
+-    static const char* source3 =
+-        "var error = null;            "
+-        /* Normal Error */
+-        "try {                        "
+-        /* as prototype */
+-        "  throw new Error();         "
+-        "} catch (e) {                "
+-        "  error = {};                "
+-        "  error.__proto__ = e;       "
+-        "}                            ";
+-    static const char* source4 =
+-        "var error = null;            "
+-        /* Stack overflow */
+-        "try {                        "
+-        /* as prototype   */
+-        "  (function f() { f(); })(); "
+-        "} catch (e) {                "
+-        "  error = {};                "
+-        "  error.__proto__ = e;       "
+-        "}                            ";
+     static const char* getter = "error.stack";
+     static const char* setter = "error.stack = 0";
+ 
+     ReleaseStackTraceDataTest(isolate, source1, setter);
+     ReleaseStackTraceDataTest(isolate, source2, setter);
+-    // We do not test source3 and source4 with setter, since the setter is
+-    // supposed to (untypically) write to the receiver, not the holder.  This is
+-    // to emulate the behavior of a data property.
+-
+     ReleaseStackTraceDataTest(isolate, source1, getter);
+     ReleaseStackTraceDataTest(isolate, source2, getter);
+-    ReleaseStackTraceDataTest(isolate, source3, getter);
+-    ReleaseStackTraceDataTest(isolate, source4, getter);
+   }
+   isolate->Dispose();
+ }
+diff --git a/test/cctest/test-api-stack-traces.cc b/test/cctest/test-api-stack-traces.cc
+index 99012b8b744036f7c5515d103b8ef268f8de1354..4095af193595058153b7517b0310c7d0a32e6469 100644
+--- a/test/cctest/test-api-stack-traces.cc
++++ b/test/cctest/test-api-stack-traces.cc
+@@ -670,7 +670,7 @@ TEST(RethrowBogusErrorStackTrace) {
+   v8::HandleScope scope(isolate);
+   const char* source =
+       "var e = {__proto__: new Error()} \n"
+-      "throw e;                         \n";
++      "throw e.__proto__;               \n";
+   isolate->AddMessageListener(RethrowBogusErrorStackTraceHandler);
+   isolate->SetCaptureStackTraceForUncaughtExceptions(true);
+   CompileRun(source);
+diff --git a/test/mjsunit/stack-traces-overflow.js b/test/mjsunit/stack-traces-overflow.js
+index cd690752d3dc61f96726b09c09d393bc715e2d2b..60dc034f0077a923cc4d5e641eae440c896dd9f0 100644
+--- a/test/mjsunit/stack-traces-overflow.js
++++ b/test/mjsunit/stack-traces-overflow.js
+@@ -76,35 +76,6 @@ try {
+ }
+ 
+ 
+-// Check setting/getting stack property on the prototype chain.
+-function testErrorPrototype(prototype) {
+-  var object = {};
+-  object.__proto__ = prototype;
+-  // Setting stack property overwrites prototype.stack value.
+-  object.stack = "123";
+-  assertEquals(prototype.stack, object.stack);
+-  assertEquals("123", object.stack);
+-}
+-
+-try {
+-  rec1(0);
+-} catch (e) {
+-  e.stack;
+-  testErrorPrototype(e);
+-}
+-
+-try {
+-  rec1(0);
+-} catch (e) {
+-  testErrorPrototype(e);
+-}
+-
+-try {
+-  throw new Error();
+-} catch (e) {
+-  testErrorPrototype(e);
+-}
+-
+ Error.stackTraceLimit = 3;
+ try {
+   rec1(0);

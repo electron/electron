@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Wed, 8 Jul 2026 20:48:33 -0700
+Subject: [M150] [HiC] Invalidate cached paint when content is moved into
+ canvas
+
+Original change's description:
+> [HiC] Invalidate cached paint when content is moved into canvas
+>
+> Bug: 517931625
+> Change-Id: I4b024abe0d670a30daab5089ac2a9c4942bb27c8
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7997860
+> Reviewed-by: Philip Rogers <pdr@chromium.org>
+> Commit-Queue: Stefan Zager <szager@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1653242}
+
+(cherry picked from commit 4ca9747a45ccaf8beda9ed8803333b4b6bfc1bfe)
+
+Bug: 528588695,517931625
+Change-Id: I4b024abe0d670a30daab5089ac2a9c4942bb27c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8061624
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#3062}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 9defc3828f9cc014dee957afba71d21f1a4402a4..c81c41d3b1c653bfd016e2e52aa3186dd70b949e 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -245,6 +245,7 @@
+ #include "third_party/blink/renderer/core/page/scrolling/root_scroller_controller.h"
+ #include "third_party/blink/renderer/core/page/scrolling/sync_scroll_attempt_heuristic.h"
+ #include "third_party/blink/renderer/core/page/spatial_navigation.h"
++#include "third_party/blink/renderer/core/paint/object_paint_invalidator.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer.h"
+ #include "third_party/blink/renderer/core/paint/paint_layer_scrollable_area.h"
+ #include "third_party/blink/renderer/core/probe/core_probes.h"
+@@ -4407,6 +4408,18 @@ void Element::SetIsCanvasOrInCanvasSubtree(bool value) {
+   DidChangeIsCanvasOrInCanvasSubtree();
+ }
+ 
++void Element::DidChangeIsCanvasOrInCanvasSubtree() {
++  if (auto* layout_object = GetLayoutObject()) {
++    layout_object->SetNeedsPaintPropertyUpdate();
++    if (layout_object->HasLayer()) {
++      To<LayoutBoxModelObject>(layout_object)->Layer()->SetNeedsRepaint();
++    }
++    ObjectPaintInvalidator(*layout_object)
++        .InvalidateDisplayItemClient(*layout_object,
++                                     PaintInvalidationReason::kUncacheable);
++  }
++}
++
+ void Element::RemovedFrom(ContainerNode& insertion_point) {
+   bool was_in_document = insertion_point.isConnected();
+   if (Element* parent = DynamicTo<Element>(insertion_point)) {
+diff --git a/third_party/blink/renderer/core/dom/element.h b/third_party/blink/renderer/core/dom/element.h
+index 679c68de8de552bc33833e013b3e7cd62fb51c99..a1acbe030d45ecb020001ca68746d97a1cc00011 100644
+--- a/third_party/blink/renderer/core/dom/element.h
++++ b/third_party/blink/renderer/core/dom/element.h
+@@ -1103,7 +1103,7 @@ class CORE_EXPORT Element : public ContainerNode {
+     return HasElementFlag(ElementFlags::kIsCanvasOrInCanvasSubtree);
+   }
+   // Called when `IsCanvasOrInCanvasSubtree()` has changed.
+-  virtual void DidChangeIsCanvasOrInCanvasSubtree() {}
++  virtual void DidChangeIsCanvasOrInCanvasSubtree();
+   // Like `IsCanvasOrInCanvasSubtree()`, but excludes the outermost <canvas>.
+   bool IsInCanvasSubtree() const;
+ 
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index b6a14cccb84ff3ba7db8a03f0509998bf935c334..46934cd796a8a5b6b8bbeb91e6edf29ac3f9df7a 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -1296,6 +1296,7 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+ }
+ 
+ void HTMLInputElement::DidChangeIsCanvasOrInCanvasSubtree() {
++  TextControlElement::DidChangeIsCanvasOrInCanvasSubtree();
+   if (RuntimeEnabledFeatures::CanvasDrawElementEnabled(GetExecutionContext()) &&
+       IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.cc b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+index fc87e0520ded1d367c250b7f422c2f13c1760cf1..4d78199ea863c6e5b323c3c8f517cc85b5e4d1dc 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+@@ -841,6 +841,7 @@ int HTMLSelectElement::SelectedListIndex() const {
+ }
+ 
+ void HTMLSelectElement::DidChangeIsCanvasOrInCanvasSubtree() {
++  HTMLFormControlElementWithState::DidChangeIsCanvasOrInCanvasSubtree();
+   if (RuntimeEnabledFeatures::CanvasDrawElementEnabled(GetExecutionContext()) &&
+       IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+diff --git a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+index 7bde0d26d04c9c0a2e820f90f4e9528b430a8c43..dceb9a65b5eaa25c2faa537eb41c5988099cca87 100644
+--- a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+@@ -669,6 +669,7 @@ void HTMLTextAreaElement::SetSuggestedValue(const String& value) {
+ }
+ 
+ void HTMLTextAreaElement::DidChangeIsCanvasOrInCanvasSubtree() {
++  TextControlElement::DidChangeIsCanvasOrInCanvasSubtree();
+   if (RuntimeEnabledFeatures::CanvasDrawElementEnabled(GetExecutionContext()) &&
+       IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..5dc64d562baf1914e71b26d7931f15469c088d82
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/background-image-in-iframe-ignored.tentative.https.sub.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin background images</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++
++<body>
++  <iframe id="iframe" src="support/subframe-cross-origin-background-image.https.sub.html"></iframe>
++  <canvas id="canvas" width="300" height="150" layoutsubtree>
++    <div id="child"></div>
++  </canvas>
++
++  <script>
++  window.onload = () => {
++    promise_test(async function(t) {
++      await waitForCanvasPaint(canvas);
++
++      // Atomically move the iframe into the canvas.
++      child.moveBefore(iframe, null);
++
++      await waitForCanvasPaint(canvas);
++      const context = canvas.getContext("2d");
++      context.drawElementImage(child, 0, 0);
++      const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++      let pixel = _getPixelFromImageData(imgData, 50, 50);
++      assert_array_equals(pixel, [0, 128, 0, 255],
++                          "Cross-origin background image in iframe should not draw");
++    });
++  };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..48c81b7ecf8b6affaa29fa36e8e4767e22e6917a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/support/subframe-cross-origin-background-image.https.sub.html
+@@ -0,0 +1,22 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>subframe with cross-origin background image</title>
++  <style>
++  body {
++    background-color: rgb(0 128 0);
++  }
++  div {
++    position: absolute;
++    left: 0px;
++    top: 0px;
++    width: 100px;
++    height: 100px;
++    background-image: url("https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png");
++  }
++  </style>
++</head>
++
++<body><div></div></body>
++
++</html>

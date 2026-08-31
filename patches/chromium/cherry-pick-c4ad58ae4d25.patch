@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 10 Jul 2026 19:27:29 -0700
+Subject: [M150] media: Validate source texture format in PerformD3DCopy
+
+Original change's description:
+> media: Validate source texture format in PerformD3DCopy
+>
+> Unfortunately ID3D11DeviceContext::CopySubresourceRegion silently drops
+> copies between incompatible formats.
+> This change adds an explicit check in PerformD3DCopy to ensure the
+> source texture is DXGI_FORMAT_NV12 before copying.
+>
+> Bug: 525177160
+> Change-Id: I262079c23c553938c08cdc381b8f6d5b2b86d3ff
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8013291
+> Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1653876}
+
+(cherry picked from commit e156270a01df9c66dca76380e1c7796783d3394c)
+
+Bug: 530063884,525177160
+Change-Id: I262079c23c553938c08cdc381b8f6d5b2b86d3ff
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8078078
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3185}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index f335df665a7e678f37dafee9bfe509f258b528e2..d81202fde17e8f49b354cec64a4438f960da6f45 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -2950,6 +2950,15 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DCopy(
+       release_keyed_mutex.emplace(std::move(keyed_mutex), 0);
+     }
+ 
++    D3D11_TEXTURE2D_DESC input_desc;
++    input_texture->GetDesc(&input_desc);
++
++    if (input_desc.Format != DXGI_FORMAT_NV12) {
++      LOG(ERROR) << "Format mismatch: source format " << input_desc.Format
++                 << " is not DXGI_FORMAT_NV12";
++      return E_INVALIDARG;
++    }
++
+     D3D11_BOX src_box = {static_cast<UINT>(visible_rect.x()),
+                          static_cast<UINT>(visible_rect.y()),
+                          0,

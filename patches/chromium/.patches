@@ -301,3 +301,12 @@ m152_extensions_disallow_error_documents_from_spoofing.patch
 m152_fix_overflow_in_crashpad.patch
 m152_gpu_add_flush_queries_before_deleting_or_unbinding_fbo.patch
 revert_only_preload_swiftshader_in_gpu_sandbox_init_when_allowed.patch
+cherry-pick-a74693810877.patch
+cherry-pick-109d4363b05b.patch
+cherry-pick-02ddefa1eb9e.patch
+cherry-pick-d39395c9f94c.patch
+cherry-pick-c4ad58ae4d25.patch
+cherry-pick-b9cc197cf022.patch
+cherry-pick-7d3266fe2240.patch
+cherry-pick-b643479522e2.patch
+cherry-pick-bbc335d274ed.patch
