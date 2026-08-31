@@ -240,6 +240,7 @@
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/common/constants.h"  // nogncheck
+#include "components/pdf/common/pdf_util.h"   // nogncheck
 #include "pdf/pdf_features.h"
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
@@ -1850,6 +1851,13 @@ ElectronBrowserClient::MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
   content::RenderFrameHost* pdf_embedder = pdf_extension->GetParent();
   CHECK(pdf_embedder);
   return pdf_embedder->GetCrossOriginEmbedderPolicy();
+}
+
+bool ElectronBrowserClient::IsCrossOriginSubframeAllowedToShowFilePicker(
+    content::RenderFrameHost* render_frame_host,
+    const url::Origin& requesting_origin) {
+  // Let the PDF viewer save edited PDFs via window.showSaveFilePicker().
+  return IsPdfExtensionOrigin(requesting_origin);
 }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
