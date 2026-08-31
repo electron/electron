@@ -742,6 +742,90 @@ app.whenReady().then(() => {
 })
 ```
 
+#### Event: 'collect-webauthn-pin'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53351
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `reason` string - Why the PIN is being collected. Can be `challenge`,
+    `set` or `change`. `challenge` means the existing PIN is needed to
+    complete the request; `set` means the authenticator requires a PIN to be
+    set before it can be used; `change` means the existing PIN must be changed
+    before the authenticator can be used, e.g. because it was set below the
+    authenticator's current minimum length.
+  * `error` string | null - Why the previous PIN entry was rejected, when this
+    event re-fires after a failed attempt. Can be `wrong-pin`, `too-short`,
+    `invalid-characters`, `same-as-current-pin` or `internal-uv-locked`.
+    `internal-uv-locked` means the authenticator's built-in user verification
+    (e.g. a fingerprint sensor) is locked and the request fell back to PIN
+    entry. `null` on the first prompt.
+  * `minPinLength` Integer - The minimum length the authenticator will accept
+    for a new PIN. When `reason` is `challenge`, the existing PIN may be
+    shorter than this if it was set before the minimum was raised.
+  * `attemptsRemaining` Integer | null - The number of attempts remaining
+    before the authenticator locks itself. Only set when `reason` is
+    `challenge`; `null` otherwise.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating
+    this event. May be `null` if accessed after the frame has either navigated
+    or been destroyed.
+* `callback` Function
+  * `pin` string | null (optional)
+
+Emitted when a security key (e.g. a USB FIDO2 authenticator) needs a PIN to
+complete a WebAuthn request. `callback` should be called with the PIN the user
+entered; passing no arguments — or an empty string — cancels the request and
+the page receives a `NotAllowedError`. The request remains pending until the
+listener invokes the callback, so always invoke it exactly once.
+
+If the user enters a PIN that cannot be valid (for example, shorter than
+`minPinLength` when setting a new PIN), the callback's entry is rejected
+without contacting the authenticator and the event fires again with `error`
+set. If the entered PIN is well-formed but wrong, the authenticator rejects
+it, consuming one attempt, and the event fires again with `error` set to
+`wrong-pin` and an updated `attemptsRemaining`.
+
+> [!NOTE]
+> Registering a listener for this event is what enables PIN collection:
+> Chromium asks the embedder whether it can collect a PIN before routing a
+> request into a PIN exchange. With no listener registered, behavior is
+> unchanged from previous versions of Electron — requests with
+> `userVerification: 'preferred'` complete without user verification where the
+> authenticator allows it, and requests that strictly require a PIN cannot
+> proceed. Register the listener before any WebAuthn request starts.
+
+This event allows security keys that require user verification to work on
+platforms where no system-level WebAuthn UI exists (notably Linux). On
+Windows, security key requests are handled by the operating system's own
+dialogs and this event is not emitted.
+
+```js
+const { BrowserWindow, session } = require('electron')
+
+session.defaultSession.on('collect-webauthn-pin', async (event, details, callback) => {
+  try {
+    // showPinDialog is your own UI, e.g. a prompt rendered in a modal window.
+    const pin = await showPinDialog({
+      reason: details.reason,
+      error: details.error,
+      minPinLength: details.minPinLength,
+      attemptsRemaining: details.attemptsRemaining
+    })
+    callback(pin)
+  } catch {
+    callback() // user dismissed the dialog — cancel the request
+  }
+})
+```
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
