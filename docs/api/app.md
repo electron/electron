@@ -1454,6 +1454,12 @@ This method can only be called before app is ready.
 
 Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetric` objects that correspond to memory and CPU usage statistics of all the processes associated with the app.
 
+> [!NOTE]
+> `cpu.percentCPUUsage` and `cpu.idleWakeupsPerSecond` are averages over the time since
+> the last call to `app.getAppMetrics()`, and each call starts a new measurement interval
+> for every process at once. Other code in the main process, including dependencies, shares those
+> intervals. See [`CPUUsage`](structures/cpu-usage.md) for more details.
+
 ### `app.getGPUFeatureStatus()`
 
 Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Feature Status from `chrome://gpu/`.
