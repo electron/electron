@@ -11,17 +11,10 @@
 #include "shell/common/api/api.mojom.h"
 #include "v8/include/cppgc/prefinalizer.h"
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace v8 {
 class Isolate;
 template <typename T>
 class Local;
-class Object;
-class ObjectTemplate;
 }  // namespace v8
 
 namespace gin_helper::internal {

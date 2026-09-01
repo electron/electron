@@ -25,6 +25,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -35,9 +40,28 @@ on:
         required: false
         type: string
         default: x11
+    secrets:
+      # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
+      # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
+      CI_STEP_DEBUG:
+        required: false
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING:
+        required: false
+      CLOUDFLARE_TUNNEL_CERT:
+        required: false
+      CLOUDFLARE_USER_CA_CERT:
+        required: false
+      DD_API_KEY:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
+      SSH_DEBUG_AUTHORIZED_USERS:
+        required: false
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -47,7 +71,7 @@ env:
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.CI_STEP_DEBUG }}
   # @sentry/cli is only needed by release upload-symbols.py; skip the ~17MB CDN download on test jobs
   SENTRYCLI_SKIP_DOWNLOAD: 1
 
@@ -61,12 +85,12 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-ubsan && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -142,6 +166,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Turn off screenshot nag on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -164,9 +189,15 @@ jobs:
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
       run: |
-        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
+    - name: Load UBSan specific environment variables
+      if: ${{ inputs.is-ubsan == true }}
+      run: |
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_ubsan" >> $GITHUB_ENV
+        echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
+        echo "IS_UBSAN=true" >> $GITHUB_ENV
     # Safe to parallelize: each step writes a disjoint location (src/electron
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
@@ -258,11 +289,13 @@ jobs:
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
+        if (Test-Path xcache.zip) { Expand-Archive -Force xcache.zip -DestinationPath ./ }
     - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
+        if [ -f xcache.zip ]; then unzip -:o xcache.zip electron_xcache; fi
     - name: Import & Trust Self-Signed Codesigning Cert on MacOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -294,12 +327,16 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        DISPLAY_SERVER: ${{ inputs.display-server }}
+        SHARD: ${{ matrix.shard }}
+        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
-        if [ "${{ inputs.display-server }}" = "wayland" ]; then
+        tests_files=$(node script/split-tests "$SHARD" "$SHARD_COUNT")
+        if [ "$DISPLAY_SERVER" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
           for test_file in $tests_files; do
@@ -316,20 +353,26 @@ jobs:
         fi
 
         # Run tests
-        if [ "${{ inputs.target-platform }}" != "linux" ]; then
+        if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "win" ]; then
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            if [ "$TARGET_ARCH" = "arm64" ]; then
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          if [ "$IS_UBSAN" = "true" ]; then
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
+            export MOCHA_TIMEOUT=180000
+            node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          else
+            node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          fi
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
-          if [ "${{ inputs.is-asan }}" == "true" ]; then
+          if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
             # symbolize=1 is required for leak suppressions to work: LSan can
@@ -346,8 +389,14 @@ jobs:
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+          elif [ "$IS_UBSAN" == "true" ]; then
+            cd ..
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
+            export MOCHA_TIMEOUT=180000
+            cd electron
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
-            if [ "${{ inputs.display-server }}" = "wayland" ]; then
+            if [ "$DISPLAY_SERVER" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             else
               runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
@@ -370,13 +419,15 @@ jobs:
     - name: Take screenshot on timeout or cancellation
       if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         screenshot_dir="src/electron/spec/artifacts"
         mkdir -p "$screenshot_dir"
         screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           screencapture -x "$screenshot_file" || true
-        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+        elif [ "$TARGET_PLATFORM" = "win" ]; then
           powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
         fi
 
@@ -386,7 +437,7 @@ jobs:
         DD_SERVICE: electron
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_CIVISIBILITY_LOGS_ENABLED: true
-        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
+        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }},ubsan:${{ inputs.is-ubsan }}"
       run: |
         if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
           cd src/electron

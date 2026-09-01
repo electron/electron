@@ -78,6 +78,8 @@ void DragFileItems(const std::vector<base::FilePath>& files,
                       eventNumber:0
                        clickCount:1
                          pressure:1.0];
+  if (!dragEvent)
+    return;
 
   // Run the drag operation.
   [native_view beginDraggingSessionWithItems:file_items

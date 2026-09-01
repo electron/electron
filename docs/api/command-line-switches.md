@@ -392,6 +392,13 @@ Finally, you'll need to ensure that the version of Chromium in Electron matches 
   [`long-animation-frame`](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing)
   `PerformanceObserver` events for non-http(s), non-data, non-blob URLs (such as `file:` or custom
   protocol URLs).
+* `SpareRendererForSitePerProcess`: keeps a spare renderer process running at all times so
+  that a new window, or a navigation that needs a new process, does not wait for a process to
+  launch. Electron starts one such process when the default session is created, for the first
+  sandboxed window that uses it; enable this if the app opens windows regularly and the memory of an
+  idle renderer is acceptable. Only windows whose `webPreferences` are sandboxed and set none of `additionalArguments`,
+  `enableBlinkFeatures`, `disableBlinkFeatures`, `experimentalFeatures`, `offscreen` or (macOS)
+  `scrollBounce` can use it.
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value

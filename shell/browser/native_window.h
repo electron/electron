@@ -26,7 +26,6 @@
 #include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
 class DraggableRegionProvider;
 class PrefService;
 
@@ -408,7 +407,7 @@ class NativeWindow : public views::WidgetDelegate {
 
   [[nodiscard]] bool has_frame() const { return has_frame_; }
 
-  NativeWindow* parent() const { return parent_; }
+  NativeWindow* parent() const { return parent_.get(); }
 
   [[nodiscard]] bool is_modal() const { return is_modal_; }
 
@@ -571,8 +570,9 @@ class NativeWindow : public views::WidgetDelegate {
   double aspect_ratio_ = 0.0;
   gfx::Size aspect_ratio_extraSize_;
 
-  // The parent window, it is guaranteed to be valid during this window's life.
-  raw_ptr<NativeWindow> parent_ = nullptr;
+  // The parent window. Held weakly because the parent may be destroyed
+  // before this window (e.g. a modal child whose parent is destroy()ed).
+  base::WeakPtr<NativeWindow> parent_;
 
   bool is_transitioning_fullscreen_ = false;
 

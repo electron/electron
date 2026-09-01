@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 857a63363486a092ae6242334fcce5ac5efd74a7..4f4e7ed33d3230e28c3e94ec2a79bc4458610993 100644
+index d20920174d7e7fafa4f58283db2a660beef7ef7a..fcff902ca98c598659e4418f96b633eea2296fc8 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -566,7 +566,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -584,7 +584,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -130,10 +130,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 70022df0744e19ece95ccfc65b4c738f9470989b..501ad4512ec551fcafae98d2d9f77161d68e9215 100644
+index bc94b303773d865175a8d4158a9fdb9e161a9c03..7aaa20eb8a8aed93a78af48903ddb7dbfbb5a84f 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -127,7 +127,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -129,7 +129,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -142,7 +142,7 @@ index 70022df0744e19ece95ccfc65b4c738f9470989b..501ad4512ec551fcafae98d2d9f77161
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -352,7 +352,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -354,7 +354,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&

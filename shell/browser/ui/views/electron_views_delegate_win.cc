@@ -34,7 +34,7 @@ bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
   HWND taskbar = reinterpret_cast<HWND>(
       SHAppBarMessage(ABM_GETAUTOHIDEBAR, &taskbar_data));
   if (!::IsWindow(taskbar)) {
-    APPBARDATA new_taskbar_data = {sizeof(APPBARDATA), 0, 0, 0};
+    APPBARDATA new_taskbar_data = {sizeof(APPBARDATA), nullptr, 0, 0};
     unsigned int taskbar_state =
         SHAppBarMessage(ABM_GETSTATE, &new_taskbar_data);
     if (!(taskbar_state & ABS_AUTOHIDE))

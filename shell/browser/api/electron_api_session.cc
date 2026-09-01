@@ -43,6 +43,7 @@
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/spare_render_process_host_manager.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
@@ -347,9 +348,9 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
       auto error = v8::Exception::Error(
           gin::StringToV8(isolate, "Failed to clear data"));
       error.As<v8::Object>()
-          ->Set(promise_.GetContext(),
-                gin::StringToV8(isolate, "failedDataTypes"),
-                failed_data_types_array)
+          ->CreateDataProperty(promise_.GetContext(),
+                               gin::StringToV8(isolate, "failedDataTypes"),
+                               failed_data_types_array)
           .Check();
 
       promise_.Reject(error);
@@ -1379,7 +1380,8 @@ api::ServiceWorkerContext* Session::ServiceWorkerContext() {
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
   if (!web_request_)
-    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{});
+    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{},
+                                      browser_context()->GetWeakPtr());
   return web_request_;
 }
 
@@ -1772,7 +1774,15 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return FromOrCreate(isolate, browser_context);
+  const bool creating = !FromBrowserContext(browser_context);
+  Session* session = FromOrCreate(isolate, browser_context);
+  // One renderer started ahead of the first window; the first sandboxed
+  // WebContents takes it (ElectronBrowserClient::ShouldUseSpareRenderProcess-
+  // Host), anything else lets content discard it.
+  if (creating && partition.empty()) {
+    content::SpareRenderProcessHostManager::Get().WarmupSpare(browser_context);
+  }
+  return session;
 }
 
 // static

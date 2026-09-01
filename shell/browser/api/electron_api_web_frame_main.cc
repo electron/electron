@@ -12,6 +12,7 @@
 #include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
@@ -28,6 +29,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -221,6 +223,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   DCHECK(inserted);
 
   render_frame_disposed_ = false;
+  render_frame_detached_ = false;
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
@@ -243,7 +246,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Optional userGesture parameter
-  bool user_gesture;
+  bool user_gesture = false;
   if (!args->PeekNext().IsEmpty()) {
     if (args->PeekNext()->IsBoolean()) {
       args->GetNext(&user_gesture);
@@ -251,8 +254,6 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
       args->ThrowTypeError("userGesture must be a boolean");
       return handle;
     }
-  } else {
-    user_gesture = false;
   }
 
   if (render_frame_disposed_) {
@@ -333,7 +334,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
                         bool internal,
                         const std::string& channel,
                         v8::Local<v8::Value> args) {
-  blink::CloneableMessage message;
+  electron::SerializedValue message;
   if (!gin::ConvertFromV8(isolate, args, &message)) {
     isolate->ThrowException(v8::Exception::Error(
         gin::StringToV8(isolate, "Failed to serialize arguments")));
@@ -635,6 +636,12 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
       // RFH is in the process of being swapped. Need to lookup by FTN to avoid
       // creating dangling WebFrameMain.
       web_frame = FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+      if (!web_frame) {
+        // A WebFrameMain cannot be created for a transient RFH, so initialize
+        // it with the current active RFH and update it when the swap completes.
+        auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+        rfh = rfh_impl->frame_tree_node()->current_frame_host();
+      }
       break;
     case LifecycleState::kPrerendering:
     case LifecycleState::kActive:

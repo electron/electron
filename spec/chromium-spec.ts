@@ -598,6 +598,8 @@ describe('command line switches', () => {
     it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should set the locale with country code', async () =>
       testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should resolve a locale whose country code is not shipped', async () =>
+      testLocale('de-DE', `de|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should not set an invalid locale', async () =>
       testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
 
@@ -1350,12 +1352,12 @@ describe('chromium features', () => {
   describe('File System API,', () => {
     let w: BrowserWindow | null = null;
 
-    afterEach(() => {
+    afterEach(async () => {
       ipcMain.removeAllListeners('did-create-file-handle');
       ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionCheckHandler(null);
       session.defaultSession.setPermissionRequestHandler(null);
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('allows access by default to reading an OPFS file', async () => {
@@ -2700,7 +2702,12 @@ describe('chromium features', () => {
         callback(permission === 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -2729,7 +2736,12 @@ describe('chromium features', () => {
         callback(permission !== 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -2980,6 +2992,140 @@ describe('chromium features', () => {
       );
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
+    });
+
+    describe('permission requests', () => {
+      const deviceGetUserMedia = `navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+      const desktopGetUserMedia = `navigator.mediaDevices.getUserMedia({
+          video: { mandatory: { chromeMediaSource: 'desktop' } }
+        }).then(s => ({ ok: true, kinds: s.getTracks().map(t => t.kind) }), e => ({ ok: false, err: e.message }))`;
+      const getDisplayMedia = `navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+
+      type SeenRequest = { permission: string; mediaTypes: string[] | undefined; securityOrigin: string | undefined };
+      const collectRequests = (ses: Electron.Session, grant: (permission: string) => boolean) => {
+        const seen: SeenRequest[] = [];
+        ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+          const { mediaTypes, securityOrigin } = details as MediaAccessPermissionRequest;
+          seen.push({ permission, mediaTypes, securityOrigin });
+          callback(grant(permission));
+        });
+        return seen;
+      };
+
+      it('reports camera and microphone getUserMedia as a media request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(deviceGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('media');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('reports desktop getUserMedia as a display-capture request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err, kinds } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(kinds).to.deep.equal(['video']);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.deep.equal(['video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('denies desktop getUserMedia when display-capture is denied', async () => {
+        const seen = collectRequests(session.defaultSession, (permission) => permission === 'media');
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
+
+      it('reports getDisplayMedia as a display-capture request before the display media handler runs', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, () => true);
+        let requestsSeenByDisplayHandler = -1;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          requestsSeenByDisplayHandler = seen.length;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.true(err);
+        expect(requestsSeenByDisplayHandler).to.equal(1);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('applies the display-capture permissions policy to desktop getUserMedia from a cross-origin iframe', async () => {
+        const iframeServer = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<body>iframe</body>');
+        });
+        const { url: iframeUrl } = await listen(iframeServer);
+        defer(() => iframeServer.close());
+
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+
+        const loadIframe = async (allow: string) => {
+          w.webContents.executeJavaScript(`(() => {
+            for (const f of document.querySelectorAll('iframe')) f.remove();
+            const iframe = document.createElement('iframe');
+            iframe.src = ${JSON.stringify(iframeUrl)};
+            iframe.allow = ${JSON.stringify(allow)};
+            document.body.appendChild(iframe);
+          })()`);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          return webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        };
+
+        // Without allow="display-capture" the policy defaults to 'self', so the
+        // cross-origin iframe is denied without the app being asked.
+        const denied = (await (await loadIframe('')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(denied.ok).to.be.false();
+        expect(denied.err).to.equal('Permission denied');
+        expect(seen).to.be.empty();
+
+        const allowed = (await (await loadIframe('display-capture')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(allowed.ok).to.be.true(allowed.err);
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
+
+      it('does not run the display media handler for getDisplayMedia when display-capture is denied', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, (permission) => permission === 'media');
+        let displayHandlerCalled = false;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          displayHandlerCalled = true;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(displayHandlerCalled).to.be.false();
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
     });
   });
 
@@ -3908,6 +4054,14 @@ describe('chromium features', () => {
     });
   });
 
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
+    });
+  });
+
   // FIXME(nornagon): this is broken on CI, it triggers:
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
@@ -4480,9 +4634,9 @@ describe('paste execCommand', () => {
     ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     ses.setPermissionCheckHandler(null);
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   it('is disabled by default', async () => {
@@ -4627,9 +4781,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     });
 
-    after(() => {
+    after(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can set a numerical value', async () => {
@@ -4666,9 +4820,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can be called in a ServiceWorker', (done) => {
@@ -4782,9 +4936,9 @@ describe('navigator.hid', () => {
   const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
     deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {
@@ -4956,6 +5110,26 @@ describe('navigator.hid', () => {
       }
     }
   });
+
+  it('does not crash when the requesting webContents is destroyed from the select-hid-device handler', async () => {
+    const guest = (webContents as typeof ElectronInternal.WebContents).create({
+      type: 'webview',
+      embedder: w.webContents
+    });
+    await guest.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+    const selectFired = new Promise<void>((resolve) => {
+      w.webContents.session.once('select-hid-device', () => {
+        guest.destroy();
+        resolve();
+      });
+    });
+    guest.executeJavaScript('navigator.hid.requestDevice({filters: []})', true).catch(() => {});
+    await selectFired;
+    await setTimeout();
+    expect(guest.isDestroyed()).to.be.true();
+  });
 });
 
 describe('navigator.usb', () => {
@@ -4994,9 +5168,9 @@ describe('navigator.usb', () => {
 
   const notFoundError = "NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.";
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {
@@ -5234,6 +5408,7 @@ describe('iframe sandbox popups', () => {
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
         a.href = ${JSON.stringify(href)};
+        a.target = '_blank';
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window

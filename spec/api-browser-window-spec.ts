@@ -15,6 +15,7 @@ import {
   session,
   systemPreferences,
   WebContents,
+  WebContentsView,
   WebFrameMain
 } from 'electron/main';
 
@@ -1167,6 +1168,94 @@ describe('BrowserWindow module', () => {
         after(() => {
           server.close();
         });
+        it('exposes a cross-origin iframe during navigation', async () => {
+          const port = (server.address() as AddressInfo).port;
+          const fixture = path.join(os.tmpdir(), `web-frame-main-navigation-${crypto.randomUUID()}.html`);
+          fs.writeFileSync(fixture, `<iframe src="${url}/iframe"></iframe>`);
+          defer(() => fs.unlinkSync(fixture));
+
+          const view = new WebContentsView({
+            webPreferences: { partition: `wfm-navigation-${crypto.randomUUID()}`, sandbox }
+          });
+          defer(() => view.webContents.destroy());
+          w.contentView.addChildView(view);
+          defer(() => w.contentView.removeChildView(view));
+
+          const { webContents } = view;
+          const didStartNavigation = new Promise<number>((resolve) => {
+            webContents.on('did-start-navigation', (details) => {
+              if (!details.isMainFrame) resolve(details.frame!.frameTreeNodeId);
+            });
+          });
+          const headersReceived = new Promise<number>((resolve) => {
+            webContents.session.webRequest.onHeadersReceived((details, callback) => {
+              const frameTreeNodeId = details.frame?.frameTreeNodeId;
+              callback({ responseHeaders: details.responseHeaders });
+              if (details.resourceType === 'subFrame' && frameTreeNodeId) resolve(frameTreeNodeId);
+            });
+          });
+          defer(() => webContents.session.webRequest.onHeadersReceived(null));
+
+          await webContents.loadFile(fixture);
+          const frameTreeNodeId = await didStartNavigation;
+          expect(await headersReceived).to.equal(frameTreeNodeId);
+
+          const iframe = webContents.mainFrame.frames[0];
+          expect(iframe.frameTreeNodeId).to.equal(frameTreeNodeId);
+          const navigated = emittedUntil(
+            webContents,
+            'did-frame-navigate',
+            (_event: Electron.Event, _url: string, _code: number, _status: string, isMainFrame: boolean) => !isMainFrame
+          );
+          iframe.executeJavaScript(`location.href = 'http://localhost:${port}/navigated'`);
+          const [, , , , , processId, routingId] = await navigated;
+          const navigatedIframe = webFrameMain.fromId(processId, routingId);
+          expect(navigatedIframe).to.equal(iframe);
+          expect(navigatedIframe!.frameTreeNodeId).to.equal(frameTreeNodeId);
+        });
+
+        it('recovers a frame when its renderer crashes during navigation', async () => {
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const view = new WebContentsView({
+            webPreferences: { partition: `wfm-crash-navigation-${crypto.randomUUID()}`, sandbox }
+          });
+          defer(() => view.webContents.destroy());
+          w.contentView.addChildView(view);
+          defer(() => w.contentView.removeChildView(view));
+
+          const { webContents } = view;
+          await webContents.loadURL(`${url}/initial`);
+
+          let resumeNavigation: (() => void) | undefined;
+          const frameReceived = new Promise<WebFrameMain>((resolve) => {
+            webContents.session.webRequest.onHeadersReceived((details, callback) => {
+              if (details.resourceType === 'mainFrame' && details.frame) {
+                resumeNavigation = () => callback({ responseHeaders: details.responseHeaders });
+                resolve(details.frame);
+              } else {
+                callback({ responseHeaders: details.responseHeaders });
+              }
+            });
+          });
+          defer(() => {
+            resumeNavigation?.();
+            webContents.session.webRequest.onHeadersReceived(null);
+          });
+
+          const navigation = webContents.loadURL(`${crossOriginUrl}/navigated`);
+          const frame = await frameReceived;
+          const renderProcessGone = once(webContents, 'render-process-gone');
+          webContents.forcefullyCrashRenderer();
+          await renderProcessGone;
+          expect(frame.detached).to.be.true();
+
+          resumeNavigation!();
+          resumeNavigation = undefined;
+          await navigation;
+
+          expect(webContents.mainFrame).to.equal(frame);
+          expect(frame.detached).to.be.false();
+        });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = ['did-start-navigation', 'did-frame-navigate', 'did-navigate'];
@@ -1447,7 +1536,7 @@ describe('BrowserWindow module', () => {
         expect(w.isVisible()).to.be.true('parent is visible');
         expect(c.isVisible()).to.be.true('child is visible');
 
-        closeWindow(c);
+        await closeWindow(c);
       });
     });
 
@@ -4705,7 +4794,7 @@ describe('BrowserWindow module', () => {
           // w.title should update after 'page-title-updated'.
           // It happens right *after* the event fires though,
           // so we have to waitUntil it changes
-          waitUntil(() => w.title === newTitle);
+          await waitUntil(() => w.title === newTitle);
         });
 
         it('works for stop events', async () => {
@@ -5469,8 +5558,8 @@ describe('BrowserWindow module', () => {
     const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
     const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
 
-    afterEach(() => {
-      closeAllWindows();
+    afterEach(async () => {
+      await closeAllWindows();
 
       try {
         fs.unlinkSync(savePageCssPath);
@@ -6008,6 +6097,21 @@ describe('BrowserWindow module', () => {
 
         await once(one, 'closed');
         await createTwo();
+      });
+
+      it('does not crash when the parent is destroyed before the modal child', async () => {
+        const parent = new BrowserWindow({ show: false });
+        const child = new BrowserWindow({ parent, modal: true, show: false });
+        parent.destroy();
+        await setTimeout(300);
+        // On Windows the child is owned by the parent HWND and is destroyed
+        // with it; elsewhere it survives and must not touch the freed parent.
+        if (!child.isDestroyed()) {
+          child.hide();
+          child.show();
+          child.hide();
+          child.destroy();
+        }
       });
 
       ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
@@ -7778,12 +7882,14 @@ describe('BrowserWindow module', () => {
         const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
         await foregroundWindow.loadFile(colorFile);
 
+        // This verifies how the transparent window composites over the window
+        // behind it, so it has to capture the display rather than one window.
         const screenCapture = new ScreenCapture(display);
-        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, (size) => ({
+        await screenCapture.expectColorAtPointMatches(HexColors.GREEN, (size) => ({
           x: size.width / 4,
           y: size.height / 2
         }));
-        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.RED, (size) => ({
+        await screenCapture.expectColorAtPointMatches(HexColors.RED, (size) => ({
           x: (size.width * 3) / 4,
           y: size.height / 2
         }));
@@ -7819,6 +7925,8 @@ describe('BrowserWindow module', () => {
         foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
         await once(ipcMain, 'set-transparent');
 
+        // This verifies how the transparent window composites over the window
+        // behind it, so it has to capture the display rather than one window.
         const screenCapture = new ScreenCapture(display);
         await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
       }
@@ -7836,9 +7944,9 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        const screenCapture = new ScreenCapture(display);
+        const capture = ScreenCapture.forWindow(window);
         // color-scheme is set to dark so background should not be white
-        await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+        await capture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
 
         window.close();
       }
@@ -7860,8 +7968,8 @@ describe('BrowserWindow module', () => {
       w.loadURL('data:text/html,<html></html>');
       await once(w, 'ready-to-show');
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(HexColors.BLUE);
     });
   });
 

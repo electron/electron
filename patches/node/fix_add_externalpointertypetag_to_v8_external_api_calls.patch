@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 1d4c36783609ca85a66590b94608110fdd4fcc12..b213fc8e6a4a74b14beaab22c73374f55bba9079 100644
+index 05592ab02db0ba482136f1d6827829737cbdd693..1a0c06f473b65967ef5d9330196ec72b8c3e79cf 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2399,7 +2399,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2626,7 +2626,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -100,7 +100,7 @@ index 541c1580f7b29cb2bdd4bbdc5e056b46bba08dbb..34ced47c7142be3ab8d97840ea88770c
    env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
  }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index 065ed602b314f367c2e7dec94019521fd5d23bf4..8be8a8b5726a265a838841a21bb023fa41ceeb13 100644
+index ce381c00888b032c281938a7bab334058e075ec8..6d3373caae6c5cc22e16fc32e7ea007178aa1a20 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
 @@ -93,7 +93,7 @@ static void GetExternalValue(
@@ -113,10 +113,10 @@ index 065ed602b314f367c2e7dec94019521fd5d23bf4..8be8a8b5726a265a838841a21bb023fa
    Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
    args.GetReturnValue().Set(ret);
 diff --git a/src/stream_base.cc b/src/stream_base.cc
-index 566204e667c8e8802db6ac47881d33178f6147b2..31af8313611961d8c18654ce9ccaee6e6af087b1 100644
+index 360986c8935dde85d7e946699731b17a3bd5d209..c61bb72fabb8854a5b3a3fc88b347581fcb5c1ca 100644
 --- a/src/stream_base.cc
 +++ b/src/stream_base.cc
-@@ -653,7 +653,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
+@@ -649,7 +649,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
    StreamBase* wrap = StreamBase::FromObject(args.This().As<Object>());
    if (wrap == nullptr) return;
  

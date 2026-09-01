@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "shell/common/uv_includes.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 #include "v8/include/v8-locker.h"
 
 namespace gin {
@@ -16,13 +17,13 @@ class IsolateHolder;
 }  // namespace gin
 
 namespace node {
-class Environment;
 class MultiIsolatePlatform;
 struct SnapshotData;
 }  // namespace node
 
 namespace v8 {
 class Isolate;
+class TracingController;
 }  // namespace v8
 
 namespace electron {
@@ -32,7 +33,8 @@ class MicrotasksRunner;
 class JavascriptEnvironment {
  public:
   JavascriptEnvironment(uv_loop_t* event_loop,
-                        bool setup_wasm_streaming = false);
+                        bool setup_wasm_streaming = false,
+                        v8::TracingController* tracing_controller = nullptr);
   ~JavascriptEnvironment();
 
   // disable copy
@@ -61,7 +63,9 @@ class JavascriptEnvironment {
   [[nodiscard]] static const node::SnapshotData* NodeSnapshot();
 
  private:
-  v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
+  v8::Isolate* Initialize(uv_loop_t* event_loop,
+                          bool setup_wasm_streaming,
+                          v8::TracingController* tracing_controller);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   size_t max_young_generation_size_ = 0;

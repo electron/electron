@@ -9,10 +9,10 @@ modules to sandboxed renderers.
 TODO(codebytere): remove and replace with a public facing API.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index b76ecc8cab47dfb96adce17294eb0191a60a2efd..0ddc080f6f1e1b3d0aaa0e55c9aa5ddb7409b11b 100644
+index fa11b58725cfd58055aad628876eac3d978f68a5..d87e97305b618b043bf2842ccbf3642ae95bed7e 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
-@@ -657,6 +657,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
+@@ -661,6 +661,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
    args.GetReturnValue().Set(exports);
  }
  

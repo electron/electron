@@ -39,7 +39,7 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 168b6a812a87cf2d700afc71c205493c968fc540..c1fa104fa25bd5919e405a3df94f3701d0e234a2 100644
+index 20e001bb870ceb118a4f95d2e8dbcedd9717365a..ad22d64bc133b657de85a4012756a2aa0360339b 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -2273,4 +2273,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
@@ -87,7 +87,7 @@ index d2375ecd32483ff57840d30f804100372f2e12db..396f7848952e941b3e667b47424c5166
  #endif
  
 diff --git a/src/memory_tracker-inl.h b/src/memory_tracker-inl.h
-index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4acf2c709ec 100644
+index a59452fd994c33c263da9ff0865ef6717d4a81b4..be72ac5f3102b2915eff3fcbcfb51b8af7eafd32 100644
 --- a/src/memory_tracker-inl.h
 +++ b/src/memory_tracker-inl.h
 @@ -63,7 +63,7 @@ class MemoryRetainerNode : public v8::EmbedderGraph::Node {
@@ -100,10 +100,10 @@ index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4ac
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 8ce9c5c5fcf55dfc711363fe652ae3cbe17a480e..1c5465fc09fa480258c928deb7871fcd9e34878a 100644
+index f4094b05b0122377c826828457a842cde0acb2e8..a6a0ffb0ed272b9b05acc9cb32aa7951a780443e 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -1015,6 +1015,21 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -1017,6 +1017,21 @@ void BuiltinLoader::RegisterExternalReferences(
  }
  
  }  // namespace builtins

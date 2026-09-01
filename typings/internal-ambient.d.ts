@@ -73,9 +73,12 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    executable: boolean;
     integrity?: {
       algorithm: 'SHA256';
       hash: string;
+      blockSize: number;
+      blocks: string[];
     };
   };
 
@@ -83,6 +86,7 @@ declare namespace NodeJS {
     size: number;
     offset: number;
     type: number;
+    executable: boolean;
   };
 
   interface AsarArchive {
@@ -96,6 +100,7 @@ declare namespace NodeJS {
 
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
+    createSentinelFd(): number | -1;
     splitPath(path: string):
       | {
           isAsar: false;

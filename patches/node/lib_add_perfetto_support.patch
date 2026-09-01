@@ -1,0 +1,379 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <legendecas@gmail.com>
+Date: Sun, 2 Nov 2025 21:52:06 +0000
+Subject: lib: add perfetto support
+
+Signed-off-by: Chengzhong Wu <cwu631@bloomberg.net>
+PR-URL: https://github.com/nodejs/node/pull/64565
+Refs: https://github.com/nodejs/diagnostics/issues/654
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
+
+diff --git a/lib/internal/console/constructor.js b/lib/internal/console/constructor.js
+index 0b71abc98f700fec597e603a1785929f74ec30b9..9d653793f133dbff300cdbd44b256cacc53d399b 100644
+--- a/lib/internal/console/constructor.js
++++ b/lib/internal/console/constructor.js
+@@ -35,7 +35,7 @@ const {
+   SymbolToStringTag,
+ } = primordials;
+ 
+-const { trace } = internalBinding('trace_events');
++const { trace, nodeTraceEventCategory, kTraceCount } = require('internal/trace_events');
+ const {
+   codes: {
+     ERR_CONSOLE_WRITABLE_STREAM,
+@@ -59,9 +59,6 @@ const {
+ const {
+   isTypedArray, isSet, isMap, isSetIterator, isMapIterator,
+ } = require('internal/util/types');
+-const {
+-  CHAR_UPPERCASE_C: kTraceCount,
+-} = require('internal/constants');
+ const kCounts = Symbol('counts');
+ const { time, timeLog, timeEnd, kNone } = require('internal/util/debuglog');
+ const { channel } = require('diagnostics_channel');
+@@ -72,7 +69,7 @@ const onError = channel('console.error');
+ const onInfo = channel('console.info');
+ const onDebug = channel('console.debug');
+ 
+-const kTraceConsoleCategory = 'node,node.console';
++const kTraceConsoleCategory = nodeTraceEventCategory('node.console');
+ 
+ const kMaxGroupIndentation = 1000;
+ 
+diff --git a/lib/internal/constants.js b/lib/internal/constants.js
+index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..8ddb8ba81e6c4536f5d9c3042e3a0cbb1533c7a2 100644
+--- a/lib/internal/constants.js
++++ b/lib/internal/constants.js
+@@ -9,8 +9,11 @@ module.exports = {
+   CHAR_UPPERCASE_Z: 90, /* Z */
+   CHAR_LOWERCASE_Z: 122, /* z */
+   CHAR_UPPERCASE_C: 67, /* C */
++  CHAR_UPPERCASE_B: 66, /* B */
+   CHAR_LOWERCASE_B: 98, /* b */
++  CHAR_UPPERCASE_E: 69, /* E */
+   CHAR_LOWERCASE_E: 101, /* e */
++  CHAR_UPPERCASE_I: 73, /* I */
+   CHAR_LOWERCASE_N: 110, /* n */
+ 
+   // Non-alphabetic chars.
+diff --git a/lib/internal/http.js b/lib/internal/http.js
+index 116d699f505a4f53ec816ccb83b634cccdf2a67c..304ef04d663826adc70e874c6d32f4acee4d55a6 100644
+--- a/lib/internal/http.js
++++ b/lib/internal/http.js
+@@ -9,11 +9,13 @@ const {
+ } = primordials;
+ 
+ const { setUnrefTimeout } = require('internal/timers');
+-const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
+ const {
+-  CHAR_LOWERCASE_B,
+-  CHAR_LOWERCASE_E,
+-} = require('internal/constants');
++  getCategoryEnabledBuffer,
++  trace,
++  nodeTraceEventCategory,
++  kAsyncBegin,
++  kAsyncEnd,
++} = require('internal/trace_events');
+ 
+ const { URL } = require('internal/url');
+ const { Buffer } = require('buffer');
+@@ -48,14 +50,14 @@ function isTraceHTTPEnabled() {
+   return httpEnabled[0] > 0;
+ }
+ 
+-const traceEventCategory = 'node,node.http';
++const traceEventCategory = nodeTraceEventCategory('node.http');
+ 
+ function traceBegin(...args) {
+-  trace(CHAR_LOWERCASE_B, traceEventCategory, ...args);
++  trace(kAsyncBegin, traceEventCategory, ...args);
+ }
+ 
+ function traceEnd(...args) {
+-  trace(CHAR_LOWERCASE_E, traceEventCategory, ...args);
++  trace(kAsyncEnd, traceEventCategory, ...args);
+ }
+ 
+ function ipToInt(ip) {
+diff --git a/lib/internal/perf/usertiming.js b/lib/internal/perf/usertiming.js
+index 88bb63ead2d3d620dea6b54db043a404b484ead9..4eac195eb14d219e0b1539e5db3b3075e65b42f4 100644
+--- a/lib/internal/perf/usertiming.js
++++ b/lib/internal/perf/usertiming.js
+@@ -13,6 +13,12 @@ const { PerformanceEntry, kSkipThrow } = require('internal/perf/performance_entr
+ const { now } = require('internal/perf/utils');
+ const { enqueue, bufferUserTiming } = require('internal/perf/observe');
+ const nodeTiming = require('internal/perf/nodetiming');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
++const {
++  CHAR_LOWERCASE_B,
++  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_I,
++} = require('internal/constants');
+ 
+ const {
+   validateNumber,
+@@ -41,6 +47,9 @@ const kDetail = Symbol('kDetail');
+ 
+ const markTimings = new SafeMap();
+ 
++const traceEventCategory = 'node.perf.usertiming';
++let traceEventId = 0;
++
+ const nodeTimingReadOnlyAttributes = new SafeSet(new SafeArrayIterator([
+   'nodeStart',
+   'v8Start',
+@@ -168,6 +177,10 @@ function mark(name, options) {
+   const mark = new PerformanceMark(name, options);
+   enqueue(mark);
+   bufferUserTiming(mark);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    trace(CHAR_UPPERCASE_I, traceEventCategory, name, undefined,
++          { startTime: mark.startTime });
++  }
+   return mark;
+ }
+ 
+@@ -233,6 +246,13 @@ function measure(name, startOrMeasureOptions, endMark) {
+   const measure = createPerformanceMeasure(name, start, duration, detail);
+   enqueue(measure);
+   bufferUserTiming(measure);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    const id = ++traceEventId;
++    trace(CHAR_LOWERCASE_B, traceEventCategory, name, id,
++          { startTime: start });
++    trace(CHAR_LOWERCASE_E, traceEventCategory, name, id,
++          { startTime: start, duration });
++  }
+   return measure;
+ }
+ 
+diff --git a/lib/internal/trace_events.js b/lib/internal/trace_events.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d240f4ad589e746b2cf398df98ddb2a23ef6b70f
+--- /dev/null
++++ b/lib/internal/trace_events.js
+@@ -0,0 +1,56 @@
++'use strict';
++
++const { getCategoryEnabledBuffer, trace, usePerfetto } = internalBinding('trace_events');
++const {
++  CHAR_UPPERCASE_B,
++  CHAR_LOWERCASE_B,
++  CHAR_UPPERCASE_C,
++  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_E,
++  CHAR_LOWERCASE_N,
++} = require('internal/constants');
++
++let nodeTraceEventCategory;
++if (usePerfetto) {
++  nodeTraceEventCategory = (category) => `${category}`;
++} else {
++  nodeTraceEventCategory = (category) => `node,${category}`;
++}
++
++// The async events describe the execution of a single asynchronous operation, and are
++// used to measure the time spent in a single asynchronous operation.
++// Async events may overlap with each other. Different events do not have
++// to be nested, or FILO (first in last out).
++// TODO(legendecas): V8 `trace` API does not support async marks in perfetto yet.
++const kAsyncBegin = usePerfetto ? CHAR_UPPERCASE_B : CHAR_LOWERCASE_B;
++const kAsyncEnd = usePerfetto ? CHAR_UPPERCASE_E : CHAR_LOWERCASE_E;
++
++// The sync events describe the execution of a single thread, and are
++// used to measure the time spent in a function.
++// Sync events must be nested, and are FILO (first in last out), in a stack
++// manner.
++const kSyncBegin = CHAR_UPPERCASE_B;
++const kSyncEnd = CHAR_UPPERCASE_E;
++
++// Counter events track a named numeric value as it changes over time. Each
++// event records the value at a point in time, and the trace viewer renders the
++// series as a graph.
++// TODO(legendecas): V8 `trace` API does not support count marks in perfetto yet.
++const kTraceCount = usePerfetto ? CHAR_LOWERCASE_N : CHAR_UPPERCASE_C;
++
++// Instant events mark a single moment in time. They have no duration and do
++// not need to be paired or nested.
++const kTraceInstant = CHAR_LOWERCASE_N;
++
++module.exports = {
++  usePerfetto,
++  getCategoryEnabledBuffer,
++  trace,
++  nodeTraceEventCategory,
++  kAsyncBegin,
++  kAsyncEnd,
++  kSyncBegin,
++  kSyncEnd,
++  kTraceCount,
++  kTraceInstant,
++};
+diff --git a/lib/internal/trace_events_async_hooks.js b/lib/internal/trace_events_async_hooks.js
+index a9f517ffc9e4eea5bc68997ffadc85d43dde2a52..86de9e7964743e7686e83626f3d4d7964e0437a9 100644
+--- a/lib/internal/trace_events_async_hooks.js
++++ b/lib/internal/trace_events_async_hooks.js
+@@ -7,20 +7,18 @@ const {
+   Symbol,
+ } = primordials;
+ 
+-const { trace } = internalBinding('trace_events');
++const {
++  trace,
++  nodeTraceEventCategory,
++  kAsyncBegin,
++  kAsyncEnd,
++  kSyncBegin,
++  kSyncEnd,
++} = require('internal/trace_events');
+ const async_wrap = internalBinding('async_wrap');
+ const async_hooks = require('async_hooks');
+-const {
+-  CHAR_LOWERCASE_B,
+-  CHAR_LOWERCASE_E,
+-} = require('internal/constants');
+ 
+-// Use small letters such that chrome://tracing groups by the name.
+-// The behavior is not only useful but the same as the events emitted using
+-// the specific C++ macros.
+-const kBeforeEvent = CHAR_LOWERCASE_B;
+-const kEndEvent = CHAR_LOWERCASE_E;
+-const kTraceEventCategory = 'node,node.async_hooks';
++const kTraceEventCategory = nodeTraceEventCategory('node.async_hooks');
+ 
+ const kEnabled = Symbol('enabled');
+ 
+@@ -45,7 +43,7 @@ function createHook() {
+       if (nativeProviders.has(type)) return;
+ 
+       typeMemory.set(asyncId, type);
+-      trace(kBeforeEvent, kTraceEventCategory,
++      trace(kAsyncBegin, kTraceEventCategory,
+             type, asyncId,
+             {
+               triggerAsyncId,
+@@ -57,21 +55,21 @@ function createHook() {
+       const type = typeMemory.get(asyncId);
+       if (type === undefined) return;
+ 
+-      trace(kBeforeEvent, kTraceEventCategory, `${type}_CALLBACK`, asyncId);
++      trace(kSyncBegin, kTraceEventCategory, `${type}_CALLBACK`, asyncId);
+     },
+ 
+     after(asyncId) {
+       const type = typeMemory.get(asyncId);
+       if (type === undefined) return;
+ 
+-      trace(kEndEvent, kTraceEventCategory, `${type}_CALLBACK`, asyncId);
++      trace(kSyncEnd, kTraceEventCategory, `${type}_CALLBACK`, asyncId);
+     },
+ 
+     destroy(asyncId) {
+       const type = typeMemory.get(asyncId);
+       if (type === undefined) return;
+ 
+-      trace(kEndEvent, kTraceEventCategory, type, asyncId);
++      trace(kAsyncEnd, kTraceEventCategory, type, asyncId);
+ 
+       // Cleanup asyncId to type map
+       typeMemory.delete(asyncId);
+diff --git a/lib/internal/util/debuglog.js b/lib/internal/util/debuglog.js
+index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1cb3ba4df520e782037d63bf1aeaef8b6313199f 100644
+--- a/lib/internal/util/debuglog.js
++++ b/lib/internal/util/debuglog.js
+@@ -14,13 +14,15 @@ const {
+   StringPrototypeToLowerCase,
+   StringPrototypeToUpperCase,
+ } = primordials;
+-const {
+-  CHAR_LOWERCASE_B: kTraceBegin,
+-  CHAR_LOWERCASE_E: kTraceEnd,
+-  CHAR_LOWERCASE_N: kTraceInstant,
+-} = require('internal/constants');
+ const { inspect, format, formatWithOptions } = require('internal/util/inspect');
+-const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
++const {
++  getCategoryEnabledBuffer,
++  trace,
++  nodeTraceEventCategory,
++  kAsyncBegin,
++  kAsyncEnd,
++  kTraceInstant,
++} = require('internal/trace_events');
+ 
+ // `debugImpls` and `testEnabled` are deliberately not initialized so any call
+ // to `debuglog()` before `initializeDebugEnv()` is called will throw.
+@@ -246,7 +248,7 @@ function time(timesStore, traceCategory, implementation, timerFlags, logLabel =
+ 
+   if ((timerFlags & kSkipTrace) === 0) {
+     traceLabel = safeTraceLabel(traceLabel);
+-    trace(kTraceBegin, traceCategory, traceLabel, 0);
++    trace(kAsyncBegin, traceCategory, traceLabel, 0);
+   }
+ 
+   timesStore.set(logLabel, process.hrtime());
+@@ -286,7 +288,7 @@ function timeEnd(
+ 
+   if ((timerFlags & kSkipTrace) === 0) {
+     traceLabel = safeTraceLabel(traceLabel);
+-    trace(kTraceEnd, traceCategory, traceLabel, 0);
++    trace(kAsyncEnd, traceCategory, traceLabel, 0);
+   }
+ 
+   timesStore.delete(logLabel);
+@@ -385,7 +387,7 @@ function debugWithTimer(set, cb) {
+       );
+   }
+ 
+-  const traceCategory = `node,node.${StringPrototypeToLowerCase(set)}`;
++  const traceCategory = nodeTraceEventCategory(`node.${StringPrototypeToLowerCase(set)}`);
+   let traceCategoryBuffer;
+   let debugLogCategoryEnabled = false;
+   let timerFlags = kNone;
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index e15501e174f1e04d2f58e8ec3f2d032390774dc1..278c7f96e12460e8a00ed37ce6ddad54c9815dbf 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1318,9 +1318,6 @@ void DefineTraceConstants(Local<Object> target) {
+   NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MEMORY_DUMP);
+   NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MARK);
+   NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_CLOCK_SYNC);
+-  NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_ENTER_CONTEXT);
+-  NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_LEAVE_CONTEXT);
+-  NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_LINK_IDS);
+ }
+ 
+ void CreatePerContextProperties(Local<Object> target,
+diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
+index 49c457cae2b3da603a548874f63dbdf9f50580d9..73ef9f99167154f6fbb3ef857b8ce3b5a94a1431 100644
+--- a/src/node_trace_events.cc
++++ b/src/node_trace_events.cc
+@@ -205,6 +205,14 @@ void NodeCategorySet::Initialize(Local<Object> target,
+                   .Check();
+   target->Set(context, trace,
+               binding->Get(context, trace).ToLocalChecked()).Check();
++
++  Local<String> use_perfetto =
++      FIXED_ONE_BYTE_STRING(env->isolate(), "usePerfetto");
++#if defined(V8_USE_PERFETTO)
++  target->Set(context, use_perfetto, v8::True(isolate)).Check();
++#else
++  target->Set(context, use_perfetto, v8::False(isolate)).Check();
++#endif
+ }
+ 
+ void NodeCategorySet::RegisterExternalReferences(
+diff --git a/test/parallel/test-bootstrap-modules.js b/test/parallel/test-bootstrap-modules.js
+index 01b7ba07cf6151be43658f855711cf2f67e5a13f..099f8d2eaf057eea5ddd9812e6b18dd6933fcf7d 100644
+--- a/test/parallel/test-bootstrap-modules.js
++++ b/test/parallel/test-bootstrap-modules.js
+@@ -118,6 +118,7 @@ expected.beforePreExec = new Set([
+   'NativeModule internal/net',
+   'NativeModule internal/dns/utils',
+   'NativeModule internal/modules/esm/get_format',
++  'NativeModule internal/trace_events',
+ ]);
+ 
+ expected.atRunTime = new Set([

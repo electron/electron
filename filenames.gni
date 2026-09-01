@@ -8,17 +8,15 @@ filenames = {
   default_app_static_sources = [
     "default_app/icon.png",
     "default_app/index.html",
+    "default_app/octicon/LICENSE",
+    "default_app/octicon/book-24.svg",
+    "default_app/octicon/build.css",
+    "default_app/octicon/code-square-24.svg",
+    "default_app/octicon/gift-24.svg",
+    "default_app/octicon/mark-github-16.svg",
+    "default_app/octicon/star-fill-24.svg",
     "default_app/package.json",
     "default_app/styles.css",
-  ]
-
-  default_app_octicon_sources = [
-    "node_modules/@primer/octicons/build/build.css",
-    "node_modules/@primer/octicons/build/svg/book-24.svg",
-    "node_modules/@primer/octicons/build/svg/code-square-24.svg",
-    "node_modules/@primer/octicons/build/svg/gift-24.svg",
-    "node_modules/@primer/octicons/build/svg/mark-github-16.svg",
-    "node_modules/@primer/octicons/build/svg/star-fill-24.svg",
   ]
 
   lib_sources_linux = [
@@ -484,6 +482,8 @@ filenames = {
     "shell/browser/net/resolve_proxy_helper.h",
     "shell/browser/net/system_network_context_manager.cc",
     "shell/browser/net/system_network_context_manager.h",
+    "shell/browser/net/url_loader_factory_gate.cc",
+    "shell/browser/net/url_loader_factory_gate.h",
     "shell/browser/net/url_loader_network_observer.cc",
     "shell/browser/net/url_loader_network_observer.h",
     "shell/browser/network_hints_handler_impl.cc",
@@ -663,6 +663,8 @@ filenames = {
     "shell/common/gin_converters/osr_converter.cc",
     "shell/common/gin_converters/osr_converter.h",
     "shell/common/gin_converters/serial_port_info_converter.h",
+    "shell/common/gin_converters/serialized_value_converter.cc",
+    "shell/common/gin_converters/serialized_value_converter.h",
     "shell/common/gin_converters/service_worker_converter.cc",
     "shell/common/gin_converters/service_worker_converter.h",
     "shell/common/gin_converters/std_converter.h",
@@ -692,6 +694,7 @@ filenames = {
     "shell/common/gin_helper/function_template.cc",
     "shell/common/gin_helper/function_template.h",
     "shell/common/gin_helper/function_template_extensions.h",
+    "shell/common/gin_helper/gin_embedders.h",
     "shell/common/gin_helper/handle.h",
     "shell/common/gin_helper/locker.cc",
     "shell/common/gin_helper/locker.h",

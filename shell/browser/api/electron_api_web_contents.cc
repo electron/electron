@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
+#include <algorithm>
 #include <limits>
 #include <list>
 #include <memory>
@@ -13,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/auto_reset.h"
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
@@ -168,6 +170,7 @@
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
+#include "ui/accessibility/platform/ax_platform.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
@@ -442,6 +445,18 @@ namespace {
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
 
+// Number of WebContents with caret browsing enabled.
+int g_caret_browsing_count = 0;
+
+void AdjustCaretBrowsingCount(int delta) {
+  // g_caret_browsing_count should never be negative. This shouldn't be
+  // possible, but it's cheap to ensure and log in dev.
+  DCHECK_GE(g_caret_browsing_count + delta, 0);
+  g_caret_browsing_count = std::max(0, g_caret_browsing_count + delta);
+  const bool any_enabled = g_caret_browsing_count > 0;
+  ui::AXPlatform::GetInstance().SetCaretBrowsingState(any_enabled);
+}
+
 #if BUILDFLAG(ENABLE_PRINTING)
 // Constants we use for printing.
 constexpr char kFrom[] = "from";
@@ -455,6 +470,8 @@ constexpr char kMediaSize[] = "mediaSize";
 constexpr char kDpi[] = "dpi";
 constexpr char kMarginType[] = "marginType";
 constexpr char kMargins[] = "margins";
+constexpr char kPrintBackground[] = "printBackground";
+constexpr char kDuplexMode[] = "duplexMode";
 
 constexpr char kDpiHorizontal[] = "horizontal";
 constexpr char kDpiVertical[] = "vertical";
@@ -806,6 +823,11 @@ WebContents::WebContents(v8::Isolate* isolate,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
 #endif
 {
+  // A Type::kRemote WebContents returns from InitWithExtensionView() before the
+  // funnel below, so it takes its caret browsing reference here instead.
+  ReconcileCaretBrowsingCount(
+      web_contents->GetMutableRendererPrefs()->caret_browsing_enabled);
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
   extensions::mojom::ViewType view_type = extensions::GetViewType(web_contents);
@@ -901,6 +923,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     }
   }
 
+  // Wake lock disabling
+  bool disable_wake_locks = false;
+  options.Get(options::kDisableWakeLocks, &disable_wake_locks);
+
   // Init embedder earlier
   options.Get("embedder", &embedder_);
 
@@ -940,6 +966,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     guest_delegate_ =
         std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
+    params.enable_wake_locks = !disable_wake_locks;
 
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
@@ -972,6 +999,7 @@ WebContents::WebContents(v8::Isolate* isolate,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
+    params.enable_wake_locks = !disable_wake_locks;
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
@@ -979,6 +1007,10 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params{browser_context};
     params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
+    params.enable_wake_locks = !disable_wake_locks;
+    base::AutoReset<bool> reset(
+        ElectronBrowserClient::Get()->spare_renderer_compatible(),
+        RendererProcessPreferences::From(options).CanUseSpareRenderer());
     web_contents = content::WebContents::Create(params);
   }
 
@@ -1093,7 +1125,6 @@ void WebContents::InitWithSessionAndOptions(
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
-  WebContentsPermissionHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
@@ -1152,6 +1183,15 @@ void WebContents::InitWithWebContents(
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
+  // As the delegate we route permission checks through this helper, so every
+  // adopted WebContents (including extension background pages) needs one.
+  WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
+
+  // A <webview> guest is created with a copy of its embedder's renderer
+  // preferences, so caret browsing may already be enabled. Every path that
+  // adopts a content::WebContents funnels through here.
+  ReconcileCaretBrowsingCount(
+      web_contents->GetMutableRendererPrefs()->caret_browsing_enabled);
 
   // TODO: This works for main frames, but does not work for child frames.
   // See: https://github.com/electron/electron/issues/49256
@@ -1173,6 +1213,13 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // Release this instance's contribution to the process-wide caret browsing
+  // refcount. Runs before any of the early returns below so a WebContents
+  // destroyed with caret browsing on cannot leak a count and pin the platform
+  // state on forever. Note that WebContentsDestroyed() releases it too and
+  // normally gets there first.
+  ReconcileCaretBrowsingCount(false);
+
   // A queued DevTools embedder-message IPC (e.g. "loadCompleted") can be
   // dispatched after this WebContents has begun teardown. Both delegate
   // interfaces it can call back into (DevToolsOpened()/DevToolsClosed() on the
@@ -1274,6 +1321,8 @@ void WebContents::OnDidAddMessageToConsole(
     int32_t line_no,
     const std::u16string& source_id,
     const std::optional<std::u16string>& untrusted_stack_trace) {
+  if (!console_message_observed_)
+    return;
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -1430,6 +1479,10 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
       create_params->delegate_view = view;
     }
   }
+
+  bool disable_wake_locks = false;
+  dict.Get(options::kDisableWakeLocks, &disable_wake_locks);
+  create_params->enable_wake_locks = !disable_wake_locks;
 }
 
 content::WebContents* WebContents::AddNewContents(
@@ -1476,7 +1529,12 @@ content::WebContents* WebContents::AddNewContents(
            window_features.bounds.width(), window_features.bounds.height(),
            tracker->url, tracker->frame_name, tracker->referrer,
            tracker->raw_features, tracker->body)) {
-    api_web_contents->Destroy();
+    // Destroy() may synchronously `delete this`, so drop the handle's
+    // reference first. Otherwise it is left dangling until the handle goes
+    // out of scope below.
+    auto* contents = api_web_contents.get();
+    api_web_contents.Clear();
+    contents->Destroy();
   }
 
   return nullptr;
@@ -2470,18 +2528,20 @@ void WebContents::DidFinishNavigation(
           zc->ProcessNavigationZoom(navigation_handle);
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
-
-      content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
-
-      // This check is needed due to an issue in Chromium
-      // Upstream is open to patching:
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
-      // If a history entry has been made and the forward/back call has been
-      // made, proceed with setting the new title
-      if (entry &&
-          (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
-        WebContents::TitleWasSet(entry);
     }
+
+    content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+    // This check is needed due to an issue in Chromium
+    // Upstream is open to patching:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+    // If a history entry has been made and the forward/back call has been
+    // made, proceed with setting the new title
+    if (is_main_frame && entry &&
+        (navigation_handle->GetPageTransition() &
+         ui::PAGE_TRANSITION_FORWARD_BACK))
+      NotifyPageTitleUpdated(entry, is_same_document);
+
     if (is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
@@ -2503,7 +2563,9 @@ void WebContents::DidFinishNavigation(
   }
 }
 
-void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+void WebContents::NotifyPageTitleUpdated(
+    content::NavigationEntry* entry,
+    bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
@@ -2519,8 +2581,13 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     final_title = web_contents()->GetTitle();
   }
   observers_.Notify(&ExtendedWebContentsObserver::OnPageTitleUpdated,
-                    final_title, explicit_set);
+                    final_title, explicit_set,
+                    from_same_document_history_navigation);
   Emit("page-title-updated", final_title, explicit_set);
+}
+
+void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+  NotifyPageTitleUpdated(entry, false);
 }
 
 void WebContents::DidUpdateFaviconURL(
@@ -2635,6 +2702,9 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
 }
 
 void WebContents::WebContentsDestroyed() {
+  // Drop this instance's contribution to the process-wide caret browsing count.
+  ReconcileCaretBrowsingCount(false);
+
   // The underlying content::WebContents is gone, let the wrapper be collected.
   Unpin();
 
@@ -3058,6 +3128,36 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
       blink::ToWebRTCIPHandlingPolicy(webrtc_ip_handling_policy);
 
+  web_contents()->SyncRendererPrefs();
+}
+
+bool WebContents::IsCaretBrowsingEnabled() const {
+  return web_contents()->GetMutableRendererPrefs()->caret_browsing_enabled;
+}
+
+// The renderer preference alone only makes Blink draw the caret; a screen
+// reader reports its position only while ui::AXPlatform is told too. AXPlatform
+// is process-wide, so a count drives it: mirroring one instance's value would
+// let one window disabling caret browsing degrade accessibility in another.
+void WebContents::ReconcileCaretBrowsingCount(bool enabled) {
+  if (caret_browsing_counted_ == enabled)
+    return;
+  caret_browsing_counted_ = enabled;
+  AdjustCaretBrowsingCount(enabled ? 1 : -1);
+}
+
+void WebContents::SetCaretBrowsingEnabled(bool enabled) {
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+  const bool pref_changed = prefs->caret_browsing_enabled != enabled;
+
+  // Reconcile before the early return below. An inherited-but-uncounted
+  // preference (see InitWithWebContents) means the preference and the
+  // count can disagree, so a no-op for the preference is not one for the count.
+  ReconcileCaretBrowsingCount(enabled);
+
+  if (!pref_changed)
+    return;
+  prefs->caret_browsing_enabled = enabled;
   web_contents()->SyncRendererPrefs();
 }
 
@@ -3521,9 +3621,11 @@ void WebContents::Print(gin::Arguments* const args) {
   // Set optional silent printing.
   settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
 
-  settings.Set(
-      printing::kSettingShouldPrintBackgrounds,
-      options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds, false));
+  settings.Set(printing::kSettingShouldPrintBackgrounds,
+               options.ValueOrDefault(
+                   kPrintBackground,
+                   options.ValueOrDefault(
+                       printing::kSettingShouldPrintBackgrounds, false)));
 
   // Set custom margin settings
   auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -3628,7 +3730,9 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Duplex type user wants to use.
   const auto duplex_mode = options.ValueOrDefault(
-      printing::kSettingDuplexMode, printing::mojom::DuplexMode::kSimplex);
+      kDuplexMode,
+      options.ValueOrDefault(printing::kSettingDuplexMode,
+                             printing::mojom::DuplexMode::kUnknownDuplexMode));
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   // Set custom media size if passed. If none is passed, the media size
@@ -4858,6 +4962,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("clone", &WebContents::Clone)
+      .SetMethod("_setConsoleMessageObserved",
+                 &WebContents::SetConsoleMessageObserved)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
@@ -4904,6 +5010,9 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
+      .SetMethod("setCaretBrowsingEnabled",
+                 &WebContents::SetCaretBrowsingEnabled)
+      .SetMethod("isCaretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)

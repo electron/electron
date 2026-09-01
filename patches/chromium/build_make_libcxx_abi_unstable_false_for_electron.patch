@@ -31,3 +31,43 @@ index a9ab1614b67e2df7b379c1d8a4147265a15747db..f1c60c7d0a320e5a1e9a9e454ef0e084
  
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
  #define _LIBCPP_ABI_FORCE_MICROSOFT 0
+diff --git a/components/password_manager/core/browser/password_form_manager.cc b/components/password_manager/core/browser/password_form_manager.cc
+index e6745238089425cba1533d315d437f07e18056e0..1fa26525e03377de72ba48cf1e9209147a977682 100644
+--- a/components/password_manager/core/browser/password_form_manager.cc
++++ b/components/password_manager/core/browser/password_form_manager.cc
+@@ -41,6 +41,7 @@
+ #include "components/password_manager/core/browser/form_fetcher_impl.h"
+ #include "components/password_manager/core/browser/form_parsing/form_data_parser.h"
+ #include "components/password_manager/core/browser/form_parsing/password_field_prediction.h"
++#include "components/password_manager/core/browser/passkey_credential.h"
+ #include "components/password_manager/core/browser/password_feature_manager.h"
+ #include "components/password_manager/core/browser/password_form.h"
+ #include "components/password_manager/core/browser/password_form_cache.h"
+diff --git a/extensions/common/value_counter.cc b/extensions/common/value_counter.cc
+index 35a36ab127f061a291cec18064d2d5ffa5e503e6..d7ddea678252ce48ff57647e7977f92d38cac32e 100644
+--- a/extensions/common/value_counter.cc
++++ b/extensions/common/value_counter.cc
+@@ -31,6 +31,10 @@ ValueCounter::ValueCounter() {
+ ValueCounter::~ValueCounter() {
+ }
+ 
++bool ValueCounter::is_empty() const {
++  return entries_.empty();
++}
++
+ bool ValueCounter::Add(const base::Value& value) {
+   for (auto& entry : entries_) {
+     if (entry.value == value) {
+diff --git a/extensions/common/value_counter.h b/extensions/common/value_counter.h
+index f98ae27dcca669c668ed5b67e8a9962cf605f7dc..2b3708caf39c2c4b2b018f23446e377b9a2cd094 100644
+--- a/extensions/common/value_counter.h
++++ b/extensions/common/value_counter.h
+@@ -39,7 +39,7 @@ class ValueCounter {
+   bool Remove(const base::Value& value);
+ 
+   // Returns true if there are no values of any type being counted.
+-  bool is_empty() const { return entries_.empty(); }
++  bool is_empty() const;
+ 
+  private:
+   struct Entry;

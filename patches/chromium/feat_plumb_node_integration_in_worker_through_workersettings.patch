@@ -10,7 +10,7 @@ relying on a process-wide command line switch. The value is also
 propagated to nested workers via WorkerSettings::Copy.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index bc8726d68af801c093bc4baf266c7d3271638df8..519530ba218afa6be4654e1ff7d0d623b9a4429e 100644
+index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..6d305498f966bfbf250b90f57163a8eb93245320 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -137,10 +137,10 @@ index 9e4968b36e6324793c0bcc104caf7899359beb8c..1caf8d05b585ed5d9c986f684059c774
    DCHECK((thread_type_ == ThreadType::kMainThread && frame_) ||
           (thread_type_ == ThreadType::kOffMainThread && worker_thread_));
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-index c7dd62900f0de48ab992a7c99058f5b6d98212cf..47ceea11ec9db6b67cef6945d165f46c868f4ca5 100644
+index 285326d9d74fda6a725258e91c88ed4037a7ec0b..6659b0a84b3152b85dbed734c0068420fc5cd8df 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-@@ -140,6 +140,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -141,6 +141,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
    // Returns the WorkletToken that uniquely identifies this worklet.
    virtual WorkletToken GetWorkletToken() const = 0;
  
@@ -154,7 +154,7 @@ index c7dd62900f0de48ab992a7c99058f5b6d98212cf..47ceea11ec9db6b67cef6945d165f46c
    // Returns the ExecutionContextToken that uniquely identifies the parent
    // context that created this worklet. Note that this will always be a
    // LocalFrameToken.
-@@ -207,6 +214,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -209,6 +216,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
    // TODO(crbug.com/1206150): We need a spec for this capability.
    const bool parent_is_isolated_context_;
  

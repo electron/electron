@@ -828,6 +828,16 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
+  this.on('newListener' as any, (eventName: string | symbol) => {
+    if (eventName === 'console-message') {
+      this._setConsoleMessageObserved(true);
+    }
+  });
+  this.on('removeListener' as any, (eventName: string | symbol) => {
+    if (eventName === 'console-message' && this.listenerCount('console-message') === 0) {
+      this._setConsoleMessageObserved(false);
+    }
+  });
   // TODO(samuelmaddock): remove deprecated 'console-message' arguments
   this.on('-console-message' as any, (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) => {
     const hasDeprecatedListener = this.listeners('console-message').some((listener) => listener.length > 1);
@@ -891,6 +901,11 @@ WebContents.prototype._init = function () {
   Object.defineProperty(this, 'backgroundThrottling', {
     get: () => this.getBackgroundThrottling(),
     set: (allowed) => this.setBackgroundThrottling(allowed)
+  });
+
+  Object.defineProperty(this, 'caretBrowsingEnabled', {
+    get: () => this.isCaretBrowsingEnabled(),
+    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
   });
 };
 

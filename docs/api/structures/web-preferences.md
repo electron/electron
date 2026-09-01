@@ -163,6 +163,7 @@
 * `enableDeprecatedPaste` boolean (optional) _Deprecated_ - Whether to enable the `paste` [execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand). Default is `false`.
 * `focusOnNavigation` boolean (optional) - Whether to focus the WebContents
   when navigating. Default is `true`.
+* `disableWakeLocks` boolean (optional) - Whether to disable the wake locks of the WebContents. Default is `false`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5

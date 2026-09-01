@@ -76,9 +76,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     w.webContents.session.registerLocalAIHandler(null);
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   describe('LanguageModel.availability()', () => {
@@ -369,6 +369,27 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
 
       expect(message).not.null();
+    });
+
+    it('does not crash the handler when several pending create() calls are aborted', async () => {
+      const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
+      await sendControllableMessage(aiHandler, { command: 'set-create', value: 'wait-for-abort' });
+      let exited = false;
+      aiHandler.once('exit', () => {
+        exited = true;
+      });
+
+      const results = await w.webContents.executeJavaScript(
+        'Promise.all([100, 200, 300].map(t => LanguageModel.create({ signal: AbortSignal.timeout(t) }).then(() => "resolved", err => err.message)))'
+      );
+      for (const result of results) {
+        expect(result).to.match(/signal timed out/);
+      }
+
+      // The handler process must still be alive and responsive.
+      await sendControllableMessage(aiHandler, { command: 'set-create', value: null });
+      expect(exited).to.be.false();
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(() => "ok")')).to.equal('ok');
     });
 
     it('exposes contextUsage and contextWindow on the created model', async () => {
@@ -814,6 +835,31 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
 
       expect(message).not.null();
+    });
+
+    it('does not crash the handler when one of several pending append() calls is aborted', async () => {
+      const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
+      await sendControllableMessage(aiHandler, { command: 'set-append-response', value: 'wait-for-abort' });
+      let exited = false;
+      aiHandler.once('exit', () => {
+        exited = true;
+      });
+
+      const result = await w.webContents.executeJavaScript(`
+        LanguageModel.create().then(async (model) => {
+          const controller = new AbortController();
+          const aborted = model.append("one", { signal: controller.signal }).then(() => "resolved", err => err.message);
+          model.append("two", { signal: new AbortController().signal }).catch(() => {});
+          await new Promise(r => setTimeout(r, 100));
+          controller.abort();
+          return aborted;
+        })
+      `);
+      expect(result).to.match(/aborted/);
+
+      // The handler process must still be alive and responsive.
+      await sendControllableMessage(aiHandler, { command: 'set-append-response', value: null });
+      expect(exited).to.be.false();
     });
 
     it('updates contextUsage after append', async () => {

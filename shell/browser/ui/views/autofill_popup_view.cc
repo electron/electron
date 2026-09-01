@@ -19,6 +19,7 @@
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/base/dragdrop/drag_drop_types.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
+#include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/gfx/canvas.h"
@@ -107,7 +108,7 @@ void AutofillPopupView::Show() {
 
   SetBorder(views::CreateSolidBorder(
       kPopupBorderThickness,
-      GetColorProvider()->GetColor(ui::kColorUnfocusedBorder)));
+      GetColorProvider()->GetColor(ui::kColorMenuBorder)));
 
   DoUpdateBoundsAndRedrawPopup();
   GetWidget()->Show();
@@ -185,8 +186,12 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   if (!popup_)
     return;
 
-  canvas->FillRect(entry_rect, GetColorProvider()->GetColor(
-                                   popup_->GetBackgroundColorIDForRow(index)));
+  const bool selected = selected_line_ == index;
+  const auto* color_provider = GetColorProvider();
+  canvas->FillRect(
+      entry_rect,
+      color_provider->GetColor(selected ? ui::kColorDropdownBackgroundSelected
+                                        : ui::kColorDropdownBackground));
 
   const bool is_rtl = base::i18n::IsRTL();
   const int text_align =
@@ -201,7 +206,8 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
 
   canvas->DrawStringRectWithFlags(
       popup_->value_at(index), popup_->GetValueFontListForRow(index),
-      GetColorProvider()->GetColor(ui::kColorResultsTableNormalText),
+      color_provider->GetColor(selected ? ui::kColorDropdownForegroundSelected
+                                        : ui::kColorDropdownForeground),
       gfx::Rect(value_x_align_left, value_rect.y(), value_width,
                 value_rect.height()),
       text_align);
@@ -215,7 +221,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
 
     canvas->DrawStringRectWithFlags(
         label, popup_->GetLabelFontListForRow(index),
-        GetColorProvider()->GetColor(ui::kColorResultsTableDimmedText),
+        color_provider->GetColor(ui::kColorLabelForegroundSecondary),
         gfx::Rect(label_x_align_left, entry_rect.y(), label_width,
                   entry_rect.height()),
         text_align);
@@ -271,8 +277,7 @@ void AutofillPopupView::OnPaint(gfx::Canvas* canvas) {
     canvas = &offscreen_draw_canvas.value();
   }
 
-  canvas->DrawColor(
-      GetColorProvider()->GetColor(ui::kColorResultsTableNormalBackground));
+  canvas->DrawColor(GetColorProvider()->GetColor(ui::kColorDropdownBackground));
   OnPaintBorder(canvas);
 
   for (int i = 0; i < popup_->line_count(); ++i) {

@@ -17,7 +17,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
-#include "gin/public/gin_embedders.h"
+#include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/uv_includes.h"
 #include "v8/include/v8-forward.h"
 
@@ -27,7 +27,6 @@ class SingleThreadTaskRunner;
 
 namespace node {
 class Environment;
-class IsolateData;
 class MultiIsolatePlatform;
 }  // namespace node
 
@@ -118,7 +117,9 @@ class NodeBindings {
  public:
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
-  static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env);
+  // Integrates |loop|, or a new loop owned by this instance when null.
+  static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env,
+                                              uv_loop_t* loop);
   static void RegisterBuiltinBindings();
   static bool IsInitialized();
 
@@ -134,6 +135,10 @@ class NodeBindings {
 
   // Setup V8, libuv.
   void Initialize(v8::Isolate* isolate, v8::Local<v8::Context> context);
+
+  // Installs the isolate-wide callbacks Node.js needs. Once per isolate; where
+  // the environment comes from the Node snapshot, after CreateEnvironment().
+  void SetUpIsolate(v8::Isolate* isolate);
 
   std::vector<std::string> ParseNodeCliFlags();
 
@@ -171,8 +176,6 @@ class NodeBindings {
   // environment teardown but reuse the same NodeBindings for the next context.
   void StopPolling();
 
-  node::IsolateData* isolate_data(v8::Local<v8::Context> context) const;
-
   // Gets/sets the environment to wrap uv loop.
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
@@ -188,7 +191,7 @@ class NodeBindings {
   void JoinAppCode();
 
  protected:
-  explicit NodeBindings(BrowserEnvironment browser_env);
+  NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop);
 
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
@@ -200,24 +203,16 @@ class NodeBindings {
   void WakeupEmbedThread();
 
  private:
-  static uv_loop_t* InitEventLoop(BrowserEnvironment browser_env,
-                                  uv_loop_t* worker_loop);
-
   // Run the libuv loop for once.
   void UvRunOnce();
-
-  [[nodiscard]] constexpr bool in_worker_loop() const {
-    return browser_env_ == BrowserEnvironment::kWorker;
-  }
 
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
 
-  // Loop used when constructed in WORKER mode
-  uv_loop_t worker_loop_;
+  // Engaged when this instance created its loop instead of integrating one.
+  std::optional<uv_loop_t> owned_loop_;
 
-  // Current thread's libuv loop.
-  // depends-on: worker_loop_
+  // depends-on: owned_loop_
   const raw_ptr<uv_loop_t> uv_loop_;
 
   // Current thread's MessageLoop.
@@ -227,7 +222,7 @@ class NodeBindings {
   // and thus unlikely to collide with an existing index.
   static constexpr int kElectronContextEmbedderDataIndex =
       static_cast<int>(gin::kPerContextDataStartIndex) +
-      static_cast<int>(gin::kEmbedderElectron);
+      static_cast<int>(kEmbedderElectron);
 
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
@@ -266,9 +261,6 @@ class NodeBindings {
 
   // Environment that to wrap the uv loop.
   raw_ptr<node::Environment> uv_env_ = nullptr;
-
-  // Isolate data used in creating the environment
-  raw_ptr<node::IsolateData> isolate_data_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };

@@ -67,18 +67,6 @@ describe('modules support', () => {
       });
     });
 
-    describe('q', () => {
-      describe('Q.when', () => {
-        it('emits the fulfil callback', (done) => {
-          const Q = require('q');
-          Q(true).then((val: boolean) => {
-            expect(val).to.be.true();
-            done();
-          });
-        });
-      });
-    });
-
     describe("require('electron/...')", () => {
       const utilityProcessFixturesPath = path.resolve(
         __dirname,
@@ -215,15 +203,6 @@ describe('modules support', () => {
         expect(code).to.equal(0);
       });
     });
-
-    describe('coffeescript', () => {
-      it('can be registered and used to require .coffee files', () => {
-        expect(() => {
-          require('coffeescript').register();
-        }).to.not.throw();
-        expect(require('./fixtures/module/test.coffee')).to.be.true();
-      });
-    });
   });
 
   describe('global variables', () => {
@@ -305,7 +284,9 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        const result = await w.webContents.executeJavaScript('typeof require("q").when');
+        // Any module that only exists in the spec app's node_modules will do here;
+        // this is checking that module.paths includes the app directory.
+        const result = await w.webContents.executeJavaScript('typeof require("dirty-chai")');
         expect(result).to.equal('function');
       });
     });

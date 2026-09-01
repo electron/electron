@@ -1,11 +1,10 @@
 import { autoUpdater, systemPreferences } from 'electron';
 
 import { expect } from 'chai';
-import express from 'express';
 import psList from 'ps-list';
-import * as uuid from 'uuid';
 
 import * as cp from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
@@ -21,10 +20,11 @@ import {
   unsignApp
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { createRoutedServer, RoutedRequest, RoutedResponse, RoutedServer } from './lib/http-server-helpers';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
+ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
@@ -222,13 +222,13 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
   describe('with update server', () => {
     let port = 0;
-    let server: express.Application = null as any;
+    let server: RoutedServer = null as any;
     let httpServer: http.Server = null as any;
-    let requests: express.Request[] = [];
+    let requests: RoutedRequest[] = [];
 
     beforeEach((done) => {
       requests = [];
-      server = express();
+      server = createRoutedServer();
       server.use((req, res, next) => {
         requests.push(req);
         next();
@@ -648,7 +648,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
         },
         async (appPath, updateZipPath) => {
           let downloadCount = 0;
-          let stalledResponse: express.Response | null = null;
+          let stalledResponse: RoutedResponse | null = null;
 
           server.get('/update-file', (req, res) => {
             downloadCount++;
@@ -695,9 +695,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           });
 
           // Unblock the stalled response now that the initial app has exited
-          // so the express server can shut down cleanly.
+          // so the server can shut down cleanly.
           if (stalledResponse) {
-            (stalledResponse as express.Response).status(500).end();
+            (stalledResponse as RoutedResponse).status(500).end();
           }
 
           // The originally staged update (2.0.0) must have been applied and
@@ -992,7 +992,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
             endFixture: 'update'
           },
           async (appPath, updateZipPath) => {
-            const randomID = uuid.v4();
+            const randomID = randomUUID();
             cp.spawnSync('xattr', ['-w', 'spec-id', randomID, appPath]);
             server.get('/update-file', (req, res) => {
               res.download(updateZipPath);

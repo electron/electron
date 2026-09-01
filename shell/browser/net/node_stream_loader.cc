@@ -4,10 +4,13 @@
 
 #include "shell/browser/net/node_stream_loader.h"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 
+#include "base/numerics/safe_conversions.h"
 #include "mojo/public/cpp/system/string_data_source.h"
+#include "services/network/public/cpp/loading_params.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 
@@ -31,6 +34,12 @@ NodeStreamLoader::NodeStreamLoader(
 }
 
 NodeStreamLoader::~NodeStreamLoader() {
+  // The "removeListener" and "destroy" calls below run user JS which may
+  // invoke the handlers we are unsubscribing. Invalidate weak pointers first
+  // so those handlers, which are bound weakly, become no-ops instead of
+  // re-entering NotifyComplete() on a partially destroyed object.
+  weak_factory_.InvalidateWeakPtrs();
+
   v8::Isolate::Scope isolate_scope(isolate_);
   v8::HandleScope handle_scope(isolate_);
 
@@ -50,9 +59,19 @@ NodeStreamLoader::~NodeStreamLoader() {
 }
 
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
+  // A declared Content-Length larger than mojo's 64 KB default grows the pipe
+  // (up to the network service's default); it never shrinks it, since the
+  // header may describe an encoded upstream body rather than this stream.
+  constexpr int64_t kMojoDefaultPipeSize = 64 * 1024;
+  const uint32_t pipe_size =
+      head->content_length > kMojoDefaultPipeSize
+          ? base::saturated_cast<uint32_t>(
+                std::min<int64_t>(head->content_length,
+                                  network::GetDataPipeDefaultAllocationSize()))
+          : 0;
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+  MojoResult rv = mojo::CreateDataPipe(pipe_size, producer, consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;
@@ -62,9 +81,15 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   client_->OnReceiveResponse(std::move(head), std::move(consumer),
                              std::nullopt);
 
+  // Subscribing runs the emitter's "on" method, which may invoke the handler
+  // synchronously and delete |this|, so check |weak| between each call.
   auto weak = weak_factory_.GetWeakPtr();
   On("end", base::BindRepeating(&NodeStreamLoader::NotifyEnd, weak));
+  if (!weak)
+    return;
   On("error", base::BindRepeating(&NodeStreamLoader::NotifyError, weak));
+  if (!weak)
+    return;
   On("readable", base::BindRepeating(&NodeStreamLoader::NotifyReadable, weak));
 }
 

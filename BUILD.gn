@@ -344,22 +344,15 @@ copy("default_app_static") {
   outputs = [ "$target_gen_default_app_js/{{source}}" ]
 }
 
-copy("default_app_octicon_deps") {
-  sources = filenames.default_app_octicon_sources
-  outputs = [ "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}" ]
-}
-
 asar("default_app_asar") {
   deps = [
     ":default_app_js",
-    ":default_app_octicon_deps",
     ":default_app_static",
   ]
 
   root = "$target_gen_default_app_js/electron/default_app"
   sources = get_target_outputs(":default_app_js") +
-            get_target_outputs(":default_app_static") +
-            get_target_outputs(":default_app_octicon_deps")
+            get_target_outputs(":default_app_static")
   outputs = [ "$root_out_dir/resources/default_app.asar" ]
 }
 
@@ -521,12 +514,10 @@ source_set("electron_lib") {
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/common/notifications",
-    "//components/autofill/core/common:features",
     "//components/cbor",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
-    "//components/heap_profiling/multi_process",
     "//components/input",
     "//components/language/core/browser",
     "//components/memory_system",
@@ -612,6 +603,7 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
+    "//build/config/compiler:compiler_buildflags",
     "//content/public/app",
     "//ui/base/unowned_user_data",
   ]
@@ -903,6 +895,23 @@ source_set("electron_lib") {
 
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
+  }
+}
+
+# Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
+# startup snapshot blob it is given -- including one from another OS/CPU's
+# build of the same Electron version. See shell/common/electron_xcache_main.cc.
+if (current_toolchain == default_toolchain) {
+  executable("electron_xcache") {
+    configs += [ "//build/config/compiler:no_chromium_code" ]
+    configs -= [ "//build/config/compiler:chromium_code" ]
+    include_dirs = [ "//" ]
+    sources = [ "shell/common/electron_xcache_main.cc" ]
+    deps = [
+      "//third_party/zlib",
+      "//v8",
+      "//v8:v8_libplatform",
+    ]
   }
 }
 
@@ -1942,6 +1951,18 @@ dist_zip("hunspell_dictionaries_zip") {
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
 }
 
+dist_zip("electron_xcache_zip") {
+  data_deps = [
+    ":electron_xcache",
+    ":licenses",
+  ]
+  if (is_linux && is_official_build) {
+    data_deps += [ ":strip_electron_xcache_binary" ]
+  }
+  deps = data_deps
+  outputs = [ "$root_build_dir/xcache.zip" ]
+}
+
 copy("libcxx_headers") {
   sources = libcxx_headers + libcxx_licenses + [
               "//buildtools/third_party/libc++/__assertion_handler",
@@ -2058,6 +2079,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (!is_mas_build) {
+    public_deps += [ ":electron_xcache_zip" ]
+  }
 }
 
 group("release_build") {
@@ -2095,6 +2119,13 @@ if (is_linux && is_official_build) {
     symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
     compress_debug_sections = true
     deps = [ "//sandbox/linux:chrome_sandbox" ]
+  }
+
+  strip_binary("strip_electron_xcache_binary") {
+    binary_input = "$root_out_dir/electron_xcache"
+    symbol_output = "$root_out_dir/debug/electron_xcache.debug"
+    compress_debug_sections = true
+    deps = [ ":electron_xcache" ]
   }
 
   strip_binary("strip_libffmpeg_shlib") {

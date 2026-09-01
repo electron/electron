@@ -26,10 +26,10 @@ TaskQueue<T> without a priority member since the queue became a
 priority_queue.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..4a345d6cc321d4f5969a76a1a800f3e517528fcb 100644
+index 7f4004b4cb94b813be693818d3c4d96923442eea..c13d363cde2cf028ba3f364db489bb5d6bedf7a6 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -136,6 +136,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+@@ -139,6 +139,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
      uv_async_send(&flush_tasks_);
    }
  
@@ -37,7 +37,7 @@ index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..4a345d6cc321d4f5969a76a1a800f3e5
   private:
    void Run() {
      TRACE_EVENT_METADATA1("__metadata", "thread_name", "name",
-@@ -173,6 +174,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+@@ -176,6 +177,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
      explicit StopTask(DelayedTaskScheduler* scheduler): scheduler_(scheduler) {}
  
      void Run() override {
@@ -45,7 +45,7 @@ index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..4a345d6cc321d4f5969a76a1a800f3e5
        std::vector<uv_timer_t*> timers;
        for (uv_timer_t* timer : scheduler_->timers_)
          timers.push_back(timer);
-@@ -196,6 +198,16 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+@@ -199,6 +201,16 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
            delay_in_seconds_(delay_in_seconds) {}
  
      void Run() override {
@@ -62,12 +62,12 @@ index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..4a345d6cc321d4f5969a76a1a800f3e5
        uint64_t delay_millis = llround(delay_in_seconds_ * 1000);
        std::unique_ptr<uv_timer_t> timer(new uv_timer_t());
        CHECK_EQ(0, uv_timer_init(&scheduler_->loop_, timer.get()));
-@@ -240,6 +252,8 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
+@@ -243,6 +255,8 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {
    TaskQueue<Task> tasks_;
    uv_loop_t loop_;
    uv_async_t flush_tasks_;
 +  // Set on the scheduler thread by StopTask; read there by ScheduleTask.
 +  bool stopped_ = false;
    std::unordered_set<uv_timer_t*> timers_;
+   bool has_shut_down_ = false;
  };
- 

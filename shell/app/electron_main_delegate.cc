@@ -65,6 +65,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "ui/gfx/linux/fontconfig_util.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -340,13 +341,21 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   if (!base::FieldTrialList::GetInstance()) {
-    base::FieldTrialList* leaked_field_trial_list = new base::FieldTrialList();
+    // Intentionally never destroyed: the FieldTrialList has to outlive
+    // everything that reads field trials. Storing it in a static keeps the
+    // allocation reachable, both for static analysis and for LeakSanitizer.
+    [[maybe_unused]] static base::FieldTrialList* leaked_field_trial_list =
+        new base::FieldTrialList();
     ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
-    std::ignore = leaked_field_trial_list;
   }
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
   content::InitializeMojoCore();
+#if BUILDFLAG(IS_LINUX)
+  // Queued before the browser ThreadPool starts, so FontConfig loads in
+  // parallel with toolkit initialization instead of on first use.
+  gfx::InitializeGlobalFontConfigAsync();
+#endif
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif

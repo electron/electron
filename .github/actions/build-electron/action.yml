@@ -26,6 +26,9 @@ inputs:
   is-asan:
     description: 'The ASan Linux build'
     required: false
+  is-ubsan:
+    description: 'The UBSan build'
+    required: false
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
     required: false
@@ -46,8 +49,11 @@ runs:
   steps:
     - name: Validate inputs
       shell: bash
+      env:
+        PUBLISH: ${{ inputs.publish }}
+        IS_RELEASE: ${{ inputs.is-release }}
       run: |
-        if [ "${{ inputs.publish }}" = "true" ] && [ "${{ inputs.is-release }}" != "true" ]; then
+        if [ "$PUBLISH" = "true" ] && [ "$IS_RELEASE" != "true" ]; then
           echo "Can only publish release builds"
           exit 1
         fi
@@ -58,8 +64,10 @@ runs:
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
-      run: |
-        if [ "${{ inputs.is-release }}" = "true" ]; then
+      env:
+        IS_RELEASE: ${{ inputs.is-release }}
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
+        if [ "$IS_RELEASE" = "true" ]; then
           SNAPSHOT_TOOLCHAIN="//electron/build/toolchain/mac:clang_x64_snapshot"
         else
           SNAPSHOT_TOOLCHAIN="//build/toolchain/mac:clang_x64"
@@ -74,7 +82,9 @@ runs:
     - name: Set GN_EXTRA_ARGS for MacOS Release Builds
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'macos' }}
-      run: |
+      env:
+        TARGET_ARCH: ${{ inputs.target-arch }}
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS thin_lto_enable_cache=false"
         # Build mksnapshot, node_mksnapshot, v8_context_snapshot_generator
         # and the natives code-cache generator without ThinLTO/PGO/dsyms
@@ -82,28 +92,24 @@ runs:
         # they are four serialized ThinLTO links of V8/Blink/Node (~40 min
         # of link-pool time) whose outputs are optimization-independent
         # data. x64 is handled in the x64 step above.
-        if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+        if [ "$TARGET_ARCH" = "arm64" ]; then
           GN_APPENDED_ARGS="$GN_APPENDED_ARGS v8_snapshot_toolchain=\"//electron/build/toolchain/mac:clang_arm64_snapshot\""
         fi
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Windows
       shell: bash
-      if: ${{ inputs.target-platform == 'win' }}
-      run: |
-        # Resolve .obj paths to absolute in linker response files to work
-        # around BindFlt concurrency bug in Windows containers.
-        # https://github.com/microsoft/Windows-Containers/issues/635
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS win_abs_link_wrapper=\"//electron/build/win/abs_link_wrapper.py\""
-        if [ "${{ inputs.target-arch }}" != "x64" ]; then
-          GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"${{ inputs.target-arch }}\""
-        fi
+      if: ${{ inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      env:
+        TARGET_ARCH: ${{ inputs.target-arch }}
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
+        GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"$TARGET_ARCH\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
       shell: bash
-      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       env:
         GITHUB_TOKEN: ${{ github.token }}
         ARTIFACT_NAME: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
@@ -129,6 +135,11 @@ runs:
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
+      env:
+        PUBLISH: ${{ inputs.publish }}
+        IS_RELEASE: ${{ inputs.is-release }}
+        ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
         rm -rf src/out/Default/Electron*.app
@@ -145,9 +156,9 @@ runs:
 
         export NINJA_SUMMARIZE_BUILD=1
         export NO_COLOR=1
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "$PUBLISH" = "true" ] || echo -quiet)
 
-        if [ "${{ inputs.is-release }}" = "true" ]; then
+        if [ "$IS_RELEASE" = "true" ]; then
           e build --target electron:release_build $QUIET_FLAG
         else
           e build --target electron:testing_build $QUIET_FLAG
@@ -156,7 +167,7 @@ runs:
         node electron/script/check-symlinks.js
 
         # Build stats and object checksums
-        BUILD_STATS_ARGS="out/Default/siso.INFO --out-dir out/Default --output-object-checksums object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json"
+        BUILD_STATS_ARGS="out/Default/siso.INFO --out-dir out/Default --output-object-checksums object-checksums.${ARTIFACT_PLATFORM}_${TARGET_ARCH}.json"
         if [ -f previous-object-checksums.json ]; then
           BUILD_STATS_ARGS="$BUILD_STATS_ARGS --input-object-checksums previous-object-checksums.json"
         fi
@@ -169,6 +180,10 @@ runs:
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
+      env:
+        IS_RELEASE: ${{ inputs.is-release }}
+        ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
         cd src\electron
         git pack-refs
@@ -176,8 +191,8 @@ runs:
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         $env:NO_COLOR = 1
-        $quietFlag = if ($env:ACTIONS_STEP_DEBUG -eq "true" -or "${{ inputs.is-release }}" -eq "true") { @() } else { @("-quiet") }
-        if ("${{ inputs.is-release }}" -eq "true") {          
+        $quietFlag = if ($env:ACTIONS_STEP_DEBUG -eq "true" -or $env:IS_RELEASE -eq "true") { @() } else { @("-quiet") }
+        if ($env:IS_RELEASE -eq "true") {          
           e build --target electron:release_build
         } else {
           e build --target electron:testing_build $quietFlag
@@ -190,7 +205,7 @@ runs:
         node electron\script\check-symlinks.js
 
         # Build stats and object checksums
-        $statsArgs = @("out\Default\siso.exe.INFO", "--out-dir", "out\Default", "--output-object-checksums", "object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json")
+        $statsArgs = @("out\Default\siso.exe.INFO", "--out-dir", "out\Default", "--output-object-checksums", "object-checksums.$($env:ARTIFACT_PLATFORM)_$($env:TARGET_ARCH).json")
         if (Test-Path previous-object-checksums.json) {
           $statsArgs += @("--input-object-checksums", "previous-object-checksums.json")
         }
@@ -206,14 +221,20 @@ runs:
         }
     - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
+      env:
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
+        TARGET_OS: ${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
+        ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
-        cd src        
-        if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
-          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+        cd src
+        if [ "$IS_ASAN" != "true" ] && [ "$IS_UBSAN" != "true" ]; then
+          target_os=$TARGET_OS
+          if [ "$ARTIFACT_PLATFORM" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$TARGET_ARCH.manifest
         fi
     # mksnapshot_args is consumed by both the mksnapshot tests and by
     # @electron/mksnapshot from the released mksnapshot.zip, so this is needed
@@ -221,6 +242,8 @@ runs:
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.generate-test-artifacts == 'true' || inputs.is-release == 'true' }}
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
@@ -239,7 +262,7 @@ runs:
         sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--abort-on-bad-builtin-profile-data/d' out/Default/mksnapshot_args
 
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           cd out/Default
           powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
           powershell mkdir mktmp\\gen\\v8
@@ -267,16 +290,23 @@ runs:
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.generate-chromedriver == 'true' }}
+      env:
+        PUBLISH: ${{ inputs.publish }}
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
+        TARGET_OS: ${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
+        ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
         cd src
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "$PUBLISH" = "true" ] || echo -quiet)
         e build --target electron:electron_chromedriver_zip $QUIET_FLAG
-        if [ "${{ inputs.is-asan }}" != "true" ]; then
-          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
-          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+        if [ "$IS_ASAN" != "true" ] && [ "$IS_UBSAN" != "true" ]; then
+          target_os=$TARGET_OS
+          if [ "$ARTIFACT_PLATFORM" = "mas" ]; then
             target_os="${target_os}_mas"
           fi
-          electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.${{ inputs.target-arch }}.manifest
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.$TARGET_ARCH.manifest
         fi
     - name: Create installed_software.json ${{ inputs.step-suffix }}
       shell: powershell
@@ -303,10 +333,12 @@ runs:
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.generate-symbols == 'true' }}
+      env:
+        IS_RELEASE: ${{ inputs.is-release }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        if [ "${{ inputs.is-release }}" = "true" ]; then
+        if [ "$IS_RELEASE" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
           electron/script/zip-symbols.py -b $BUILD_PATH
@@ -314,9 +346,12 @@ runs:
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
+      env:
+        PUBLISH: ${{ inputs.publish }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
-        e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu ${{ inputs.target-arch }} --remote-build siso
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
+        e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu "$TARGET_ARCH" --remote-build siso
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "$PUBLISH" = "true" ] || echo -quiet)
         e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
@@ -367,10 +402,12 @@ runs:
       if: ${{ inputs.publish == 'true' }}
       shell: bash
       id: github-upload
+      env:
+        UPLOAD_TO_STORAGE: ${{ inputs.upload-to-storage }}
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
-        if [ "${{ inputs.upload-to-storage }}" = "1" ]; then
+        if [ "$UPLOAD_TO_STORAGE" = "1" ]; then
           echo 'Uploading Electron release distribution to Azure'
           script/release/uploaders/upload.py --verbose --upload_to_storage
         else
@@ -385,7 +422,7 @@ runs:
     - name: Generate siso report
       if: ${{ inputs.target-platform != 'win' && !cancelled() }}
       shell: bash
-      run: |
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
         cd src
         e d siso report -C out/Default > siso_report.txt
         SISO_REPORT_PATH=$(grep -o '/.*siso-report-[^ ]*' siso_report.txt)
@@ -395,7 +432,7 @@ runs:
     - name: Generate siso report (Windows)
       if: ${{ inputs.target-platform == 'win' && !cancelled() }}
       shell: powershell
-      run: |
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
         cd src
         e d siso report -C out\Default > siso_report.txt
         $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
@@ -406,11 +443,21 @@ runs:
     - name: Generate Artifact Key
       if: always() && !cancelled()
       shell: bash
-      run: |
-        if [ "${{ inputs.is-asan }}" = "true" ]; then 
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
+      env:
+        IS_ASAN: ${{ inputs.is-asan }}
+        IS_UBSAN: ${{ inputs.is-ubsan }}
+        ARTIFACT_PLATFORM: ${{ inputs.artifact-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
+      run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
+        if [ "$IS_ASAN" = "true" ] && [ "$IS_UBSAN" = "true" ]; then
+          echo "Only one sanitizer build can be enabled at a time (set either is-asan or is-ubsan)."
+          exit 1
+        elif [ "$IS_ASAN" = "true" ]; then
+          ARTIFACT_KEY=${ARTIFACT_PLATFORM}_${TARGET_ARCH}_asan
+        elif [ "$IS_UBSAN" = "true" ]; then
+          ARTIFACT_KEY=${ARTIFACT_PLATFORM}_${TARGET_ARCH}_ubsan
         else
-          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+          ARTIFACT_KEY=${ARTIFACT_PLATFORM}_${TARGET_ARCH}
         fi
         echo "ARTIFACT_KEY=$ARTIFACT_KEY" >> $GITHUB_ENV
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
@@ -440,7 +487,7 @@ runs:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/Default/gen
     - name: Upload Object Checksums ${{ inputs.step-suffix }}
-      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' }}
+      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}

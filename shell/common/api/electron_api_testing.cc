@@ -16,6 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
 
 #if DCHECK_IS_ON()
@@ -136,6 +137,10 @@ std::string GetLoggingDestination() {
   return command_line->GetSwitchValueASCII(switches::kEnableLogging);
 }
 
+bool IsPlatformCaretBrowsingEnabled() {
+  return ui::AXPlatform::GetInstance().IsCaretBrowsingEnabled();
+}
+
 v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -212,6 +217,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("log", &Log);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
+  dict.SetMethod("isPlatformCaretBrowsingEnabled",
+                 &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
   dict.SetMethod("holdRepeatingCallbackForTesting",
                  &HoldRepeatingCallbackForTesting);

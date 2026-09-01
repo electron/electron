@@ -16,10 +16,6 @@
 #include "ui/base/clipboard/clipboard_buffer.h"
 #include "v8/include/v8-forward.h"
 
-namespace cppgc {
-class Visitor;
-}  // namespace cppgc
-
 namespace gin {
 class Arguments;
 }  // namespace gin

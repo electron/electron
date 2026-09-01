@@ -105,7 +105,10 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       !electron::is_isolated_world(world_id)) {
     const auto [_, inserted] = isolated_worlds_.insert(world_id);
     if (inserted) {
-      for (const auto& callback : isolated_world_created_callbacks_) {
+      // The callbacks run JS which may register further callbacks and
+      // reallocate the vector, so iterate over a copy.
+      auto callbacks = isolated_world_created_callbacks_;
+      for (const auto& callback : callbacks) {
         if (!callback.is_null())
           callback.Run(world_id);
       }
@@ -213,20 +216,15 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) const {
   const auto& prefs = render_frame_->GetBlinkPreferences();
 
-  // This is necessary because if an iframe is created and a source is not
-  // set, the iframe loads about:blank and creates a script context for the
-  // same. We don't want to create a Node.js environment here because if the src
-  // is later set, the JS necessary to do that triggers illegal access errors
-  // when the initial about:blank Node.js environment is cleaned up. See:
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/renderer/render_frame_impl.h;l=870-892;drc=4b6001440a18740b76a1c63fa2a002cc941db394
-  const bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
-  if (allow_node_in_sub_frames && !render_frame_->IsMainFrame()) {
-    if (GURL{render_frame_->GetWebFrame()->GetDocument().Url()}.IsAboutBlank())
-      return false;
-  }
+  // about:blank subframes commit synchronously in the renderer and never get
+  // the browser's preload startup data (see MaybeSendRendererStartupData), so
+  // they are left without preload scripts and Node.js integration.
+  if (prefs.node_integration_in_sub_frames && !render_frame_->IsMainFrame() &&
+      GURL{render_frame_->GetWebFrame()->GetDocument().Url()}.IsAboutBlank())
+    return false;
 
   if (prefs.context_isolation &&
-      (render_frame_->IsMainFrame() || allow_node_in_sub_frames))
+      (render_frame_->IsMainFrame() || prefs.node_integration_in_sub_frames))
     return is_isolated_world(world_id);
 
   return is_main_world(world_id);

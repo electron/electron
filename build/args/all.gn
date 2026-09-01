@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
-node_module_version = 149
+node_module_version = 150
 
 # Build Node.js against Chromium's BoringSSL instead of node's bundled OpenSSL.
 node_openssl_path = "//third_party/boringssl"
@@ -15,12 +15,6 @@ v8_enable_snapshot_native_code_counters = false
 
 # we use this api
 v8_enable_javascript_promise_hooks = true
-
-# Node's inspector dispatches protocol messages (and runs JS handlers) from
-# v8::Isolate::RequestInterrupt callbacks. V8 defaults this check to off only
-# when build_with_node is set, which Electron's build does not define.
-# TODO: remove once https://github.com/nodejs/node/pull/65028 is picked up.
-v8_disallow_js_in_api_interrupts_is_checked = false
 
 enable_cdm_host_verification = false
 ffmpeg_branding = "Chrome"
@@ -88,7 +82,6 @@ enable_pdf_save_to_drive = false
 # ever costs a cold-cache page load. Build the stub producer (as Android
 # does) instead.
 produce_v8_compile_hints = false
-
 # Track which grit resource IDs the linked binary actually references and
 # repack the locale .pak files with only those strings. Enabled for both
 # testing and release builds so that a reference to an unshipped resource
@@ -96,4 +89,7 @@ produce_v8_compile_hints = false
 # the next release build.
 # TODO: extend the allowlist consumption to Windows (PDB-based extraction);
 # there this only makes grit emit the (free) marker symbols today.
-enable_resource_allowlist_generation = true
+# Uncomment this condition once
+# fix_disable_enable_resource_allowlist_generation_on_windows.patch
+# is removed.
+# enable_resource_allowlist_generation = true

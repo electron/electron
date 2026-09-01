@@ -30,6 +30,7 @@
 namespace gin {
 
 using SharingItem = electron::ElectronMenuModel::SharingItem;
+using Badge = electron::ElectronMenuModel::Badge;
 
 template <>
 struct Converter<SharingItem> {
@@ -42,6 +43,22 @@ struct Converter<SharingItem> {
     dict.GetOptional("texts", &(out->texts));
     dict.GetOptional("filePaths", &(out->file_paths));
     dict.GetOptional("urls", &(out->urls));
+    return true;
+  }
+};
+
+template <>
+struct Converter<Badge> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     Badge* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    out->type = "none";
+    dict.Get("type", &(out->type));
+    dict.GetOptional("count", &(out->count));
+    dict.GetOptional("content", &(out->content));
     return true;
   }
 };
@@ -262,6 +279,12 @@ void Menu::SetCustomType(int index, const std::u16string& customType) {
   model_->SetCustomType(index, customType);
 }
 
+#if BUILDFLAG(IS_MAC)
+void Menu::SetBadge(int index, std::optional<ElectronMenuModel::Badge> badge) {
+  model_->SetBadge(index, std::move(badge));
+}
+#endif
+
 void Menu::Clear() {
   model_->Clear();
 }
@@ -303,8 +326,12 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
+#if BUILDFLAG(IS_MAC)
+      .SetMethod("setBadge", &Menu::SetBadge)
+#endif
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
+      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)

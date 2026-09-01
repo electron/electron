@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index dc70c7a569c4fb32249b6eb484ad795c302bf78a..8001d32ff36f7336083f532814393e2addb315c7 100644
+index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc08485ea4 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -54,7 +54,7 @@ index dc70c7a569c4fb32249b6eb484ad795c302bf78a..8001d32ff36f7336083f532814393e2a
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
  #include "chrome/common/url_constants.h"
-@@ -284,10 +283,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -285,10 +284,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,7 +68,7 @@ index dc70c7a569c4fb32249b6eb484ad795c302bf78a..8001d32ff36f7336083f532814393e2a
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -502,11 +504,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -506,11 +508,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
@@ -83,7 +83,7 @@ index dc70c7a569c4fb32249b6eb484ad795c302bf78a..8001d32ff36f7336083f532814393e2a
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
+index 90c503d13692a9417deef60b76f3c298a3b79368..dc412feaa72b6b94646f09a098bb07ecb0207630 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@
@@ -122,21 +122,21 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 5137d6019b3edd11816285309f2d9d1a616200c7..54ab0e67286f251df33113e00bef79cb62c7df64 100644
+index 4d538186fd804419f36c363d785376cbfbf9509d..93d81b0d1c37e7f4967bba16eb24c0db26773035 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -21,8 +21,10 @@
- #include "base/synchronization/waitable_event.h"
+@@ -25,8 +25,10 @@
+ #include "base/timer/elapsed_timer.h"
  #include "base/values.h"
  #include "build/build_config.h"
 +#if 0
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/profiles/profiles_state.h"
 +#endif
- #include "chrome/common/chrome_features.h"
  #include "chrome/browser/search/search.h"
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
-@@ -71,7 +73,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+@@ -75,7 +77,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
@@ -147,32 +147,17 @@ index 5137d6019b3edd11816285309f2d9d1a616200c7..54ab0e67286f251df33113e00bef79cb
  }
  
  }  // namespace
-@@ -402,11 +407,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
-       return;
-     }
+@@ -507,11 +512,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+       features::kInitialWebUIWithoutSpellCheck.Get()) {
+     return;
    }
 +#if 0
-   if (base::FeatureList::IsEnabled(features::kInitialWebUIWithoutSpellCheckForNtp)) {
-     if (host->GetUserData(search::kIsNTPProcessKey)) {
-       return;
-     }
+   if (base::FeatureList::IsEnabled(
+           features::kInitialWebUIWithoutSpellCheckForNtp) &&
+       host->GetUserData(search::kIsNTPProcessKey)) {
+     return;
    }
 +#endif
  
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
  
-diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
-index 65b591832e02d3b41d0768bb250e548386878a87..3e97329c584e9d28d5d73e9cb43590ce8568c19b 100644
---- a/chrome/browser/win/titlebar_config.cc
-+++ b/chrome/browser/win/titlebar_config.cc
-@@ -13,8 +13,10 @@
- bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
-   const BrowserWindowInterface::Type type = browser_view->browser()->GetType();
-   return !ShouldDefaultThemeUseMicaTitlebar() ||
-+#if 0
-          !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
-               ->UsingSystemTheme() ||
-+#endif
-          (type != BrowserWindowInterface::Type::TYPE_NORMAL &&
-           type != BrowserWindowInterface::Type::TYPE_POPUP &&
-           type != BrowserWindowInterface::Type::TYPE_DEVTOOLS);
