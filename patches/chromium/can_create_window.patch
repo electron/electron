@@ -242,7 +242,7 @@ index 1208199428a2de729650c82e988ab67abeb0e786..2e6643ede047a580a636dbf75e86c99f
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 2721447eb5246eba8ef3e85e6682ec587c3d012e..2c25046a3a9b8b8a6d88d1daff978410f2e26e5c 100644
+index cc0f3a60d763c72820c344ac927a636a29536728..5ca1c5505209d69c0c9c4c09b48bac95136b3966 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2499,6 +2499,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

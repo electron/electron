@@ -1333,7 +1333,7 @@ describe('chrome extensions', () => {
         });
 
         it('does not return privileged properties from query without tabs permission', async () => {
-          const noPrivilegeSes = session.fromPartition(`persist:${uuid.v4()}`);
+          const noPrivilegeSes = session.fromPartition(`persist:${randomUUID()}`);
           await noPrivilegeSes.extensions.loadExtension(
             path.join(fixtures, 'extensions', 'chrome-tabs', 'no-privileges')
           );

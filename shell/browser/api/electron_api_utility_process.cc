@@ -271,7 +271,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
     EmitWithoutEvent("stdout", stdout_read_fd_);
   if (stderr_read_fd_ != -1)
     EmitWithoutEvent("stderr", stderr_read_fd_);
-  if (url_loader_network_observer_.has_value()) {
+  if (url_loader_network_observer_) {
     url_loader_network_observer_->set_process_id(pid_);
   }
   EmitWithoutEvent("spawn");
@@ -467,7 +467,8 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer_) {
-    url_loader_network_observer_.emplace();
+    url_loader_network_observer_ =
+        std::make_unique<electron::URLLoaderNetworkObserver>();
     loader_params->url_loader_network_observer =
         url_loader_network_observer_->Bind();
   }
