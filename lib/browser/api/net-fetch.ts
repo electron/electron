@@ -160,7 +160,7 @@ export function fetchWithSession(
                 responseBodyController = undefined;
                 controller.close();
               } else {
-                controller.enqueue(buffer.subarray(0, bytesRead));
+                controller.enqueue(buffer.slice(0, bytesRead));
               }
             },
             cancel() {
