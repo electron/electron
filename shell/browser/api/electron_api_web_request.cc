@@ -924,7 +924,8 @@ void WebRequest::OnLoginAuthResult(
     net::AuthCredentials* credentials,
     const std::optional<net::AuthCredentials>& maybe_creds) {
   auto nh = blocked_requests_.extract(id);
-  CHECK(nh);
+  if (!nh)
+    return;
 
   AuthRequiredResponse action =
       AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
