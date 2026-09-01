@@ -88,6 +88,17 @@ api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   return info;
 }
 
+// "title" and "url" properties are considered privileged data and can only
+// be exposed if the extension has the "tabs" permission or it has access to
+// the WebContents's origin.
+bool CanAccessPrivilegedTabFields(const Extension* extension,
+                                  int tab_id,
+                                  const GURL& url) {
+  return extension->permissions_data()->HasAPIPermissionForTab(
+             tab_id, mojom::APIPermissionID::kTab) ||
+         extension->permissions_data()->HasHostPermission(url);
+}
+
 }  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
@@ -294,16 +305,14 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     if (!MatchesBool(params->query_info.active, contents->IsFocused()))
       continue;
 
+    const GURL& committed_url = wc->GetLastCommittedURL();
+    const bool has_privileged_access = CanAccessPrivilegedTabFields(
+        extension(), contents->ID(), committed_url);
+
     if (!title.empty() || !url_patterns.is_empty()) {
-      // "title" and "url" properties are considered privileged data and can
-      // only be checked if the extension has the "tabs" permission or it has
-      // access to the WebContents's origin. Otherwise, this tab is considered
-      // not matched.
-      if (!extension()->permissions_data()->HasAPIPermissionForTab(
-              contents->ID(), mojom::APIPermissionID::kTab) &&
-          !extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+      // Without privileged access, this tab is considered not matched.
+      if (!has_privileged_access)
         continue;
-      }
 
       // Match webContents title.
       if (!title.empty() &&
@@ -311,14 +320,16 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
         continue;
 
       // Match webContents url.
-      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(wc->GetURL()))
+      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(committed_url))
         continue;
     }
 
     tabs::Tab tab;
     tab.id = contents->ID();
-    tab.title = base::UTF16ToUTF8(wc->GetTitle());
-    tab.url = wc->GetLastCommittedURL().spec();
+    if (has_privileged_access) {
+      tab.title = base::UTF16ToUTF8(wc->GetTitle());
+      tab.url = committed_url.spec();
+    }
     tab.active = contents->IsFocused();
     tab.audible = contents->IsCurrentlyAudible();
     tab.muted_info = CreateMutedInfo(wc);
@@ -343,13 +354,9 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   tabs::Tab tab;
   tab.id = tab_id;
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
   auto* wc = contents->web_contents();
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+  if (CanAccessPrivilegedTabFields(extension(), contents->ID(),
+                                   wc->GetLastCommittedURL())) {
     tab.url = wc->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(wc->GetTitle());
   }
@@ -684,13 +691,9 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
   tab.id = (api_web_contents ? api_web_contents->ID() : -1);
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          api_web_contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(
-          web_contents_->GetURL())) {
+  if (CanAccessPrivilegedTabFields(
+          extension(), api_web_contents ? api_web_contents->ID() : -1,
+          web_contents_->GetLastCommittedURL())) {
     tab.url = web_contents_->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(web_contents_->GetTitle());
   }
