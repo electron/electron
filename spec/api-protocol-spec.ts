@@ -1857,6 +1857,10 @@ describe('protocol module', () => {
           } else if (req.url === '/redirect') {
             res.writeHead(302, { location: '/small' });
             res.end();
+          } else if (req.url === '/echo') {
+            const chunks: Buffer[] = [];
+            req.on('data', (chunk) => chunks.push(chunk));
+            req.on('end', () => res.end(Buffer.concat(chunks)));
           } else if (req.url === '/endless') {
             endlessResponse = res;
             res.writeHead(200);
@@ -1974,6 +1978,22 @@ describe('protocol module', () => {
         });
         const r = await net.fetch('test-scheme://host/redirect');
         expect(await r.text()).to.equal('small body');
+      });
+
+      it('transfers a response after uploading a request body', async () => {
+        protocol.handle('test-scheme', (req) =>
+          net.fetch(base + '/echo', {
+            bypassCustomProtocolHandlers: true,
+            method: req.method,
+            body: req.body,
+            duplex: 'half'
+          } as RequestInit)
+        );
+        const r = await net.fetch('test-scheme://host/echo', {
+          method: 'POST',
+          body: 'uploaded body'
+        });
+        expect(await r.text()).to.equal('uploaded body');
       });
 
       it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {

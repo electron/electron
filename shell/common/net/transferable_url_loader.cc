@@ -59,10 +59,13 @@ std::optional<PendingURLLoaderResponse> TransferableURLLoader::TakeResponse() {
 
   disposition_ = Disposition::kTransferred;
   body_watcher_.Cancel();
+  auto target_url_loader_client_receiver =
+      target_url_loader_client_receiver_.Unbind();
   simple_url_loader_receiver_.reset();
   simple_url_loader_client_.reset();
   auto endpoints = network::mojom::URLLoaderClientEndpoints::New(
-      target_url_loader_.Unbind(), target_url_loader_client_receiver_.Unbind());
+      target_url_loader_.Unbind(),
+      std::move(target_url_loader_client_receiver));
   return PendingURLLoaderResponse{std::move(body_), std::move(cached_metadata_),
                                   std::move(transfer_size_updates_),
                                   std::move(completion_status_),
