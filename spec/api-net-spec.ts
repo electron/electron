@@ -1,4 +1,12 @@
-import { app, net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import {
+  app,
+  net,
+  protocol,
+  session,
+  ClientRequest,
+  ClientRequestConstructorOptions,
+  utilityProcess
+} from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -791,6 +799,42 @@ describe('net module', () => {
         await p;
         expect(requestReceivedByServer).to.equal(true);
         expect(requestAbortEventEmitted).to.equal(true);
+      });
+
+      it('should settle a pending upload stream read in a protocol handler when the request is aborted', async () => {
+        // A protocol handler that reads the chunked upload body slowly and
+        // never responds; the read it parks must not be left pending forever
+        // once the request is torn down.
+        let pendingRead: Promise<number> | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            (async () => {
+              const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+              if (!streamElement) {
+                callback({ statusCode: 400, data: null as any });
+                reject(new Error('request had no stream upload element'));
+                return;
+              }
+              const body: any = (streamElement as any).body;
+              // Drain the chunk that was already written, then park a read.
+              await body.read(new Uint8Array(1024));
+              pendingRead = body.read(new Uint8Array(1024));
+              resolve();
+            })();
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://pending-upload-read' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        urlRequest.write('hello');
+        await reached;
+
+        const aborted = once(urlRequest, 'abort');
+        urlRequest.abort();
+        await aborted;
+        await expect(pendingRead).to.eventually.be.rejectedWith('ERR_ABORTED');
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {

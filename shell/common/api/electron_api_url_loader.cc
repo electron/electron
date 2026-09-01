@@ -209,6 +209,16 @@ class JSChunkedDataPipeGetter final
   static const gin::WrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
+  // Called when the request this getter feeds is over. Anything still reading
+  // the upload body (e.g. a protocol handler holding the stream) is told the
+  // body ended with |net_error| instead of waiting forever for a size that
+  // will never be reported.
+  void Abort(int net_error) {
+    if (size_callback_)
+      std::move(size_callback_).Run(net_error, bytes_written_);
+    Finished();
+  }
+
   JSChunkedDataPipeGetter(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
@@ -514,6 +524,8 @@ void SimpleURLLoaderWrapper::OnPlatformLocalNetworkPermissionRequired(
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
   url_loader_factory_.reset();
+  if (chunk_pipe_getter_)
+    chunk_pipe_getter_->Abort(net::ERR_ABORTED);
   keep_alive_.Clear();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
@@ -771,13 +783,16 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
+  const int net_error = loader_->NetError();
   if (success) {
     Emit("complete");
   } else {
-    Emit("error", net::ErrorToString(loader_->NetError()));
+    Emit("error", net::ErrorToString(net_error));
   }
   loader_.reset();
   url_loader_factory_.reset();
+  if (chunk_pipe_getter_)
+    chunk_pipe_getter_->Abort(success ? net::ERR_ABORTED : net_error);
   keep_alive_.Clear();
 }
 
