@@ -1852,6 +1852,8 @@ describe('protocol module', () => {
             res.writeHead(200, { 'content-length': '100' });
             res.write('partial');
             setImmediate(() => res.destroy());
+          } else if (req.url === '/disconnect') {
+            req.socket.destroy();
           } else if (req.url === '/redirect') {
             res.writeHead(302, { location: '/small' });
             res.end();
@@ -2011,6 +2013,11 @@ describe('protocol module', () => {
         proxy((u) => base + u.pathname);
         const r = await net.fetch('test-scheme://host/error');
         await expect(r.text()).to.eventually.be.rejected();
+      });
+
+      it('rejects when the upstream disconnects before response headers', async () => {
+        proxy(() => base + '/disconnect');
+        await expect(net.fetch('test-scheme://host/disconnect')).to.eventually.be.rejected();
       });
 
       it('cancels an unread response after it becomes unreachable', async () => {

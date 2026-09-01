@@ -273,6 +273,16 @@ void TransferableURLLoader::OnTargetURLLoaderClientDisconnected() {
   completion_status_ = network::URLLoaderCompletionStatus(net::ERR_FAILED);
   pipe_closed_ = true;
   body_.reset();
+  if (!response_received_) {
+    delegate_ = nullptr;
+    if (downstream_client_.is_bound())
+      downstream_client_->OnComplete(*completion_status_);
+    upstream_client_receiver_.reset();
+    upstream_loader_.reset();
+    downstream_loader_receiver_.reset();
+    downstream_client_.reset();
+    return;
+  }
   CompletePendingRead();
 }
 
