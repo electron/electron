@@ -28,10 +28,27 @@ Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{
 Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
 
 diff --git a/src/compiler/turboshaft/late-load-elimination-reducer.cc b/src/compiler/turboshaft/late-load-elimination-reducer.cc
-index cd3634f2b7a75e095622ff6e7fea6c36d0cde2f6..372733b22710482475e8ffc4dce3b1c7485b4cfe 100644
+index cd3634f2b7a75e095622ff6e7fea6c36d0cde2f6..22bb746d67584ca651d3625f59b4890e48b674b2 100644
 --- a/src/compiler/turboshaft/late-load-elimination-reducer.cc
 +++ b/src/compiler/turboshaft/late-load-elimination-reducer.cc
-@@ -534,6 +534,14 @@ void LateLoadEliminationAnalyzer::ProcessCall(OpIndex op_idx,
+@@ -464,9 +464,13 @@ void LateLoadEliminationAnalyzer::ProcessStore(OpIndex op_idx,
+     // TODO(dmercadier): do this only if `value` is a Constant with kind
+     // kHeapObject, since all map stores should store a known constant maps.
+     TRACE(">> Wiping all maps\n");
+-    for (auto it : object_maps_) {
+-      object_maps_.Set(it.second, MapMaskAndOr{});
+-    }
++    WipeAllMaps();
++  }
++}
++
++void LateLoadEliminationAnalyzer::WipeAllMaps() {
++  for (auto it : object_maps_) {
++    object_maps_.Set(it.second, MapMaskAndOr{});
+   }
+ }
+ 
+@@ -534,6 +538,14 @@ void LateLoadEliminationAnalyzer::ProcessCall(OpIndex op_idx,
    // The call could modify arbitrary memory, so we invalidate every
    // potentially-aliasing object.
    memory_.InvalidateMaybeAliasing();
@@ -46,3 +63,16 @@ index cd3634f2b7a75e095622ff6e7fea6c36d0cde2f6..372733b22710482475e8ffc4dce3b1c7
  }
  
  // The only time an Allocate should flow into a WordBinop is for Smi checks
+diff --git a/src/compiler/turboshaft/late-load-elimination-reducer.h b/src/compiler/turboshaft/late-load-elimination-reducer.h
+index b5e9032f6edaa71f9ee55ba798ca6975b810b88c..859c98d1cc158d060e27c871b810dba0006deb66 100644
+--- a/src/compiler/turboshaft/late-load-elimination-reducer.h
++++ b/src/compiler/turboshaft/late-load-elimination-reducer.h
+@@ -778,6 +778,8 @@ class V8_EXPORT_PRIVATE LateLoadEliminationAnalyzer {
+ 
+   void DcheckWordBinop(OpIndex op_idx, const WordBinopOp& binop);
+ 
++  void WipeAllMaps();
++
+   // BeginBlock initializes the various SnapshotTables for {block}, and returns
+   // true if {block} is a loop that should be revisited.
+   template <bool for_loop_revisit = false>
