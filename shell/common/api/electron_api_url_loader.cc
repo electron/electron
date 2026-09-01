@@ -639,10 +639,10 @@ void SimpleURLLoaderWrapper::OnCertificateRequested(
 }
 
 void SimpleURLLoaderWrapper::Cancel() {
-  if (transferable_body_)
-    transferable_body_->Cancel();
+  auto transferable_body = std::move(transferable_body_);
   loader_.reset();
-  transferable_body_.reset();
+  if (transferable_body)
+    transferable_body->Cancel();
   url_loader_factory_.reset();
   if (chunk_pipe_getter_)
     chunk_pipe_getter_->Abort();
@@ -934,15 +934,15 @@ void SimpleURLLoaderWrapper::ReleaseResponse() {
 void SimpleURLLoaderWrapper::OnTransferableBodyComplete(int result) {
   if (!transferable_body_)
     return;
-  transferable_body_->Release();
-  transferable_body_.reset();
+  auto transferable_body = std::move(transferable_body_);
   loader_.reset();
+  transferable_body->ReleaseResponse();
   url_loader_factory_.reset();
   keep_alive_.Clear();
-  if (result == net::OK)
-    Emit("complete");
-  else
-    Emit("error", net::ErrorToString(result));
+  // The native reader delivers post-header body errors through its read
+  // promise. Complete the unused IncomingMessage without duplicating that
+  // error as a request-level ClientRequest failure.
+  Emit("complete");
 }
 
 FetchResponseBodyReader* SimpleURLLoaderWrapper::CreateResponseBodyReader(
@@ -965,6 +965,9 @@ void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
 }
 
 int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
+  if (transferable_response_started_)
+    return net::OK;
+
   const int net_error = success ? net::OK : loader_->NetError();
   if (success) {
     Emit("complete");
@@ -972,7 +975,10 @@ int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
     Emit("error", net::ErrorToString(net_error));
   }
   keep_alive_.Clear();
+  auto transferable_body = std::move(transferable_body_);
   loader_.reset();
+  if (transferable_body)
+    transferable_body->ReleaseResponse();
   url_loader_factory_.reset();
   if (chunk_pipe_getter_)
     chunk_pipe_getter_->Abort();
@@ -982,13 +988,15 @@ int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
 void SimpleURLLoaderWrapper::OnTransferableResponseStarted(
     const GURL& final_url,
     const network::mojom::URLResponseHead& response_head) {
+  transferable_response_started_ = true;
   OnResponseStarted(final_url, response_head);
-  // OnResponseStarted synchronously emits "response-started". Before it
-  // returns, net.fetch creates the response body reader and its JS object graph
-  // retains this wrapper. The wrapper must stop self rooting at that ownership
-  // handoff, an unread response can fill its body pipe and never complete, but
-  // if the response is abandoned, GC should be able to release this wrapper
-  // and close the upstream request.
+  // OnResponseStarted synchronously emits "response-started", where net.fetch
+  // creates the native response body reader. SimpleURLLoader cannot consume
+  // this response because its body pipe is owned by TransferableURLLoader, so
+  // detach it once that handoff is complete. The reader's JS object graph keeps
+  // this wrapper reachable while the response is in use; an abandoned response
+  // can therefore be collected and close the target request.
+  loader_.reset();
   keep_alive_.Clear();
 }
 

@@ -55,6 +55,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/net/transferable_url_loader.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 #include "url/url_util.h"
@@ -218,12 +219,15 @@ class TransferredURLLoader final : public network::mojom::URLLoader,
           fetch_url_loader_client,
       mojo::PendingReceiver<network::mojom::URLLoader> protocol_url_loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient>
-          protocol_url_loader_client)
+          protocol_url_loader_client,
+      base::OnceClosure local_protocol_cancel_callback)
       : fetch_url_loader_(std::move(fetch_url_loader)),
         fetch_url_loader_client_receiver_(this,
                                           std::move(fetch_url_loader_client)),
         protocol_url_loader_receiver_(this, std::move(protocol_url_loader)),
-        protocol_url_loader_client_(std::move(protocol_url_loader_client)) {
+        protocol_url_loader_client_(std::move(protocol_url_loader_client)),
+        local_protocol_cancel_callback_(
+            std::move(local_protocol_cancel_callback)) {
     fetch_url_loader_client_receiver_.set_disconnect_handler(base::BindOnce(
         &TransferredURLLoader::OnFetchURLLoaderClientDisconnected,
         base::Unretained(this)));
@@ -314,6 +318,8 @@ class TransferredURLLoader final : public network::mojom::URLLoader,
   }
 
   void Cancel() {
+    if (local_protocol_cancel_callback_)
+      std::move(local_protocol_cancel_callback_).Run();
     protocol_url_loader_client_->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_ABORTED));
     delete this;
@@ -324,6 +330,7 @@ class TransferredURLLoader final : public network::mojom::URLLoader,
       fetch_url_loader_client_receiver_;
   mojo::Receiver<network::mojom::URLLoader> protocol_url_loader_receiver_;
   mojo::Remote<network::mojom::URLLoaderClient> protocol_url_loader_client_;
+  base::OnceClosure local_protocol_cancel_callback_;
   base::WeakPtrFactory<TransferredURLLoader> weak_factory_{this};
 };
 
@@ -845,8 +852,8 @@ void ElectronURLLoaderFactory::StartLoading(
       api::SimpleURLLoaderWrapper* fetch_loader = nullptr;
       if (!dict.IsEmpty() && dict.Get("loader", &fetch_loader) &&
           fetch_loader) {
-        StartLoadingRelay(std::move(client), std::move(loader), std::move(head),
-                          fetch_loader);
+        StartLoadingRelay(std::move(client), std::move(loader), request_id,
+                          std::move(head), fetch_loader);
       } else if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
@@ -972,8 +979,11 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
 void ElectronURLLoaderFactory::StartLoadingRelay(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    int32_t request_id,
     network::mojom::URLResponseHeadPtr head,
     api::SimpleURLLoaderWrapper* fetch_loader) {
+  auto local_protocol_cancel_callback =
+      TransferableURLLoader::TakeLocalCancelCallback(request_id);
   auto response = fetch_loader->TakeResponse();
   if (!response) {
     mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
@@ -984,7 +994,7 @@ void ElectronURLLoaderFactory::StartLoadingRelay(
   auto* transferred_loader = new TransferredURLLoader(
       std::move(response->endpoints->url_loader),
       std::move(response->endpoints->url_loader_client), std::move(loader),
-      std::move(client));
+      std::move(client), std::move(local_protocol_cancel_callback));
   fetch_loader->SetTransferredCancelCallback(
       transferred_loader->GetCancelCallback());
   transferred_loader->StartResponse(std::move(head), std::move(response->body),

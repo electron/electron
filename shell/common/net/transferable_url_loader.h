@@ -13,6 +13,7 @@
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_span.h"
+#include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -57,7 +58,8 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
       const GURL& initial_url);
 
   void Cancel();
-  void Release();
+  void ReleaseResponse();
+  static base::OnceClosure TakeLocalCancelCallback(int32_t request_id);
   bool CanTransfer() const;
   std::optional<PendingURLLoaderResponse> TakeResponse();
   void SetTransferredCancelCallback(base::OnceClosure callback);
@@ -107,6 +109,8 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   };
 
   std::optional<int> ReadInternal(base::span<uint8_t> buffer);
+  void CancelFromTransferredSource();
+  void UnregisterLocalRequest();
   void ReleaseEndpoints();
   void OnBodyReadable(MojoResult result);
   void OnTargetURLLoaderClientDisconnected();
@@ -118,6 +122,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   Disposition disposition_ = Disposition::kUnclaimed;
   bool response_received_ = false;
   bool pipe_closed_ = false;
+  std::optional<int32_t> registered_request_id_;
   mojo::Remote<network::mojom::URLLoader> target_url_loader_;
   mojo::Receiver<network::mojom::URLLoaderClient>
       target_url_loader_client_receiver_{this};
@@ -132,6 +137,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   base::OnceCallback<void(int)> pending_read_callback_;
   base::OnceClosure transferred_cancel_callback_;
   SEQUENCE_CHECKER(sequence_checker_);
+  base::WeakPtrFactory<TransferableURLLoader> weak_factory_{this};
 };
 
 }  // namespace electron

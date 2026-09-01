@@ -160,6 +160,7 @@ class SimpleURLLoaderWrapper final
   raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   bool transferable_response_ = false;
+  bool transferable_response_started_ = false;
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   // The client receives callbacks from |loader_| and must outlive it.

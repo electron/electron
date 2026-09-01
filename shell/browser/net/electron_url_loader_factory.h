@@ -179,6 +179,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   static void StartLoadingRelay(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t request_id,
       network::mojom::URLResponseHeadPtr head,
       api::SimpleURLLoaderWrapper* fetch_loader);
   static void StartLoadingStream(

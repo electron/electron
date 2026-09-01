@@ -137,6 +137,21 @@ export function fetchWithSession(
     r.setHeader(k, v);
   }
 
+  r.on('redirect', (statusCode, _method, _newUrl, redirectHeaders) => {
+    if (req.redirect !== 'manual') return;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(redirectHeaders)) {
+      headers.set(k, Array.isArray(v) ? v.join(', ') : v);
+    }
+    p.resolve(
+      new Response(null, {
+        headers,
+        status: statusCode
+      })
+    );
+    r.abort();
+  });
+
   r.on('response', (resp: IncomingMessage) => {
     if (locallyAborted) return;
     const headers = new Headers();

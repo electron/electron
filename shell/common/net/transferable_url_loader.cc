@@ -7,7 +7,9 @@
 #include <utility>
 
 #include "base/check.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
+#include "base/no_destructor.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "net/base/net_errors.h"
@@ -17,6 +19,20 @@
 #include "services/network/public/mojom/url_response_head.mojom.h"
 
 namespace electron {
+
+namespace {
+
+using LocalRequestMap =
+    base::flat_map<int32_t, base::WeakPtr<TransferableURLLoader>>;
+
+LocalRequestMap& GetLocalRequestMap() {
+  // Browser-initiated request IDs correlate the local client endpoint with the
+  // custom protocol factory handling that request.
+  static base::NoDestructor<LocalRequestMap> requests;
+  return *requests;
+}
+
+}  // namespace
 
 TransferableURLLoader::TransferableURLLoader(
     Delegate* delegate,
@@ -29,7 +45,9 @@ TransferableURLLoader::TransferableURLLoader(
                     mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                     base::SequencedTaskRunner::GetCurrentDefault()) {}
 
-TransferableURLLoader::~TransferableURLLoader() = default;
+TransferableURLLoader::~TransferableURLLoader() {
+  UnregisterLocalRequest();
+}
 
 void TransferableURLLoader::Cancel() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -44,11 +62,28 @@ void TransferableURLLoader::Cancel() {
     std::move(pending_read_callback_).Run(net::ERR_ABORTED);
 }
 
-void TransferableURLLoader::Release() {
+void TransferableURLLoader::ReleaseResponse() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   CHECK_NE(disposition_, Disposition::kTransferred);
   delegate_ = nullptr;
   ReleaseEndpoints();
+}
+
+// static
+base::OnceClosure TransferableURLLoader::TakeLocalCancelCallback(
+    int32_t request_id) {
+  auto& requests = GetLocalRequestMap();
+  auto it = requests.find(request_id);
+  if (it == requests.end())
+    return {};
+  auto loader = it->second;
+  requests.erase(it);
+  if (!loader)
+    return {};
+  auto callback = base::BindOnce(
+      &TransferableURLLoader::CancelFromTransferredSource, loader);
+  loader->registered_request_id_.reset();
+  return callback;
 }
 
 bool TransferableURLLoader::CanTransfer() const {
@@ -118,6 +153,12 @@ void TransferableURLLoader::CreateLoaderAndStart(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   CHECK(!simple_url_loader_receiver_.is_bound());
+  if (request_id != 0) {
+    auto [it, inserted] =
+        GetLocalRequestMap().emplace(request_id, weak_factory_.GetWeakPtr());
+    CHECK(inserted);
+    registered_request_id_ = request_id;
+  }
   simple_url_loader_receiver_.Bind(std::move(loader));
   simple_url_loader_client_.Bind(std::move(client));
   target_url_loader_factory_->CreateLoaderAndStart(
@@ -166,6 +207,7 @@ void TransferableURLLoader::OnReceiveResponse(
     mojo::ScopedDataPipeConsumerHandle body,
     std::optional<mojo_base::BigBuffer> cached_metadata) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  UnregisterLocalRequest();
   CHECK(!response_received_);
   response_received_ = true;
   body_ = std::move(body);
@@ -212,13 +254,13 @@ void TransferableURLLoader::OnTransferSizeUpdated(int32_t transfer_size_diff) {
 void TransferableURLLoader::OnComplete(
     const network::URLLoaderCompletionStatus& status) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  completion_status_ = status;
   if (!response_received_) {
     CHECK(simple_url_loader_client_.is_bound());
     delegate_ = nullptr;
     simple_url_loader_client_->OnComplete(status);
     return;
   }
-  completion_status_ = status;
   CompletePendingRead();
 }
 
@@ -229,11 +271,9 @@ std::optional<int> TransferableURLLoader::ReadInternal(
     pipe_closed_ = true;
     if (!completion_status_)
       return std::nullopt;
-    const int result = completion_status_->error_code == net::OK
-                           ? 0
-                           : completion_status_->error_code;
-    ReleaseEndpoints();
-    return result;
+    return completion_status_->error_code == net::OK
+               ? 0
+               : completion_status_->error_code;
   }
 
   size_t num_bytes = buffer.size();
@@ -258,15 +298,14 @@ std::optional<int> TransferableURLLoader::ReadInternal(
   body_.reset();
   if (!completion_status_)
     return std::nullopt;
-  const int read_result = completion_status_->error_code == net::OK
-                              ? 0
-                              : completion_status_->error_code;
-  ReleaseEndpoints();
-  return read_result;
+  return completion_status_->error_code == net::OK
+             ? 0
+             : completion_status_->error_code;
 }
 
 void TransferableURLLoader::ReleaseEndpoints() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  UnregisterLocalRequest();
   body_watcher_.Cancel();
   body_.reset();
   target_url_loader_client_receiver_.reset();
@@ -276,6 +315,24 @@ void TransferableURLLoader::ReleaseEndpoints() {
   target_url_loader_factory_.reset();
 }
 
+void TransferableURLLoader::CancelFromTransferredSource() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  if (completion_status_)
+    return;
+  completion_status_ = network::URLLoaderCompletionStatus(net::ERR_ABORTED);
+  pipe_closed_ = true;
+  body_watcher_.Cancel();
+  body_.reset();
+  CompletePendingRead();
+}
+
+void TransferableURLLoader::UnregisterLocalRequest() {
+  if (!registered_request_id_)
+    return;
+  GetLocalRequestMap().erase(*registered_request_id_);
+  registered_request_id_.reset();
+}
+
 void TransferableURLLoader::OnBodyReadable(MojoResult result) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   if (!pending_read_callback_)
@@ -283,7 +340,8 @@ void TransferableURLLoader::OnBodyReadable(MojoResult result) {
   if (result != MOJO_RESULT_OK && result != MOJO_RESULT_FAILED_PRECONDITION) {
     completion_status_ = network::URLLoaderCompletionStatus(net::ERR_FAILED);
     pipe_closed_ = true;
-    ReleaseEndpoints();
+    body_watcher_.Cancel();
+    body_.reset();
     auto callback = std::move(pending_read_callback_);
     pending_read_buffer_ = {};
     std::move(callback).Run(net::ERR_FAILED);
@@ -324,7 +382,6 @@ void TransferableURLLoader::CompletePendingRead() {
   const int result = completion_status_->error_code == net::OK
                          ? 0
                          : completion_status_->error_code;
-  ReleaseEndpoints();
   std::move(callback).Run(result);
 }
 
