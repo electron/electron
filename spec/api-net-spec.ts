@@ -909,6 +909,46 @@ describe('net module', () => {
         expect(writeError!.message).to.contain('ERR_ABORTED');
       });
 
+      it('should settle an in-flight upload write when the request is aborted', async () => {
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            const streamElement = (request.uploadData || []).find((element: any) => element.type === 'stream');
+            if (!streamElement) {
+              callback({ statusCode: 400, data: null as any });
+              reject(new Error('request had no stream upload element'));
+              return;
+            }
+            const body: any = (streamElement as any).body;
+            body.read(new Uint8Array(1)).then(() => resolve(), reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://aborted-upload-write' });
+        urlRequest.on('error', () => {
+          expect.fail('Unexpected error event');
+        });
+        urlRequest.chunkedEncoding = true;
+        let writeCallbackCalled = false;
+        const writeCompleted = new Promise<Error | undefined>((resolve) => {
+          urlRequest.write(Buffer.alloc(4 * kOneMegaByte), 'buffer', (error?: Error | null) => {
+            writeCallbackCalled = true;
+            resolve(error || undefined);
+          });
+        });
+        await reached;
+        expect(writeCallbackCalled).to.equal(false);
+
+        const aborted = once(urlRequest, 'abort');
+        urlRequest.abort();
+        await aborted;
+        // Like Node.js, which settles a write cancelled by abort() with an
+        // error (ECANCELED); the request itself emits 'abort', not 'error'.
+        const writeError = await writeCompleted;
+        expect(writeError).to.be.an.instanceOf(Error);
+        expect(writeError!.message).to.contain('ERR_ABORTED');
+      });
+
       test('it should be able to abort an HTTP request after request end and before response', async () => {
         let requestReceivedByServer = false;
         let urlRequest: ClientRequest | null = null;
