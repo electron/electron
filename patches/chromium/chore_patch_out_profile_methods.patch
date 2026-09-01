@@ -83,7 +83,7 @@ index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 90c503d13692a9417deef60b76f3c298a3b79368..dc412feaa72b6b94646f09a098bb07ecb0207630 100644
+index 2d83b0aaac61a8070e0372c265d029818e65689f..c370e87f03564f65e13b1cd5c18cda452d60daea 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
 @@ -13,6 +13,7 @@
@@ -103,7 +103,7 @@ index 90c503d13692a9417deef60b76f3c298a3b79368..dc412feaa72b6b94646f09a098bb07ec
    return false;
  }
  
-@@ -104,6 +105,7 @@ ProfileSelections ProfileSelections::BuildRedirectedInIncognito() {
+@@ -116,6 +117,7 @@ ProfileSelections ProfileSelections::BuildRedirectedInIncognito() {
  }
  
  Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
@@ -111,7 +111,7 @@ index 90c503d13692a9417deef60b76f3c298a3b79368..dc412feaa72b6b94646f09a098bb07ec
    CHECK(profile);
  
    ProfileSelection selection = GetProfileSelection(profile);
-@@ -119,6 +121,9 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+@@ -131,6 +133,9 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
      case ProfileSelection::kOffTheRecordOnly:
        return profile->IsOffTheRecord() ? profile : nullptr;
    }
