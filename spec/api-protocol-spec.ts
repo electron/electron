@@ -1852,6 +1852,9 @@ describe('protocol module', () => {
             res.writeHead(200, { 'content-length': '100' });
             res.write('partial');
             setImmediate(() => res.destroy());
+          } else if (req.url === '/redirect') {
+            res.writeHead(302, { location: '/small' });
+            res.end();
           } else if (req.url === '/endless') {
             endlessResponse = res;
             res.writeHead(200);
@@ -1950,6 +1953,24 @@ describe('protocol module', () => {
           return r;
         });
         const r = await net.fetch('test-scheme://host/delayed');
+        expect(await r.text()).to.equal('small body');
+      });
+
+      it('transfers a response after the inner fetch follows a redirect', async () => {
+        proxy(() => base + '/redirect');
+        const r = await net.fetch('test-scheme://host/redirect');
+        expect(await r.text()).to.equal('small body');
+      });
+
+      it('follows a redirect returned through the transferred response', async () => {
+        protocol.handle('test-scheme', (req) => {
+          const pathname = new URL(req.url).pathname;
+          return net.fetch(base + pathname, {
+            bypassCustomProtocolHandlers: true,
+            redirect: pathname === '/redirect' ? 'manual' : 'follow'
+          });
+        });
+        const r = await net.fetch('test-scheme://host/redirect');
         expect(await r.text()).to.equal('small body');
       });
 
