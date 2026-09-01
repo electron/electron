@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Wed, 1 Jul 2026 20:27:12 +0000
+Subject: fix: systemd-escape the app name in the xdg portal scope unit name
+
+components/dbus/xdg/systemd.cc builds the transient scope name
+app-<name>-<pid>.scope without escaping <name>. Per
+https://systemd.io/DESKTOP_ENVIRONMENTS/ (and matching what gnome-shell
+does for launcher-created scopes), the app id segment must be escaped
+so that unescaping round-trips: bytes outside [A-Za-z0-9:_.] become
+\xNN.
+
+Without this, a dashed name like my-app produces app-my-app-1234.scope,
+which xdg-desktop-portal (xdp-app-info-host.c) parses as launcher="my",
+app id="app" - the wrong identity. GNOME 50.0/50.1 then rejects
+GlobalShortcuts binds for such ids because they fail
+g_application_id_is_valid(). The reverse-DNS ids that GetAppName()
+returns for stock Chromium builds contain no bytes that need escaping,
+so their scope names are unchanged.
+
+Mirrors the upstream fix in https://chromium-review.googlesource.com/c/chromium/src/+/8127836,
+which is present in main and 44-x-y but was never merged to Chromium 150.
+
+diff --git a/components/dbus/xdg/systemd.cc b/components/dbus/xdg/systemd.cc
+index 03250c4411fae1db02a7a675bff7ae669cce097d..20c4e95edcc2a0bc4130f1e57c421aa00af920fb 100644
+--- a/components/dbus/xdg/systemd.cc
++++ b/components/dbus/xdg/systemd.cc
+@@ -192,7 +192,9 @@ void OnNameHasOwnerResponse(scoped_refptr<dbus::Bus> bus,
+   // The unit naming format is specified in
+   // https://systemd.io/DESKTOP_ENVIRONMENTS/
+   auto unit_name = base::ReplaceStringPlaceholders(
+-      kUnitNameFormat, {app_name, base::NumberToString(pid)}, nullptr);
++      kUnitNameFormat,
++      {internal::EscapeSystemdUnitName(app_name), base::NumberToString(pid)},
++      nullptr);
+ 
+   auto* systemd = bus->GetObjectProxy(kServiceNameSystemd,
+                                       dbus::ObjectPath(kObjectPathSystemd));
+@@ -220,6 +222,28 @@ void OnNameHasOwnerResponse(scoped_refptr<dbus::Bus> bus,
+ 
+ namespace internal {
+ 
++std::string EscapeSystemdUnitName(std::string_view name) {
++  std::string escaped;
++  for (char c : name) {
++    if (c == '/') {
++      escaped.push_back('-');
++    } else if (base::IsAsciiAlphaNumeric(c) || c == ':' || c == '_') {
++      escaped.push_back(c);
++    } else if (c == '.') {
++      if (escaped.empty()) {
++        escaped.append("\\x2e");
++      } else {
++        escaped.push_back(c);
++      }
++    } else {
++      escaped.append("\\x");
++      base::AppendHexEncodedByte(static_cast<uint8_t>(c), escaped,
++                                 /*uppercase=*/false);
++    }
++  }
++  return escaped;
++}
++
+ void SetSystemdScopeUnitNameForXdgPortal(dbus::Bus* bus,
+                                          SystemdUnitCallback callback) {
+ #if DCHECK_IS_ON()
+diff --git a/components/dbus/xdg/systemd.h b/components/dbus/xdg/systemd.h
+index 5d53d3bb72dddbbe0d8824215a51909adac3f732..dc630f10c24f11d10d8509d433e7147c84ad532f 100644
+--- a/components/dbus/xdg/systemd.h
++++ b/components/dbus/xdg/systemd.h
+@@ -5,6 +5,9 @@
+ #ifndef COMPONENTS_DBUS_XDG_SYSTEMD_H_
+ #define COMPONENTS_DBUS_XDG_SYSTEMD_H_
+ 
++#include <string>
++#include <string_view>
++
+ #include "base/functional/callback_forward.h"
+ 
+ namespace dbus {
+@@ -37,6 +40,9 @@ using SystemdUnitCallback = base::OnceCallback<void(SystemdUnitStatus)>;
+ void SetSystemdScopeUnitNameForXdgPortal(dbus::Bus* bus,
+                                          SystemdUnitCallback callback);
+ 
++// Escapes a string for usage in a systemd unit name.
++std::string EscapeSystemdUnitName(std::string_view name);
++
+ }  // namespace dbus_xdg::internal
+ 
+ #endif  // COMPONENTS_DBUS_XDG_SYSTEMD_H_
+diff --git a/components/dbus/xdg/systemd_unittest.cc b/components/dbus/xdg/systemd_unittest.cc
+index 4a925983fa84d8dec1d260f96d79d58132de2fb7..7f5c603fec96e7690c452128d93f6c2ff85d4a25 100644
+--- a/components/dbus/xdg/systemd_unittest.cc
++++ b/components/dbus/xdg/systemd_unittest.cc
+@@ -54,6 +54,19 @@ std::unique_ptr<dbus::Response> CreateActiveStateGetAllResponse(
+ 
+ using SetSystemdScopeUnitNameForXdgPortalTest = ::testing::Test;
+ 
++TEST(SystemdEscapeTest, EscapeSystemdUnitName) {
++  EXPECT_EQ(internal::EscapeSystemdUnitName("foo-bar"), "foo\\x2dbar");
++  EXPECT_EQ(internal::EscapeSystemdUnitName("foo/bar"), "foo-bar");
++  EXPECT_EQ(internal::EscapeSystemdUnitName(".foo"), "\\x2efoo");
++  EXPECT_EQ(internal::EscapeSystemdUnitName("1foo"), "1foo");
++  EXPECT_EQ(internal::EscapeSystemdUnitName("foo_bar:baz.qux"),
++            "foo_bar:baz.qux");
++  // Non-ASCII bytes must not be sign-extended.
++  EXPECT_EQ(internal::EscapeSystemdUnitName("caf\xc3\xa9"),
++            "caf\\xc3\\xa9");
++  EXPECT_EQ(internal::EscapeSystemdUnitName(""), "");
++}
++
+ TEST_F(SetSystemdScopeUnitNameForXdgPortalTest, NotNecessaryInFlatpak) {
+   scoped_refptr<dbus::MockBus> bus =
+       base::MakeRefCounted<dbus::MockBus>(dbus::Bus::Options());
+@@ -411,12 +424,15 @@ TEST_F(SetSystemdScopeUnitNameForXdgPortalTest, UnitNameConstruction) {
+                                    dbus::ObjectPath(kFakeUnitPath)))
+       .WillOnce(Return(mock_dbus_unit_proxy.get()));
+ 
++  std::string started_unit_name;
++
+   EXPECT_CALL(*mock_systemd_proxy, CallMethod(_, _, _))
+       .WillOnce([&](dbus::MethodCall* method_call, int timeout_ms,
+                     dbus::ObjectProxy::ResponseCallback callback) {
+         dbus::MessageReader reader(method_call);
+         std::string unit_name;
+         EXPECT_TRUE(reader.PopString(&unit_name));
++        started_unit_name = unit_name;
+ 
+         // Check that the unit_name matches the expected format
+         // Format: app-<ApplicationID>-<RANDOM>.scope
+@@ -446,12 +462,18 @@ TEST_F(SetSystemdScopeUnitNameForXdgPortalTest, UnitNameConstruction) {
+         auto response = dbus::Response::CreateEmpty();
+         std::move(callback).Run(response.get());
+       })
+-      .WillOnce([obj_path = kFakeUnitPath](
++      .WillOnce([&, obj_path = kFakeUnitPath](
+                     dbus::MethodCall* method_call, int timeout_ms,
+                     dbus::ObjectProxy::ResponseCallback callback) {
+         EXPECT_EQ(method_call->GetInterface(), kInterfaceSystemdManager);
+         EXPECT_EQ(method_call->GetMember(), kMethodGetUnit);
+ 
++        // The GetUnit wait path must query the same unit that was started.
++        dbus::MessageReader reader(method_call);
++        std::string unit_name;
++        EXPECT_TRUE(reader.PopString(&unit_name));
++        EXPECT_EQ(unit_name, started_unit_name);
++
+         // Simulate a successful response
+         auto response = dbus::Response::CreateEmpty();
+         dbus::MessageWriter writer(response.get());
