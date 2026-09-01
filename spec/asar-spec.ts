@@ -2316,8 +2316,7 @@ describe('asar package', function () {
         // FileHandle#close() runs close(2) on the threadpool; until then a real
         // file opened right after may be handed the same number. It must never
         // be served from the archive-backed reader.
-        const temp = require('temp').track();
-        const real = temp.path();
+        const real = tempPath();
         fs.writeFileSync(real, 'real-file-content');
         const p = path.join(asarDir, 'a.asar', 'file1');
         for (let i = 0; i < 200; i++) {
@@ -2339,8 +2338,7 @@ describe('asar package', function () {
         // without going through fs.close. Simulate that with original-fs and
         // check the next owner of the number is served natively.
         const originalFs = require('node:original-fs');
-        const temp = require('temp').track();
-        const real = temp.path();
+        const real = tempPath();
         fs.writeFileSync(real, 'real-file-content');
         const p = path.join(asarDir, 'a.asar', 'file1');
         for (const variant of ['sync', 'async', 'handle']) {
@@ -2423,8 +2421,7 @@ describe('asar package', function () {
     describe('fs.copyFile flags and errors', function () {
       itremote('honours COPYFILE_EXCL and overwrites otherwise', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         fs.copyFileSync(p, dest);
         expect(fs.readFileSync(dest).toString()).to.equal('file1\n');
         expect(() => fs.copyFileSync(p, dest, fs.constants.COPYFILE_EXCL)).to.throw(/EEXIST/);
@@ -2443,7 +2440,6 @@ describe('asar package', function () {
 
       itremote('lets native fs decide about copy-on-write clones of unpacked files', function () {
         const originalFs = require('node:original-fs');
-        const temp = require('temp').track();
         const unpacked = path.join(asarDir, 'unpack.asar', 'a.txt');
         const real = path.join(asarDir, 'unpack.asar.unpacked', 'a.txt');
         const outcome = (fn: () => void) => {
@@ -2454,8 +2450,8 @@ describe('asar package', function () {
             return e.code;
           }
         };
-        const viaAsar = temp.path();
-        const viaOriginal = temp.path();
+        const viaAsar = tempPath();
+        const viaOriginal = tempPath();
         // Whatever the filesystem says about reflinks, the answer for an unpacked
         // entry must match the answer for the real file behind it.
         expect(outcome(() => fs.copyFileSync(unpacked, viaAsar, fs.constants.COPYFILE_FICLONE_FORCE))).to.equal(
@@ -2466,68 +2462,64 @@ describe('asar package', function () {
 
       itremote('validates the mode argument like Node', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        expect(() => fs.copyFileSync(p, temp.path(), 8))
+        expect(() => fs.copyFileSync(p, tempPath(), 8))
           .to.throw()
           .with.property('code', 'ERR_OUT_OF_RANGE');
-        expect(() => (fs.copyFileSync as any)(p, temp.path(), 'x'))
+        expect(() => (fs.copyFileSync as any)(p, tempPath(), 'x'))
           .to.throw()
           .with.property('code', 'ERR_INVALID_ARG_TYPE');
       });
 
       itremote('reports ENOENT / EISDIR for bad sources', async function () {
-        const temp = require('temp').track();
-        expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'nope'), temp.path())).to.throw(/ENOENT/);
-        expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'dir1'), temp.path())).to.throw(/EISDIR/);
+        expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'nope'), tempPath())).to.throw(/ENOENT/);
+        expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'dir1'), tempPath())).to.throw(/EISDIR/);
         await expectToThrowErrorWithCode(
-          () => fs.promises.copyFile(path.join(asarDir, 'a.asar', 'nope'), temp.path()),
+          () => fs.promises.copyFile(path.join(asarDir, 'a.asar', 'nope'), tempPath()),
           'ENOENT'
         );
         const err = await new Promise<any>((resolve) =>
-          fs.copyFile(path.join(asarDir, 'a.asar', 'dir1'), temp.path(), resolve)
+          fs.copyFile(path.join(asarDir, 'a.asar', 'dir1'), tempPath(), resolve)
         );
         expect(err.code).to.equal('EISDIR');
       });
 
       itremote('copies linked files, larger files and executable bits', async function () {
-        const temp = require('temp').track();
         const link = path.join(asarDir, 'a.asar', 'link1');
-        const d1 = temp.path();
+        const d1 = tempPath();
         fs.copyFileSync(link, d1);
         expect(fs.readFileSync(d1).toString()).to.equal('file1\n');
 
         const big = path.join(asarDir, 'video.asar', 'video.mp4');
-        const d2 = temp.path();
+        const d2 = tempPath();
         await fs.promises.copyFile(big, d2);
         expect(fs.readFileSync(d2).equals(fs.readFileSync(big))).to.be.true();
-        const d3 = temp.path();
+        const d3 = tempPath();
         await promisify(fs.copyFile)(big, d3);
         expect(fs.readFileSync(d3).equals(fs.readFileSync(big))).to.be.true();
 
         if (process.platform !== 'win32') {
-          const d4 = temp.path();
+          const d4 = tempPath();
           fs.copyFileSync(path.join(asarDir, 'echo.asar', 'echo'), d4);
           expect(fs.statSync(d4).mode & 0o111).to.not.equal(0);
-          const d5 = temp.path();
+          const d5 = tempPath();
           fs.copyFileSync(path.join(asarDir, 'a.asar', 'file1'), d5);
           expect(fs.statSync(d5).mode & 0o111).to.equal(0);
           // cp chmods the destination to the source's stat mode afterwards, so
           // stat must agree with what copyFile preserved.
-          const d6 = temp.path();
+          const d6 = tempPath();
           fs.cpSync(path.join(asarDir, 'echo.asar', 'echo'), d6);
           expect(fs.statSync(d6).mode & 0o111).to.not.equal(0);
-          const d7 = temp.path();
+          const d7 = tempPath();
           await fs.promises.cp(path.join(asarDir, 'echo.asar', 'echo'), d7);
           expect(fs.statSync(d7).mode & 0o111).to.not.equal(0);
-          const d8 = temp.path();
+          const d8 = tempPath();
           fs.cpSync(path.join(asarDir, 'echo.asar'), d8, { recursive: true, filter: () => true });
           expect(fs.statSync(path.join(d8, 'echo')).mode & 0o111).to.not.equal(0);
         }
       });
 
       itremote('fails when the destination is inside an archive', async function () {
-        const temp = require('temp').track();
-        const src = temp.path();
+        const src = tempPath();
         fs.writeFileSync(src, 'x');
         expect(() => fs.copyFileSync(src, path.join(asarDir, 'a.asar', 'new-file'))).to.throw(/ENOTDIR|EACCES|ENOENT/);
         expect(() =>
@@ -2539,11 +2531,10 @@ describe('asar package', function () {
     // Mirrors the test-fs-cp-* family (subset applicable to read-only sources).
     describe('fs.cp / fs.cpSync / fs.promises.cp from archives', function () {
       itremote('copies a directory tree recursively (sync, callback, promises)', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar');
         const expectedTop = ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js'];
         for (const variant of ['sync', 'callback', 'promises']) {
-          const dest = temp.path();
+          const dest = tempPath();
           if (variant === 'sync') fs.cpSync(src, dest, { recursive: true });
           else if (variant === 'callback') await promisify(fs.cp)(src, dest, { recursive: true });
           else await fs.promises.cp(src, dest, { recursive: true });
@@ -2572,10 +2563,9 @@ describe('asar package', function () {
       });
 
       itremote('copies symlinks verbatim when asked, producing a self-contained tree', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar');
         for (const variant of ['sync', 'promises']) {
-          const dest = temp.path();
+          const dest = tempPath();
           if (variant === 'sync') fs.cpSync(src, dest, { recursive: true, verbatimSymlinks: true });
           else await fs.promises.cp(src, dest, { recursive: true, verbatimSymlinks: true });
           expect(fs.readlinkSync(path.join(dest, 'link1')), variant).to.equal('file1');
@@ -2593,22 +2583,20 @@ describe('asar package', function () {
       });
 
       itremote('requires recursive for directories', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar');
         // Node reports this as the ERR_FS_EISDIR system error (with EISDIR as its info code).
-        expect(() => fs.cpSync(src, temp.path()))
+        expect(() => fs.cpSync(src, tempPath()))
           .to.throw()
           .with.property('code', 'ERR_FS_EISDIR');
-        await expectToThrowErrorWithCode(() => fs.promises.cp(src, temp.path()), 'ERR_FS_EISDIR');
-        const err = await new Promise<any>((resolve) => fs.cp(src, temp.path(), resolve));
+        await expectToThrowErrorWithCode(() => fs.promises.cp(src, tempPath()), 'ERR_FS_EISDIR');
+        const err = await new Promise<any>((resolve) => fs.cp(src, tempPath(), resolve));
         expect(err.code).to.equal('ERR_FS_EISDIR');
         expect(err.info.code).to.equal('EISDIR');
       });
 
       itremote('honours errorOnExist and force', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar', 'file1');
-        const dest = temp.path();
+        const dest = tempPath();
         fs.writeFileSync(dest, 'existing');
         // force defaults to true
         fs.cpSync(src, dest);
@@ -2629,7 +2617,7 @@ describe('asar package', function () {
         expect(fs.readFileSync(dest).toString()).to.equal('file1\n');
 
         // Directory variants
-        const dir = temp.path();
+        const dir = tempPath();
         fs.mkdirSync(path.join(dir, 'dir1'), { recursive: true });
         fs.writeFileSync(path.join(dir, 'dir1', 'file1'), 'existing');
         fs.cpSync(path.join(asarDir, 'a.asar'), dir, { recursive: true, force: false });
@@ -2643,14 +2631,13 @@ describe('asar package', function () {
       });
 
       itremote('applies filter functions', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar');
-        const dest = temp.path();
+        const dest = tempPath();
         fs.cpSync(src, dest, { recursive: true, filter: (p: string) => !p.endsWith('file2') });
         expect(fs.existsSync(path.join(dest, 'file1'))).to.be.true();
         expect(fs.existsSync(path.join(dest, 'file2'))).to.be.false();
         expect(fs.existsSync(path.join(dest, 'dir1', 'file2'))).to.be.false();
-        const dest2 = temp.path();
+        const dest2 = tempPath();
         await fs.promises.cp(src, dest2, {
           recursive: true,
           filter: async (p: string) => !path.basename(p).startsWith('dir')
@@ -2661,19 +2648,18 @@ describe('asar package', function () {
       });
 
       itremote('dereferences symlinks when asked', async function () {
-        const temp = require('temp').track();
         const src = path.join(asarDir, 'a.asar');
         // Note: a.asar's directory links form a cycle (dir1/link2 -> dir1), so a
         // dereferencing copy of the whole tree cannot terminate (Node behaves
         // the same on a real tree); dereference the acyclic parts instead.
         for (const variant of ['sync', 'promises']) {
-          const single = temp.path();
+          const single = tempPath();
           if (variant === 'sync') fs.cpSync(path.join(src, 'link1'), single, { dereference: true });
           else await fs.promises.cp(path.join(src, 'link1'), single, { dereference: true });
           expect(fs.lstatSync(single).isFile(), variant).to.be.true();
           expect(fs.readFileSync(single).toString(), variant).to.equal('file1\n');
 
-          const dir = temp.path();
+          const dir = tempPath();
           if (variant === 'sync') fs.cpSync(path.join(src, 'dir2'), dir, { recursive: true, dereference: true });
           else await fs.promises.cp(path.join(src, 'dir2'), dir, { recursive: true, dereference: true });
           expect(fs.readdirSync(dir).sort(), variant).to.deep.equal(['file1', 'file2', 'file3']);
@@ -2681,13 +2667,12 @@ describe('asar package', function () {
       });
 
       itremote('errors on non-existent sources and file-to-directory mismatches', async function () {
-        const temp = require('temp').track();
-        expect(() => fs.cpSync(path.join(asarDir, 'a.asar', 'nope'), temp.path())).to.throw(/ENOENT/);
+        expect(() => fs.cpSync(path.join(asarDir, 'a.asar', 'nope'), tempPath())).to.throw(/ENOENT/);
         await expectToThrowErrorWithCode(
-          () => fs.promises.cp(path.join(asarDir, 'a.asar', 'nope'), temp.path()),
+          () => fs.promises.cp(path.join(asarDir, 'a.asar', 'nope'), tempPath()),
           'ENOENT'
         );
-        const dir = temp.path();
+        const dir = tempPath();
         fs.mkdirSync(dir);
         expect(() => fs.cpSync(path.join(asarDir, 'a.asar', 'file1'), dir))
           .to.throw()
@@ -2696,7 +2681,7 @@ describe('asar package', function () {
           () => fs.promises.cp(path.join(asarDir, 'a.asar', 'file1'), dir),
           'ERR_FS_CP_NON_DIR_TO_DIR'
         );
-        const file = temp.path();
+        const file = tempPath();
         fs.writeFileSync(file, 'x');
         expect(() => fs.cpSync(path.join(asarDir, 'a.asar'), file, { recursive: true }))
           .to.throw()
@@ -2708,8 +2693,7 @@ describe('asar package', function () {
       });
 
       itremote('copies unpacked files and mixed archives', async function () {
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         fs.cpSync(path.join(asarDir, 'unpack.asar'), dest, { recursive: true });
         expect(
           fs.readFileSync(path.join(dest, 'a.txt')).equals(fs.readFileSync(path.join(asarDir, 'unpack.asar', 'a.txt')))
@@ -3036,17 +3020,16 @@ describe('asar package', function () {
         );
 
         // Copies copy the archive file itself.
-        const temp = require('temp').track();
-        const d1 = temp.path();
+        const d1 = tempPath();
         originalFs.copyFileSync(archive, d1);
         expect(originalFs.readFileSync(d1).equals(raw)).to.be.true();
-        const d2 = temp.path();
+        const d2 = tempPath();
         await originalFs.promises.copyFile(archive, d2);
         expect(originalFs.readFileSync(d2).equals(raw)).to.be.true();
-        const d3 = temp.path();
+        const d3 = tempPath();
         originalFs.cpSync(archive, d3);
         expect(originalFs.readFileSync(d3).equals(raw)).to.be.true();
-        const d4 = temp.path();
+        const d4 = tempPath();
         await originalFs.promises.cp(archive, d4);
         expect(originalFs.readFileSync(d4).equals(raw)).to.be.true();
 
@@ -3064,7 +3047,10 @@ describe('asar package', function () {
         expect(seen).to.be.true();
 
         // Writing through original-fs to a path that merely mentions .asar works.
-        const scratch = path.join(temp.mkdirSync('asar-original-fs'), 'not-really.asar');
+        const scratch = path.join(
+          fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'asar-original-fs-')),
+          'not-really.asar'
+        );
         originalFs.writeFileSync(scratch, 'hello');
         expect(originalFs.readFileSync(scratch, 'utf8')).to.equal('hello');
         const wfd = originalFs.openSync(scratch, 'w');
