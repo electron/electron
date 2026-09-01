@@ -405,11 +405,15 @@ void BaseWindow::ShowInactive(gin::Arguments* args) {
   if (IsModal())
     return;
   gin_helper::Dictionary options;
-  bool bring_to_front = true;
+  std::string order = "front";
   if (args->GetNext(&options)) {
-    options.Get("bringToFront", &bring_to_front);
+    options.Get("order", &order);
   }
-  window_->ShowInactive(bring_to_front);
+  if (order != "front" && order != "automatic") {
+    args->ThrowTypeError("'order' must be 'front' or 'automatic'");
+    return;
+  }
+  window_->ShowInactive(order == "front");
 }
 
 void BaseWindow::Hide() {

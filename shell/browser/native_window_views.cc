@@ -628,7 +628,7 @@ void NativeWindowViews::Show() {
 #endif
 }
 
-void NativeWindowViews::ShowInactive(bool bring_to_front) {
+void NativeWindowViews::ShowInactive(bool order_front) {
   FlushPendingDisplayMode();
 
   widget()->ShowInactive();
@@ -645,9 +645,8 @@ void NativeWindowViews::ShowInactive(bool bring_to_front) {
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 
-  // Note: bring_to_front is currently only implemented on macOS.
-  // On Windows/Linux, the window may still be brought to front.
-  std::ignore = bring_to_front;
+  // Explicit front ordering is currently only implemented on macOS.
+  std::ignore = order_front;
 }
 
 void NativeWindowViews::Hide() {

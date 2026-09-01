@@ -1540,7 +1540,7 @@ describe('BrowserWindow module', () => {
         await closeWindow(c);
       });
 
-      ifdescribe(process.platform === 'darwin')('bringToFront', () => {
+      ifdescribe(process.platform === 'darwin')('order', () => {
         let w1: BrowserWindow;
         let w2: BrowserWindow;
 
@@ -1586,13 +1586,19 @@ describe('BrowserWindow module', () => {
         });
 
         it('shows a hidden window to the front when requested', async () => {
-          w2.showInactive({ bringToFront: true });
+          w2.showInactive({ order: 'front' });
           await waitForOrder(['w2', 'w1']);
         });
 
-        it('shows a hidden window behind the front window when requested', async () => {
-          w2.showInactive({ bringToFront: false });
+        it('does not bring a hidden window to the front with automatic ordering', async () => {
+          w2.showInactive({ order: 'automatic' });
           await waitForOrder(['w1', 'w2']);
+        });
+
+        it('rejects an invalid order', async () => {
+          expect(() => w2.showInactive({ order: 'invalid' as unknown as 'front' })).to.throw(
+            "'order' must be 'front' or 'automatic'"
+          );
         });
       });
     });
