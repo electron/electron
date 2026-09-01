@@ -10,6 +10,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "net/base/net_errors.h"
+#include "shell/common/api/electron_api_url_loader.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/net/transferable_url_loader.h"
 #include "shell/common/v8_util.h"
@@ -24,15 +25,18 @@ const gin::WrapperInfo FetchResponseBodyReader::kWrapperInfo =
 // static
 FetchResponseBodyReader* FetchResponseBodyReader::Create(
     v8::Isolate* isolate,
-    scoped_refptr<TransferableURLLoader> loader) {
+    scoped_refptr<TransferableURLLoader> loader,
+    SimpleURLLoaderWrapper* owner) {
   return cppgc::MakeGarbageCollected<FetchResponseBodyReader>(
-      isolate->GetCppHeap()->GetAllocationHandle(), isolate, std::move(loader));
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, std::move(loader),
+      owner);
 }
 
 FetchResponseBodyReader::FetchResponseBodyReader(
     v8::Isolate* isolate,
-    scoped_refptr<TransferableURLLoader> loader)
-    : isolate_(isolate), loader_(std::move(loader)) {}
+    scoped_refptr<TransferableURLLoader> loader,
+    SimpleURLLoaderWrapper* owner)
+    : isolate_(isolate), loader_(std::move(loader)), owner_(owner) {}
 
 FetchResponseBodyReader::~FetchResponseBodyReader() = default;
 
@@ -53,6 +57,7 @@ gin::ObjectTemplateBuilder FetchResponseBodyReader::GetObjectTemplateBuilder(
 
 void FetchResponseBodyReader::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<FetchResponseBodyReader>::Trace(visitor);
+  visitor->Trace(owner_);
   visitor->Trace(read_buffer_);
   visitor->Trace(weak_factory_);
 }
@@ -84,6 +89,12 @@ void FetchResponseBodyReader::OnReadCompleted(int result) {
   pending_read_.reset();
   backing_store_.reset();
   read_buffer_.Reset();
+  if (result <= 0) {
+    loader_.reset();
+    if (owner_)
+      owner_->OnTransferableBodyComplete(result);
+    owner_ = nullptr;
+  }
   if (result < 0)
     std::move(promise).RejectWithErrorMessage(net::ErrorToString(result));
   else

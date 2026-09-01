@@ -57,6 +57,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
       const GURL& initial_url);
 
   void Cancel();
+  void Release();
   bool CanTransfer() const;
   std::optional<PendingURLLoaderResponse> TakeResponse();
   void SetTransferredCancelCallback(base::OnceClosure callback);
@@ -106,6 +107,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   };
 
   std::optional<int> ReadInternal(base::span<uint8_t> buffer);
+  void ReleaseEndpoints();
   void OnBodyReadable(MojoResult result);
   void OnTargetURLLoaderClientDisconnected();
   void CompletePendingRead();

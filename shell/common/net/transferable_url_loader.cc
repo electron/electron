@@ -38,15 +38,17 @@ void TransferableURLLoader::Cancel() {
   pipe_closed_ = true;
   if (transferred_cancel_callback_)
     std::move(transferred_cancel_callback_).Run();
-  body_watcher_.Cancel();
-  body_.reset();
-  target_url_loader_client_receiver_.reset();
-  target_url_loader_.reset();
-  simple_url_loader_receiver_.reset();
-  simple_url_loader_client_.reset();
+  ReleaseEndpoints();
   pending_read_buffer_ = {};
   if (pending_read_callback_)
     std::move(pending_read_callback_).Run(net::ERR_ABORTED);
+}
+
+void TransferableURLLoader::Release() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  CHECK_NE(disposition_, Disposition::kTransferred);
+  delegate_ = nullptr;
+  ReleaseEndpoints();
 }
 
 bool TransferableURLLoader::CanTransfer() const {
@@ -227,9 +229,11 @@ std::optional<int> TransferableURLLoader::ReadInternal(
     pipe_closed_ = true;
     if (!completion_status_)
       return std::nullopt;
-    return completion_status_->error_code == net::OK
-               ? 0
-               : completion_status_->error_code;
+    const int result = completion_status_->error_code == net::OK
+                           ? 0
+                           : completion_status_->error_code;
+    ReleaseEndpoints();
+    return result;
   }
 
   size_t num_bytes = buffer.size();
@@ -254,9 +258,22 @@ std::optional<int> TransferableURLLoader::ReadInternal(
   body_.reset();
   if (!completion_status_)
     return std::nullopt;
-  return completion_status_->error_code == net::OK
-             ? 0
-             : completion_status_->error_code;
+  const int read_result = completion_status_->error_code == net::OK
+                              ? 0
+                              : completion_status_->error_code;
+  ReleaseEndpoints();
+  return read_result;
+}
+
+void TransferableURLLoader::ReleaseEndpoints() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  body_watcher_.Cancel();
+  body_.reset();
+  target_url_loader_client_receiver_.reset();
+  target_url_loader_.reset();
+  simple_url_loader_receiver_.reset();
+  simple_url_loader_client_.reset();
+  target_url_loader_factory_.reset();
 }
 
 void TransferableURLLoader::OnBodyReadable(MojoResult result) {
@@ -264,6 +281,9 @@ void TransferableURLLoader::OnBodyReadable(MojoResult result) {
   if (!pending_read_callback_)
     return;
   if (result != MOJO_RESULT_OK && result != MOJO_RESULT_FAILED_PRECONDITION) {
+    completion_status_ = network::URLLoaderCompletionStatus(net::ERR_FAILED);
+    pipe_closed_ = true;
+    ReleaseEndpoints();
     auto callback = std::move(pending_read_callback_);
     pending_read_buffer_ = {};
     std::move(callback).Run(net::ERR_FAILED);
@@ -289,10 +309,7 @@ void TransferableURLLoader::OnTargetURLLoaderClientDisconnected() {
     delegate_ = nullptr;
     if (simple_url_loader_client_.is_bound())
       simple_url_loader_client_->OnComplete(*completion_status_);
-    target_url_loader_client_receiver_.reset();
-    target_url_loader_.reset();
-    simple_url_loader_receiver_.reset();
-    simple_url_loader_client_.reset();
+    ReleaseEndpoints();
     return;
   }
   CompletePendingRead();
@@ -304,9 +321,11 @@ void TransferableURLLoader::CompletePendingRead() {
     return;
   auto callback = std::move(pending_read_callback_);
   pending_read_buffer_ = {};
-  std::move(callback).Run(completion_status_->error_code == net::OK
-                              ? 0
-                              : completion_status_->error_code);
+  const int result = completion_status_->error_code == net::OK
+                         ? 0
+                         : completion_status_->error_code;
+  ReleaseEndpoints();
+  std::move(callback).Run(result);
 }
 
 }  // namespace electron

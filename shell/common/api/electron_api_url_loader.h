@@ -96,6 +96,8 @@ class SimpleURLLoaderWrapper final
   bool CanTransferResponse() const;
   std::optional<PendingURLLoaderResponse> TakeResponse();
   void SetTransferredCancelCallback(base::OnceClosure callback);
+  void ReleaseResponse();
+  void OnTransferableBodyComplete(int result);
   FetchResponseBodyReader* CreateResponseBodyReader(v8::Isolate* isolate);
 
   // gin::Wrappable

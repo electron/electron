@@ -14,6 +14,7 @@
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "v8/include/cppgc/member.h"
 #include "v8/include/v8-array-buffer.h"
 #include "v8/include/v8-traced-handle.h"
 
@@ -23,15 +24,19 @@ class TransferableURLLoader;
 
 namespace electron::api {
 
+class SimpleURLLoaderWrapper;
+
 class FetchResponseBodyReader final
     : public gin::Wrappable<FetchResponseBodyReader> {
  public:
   static FetchResponseBodyReader* Create(
       v8::Isolate* isolate,
-      scoped_refptr<TransferableURLLoader> loader);
+      scoped_refptr<TransferableURLLoader> loader,
+      SimpleURLLoaderWrapper* owner);
 
   FetchResponseBodyReader(v8::Isolate* isolate,
-                          scoped_refptr<TransferableURLLoader> loader);
+                          scoped_refptr<TransferableURLLoader> loader,
+                          SimpleURLLoaderWrapper* owner);
   ~FetchResponseBodyReader() override;
 
   static const gin::WrapperInfo kWrapperInfo;
@@ -48,6 +53,7 @@ class FetchResponseBodyReader final
 
   raw_ptr<v8::Isolate> isolate_;
   scoped_refptr<TransferableURLLoader> loader_;
+  cppgc::Member<SimpleURLLoaderWrapper> owner_;
   std::optional<gin_helper::Promise<int>> pending_read_;
   std::shared_ptr<v8::BackingStore> backing_store_;
   v8::TracedReference<v8::ArrayBufferView> read_buffer_;

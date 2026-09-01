@@ -927,11 +927,29 @@ void SimpleURLLoaderWrapper::SetTransferredCancelCallback(
     transferable_body_->SetTransferredCancelCallback(std::move(callback));
 }
 
+void SimpleURLLoaderWrapper::ReleaseResponse() {
+  OnTransferableBodyComplete(net::OK);
+}
+
+void SimpleURLLoaderWrapper::OnTransferableBodyComplete(int result) {
+  if (!transferable_body_)
+    return;
+  transferable_body_->Release();
+  transferable_body_.reset();
+  loader_.reset();
+  url_loader_factory_.reset();
+  keep_alive_.Clear();
+  if (result == net::OK)
+    Emit("complete");
+  else
+    Emit("error", net::ErrorToString(result));
+}
+
 FetchResponseBodyReader* SimpleURLLoaderWrapper::CreateResponseBodyReader(
     v8::Isolate* isolate) {
   if (!transferable_body_)
     return nullptr;
-  return FetchResponseBodyReader::Create(isolate, transferable_body_);
+  return FetchResponseBodyReader::Create(isolate, transferable_body_, this);
 }
 
 void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
@@ -1061,7 +1079,8 @@ gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
       .SetMethod("createResponseBodyReader",
                  &SimpleURLLoaderWrapper::CreateResponseBodyReader)
       .SetMethod("canTransferResponse",
-                 &SimpleURLLoaderWrapper::CanTransferResponse);
+                 &SimpleURLLoaderWrapper::CanTransferResponse)
+      .SetMethod("releaseResponse", &SimpleURLLoaderWrapper::ReleaseResponse);
 }
 
 const gin::WrapperInfo* SimpleURLLoaderWrapper::wrapper_info() const {

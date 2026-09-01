@@ -179,6 +179,8 @@ export function fetchWithSession(
         loader,
         mimeType: (resp as any)._responseHead?.mimeType
       });
+    } else {
+      loader.releaseResponse();
     }
     p.resolve(rResp);
   });

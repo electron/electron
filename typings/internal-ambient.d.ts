@@ -267,6 +267,7 @@ declare namespace NodeJS {
     cancel(): void;
     canTransferResponse(): boolean;
     createResponseBodyReader(): FetchResponseBodyReader;
+    releaseResponse(): void;
     on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(
       eventName: 'response-started',
