@@ -2062,6 +2062,23 @@ describe('protocol module', () => {
         ]);
       });
 
+      it('keeps the inner fetch abort signal connected after transfer', async () => {
+        let abort!: () => void;
+        protocol.handle('test-scheme', () => {
+          const controller = new AbortController();
+          abort = () => controller.abort();
+          return net.fetch(base + '/endless', {
+            bypassCustomProtocolHandlers: true,
+            signal: controller.signal
+          });
+        });
+        const r = await net.fetch('test-scheme://host/endless');
+        const reader = r.body!.getReader();
+        await reader.read();
+        abort();
+        await expect(reader.read()).to.eventually.be.rejected();
+      });
+
       it('lets the client abort mid-body', async () => {
         proxy((u) => base + u.pathname);
         const controller = new AbortController();

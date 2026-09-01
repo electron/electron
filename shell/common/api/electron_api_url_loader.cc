@@ -916,11 +916,15 @@ std::optional<PendingURLLoaderResponse> SimpleURLLoaderWrapper::TakeResponse() {
   if (!response)
     return std::nullopt;
   loader_.reset();
-  transferable_body_->Cancel();
-  transferable_body_.reset();
   url_loader_factory_.reset();
   keep_alive_.Clear();
   return response;
+}
+
+void SimpleURLLoaderWrapper::SetTransferredCancelCallback(
+    base::OnceClosure callback) {
+  if (transferable_body_)
+    transferable_body_->SetTransferredCancelCallback(std::move(callback));
 }
 
 FetchResponseBodyReader* SimpleURLLoaderWrapper::CreateResponseBodyReader(

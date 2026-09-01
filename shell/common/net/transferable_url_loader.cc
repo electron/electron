@@ -36,6 +36,8 @@ void TransferableURLLoader::Cancel() {
   delegate_ = nullptr;
   completion_status_ = network::URLLoaderCompletionStatus(net::ERR_ABORTED);
   pipe_closed_ = true;
+  if (transferred_cancel_callback_)
+    std::move(transferred_cancel_callback_).Run();
   body_watcher_.Cancel();
   body_.reset();
   target_url_loader_client_receiver_.reset();
@@ -70,6 +72,13 @@ std::optional<PendingURLLoaderResponse> TransferableURLLoader::TakeResponse() {
                                   std::move(transfer_size_updates_),
                                   std::move(completion_status_),
                                   std::move(endpoints)};
+}
+
+void TransferableURLLoader::SetTransferredCancelCallback(
+    base::OnceClosure callback) {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  CHECK_EQ(disposition_, Disposition::kTransferred);
+  transferred_cancel_callback_ = std::move(callback);
 }
 
 void TransferableURLLoader::Read(base::span<uint8_t> buffer,
@@ -278,12 +287,12 @@ void TransferableURLLoader::OnTargetURLLoaderClientDisconnected() {
   body_.reset();
   if (!response_received_) {
     delegate_ = nullptr;
-    if (downstream_client_.is_bound())
-      downstream_client_->OnComplete(*completion_status_);
-    upstream_client_receiver_.reset();
-    upstream_loader_.reset();
-    downstream_loader_receiver_.reset();
-    downstream_client_.reset();
+    if (simple_url_loader_client_.is_bound())
+      simple_url_loader_client_->OnComplete(*completion_status_);
+    target_url_loader_client_receiver_.reset();
+    target_url_loader_.reset();
+    simple_url_loader_receiver_.reset();
+    simple_url_loader_client_.reset();
     return;
   }
   CompletePendingRead();

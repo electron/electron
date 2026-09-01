@@ -59,6 +59,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   void Cancel();
   bool CanTransfer() const;
   std::optional<PendingURLLoaderResponse> TakeResponse();
+  void SetTransferredCancelCallback(base::OnceClosure callback);
   void Read(base::span<uint8_t> buffer, base::OnceCallback<void(int)> callback);
 
   // network::SharedURLLoaderFactory:
@@ -127,6 +128,7 @@ class TransferableURLLoader final : public network::SharedURLLoaderFactory,
   std::optional<network::URLLoaderCompletionStatus> completion_status_;
   base::raw_span<uint8_t> pending_read_buffer_;
   base::OnceCallback<void(int)> pending_read_callback_;
+  base::OnceClosure transferred_cancel_callback_;
   SEQUENCE_CHECKER(sequence_checker_);
 };
 

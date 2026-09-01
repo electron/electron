@@ -12,6 +12,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/self_deleting.h"
+#include "base/memory/weak_ptr.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
@@ -236,6 +237,11 @@ class TransferredURLLoader final : public network::mojom::URLLoader,
   TransferredURLLoader(const TransferredURLLoader&) = delete;
   TransferredURLLoader& operator=(const TransferredURLLoader&) = delete;
 
+  base::OnceClosure GetCancelCallback() {
+    return base::BindOnce(&TransferredURLLoader::Cancel,
+                          weak_factory_.GetWeakPtr());
+  }
+
   void StartResponse(network::mojom::URLResponseHeadPtr head,
                      mojo::ScopedDataPipeConsumerHandle body,
                      std::optional<mojo_base::BigBuffer> cached_metadata,
@@ -307,11 +313,18 @@ class TransferredURLLoader final : public network::mojom::URLLoader,
     delete this;
   }
 
+  void Cancel() {
+    protocol_url_loader_client_->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_ABORTED));
+    delete this;
+  }
+
   mojo::Remote<network::mojom::URLLoader> fetch_url_loader_;
   mojo::Receiver<network::mojom::URLLoaderClient>
       fetch_url_loader_client_receiver_;
   mojo::Receiver<network::mojom::URLLoader> protocol_url_loader_receiver_;
   mojo::Remote<network::mojom::URLLoaderClient> protocol_url_loader_client_;
+  base::WeakPtrFactory<TransferredURLLoader> weak_factory_{this};
 };
 
 // Read data from URL and pipe it to NetworkService.
@@ -972,6 +985,8 @@ void ElectronURLLoaderFactory::StartLoadingRelay(
       std::move(response->endpoints->url_loader),
       std::move(response->endpoints->url_loader_client), std::move(loader),
       std::move(client));
+  fetch_loader->SetTransferredCancelCallback(
+      transferred_loader->GetCancelCallback());
   transferred_loader->StartResponse(std::move(head), std::move(response->body),
                                     std::move(response->cached_metadata),
                                     response->transfer_size_updates,
