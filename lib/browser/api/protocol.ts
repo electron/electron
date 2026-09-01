@@ -127,7 +127,7 @@ const later = () => new Promise<typeof notYet>((resolve) => setImmediate(resolve
 // read, locked, cloned or replaced) is relayed natively: the fetch stops
 // handing chunks to JS, whatever JS had already pulled is collected as a
 // prefix, and the loader writes prefix + remainder straight to the client.
-async function relayUntouchedFetch(res: Response): Promise<{ loader: unknown; data: Buffer } | null> {
+async function relayUntouchedFetch(res: Response): Promise<{ loader?: unknown; data: Buffer } | null> {
   const fetched = (res as any).__fetch;
   if (!fetched || res.body !== fetched.body || res.bodyUsed || res.body!.locked) return null;
   const urlLoader = fetched.request._urlLoader;
@@ -137,7 +137,9 @@ async function relayUntouchedFetch(res: Response): Promise<{ loader: unknown; da
   const prefix: Uint8Array[] = [];
   for (;;) {
     const next = await Promise.race([reader.read(), later()]);
-    if (next === notYet || next.done) break;
+    if (next === notYet) break;
+    // The fetch finished before hold(); JS already has the whole body.
+    if (next.done) return { data: Buffer.concat(prefix) };
     prefix.push(next.value);
   }
   return { loader: urlLoader, data: Buffer.concat(prefix) };
