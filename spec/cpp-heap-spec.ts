@@ -704,7 +704,12 @@ describe('cpp heap', () => {
             rejectReached = reject;
           });
 
+          // The handler deliberately never responds. Hold on to `callback`: the
+          // native side only references it weakly, and if the GC loops below
+          // collect it the request fails with ERR_FAILED before `request.end()`
+          // and the test would then be measuring a dead request.
           protocol.interceptStreamProtocol('http', (request: any, callback: any) => {
+            (globalThis as any).heldInterceptCallback = callback;
             (async () => {
               try {
                 const elements = request.uploadData || [];
@@ -779,6 +784,7 @@ describe('cpp heap', () => {
             request.abort();
             return { ok: false, error: String(err) };
           } finally {
+            delete (globalThis as any).heldInterceptCallback;
             protocol.uninterceptProtocol('http');
             setTimeout(() => app.quit());
           }
