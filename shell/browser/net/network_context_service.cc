@@ -18,7 +18,14 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/net/device_bound_sessions.h"
 #include "shell/browser/net/system_network_context_manager.h"
+
+#if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
+#include "components/unexportable_keys/mojom/unexportable_key_service.mojom.h"
+#include "components/unexportable_keys/mojom/unexportable_key_service_proxy_impl.h"
+#include "services/network/public/cpp/features.h"
+#endif
 
 namespace electron {
 
@@ -75,6 +82,37 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->http_cache_enabled =
       browser_context_->can_use_http_cache();
 
+  network_context_params->device_bound_sessions_enabled =
+      ShouldEnableDeviceBoundSessions();
+
+#if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
+  // Without a key service the network service falls back to its own factory,
+  // which hardcodes Chromium's keychain access group on macOS (no Electron app
+  // can hold that entitlement) and runs key operations inside the sandboxed
+  // network process. Create the service here instead and pass a remote to it,
+  // mirroring what ProfileNetworkContextService does in Chrome.
+  if (network_context_params->device_bound_sessions_enabled &&
+      base::FeatureList::IsEnabled(
+          network::features::kUseUnexportableKeyServiceInBrowserProcess)) {
+    if (!unexportable_key_service_) {
+      unexportable_key_service_ = CreateDeviceBoundSessionsKeyService(path);
+    }
+    if (unexportable_key_service_) {
+      mojo::PendingRemote<unexportable_keys::mojom::UnexportableKeyService>
+          key_service_remote;
+      // The proxy is recreated on every call so that a restarted network
+      // service gets a live pipe; the key service itself is kept, because its
+      // keys are this context's.
+      unexportable_key_service_proxy_ =
+          std::make_unique<unexportable_keys::UnexportableKeyServiceProxyImpl>(
+              unexportable_key_service_.get(),
+              key_service_remote.InitWithNewPipeAndPassReceiver());
+      network_context_params->bound_sessions_unexportable_key_service =
+          std::move(key_service_remote);
+    }
+  }
+#endif  // BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
+
   network_context_params->cookie_manager_params =
       network::mojom::CookieManagerParams::New();
 
@@ -107,6 +145,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
     network_context_params->file_paths->trust_token_database_name =
         base::FilePath(chrome::kTrustTokenFilename);
+
+    if (network_context_params->device_bound_sessions_enabled) {
+      network_context_params->file_paths->device_bound_sessions_database_name =
+          base::FilePath(chrome::kDeviceBoundSessionsFilename);
+    }
 
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;

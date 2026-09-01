@@ -94,6 +94,10 @@ signing (and notarizing) your app:
 - [The `cookieEncryption` fuse](./fuses.md#cookieencryption) - Cookie encryption uses
   the same OS-level access to the Keychain as `safeStorage`, so it has the same code
   signing requirement.
+- [The `deviceBoundSessions` fuse](./fuses.md#deviceboundsessions) - Hardware-backed
+  session credentials use the Secure Enclave via Keychain, so the app must be signed with a
+  team identifier and carry a `keychain-access-groups` entitlement for
+  `<TeamID>.<BundleID>.unexportable-keys`.
 - [`autoUpdater`](../api/auto-updater.md) - `Squirrel.Mac` requires the app to be
   signed for automatic updates to work at all.
 
