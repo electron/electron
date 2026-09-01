@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 6 May 2026 17:29:39 +0200
+Subject: [M149] [turboshaft] Load elimination: invalidate known maps on Calls
+
+Original change's description:
+> [turboshaft] Load elimination: invalidate known maps on Calls
+>
+> Fixed: 508811477
+> Change-Id: I090877c8babd5102319d7b3f5b63fefd5af941a9
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7823059
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#107101}
+
+(cherry picked from commit df948e6725883d290998e99343a7ef093f781c13)
+
+Bug: 514929391,508811477
+Change-Id: I090877c8babd5102319d7b3f5b63fefd5af941a9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7870081
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.9@{#32}
+Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{#1}
+Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
+
+diff --git a/src/compiler/turboshaft/late-load-elimination-reducer.cc b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+index cd3634f2b7a75e095622ff6e7fea6c36d0cde2f6..372733b22710482475e8ffc4dce3b1c7485b4cfe 100644
+--- a/src/compiler/turboshaft/late-load-elimination-reducer.cc
++++ b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+@@ -534,6 +534,14 @@ void LateLoadEliminationAnalyzer::ProcessCall(OpIndex op_idx,
+   // The call could modify arbitrary memory, so we invalidate every
+   // potentially-aliasing object.
+   memory_.InvalidateMaybeAliasing();
++
++  // This call could transition objects, thus invalidating their maps.
++  // TODO(dmercadier): we should only wipe unstable maps here, except that we
++  // don't know which maps are stable or not because we compact maps in
++  // MapMaskAndOr. I'm really not sure how much benefits this MapMaskAndOr
++  // structure brings, so we could instead consider to record exact maps, in
++  // which case we'd be able to only invalidate unstable ones.
++  WipeAllMaps();
+ }
+ 
+ // The only time an Allocate should flow into a WordBinop is for Smi checks

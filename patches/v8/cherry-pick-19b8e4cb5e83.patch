@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Mon, 27 Apr 2026 15:32:54 +0200
+Subject: [codegen] Fix signed integer overflow in Assembler::GrowBuffer
+
+Compiling extremely large functions could cause `Assembler::GrowBuffer`
+to calculate a negative buffer size due to a signed integer overflow
+when doubling the size. This bypassed the out-of-memory guard and
+resulted in a massive heap-based buffer overflow.
+
+This CL fixes the issue by:
+1. Moving `kMaximalBufferSize` to `AssemblerBase` as a common constant.
+2. Adding a non-static helper method `ComputeNewBufferSize` to
+   `AssemblerBase` that takes a `BufferGrowthStrategy` enum flag.
+3. Adding a `DCHECK` to ensure the new size fits within `int` boundaries.
+4. Updating `GrowBuffer` in arm, arm64, ia32, and x64 to use this helper.
+5. Adding a check against `kMaximalBufferSize` in
+   `BaselineCompiler::AllocateBuffer` to prevent huge initial
+   allocations.
+
+TAG=agy
+CONV=d58d11be-b7cb-4eab-a315-ddefcb616292
+
+Fixed: 506629455
+Change-Id: Iff3ee491f911b9183c9680db84417de9e89ed72d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7796004
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106882}
+
+diff --git a/src/baseline/baseline-compiler.cc b/src/baseline/baseline-compiler.cc
+index 9bf1ee81ee24203049cc83b61643fab09d269002..9baa338f9180faa4d6e0c264292bb8a253ae6309 100644
+--- a/src/baseline/baseline-compiler.cc
++++ b/src/baseline/baseline-compiler.cc
+@@ -276,7 +276,11 @@ std::unique_ptr<AssemblerBuffer> AllocateBuffer(
+     DisallowHeapAllocation no_gc;
+     estimated_size = BaselineCompiler::EstimateInstructionSize(*bytecodes);
+   }
+-  return NewAssemblerBuffer(RoundUp(estimated_size, 4 * KB));
++  int rounded_size = RoundUp(estimated_size, 4 * KB);
++  if (rounded_size > Assembler::kMaximalBufferSize) {
++    V8::FatalProcessOutOfMemory(nullptr, "BaselineCompiler::AllocateBuffer");
++  }
++  return NewAssemblerBuffer(rounded_size);
+ }
+ }  // namespace
+ 
+diff --git a/src/codegen/arm/assembler-arm.cc b/src/codegen/arm/assembler-arm.cc
+index 01314694d49ee50dab476ba9f6c20a277441a97f..47d62e770771017f4a98ce07eb584227db438c34 100644
+--- a/src/codegen/arm/assembler-arm.cc
++++ b/src/codegen/arm/assembler-arm.cc
+@@ -5214,13 +5214,7 @@ void Assembler::GrowBuffer() {
+ 
+   // Compute new buffer size.
+   int old_size = buffer_->size();
+-  int new_size = std::min(2 * old_size, old_size + 1 * MB);
+-
+-  // Some internal data structures overflow for very large buffers,
+-  // they must ensure that kMaximalBufferSize is not too large.
+-  if (new_size > kMaximalBufferSize) {
+-    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
+-  }
++  int new_size = ComputeNewBufferSize(BufferGrowthStrategy::kDoubleCapped1MB);
+ 
+   // Set up new buffer.
+   std::unique_ptr<AssemblerBuffer> new_buffer = buffer_->Grow(new_size);
+diff --git a/src/codegen/arm/assembler-arm.h b/src/codegen/arm/assembler-arm.h
+index 91a38acfbff5f9338344e553f008e4a74338db1b..9056d0fa5478c99de1e109384a99c3a2f036f2d9 100644
+--- a/src/codegen/arm/assembler-arm.h
++++ b/src/codegen/arm/assembler-arm.h
+@@ -1302,9 +1302,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+   VfpRegList scratch_vfp_register_list_;
+ 
+  private:
+-  // Avoid overflows for displacements etc.
+-  static const int kMaximalBufferSize = 512 * MB;
+-
+   // Constant pool generation
+   // Pools are emitted in the instruction stream, preferably after unconditional
+   // jumps or after returns from functions (in dead code locations).
+diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
+index 40adf1773e658e5bfe5f40f503421a3320c49f7b..4b294dc13566e8e5a202b1e09f784a72e4d97471 100644
+--- a/src/codegen/arm64/assembler-arm64.cc
++++ b/src/codegen/arm64/assembler-arm64.cc
+@@ -4678,13 +4678,7 @@ bool Assembler::IsImmFP64(uint64_t bits) {
+ void Assembler::GrowBuffer() {
+   // Compute new buffer size.
+   int old_size = buffer_->size();
+-  int new_size = std::min(2 * old_size, old_size + 1 * MB);
+-
+-  // Some internal data structures overflow for very large buffers,
+-  // they must ensure that kMaximalBufferSize is not too large.
+-  if (new_size > kMaximalBufferSize) {
+-    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
+-  }
++  int new_size = ComputeNewBufferSize(BufferGrowthStrategy::kDoubleCapped1MB);
+ 
+   // Set up new buffer.
+   std::unique_ptr<AssemblerBuffer> new_buffer = buffer_->Grow(new_size);
+diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
+index a642a62f96a9748782b691a92ee5aecfe3d75b32..3d007d617e37f446fb11418f4702f0e996234a4a 100644
+--- a/src/codegen/arm64/assembler-arm64.h
++++ b/src/codegen/arm64/assembler-arm64.h
+@@ -3536,9 +3536,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+ #endif
+ 
+  private:
+-  // Avoid overflows for displacements etc.
+-  static const int kMaximalBufferSize = 512 * MB;
+-
+   // If a veneer is emitted for a branch instruction, that instruction must be
+   // removed from the associated label's link chain so that the assembler does
+   // not later attempt (likely unsuccessfully) to patch it to branch directly to
+diff --git a/src/codegen/assembler.cc b/src/codegen/assembler.cc
+index bf8a0749d2b489175a1b321162f2e1530794243c..5a8278bba780e3d3ffef3fff5c8d3d00540e5907 100644
+--- a/src/codegen/assembler.cc
++++ b/src/codegen/assembler.cc
+@@ -195,6 +195,25 @@ AssemblerBase::AssemblerBase(const AssemblerOptions& options,
+ 
+ AssemblerBase::~AssemblerBase() = default;
+ 
++int AssemblerBase::ComputeNewBufferSize(BufferGrowthStrategy strategy) {
++  int old_size = buffer_size();
++  int64_t new_size_64;
++
++  if (strategy == BufferGrowthStrategy::kDouble) {
++    new_size_64 = 2LL * old_size;
++  } else {
++    DCHECK_EQ(strategy, BufferGrowthStrategy::kDoubleCapped1MB);
++    new_size_64 = std::min<int64_t>(2LL * old_size,
++                                    static_cast<int64_t>(old_size) + 1 * MB);
++  }
++
++  if (new_size_64 > kMaximalBufferSize) {
++    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
++  }
++  DCHECK_LE(new_size_64, kMaxInt);
++  return static_cast<int>(new_size_64);
++}
++
+ void AssemblerBase::Print(Isolate* isolate) {
+   StdoutStream os;
+   v8::internal::Disassembler::Decode(isolate, os, buffer_start_, pc_);
+diff --git a/src/codegen/assembler.h b/src/codegen/assembler.h
+index 834ed253ad3ab71e928c235e61e020cc3c1e3506..1733a9717d84b2170e6ec9ff42ef96f4c9d75b01 100644
+--- a/src/codegen/assembler.h
++++ b/src/codegen/assembler.h
+@@ -332,6 +332,10 @@ std::unique_ptr<AssemblerBuffer> NewAssemblerBuffer(int size);
+ 
+ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
+  public:
++  static constexpr int kMaximalBufferSize = 512 * MB;
++
++  enum class BufferGrowthStrategy { kDouble, kDoubleCapped1MB };
++
+   AssemblerBase(const AssemblerOptions& options,
+                 std::unique_ptr<AssemblerBuffer>);
+   virtual ~AssemblerBase();
+@@ -410,6 +414,8 @@ class V8_EXPORT_PRIVATE AssemblerBase : public Malloced {
+     return buffer;
+   }
+ 
++  int ComputeNewBufferSize(BufferGrowthStrategy strategy);
++
+   // This function is called when code generation is aborted, so that
+   // the assembler could clean up internal data structures.
+   virtual void AbortedCodeGeneration() {}
+diff --git a/src/codegen/ia32/assembler-ia32.cc b/src/codegen/ia32/assembler-ia32.cc
+index 6b1cd0166b7608725ed3b54cb3e9b09afaea1389..4aa3706fa0eb3ed1424f9f3403e92cc229358a94 100644
+--- a/src/codegen/ia32/assembler-ia32.cc
++++ b/src/codegen/ia32/assembler-ia32.cc
+@@ -3309,13 +3309,7 @@ void Assembler::GrowBuffer() {
+ 
+   // Compute new buffer size.
+   int old_size = buffer_->size();
+-  int new_size = 2 * old_size;
+-
+-  // Some internal data structures overflow for very large buffers,
+-  // they must ensure that kMaximalBufferSize is not too large.
+-  if (new_size > kMaximalBufferSize) {
+-    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
+-  }
++  int new_size = ComputeNewBufferSize(BufferGrowthStrategy::kDouble);
+ 
+   // Set up new buffer.
+   std::unique_ptr<AssemblerBuffer> new_buffer = buffer_->Grow(new_size);
+diff --git a/src/codegen/ia32/assembler-ia32.h b/src/codegen/ia32/assembler-ia32.h
+index b462cd8b67e84b50c9596f1a957c43d117cadad5..bf89748ef5389980f1b0d16794739880f89885f7 100644
+--- a/src/codegen/ia32/assembler-ia32.h
++++ b/src/codegen/ia32/assembler-ia32.h
+@@ -1686,9 +1686,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+     return (buffer_start_ + buffer_->size()) - reloc_info_writer.pos();
+   }
+ 
+-  // Avoid overflows for displacements etc.
+-  static constexpr int kMaximalBufferSize = 512 * MB;
+-
+   uint8_t byte_at(int pos) { return buffer_start_[pos]; }
+   void set_byte_at(int pos, uint8_t value) { buffer_start_[pos] = value; }
+ 
+diff --git a/src/codegen/x64/assembler-x64.cc b/src/codegen/x64/assembler-x64.cc
+index 6edc61b4d52f8d4e9019c4057b5a5d4b8ea7b4fe..a6c0964e73569624523be45b24a88ffece70064a 100644
+--- a/src/codegen/x64/assembler-x64.cc
++++ b/src/codegen/x64/assembler-x64.cc
+@@ -726,13 +726,7 @@ void Assembler::GrowBuffer() {
+   // Compute new buffer size.
+   DCHECK_EQ(buffer_start_, buffer_->start());
+   int old_size = buffer_->size();
+-  int new_size = 2 * old_size;
+-
+-  // Some internal data structures overflow for very large buffers,
+-  // they must ensure that kMaximalBufferSize is not too large.
+-  if (new_size > kMaximalBufferSize) {
+-    V8::FatalProcessOutOfMemory(nullptr, "Assembler::GrowBuffer");
+-  }
++  int new_size = ComputeNewBufferSize(BufferGrowthStrategy::kDouble);
+ 
+   // Set up new buffer.
+   std::unique_ptr<AssemblerBuffer> new_buffer = buffer_->Grow(new_size);
+diff --git a/src/codegen/x64/assembler-x64.h b/src/codegen/x64/assembler-x64.h
+index a4aaae402920d90e961e163cf87af5c564c28a78..044e4bd0a1f42f9ec0330e6ddce9d93540dd6b78 100644
+--- a/src/codegen/x64/assembler-x64.h
++++ b/src/codegen/x64/assembler-x64.h
+@@ -2681,9 +2681,6 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {
+   static bool IsNop(Address addr);
+   static bool IsJmpRel(Address addr);
+ 
+-  // Avoid overflows for displacements etc.
+-  static constexpr int kMaximalBufferSize = 512 * MB;
+-
+   uint8_t byte_at(int pos) { return buffer_start_[pos]; }
+   void set_byte_at(int pos, uint8_t value) { buffer_start_[pos] = value; }
+ 

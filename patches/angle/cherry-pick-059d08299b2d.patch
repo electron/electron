@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Tue, 21 Apr 2026 19:49:58 +0800
+Subject: Metal: Add program serial ID to uniform conversion buffer cache key
+
+This change adds a unique serial ID to each ProgramExecutableMtl, which
+is now included in the UniformConversionBufferMtl cache lookup. This
+prevents incorrect reuse of conversion buffers when different programs
+share the same GL buffer but have different UBO layout requirements
+(e.g., row-major mat4 vs. vec4[4]).
+
+The uniform conversion buffer cache in BufferMtl is also transitioned
+from a std::vector to a std::deque with a maximum size of 32 to ensure
+better performance and memory usage. The max size is included to avoid
+retaining deleted programs' data in the cache indefinitely.
+
+Bug: angleproject:500472605
+Bug: angleproject:500942658
+Change-Id: Iafff85b0a250ad155f5ca808879ed786dd59d64d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7742760
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@chromium.org>
+Auto-Submit: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Quyen Le <lehoangquyen@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/BufferMtl.h b/src/libANGLE/renderer/metal/BufferMtl.h
+index 3d474212ed0c54ddcc98967e8824e0211c442390..290aadffe292a9afdac7afa20f173d7fec589053 100644
+--- a/src/libANGLE/renderer/metal/BufferMtl.h
++++ b/src/libANGLE/renderer/metal/BufferMtl.h
+@@ -12,6 +12,7 @@
+ 
+ #import <Metal/Metal.h>
+ 
++#include <deque>
+ #include <optional>
+ #include <utility>
+ 
+@@ -84,11 +85,13 @@ struct IndexConversionBufferMtl : public ConversionBufferMtl
+ struct UniformConversionBufferMtl : public ConversionBufferMtl
+ {
+     UniformConversionBufferMtl(ContextMtl *context,
++                               uint64_t programSerialIdIn,
+                                std::pair<size_t, size_t> offsetIn,
+                                size_t blockSize);
+ 
+     size_t initialSrcOffset() { return offset.second; }
+ 
++    const uint64_t programSerialId;
+     const size_t uniformBufferBlockSize;
+     const std::pair<size_t, size_t> offset;
+ };
+@@ -180,6 +183,7 @@ class BufferMtl : public BufferImpl, public BufferHolderMtl
+                                                        size_t offset);
+ 
+     ConversionBufferMtl *getUniformConversionBuffer(ContextMtl *context,
++                                                    uint64_t programSerialId,
+                                                     std::pair<size_t, size_t> offset,
+                                                     size_t blockSize);
+ 
+@@ -246,7 +250,8 @@ class BufferMtl : public BufferImpl, public BufferHolderMtl
+ 
+     std::vector<IndexConversionBufferMtl> mIndexConversionBuffers;
+ 
+-    std::vector<UniformConversionBufferMtl> mUniformConversionBuffers;
++    // TODO(crbug.com/500942658): Consider using LRU cache
++    std::deque<UniformConversionBufferMtl> mUniformConversionBuffers;
+ 
+     struct RestartRangeCache
+     {
+diff --git a/src/libANGLE/renderer/metal/BufferMtl.mm b/src/libANGLE/renderer/metal/BufferMtl.mm
+index fec633de4ec121f0b4abb51d3b014b3f4e6d5296..1f89a079c7542964a2d822f1e77dedbecd673dcf 100644
+--- a/src/libANGLE/renderer/metal/BufferMtl.mm
++++ b/src/libANGLE/renderer/metal/BufferMtl.mm
+@@ -84,9 +84,11 @@ bool isOffsetAndSizeMetalBlitCompatible(size_t offset, size_t size)
+ 
+ // UniformConversionBufferMtl implementation
+ UniformConversionBufferMtl::UniformConversionBufferMtl(ContextMtl *context,
++                                                       uint64_t programSerialIdIn,
+                                                        std::pair<size_t, size_t> offsetIn,
+                                                        size_t uniformBufferBlockSize)
+     : ConversionBufferMtl(context, 0, mtl::kUniformBufferSettingOffsetMinAlignment),
++      programSerialId(programSerialIdIn),
+       uniformBufferBlockSize(uniformBufferBlockSize),
+       offset(offsetIn)
+ {}
+@@ -411,12 +413,14 @@ bool isOffsetAndSizeMetalBlitCompatible(size_t offset, size_t size)
+ }
+ 
+ ConversionBufferMtl *BufferMtl::getUniformConversionBuffer(ContextMtl *context,
++                                                           uint64_t programSerialId,
+                                                            std::pair<size_t, size_t> offset,
+                                                            size_t stdSize)
+ {
+     for (UniformConversionBufferMtl &buffer : mUniformConversionBuffers)
+     {
+-        if (buffer.offset.first == offset.first && buffer.uniformBufferBlockSize == stdSize)
++        if (buffer.programSerialId == programSerialId && buffer.offset.first == offset.first &&
++            buffer.uniformBufferBlockSize == stdSize)
+         {
+             if (buffer.offset.second <= offset.second &&
+                 (offset.second - buffer.offset.second) % buffer.uniformBufferBlockSize == 0)
+@@ -424,7 +428,13 @@ bool isOffsetAndSizeMetalBlitCompatible(size_t offset, size_t size)
+         }
+     }
+ 
+-    mUniformConversionBuffers.emplace_back(context, offset, stdSize);
++    constexpr size_t kMaxCacheSize = 32;
++    if (mUniformConversionBuffers.size() >= kMaxCacheSize)
++    {
++        mUniformConversionBuffers.pop_front();
++    }
++
++    mUniformConversionBuffers.emplace_back(context, programSerialId, offset, stdSize);
+     return &mUniformConversionBuffers.back();
+ }
+ 
+diff --git a/src/libANGLE/renderer/metal/ProgramExecutableMtl.h b/src/libANGLE/renderer/metal/ProgramExecutableMtl.h
+index 2bc12ca6ee3cf9bd4b4da797ad7a209b3415c659..6cc55c3d4386d501a48b100096fcae4246cde85e 100644
+--- a/src/libANGLE/renderer/metal/ProgramExecutableMtl.h
++++ b/src/libANGLE/renderer/metal/ProgramExecutableMtl.h
+@@ -292,6 +292,10 @@ class ProgramExecutableMtl : public ProgramExecutableImpl
+     uint32_t mShadowCompareModes[mtl::kMaxShaderSamplers];
+ 
+     gl::ShaderMap<std::unique_ptr<mtl::BufferPool>> mDefaultUniformBufferPools;
++
++    // A unique ID to identify this program executable across its lifetime. It's guaranteed that
++    // there is no duplicated ID ever even if the program is deleted.
++    Serial mProgramSerialId;
+ };
+ 
+ angle::Result CreateMslShaderLib(mtl::Context *context,
+diff --git a/src/libANGLE/renderer/metal/ProgramExecutableMtl.mm b/src/libANGLE/renderer/metal/ProgramExecutableMtl.mm
+index 4a4a668b4a28edd40ffcea68c530cbe9b3d9df4b..75a973b9c8da6dd3a2a68930765e8220e086a828 100644
+--- a/src/libANGLE/renderer/metal/ProgramExecutableMtl.mm
++++ b/src/libANGLE/renderer/metal/ProgramExecutableMtl.mm
+@@ -24,6 +24,12 @@
+ {
+ #define SHADER_ENTRY_NAME @"main0"
+ 
++Serial GenerateProgramSerialId()
++{
++    static AtomicSerialFactory gProgramSerialFactory;
++    return gProgramSerialFactory.generate();
++}
++
+ bool CompareBlockInfo(const sh::BlockMemberInfo &a, const sh::BlockMemberInfo &b)
+ {
+     return a.offset < b.offset;
+@@ -378,7 +384,10 @@ void ReadFromDefaultUniformBlockWithElementSize(int componentCount,
+ DefaultUniformBlockMtl::~DefaultUniformBlockMtl() = default;
+ 
+ ProgramExecutableMtl::ProgramExecutableMtl(const gl::ProgramExecutable *executable)
+-    : ProgramExecutableImpl(executable), mProgramHasFlatAttributes(false), mShadowCompareModes{}
++    : ProgramExecutableImpl(executable),
++      mProgramHasFlatAttributes(false),
++      mShadowCompareModes{},
++      mProgramSerialId(GenerateProgramSerialId())
+ {
+     mCurrentShaderVariants.fill(nullptr);
+ 
+@@ -1304,8 +1313,8 @@ void ReadFromDefaultUniformBlockWithElementSize(int componentCount,
+ 
+             UniformConversionBufferMtl *conversion =
+                 (UniformConversionBufferMtl *)bufferMtl->getUniformConversionBuffer(
+-                    context, std::pair<size_t, size_t>(bufferIndex, srcOffset),
+-                    conversionInfo.stdSize());
++                    context, mProgramSerialId.getValue(),
++                    std::pair<size_t, size_t>(bufferIndex, srcOffset), conversionInfo.stdSize());
+             // Has the content of the buffer has changed since last conversion?
+             if (conversion->dirty)
+             {

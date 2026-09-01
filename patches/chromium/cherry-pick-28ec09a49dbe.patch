@@ -1,0 +1,570 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 24 Apr 2026 18:26:26 -0700
+Subject: media: Fix ScopedReadAccess lifetime in D3D12 and MF VEAs
+
+The Windows hardware video encoders (D3D12 and Media Foundation)
+prematurely destroyed gpu::VideoImageRepresentation::ScopedReadAccess
+on the GPU main thread before the hardware encoder finished reading
+the texture, allowing concurrent write access.
+
+This change fixes the race condition by keeping the read access alive
+for the duration of the encode. The VideoImageRepresentation
+and ScopedReadAccess are encapsulated within a SharedImageReadAccess
+struct. This struct internally utilizes a unique_ptr with a
+base::OnTaskRunnerDeleter, guaranteeing that EndReadAccess() and the
+representation are safely destroyed on the GPU main thread when the
+background encoding thread finishes.
+
+Bug: 503879873
+Change-Id: Iff8412e0648b1c01105f6ee9cc39a1e9c7ce9996
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7787507
+Reviewed-by: Qiu, Jianlin <jianlin.qiu@intel.com>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1620599}
+
+diff --git a/media/base/win/mf_helpers.cc b/media/base/win/mf_helpers.cc
+index 6b92e6334c69b072da865d07b92a85f123e2907d..7075b0bbdb11acef823bbcb6f6aba4b0987774c0 100644
+--- a/media/base/win/mf_helpers.cc
++++ b/media/base/win/mf_helpers.cc
+@@ -45,6 +45,20 @@
+ 
+ namespace media {
+ 
++SharedImageReadLock::SharedImageReadLock(
++    std::unique_ptr<gpu::VideoImageRepresentation> representation,
++    std::unique_ptr<gpu::VideoImageRepresentation::ScopedReadAccess>
++        scoped_read_access)
++    : representation_(representation.release(),
++                      base::OnTaskRunnerDeleter(
++                          base::SequencedTaskRunner::GetCurrentDefault())),
++      scoped_read_access_(scoped_read_access.release(),
++                          base::OnTaskRunnerDeleter(
++                              base::SequencedTaskRunner::GetCurrentDefault())) {
++}
++
++SharedImageReadLock::~SharedImageReadLock() = default;
++
+ using Microsoft::WRL::ComPtr;
+ using Microsoft::WRL::MakeAndInitialize;
+ 
+@@ -1049,12 +1063,13 @@ void GenerateResourceOnSyncTokenReleased(
+     ResourceAvailableCB sample_available_cb) {
+   TRACE_EVENT0("media", "GenerateResourceOnSyncTokenReleased");
+ 
+-#define RETURN_ON_FAILURE_WITH_CALLBACK(hr, message)                       \
+-  if (FAILED(hr)) {                                                        \
+-    LOG(ERROR) << message << ": " << logging::SystemErrorCodeToString(hr); \
+-    std::move(sample_available_cb)                                         \
+-        .Run(std::move(frame), nullptr, std::nullopt, std::nullopt, hr);   \
+-    return;                                                                \
++#define RETURN_ON_FAILURE_WITH_CALLBACK(hr, message)                         \
++  if (FAILED(hr)) {                                                          \
++    LOG(ERROR) << message << ": " << logging::SystemErrorCodeToString(hr);   \
++    std::move(sample_available_cb)                                           \
++        .Run(std::move(frame), nullptr, std::nullopt, nullptr, std::nullopt, \
++             hr);                                                            \
++    return;                                                                  \
+   }
+ 
+   auto* shared_image_stub = command_buffer_helper->GetSharedImageStub();
+@@ -1091,8 +1106,19 @@ void GenerateResourceOnSyncTokenReleased(
+   }
+ 
+   auto scoped_read_access = image_representation->BeginScopedReadAccess();
++  if (!scoped_read_access) {
++    RETURN_ON_FAILURE_WITH_CALLBACK(E_FAIL, "Failed to begin read access");
++  }
++  ComPtr<SharedImageReadLock> si_lock =
++      Microsoft::WRL::Make<SharedImageReadLock>(std::move(image_representation),
++                                                std::move(scoped_read_access));
++  if (!si_lock) {
++    RETURN_ON_FAILURE_WITH_CALLBACK(E_OUTOFMEMORY,
++                                    "Failed to create SharedImageReadLock");
++  }
++
+   gpu::D3D11TextureAndArrayIndex input_texture =
+-      scoped_read_access->GetD3D11Texture();
++      si_lock->access()->GetD3D11Texture();
+ 
+   D3D11_TEXTURE2D_DESC texture_desc;
+   input_texture.texture->GetDesc(&texture_desc);
+@@ -1112,8 +1138,8 @@ void GenerateResourceOnSyncTokenReleased(
+     RETURN_ON_FAILURE_WITH_CALLBACK(sample != nullptr ? S_OK : E_FAIL,
+                                     "Failed to create MF sample");
+     std::move(sample_available_cb)
+-        .Run(std::move(frame), std::move(sample), std::nullopt, std::nullopt,
+-             S_OK);
++        .Run(std::move(frame), std::move(sample), std::nullopt,
++             std::move(si_lock), std::nullopt, S_OK);
+     return;
+   }
+ 
+@@ -1195,7 +1221,7 @@ void GenerateResourceOnSyncTokenReleased(
+ 
+   std::move(sample_available_cb)
+       .Run(std::move(frame), nullptr, std::move(scoped_shared_handle),
+-           input_texture_has_been_copied, S_OK);
++           std::move(si_lock), input_texture_has_been_copied, S_OK);
+ #undef RETURN_ON_FAILURE_WITH_CALLBACK
+ }
+ 
+diff --git a/media/base/win/mf_helpers.h b/media/base/win/mf_helpers.h
+index 2dbfac54410562138da706bedd957f03843ea256..ea0e28e855cf652ae17ec6409d0f8eb8554e3537 100644
+--- a/media/base/win/mf_helpers.h
++++ b/media/base/win/mf_helpers.h
+@@ -9,10 +9,13 @@
+ #include <mfidl.h>
+ #include <stdint.h>
+ #include <wrl/client.h>
++#include <wrl/implements.h>
+ 
+ #include "base/functional/callback.h"
+ #include "base/logging.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/time/time.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
+ #include "media/base/audio_decoder_config.h"
+ #include "media/base/channel_layout.h"
+ #include "media/base/decoder_buffer.h"
+@@ -228,6 +231,46 @@ MEDIA_EXPORT HRESULT GenerateSampleFromVideoFrame(
+ 
+ class CommandBufferHelper;
+ 
++// Manages the lifetime of a VideoImageRepresentation and its ScopedReadAccess.
++// Since these objects are not thread-safe and must be destroyed on the GPU
++// main thread, this COM class encapsulates them and uses
++// base::OnTaskRunnerDeleter to ensure they are safely destroyed on the
++// original task runner, even if the SharedImageReadLock is passed to and
++// destroyed by a background OS thread (e.g., inside an IMFSample).
++// It also guarantees destruction order (ScopedReadAccess before
++// VideoImageRepresentation).
++class MEDIA_EXPORT SharedImageReadLock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IUnknown> {
++ public:
++  // Custom GUID used to attach the SharedImageReadLock to an IMFSample.
++  // This is a randomly generated GUID and has no special meaning.
++  static constexpr GUID kSampleExtensionGUID = {
++      0xb30e9cc8,
++      0xd05a,
++      0x482a,
++      {0xba, 0x28, 0x0e, 0x21, 0xc0, 0xe3, 0x95, 0xa9}};
++
++  SharedImageReadLock(
++      std::unique_ptr<gpu::VideoImageRepresentation> representation,
++      std::unique_ptr<gpu::VideoImageRepresentation::ScopedReadAccess>
++          scoped_read_access);
++
++  gpu::VideoImageRepresentation::ScopedReadAccess* access() const {
++    return scoped_read_access_.get();
++  }
++
++ private:
++  ~SharedImageReadLock() override;
++
++  std::unique_ptr<gpu::VideoImageRepresentation, base::OnTaskRunnerDeleter>
++      representation_;
++  std::unique_ptr<gpu::VideoImageRepresentation::ScopedReadAccess,
++                  base::OnTaskRunnerDeleter>
++      scoped_read_access_;
++};
++
+ // Parameters:
+ //   frame: The original video frame.
+ //   sample: The generated IMFSample, or nullptr if a shared handle is needed.
+@@ -245,6 +288,7 @@ typedef base::OnceCallback<void(
+     scoped_refptr<VideoFrame> frame,
+     Microsoft::WRL::ComPtr<IMFSample> sample,
+     std::optional<base::win::ScopedHandle> texture_handle,
++    Microsoft::WRL::ComPtr<SharedImageReadLock> scoped_read_access,
+     std::optional<bool> texture_has_been_copied,
+     HRESULT hr)>
+     ResourceAvailableCB;
+diff --git a/media/gpu/windows/d3d12_video_encode_accelerator.cc b/media/gpu/windows/d3d12_video_encode_accelerator.cc
+index ae877437eaa643904cc948ac83c746c7fe54d43a..5d153591b5b023edd39250410f2421e5aff0c86d 100644
+--- a/media/gpu/windows/d3d12_video_encode_accelerator.cc
++++ b/media/gpu/windows/d3d12_video_encode_accelerator.cc
+@@ -85,7 +85,8 @@ std::string GetEncoderStatusHistogramName(VideoCodecProfile profile) {
+   if (FAILED(hr)) {                                                        \
+     LOG(ERROR) << message << ": " << logging::SystemErrorCodeToString(hr); \
+     std::move(frame_available_cb)                                          \
+-        .Run(std::move(frame), base::win::ScopedHandle(), 0, hr);          \
++        .Run(std::move(frame), base::win::ScopedHandle(),                  \
++             Microsoft::WRL::ComPtr<SharedImageReadLock>(), 0, hr);        \
+     return;                                                                \
+   }
+ 
+@@ -135,11 +136,14 @@ struct D3D12VideoEncodeAccelerator::InputFrameRef {
+       : frame(std::move(frame)),
+         options(options),
+         resolving_shared_image(resolving_shared_image) {}
+-  const scoped_refptr<VideoFrame> frame;
+-  const VideoEncoder::EncodeOptions options;
++  InputFrameRef(InputFrameRef&&) = default;
++  InputFrameRef& operator=(InputFrameRef&&) = default;
++  scoped_refptr<VideoFrame> frame;
++  VideoEncoder::EncodeOptions options;
+   bool resolve_shared_image_requested = false;
+   bool resolving_shared_image = false;
+   gpu::Mailbox shared_image_token;
++  Microsoft::WRL::ComPtr<SharedImageReadLock> scoped_read_access;
+   D3D12PictureBuffer resolved_picture;
+   base::TimeTicks frame_encode_start_time = base::TimeTicks::Now();
+ };
+@@ -164,8 +168,18 @@ void GenerateResourceOnSynTokenReleased(
+   }
+ 
+   auto scoped_read_access = representation->BeginScopedReadAccess();
++  if (!scoped_read_access) {
++    RETURN_ON_FAILURE_WITH_CALLBACK(E_FAIL, "Failed to begin read access");
++  }
++  Microsoft::WRL::ComPtr<SharedImageReadLock> si_lock =
++      Microsoft::WRL::Make<SharedImageReadLock>(std::move(representation),
++                                                std::move(scoped_read_access));
++  if (!si_lock) {
++    RETURN_ON_FAILURE_WITH_CALLBACK(E_OUTOFMEMORY,
++                                    "Failed to create SharedImageReadLock");
++  }
+   gpu::D3D11TextureAndArrayIndex input_texture =
+-      scoped_read_access->GetD3D11Texture();
++      si_lock->access()->GetD3D11Texture();
+ 
+   D3D11_TEXTURE2D_DESC desc;
+   input_texture.texture->GetDesc(&desc);
+@@ -243,7 +257,7 @@ void GenerateResourceOnSynTokenReleased(
+     shared_handle.Set(copied_handle);
+   }
+ 
+-  // This `fence_and_value` is for D3D11 → D3D12 synchronization:
++  // This `fence_and_value` is for D3D11 -> D3D12 synchronization:
+   // The D3D11 fence signals completion of all D3D11 operations on the input
+   // texture, so the D3D12 command queue can wait on it before safely consuming
+   // the texture.
+@@ -254,18 +268,19 @@ void GenerateResourceOnSynTokenReleased(
+   RETURN_ON_FAILURE_WITH_CALLBACK(hr, "Failed to signal d3d11 fence");
+ 
+   std::move(frame_available_cb)
+-      .Run(std::move(frame), std::move(shared_handle), fence_and_value.second,
+-           S_OK);
++      .Run(std::move(frame), std::move(shared_handle), std::move(si_lock),
++           fence_and_value.second, S_OK);
+ }
+ 
+-void GenerateResourceFromSharedImageVideoFrame(
++void D3D12GenerateResourceFromSharedImageVideoFrame(
+     scoped_refptr<VideoFrame> frame,
+     D3D11FenceAndValue fence_and_value,
+     scoped_refptr<CommandBufferHelper> command_buffer_helper,
+     FrameAvailableCB frame_available_cb) {
+   if (!frame->HasSharedImage()) {
+     std::move(frame_available_cb)
+-        .Run(std::move(frame), base::win::ScopedHandle(), 0, E_FAIL);
++        .Run(std::move(frame), base::win::ScopedHandle(),
++             Microsoft::WRL::ComPtr<SharedImageReadLock>(), 0, E_FAIL);
+     return;
+   }
+ 
+@@ -275,7 +290,8 @@ void GenerateResourceFromSharedImageVideoFrame(
+           ->GetD3D11Device();
+   if (!d3d11_device) {
+     std::move(frame_available_cb)
+-        .Run(std::move(frame), base::win::ScopedHandle(), 0, E_FAIL);
++        .Run(std::move(frame), base::win::ScopedHandle(),
++             Microsoft::WRL::ComPtr<SharedImageReadLock>(), 0, E_FAIL);
+     return;
+   }
+ 
+@@ -805,7 +821,7 @@ void D3D12VideoEncodeAccelerator::EncodeTask(
+       gpu_task_runner_->PostTask(
+           FROM_HERE,
+           base::BindOnce(
+-              &GenerateResourceFromSharedImageVideoFrame, frame,
++              &D3D12GenerateResourceFromSharedImageVideoFrame, frame,
+               source_texture_fence_->GetD3D11FenceAndIncrementValue(),
+               command_buffer_helper_,
+               base::BindPostTask(
+@@ -852,7 +868,7 @@ void D3D12VideoEncodeAccelerator::TryEncodeFrames() {
+ }
+ 
+ void D3D12VideoEncodeAccelerator::DoEncodeTask(
+-    const InputFrameRef& input_frame,
++    InputFrameRef& input_frame,
+     const BitstreamBuffer& bitstream_buffer) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(encoder_sequence_checker_);
+ 
+@@ -904,8 +920,16 @@ void D3D12VideoEncodeAccelerator::DoEncodeTask(
+   }
+ 
+   child_task_runner_->PostTask(
+-      FROM_HERE, BindOnce(&Client::BitstreamBufferReady, client_,
+-                          result.bitstream_buffer_id, result.metadata));
++      FROM_HERE, BindOnce(
++                     [](base::WeakPtr<Client> client, int32_t id,
++                        const BitstreamBufferMetadata& md,
++                        Microsoft::WRL::ComPtr<SharedImageReadLock> access) {
++                       if (client) {
++                         client->BitstreamBufferReady(id, md);
++                       }
++                     },
++                     client_, result.bitstream_buffer_id, result.metadata,
++                     std::move(input_frame.scoped_read_access)));
+ }
+ 
+ void D3D12VideoEncodeAccelerator::DestroyTask() {
+@@ -1023,6 +1047,7 @@ void D3D12VideoEncodeAccelerator::SetCommandBufferHelperCB(
+ void D3D12VideoEncodeAccelerator::OnSharedImageResolved(
+     scoped_refptr<VideoFrame> frame,
+     base::win::ScopedHandle shared_handle,
++    Microsoft::WRL::ComPtr<SharedImageReadLock> scoped_read_access,
+     uint64_t source_texture_fence_value,
+     HRESULT hr) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(encoder_sequence_checker_);
+@@ -1056,6 +1081,7 @@ void D3D12VideoEncodeAccelerator::OnSharedImageResolved(
+          "Failed to find input frame for resolved shared image"});
+   }
+   it->resolving_shared_image = false;
++  it->scoped_read_access = std::move(scoped_read_access);
+   it->resolved_picture = {
+       std::move(input_texture),
+       0,
+@@ -1077,7 +1103,8 @@ void D3D12VideoEncodeAccelerator::ResolveQueuedSharedImages() {
+       gpu_task_runner_->PostTask(
+           FROM_HERE,
+           base::BindOnce(
+-              &GenerateResourceFromSharedImageVideoFrame, input_frame.frame,
++              &D3D12GenerateResourceFromSharedImageVideoFrame,
++              input_frame.frame,
+               source_texture_fence_->GetD3D11FenceAndIncrementValue(),
+               command_buffer_helper_,
+               base::BindPostTask(
+diff --git a/media/gpu/windows/d3d12_video_encode_accelerator.h b/media/gpu/windows/d3d12_video_encode_accelerator.h
+index aa24496bd7aea832cf210a26b5361578fb43cef8..1748a4c4f1db1493f73b084b20950c92d5d8de6d 100644
+--- a/media/gpu/windows/d3d12_video_encode_accelerator.h
++++ b/media/gpu/windows/d3d12_video_encode_accelerator.h
+@@ -17,6 +17,7 @@
+ #include "base/containers/lru_cache.h"
+ #include "base/containers/queue.h"
+ #include "base/sequence_checker.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
+ #include "gpu/config/gpu_driver_bug_workarounds.h"
+ #include "gpu/ipc/service/command_buffer_stub.h"
+ #include "media/base/bitstream_buffer.h"
+@@ -24,6 +25,7 @@
+ #include "media/base/media_log.h"
+ #include "media/base/video_frame.h"
+ #include "media/base/video_frame_converter.h"
++#include "media/base/win/mf_helpers.h"
+ #include "media/gpu/media_gpu_export.h"
+ #include "media/gpu/windows/d3d12_copy_command_list_wrapper.h"
+ #include "media/gpu/windows/d3d12_video_encode_delegate.h"
+@@ -34,10 +36,12 @@ namespace media {
+ class CommandBufferHelper;
+ class VEAEncodingLatencyMetricsHelper;
+ 
+-typedef base::OnceCallback<void(scoped_refptr<VideoFrame> frame,
+-                                base::win::ScopedHandle shared_handle,
+-                                uint64_t source_texture_fence_value,
+-                                HRESULT hr)>
++typedef base::OnceCallback<void(
++    scoped_refptr<VideoFrame> frame,
++    base::win::ScopedHandle shared_handle,
++    Microsoft::WRL::ComPtr<SharedImageReadLock> scoped_read_access,
++    uint64_t source_texture_fence_value,
++    HRESULT hr)>
+     FrameAvailableCB;
+ 
+ class MEDIA_GPU_EXPORT D3D12VideoEncodeAccelerator
+@@ -122,7 +126,7 @@ class MEDIA_GPU_EXPORT D3D12VideoEncodeAccelerator
+   void EncodeTask(scoped_refptr<VideoFrame> frame,
+                   const VideoEncoder::EncodeOptions& options);
+ 
+-  void DoEncodeTask(const InputFrameRef& input_frame,
++  void DoEncodeTask(InputFrameRef& input_frame,
+                     const BitstreamBuffer& bitstream_buffer);
+ 
+   void TryEncodeFrames();
+@@ -142,10 +146,12 @@ class MEDIA_GPU_EXPORT D3D12VideoEncodeAccelerator
+       const GetCommandBufferHelperResult& result);
+ 
+   // Invoked when a shared image backed VideoFrame is resolved.
+-  void OnSharedImageResolved(scoped_refptr<VideoFrame> frame,
+-                             base::win::ScopedHandle shared_handle,
+-                             uint64_t source_texture_fence_value,
+-                             HRESULT hr);
++  void OnSharedImageResolved(
++      scoped_refptr<VideoFrame> frame,
++      base::win::ScopedHandle shared_handle,
++      Microsoft::WRL::ComPtr<SharedImageReadLock> scoped_read_access,
++      uint64_t source_texture_fence_value,
++      HRESULT hr);
+ 
+   std::vector<D3D12_VIDEO_ENCODER_CODEC> codecs_;
+ 
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index d81202fde17e8f49b354cec64a4438f960da6f45..ba02b32c67f5943e580bbfdc4cc83654c386fa85 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -277,7 +277,8 @@ class MFAsyncCallbackProxy
+ struct MediaFoundationVideoEncodeAccelerator::PendingInput {
+   PendingInput() = default;
+   ~PendingInput() = default;
+-  PendingInput(const PendingInput&) = default;
++  PendingInput(PendingInput&&) = default;
++  PendingInput& operator=(PendingInput&&) = default;
+   // If true, output bits should be discarded and the rate control object
+   // shouldn't be let known about the encode.
+   bool discard_output = false;
+@@ -285,6 +286,7 @@ struct MediaFoundationVideoEncodeAccelerator::PendingInput {
+   base::TimeDelta timestamp;
+   gfx::ColorSpace color_space;
+   ComMFSample input_sample;
++  Microsoft::WRL::ComPtr<SharedImageReadLock> si_lock;
+   bool resolving_shared_image = false;
+   gpu::Mailbox shared_image_token;
+   base::TimeTicks frame_encode_start_time = base::TimeTicks::Now();
+@@ -826,7 +828,7 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
+                  "GenerateSampleOnWaitSyncToken");
+     result.resolving_shared_image = true;
+     result.shared_image_token = frame->shared_image()->mailbox();
+-    pending_input_queue_.push_back(result);
++    pending_input_queue_.push_back(std::move(result));
+     auto d3d_device = dxgi_device_manager_->GetDevice();
+     if (!d3d_device) {
+       NotifyErrorStatus({EncoderStatus::Codes::kSystemAPICallError,
+@@ -854,7 +856,7 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
+     return;
+   }
+ 
+-  pending_input_queue_.push_back(result);
++  pending_input_queue_.push_back(std::move(result));
+ }
+ 
+ void MediaFoundationVideoEncodeAccelerator::EncodeInternal(
+@@ -1959,10 +1961,20 @@ HRESULT MediaFoundationVideoEncodeAccelerator::ProcessInput(
+ }
+ 
+ HRESULT MediaFoundationVideoEncodeAccelerator::PopulateInputSampleBuffer(
+-    const PendingInput& input,
++    PendingInput& input,
+     scoped_refptr<VideoFrame> frame) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   auto input_sample = input.input_sample;
++  if (input.si_lock) {
++    HRESULT hr = input_sample->SetUnknown(
++        SharedImageReadLock::kSampleExtensionGUID, input.si_lock.Get());
++    if (FAILED(hr)) {
++      LOG(ERROR) << "Failed to attach ScopedReadAccess to IMFSample: "
++                 << PrintHr(hr);
++      return hr;
++    }
++  }
++
+   if (!frame->HasMappableSharedImage() && !frame->HasDirectCpuAccess() &&
+       !input.generate_sample_on_wait_sync_token) {
+     LOG(ERROR) << "Unsupported video frame storage type";
+@@ -2158,7 +2170,7 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PopulateInputSampleBuffer(
+ // different from that is currently used for encoding.
+ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+     scoped_refptr<VideoFrame> frame,
+-    const PendingInput& input) {
++    PendingInput& input) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(frame->HasNativeMappableSharedImage() ||
+          input.generate_sample_on_wait_sync_token);
+@@ -2267,7 +2279,7 @@ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+ // Handle case where video frame is backed by a GPU texture
+ HRESULT MediaFoundationVideoEncodeAccelerator::PopulateInputSampleBufferGpu(
+     scoped_refptr<VideoFrame> frame,
+-    const PendingInput& input) {
++    PendingInput& input) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(dxgi_device_manager_);
+   auto& input_sample = input.input_sample;
+@@ -2996,12 +3008,12 @@ void MediaFoundationVideoEncodeAccelerator::OnSharedImageResourceAvailable(
+     scoped_refptr<VideoFrame> frame,
+     ComPtr<IMFSample> sample,
+     std::optional<base::win::ScopedHandle> texture_handle,
++    Microsoft::WRL::ComPtr<SharedImageReadLock> si_lock,
+     std::optional<bool> has_been_copied,
+-    HRESULT hrResult) {
++    HRESULT hr) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  if (FAILED(hrResult)) {
+-    LOG(ERROR) << "Failed to obtain shared image for encoding: "
+-               << PrintHr(hrResult);
++  if (FAILED(hr)) {
++    LOG(ERROR) << "Failed to obtain shared image for encoding: " << PrintHr(hr);
+     NotifyErrorStatus({EncoderStatus::Codes::kSystemAPICallError,
+                        "Failed to obtain shared image for encoding"});
+     return;
+@@ -3011,7 +3023,7 @@ void MediaFoundationVideoEncodeAccelerator::OnSharedImageResourceAvailable(
+     CHECK(texture_handle.has_value());
+     ComPtr<ID3D11Device> d3d_device = dxgi_device_manager_->GetDevice();
+     Microsoft::WRL::ComPtr<ID3D11Device1> d3d_device1;
+-    auto hr = d3d_device.As(&d3d_device1);
++    hr = d3d_device.As(&d3d_device1);
+     CHECK(SUCCEEDED(hr));
+     Microsoft::WRL::ComPtr<ID3D11Texture2D> input_texture;
+     hr = d3d_device1->OpenSharedResource1(texture_handle->Get(),
+@@ -3048,13 +3060,14 @@ void MediaFoundationVideoEncodeAccelerator::OnSharedImageResourceAvailable(
+     if (it->shared_image_token == frame->shared_image()->mailbox() &&
+         it->resolving_shared_image) {
+       it->input_sample = sample;
++      it->si_lock = std::move(si_lock);
+       it->resolving_shared_image = false;
+       break;
+     }
+   }
+   DCHECK(it != pending_input_queue_.end());
+ 
+-  HRESULT hr = PopulateInputSampleBuffer(*it, std::move(frame));
++  hr = PopulateInputSampleBuffer(*it, std::move(frame));
+   if (FAILED(hr)) {
+     NotifyErrorStatus({EncoderStatus::Codes::kEncoderFailedEncode,
+                        "Failed to populate input sample buffer"});
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index 3e0cc7ab16dbcaf60d4d3f8b34833ee8c9d77f6b..e1bbc5eb37f7a3857192f5a99c0efb4f325a4ed2 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -24,6 +24,7 @@
+ #include "base/threading/thread.h"
+ #include "base/win/shlwapi.h"
+ #include "base/win/windows_types.h"
++#include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
+ #include "gpu/config/gpu_driver_bug_workarounds.h"
+ #include "gpu/config/gpu_preferences.h"
+ #include "gpu/ipc/service/command_buffer_stub.h"
+@@ -33,6 +34,7 @@
+ #include "media/base/video_encoder.h"
+ #include "media/base/video_frame_converter.h"
+ #include "media/base/win/dxgi_device_manager.h"
++#include "media/base/win/mf_helpers.h"
+ #include "media/gpu/command_buffer_helper.h"
+ #include "media/gpu/media_gpu_export.h"
+ #include "media/gpu/windows/d3d_com_defs.h"
+@@ -193,12 +195,12 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+   void FeedInputs();
+ 
+   // Populates input sample buffer with contents of a video frame
+-  HRESULT PopulateInputSampleBuffer(const PendingInput& input,
++  HRESULT PopulateInputSampleBuffer(PendingInput& input,
+                                     scoped_refptr<VideoFrame> frame);
+   HRESULT PopulateInputSampleBufferGpu(scoped_refptr<VideoFrame> frame,
+-                                       const PendingInput& input);
++                                       PendingInput& input);
+   HRESULT CopyInputSampleBufferFromGpu(scoped_refptr<VideoFrame> frame,
+-                                       const PendingInput& input);
++                                       PendingInput& input);
+ 
+   bool IsTemporalScalabilityCoding() const { return num_temporal_layers_ > 1; }
+ 
+@@ -242,6 +244,7 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+       scoped_refptr<VideoFrame> frame,
+       Microsoft::WRL::ComPtr<IMFSample> sample,
+       std::optional<base::win::ScopedHandle> texture_handle,
++      Microsoft::WRL::ComPtr<SharedImageReadLock> si_lock,
+       std::optional<bool> has_been_copied,
+       HRESULT hr);
+ 

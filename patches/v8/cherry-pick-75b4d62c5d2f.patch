@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 22 May 2026 14:46:48 +0200
+Subject: [M149] [baseline] Fix integer overflow in instruction size estimation
+
+Original change's description:
+> [baseline] Fix integer overflow in instruction size estimation
+>
+> Use base::CheckedNumeric<int> for EstimateInstructionSize to prevent
+> integer overflow when calculating estimated instruction size for very
+> large bytecode arrays.
+>
+> Also update baseline batch compiler to handle CheckedNumeric and prevent
+> overflow of estimated_instruction_size_.
+>
+> Bug: 515431687
+> Change-Id: Id2208f5d95d81bd99adcde656ebcabcee9f38cce
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7866066
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#107527}
+
+(cherry picked from commit ebf970d8a36498ea34eb9bf9fdfe8574c6bd8cf3)
+
+Bug: 517013446,515431687
+Change-Id: Id2208f5d95d81bd99adcde656ebcabcee9f38cce
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7880152
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/14.9@{#38}
+Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{#1}
+Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
+
+diff --git a/src/baseline/baseline-batch-compiler.cc b/src/baseline/baseline-batch-compiler.cc
+index ca0dbc932b66d69d1aefa3453c152dde25aa4a3e..11c2f01e589f4e84a8be566149b2cd0ddcebbebf 100644
+--- a/src/baseline/baseline-batch-compiler.cc
++++ b/src/baseline/baseline-batch-compiler.cc
+@@ -7,6 +7,7 @@
+ #include <algorithm>
+ 
+ #include "src/base/fpu.h"
++#include "src/base/numerics/checked_math.h"
+ #include "src/baseline/baseline-compiler.h"
+ #include "src/codegen/compiler.h"
+ #include "src/execution/isolate.h"
+@@ -342,20 +343,23 @@ bool BaselineBatchCompiler::ShouldCompileBatch(
+   if (shared->is_sparkplug_compiling()) return false;
+   if (!CanCompileWithBaseline(isolate_, shared)) return false;
+ 
+-  int estimated_size;
++  base::CheckedNumeric<int> estimated_size;
+   {
+     DisallowHeapAllocation no_gc;
+     estimated_size = BaselineCompiler::EstimateInstructionSize(
+         shared->GetBytecodeArray(isolate_));
+   }
+-  estimated_instruction_size_ += estimated_size;
++  int raw_estimated_size = estimated_size.ValueOrDefault(kMaxInt);
++  base::CheckedNumeric<int> new_size = estimated_instruction_size_;
++  new_size += raw_estimated_size;
++  estimated_instruction_size_ = new_size.ValueOrDefault(kMaxInt);
+   if (v8_flags.trace_baseline_batch_compilation) {
+     CodeTracer::Scope trace_scope(isolate_->GetCodeTracer());
+     PrintF(trace_scope.file(), "[Baseline batch compilation] Enqueued SFI %s",
+            shared->DebugNameCStr().get());
+     PrintF(trace_scope.file(),
+-           " with estimated size %d (current budget: %d/%d)\n", estimated_size,
+-           estimated_instruction_size_,
++           " with estimated size %d (current budget: %d/%d)\n",
++           raw_estimated_size, estimated_instruction_size_,
+            v8_flags.baseline_batch_compilation_threshold.value());
+   }
+   if (estimated_instruction_size_ >=
+diff --git a/src/baseline/baseline-compiler.cc b/src/baseline/baseline-compiler.cc
+index 9baa338f9180faa4d6e0c264292bb8a253ae6309..d9c09c9d3fb0fbd28a8edfa8d0e4ed7d95740016 100644
+--- a/src/baseline/baseline-compiler.cc
++++ b/src/baseline/baseline-compiler.cc
+@@ -271,12 +271,17 @@ const int kAverageBytecodeToInstructionRatio = 7;
+ #endif
+ std::unique_ptr<AssemblerBuffer> AllocateBuffer(
+     DirectHandle<BytecodeArray> bytecodes) {
+-  int estimated_size;
++  base::CheckedNumeric<int> estimated_size;
+   {
+     DisallowHeapAllocation no_gc;
+     estimated_size = BaselineCompiler::EstimateInstructionSize(*bytecodes);
+   }
+-  int rounded_size = RoundUp(estimated_size, 4 * KB);
++  int raw_estimated_size;
++  if (!estimated_size.AssignIfValid(&raw_estimated_size) ||
++      raw_estimated_size > Assembler::kMaximalBufferSize) {
++    V8::FatalProcessOutOfMemory(nullptr, "BaselineCompiler::AllocateBuffer");
++  }
++  int rounded_size = RoundUp(raw_estimated_size, 4 * KB);
+   if (rounded_size > Assembler::kMaximalBufferSize) {
+     V8::FatalProcessOutOfMemory(nullptr, "BaselineCompiler::AllocateBuffer");
+   }
+@@ -367,8 +372,10 @@ MaybeHandle<Code> BaselineCompiler::Build() {
+   return code_builder.TryBuild();
+ }
+ 
+-int BaselineCompiler::EstimateInstructionSize(Tagged<BytecodeArray> bytecode) {
+-  return bytecode->length() * kAverageBytecodeToInstructionRatio;
++base::CheckedNumeric<int> BaselineCompiler::EstimateInstructionSize(
++    Tagged<BytecodeArray> bytecode) {
++  return base::CheckedNumeric<int>(bytecode->length()) *
++         kAverageBytecodeToInstructionRatio;
+ }
+ 
+ interpreter::Register BaselineCompiler::RegisterOperand(int operand_index) {
+diff --git a/src/baseline/baseline-compiler.h b/src/baseline/baseline-compiler.h
+index c3817b1027fd059ef791add3ccfb4d28eb940e68..01a07f638702204c2a63d8b552b84013318816f0 100644
+--- a/src/baseline/baseline-compiler.h
++++ b/src/baseline/baseline-compiler.h
+@@ -6,6 +6,7 @@
+ #define V8_BASELINE_BASELINE_COMPILER_H_
+ 
+ #include "src/base/logging.h"
++#include "src/base/numerics/checked_math.h"
+ #include "src/base/pointer-with-payload.h"
+ #include "src/base/threaded-list.h"
+ #include "src/base/vlq.h"
+@@ -55,7 +56,8 @@ class BaselineCompiler {
+ 
+   void GenerateCode();
+   MaybeHandle<Code> Build();
+-  static int EstimateInstructionSize(Tagged<BytecodeArray> bytecode);
++  static base::CheckedNumeric<int> EstimateInstructionSize(
++      Tagged<BytecodeArray> bytecode);
+ 
+  private:
+   void Prologue();

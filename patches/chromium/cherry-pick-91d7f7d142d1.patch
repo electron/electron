@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Thu, 21 May 2026 02:34:40 -0700
+Subject: [M149] Roll inspector_protocol to
+ d025eb48e8febbe8b846b2675e031295c8ef605e
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit ede5808211a1400283b09d958a988010cabde9e2)
+
+Bug: 513713927
+Fixed: 514929228
+Change-Id: Ibb44cb239a120e5d0e7e37a4296a8d51586d7017
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7853419
+Commit-Queue: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Auto-Submit: Alex Rudenko <alexrudenko@chromium.org>
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1632115}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7867651
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7827@{#1355}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/third_party/inspector_protocol/crdtp/cbor.cc b/third_party/inspector_protocol/crdtp/cbor.cc
+index dc52549c55a6fed28bca1d175bdc29e1e3d72c1c..7e62d765141c7174d1c3e6311389a3e1ed3c5447 100644
+--- a/third_party/inspector_protocol/crdtp/cbor.cc
++++ b/third_party/inspector_protocol/crdtp/cbor.cc
+@@ -1074,5 +1074,97 @@ Status AppendString8EntryToCBORMap(span<uint8_t> string8_key,
+   *(out) = new_envelope_size & 0xff;
+   return Status();
+ }
++
++span<uint8_t> GetString8ValueFromMap(span<uint8_t> message,
++                                     span<uint8_t> string8_key) {
++  CBORTokenizer tokenizer(message);
++  if (tokenizer.TokenTag() != CBORTokenTag::ENVELOPE) {
++    return {};
++  }
++  tokenizer.EnterEnvelope();
++  if (tokenizer.TokenTag() != CBORTokenTag::MAP_START) {
++    return {};
++  }
++  tokenizer.Next();
++  span<uint8_t> result;
++  bool found_key = false;
++  bool found_value = false;
++  bool is_key = true;
++  while (tokenizer.TokenTag() != CBORTokenTag::STOP &&
++         tokenizer.TokenTag() != CBORTokenTag::DONE &&
++         tokenizer.TokenTag() != CBORTokenTag::ERROR_VALUE) {
++    if (tokenizer.TokenTag() == CBORTokenTag::MAP_START ||
++        tokenizer.TokenTag() == CBORTokenTag::ARRAY_START) {
++      return {};
++    }
++    if (is_key) {
++      if (tokenizer.TokenTag() == CBORTokenTag::STRING8 &&
++          SpanEquals(tokenizer.GetString8(), string8_key)) {
++        if (found_key) {
++          return {};  // Duplicate key
++        }
++        found_key = true;
++      }
++    } else if (found_key && !found_value) {
++      if (tokenizer.TokenTag() == CBORTokenTag::STRING8) {
++        result = tokenizer.GetString8();
++      }
++      found_value = true;
++    }
++    tokenizer.Next();
++    is_key = !is_key;
++  }
++  if (tokenizer.TokenTag() != CBORTokenTag::STOP) {
++    return {};
++  }
++  return result;
++}
++
++bool HasKeyInMap(span<uint8_t> message, span<uint8_t> key) {
++  CBORTokenizer tokenizer(message);
++  if (tokenizer.TokenTag() != CBORTokenTag::ENVELOPE) {
++    return false;
++  }
++  tokenizer.EnterEnvelope();
++  if (tokenizer.TokenTag() != CBORTokenTag::MAP_START) {
++    return false;
++  }
++  tokenizer.Next();
++  bool is_key = true;
++  size_t nested_depth = 0;
++  while (tokenizer.TokenTag() != CBORTokenTag::DONE &&
++         tokenizer.TokenTag() != CBORTokenTag::ERROR_VALUE) {
++    if (tokenizer.TokenTag() == CBORTokenTag::STOP) {
++      if (nested_depth == 0) {
++        break;
++      }
++      nested_depth--;
++      if (nested_depth == 0) {
++        is_key = !is_key;
++      }
++      tokenizer.Next();
++      continue;
++    }
++    if (tokenizer.TokenTag() == CBORTokenTag::MAP_START ||
++        tokenizer.TokenTag() == CBORTokenTag::ARRAY_START) {
++      nested_depth++;
++      tokenizer.Next();
++      continue;
++    }
++    if (nested_depth > 0) {
++      tokenizer.Next();
++      continue;
++    }
++    if (is_key) {
++      if (tokenizer.TokenTag() == CBORTokenTag::STRING8 &&
++          SpanEquals(tokenizer.GetString8(), key)) {
++        return true;
++      }
++    }
++    tokenizer.Next();
++    is_key = !is_key;
++  }
++  return false;
++}
+ }  // namespace cbor
+ }  // namespace crdtp
+diff --git a/third_party/inspector_protocol/crdtp/cbor.h b/third_party/inspector_protocol/crdtp/cbor.h
+index 2d925fad5cc30ba6d600363918f259537e9b11c9..d7bcfa2652fdb0935ce9aaca5e2ad9d0db148561 100644
+--- a/third_party/inspector_protocol/crdtp/cbor.h
++++ b/third_party/inspector_protocol/crdtp/cbor.h
+@@ -315,6 +315,18 @@ CRDTP_EXPORT Status AppendString8EntryToCBORMap(span<uint8_t> string8_key,
+                                                 span<uint8_t> string8_value,
+                                                 std::vector<uint8_t>* cbor);
+ 
++// Safely extracts the value for |string8_key| from a CBOR encoded map wrapped
++// in an envelope. This is a shallow parser that skips unknown keys and
++// complex values. If the key is not found, or if it is found more than once,
++// or if it contains nested maps/arrays, returns an empty span.
++// Explicitly rejects duplicate keys and non-STRING8 values.
++CRDTP_EXPORT span<uint8_t> GetString8ValueFromMap(span<uint8_t> message,
++                                                  span<uint8_t> string8_key);
++// Safely checks if |key| exists in the top-level of a CBOR encoded map wrapped
++// in an envelope. Shallow parser that skips nested structures.
++// Returns true as soon as the key is found at the top level.
++CRDTP_EXPORT bool HasKeyInMap(span<uint8_t> message, span<uint8_t> key);
++
+ namespace internals {  // Exposed only for writing tests.
+ CRDTP_EXPORT size_t ReadTokenStart(span<uint8_t> bytes,
+                                    cbor::MajorType* type,

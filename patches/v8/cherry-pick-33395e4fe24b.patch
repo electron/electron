@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 30 Apr 2026 09:32:00 +0200
+Subject: [array-buffer] Defer AttachView in DataView ctor past detach check
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The DataView constructor registered the new view on the underlying
+ArrayBuffer (via AttachView) before the second IsDetachedBuffer
+check. If the byteLength arg's valueOf (or new.target.prototype's
+getter) detached the buffer, AttachView ran on a detached buffer
+and the orphan view leaked into its `views` field even though the
+constructor threw, violating the tracking invariant verified by
+--verify-heap.
+
+Move AttachView to immediately after the second IsDetachedBuffer
+check. The remaining constructor steps (ArrayBufferByteLength read,
+RAB offset/length range checks) cannot run user code, so the buffer
+cannot become detached past that point.
+
+AttachView must still run before those RAB range checks: if we
+deferred it further and one of them threw on a resized-but-not-
+detached buffer, the orphan view would have `views == kNoView`
+while WasDetached() is false, which violates
+CheckArrayBufferViewTrackingConsistency (see test262
+DataView/custom-proto-access-resizes-buffer-*).
+
+Fixed: 506855825
+Change-Id: Ib65499805b5e75b09c999e3c0e07dfac49f575d9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7806344
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+Commit-Queue: Olivier Flückiger <olivf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106956}
+
+diff --git a/src/builtins/builtins-dataview.cc b/src/builtins/builtins-dataview.cc
+index 4c0a7cdda8fcc9b16ddf75b5acbdc38a068a7fad..952845d2ce486e64fa79e39dd907b1dc9c45cd67 100644
+--- a/src/builtins/builtins-dataview.cc
++++ b/src/builtins/builtins-dataview.cc
+@@ -143,8 +143,6 @@ BUILTIN(DataViewConstructor) {
+     raw->set_buffer(*array_buffer);
+   }
+ 
+-  array_buffer->AttachView(*data_view);
+-
+   // 13. If IsDetachedBuffer(buffer) is true, throw a TypeError exception.
+   if (array_buffer->was_detached()) {
+     THROW_NEW_ERROR_RETURN_FAILURE(
+@@ -154,6 +152,13 @@ BUILTIN(DataViewConstructor) {
+             isolate->factory()->NewStringFromAsciiChecked(kMethodName)));
+   }
+ 
++  // AttachView only after the detach check, so a detached buffer does not end
++  // up tracking a view that is never returned to script (the orphan view's
++  // WasDetached() would still be true, but the buffer's views list would be
++  // inconsistent with its detached state). The remaining steps below cannot
++  // detach the buffer, so attaching here is safe.
++  array_buffer->AttachView(*data_view);
++
+   // 14. Let getBufferByteLength be
+   //     MakeIdempotentArrayBufferByteLengthGetter(SeqCst).
+   // 15. Set bufferByteLength be getBufferByteLength(buffer).

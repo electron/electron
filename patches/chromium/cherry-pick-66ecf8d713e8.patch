@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Wed, 20 May 2026 15:46:30 -0700
+Subject: [M149] [Extensions] Don't allow message connections from sandboxed
+ pages
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [Extensions] Don't allow message connections from sandboxed pages
+>
+> Extensions can sandbox their pages via the manifest key "sandbox";
+> pages specified in this will be hosted in a separate process and
+> will not have any extension API access (including access to messaging).
+> Validate that attempts to open extension message channels from these
+> processes are disallowed.
+>
+> Add a number of related browser tests for both "happy" and "sad" flows:
+> * OpenChannelToExtensionExploitTest.FromSandboxedPage_SpoofedSourceUrl:
+>   The flow described above. A sandboxed extension page tries to open a
+>   message channel. The process should be terminated for a bad message.
+> * OpenChannelToExtensionExploitTest.
+>       FromSandboxedPage_AboutBlankChild_SpoofedSourceUrl: Same as above,
+>   but with an about:blank child frame initiating the message.
+> * SandboxedPagesTest.ManifestV3MessagingBindingsWithheld: Verifies that
+>   extension messaging APIs are withheld in sandboxed pages and these
+>   pages are hosted in separate processes.
+> * SandboxedPagesTest.Html5SandboxedIframeMessagingBindingsExposed:
+>   Verifies messaging bindings are *not* withheld in frames sandboxed via
+>   the `sandbox` html frame attribute. These should still be able to send
+>   messages.
+>
+> Bug: 511765713
+> Change-Id: I0118926a451a194baab5c075565b127023cad508
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7851421
+> Reviewed-by: Nasko Oskov <nasko@chromium.org>
+> Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+> Reviewed-by: Luc Nguyen <lucnguyen@google.com>
+> Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1631630}
+
+(cherry picked from commit 885bc0953c95342e3e40be8ca2a87aa4d94e1923)
+
+Bug: 514929820,511765713
+Change-Id: I0118926a451a194baab5c075565b127023cad508
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7863168
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#1319}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/extensions/browser/api/messaging/message_service_bindings.cc b/extensions/browser/api/messaging/message_service_bindings.cc
+index d2a6f8737bc1f2225f36df89d51ceaf36e28a7a9..d9e61c1c454635b489e9142fc0773b084dae1896 100644
+--- a/extensions/browser/api/messaging/message_service_bindings.cc
++++ b/extensions/browser/api/messaging/message_service_bindings.cc
+@@ -17,6 +17,7 @@
+ #include "extensions/browser/api/messaging/message_service.h"
+ #include "extensions/browser/bad_message.h"
+ #include "extensions/browser/extension_util.h"
++#include "extensions/browser/process_map.h"
+ #include "extensions/browser/script_injection_tracker.h"
+ #include "extensions/common/constants.h"
+ #include "extensions/common/extension.h"
+@@ -261,19 +262,6 @@ bool IsValidSourceUrl(content::RenderProcessHost& process,
+       return false;
+     }
+ 
+-    if (frame->GetLastCommittedURL() == source_url) {
+-      // If the trustworthy, browser-side URL matches `source_url` from the IPC
+-      // payload, then report that the IPC is valid.  If the URLs don't match
+-      // then we can't assume that the IPC is malformed and `return false`,
+-      // because the renderer-side and browser-side URLs may differ in some
+-      // scenarios (e.g. see https://crbug.com/1197308 or `document.write`).  In
+-      // such scenarios we want to fall back to `base_origin`-based /
+-      // `source_url_origin``-based checks, but these checks are not 100%
+-      // correct (see https://crbug.com/1449796), so `GetLastCommittedURL` is
+-      // consulted first.
+-      return true;
+-    }
+-
+     base_origin = frame->GetLastCommittedOrigin();
+   } else if (source_context.is_for_service_worker()) {
+     // Validate `source_context` before using it to validate `source_url`.
+@@ -297,6 +285,21 @@ bool IsValidSourceUrl(content::RenderProcessHost& process,
+     return false;
+   }
+ 
++  url::SchemeHostPort precursor_origin =
++      base_origin.GetTupleOrPrecursorTupleIfOpaque();
++  if (precursor_origin.scheme() == kExtensionScheme &&
++      !ProcessMap::Get(process.GetBrowserContext())
++           ->Contains(precursor_origin.host(), process.GetID())) {
++    // The process isn't in the extension process map. This is legitimately
++    // possible for extension frames that are marked as sandboxed in their
++    // manifests. However, these frames do *not* have access to extension APIs,
++    // including messaging. As such, we consider this an invalid messaging
++    // attempt and kill the renderer.
++    bad_message::ReceivedBadMessage(
++        &process, bad_message::EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS);
++    return false;
++  }
++
+   // Verify `source_url` via ChildProcessSecurityPolicy::HostsOrigin.
+   //
+   // TODO(crbug.com/40915015): Stop partially/not-100%-correctly
+@@ -304,7 +307,21 @@ bool IsValidSourceUrl(content::RenderProcessHost& process,
+   // The code below correctly handles URLs like `about:blank`, but may diverge
+   // from //content checks in some cases (e.g. WebUI checks are not replicated
+   // here;  MHTML divergence is avoided via GetLastCommittedURL() check above).
++  //
++  // Potentially scary: url::Origin::Resolve() will return the origin of
++  // `source_url` (and completely ignore `base_origin`) if `source_url` is a
++  // URL with a normal scheme (e.g., http[s] or chrome-extension). Thus, the
++  // `source_url_origin` is essentially renderer-controlled at this point. This
++  // is okay because:
++  // 1) We use this to check if the process can host the origin below, so if the
++  //    renderer indicated it was an origin it's not allowed to host, we'll kill
++  //    the process.
++  // 2) The only scenario in which the renderer is allowed to host an origin
++  //    but we *wouldn't* allow a message to be sent from a context like this
++  //    for extension pages sandboxed through the manifest, and those are
++  //    checked above.
+   url::Origin source_url_origin = url::Origin::Resolve(source_url, base_origin);
++
+   if (IsPortContextSandboxed(process, source_context)) {
+     // If `source_url` came from a sandboxed extension, convert the origin to
+     // an opaque origin, since HostsOrigin() enforces that sandboxed processes

@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Fri, 24 Apr 2026 12:02:55 -0700
+Subject: Fix Use-After-Free in RenderFrameHostImpl::ExitFullscreen()
+
+The call to delegate_->ExitFullscreenMode() can synchronously destroy
+the RenderFrameHostImpl object (e.g., if the tab is closed).
+Subsequent calls in ExitFullscreen() then operate on the deleted object,
+causing a Use-After-Free.
+
+This CL adds a base::WeakPtr guard to detect if the object has been
+destroyed and returns early if so. This is a variant of the fix for
+EnterFullscreen in commit 91d5baaef742.
+
+Bug: 505045913
+Change-Id: Id2b34bea77bb80a3b6c11372cc8813a812e34a2e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7787660
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Jordan Bayles <jophba@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1620376}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index a756cf1eaa598dc3d237b62fa7d7f1f5e548182d..0db6af70ef6c6d34476c7220888e0ad0fdb2db10 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -9326,8 +9326,14 @@ void RenderFrameHostImpl::EnterFullscreen(
+ 
+ void RenderFrameHostImpl::ExitFullscreen() {
+   base::RecordAction(base::UserMetricsAction("ExitFullscreen_API"));
++
++  base::WeakPtr<RenderFrameHostImpl> weak_ptr = GetWeakPtr();
+   delegate_->ExitFullscreenMode(/*will_cause_resize=*/true);
+ 
++  if (!weak_ptr) {
++    return;
++  }
++
+   // The previous call might change the fullscreen state. We need to make sure
+   // the renderer is aware of that, which is done via the resize message.
+   // Typically, this will be sent as part of the call on the |delegate_| above

@@ -1,0 +1,352 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 13 Apr 2026 14:48:57 -0400
+Subject: Validate TF buffer size for multidraw calls.
+
+Validation for transform feedback output buffer size was done per draw
+call and the space available was accumulated after the draw finished.
+For multidraw calls, this did not correctly calculate the counts.
+
+Refactor this validation out of the common draw call validation and do
+it in the higher level validation functions which are aware of how many
+draws will be submitted.
+
+Bug: chromium:489071023
+Change-Id: Id1976906235a174688cf3c586ef7af49ae81dff9
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7758139
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp
+index ff98c43ea63e9aebfc5adadc9267e8f1a97da8ae..29e93666bed772858dbeb25f79115c54a4530de7 100644
+--- a/src/libANGLE/TransformFeedback.cpp
++++ b/src/libANGLE/TransformFeedback.cpp
+@@ -227,10 +227,17 @@ PrimitiveMode TransformFeedback::getPrimitiveMode() const
+     return mState.mPrimitiveMode;
+ }
+ 
+-bool TransformFeedback::checkBufferSpaceForDraw(GLsizei count, GLsizei primcount) const
++bool TransformFeedback::checkBufferSpaceForDraw(const GLsizei *counts,
++                                                const GLsizei *primcounts,
++                                                GLsizei drawcount) const
+ {
+-    auto vertices =
+-        mState.mVerticesDrawn + GetVerticesNeededForDraw(mState.mPrimitiveMode, count, primcount);
++    auto vertices = angle::CheckedNumeric<GLsizeiptr>(mState.mVerticesDrawn);
++    for (GLsizei drawID = 0; drawID < drawcount; ++drawID)
++    {
++        GLsizei primcount = ANGLE_UNSAFE_BUFFERS(primcounts ? primcounts[drawID] : 1);
++        GLsizei count     = ANGLE_UNSAFE_BUFFERS(counts[drawID]);
++        vertices += GetVerticesNeededForDraw(mState.mPrimitiveMode, count, primcount);
++    }
+     return vertices.IsValid() && vertices.ValueOrDie() <= mState.mVertexCapacity;
+ }
+ 
+diff --git a/src/libANGLE/TransformFeedback.h b/src/libANGLE/TransformFeedback.h
+index bd0f355cd0b1675016a55a549e8d84361be436c8..d78d6d6d636d63f76179eba35fc395970ce5e0b2 100644
+--- a/src/libANGLE/TransformFeedback.h
++++ b/src/libANGLE/TransformFeedback.h
+@@ -87,8 +87,10 @@ class TransformFeedback final : public RefCountObject<TransformFeedbackID>, publ
+     bool isPaused() const;
+     PrimitiveMode getPrimitiveMode() const;
+     // Validates that the vertices produced by a draw call will fit in the bound transform feedback
+-    // buffers.
+-    bool checkBufferSpaceForDraw(GLsizei count, GLsizei primcount) const;
++    // buffers. primcounts may be nullptr for non-instanced draw calls.
++    bool checkBufferSpaceForDraw(const GLsizei *counts,
++                                 const GLsizei *primcounts,
++                                 GLsizei drawcount) const;
+     // This must be called after each draw call when transform feedback is enabled to keep track of
+     // how many vertices have been written to the buffers. This information is needed by
+     // checkBufferSpaceForDraw because each draw call appends vertices to the buffers starting just
+diff --git a/src/libANGLE/capture/capture_gles_ext_params.cpp b/src/libANGLE/capture/capture_gles_ext_params.cpp
+index 9e678582b44120944380b0eef93609596b4ec313..89734a10ad7e3ef760bbed08448250e4c621e557 100644
+--- a/src/libANGLE/capture/capture_gles_ext_params.cpp
++++ b/src/libANGLE/capture/capture_gles_ext_params.cpp
+@@ -508,7 +508,7 @@ void CaptureMultiDrawArraysANGLE_firsts(const State &glState,
+                                         GLsizei drawcount,
+                                         ParamCapture *paramCapture)
+ {
+-    UNIMPLEMENTED();
++    CaptureArray(firsts, drawcount, paramCapture);
+ }
+ 
+ void CaptureMultiDrawArraysANGLE_counts(const State &glState,
+@@ -518,7 +518,7 @@ void CaptureMultiDrawArraysANGLE_counts(const State &glState,
+                                         GLsizei drawcount,
+                                         ParamCapture *paramCapture)
+ {
+-    UNIMPLEMENTED();
++    CaptureArray(counts, drawcount, paramCapture);
+ }
+ 
+ void CaptureMultiDrawArraysInstancedANGLE_firsts(const State &glState,
+@@ -529,7 +529,7 @@ void CaptureMultiDrawArraysInstancedANGLE_firsts(const State &glState,
+                                                  GLsizei drawcount,
+                                                  ParamCapture *paramCapture)
+ {
+-    UNIMPLEMENTED();
++    CaptureArray(firsts, drawcount, paramCapture);
+ }
+ 
+ void CaptureMultiDrawArraysInstancedANGLE_counts(const State &glState,
+@@ -540,7 +540,7 @@ void CaptureMultiDrawArraysInstancedANGLE_counts(const State &glState,
+                                                  GLsizei drawcount,
+                                                  ParamCapture *paramCapture)
+ {
+-    UNIMPLEMENTED();
++    CaptureArray(counts, drawcount, paramCapture);
+ }
+ 
+ void CaptureMultiDrawArraysInstancedANGLE_instanceCounts(const State &glState,
+@@ -551,7 +551,7 @@ void CaptureMultiDrawArraysInstancedANGLE_instanceCounts(const State &glState,
+                                                          GLsizei drawcount,
+                                                          ParamCapture *paramCapture)
+ {
+-    UNIMPLEMENTED();
++    CaptureArray(instanceCounts, drawcount, paramCapture);
+ }
+ 
+ void CaptureMultiDrawElementsANGLE_counts(const State &glState,
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 27998e37ccdc172d7be596015801c964d0a830c4..868c1ad4d1c73c7a4834209175d94bb92eed4749 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -1525,6 +1525,27 @@ bool ValidateWebGLVertexAttribPointer(const Context *context,
+     return true;
+ }
+ 
++bool ValidateDrawArraysTransformFeedbackBufferSize(const Context *context,
++                                                   angle::EntryPoint entryPoint,
++                                                   const GLsizei *counts,
++                                                   const GLsizei *primcounts,
++                                                   GLsizei drawcount)
++{
++    if (ANGLE_UNLIKELY(context->getStateCache().isTransformFeedbackActiveUnpaused()) &&
++        ANGLE_UNLIKELY(!context->supportsGeometryOrTesselation()))
++    {
++        const State &state                      = context->getState();
++        TransformFeedback *curTransformFeedback = state.getCurrentTransformFeedback();
++        if (!curTransformFeedback->checkBufferSpaceForDraw(counts, primcounts, drawcount))
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kTransformFeedbackBufferTooSmall);
++            return false;
++        }
++    }
++
++    return true;
++}
++
+ Program *GetValidProgramNoResolve(const Context *context,
+                                   angle::EntryPoint entryPoint,
+                                   ShaderProgramID id)
+@@ -4490,6 +4511,11 @@ bool ValidateDrawArraysInstancedANGLE(const Context *context,
+         return false;
+     }
+ 
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
++    {
++        return false;
++    }
++
+     return ValidateDrawInstancedANGLE(context, entryPoint);
+ }
+ 
+@@ -4505,6 +4531,11 @@ bool ValidateDrawArraysInstancedEXT(const Context *context,
+         return false;
+     }
+ 
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
++    {
++        return false;
++    }
++
+     return true;
+ }
+ 
+diff --git a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h
+index 8c0c426e1143b791d1efaa66cb7a894cef11532e..6ea676730bd934f89c26abf0810fc4cc246368e5 100644
+--- a/src/libANGLE/validationES.h
++++ b/src/libANGLE/validationES.h
+@@ -98,6 +98,15 @@ bool ValidateWebGLVertexAttribPointer(const Context *context,
+                                       const void *ptr,
+                                       bool pureInteger);
+ 
++// Validation of transform feedback buffer output size for various DrawArrays calls.
++// `primcounts` can be null for non-instanced calls.
++// If this function returns false, an error has been generated.
++bool ValidateDrawArraysTransformFeedbackBufferSize(const Context *context,
++                                                   angle::EntryPoint entryPoint,
++                                                   const GLsizei *counts,
++                                                   const GLsizei *primcounts,
++                                                   GLsizei drawcount);
++
+ // Returns valid program if id is a valid program name
+ // Errors INVALID_OPERATION if valid shader is given and returns NULL
+ // Errors INVALID_VALUE otherwise and returns NULL
+@@ -941,18 +950,6 @@ ANGLE_INLINE bool ValidateDrawArraysCommon(const Context *context,
+         return false;
+     }
+ 
+-    if (ANGLE_UNLIKELY(context->getStateCache().isTransformFeedbackActiveUnpaused()) &&
+-        ANGLE_UNLIKELY(!context->supportsGeometryOrTesselation()))
+-    {
+-        const State &state                      = context->getState();
+-        TransformFeedback *curTransformFeedback = state.getCurrentTransformFeedback();
+-        if (!curTransformFeedback->checkBufferSpaceForDraw(count, primcount))
+-        {
+-            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kTransformFeedbackBufferTooSmall);
+-            return false;
+-        }
+-    }
+-
+     return ValidateDrawArraysAttribs(context, entryPoint, first, count);
+ }
+ 
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index b024a597eaace12a5745c0a01e6e0680f726c892..7fd05908ccc7f5f448f144ac9e0d27ddf36c8389 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -5915,11 +5915,18 @@ bool ValidateMultiDrawArraysANGLE(const Context *context,
+     }
+     for (GLsizei drawID = 0; drawID < drawcount; ++drawID)
+     {
+-        if (!ValidateDrawArrays(context, entryPoint, mode, firsts[drawID], counts[drawID]))
++        if (!ValidateDrawArraysCommon(context, entryPoint, mode, firsts[drawID], counts[drawID], 1))
+         {
+             return false;
+         }
+     }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, counts, nullptr,
++                                                       drawcount))
++    {
++        return false;
++    }
++
+     return true;
+ }
+ 
+diff --git a/src/libANGLE/validationES2.h b/src/libANGLE/validationES2.h
+index 6d30ef53263363679b32eb1d1814ec6cba2e258b..6aec92e22b7b8ce52bf8d57a3c42c0ff3ab9cf2e 100644
+--- a/src/libANGLE/validationES2.h
++++ b/src/libANGLE/validationES2.h
+@@ -24,7 +24,17 @@ ANGLE_INLINE bool ValidateDrawArrays(const Context *context,
+                                      GLint first,
+                                      GLsizei count)
+ {
+-    return ValidateDrawArraysCommon(context, entryPoint, mode, first, count, 1);
++    if (!ValidateDrawArraysCommon(context, entryPoint, mode, first, count, 1))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, nullptr, 1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ ANGLE_INLINE bool ValidateUniform1f(const Context *context,
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index e96b2b594acbbeb3eeb792c9f1dbd72df7fb3adc..e2bf2db5b3ef2c50214c644b55ba78f7d878c57d 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -3526,6 +3526,13 @@ bool ValidateMultiDrawArraysInstancedANGLE(const Context *context,
+             return false;
+         }
+     }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, counts, instanceCounts,
++                                                       drawcount))
++    {
++        return false;
++    }
++
+     return true;
+ }
+ 
+@@ -3574,8 +3581,19 @@ bool ValidateDrawArraysInstancedBaseInstanceANGLE(const Context *context,
+                                                   GLsizei instanceCount,
+                                                   GLuint baseInstance)
+ {
+-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
+-                                           baseInstance);
++    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
++                                         baseInstance))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &instanceCount,
++                                                       1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ bool ValidateDrawElementsInstancedBaseVertexBaseInstanceANGLE(const Context *context,
+@@ -3620,6 +3638,13 @@ bool ValidateMultiDrawArraysInstancedBaseInstanceANGLE(const Context *context,
+             return false;
+         }
+     }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, counts, instanceCounts,
++                                                       drawcount))
++    {
++        return false;
++    }
++
+     return true;
+ }
+ 
+@@ -4410,7 +4435,17 @@ bool ValidateDrawArraysInstanced(const Context *context,
+                                  GLsizei count,
+                                  GLsizei primcount)
+ {
+-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0);
++    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, primcount, 0))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &primcount, 1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ bool ValidateFenceSync(const Context *context,
+diff --git a/src/libANGLE/validationESEXT.cpp b/src/libANGLE/validationESEXT.cpp
+index 2f6109b8ba037d147ea2dd4c9ceee0e5389c020c..56e0678165d13c08c58b1fbd2166dec19980af84 100644
+--- a/src/libANGLE/validationESEXT.cpp
++++ b/src/libANGLE/validationESEXT.cpp
+@@ -684,8 +684,19 @@ bool ValidateDrawArraysInstancedBaseInstanceEXT(const Context *context,
+                                                 GLsizei instanceCount,
+                                                 GLuint baseInstance)
+ {
+-    return ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
+-                                           baseInstance);
++    if (!ValidateDrawArraysInstancedBase(context, entryPoint, mode, first, count, instanceCount,
++                                         baseInstance))
++    {
++        return false;
++    }
++
++    if (!ValidateDrawArraysTransformFeedbackBufferSize(context, entryPoint, &count, &instanceCount,
++                                                       1))
++    {
++        return false;
++    }
++
++    return true;
+ }
+ 
+ bool ValidateDrawElementsInstancedBaseInstanceEXT(const Context *context,

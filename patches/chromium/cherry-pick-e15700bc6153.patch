@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 27 May 2026 18:28:07 -0700
+Subject: [M149] clamp renderable frame size for VP9-kSVC
+
+Original change's description:
+> clamp renderable frame size for VP9-kSVC
+>
+> `new_pic_size` is potentially larger than the actual gpu-allocated
+> buffers, which have a maximum size of `frame_width` x `frame_height`.
+> The renderable width and height should be clamped to this.
+>
+> Fixed: 513762354
+> Change-Id: Ie5d99c7b86ae4e41bd4e817bcc7821025af33c50
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7861639
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: James Zern <jzern@google.com>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636285}
+
+(cherry picked from commit 8def0f2575cda293ba16480642205be522150517)
+
+Bug: 517017815,513762354
+Change-Id: Ie5d99c7b86ae4e41bd4e817bcc7821025af33c50
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880327
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#1917}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/media/gpu/vp9_decoder.cc b/media/gpu/vp9_decoder.cc
+index 55ba85dadf7073dfbe61a72a2efd5da8814cffba..912c1c98ef63ff5fe9728b3ffebd6bae9fe11d20 100644
+--- a/media/gpu/vp9_decoder.cc
++++ b/media/gpu/vp9_decoder.cc
+@@ -250,12 +250,18 @@ VP9Decoder::DecodeResult VP9Decoder::Decode() {
+     gfx::Size new_pic_size = curr_frame_size_;
+     gfx::Rect new_render_rect(curr_frame_hdr_->render_width,
+                               curr_frame_hdr_->render_height);
+-    // For safety, check the validity of render size or leave it as pic size.
+-    if (!gfx::Rect(new_pic_size).Contains(new_render_rect)) {
+-      DVLOG(1) << "Render size exceeds picture size. render size: "
++    const gfx::Rect frame_size(curr_frame_hdr_->frame_width,
++                               curr_frame_hdr_->frame_height);
++    if (!frame_size.Contains(new_render_rect)) {
++      // For safety, check the validity of render size or leave it as the actual
++      // per-frame decoded size. In the k-SVC path |curr_frame_size_| is the
++      // *maximum* layer size (Vp9Parser::ParseSVCFrame stamps allocate_size
++      // onto every layer), so clamping against it would allow render_rect to
++      // extend into the undecoded region of the surface (b/149727823).
++      DVLOG(1) << "Render size exceeds frame size. render size: "
+                << new_render_rect.ToString()
+-               << ", picture size: " << new_pic_size.ToString();
+-      new_render_rect = gfx::Rect(new_pic_size);
++               << ", frame size: " << frame_size.ToString();
++      new_render_rect = frame_size;
+     }
+     VideoCodecProfile new_profile =
+         VP9ProfileToVideoCodecProfile(curr_frame_hdr_->profile);

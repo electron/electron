@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Tue, 26 May 2026 19:16:06 -0700
+Subject: [M149] media: Validate mappable SharedImage in video frame mojo
+ traits
+
+Original change's description:
+> media: Validate mappable SharedImage in video frame mojo traits
+>
+> Add handle verification to VideoFrame Mojo traits for mappable
+> SharedImages on Linux and ChromeOS and promote GpuMemoryBufferHandle
+> verification in CreateGpuMemoryBufferHandle() from a debug-only check
+> to a production check.
+>
+> Bug: 495819067
+> Test: webrtc.RTCPeerConnection.*
+> Change-Id: I56b9761b67a4e1ec8bbe6813c9bc920477a70531
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7834743
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Auto-Submit: Hirokazu Honda <hiroh@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1632369}
+
+(cherry picked from commit 92f794103de8e4356e95d7ebcbe574f369755a61)
+
+Bug: 514929009,495819067
+Change-Id: I56b9761b67a4e1ec8bbe6813c9bc920477a70531
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7873762
+Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#1819}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/media/gpu/chromeos/platform_video_frame_utils.cc b/media/gpu/chromeos/platform_video_frame_utils.cc
+index d337cd205f6b9ad3f72f68f0dceda18b2aea21b6..97b6702da0be983e025bf3fee629e49e3f81bf2b 100644
+--- a/media/gpu/chromeos/platform_video_frame_utils.cc
++++ b/media/gpu/chromeos/platform_video_frame_utils.cc
+@@ -535,14 +535,11 @@ gfx::GpuMemoryBufferHandle CreateGpuMemoryBufferHandle(
+   CHECK_EQ(handle.type, gfx::NATIVE_PIXMAP);
+   if (video_frame->format() == PIXEL_FORMAT_MJPEG)
+     return handle;
+-#if DCHECK_IS_ON()
+-  const bool is_handle_valid =
+-      !handle.is_null() &&
+-      VerifyGpuMemoryBufferHandle(video_frame->format(),
+-                                  video_frame->coded_size(), handle);
+-  DLOG_IF(WARNING, !is_handle_valid)
+-      << __func__ << "(): Created GpuMemoryBufferHandle is invalid";
+-#endif  // DCHECK_IS_ON()
++  if (!VerifyGpuMemoryBufferHandle(video_frame->format(),
++                                   video_frame->coded_size(), handle)) {
++    LOG(ERROR) << __func__ << "(): Created GpuMemoryBufferHandle is invalid";
++    return gfx::GpuMemoryBufferHandle();
++  }
+   return handle;
+ }
+ 
+diff --git a/media/mojo/mojom/video_frame_mojom_traits.cc b/media/mojo/mojom/video_frame_mojom_traits.cc
+index 028d7b4cdf1f28e58dfbc845239fe2cc68931cff..af34c58bbe18f424d329a29e1d7f72cf56eb55b0 100644
+--- a/media/mojo/mojom/video_frame_mojom_traits.cc
++++ b/media/mojo/mojom/video_frame_mojom_traits.cc
+@@ -385,6 +385,23 @@ bool StructTraits<media::mojom::VideoFrameDataView,
+ 
+     bool is_mappable = shared_image_data.is_mappable();
+     if (is_mappable) {
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
++      // TODO(crbug.com/513289253): Avoid CloneGpuMemoryBufferHandle() only for
++      // validation.
++      const auto video_pixel_format =
++          media::SharedImageFormatToVideoPixelFormat(shared_image->format());
++      if (video_pixel_format) {
++        auto gmb_handle = shared_image->CloneGpuMemoryBufferHandle();
++        if (!gmb_handle.is_null() && gmb_handle.type == gfx::NATIVE_PIXMAP) {
++          if (!media::VerifyGpuMemoryBufferHandle(*video_pixel_format,
++                                                  coded_size, gmb_handle)) {
++            LOG(ERROR)
++                << "Invalid GpuMemoryBufferHandle for mappable SharedImage";
++            return false;
++          }
++        }
++      }
++#endif
+       // VideoFrame should have buffer usage if its SI is mappable.
+       // NOTE: This isn't exactly correct for software SharedImages can be
+       // mappable but do not have buffer usage. But since, such software

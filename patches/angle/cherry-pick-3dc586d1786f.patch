@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 20 May 2026 14:47:19 -0400
+Subject: M149: Translator: Fix crash with (sideeffect,uniform)
+
+... during monomorphisation pass.  It can be very complicated to
+actually fix this, so this change just drops the left-hand side of
+comma.  This is handled correctly in the IR.
+
+Bug: chromium:513003797
+Change-Id: I8bfcf4a2004af34613275604c26c7fa3aabb2e09
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7880317
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp b/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+index 8a82f64f3677a453057341adf32bb3b88e2437d9..539c8466f242b5cce05e33ce9544e8eab5842cbd 100644
+--- a/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
++++ b/src/compiler/translator/tree_ops/MonomorphizeUnsupportedFunctions.cpp
+@@ -75,7 +75,7 @@ const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
+             *isSamplerInStructOut = true;
+         }
+ 
+-        node = asBinary->getLeft();
++        node = op == EOpComma ? asBinary->getRight() : asBinary->getLeft();
+     }
+ 
+     // Only interested in uniform opaque types.  If a function call within another function uses
+@@ -99,6 +99,13 @@ TIntermTyped *ExtractSideEffects(TSymbolTable *symbolTable,
+                                  TIntermTyped *node,
+                                  TIntermSequence *replacementIndices)
+ {
++    // If this is a comma expression, throw away the left hand side.  THIS IS INCORRECT, but it's
++    // overly complicated to try and support it.  The IR already handles this correctly.
++    while (node->getAsBinaryNode() != nullptr && node->getAsBinaryNode()->getOp() == EOpComma)
++    {
++        node = node->getAsBinaryNode()->getRight();
++    }
++
+     TIntermTyped *withoutSideEffects = node->deepCopy();
+ 
+     for (TIntermBinary *asBinary = withoutSideEffects->getAsBinaryNode(); asBinary;

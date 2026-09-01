@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@webrtc.org>
+Date: Tue, 21 Apr 2026 14:59:35 +0000
+Subject: [M148] pc: fix use-after-free in AllocateSctpSids
+
+AllocateSctpSids iterates over newly assigned channels using raw
+pointers and calls OnTransportReady on each one. OnTransportReady
+can synchronously fail (e.g. if sending the DCEP OPEN message
+fails), which may cause the channel to close and be deleted,
+leaving the controller with a dangling pointer.
+
+This change ensures the channels are kept alive during the loop by
+using scoped_refptr for the temporary collection. This fixes the
+UAF for any failure mode that prevents synchronous sending of the
+initialization message.
+
+(cherry picked from commit 13fdb6e802e5c326533445aa15f9717f2fc26004)
+
+No-Try: true
+Bug: chromium:503422316
+Fixed: chromium:514924244
+Change-Id: I1b927386fb4ed4279036835a244320aba6acf875
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465701
+Commit-Queue: Harald Alvestrand <hta@webrtc.org>
+Auto-Submit: Harald Alvestrand <hta@webrtc.org>
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#47503}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/485860
+Cr-Commit-Position: refs/branch-heads/7778@{#16}
+Cr-Branched-From: ca896b7ffef011bbf6957c99d413c5aac602c99f-refs/heads/main@{#47319}
+
+diff --git a/pc/data_channel_controller.cc b/pc/data_channel_controller.cc
+index 19c81954d4096d8b39810c71df3aa603f53fb874..9688699bfe84037c11a160b0dff59b70431602b2 100644
+--- a/pc/data_channel_controller.cc
++++ b/pc/data_channel_controller.cc
+@@ -458,7 +458,7 @@ void DataChannelController::AllocateSctpSids(SSLRole role) {
+   const bool ready_to_send =
+       data_channel_transport_ && data_channel_transport_->IsReadyToSend();
+ 
+-  std::vector<SctpDataChannel*> channels_to_start;
++  std::vector<scoped_refptr<SctpDataChannel>> channels_to_start;
+   std::vector<scoped_refptr<SctpDataChannel>> channels_to_close;
+   for (auto it = sctp_data_channels_n_.begin();
+        it != sctp_data_channels_n_.end();) {
+@@ -467,7 +467,7 @@ void DataChannelController::AllocateSctpSids(SSLRole role) {
+       if (sid.has_value()) {
+         (*it)->SetSctpSid_n(*sid);
+         AddSctpDataStream(*sid, (*it)->priority());
+-        channels_to_start.push_back((*it).get());
++        channels_to_start.push_back(*it);
+       } else {
+         channels_to_close.push_back(std::move(*it));
+         it = sctp_data_channels_n_.erase(it);
+@@ -479,7 +479,7 @@ void DataChannelController::AllocateSctpSids(SSLRole role) {
+   // Since OnTransportReady can cause sending, and sending may fail and cause
+   // channel to close, do this outside the loop.
+   if (ready_to_send) {
+-    for (auto* channel : channels_to_start) {
++    for (auto& channel : channels_to_start) {
+       RTC_LOG(LS_INFO) << "AllocateSctpSids: Id assigned, ready to send.";
+       channel->OnTransportReady();
+     }

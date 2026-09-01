@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@webrtc.org>
+Date: Tue, 21 Apr 2026 15:12:32 +0200
+Subject: [M148] Remove audio stream from old sync group on update.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Remove audio stream from old sync group on update.
+>
+> If the sync group for an audio receive stream is updated, it must be
+> removed from the old sync group as well so that the old group does not
+> have an invalid reference.
+>
+> Bug: chromium:504599749
+> Change-Id: I548e194d4f8ac6461388d639836e1f62f6b7f7e7
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465663
+> Reviewed-by: Tomas Gunnarsson <tommi@webrtc.org>
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#47504}
+
+(cherry picked from commit b5bd19b75c8c417d9e4d5a25ce55eea6b17b9c94)
+
+Disabling try bots to work around ios_dbg_simulator infra failure.
+
+No-Try: true
+Bug: chromium:514925053,chromium:504599749
+Change-Id: I548e194d4f8ac6461388d639836e1f62f6b7f7e7
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/481180
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#17}
+Cr-Branched-From: ca896b7ffef011bbf6957c99d413c5aac602c99f-refs/heads/main@{#47319}
+
+diff --git a/call/call.cc b/call/call.cc
+index df8786c886b9ade69c56eb8c3fd48e1e7dc3e05f..00ee6d386dbf2ec93106e58f418e2762c54e76c0 100644
+--- a/call/call.cc
++++ b/call/call.cc
+@@ -1230,7 +1230,11 @@ void Call::OnUpdateSyncGroup(webrtc::AudioReceiveStreamInterface& stream,
+   RTC_DCHECK_RUN_ON(worker_thread_);
+   webrtc::AudioReceiveStreamImpl& receive_stream =
+       static_cast<webrtc::AudioReceiveStreamImpl&>(stream);
++  std::string old_sync_group(receive_stream.sync_group());
+   receive_stream.SetSyncGroup(sync_group);
++  if (old_sync_group != sync_group) {
++    ConfigureSync(old_sync_group);
++  }
+   ConfigureSync(sync_group);
+ }
+ 

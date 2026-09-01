@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Thu, 23 Apr 2026 10:46:32 -0700
+Subject: [dawn][native] Use size_t to store string command lengths.
+
+Fixed: 499159695
+Change-Id: Ia811965d2d9813eaf73341f9238e816663e5dd21
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/304695
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+
+diff --git a/src/dawn/native/Commands.cpp b/src/dawn/native/Commands.cpp
+index 2e538b1476de6ae0244b29444ed93189379e0728..05d9afa640714b402fd1c12c2a16da9ffc184ea8 100644
+--- a/src/dawn/native/Commands.cpp
++++ b/src/dawn/native/Commands.cpp
+@@ -435,9 +435,9 @@ void SkipCommand(CommandIterator* commands, Command type) {
+     }
+ }
+ 
+-const char* AddNullTerminatedString(CommandAllocator* allocator, StringView s, uint32_t* length) {
++const char* AddNullTerminatedString(CommandAllocator* allocator, StringView s, size_t* length) {
+     std::string_view view = s;
+-    *length = static_cast<uint32_t>(view.length());
++    *length = view.length();
+ 
+     // Include extra null-terminator character. The string_view may not be null-terminated. It also
+     // may already have a null-terminator inside of it, in which case adding the null-terminator is
+diff --git a/src/dawn/native/Commands.h b/src/dawn/native/Commands.h
+index c975fba5f048a65a87deed4342763e3bfcc56b8f..a0f9af03ac7716e0232bdc7befa14958dfc4aefb 100644
+--- a/src/dawn/native/Commands.h
++++ b/src/dawn/native/Commands.h
+@@ -342,7 +342,7 @@ struct ClearBufferCmd {
+ };
+ 
+ struct InsertDebugMarkerCmd {
+-    uint32_t length;
++    size_t length;
+ };
+ 
+ struct PixelLocalStorageBarrierCmd {};
+@@ -350,7 +350,7 @@ struct PixelLocalStorageBarrierCmd {};
+ struct PopDebugGroupCmd {};
+ 
+ struct PushDebugGroupCmd {
+-    uint32_t length;
++    size_t length;
+ };
+ 
+ struct ResolveQuerySetCmd {
+@@ -465,7 +465,7 @@ void FreeCommands(CommandIterator* commands);
+ void SkipCommand(CommandIterator* commands, Command type);
+ 
+ // Helper function to copy a wgpu::StringView into a safely null-terminated C-string in commands.
+-const char* AddNullTerminatedString(CommandAllocator* allocator, StringView s, uint32_t* length);
++const char* AddNullTerminatedString(CommandAllocator* allocator, StringView s, size_t* length);
+ 
+ }  // namespace dawn::native
+ 

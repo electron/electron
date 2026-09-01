@@ -1,0 +1,351 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vikram Pasupathy <vpasupathy@chromium.org>
+Date: Thu, 9 Apr 2026 23:47:24 -0700
+Subject: media: Validate EncryptionPattern bounds during deserialization
+
+Previously, the Mojo IPC interface accepted arbitrary 32-bit integers
+for the `crypt_byte_block` and `skip_byte_block` fields of
+`EncryptionPattern`, despite the ISO specification limiting them to 4
+bits (max 15).
+
+This CL makes the following changes:
+    1. Introduced a centralized `EncryptionPattern::Create()`
+       factory.
+
+    2. All callers of EncryptionPattern(a,b) now use Create().
+
+    3. The MP4 (MSE) stream parser now explicitly validates the pattern
+       values during box parsing, preventing "silent renderer kills" by
+       failing with a media error instead of letting the malformed data
+       reach the Mojo boundary.
+
+Bug: 497929481
+Change-Id: Iee4f6fca458456f0c4d988b212d7af3374d3fcbb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7728010
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Yuchen Liu <yucliu@chromium.org>
+Commit-Queue: Vikram Pasupathy <vpasupathy@chromium.org>
+Reviewed-by: Pilar Molina Lopez <pmolinalopez@chromium.org>
+Reviewed-by: Fred Shih <ffred@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1612648}
+
+diff --git a/chromeos/components/cdm_factory_daemon/mojom/decrypt_config_mojom_traits.cc b/chromeos/components/cdm_factory_daemon/mojom/decrypt_config_mojom_traits.cc
+index d406c35959827b509530e1b770a20711c84d0573..d09a5788629f353532ee763871d370cd27b17276 100644
+--- a/chromeos/components/cdm_factory_daemon/mojom/decrypt_config_mojom_traits.cc
++++ b/chromeos/components/cdm_factory_daemon/mojom/decrypt_config_mojom_traits.cc
+@@ -78,8 +78,12 @@ bool StructTraits<chromeos::cdm::mojom::EncryptionPatternDataView,
+                   media::EncryptionPattern>::
+     Read(chromeos::cdm::mojom::EncryptionPatternDataView input,
+          media::EncryptionPattern* output) {
+-  *output = media::EncryptionPattern(input.crypt_byte_block(),
+-                                     input.skip_byte_block());
++  auto pattern = media::EncryptionPattern::Create(input.crypt_byte_block(),
++                                                  input.skip_byte_block());
++  if (!pattern) {
++    return false;
++  }
++  *output = *pattern;
+   return true;
+ }
+ 
+diff --git a/media/base/BUILD.gn b/media/base/BUILD.gn
+index 8244e4c7f8d3d7929c85ab2f9f4ae294402b2e50..50be3e9c3062bb064b797882b4e017f0ce0c6807 100644
+--- a/media/base/BUILD.gn
++++ b/media/base/BUILD.gn
+@@ -643,6 +643,7 @@ source_set("unit_tests") {
+     "decoder_buffer_unittest.cc",
+     "decrypt_config_unittest.cc",
+     "djb2_unittest.cc",
++    "encryption_pattern_unittest.cc",
+     "fake_audio_worker_unittest.cc",
+     "fake_demuxer_stream_unittest.cc",
+     "feedback_signal_accumulator_unittest.cc",
+diff --git a/media/base/encryption_pattern.cc b/media/base/encryption_pattern.cc
+index 79c4071e8307c1e5bd804cdeb268b6777333eca6..c0a5e6cfe889e34d737846317ed0ce627c825a2d 100644
+--- a/media/base/encryption_pattern.cc
++++ b/media/base/encryption_pattern.cc
+@@ -4,14 +4,13 @@
+ 
+ #include "media/base/encryption_pattern.h"
+ 
++#include "base/feature_list.h"
++#include "media/base/media_switches.h"
++
+ namespace media {
+ 
+ EncryptionPattern::EncryptionPattern() = default;
+ 
+-EncryptionPattern::EncryptionPattern(uint32_t crypt_byte_block,
+-                                     uint32_t skip_byte_block)
+-    : crypt_byte_block_(crypt_byte_block), skip_byte_block_(skip_byte_block) {}
+-
+ EncryptionPattern::EncryptionPattern(const EncryptionPattern& rhs) = default;
+ 
+ EncryptionPattern& EncryptionPattern::operator=(const EncryptionPattern& rhs) =
+@@ -19,6 +18,18 @@ EncryptionPattern& EncryptionPattern::operator=(const EncryptionPattern& rhs) =
+ 
+ EncryptionPattern::~EncryptionPattern() = default;
+ 
++// static
++std::optional<EncryptionPattern> EncryptionPattern::Create(
++    uint32_t crypt_byte_block,
++    uint32_t skip_byte_block) {
++  if (base::FeatureList::IsEnabled(kValidateEncryptionPatternSize) &&
++      (crypt_byte_block > kMaxPatternSize ||
++       skip_byte_block > kMaxPatternSize)) {
++    return std::nullopt;
++  }
++  return EncryptionPattern(crypt_byte_block, skip_byte_block);
++}
++
+ bool EncryptionPattern::operator==(const EncryptionPattern& other) const {
+   return crypt_byte_block_ == other.crypt_byte_block_ &&
+          skip_byte_block_ == other.skip_byte_block_;
+@@ -34,4 +45,8 @@ std::ostream& operator<<(std::ostream& os,
+             << encryption_pattern.skip_byte_block() << "}";
+ }
+ 
++EncryptionPattern::EncryptionPattern(uint32_t crypt_byte_block,
++                                     uint32_t skip_byte_block)
++    : crypt_byte_block_(crypt_byte_block), skip_byte_block_(skip_byte_block) {}
++
+ }  // namespace media
+diff --git a/media/base/encryption_pattern.h b/media/base/encryption_pattern.h
+index b18e4af2d2b3fdecf7722dc836f7a14967d815d4..80e5c5e7c47b623d51f6dad0c87a83455be89cfd 100644
+--- a/media/base/encryption_pattern.h
++++ b/media/base/encryption_pattern.h
+@@ -6,6 +6,8 @@
+ #define MEDIA_BASE_ENCRYPTION_PATTERN_H_
+ 
+ #include <stdint.h>
++
++#include <optional>
+ #include <ostream>
+ 
+ #include "media/base/media_export.h"
+@@ -25,7 +27,7 @@ namespace media {
+ class MEDIA_EXPORT EncryptionPattern {
+  public:
+   EncryptionPattern();
+-  EncryptionPattern(uint32_t crypt_byte_block, uint32_t skip_byte_block);
++
+   EncryptionPattern(const EncryptionPattern& rhs);
+   EncryptionPattern& operator=(const EncryptionPattern& rhs);
+   ~EncryptionPattern();
+@@ -33,15 +35,26 @@ class MEDIA_EXPORT EncryptionPattern {
+   uint32_t crypt_byte_block() const { return crypt_byte_block_; }
+   uint32_t skip_byte_block() const { return skip_byte_block_; }
+ 
++  // ISO/IEC 23001-7:2016 restricts pattern values to 4 bits (max 15).
++  static constexpr uint32_t kMaxPatternSize = 15;
++
++  static std::optional<EncryptionPattern> Create(uint32_t crypt_byte_block,
++                                                 uint32_t skip_byte_block);
++
+   bool operator==(const EncryptionPattern& other) const;
+   bool operator!=(const EncryptionPattern& other) const;
+ 
+  private:
++  EncryptionPattern(uint32_t crypt_byte_block, uint32_t skip_byte_block);
++
+   // ISO/IEC 23001-7(2016), section 10.3, discussing 'cens' pattern encryption
+   // scheme, states "Tracks other than video are protected using whole-block
+   // full-sample encryption as specified in 9.7 and hence skip_byte_block
+   // SHALL be 0." So patterns where |skip_byte_block| = 0 should be treated
+   // as whole-block full-sample encryption.
++  // Note: A pattern of 0:X (where crypt == 0) indicates no encryption
++  // is applied to the sample. A pattern of 0:0 typically implies
++  // pattern encryption is disabled entirely.
+   uint32_t crypt_byte_block_ = 0;  // Count of the encrypted blocks.
+   uint32_t skip_byte_block_ = 0;   // Count of the unencrypted blocks.
+ };
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index 1cdacae4522fed5cc8f5009a289f7d9d9d7af953..53483ad39f005c1d4f9cc83c4016f5d166598f96 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -1556,6 +1556,10 @@ BASE_FEATURE(kFuchsiaMediacodecVideoEncoder, base::FEATURE_DISABLED_BY_DEFAULT);
+ // Note: This is controlled on a per-board basis by ChromeOS and must be kept.
+ BASE_FEATURE(kVideoDecodeBatching, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// Validates that the EncryptionPattern parameters are within the bounds
++// specified by ISO/IEC 23001-7:2016.
++BASE_FEATURE(kValidateEncryptionPatternSize, base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // Safety switch to allow us to revert to the previous behavior of using the
+ // cached bounds when the permission prompt is visible. If this feature is
+ // enabled (the default), we will clear the cached bounds, whenever the
+diff --git a/media/base/media_switches.h b/media/base/media_switches.h
+index ec136f49f1ed2dadef3159bd423cc65da7796d05..66d39f9c9b7b0d2871235f5da0ad8ebb5f42534e 100644
+--- a/media/base/media_switches.h
++++ b/media/base/media_switches.h
+@@ -477,6 +477,8 @@ MEDIA_EXPORT BASE_DECLARE_FEATURE(kFuchsiaMediacodecVideoEncoder);
+ 
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(kVideoDecodeBatching);
+ 
++MEDIA_EXPORT BASE_DECLARE_FEATURE(kValidateEncryptionPatternSize);
++
+ MEDIA_EXPORT BASE_DECLARE_FEATURE(
+     kClearPipCachedBoundsWhenPermissionPromptVisible);
+ 
+diff --git a/media/base/win/mf_helpers.cc b/media/base/win/mf_helpers.cc
+index ea6395b9d07920b30c4412aa0171c5baee18585e..6b92e6334c69b072da865d07b92a85f123e2907d 100644
+--- a/media/base/win/mf_helpers.cc
++++ b/media/base/win/mf_helpers.cc
+@@ -820,7 +820,12 @@ HRESULT CreateDecryptConfigFromSample(
+             MFSampleExtension_Encryption_CryptByteBlock, &crypt_byte_block)) &&
+         SUCCEEDED(mf_sample->GetUINT32(
+             MFSampleExtension_Encryption_SkipByteBlock, &skip_byte_block))) {
+-      encryption_pattern = EncryptionPattern(crypt_byte_block, skip_byte_block);
++      auto pattern =
++          EncryptionPattern::Create(crypt_byte_block, skip_byte_block);
++      if (!pattern) {
++        return MF_E_INVALID_STREAM_DATA;
++      }
++      encryption_pattern = *pattern;
+     }
+ 
+     DVLOG(3) << __func__ << ": encryption_pattern=" << encryption_pattern;
+diff --git a/media/cdm/cbcs_decryptor_fuzzer.cc b/media/cdm/cbcs_decryptor_fuzzer.cc
+index 4d643e065d4c04c3ebe1931b709353aebd17ca8a..ace1591e86be06785974975683236d0448e58583 100644
+--- a/media/cdm/cbcs_decryptor_fuzzer.cc
++++ b/media/cdm/cbcs_decryptor_fuzzer.cc
+@@ -64,7 +64,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data_ptr, size_t size) {
+   // |encryption_pattern| is used to determine the encryption pattern. Since
+   // |crypt_byte_block| must be > 0, use 1 for it. |skip_byte_block| can be 0.
+   // This will try patterns (1,0), (1,1), ... (1,9), which should be sufficient.
+-  media::EncryptionPattern pattern(1, encryption_pattern % 10);
++  auto pattern = media::EncryptionPattern::Create(1, encryption_pattern % 10);
+ 
+   auto encrypted_buffer = media::DecoderBuffer::CopyFrom(data);
+ 
+diff --git a/media/cdm/library_cdm/clear_key_cdm/clear_key_cdm.cc b/media/cdm/library_cdm/clear_key_cdm/clear_key_cdm.cc
+index 1cffb40bb4fbf20334f06f60427a7f34d2ddf56c..7d26a70ca0afe73248a7649fb42a0474d87f649e 100644
+--- a/media/cdm/library_cdm/clear_key_cdm/clear_key_cdm.cc
++++ b/media/cdm/library_cdm/clear_key_cdm/clear_key_cdm.cc
+@@ -108,10 +108,14 @@ static scoped_refptr<media::DecoderBuffer> DecoderBufferFrom(
+         key_id_string, iv_string, subsamples));
+   } else {
+     DCHECK_EQ(input_buffer.encryption_scheme, cdm::EncryptionScheme::kCbcs);
++    auto pattern =
++        media::EncryptionPattern::Create(input_buffer.pattern.crypt_byte_block,
++                                         input_buffer.pattern.skip_byte_block);
++    if (!pattern) {
++      return nullptr;
++    }
+     output_buffer->set_decrypt_config(media::DecryptConfig::CreateCbcsConfig(
+-        key_id_string, iv_string, subsamples,
+-        media::EncryptionPattern(input_buffer.pattern.crypt_byte_block,
+-                                 input_buffer.pattern.skip_byte_block)));
++        key_id_string, iv_string, subsamples, *pattern));
+   }
+ 
+   return output_buffer;
+diff --git a/media/formats/mp2t/es_parser_h264.cc b/media/formats/mp2t/es_parser_h264.cc
+index dd4231e5c2b6b193dff63852e334fe0672bcde0e..001f07d8df31bc18ec086d927100058c14056acd 100644
+--- a/media/formats/mp2t/es_parser_h264.cc
++++ b/media/formats/mp2t/es_parser_h264.cc
+@@ -463,8 +463,8 @@ bool EsParserH264::EmitFrame(int64_t access_unit_pos,
+             DecryptConfig::CreateCbcsConfig(
+                 base_decrypt_config->key_id(), base_decrypt_config->iv(),
+                 subsamples,
+-                EncryptionPattern(kSampleAESEncryptBlocks,
+-                                  kSampleAESSkipBlocks)));
++                EncryptionPattern::Create(kSampleAESEncryptBlocks,
++                                          kSampleAESSkipBlocks)));
+         break;
+     }
+   }
+diff --git a/media/formats/mp4/track_run_iterator.cc b/media/formats/mp4/track_run_iterator.cc
+index f4e65a83dbac8612743dd004b88d634d90210cbf..8327c8e633474b80704665700c3d1b2ea40bfa95 100644
+--- a/media/formats/mp4/track_run_iterator.cc
++++ b/media/formats/mp4/track_run_iterator.cc
+@@ -374,9 +374,12 @@ bool TrackRunIterator::Init(const MovieFragment& moof) {
+         tri.encryption_scheme = sinf->IsCbcsEncryptionScheme()
+                                     ? EncryptionScheme::kCbcs
+                                     : EncryptionScheme::kCenc;
+-        tri.encryption_pattern =
+-            EncryptionPattern(track_encryption->default_crypt_byte_block,
+-                              track_encryption->default_skip_byte_block);
++        auto pattern = EncryptionPattern::Create(
++            track_encryption->default_crypt_byte_block,
++            track_encryption->default_skip_byte_block);
++        RCHECK_MEDIA_LOGGED(pattern.has_value(), media_log_,
++                            "Invalid encryption pattern.");
++        tri.encryption_pattern = *pattern;
+       }
+ 
+       // Initialize aux_info variables only if no sample encryption entries.
+@@ -771,9 +774,13 @@ std::unique_ptr<DecryptConfig> TrackRunIterator::GetDecryptConfig() {
+         (index == 0)
+             ? track_encryption().default_skip_byte_block
+             : GetSampleEncryptionInfoEntry(*run_itr_, index)->skip_byte_block;
++    auto pattern = EncryptionPattern::Create(encrypt_blocks, skip_blocks);
++    if (!pattern) {
++      MEDIA_LOG(ERROR, media_log_) << "Invalid encryption pattern.";
++      return nullptr;
++    }
+     return DecryptConfig::CreateCbcsConfig(
+-        key_id, iv, sample_encryption_entry.subsamples,
+-        EncryptionPattern(encrypt_blocks, skip_blocks));
++        key_id, iv, sample_encryption_entry.subsamples, *pattern);
+   }
+ 
+   return DecryptConfig::CreateCencConfig(key_id, iv,
+diff --git a/media/gpu/chromeos/vd_video_decode_accelerator.cc b/media/gpu/chromeos/vd_video_decode_accelerator.cc
+index f607dfbbeaa49d34b8939c963e06800fc868d944..f752fa395db170f005146ec621bc384fff048978 100644
+--- a/media/gpu/chromeos/vd_video_decode_accelerator.cc
++++ b/media/gpu/chromeos/vd_video_decode_accelerator.cc
+@@ -151,8 +151,12 @@ scoped_refptr<DecoderBuffer> DecryptBitstreamBuffer(
+   }
+   std::optional<EncryptionPattern> pattern = std::nullopt;
+   if (buffer_proto.has_pattern()) {
+-    pattern.emplace(buffer_proto.pattern().cypher_bytes(),
+-                    buffer_proto.pattern().clear_bytes());
++    pattern = EncryptionPattern::Create(buffer_proto.pattern().cypher_bytes(),
++                                        buffer_proto.pattern().clear_bytes());
++    if (!pattern) {
++      DVLOG(2) << "Invalid encryption pattern";
++      return nullptr;
++    }
+   }
+   // Now create the DecryptConfig and set it in the decoder buffer.
+   scoped_refptr<DecoderBuffer> buffer = bitstream_buffer.ToDecoderBuffer(
+diff --git a/media/mojo/mojom/encryption_pattern_mojom_traits.cc b/media/mojo/mojom/encryption_pattern_mojom_traits.cc
+index 10a827c00e5a38aa8abc0501144c4518563060d5..509c20a6972b54a55ba435e68a2f90f78347c947 100644
+--- a/media/mojo/mojom/encryption_pattern_mojom_traits.cc
++++ b/media/mojo/mojom/encryption_pattern_mojom_traits.cc
+@@ -11,8 +11,12 @@ bool StructTraits<media::mojom::EncryptionPatternDataView,
+                   media::EncryptionPattern>::
+     Read(media::mojom::EncryptionPatternDataView input,
+          media::EncryptionPattern* output) {
+-  *output = media::EncryptionPattern(input.crypt_byte_block(),
+-                                     input.skip_byte_block());
++  auto pattern = media::EncryptionPattern::Create(input.crypt_byte_block(),
++                                                  input.skip_byte_block());
++  if (!pattern) {
++    return false;
++  }
++  *output = *pattern;
+   return true;
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webcodecs/decrypt_config_util.cc b/third_party/blink/renderer/modules/webcodecs/decrypt_config_util.cc
+index 16b24e9ac11a99dfc674c659e58dec0125f2840e..26de370b16b70a06f031c18698fdf7dd24c45d3d 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decrypt_config_util.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decrypt_config_util.cc
+@@ -41,8 +41,13 @@ std::unique_ptr<media::DecryptConfig> CreateMediaDecryptConfig(
+   DCHECK_EQ(scheme, "cbcs");
+   std::optional<media::EncryptionPattern> encryption_pattern;
+   if (js_config.hasEncryptionPattern()) {
+-    encryption_pattern.emplace(js_config.encryptionPattern()->cryptByteBlock(),
+-                               js_config.encryptionPattern()->skipByteBlock());
++    auto pattern = media::EncryptionPattern::Create(
++        js_config.encryptionPattern()->cryptByteBlock(),
++        js_config.encryptionPattern()->skipByteBlock());
++    if (!pattern) {
++      return nullptr;
++    }
++    encryption_pattern = pattern;
+   }
+   return media::DecryptConfig::CreateCbcsConfig(
+       std::move(key_id_str), std::move(iv_str), subsamples, encryption_pattern);
