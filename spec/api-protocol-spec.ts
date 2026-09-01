@@ -1861,6 +1861,8 @@ describe('protocol module', () => {
             const chunks: Buffer[] = [];
             req.on('data', (chunk) => chunks.push(chunk));
             req.on('end', () => res.end(Buffer.concat(chunks)));
+          } else if (req.url === '/sniffed') {
+            res.end(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
           } else if (req.url === '/endless') {
             endlessResponse = res;
             res.writeHead(200);
@@ -2038,6 +2040,16 @@ describe('protocol module', () => {
       it('rejects when the upstream disconnects before response headers', async () => {
         proxy(() => base + '/disconnect');
         await expect(net.fetch('test-scheme://host/disconnect')).to.eventually.be.rejected();
+      });
+
+      it('keeps the sniffed MIME type after cloning the response', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/sniffed', { bypassCustomProtocolHandlers: true });
+          r.clone();
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/sniffed');
+        expect(r.headers.get('content-type')).to.equal('image/png');
       });
 
       it('cancels an unread response after it becomes unreachable', async () => {

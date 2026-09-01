@@ -5,25 +5,27 @@ import { ClientRequestConstructorOptions, ClientRequest, IncomingMessage, Sessio
 import { Writable, isReadable } from 'stream';
 
 type TransferableFetchResponse = {
+  body: ReadableStream;
   loader: {
     canTransferResponse: () => boolean;
   };
   mimeType?: string;
 };
 
-export type FetchResponseInfo = TransferableFetchResponse & {
+export type FetchResponseInfo = Omit<TransferableFetchResponse, 'body'> & {
   canTransfer: boolean;
 };
 
-const transferableResponses = new WeakMap<ReadableStream, TransferableFetchResponse>();
+const transferableResponses = new WeakMap<Response, TransferableFetchResponse>();
 
 export function getFetchResponseInfo(res: Response): FetchResponseInfo | undefined {
-  if (!res.body) return;
-  const response = transferableResponses.get(res.body);
+  const response = transferableResponses.get(res);
   if (!response) return;
   return {
-    ...response,
-    canTransfer: !res.bodyUsed && !res.body.locked && response.loader.canTransferResponse()
+    loader: response.loader,
+    mimeType: response.mimeType,
+    canTransfer:
+      res.body === response.body && !res.bodyUsed && !res.body.locked && response.loader.canTransferResponse()
   };
 }
 
@@ -175,7 +177,8 @@ export function fetchWithSession(
       statusText: resp.statusMessage
     });
     if (rResp.body) {
-      transferableResponses.set(rResp.body, {
+      transferableResponses.set(rResp, {
+        body: rResp.body,
         loader,
         mimeType: (resp as any)._responseHead?.mimeType
       });
