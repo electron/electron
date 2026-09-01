@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -209,13 +210,22 @@ class JSChunkedDataPipeGetter final
   static const gin::WrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
-  // Called when the request this getter feeds is over. Anything still reading
-  // the upload body (e.g. a protocol handler holding the stream) is told the
-  // body ended with |net_error| instead of waiting forever for a size that
-  // will never be reported.
-  void Abort(int net_error) {
-    if (size_callback_)
-      std::move(size_callback_).Run(net_error, bytes_written_);
+  // Called when the request this getter feeds is over. Dropping the receiver
+  // disconnects whoever is still reading the upload body (the network service
+  // or a protocol handler holding the stream), and both treat that as the
+  // body ending with an error instead of waiting forever for a size that will
+  // never be reported. The size reply is deliberately not answered with an
+  // error here: the network service DCHECKs that it only arrives while the
+  // stream is still healthy.
+  void Abort() {
+    // A write still in flight would otherwise never settle: its completion
+    // callback dies with |data_producer_| below.
+    if (pending_write_) {
+      is_writing_ = false;
+      std::move(*pending_write_)
+          .RejectWithErrorMessage(net::ErrorToString(net::ERR_ABORTED));
+      pending_write_.reset();
+    }
     Finished();
   }
 
@@ -276,19 +286,21 @@ class JSChunkedDataPipeGetter final
     auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
+    pending_write_ = std::move(promise);
     data_producer_->Write(
         std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
                        // We're OK to use Unretained here because we own
                        // |data_producer_|.
-                       base::Unretained(this), std::move(promise)));
+                       base::Unretained(this)));
     return handle;
   }
 
-  void OnWriteChunkComplete(gin_helper::Promise<void> promise,
-                            MojoResult result) {
+  void OnWriteChunkComplete(MojoResult result) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     is_writing_ = false;
+    gin_helper::Promise<void> promise = std::move(*pending_write_);
+    pending_write_.reset();
     if (result == MOJO_RESULT_OK) {
       promise.Resolve();
     } else {
@@ -316,6 +328,7 @@ class JSChunkedDataPipeGetter final
 
   SEQUENCE_CHECKER(sequence_checker_);
   GetSizeCallback size_callback_;
+  std::optional<gin_helper::Promise<void>> pending_write_;
   GC_PLUGIN_IGNORE(
       "Context tracking of receiver is not needed in the browser process.")
   mojo::Receiver<network::mojom::ChunkedDataPipeGetter> receiver_{this};
@@ -434,6 +447,16 @@ void SimpleURLLoaderWrapper::Start() {
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
+void SimpleURLLoaderWrapper::Dispose() {
+  // Runs when the GC has found this object dead, before it is swept. The
+  // destructor may run a while later (and under ASan the object is poisoned
+  // in between), so anything that can still call back into this object has
+  // to go now: the network service drops its observer remotes when the
+  // loader is destroyed, and that disconnect must not land on a dead object.
+  url_loader_network_observer_receivers_.Clear();
+  loader_.reset();
+}
+
 void SimpleURLLoaderWrapper::OnAuthRequired(
     const std::optional<base::UnguessableToken>& window_id,
     int32_t request_id,
@@ -525,7 +548,7 @@ void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
   url_loader_factory_.reset();
   if (chunk_pipe_getter_)
-    chunk_pipe_getter_->Abort(net::ERR_ABORTED);
+    chunk_pipe_getter_->Abort();
   keep_alive_.Clear();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
@@ -783,16 +806,15 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
-  const int net_error = loader_->NetError();
   if (success) {
     Emit("complete");
   } else {
-    Emit("error", net::ErrorToString(net_error));
+    Emit("error", net::ErrorToString(loader_->NetError()));
   }
   loader_.reset();
   url_loader_factory_.reset();
   if (chunk_pipe_getter_)
-    chunk_pipe_getter_->Abort(success ? net::ERR_ABORTED : net_error);
+    chunk_pipe_getter_->Abort();
   keep_alive_.Clear();
 }
 

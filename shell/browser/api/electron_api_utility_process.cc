@@ -262,6 +262,15 @@ UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
 }
 
+void UtilityProcessWrapper::Dispose() {
+  // Runs when the GC has found this object dead, before it is swept. The
+  // destructor may run a while later (and under ASan the object is poisoned
+  // in between), so the observer receivers have to go now: the network
+  // service drops its remotes when the process's URLLoaderFactory goes away,
+  // and that disconnect must not land on a dead object.
+  url_loader_network_observer_.reset();
+}
+
 void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
   DCHECK(node_service_remote_.is_connected());
