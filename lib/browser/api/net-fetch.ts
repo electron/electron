@@ -125,6 +125,9 @@ export function fetchWithSession(
       statusText: resp.statusMessage
     });
     (rResp as any).__original_resp = resp;
+    // protocol.handle relays a Response that comes back untouched without
+    // pumping its body through JS; it needs the loader and the exact stream.
+    if (body) (rResp as any).__fetch = { request: r, body: rResp.body };
     p.resolve(rResp);
   });
 
