@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/byte_size.h"
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
@@ -21,6 +22,7 @@
 #include "content/public/common/url_utils.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
@@ -31,6 +33,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_util.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
@@ -56,6 +59,7 @@
 #include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
 #include "v8/include/v8-traced-handle.h"
 
@@ -367,6 +371,127 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 const gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronSimpleURLLoaderWrapper);
 
+class SimpleURLLoaderClient final
+    : public network::SimpleURLLoaderStreamConsumer,
+      public network::mojom::URLLoaderNetworkServiceObserver {
+ public:
+  explicit SimpleURLLoaderClient(
+      cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>> owner)
+      : owner_(std::move(owner)) {}
+
+  mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver> Bind() {
+    mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver> remote;
+    receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());
+    return remote;
+  }
+
+ private:
+  SimpleURLLoaderWrapper* owner() const {
+    auto* cell = owner_.Get();
+    return cell ? cell->Get() : nullptr;
+  }
+
+  // network::SimpleURLLoaderStreamConsumer:
+  void OnDataReceived(std::string_view chunk,
+                      base::OnceClosure resume) override {
+    if (auto* wrapper = owner())
+      wrapper->OnDataReceived(chunk, std::move(resume));
+    else
+      std::move(resume).Run();
+  }
+
+  void OnComplete(bool success) override {
+    if (auto* wrapper = owner())
+      wrapper->OnComplete(success);
+  }
+
+  void OnRetry(base::OnceClosure start_retry) override {}
+
+  // network::mojom::URLLoaderNetworkServiceObserver:
+  void OnAuthRequired(
+      const std::optional<base::UnguessableToken>& window_id,
+      int32_t request_id,
+      const GURL& url,
+      bool first_auth_attempt,
+      const net::AuthChallengeInfo& auth_info,
+      const scoped_refptr<net::HttpResponseHeaders>& head_headers,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder) override {
+    if (auto* wrapper = owner()) {
+      wrapper->OnAuthRequired(window_id, request_id, url, first_auth_attempt,
+                              auth_info, head_headers,
+                              std::move(auth_challenge_responder));
+    }
+  }
+
+  void OnSSLCertificateError(const GURL& url,
+                             int net_error,
+                             const net::SSLInfo& ssl_info,
+                             bool fatal,
+                             OnSSLCertificateErrorCallback response) override {
+    std::move(response).Run(net_error);
+  }
+
+  void OnCertificateRequested(
+      const std::optional<base::UnguessableToken>& window_id,
+      const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+      mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+          client_cert_responder) override {
+    if (auto* wrapper = owner()) {
+      wrapper->OnCertificateRequested(window_id, cert_info,
+                                      std::move(client_cert_responder));
+    }
+  }
+
+  void OnLocalNetworkAccessPermissionRequired(
+      network::mojom::TransportType transport_type,
+      network::mojom::IPAddressSpace ip_address_space,
+      OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
+
+  void OnPlatformLocalNetworkPermissionRequired(
+      OnPlatformLocalNetworkPermissionRequiredCallback callback) override {
+    std::move(callback).Run(false);
+  }
+
+  void OnClearSiteData(
+      const GURL& url,
+      const std::string& header_value,
+      int32_t load_flags,
+      const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+      bool partitioned_state_allowed_only,
+      OnClearSiteDataCallback callback) override {
+    std::move(callback).Run();
+  }
+
+  void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
+                            OnLoadingStateUpdateCallback callback) override {
+    std::move(callback).Run();
+  }
+
+  void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
+                       base::ByteSize recv_bytes,
+                       base::ByteSize sent_bytes) override {}
+
+  void OnWebSocketConnectedToLocalNetwork(
+      const GURL& request_url,
+      network::mojom::IPAddressSpace ip_address_space) override {}
+
+  void Clone(
+      mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
+          observer) override {
+    receivers_.Add(this, std::move(observer));
+  }
+
+  void OnUrlLoaderConnectedToLocalNetwork(
+      const GURL& request_url,
+      network::mojom::IPAddressSpace response_address_space,
+      network::mojom::IPAddressSpace client_address_space,
+      network::mojom::IPAddressSpace target_address_space) override {}
+
+  cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>> owner_;
+  mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver> receivers_;
+};
+
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
@@ -385,14 +510,13 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
         !URLLoaderBundle::GetInstance()
              ->ShouldUseNetworkObserverfromURLLoaderFactory();
   }
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  client_ = std::make_unique<SimpleURLLoaderClient>(
+      cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>>(
+          weak_factory_.GetWeakCell(
+              isolate->GetCppHeap()->GetAllocationHandle())));
   if (create_network_observer) {
-    mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
-        url_loader_network_observer_remote;
-    url_loader_network_observer_receivers_.Add(
-        this,
-        url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
-    request_->trusted_params->url_loader_network_observer =
-        std::move(url_loader_network_observer_remote);
+    request_->trusted_params->url_loader_network_observer = client_->Bind();
   }
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
@@ -442,20 +566,10 @@ void SimpleURLLoaderWrapper::Start() {
       &SimpleURLLoaderWrapper::OnDownloadProgress, weak_cell));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
-  loader_->DownloadAsStream(url_loader_factory_.get(), this);
+  loader_->DownloadAsStream(url_loader_factory_.get(), client_.get());
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
-
-void SimpleURLLoaderWrapper::Dispose() {
-  // Runs when the GC has found this object dead, before it is swept. The
-  // destructor may run a while later (and under ASan the object is poisoned
-  // in between), so anything that can still call back into this object has
-  // to go now: the network service drops its observer remotes when the
-  // loader is destroyed, and that disconnect must not land on a dead object.
-  url_loader_network_observer_receivers_.Clear();
-  loader_.reset();
-}
 
 void SimpleURLLoaderWrapper::OnAuthRequired(
     const std::optional<base::UnguessableToken>& window_id,
@@ -507,41 +621,6 @@ void SimpleURLLoaderWrapper::OnCertificateRequested(
   }
   SelectClientCertificateForResponder(browser_context_, cert_info,
                                       std::move(client_cert_responder));
-}
-
-void SimpleURLLoaderWrapper::OnSSLCertificateError(
-    const GURL& url,
-    int net_error,
-    const net::SSLInfo& ssl_info,
-    bool fatal,
-    OnSSLCertificateErrorCallback response) {
-  std::move(response).Run(net_error);
-}
-
-void SimpleURLLoaderWrapper::OnClearSiteData(
-    const GURL& url,
-    const std::string& header_value,
-    int32_t load_flags,
-    const std::optional<net::CookiePartitionKey>& cookie_partition_key,
-    bool partitioned_state_allowed_only,
-    OnClearSiteDataCallback callback) {
-  std::move(callback).Run();
-}
-void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
-    network::mojom::LoadInfoPtr info,
-    OnLoadingStateUpdateCallback callback) {
-  std::move(callback).Run();
-}
-
-void SimpleURLLoaderWrapper::Clone(
-    mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
-        observer) {
-  url_loader_network_observer_receivers_.Add(this, std::move(observer));
-}
-
-void SimpleURLLoaderWrapper::OnPlatformLocalNetworkPermissionRequired(
-    OnPlatformLocalNetworkPermissionRequiredCallback callback) {
-  std::move(callback).Run(false);
 }
 
 void SimpleURLLoaderWrapper::Cancel() {
