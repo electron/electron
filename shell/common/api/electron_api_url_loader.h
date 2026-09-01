@@ -10,19 +10,15 @@
 #include <string_view>
 #include <vector>
 
-#include "base/byte_size.h"
 #include "base/memory/raw_ptr.h"
 #include "base/sequence_checker.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
-#include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "url/gurl.h"
 #include "v8/include/cppgc/member.h"
@@ -49,13 +45,12 @@ class ElectronBrowserContext;
 namespace electron::api {
 
 class JSChunkedDataPipeGetter;
+class SimpleURLLoaderClient;
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
-      public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
-      private network::SimpleURLLoaderStreamConsumer,
-      private network::mojom::URLLoaderNetworkServiceObserver {
+      public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper> {
  public:
   ~SimpleURLLoaderWrapper() override;
   static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
@@ -77,13 +72,11 @@ class SimpleURLLoaderWrapper final
                          JSChunkedDataPipeGetter* chunk_pipe_getter);
 
  private:
-  // SimpleURLLoaderStreamConsumer:
-  void OnDataReceived(std::string_view string_view,
-                      base::OnceClosure resume) override;
-  void OnComplete(bool success) override;
-  void OnRetry(base::OnceClosure start_retry) override {}
+  friend class SimpleURLLoaderClient;
 
-  // network::mojom::URLLoaderNetworkServiceObserver:
+  void OnDataReceived(std::string_view string_view, base::OnceClosure resume);
+  void OnComplete(bool success);
+
   void OnAuthRequired(
       const std::optional<base::UnguessableToken>& window_id,
       int32_t request_id,
@@ -92,55 +85,12 @@ class SimpleURLLoaderWrapper final
       const net::AuthChallengeInfo& auth_info,
       const scoped_refptr<net::HttpResponseHeaders>& head_headers,
       mojo::PendingRemote<network::mojom::AuthChallengeResponder>
-          auth_challenge_responder) override;
-  void OnSSLCertificateError(const GURL& url,
-                             int net_error,
-                             const net::SSLInfo& ssl_info,
-                             bool fatal,
-                             OnSSLCertificateErrorCallback response) override;
+          auth_challenge_responder);
   void OnCertificateRequested(
       const std::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
-          client_cert_responder) override {}
-  void OnLocalNetworkAccessPermissionRequired(
-      network::mojom::TransportType transport_type,
-      network::mojom::IPAddressSpace ip_address_space,
-      OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
-  void OnPlatformLocalNetworkPermissionRequired(
-      OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
-  void OnClearSiteData(
-      const GURL& url,
-      const std::string& header_value,
-      int32_t load_flags,
-      const std::optional<net::CookiePartitionKey>& cookie_partition_key,
-      bool partitioned_state_allowed_only,
-      OnClearSiteDataCallback callback) override;
-  void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
-                            OnLoadingStateUpdateCallback callback) override;
-  void OnSharedStorageHeaderReceived(
-      const url::Origin& request_origin,
-      std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
-          methods,
-      const std::optional<std::string>& with_lock,
-      OnSharedStorageHeaderReceivedCallback callback) override;
-  void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
-                       base::ByteSize recv_bytes,
-                       base::ByteSize sent_bytes) override {}
-  void OnWebSocketConnectedToLocalNetwork(
-      const GURL& request_url,
-      network::mojom::IPAddressSpace ip_address_space) override {}
-  void Clone(
-      mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
-          observer) override;
-  void OnUrlLoaderConnectedToLocalNetwork(
-      const GURL& request_url,
-      network::mojom::IPAddressSpace response_address_space,
-      network::mojom::IPAddressSpace client_address_space,
-      network::mojom::IPAddressSpace target_address_space) override {}
-  void OnAdAuctionEventRecordHeaderReceived(
-      network::AdAuctionEventRecord event_record,
-      const std::optional<url::Origin>& top_frame_origin) override {}
+          client_cert_responder);
 
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactoryForURL(
       const GURL& url);
@@ -162,12 +112,9 @@ class SimpleURLLoaderWrapper final
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  // The client receives callbacks from |loader_| and must outlive it.
+  std::unique_ptr<SimpleURLLoaderClient> client_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
-
-  GC_PLUGIN_IGNORE(
-      "Context tracking of receivers is not needed in the browser process.")
-  mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver>
-      url_loader_network_observer_receivers_;
   cppgc::Member<JSChunkedDataPipeGetter> chunk_pipe_getter_;
   gin_helper::SelfKeepAlive<SimpleURLLoaderWrapper> keep_alive_{this};
   gin::WeakCellFactory<SimpleURLLoaderWrapper> weak_factory_{this};
