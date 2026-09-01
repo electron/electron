@@ -260,6 +260,7 @@ declare namespace NodeJS {
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
+    hold(): void;
     on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(
       eventName: 'response-started',
