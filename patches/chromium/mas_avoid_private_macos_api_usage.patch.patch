@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 039fca1523a20720dc121b1e3bc6ec6918fa0c40..b65b941d012325ade33bfda765aa2bf2d96fab15 100644
+index 91b8ec5bd65162dcef13b12df747a3d36f9ec8a4..e9b357b3a55e3dd44f7eaf9620535c71829bf294 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1039,6 +1039,7 @@ if (is_clang_or_gcc) {
+@@ -1043,6 +1043,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1208,7 +1208,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8924e8cd09fbe9769ce502bc8f5f717e196329c4..75f764fcdf1f837137721df864f8b83b4711e853 100644
+index 4897045f04658b8309e0957b6e6e0d2f4061b204..de5517ad7e6937a9e7b800a10d0cc2eb52f97c1f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -650,6 +650,7 @@ static_library("test_support") {
@@ -1228,7 +1228,7 @@ index 8924e8cd09fbe9769ce502bc8f5f717e196329c4..75f764fcdf1f837137721df864f8b83b
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2027,6 +2030,7 @@ test("content_browsertests") {
+@@ -2026,6 +2029,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1236,7 +1236,7 @@ index 8924e8cd09fbe9769ce502bc8f5f717e196329c4..75f764fcdf1f837137721df864f8b83b
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3349,6 +3353,7 @@ test("content_unittests") {
+@@ -3348,6 +3352,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1805,7 +1805,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 34225593922a60b3901847815fbc4a22ca8326e2..1c022236152bd4522cb9c0e8295ca4cfbf060852 100644
+index 86d0cefd4c815d1da2f4bf6e06b5657c1ce04784..47e9e8429f0fd457762ce6cf53c6861601b50636 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -444,6 +444,7 @@ component("core") {
