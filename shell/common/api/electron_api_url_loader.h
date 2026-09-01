@@ -71,13 +71,13 @@ class ResponseBody final : public network::SimpleURLLoaderStreamConsumer {
   explicit ResponseBody(Delegate* delegate);
   ~ResponseBody() override;
 
- private:
   // network::SimpleURLLoaderStreamConsumer, fed by SimpleURLLoaderClient
   void OnDataReceived(std::string_view chunk,
                       base::OnceClosure resume) override;
   void OnComplete(bool success) override;
   void OnRetry(base::OnceClosure start_retry) override {}
 
+ private:
   const raw_ptr<Delegate> delegate_;
 };
 
