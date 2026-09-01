@@ -2086,7 +2086,12 @@ describe('protocol module', () => {
         const reader = r.body!.getReader();
         await reader.read();
         controller.abort();
-        await expect(reader.read()).to.eventually.be.rejected();
+        const error = await reader.read().then(
+          () => undefined,
+          (error) => error
+        );
+        expect(error).to.be.an.instanceOf(DOMException);
+        expect(error.name).to.equal('AbortError');
         const again = await net.fetch('test-scheme://host/small');
         expect(await again.text()).to.equal('small body');
       });

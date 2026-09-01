@@ -78,6 +78,7 @@ export function fetchWithSession(
   }
 
   let locallyAborted = false;
+  let responseBodyController: ReadableStreamDefaultController<Uint8Array> | undefined;
   req.signal.addEventListener(
     'abort',
     () => {
@@ -98,6 +99,8 @@ export function fetchWithSession(
         });
       }
 
+      responseBodyController?.error(error);
+      responseBodyController = undefined;
       r.abort();
     },
     { once: true }
@@ -145,16 +148,21 @@ export function fetchWithSession(
     const body = hasBody
       ? new ReadableStream<Uint8Array>(
           {
+            start(controller) {
+              responseBodyController = controller;
+            },
             async pull(controller) {
               const buffer = new Uint8Array(64 * 1024);
               const bytesRead = await bodyReader.read(buffer);
               if (bytesRead === 0) {
+                responseBodyController = undefined;
                 controller.close();
               } else {
                 controller.enqueue(buffer.subarray(0, bytesRead));
               }
             },
             cancel() {
+              responseBodyController = undefined;
               r.abort();
             }
           },
