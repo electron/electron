@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 28 Aug 2026 10:08:46 -0400
+Subject: fix: do not pass removed JSPI V8 flag
+
+Chromium's V8 enables JSPI by default and removed the experimental flag,
+while Node.js v24.20 passes it unconditionally. Remove the obsolete argument
+so Node startup and snapshot generation work with Chromium's V8.
+
+This patch can be removed once Node.js no longer passes the removed flag.
+
+Refs: https://github.com/nodejs/node/pull/59941
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/6937664
+
+diff --git a/src/node.cc b/src/node.cc
+index 787f21586025d76f6959b002a2fb2d2ce94533a5..ac4318e708f74affd72b326ab452f4b64c884bad 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -790,9 +790,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+     // v8_args.emplace_back("--js-source-phase-imports");
+   }
+ 
+-  // WebAssembly JS Promise Integration
+-  v8_args.emplace_back("--experimental-wasm-jspi");
+-
+ #ifdef __POSIX__
+   // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the
+   // performance penalty of frequent EINTR wakeups when the profiler is running.

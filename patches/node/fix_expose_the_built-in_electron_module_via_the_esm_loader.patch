@@ -76,10 +76,10 @@ index 94879761553e02746853eecf316d88da61ab4277..080d917129990f3593ece63ebcf65037
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index b96999d80b6aaad4767b563bdbd0f9e2591d37e3..117f844efb7c6ac6f7bd9c1b0fd244443fb841f7 100644
+index e34e6f58538fc57791d8bc73bcc38cc6b9072d24..91cf127534088ad8c3b9b5effc828bf5c8e95110 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -398,7 +398,7 @@ class ModuleLoader {
+@@ -402,7 +402,7 @@ class ModuleLoader {
      assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
  
      const cjsModule = wrap[imported_cjs_symbol];
@@ -89,20 +89,21 @@ index b96999d80b6aaad4767b563bdbd0f9e2591d37e3..117f844efb7c6ac6f7bd9c1b0fd24444
        if (cjsModule?.[kIsExecuting]) {
          const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index b028f44f01388605e114130c138568f0bceea76d..185793fa305edbeab299f743e0018f34b2aaa655 100644
+index f6c8078228419eaca8fbed5a9d43d8b56cacffb0..beb3452ea134e4b408f8a3335a6cc65e97c8055a 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
+@@ -752,6 +752,10 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
 +const electronTypes = [
 +  'electron', 'electron/main', 'electron/common', 'electron/renderer', 'electron/utility'
 +];
- 
++
  /**
   * Resolves a package specifier to a URL.
-@@ -765,6 +768,11 @@ function packageResolve(specifier, base, conditions) {
+  * @param {string} specifier - The package specifier to resolve.
+@@ -765,6 +769,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -111,11 +112,11 @@ index b028f44f01388605e114130c138568f0bceea76d..185793fa305edbeab299f743e0018f34
 +    return new URL('electron:electron');
 +  }
 +
-   const { packageJSONUrl, packageJSONPath, packageSubpath } = packageJsonReader.getPackageJSONURL(specifier, base);
+   let packageJSONUrl, packageJSONPath, packageSubpath;
  
-   const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
+   if (hasPackageMap()) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 7fb265c01b8d06f15fb24d9096fabf74e02c2354..f3c3399b6891dd6766e6ecf8c892aa95d91c6ec3 100644
+index 54e15417addea96cdb6d70fd9e2b65caa0f1ae34..f54a8ca32a601e886b0cb09f0a9361a0c9c184ee 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -217,7 +217,9 @@ function createCJSModuleWrap(url, translateContext, parentURL) {
