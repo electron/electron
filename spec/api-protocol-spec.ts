@@ -1802,6 +1802,9 @@ describe('protocol module', () => {
           } else if (req.url === '/status') {
             res.writeHead(404, { 'x-reason': 'nope' });
             res.end('missing');
+          } else if (req.url === '/empty') {
+            res.writeHead(204);
+            res.end();
           } else {
             res.writeHead(200);
             res.end('small body');
@@ -1835,6 +1838,21 @@ describe('protocol module', () => {
         expect(status.status).to.equal(404);
         expect(status.headers.get('x-reason')).to.equal('nope');
         expect(await status.text()).to.equal('missing');
+      });
+
+      it('completes when the fetch finished before the handler returned it', async () => {
+        protocol.handle('test-scheme', async (req) => {
+          const r = await net.fetch(base + new URL(req.url).pathname, { bypassCustomProtocolHandlers: true });
+          await setTimeout(20);
+          return r;
+        });
+        const small = await net.fetch('test-scheme://host/small');
+        expect(await small.text()).to.equal('small body');
+        const empty = await net.fetch('test-scheme://host/empty');
+        expect(empty.status).to.equal(204);
+        expect(await empty.text()).to.equal('');
+        const large = await net.fetch('test-scheme://host/big');
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
       });
 
       it('delivers a decoded body for an encoded upstream response', async () => {

@@ -817,12 +817,9 @@ void ResponseBody::OnDataReceived(std::string_view chunk,
 }
 
 void ResponseBody::OnComplete(bool success) {
-  const int net_error = delegate_->OnBodyComplete(success);
-  if (!held_)
-    return;
-  result_ = net_error;
-  if (producer_.is_valid() && pending_.empty())
-    Finish(net_error);
+  result_ = delegate_->OnBodyComplete(success);
+  if (held_ && producer_.is_valid() && pending_.empty())
+    Finish(*result_);
 }
 
 // Writes as much of |bytes| as the pipe takes right now; returns how much.
