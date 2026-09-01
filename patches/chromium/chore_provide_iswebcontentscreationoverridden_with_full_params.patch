@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-index 8c14dc878b81b80d97bf42d1a3615b56c7785cb0..8b3c1187c7ac5a0d1b1124efef4ecab8eec21d2a 100644
+index 9e27bdcb53a5030b4226560272138debce274d56..cb547369872c759aaaa60fd8977b8345222790da 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-@@ -991,8 +991,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -994,8 +994,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 8c14dc878b81b80d97bf42d1a3615b56c7785cb0..8b3c1187c7ac5a0d1b1124efef4ecab8
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1015,7 +1014,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -1018,7 +1017,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(browser_->GetProfile(),
                                           source_site_instance, opener_url,
@@ -103,7 +103,7 @@ index 8c14dc878b81b80d97bf42d1a3615b56c7785cb0..8b3c1187c7ac5a0d1b1124efef4ecab8
  
  content::WebContents* BrowserWebContentsDelegate::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
-index e1059ac69a123ec01b12a9255367fd04f6f8a317..bee8ad1bf7720d4bfe85b9d281f901a5acc5d951 100644
+index 05a9d7f7f21841412e0b2435e8d95a9c7598d8eb..81f085c6cc16787af7f4425be46e199d522ccc86 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
 @@ -164,8 +164,7 @@ class BrowserWebContentsDelegate : public content::WebContentsDelegate {
@@ -145,10 +145,10 @@ index 5e440426ed56c423d77a60e18ee592f506f2ae88..4c6804eb7c56fdfda7afc2804f300870
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 52e96d65dfc367a55815a26bd7f15beb23a8b613..b27c9a411cb76056c03635185a500723b184a17d 100644
+index fcff4d9474d180d54d7332fd619ada26dc81ef2b..421354ec0821ef806dae5fb2ee00e8a4bed91ded 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -106,8 +106,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -107,8 +107,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

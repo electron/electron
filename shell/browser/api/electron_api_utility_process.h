@@ -146,7 +146,7 @@ class UtilityProcessWrapper final
       "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   cppgc::Member<Session> session_;
-  std::optional<electron::URLLoaderNetworkObserver>
+  std::unique_ptr<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
   base::CallbackListSubscription network_service_gone_subscription_;
   gin_helper::SelfKeepAlive<UtilityProcessWrapper> keep_alive_{this};

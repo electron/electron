@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 9137af1094f70e800f4bdfe42d6e8e0ac9e3e1f5..5f39008fba5d457cfcb9690ae381c61b00607b3a 100644
+index 053a25db4b88e1a4e94a55c96d03babdbc011660..5913c18fcfb3f470746d3e82c56cc5345ab8227c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -187,6 +187,11 @@
+@@ -188,6 +188,11 @@
  #include "services/network/ssl_private_key_proxy.h"
  #endif
  
@@ -22,7 +22,7 @@ index 9137af1094f70e800f4bdfe42d6e8e0ac9e3e1f5..5f39008fba5d457cfcb9690ae381c61b
  #if BUILDFLAG(IS_CT_SUPPORTED)
  // gn check does not account for BUILDFLAG(). So, for iOS builds, it will
  // complain about a missing dependency on the target exposing this header. Add a
-@@ -670,6 +675,111 @@ void RemoveInvalidationFilterCallback(
+@@ -671,6 +676,111 @@ void RemoveInvalidationFilterCallback(
  
  }  // namespace
  
@@ -134,7 +134,7 @@ index 9137af1094f70e800f4bdfe42d6e8e0ac9e3e1f5..5f39008fba5d457cfcb9690ae381c61b
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1144,6 +1254,12 @@ void NetworkContext::CreateSocketFactory(
+@@ -1145,6 +1255,12 @@ void NetworkContext::CreateSocketFactory(
    socket_factory_receivers_.Add(socket_factory_.get(), std::move(receiver));
  }
  
@@ -147,7 +147,7 @@ index 9137af1094f70e800f4bdfe42d6e8e0ac9e3e1f5..5f39008fba5d457cfcb9690ae381c61b
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2918,6 +3034,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2916,6 +3032,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));

@@ -34,10 +34,10 @@ index f6771b8b6c1db5f00cde78877a3c2bdf5a38d61a..800eb200f8a9e4b7b44a4d22c0cf169c
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index b54f981376e4624c88124b7a44968952f32e36c5..540aa229335c567fc4fe2c2776899199c8a0e761 100644
+index c1afbad4d374ee3f71b65d1d5efb269f9d4952bb..e957a42245455303b2b710938d98927f92d792a6 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4989,10 +4989,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4998,10 +4998,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -52,10 +52,10 @@ index b54f981376e4624c88124b7a44968952f32e36c5..540aa229335c567fc4fe2c2776899199
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 408d36d5cb04e611bb8fe5d36c95613467fc68fb..45fc33f389f8452a3cca3358f48394b16de13b6e 100644
+index cd82fe3fbba135c163998a1f7ac7267f795f764b..6e56065dfb96bb070fbcd12e373acd635f07b72f 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -623,7 +623,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -624,7 +624,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -167,10 +167,10 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 073e5665d8aa43b4c6d5337f25c2c5148e638d5b..facf77563630fd84fb4b61a64f86ecc558236bc1 100644
+index 2478fc89bc202501fc4ce81745c69ec55c4e10f7..b4f07120c50065e9413545399b359d6790b87b76 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -684,7 +684,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -685,7 +685,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.

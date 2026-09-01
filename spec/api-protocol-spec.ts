@@ -1,9 +1,9 @@
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 
 import { expect } from 'chai';
-import { v4 } from 'uuid';
 
 import * as ChildProcess from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -15,6 +15,7 @@ import * as streamConsumers from 'node:stream/consumers';
 import * as webStream from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import * as zlib from 'node:zlib';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { listen, defer } from './lib/spec-helpers';
@@ -390,7 +391,7 @@ describe('protocol module', () => {
       defer(() => server.close());
       const { url } = await listen(server);
 
-      const ses = session.fromPartition(`protocol-response-url-session-${v4()}`);
+      const ses = session.fromPartition(`protocol-response-url-session-${randomUUID()}`);
       let upstreamSeenByHandlingSession = false;
       let upstreamSeenByDefaultSession = false;
       ses.webRequest.onBeforeRequest((details, callback) => {
@@ -980,15 +981,15 @@ describe('protocol module', () => {
     after(() => protocol.unregisterProtocol(serviceWorkerScheme));
 
     it('should fail when registering invalid service worker', async () => {
-      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
+      await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
       await expect(
-        contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.notjs', {scope: './'})`)
+        contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.notjs', {scope: './'})`)
       ).to.be.rejected();
     });
 
     it('should be able to register service worker for custom scheme', async () => {
-      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
-      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
+      await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
+      await contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.js', {scope: './'})`);
     });
   });
 
@@ -1462,14 +1463,13 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged codeCache', function () {
-    const temp = require('temp').track();
     const appPath = path.join(fixturesPath, 'apps', 'refresh-page');
 
     let w: BrowserWindow;
     let codeCachePath: string;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
-      codeCachePath = temp.path();
+      codeCachePath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'electron-code-cache-')), 'cache');
     });
 
     afterEach(async () => {
@@ -1814,6 +1814,146 @@ describe('protocol module', () => {
 
       const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
       expect(body.trimEnd()).to.equal('hello world');
+    });
+
+    describe('relaying an untouched net.fetch response', () => {
+      const big = Buffer.alloc(3 * 1024 * 1024 + 17);
+      for (let i = 0; i < big.length; i++) big[i] = (i * 31 + (i >> 12)) & 255;
+      let server: http.Server;
+      let base: string;
+      let tmpDir: string;
+      before(async () => {
+        server = http.createServer((req, res) => {
+          if (req.url === '/big') {
+            res.writeHead(200, { 'content-length': String(big.length), 'x-upstream': 'yes' });
+            res.end(big);
+          } else if (req.url === '/gzip') {
+            res.writeHead(200, { 'content-encoding': 'gzip', 'content-type': 'text/plain' });
+            res.end(zlib.gzipSync(Buffer.from('compressed hello '.repeat(5000))));
+          } else if (req.url === '/slow') {
+            res.writeHead(200, { 'content-type': 'text/plain' });
+            let n = 0;
+            const timer = setInterval(() => {
+              res.write(`chunk ${n}\n`);
+              if (++n === 5) {
+                clearInterval(timer);
+                res.end('end\n');
+              }
+            }, 30);
+          } else if (req.url === '/status') {
+            res.writeHead(404, { 'x-reason': 'nope' });
+            res.end('missing');
+          } else if (req.url === '/empty') {
+            res.writeHead(204);
+            res.end();
+          } else {
+            res.writeHead(200);
+            res.end('small body');
+          }
+        });
+        base = (await listen(server)).url;
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-'));
+        fs.writeFileSync(path.join(tmpDir, 'big.bin'), big);
+      });
+      after(() => {
+        server.close();
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      });
+      afterEach(() => {
+        protocol.unhandle('test-scheme');
+      });
+      const proxy = (map: (u: URL) => string) =>
+        protocol.handle('test-scheme', (req) =>
+          net.fetch(map(new URL(req.url)), { bypassCustomProtocolHandlers: true })
+        );
+
+      it('delivers small and large upstream bodies byte for byte with status and headers', async () => {
+        proxy((u) => base + u.pathname);
+        const small = await net.fetch('test-scheme://host/small');
+        expect(small.status).to.equal(200);
+        expect(await small.text()).to.equal('small body');
+        const large = await net.fetch('test-scheme://host/big');
+        expect(large.headers.get('x-upstream')).to.equal('yes');
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+        const status = await net.fetch('test-scheme://host/status');
+        expect(status.status).to.equal(404);
+        expect(status.headers.get('x-reason')).to.equal('nope');
+        expect(await status.text()).to.equal('missing');
+      });
+
+      it('completes when the fetch finished before the handler returned it', async () => {
+        protocol.handle('test-scheme', async (req) => {
+          const r = await net.fetch(base + new URL(req.url).pathname, { bypassCustomProtocolHandlers: true });
+          await setTimeout(20);
+          return r;
+        });
+        const small = await net.fetch('test-scheme://host/small');
+        expect(await small.text()).to.equal('small body');
+        const empty = await net.fetch('test-scheme://host/empty');
+        expect(empty.status).to.equal(204);
+        expect(await empty.text()).to.equal('');
+        const large = await net.fetch('test-scheme://host/big');
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+      });
+
+      it('delivers a decoded body for an encoded upstream response', async () => {
+        proxy((u) => base + u.pathname);
+        const r = await net.fetch('test-scheme://host/gzip');
+        expect(await r.text()).to.equal('compressed hello '.repeat(5000));
+      });
+
+      it('streams a slow upstream body to the end', async () => {
+        proxy((u) => base + u.pathname);
+        const r = await net.fetch('test-scheme://host/slow');
+        expect(await r.text()).to.equal('chunk 0\nchunk 1\nchunk 2\nchunk 3\nchunk 4\nend\n');
+      });
+
+      it('relays file responses too', async () => {
+        proxy(() => url.pathToFileURL(path.join(tmpDir, 'big.bin')).toString());
+        const r = await net.fetch('test-scheme://host/whatever');
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+      });
+
+      it('keeps working when the handler inspected the response without touching the body', async () => {
+        protocol.handle('test-scheme', async (req) => {
+          const r = await net.fetch(base + new URL(req.url).pathname, { bypassCustomProtocolHandlers: true });
+          r.headers.set('x-seen-status', String(r.status));
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/big');
+        expect(r.headers.get('x-seen-status')).to.equal('200');
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+      });
+
+      it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {
+        protocol.handle('test-scheme', async (req) => {
+          const which = new URL(req.url).pathname;
+          const r = await net.fetch(base + '/big', { bypassCustomProtocolHandlers: true });
+          if (which === '/clone') {
+            const c = r.clone();
+            c.arrayBuffer().catch(() => {});
+            return r;
+          }
+          if (which === '/rewrap') return new Response(r.body, { headers: r.headers });
+          return new Response(await r.arrayBuffer());
+        });
+        for (const which of ['/clone', '/rewrap', '/read']) {
+          const r = await net.fetch('test-scheme://host' + which);
+          expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.equal(true, which);
+        }
+      });
+
+      it('lets the client abort mid-body', async () => {
+        proxy((u) => base + u.pathname);
+        const controller = new AbortController();
+        const r = await net.fetch('test-scheme://host/slow', { signal: controller.signal });
+        const reader = r.body!.getReader();
+        await reader.read();
+        controller.abort();
+        await expect(reader.read()).to.eventually.be.rejected();
+        const again = await net.fetch('test-scheme://host/small');
+        expect(await again.text()).to.equal('small body');
+      });
     });
 
     it('can receive simple request body', async () => {
