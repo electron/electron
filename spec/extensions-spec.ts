@@ -1264,6 +1264,27 @@ describe('chrome extensions', () => {
           expect(response).to.have.property('selected').that.is.a('boolean');
           expect(response).to.have.property('windowId').that.is.a('number');
         });
+
+        it('does not return privileged properties from query without tabs permission', async () => {
+          const noPrivilegeSes = session.fromPartition(`persist:${uuid.v4()}`);
+          await noPrivilegeSes.extensions.loadExtension(
+            path.join(fixtures, 'extensions', 'chrome-tabs', 'no-privileges')
+          );
+
+          w = new BrowserWindow({ show: false, webPreferences: { session: noPrivilegeSes } });
+          await w.loadURL(url);
+
+          const message = { method: 'query' };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+          const [{ message: responseString }] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).to.be.an('array').that.is.not.empty();
+          for (const tab of response) {
+            expect(tab).not.to.have.property('url');
+            expect(tab).not.to.have.property('title');
+            expect(tab).to.have.property('id').that.is.a('number');
+          }
+        });
       });
 
       it('reload', async () => {
