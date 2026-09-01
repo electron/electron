@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index b3ae470516db2b6f7ca55e22c1f7b128c80d26d2..457bb5d9dc6fc5b5546b83e7ea9f661f8a0b490a 100644
+index 0602f93ae89f314c91d335793c3932adf4b408e7..76d289ef572255b3d7d9526f0a0f8d80f2178b78 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -192,10 +192,11 @@
@@ -163,10 +163,10 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9ff90e0960 100644
+index 1f9a53d80e8d8ac70241563d2dfcf4a863030fb6..0df7bbcb11089d7f2a525c31d4cfb65442d1b19d 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -328,7 +328,11 @@ class PerProcessOptions : public Options {
+@@ -332,7 +332,11 @@ class PerProcessOptions : public Options {
  
    std::string title;
    std::string trace_event_categories;
@@ -179,7 +179,7 @@ index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9f
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 47cafc6634c14ea3d656e8819ca8351356d09254..668046e56b25465d8ffae85ccb0c42a49b107243 100644
+index c13d363cde2cf028ba3f364db489bb5d6bedf7a6..1f235cdd171ed4d00bdfd3ed25acbbfdfd172d2f 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
