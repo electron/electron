@@ -1,35 +1,59 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Nelson Gill <ngill@slack-corp.com>
-Date: Wed, 13 Aug 2026 12:00:00 -0700
-Subject: fix: use org.kde SNI bus name prefix for snap confinement
+Date: Tue, 1 Sep 2026 11:20:57 -0700
+Subject: fix: restore snap-compatible SNI bus name and dbusmenu path
 
-Chromium 151+ changed the StatusNotifierItem well-known bus name from
+Chromium changed the StatusNotifierItem well-known bus name from
 org.kde.StatusNotifierItem-{PID} to
-org.freedesktop.StatusNotifierItem-{PID}-{service_id}.
+org.freedesktop.StatusNotifierItem-{PID}-{service_id} and the dbusmenu
+object path from /com/canonical/dbusmenu to /org/chromium/DbusMenu in
+https://crrev.com/c/8043132.
 
 Under snap strict confinement, the unity7 interface only grants:
   dbus (bind) bus=session name=org.kde.StatusNotifierItem-[0-9]*
+and only allows dbusmenu traffic on the /com/canonical/dbusmenu path.
 
-The org.freedesktop prefix is not covered by any snap interface, causing
-AppArmor to deny the bus name registration and making the tray icon
-invisible for all Electron snap apps.
+The org.freedesktop prefix and the /org/chromium path are not covered by
+any snap interface, causing AppArmor to deny both the bus name
+registration (making the tray icon invisible) and the menu export
+(breaking the context menu) for all Electron snap apps.
 
-The StatusNotifierItem specification and all known StatusNotifierWatcher
-implementations accept either prefix -- the bus name is just an ownership
-claim on the session bus and does not affect the SNI protocol. Restoring
-the org.kde prefix matches what Chromium <151 used and is compatible with
-all desktop environments.
+The SNI specification and all known StatusNotifierWatcher implementations
+accept either prefix. Restoring the org.kde prefix and canonical dbusmenu
+path matches what Chromium <151 used and is compatible with all desktop
+environments.
+
+This patch can be removed after snapd ships support for the new paths
+(https://github.com/canonical/snapd/pull/17415) and sufficient adoption
+time has passed.
 
 Upstream snapd bug: https://bugs.launchpad.net/snapd/+bug/2161950
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 2df83ab250e271826e5c84687ae1e929557898a5..f93fd16dba879358b57011c224a3673a9c5bd974 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -298,7 +298,7 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -71,7 +71,10 @@ const char kInterfaceStatusNotifierWatcher[] = "org.kde.StatusNotifierWatcher";
+ // Object paths.
+ const char kPathStatusNotifierItem[] = "/StatusNotifierItem";
+ const char kPathStatusNotifierWatcher[] = "/StatusNotifierWatcher";
+-const char kPathDbusMenu[] = "/org/chromium/DbusMenu";
++// Restore the canonical dbusmenu path for snap confinement compatibility.
++// Chromium moved this from /com/canonical/dbusmenu in https://crrev.com/c/8043132
++// but snap's unity7 AppArmor rules only allow the canonical path.
++const char kPathDbusMenu[] = "/com/canonical/dbusmenu";
+
+ // Methods.
+ const char kMethodNameHasOwner[] = "NameHasOwner";
+@@ -607,7 +610,11 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    service_id_ = NextServiceId();
 
    service_name_ =
 -      base::StrCat({"org.freedesktop.StatusNotifierItem-",
++      // Use org.kde prefix for snap confinement compatibility.
++      // Chromium changed this from org.kde in https://crrev.com/c/8043132
++      // but snap's unity7 AppArmor rules only allow org.kde.StatusNotifierItem-*.
++      // Can be removed after snapd ships https://github.com/canonical/snapd/pull/17415
 +      base::StrCat({"org.kde.StatusNotifierItem-",
                      base::NumberToString(base::Process::Current().Pid()), "-",
                      base::NumberToString(service_id_)});
