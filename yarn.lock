@@ -401,7 +401,7 @@ __metadata:
     "@types/node": "npm:^24.9.0"
     "@types/semver": "npm:^7.5.8"
     "@types/stream-json": "npm:^1.7.8"
-    "@xmldom/xmldom": "npm:^0.9.10"
+    "@xmldom/xmldom": "npm:^0.9.12"
     buffer: "npm:^6.0.3"
     events: "npm:^3.2.0"
     folder-hash: "npm:^4.1.2"
@@ -2131,6 +2131,13 @@ __metadata:
   version: 0.9.10
   resolution: "@xmldom/xmldom@npm:0.9.10"
   checksum: 10c0/38a9c9b95450d7fccebc61371c8e0b90ceaae992886484108333d29ccbd2640e3555b6af012f15ce1beb5067aeb40486659b6183fad38af179e82d28028bfc5d
+  languageName: node
+  linkType: hard
+
+"@xmldom/xmldom@npm:^0.9.12":
+  version: 0.9.12
+  resolution: "@xmldom/xmldom@npm:0.9.12"
+  checksum: 10c0/0a9ef38e203213717dde8d16c62743c26c37eb4195aeb4f286550a0aec2145c063a6c3633f253c29f75202f922d7c961d1acaad4dd93e5db1ef05c813354d178
   languageName: node
   linkType: hard
 
