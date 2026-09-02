@@ -600,7 +600,14 @@ describe('node feature', () => {
     // aborted the process until nodejs/node#63985 and nodejs/node#65630 were
     // picked up. The addon is loaded in a child process because the failure
     // mode is a CHECK abort.
-    it('node::ObjectWrap instances survive garbage collection and teardown', async () => {
+    //
+    // The fixture has to be compiled against Electron's headers, which
+    // script/spec-runner.js does after installing the spec modules. On the
+    // linux-arm64 CI test job nothing can compile them: the restored Chromium
+    // clang is an x64 binary and the image's GCC rejects the V8 headers
+    // (https://github.com/electron/electron/issues/53284), so spec-runner
+    // sets this variable there instead of rebuilding and the test is skipped.
+    ifit(!process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS)('node::ObjectWrap instances survive garbage collection and teardown', async () => {
       const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'object-wrap-gc.js')], {
         env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
         stdio: ['ignore', 'pipe', 'pipe']
