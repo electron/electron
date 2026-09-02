@@ -235,6 +235,12 @@ runs:
         sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--abort-on-bad-builtin-profile-data/d' out/Default/mksnapshot_args
+        # When mksnapshot is built in a secondary toolchain (macOS release
+        # builds, see //electron/build/toolchain/mac), gn desc emits its path
+        # as ./clang_<arch>_snapshot/mksnapshot, but electron_mksnapshot_zip
+        # flattens the zip so the binary lives at the root. Point the args at
+        # the flattened location so @electron/mksnapshot can spawn it.
+        sed $SEDOPTION 's|^\./clang_[a-z0-9_]*_snapshot/mksnapshot|./mksnapshot|' out/Default/mksnapshot_args
 
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
