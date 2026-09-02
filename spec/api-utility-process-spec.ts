@@ -13,7 +13,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
+import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
@@ -535,6 +535,9 @@ describe('utilityProcess module', () => {
         stdio: 'pipe',
         execArgv: ['--inspect-brk']
       });
+      // If the expected output never arrives the test fails on mocha's timeout
+      // without reaching kill(); let the global afterEach reap the child then.
+      deferKillUtilityProcess(child);
       await outputUntil(child, /Debugger listening on ws:/m);
     });
 
@@ -543,6 +546,9 @@ describe('utilityProcess module', () => {
         stdio: 'pipe',
         execArgv: ['--inspect=17364']
       });
+      // If the expected output never arrives the test fails on mocha's timeout
+      // without reaching kill(); let the global afterEach reap the child then.
+      deferKillUtilityProcess(child);
       const output = await outputUntil(child, /Debugger listening on ws:/m);
       expect(output).to.contain(':17364', 'should be listening on port 17364');
     });
@@ -552,6 +558,9 @@ describe('utilityProcess module', () => {
         stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
+      // If the expected output never arrives the test fails on mocha's timeout
+      // without reaching kill(); let the global afterEach reap the child then.
+      deferKillUtilityProcess(child);
 
       // The fixture prints dns.getDefaultResultOrder() to stdout and exits on
       // its own, so wait for that rather than asserting on whichever pipe
