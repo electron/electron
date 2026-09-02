@@ -446,13 +446,28 @@ async function installSpecModules(dir) {
   // built them against (the system Node.js headers in CI). N-API addons are
   // ABI-stable, so that is fine for them, but addons using Node's C++ module
   // API embed NODE_MODULE_VERSION and fail to load in Electron unless they are
-  // compiled against the headers configured above, so rebuild those.
+  // compiled against the headers configured above. Such fixtures opt in with
+  // "electron:requiresElectronHeaders": true in their package.json and get
+  // rebuilt here.
   const nodeGyp = path.resolve(__dirname, '..', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
   const nativeAddonsDir = path.resolve(dir, 'fixtures', 'native-addon');
   const rebuildEnv = { ...env, ...getNativeAddonToolchainEnv() };
+  // CI pins NPM_CONFIG_MSVS_VERSION=2022 for the spec install, but the Windows
+  // test runners only ship a newer Visual Studio; let node-gyp detect the
+  // installed one, as the root install that built the fixtures did.
+  for (const key of Object.keys(rebuildEnv)) {
+    if (key.toLowerCase() === 'npm_config_msvs_version') {
+      delete rebuildEnv[key];
+    }
+  }
   for (const addon of fs.readdirSync(nativeAddonsDir)) {
     const addonDir = path.join(nativeAddonsDir, addon);
-    if (!fs.existsSync(path.join(addonDir, 'binding.gyp')) || !usesNodeModuleApi(addonDir)) {
+    const packageJsonPath = path.join(addonDir, 'package.json');
+    if (!fs.existsSync(packageJsonPath)) {
+      continue;
+    }
+    const addonPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    if (!addonPackage['electron:requiresElectronHeaders']) {
       continue;
     }
     console.log(`Rebuilding native addon '${addon}' against Electron's node headers`);
@@ -466,29 +481,6 @@ async function installSpecModules(dir) {
       process.exit(1);
     }
   }
-}
-
-const NATIVE_SOURCE_EXTENSIONS = new Set(['.c', '.cc', '.cpp', '.cxx', '.h', '.hpp', '.m', '.mm']);
-
-// Whether an addon registers itself through Node's C++ module API
-// (NODE_MODULE / NODE_MODULE_INIT) rather than N-API (NAPI_MODULE). Only those
-// embed NODE_MODULE_VERSION and depend on Electron's node headers.
-function usesNodeModuleApi(addonDir) {
-  const walk = (current) => {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      if (entry.name === 'node_modules' || entry.name === 'build') continue;
-      const entryPath = path.join(current, entry.name);
-      if (entry.isDirectory()) {
-        if (walk(entryPath)) return true;
-      } else if (NATIVE_SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
-        if (/\bNODE_MODULE(?:_INIT|_CONTEXT_AWARE)?\s*\(/.test(fs.readFileSync(entryPath, 'utf8'))) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-  return walk(addonDir);
 }
 
 // Electron's V8 headers do not compile with GCC <= 12 (attribute ordering on
