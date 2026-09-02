@@ -4,6 +4,7 @@ import { AssertionError } from 'chai';
 import { SuiteFunction, TestFunction } from 'mocha';
 
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import * as https from 'node:https';
@@ -46,6 +47,16 @@ export async function runCleanupFunctions() {
 
 export function defer(f: CleanupFunction) {
   cleanupFunctions.unshift(f);
+}
+
+export function deferKillUtilityProcess(utilityProcess: Electron.UtilityProcess) {
+  defer(async () => {
+    if (utilityProcess.pid) {
+      const exit = once(utilityProcess, 'exit');
+      utilityProcess.kill();
+      await exit;
+    }
+  });
 }
 
 class RemoteControlApp {
