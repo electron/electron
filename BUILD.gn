@@ -1415,6 +1415,7 @@ if (is_mac) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
+
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
     }
@@ -1505,6 +1506,7 @@ if (is_mac) {
       public_deps = [ ":electron_app_lproj_dirs" ]
     }
   }
+
   group("electron_app_strings_bundle_data") {
     public_deps = []
     foreach(locale, locales_as_apple_outputs) {
@@ -1572,6 +1574,7 @@ if (is_mac) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
+
       extract_symbols("electron_helper_syms_${_helper_target}") {
         binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
         symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1837,6 +1840,7 @@ copy("electron_license") {
   sources = [ "LICENSE" ]
   outputs = [ "$root_build_dir/{{source_file_part}}" ]
 }
+
 copy("chromium_licenses") {
   deps = [ "//components/resources:about_credits" ]
   sources = [ "$root_gen_dir/components/resources/about_credits.html" ]

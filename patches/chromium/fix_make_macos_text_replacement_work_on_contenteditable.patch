@@ -11,7 +11,7 @@ is currently bugged on these elements. This patch fixes that.
 2. Space now adds a space after accepting the replacement.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index ed4c62b6462684a79de8b69823f52ed7af46be53..00801636121a216052c29e521ae5bc6df31a500e 100644
+index 5b7b98e8b4f02c201098f605e63647c06912e3bc..1851c03b04b92a4396b667ad0ca3c9e8855fdcf1 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -566,6 +566,13 @@ - (void)didAcceptReplacementString:(NSString*)acceptedString
