@@ -202,7 +202,8 @@ int NodeMain() {
         node::ProcessInitializationFlags::kNoInitializeV8 |
         node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
-    if (command_line->HasSwitch(switches::kNoStdioInit)) {
+    if (command_line->HasSwitch(switches::kNoStdioInit) ||
+        !fuses::IsNodeStdioInitializationEnabled()) {
       process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
       // remove the option to avoid node error "bad option: --no-stdio-init"
       std::string option = std::string("--") + switches::kNoStdioInit;
