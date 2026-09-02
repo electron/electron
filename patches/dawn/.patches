@@ -1,2 +1,3 @@
 tint_msl_add_switchreturn_ir_transform.patch
 tint_minor_fixup_to_switchreturn_transform.patch
+cherry-pick-77bdd06ada8f.patch
