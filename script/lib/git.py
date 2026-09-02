@@ -224,6 +224,9 @@ def format_patch(repo, since):
     # 'index' line of patches, so pass --full-index to get consistent
     # behaviour.
     '--full-index',
+
+    # Never export gitlink changes, e.g. sub-repos moved by `e sync` in src.
+    '--ignore-submodules=all',
     since
   ]
   return subprocess.check_output(args).decode('utf-8')
