@@ -22,30 +22,31 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronDebugger,                        // electron::api::Debugger
   kElectronDownloadItem,                    // electron::api::DownloadItem
   kElectronEvent,                           // gin_helper::internal::Event
-  kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
-  kElectronExtensions,                      // electron::api::Extensions
-  kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
-  kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
-  kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
-  kElectronMenu,                            // electron::api::Menu
-  kElectronNativeImage,                     // electron::api::NativeImage
-  kElectronNetLog,                          // electron::api::NetLog
-  kElectronParentPort,                      // electron::ParentPort
-  kElectronPowerMonitor,                    // electron::api::PowerMonitor
-  kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
-  kElectronProtocol,                        // electron::api::Protocol
-  kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
-  kElectronScreen,                  // electron::api::Screen
-  kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
-  kElectronServiceWorkerMain,       // electron::api::ServiceWorkerMain
-  kElectronSession,                 // electron::api::Session
-  kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
-  kElectronTray,                    // electron::api::Tray
-  kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
-  kElectronWebFrameMain,            // electron::api::WebFrameMain
-  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
-  kElectronWebRequest,              // electron::api::WebRequest
-  kElectronWebSocket,               // electron::api::WebSocketWrapper
+  kElectronFetchResponseBodyReader,  // electron::api::FetchResponseBodyReader
+  kElectronGlobalShortcut,           // electron::api::GlobalShortcut
+  kElectronExtensions,               // electron::api::Extensions
+  kElectronIPCRenderFrame,           // (anonymous) IPCRenderFrame
+  kElectronIPCServiceWorker,         // (anonymous) IPCServiceWorker
+  kElectronJSChunkedDataPipeGetter,  // JSChunkedDataPipeGetter
+  kElectronMenu,                     // electron::api::Menu
+  kElectronNativeImage,              // electron::api::NativeImage
+  kElectronNetLog,                   // electron::api::NetLog
+  kElectronParentPort,               // electron::ParentPort
+  kElectronPowerMonitor,             // electron::api::PowerMonitor
+  kElectronPowerSaveBlocker,         // electron::api::PowerSaveBlocker
+  kElectronProtocol,                 // electron::api::Protocol
+  kElectronReplyChannel,             // gin_helper::internal::ReplyChannel
+  kElectronScreen,                   // electron::api::Screen
+  kElectronServiceWorkerContext,     // electron::api::ServiceWorkerContext
+  kElectronServiceWorkerMain,        // electron::api::ServiceWorkerMain
+  kElectronSession,                  // electron::api::Session
+  kElectronSimpleURLLoaderWrapper,   // electron::api::SimpleURLLoaderWrapper
+  kElectronTray,                     // electron::api::Tray
+  kElectronUtilityProcess,           // electron::api::UtilityProcessWrapper
+  kElectronWebFrameMain,             // electron::api::WebFrameMain
+  kElectronWebFrameRenderer,         // (anonymous) WebFrameRenderer
+  kElectronWebRequest,               // electron::api::WebRequest
+  kElectronWebSocket,                // electron::api::WebSocketWrapper
   kLastElectronPointerTag = kElectronWebSocket,
 };
 

@@ -237,6 +237,7 @@ declare namespace NodeJS {
     mode?: string;
     destination?: string;
     bypassCustomProtocolHandlers?: boolean;
+    transferableResponse?: boolean;
     priority?: 'throttled' | 'idle' | 'lowest' | 'low' | 'medium' | 'highest';
     priorityIncremental?: boolean;
   };
@@ -258,9 +259,15 @@ declare namespace NodeJS {
     isSignedExchangeFallbackRedirect: boolean;
   };
 
+  interface FetchResponseBodyReader {
+    read(buffer: Uint8Array): Promise<number>;
+  }
+
   interface URLLoader extends EventEmitter {
     cancel(): void;
-    hold(): void;
+    canTransferResponse(): boolean;
+    createResponseBodyReader(): FetchResponseBodyReader;
+    releaseResponse(): void;
     on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(
       eventName: 'response-started',

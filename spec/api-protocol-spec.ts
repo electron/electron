@@ -1822,6 +1822,8 @@ describe('protocol module', () => {
       let server: http.Server;
       let base: string;
       let tmpDir: string;
+      let endlessResponse: http.ServerResponse | undefined;
+      let onEndlessClosed: (() => void) | undefined;
       before(async () => {
         server = http.createServer((req, res) => {
           if (req.url === '/big') {
@@ -1846,6 +1848,32 @@ describe('protocol module', () => {
           } else if (req.url === '/empty') {
             res.writeHead(204);
             res.end();
+          } else if (req.url === '/error') {
+            res.writeHead(200, { 'content-length': '100' });
+            res.write('partial');
+            setImmediate(() => res.destroy());
+          } else if (req.url === '/disconnect') {
+            req.socket.destroy();
+          } else if (req.url === '/redirect') {
+            res.writeHead(302, { location: '/small' });
+            res.end();
+          } else if (req.url === '/echo') {
+            const chunks: Buffer[] = [];
+            req.on('data', (chunk) => chunks.push(chunk));
+            req.on('end', () => res.end(Buffer.concat(chunks)));
+          } else if (req.url === '/sniffed') {
+            res.end(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+          } else if (req.url === '/endless') {
+            endlessResponse = res;
+            res.writeHead(200);
+            const timer = setInterval(() => res.write(big), 10);
+            res.once('close', () => {
+              clearInterval(timer);
+              endlessResponse = undefined;
+              const callback = onEndlessClosed;
+              onEndlessClosed = undefined;
+              callback?.();
+            });
           } else {
             res.writeHead(200);
             res.end('small body');
@@ -1856,6 +1884,7 @@ describe('protocol module', () => {
         fs.writeFileSync(path.join(tmpDir, 'big.bin'), big);
       });
       after(() => {
+        endlessResponse?.destroy();
         server.close();
         fs.rmSync(tmpDir, { recursive: true, force: true });
       });
@@ -1925,6 +1954,50 @@ describe('protocol module', () => {
         expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
       });
 
+      it('transfers a response that completed while the handler was pending', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/small', { bypassCustomProtocolHandlers: true });
+          await setTimeout(50);
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/delayed');
+        expect(await r.text()).to.equal('small body');
+      });
+
+      it('transfers a response after the inner fetch follows a redirect', async () => {
+        proxy(() => base + '/redirect');
+        const r = await net.fetch('test-scheme://host/redirect');
+        expect(await r.text()).to.equal('small body');
+      });
+
+      it('follows a redirect returned through the transferred response', async () => {
+        protocol.handle('test-scheme', (req) => {
+          const pathname = new URL(req.url).pathname;
+          return net.fetch(base + pathname, {
+            bypassCustomProtocolHandlers: true,
+            redirect: pathname === '/redirect' ? 'manual' : 'follow'
+          });
+        });
+        const r = await net.fetch('test-scheme://host/redirect');
+        expect(await r.text()).to.equal('small body');
+      });
+
+      it('transfers a response after uploading a request body', async () => {
+        protocol.handle('test-scheme', (req) =>
+          net.fetch(base + '/echo', {
+            bypassCustomProtocolHandlers: true,
+            method: req.method,
+            body: req.body,
+            duplex: 'half'
+          } as RequestInit)
+        );
+        const r = await net.fetch('test-scheme://host/echo', {
+          method: 'POST',
+          body: 'uploaded body'
+        });
+        expect(await r.text()).to.equal('uploaded body');
+      });
+
       it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {
         protocol.handle('test-scheme', async (req) => {
           const which = new URL(req.url).pathname;
@@ -1943,6 +2016,81 @@ describe('protocol module', () => {
         }
       });
 
+      it('commits to JS streaming after the handler reads part of the body', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/big', { bypassCustomProtocolHandlers: true });
+          const reader = r.body!.getReader();
+          const first = await reader.read();
+          expect(first.done).to.be.false();
+          reader.releaseLock();
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/partial');
+        const remainder = Buffer.from(await r.arrayBuffer());
+        expect(remainder.length).to.be.lessThan(big.length);
+        expect(remainder.equals(big.subarray(big.length - remainder.length))).to.be.true();
+      });
+
+      it('preserves an upstream failure after response headers', async () => {
+        proxy((u) => base + u.pathname);
+        const r = await net.fetch('test-scheme://host/error');
+        await expect(r.text()).to.eventually.be.rejected();
+      });
+
+      it('rejects when the upstream disconnects before response headers', async () => {
+        proxy(() => base + '/disconnect');
+        await expect(net.fetch('test-scheme://host/disconnect')).to.eventually.be.rejected();
+      });
+
+      it('keeps the sniffed MIME type after cloning the response', async () => {
+        protocol.handle('test-scheme', async () => {
+          const r = await net.fetch(base + '/sniffed', { bypassCustomProtocolHandlers: true });
+          r.clone();
+          return r;
+        });
+        const r = await net.fetch('test-scheme://host/sniffed');
+        expect(r.headers.get('content-type')).to.equal('image/png');
+      });
+
+      it('cancels an unread response after it becomes unreachable', async () => {
+        proxy((u) => base + u.pathname);
+        const closed = new Promise<void>((resolve) => {
+          onEndlessClosed = resolve;
+        });
+        await (async () => {
+          await net.fetch('test-scheme://host/endless');
+        })();
+
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        for (let i = 0; i < 5; ++i) {
+          v8Util.requestGarbageCollectionForTesting();
+          await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+        }
+        await Promise.race([
+          closed,
+          setTimeout(5000).then(() => {
+            throw new Error('unread response was not cancelled');
+          })
+        ]);
+      });
+
+      it('keeps the inner fetch abort signal connected after transfer', async () => {
+        let abort!: () => void;
+        protocol.handle('test-scheme', () => {
+          const controller = new AbortController();
+          abort = () => controller.abort();
+          return net.fetch(base + '/endless', {
+            bypassCustomProtocolHandlers: true,
+            signal: controller.signal
+          });
+        });
+        const r = await net.fetch('test-scheme://host/endless');
+        const reader = r.body!.getReader();
+        await reader.read();
+        abort();
+        await expect(reader.read()).to.eventually.be.rejected();
+      });
+
       it('lets the client abort mid-body', async () => {
         proxy((u) => base + u.pathname);
         const controller = new AbortController();
@@ -1950,7 +2098,12 @@ describe('protocol module', () => {
         const reader = r.body!.getReader();
         await reader.read();
         controller.abort();
-        await expect(reader.read()).to.eventually.be.rejected();
+        const error = await reader.read().then(
+          () => undefined,
+          (error) => error
+        );
+        expect(error).to.be.an.instanceOf(DOMException);
+        expect(error.name).to.equal('AbortError');
         const again = await net.fetch('test-scheme://host/small');
         expect(await again.text()).to.equal('small body');
       });

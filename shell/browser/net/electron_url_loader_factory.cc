@@ -12,6 +12,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/self_deleting.h"
+#include "base/memory/weak_ptr.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
@@ -54,6 +55,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/net/transferable_url_loader.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 #include "url/url_util.h"
@@ -204,6 +206,133 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
   }
   write_data->client->OnComplete(status);
 }
+
+// Proxies both URLLoader endpoints after the original body pipe has been handed
+// to a protocol request. fetch_* belongs to the net.fetch transaction;
+// protocol_* belongs to the request consuming the protocol handler's response.
+class TransferredURLLoader final : public network::mojom::URLLoader,
+                                   public network::mojom::URLLoaderClient {
+ public:
+  TransferredURLLoader(
+      mojo::PendingRemote<network::mojom::URLLoader> fetch_url_loader,
+      mojo::PendingReceiver<network::mojom::URLLoaderClient>
+          fetch_url_loader_client,
+      mojo::PendingReceiver<network::mojom::URLLoader> protocol_url_loader,
+      mojo::PendingRemote<network::mojom::URLLoaderClient>
+          protocol_url_loader_client,
+      base::OnceClosure local_protocol_cancel_callback)
+      : fetch_url_loader_(std::move(fetch_url_loader)),
+        fetch_url_loader_client_receiver_(this,
+                                          std::move(fetch_url_loader_client)),
+        protocol_url_loader_receiver_(this, std::move(protocol_url_loader)),
+        protocol_url_loader_client_(std::move(protocol_url_loader_client)),
+        local_protocol_cancel_callback_(
+            std::move(local_protocol_cancel_callback)) {
+    fetch_url_loader_client_receiver_.set_disconnect_handler(base::BindOnce(
+        &TransferredURLLoader::OnFetchURLLoaderClientDisconnected,
+        base::Unretained(this)));
+    auto delete_self = [](TransferredURLLoader* self) { delete self; };
+    protocol_url_loader_receiver_.set_disconnect_handler(
+        base::BindOnce(delete_self, base::Unretained(this)));
+    protocol_url_loader_client_.set_disconnect_handler(
+        base::BindOnce(delete_self, base::Unretained(this)));
+  }
+
+  TransferredURLLoader(const TransferredURLLoader&) = delete;
+  TransferredURLLoader& operator=(const TransferredURLLoader&) = delete;
+
+  base::OnceClosure GetCancelCallback() {
+    return base::BindOnce(&TransferredURLLoader::Cancel,
+                          weak_factory_.GetWeakPtr());
+  }
+
+  void StartResponse(network::mojom::URLResponseHeadPtr head,
+                     mojo::ScopedDataPipeConsumerHandle body,
+                     std::optional<mojo_base::BigBuffer> cached_metadata,
+                     base::span<const int32_t> transfer_size_updates,
+                     const std::optional<network::URLLoaderCompletionStatus>&
+                         completion_status) {
+    protocol_url_loader_client_->OnReceiveResponse(
+        std::move(head), std::move(body), std::move(cached_metadata));
+    for (int32_t transfer_size_diff : transfer_size_updates)
+      protocol_url_loader_client_->OnTransferSizeUpdated(transfer_size_diff);
+    if (completion_status)
+      OnComplete(*completion_status);
+  }
+
+  // network::mojom::URLLoader:
+  void FollowRedirect(
+      network::HttpRequestHeadersUpdateParams headers_update_params,
+      const std::optional<GURL>& new_url) override {
+    fetch_url_loader_->FollowRedirect(std::move(headers_update_params),
+                                      new_url);
+  }
+
+  void SetPriority(net::RequestPriority priority,
+                   int32_t intra_priority_value) override {
+    fetch_url_loader_->SetPriority(priority, intra_priority_value);
+  }
+
+  // network::mojom::URLLoaderClient:
+  void OnReceiveEarlyHints(network::mojom::EarlyHintsPtr early_hints) override {
+    protocol_url_loader_client_->OnReceiveEarlyHints(std::move(early_hints));
+  }
+
+  void OnReceiveResponse(
+      network::mojom::URLResponseHeadPtr head,
+      mojo::ScopedDataPipeConsumerHandle body,
+      std::optional<mojo_base::BigBuffer> cached_metadata) override {
+    protocol_url_loader_client_->OnReceiveResponse(
+        std::move(head), std::move(body), std::move(cached_metadata));
+  }
+
+  void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
+                         network::mojom::URLResponseHeadPtr head) override {
+    protocol_url_loader_client_->OnReceiveRedirect(redirect_info,
+                                                   std::move(head));
+  }
+
+  void OnUploadProgress(int64_t current_position,
+                        int64_t total_size,
+                        OnUploadProgressCallback callback) override {
+    protocol_url_loader_client_->OnUploadProgress(current_position, total_size,
+                                                  std::move(callback));
+  }
+
+  void OnTransferSizeUpdated(int32_t transfer_size_diff) override {
+    protocol_url_loader_client_->OnTransferSizeUpdated(transfer_size_diff);
+  }
+
+  void OnComplete(const network::URLLoaderCompletionStatus& status) override {
+    protocol_url_loader_client_->OnComplete(status);
+    delete this;
+  }
+
+ private:
+  ~TransferredURLLoader() override = default;
+
+  void OnFetchURLLoaderClientDisconnected() {
+    protocol_url_loader_client_->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    delete this;
+  }
+
+  void Cancel() {
+    if (local_protocol_cancel_callback_)
+      std::move(local_protocol_cancel_callback_).Run();
+    protocol_url_loader_client_->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_ABORTED));
+    delete this;
+  }
+
+  mojo::Remote<network::mojom::URLLoader> fetch_url_loader_;
+  mojo::Receiver<network::mojom::URLLoaderClient>
+      fetch_url_loader_client_receiver_;
+  mojo::Receiver<network::mojom::URLLoader> protocol_url_loader_receiver_;
+  mojo::Remote<network::mojom::URLLoaderClient> protocol_url_loader_client_;
+  base::OnceClosure local_protocol_cancel_callback_;
+  base::WeakPtrFactory<TransferredURLLoader> weak_factory_{this};
+};
 
 // Read data from URL and pipe it to NetworkService.
 //
@@ -718,17 +847,13 @@ void ElectronURLLoaderFactory::StartLoading(
       else
         data = response;
 
-      // |data| can be either a string, a buffer or a stream; |loader| relays
+      // |data| can be either a string, a buffer or a stream; |loader| transfers
       // an untouched net.fetch response's body without going through JS.
       api::SimpleURLLoaderWrapper* fetch_loader = nullptr;
       if (!dict.IsEmpty() && dict.Get("loader", &fetch_loader) &&
           fetch_loader) {
-        std::string prefix;
-        if (data->IsArrayBufferView()) {
-          prefix.assign(node::Buffer::Data(data), node::Buffer::Length(data));
-        }
-        StartLoadingRelay(std::move(client), std::move(loader), std::move(head),
-                          fetch_loader, std::move(prefix));
+        StartLoadingRelay(std::move(client), std::move(loader), request_id,
+                          std::move(head), fetch_loader);
       } else if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
@@ -854,32 +979,28 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
 void ElectronURLLoaderFactory::StartLoadingRelay(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    int32_t request_id,
     network::mojom::URLResponseHeadPtr head,
-    api::SimpleURLLoaderWrapper* fetch_loader,
-    std::string prefix) {
-  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-      std::move(client));
-  // Grow the pipe for a body the upstream declared large; never below mojo's
-  // 64 KB default, since the declared length may describe an encoded body.
-  constexpr int64_t kMojoDefaultPipeSize = 64 * 1024;
-  const int64_t length = fetch_loader->content_length();
-  const uint32_t pipe_size =
-      length > kMojoDefaultPipeSize
-          ? base::saturated_cast<uint32_t>(std::min<int64_t>(
-                length, network::GetDataPipeDefaultAllocationSize()))
-          : 0;
-  mojo::ScopedDataPipeProducerHandle producer;
-  mojo::ScopedDataPipeConsumerHandle consumer;
-  if (mojo::CreateDataPipe(pipe_size, producer, consumer) != MOJO_RESULT_OK) {
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
-    fetch_loader->Cancel();
+    api::SimpleURLLoaderWrapper* fetch_loader) {
+  auto local_protocol_cancel_callback =
+      TransferableURLLoader::TakeLocalCancelCallback(request_id);
+  auto response = fetch_loader->TakeResponse();
+  if (!response) {
+    mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
+        ->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));
     return;
   }
-  client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
-                                   std::nullopt);
-  fetch_loader->RelayTo(client_remote.Unbind(), std::move(loader),
-                        std::move(producer), std::move(prefix));
+
+  auto* transferred_loader = new TransferredURLLoader(
+      std::move(response->endpoints->url_loader),
+      std::move(response->endpoints->url_loader_client), std::move(loader),
+      std::move(client), std::move(local_protocol_cancel_callback));
+  fetch_loader->SetTransferredCancelCallback(
+      transferred_loader->GetCancelCallback());
+  transferred_loader->StartResponse(std::move(head), std::move(response->body),
+                                    std::move(response->cached_metadata),
+                                    response->transfer_size_updates,
+                                    response->completion_status);
 }
 
 // static

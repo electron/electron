@@ -2,7 +2,32 @@ import { allowAnyProtocol } from '@electron/internal/common/api/net-client-reque
 
 import { ClientRequestConstructorOptions, ClientRequest, IncomingMessage, Session as SessionT } from 'electron/main';
 
-import { Readable, Writable, isReadable } from 'stream';
+import { Writable, isReadable } from 'stream';
+
+type TransferableFetchResponse = {
+  body: ReadableStream;
+  loader: {
+    canTransferResponse: () => boolean;
+  };
+  mimeType?: string;
+};
+
+export type FetchResponseInfo = Omit<TransferableFetchResponse, 'body'> & {
+  canTransfer: boolean;
+};
+
+const transferableResponses = new WeakMap<Response, TransferableFetchResponse>();
+
+export function getFetchResponseInfo(res: Response): FetchResponseInfo | undefined {
+  const response = transferableResponses.get(res);
+  if (!response) return;
+  return {
+    loader: response.loader,
+    mimeType: response.mimeType,
+    canTransfer:
+      res.body === response.body && !res.bodyUsed && !res.body.locked && response.loader.canTransferResponse()
+  };
+}
 
 function createDeferredPromise<T, E extends Error = Error>(): {
   promise: Promise<T>;
@@ -55,6 +80,7 @@ export function fetchWithSession(
   }
 
   let locallyAborted = false;
+  let responseBodyController: ReadableStreamDefaultController<Uint8Array> | undefined;
   req.signal.addEventListener(
     'abort',
     () => {
@@ -75,6 +101,8 @@ export function fetchWithSession(
         });
       }
 
+      responseBodyController?.error(error);
+      responseBodyController = undefined;
       r.abort();
     },
     { once: true }
@@ -98,6 +126,7 @@ export function fetchWithSession(
   );
 
   (r as any)._urlLoaderOptions.bypassCustomProtocolHandlers = !!init?.bypassCustomProtocolHandlers;
+  (r as any)._urlLoaderOptions.transferableResponse = true;
 
   // cors is the default mode, but we can't set mode=cors without an origin.
   if (req.mode && (req.mode !== 'cors' || origin)) {
@@ -108,6 +137,21 @@ export function fetchWithSession(
     r.setHeader(k, v);
   }
 
+  r.on('redirect', (statusCode, _method, _newUrl, redirectHeaders) => {
+    if (req.redirect !== 'manual') return;
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(redirectHeaders)) {
+      headers.set(k, Array.isArray(v) ? v.join(', ') : v);
+    }
+    p.resolve(
+      new Response(null, {
+        headers,
+        status: statusCode
+      })
+    );
+    r.abort();
+  });
+
   r.on('response', (resp: IncomingMessage) => {
     if (locallyAborted) return;
     const headers = new Headers();
@@ -115,19 +159,47 @@ export function fetchWithSession(
       headers.set(k, Array.isArray(v) ? v.join(', ') : v);
     }
     const nullBodyStatus = [101, 204, 205, 304];
-    const body =
-      nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD'
-        ? null
-        : (Readable.toWeb(resp as unknown as Readable) as ReadableStream);
+    const loader = (r as any)._urlLoader;
+    const hasBody = !nullBodyStatus.includes(resp.statusCode) && req.method !== 'HEAD';
+    const bodyReader = hasBody ? loader.createResponseBodyReader() : null;
+    const body = hasBody
+      ? new ReadableStream<Uint8Array>(
+          {
+            start(controller) {
+              responseBodyController = controller;
+            },
+            async pull(controller) {
+              const buffer = new Uint8Array(64 * 1024);
+              const bytesRead = await bodyReader.read(buffer);
+              if (bytesRead === 0) {
+                responseBodyController = undefined;
+                controller.close();
+              } else {
+                controller.enqueue(buffer.slice(0, bytesRead));
+              }
+            },
+            cancel() {
+              responseBodyController = undefined;
+              r.abort();
+            }
+          },
+          { highWaterMark: 0 }
+        )
+      : null;
     const rResp = new Response(body, {
       headers,
       status: resp.statusCode,
       statusText: resp.statusMessage
     });
-    (rResp as any).__original_resp = resp;
-    // protocol.handle relays a Response that comes back untouched without
-    // pumping its body through JS; it needs the loader and the exact stream.
-    if (body) (rResp as any).__fetch = { request: r, body: rResp.body };
+    if (rResp.body) {
+      transferableResponses.set(rResp, {
+        body: rResp.body,
+        loader,
+        mimeType: (resp as any)._responseHead?.mimeType
+      });
+    } else {
+      loader.releaseResponse();
+    }
     p.resolve(rResp);
   });
 
