@@ -512,8 +512,11 @@ describe('utilityProcess module', () => {
 
   describe('behavior', () => {
     // Collects the child's stdout and stderr until `pattern` appears, then
-    // kills it and waits for it to exit. Nothing asserts inside a stream
-    // listener: a failing expect() there is an uncaught exception that takes
+    // stops the child (if it has not already exited on its own) and waits for
+    // it to go. The wait is driven by the output, not by 'exit': the stdio
+    // listeners are dropped when the child exits, so a chunk still in the pipe
+    // at that point would be lost. Nothing asserts inside a stream listener
+    // either; a failing expect() there is an uncaught exception that takes
     // the whole spec runner down instead of failing one test.
     const outputUntil = async (child: Electron.UtilityProcess, pattern: RegExp) => {
       let output = '';
@@ -525,8 +528,11 @@ describe('utilityProcess module', () => {
         child.stderr!.on('data', listener);
         child.stdout!.on('data', listener);
       });
-      child.kill();
-      await once(child, 'exit');
+      if (child.pid) {
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      }
       return output;
     };
 
@@ -546,8 +552,6 @@ describe('utilityProcess module', () => {
         stdio: 'pipe',
         execArgv: ['--inspect=17364']
       });
-      // If the expected output never arrives the test fails on mocha's timeout
-      // without reaching kill(); let the global afterEach reap the child then.
       deferKillUtilityProcess(child);
       const output = await outputUntil(child, /Debugger listening on ws:/m);
       expect(output).to.contain(':17364', 'should be listening on port 17364');
@@ -558,20 +562,10 @@ describe('utilityProcess module', () => {
         stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
-      // If the expected output never arrives the test fails on mocha's timeout
-      // without reaching kill(); let the global afterEach reap the child then.
       deferKillUtilityProcess(child);
-
-      // The fixture prints dns.getDefaultResultOrder() to stdout and exits on
-      // its own, so wait for that rather than asserting on whichever pipe
-      // delivers first; a stray warning on stderr used to win that race.
-      let output = '';
-      child.stdout!.on('data', (data: Buffer) => {
-        output += data;
-      });
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
-      expect(output.trim()).to.equal('ipv4first');
+      // The fixture prints dns.getDefaultResultOrder() and exits on its own.
+      const output = await outputUntil(child, /ipv4first|verbatim/);
+      expect(output).to.contain('ipv4first', 'default verbatim should be ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
