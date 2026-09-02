@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 26 May 2026 19:01:02 -0700
+Subject: [M149] OpenGL: Fix copy offsets for cubemaps
+
+Original change's description:
+> OpenGL: Fix copy offsets for cubemaps
+>
+> Ensures that copies to and from cubemaps take the source and dest
+> z origin into account when performing the copy.
+>
+> Bug: 513249847
+> Fixes: 513249847
+> Change-Id: Ie6772184dfec4d9ed7ec7b23afb814670ebb47fd
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/308838
+> Reviewed-by: Stephen White <senorblanco@chromium.org>
+> Commit-Queue: Brandon Jones <bajones@chromium.org>
+
+(cherry picked from commit edd70be7add4999d00965d16f6a7ca173334fff3)
+
+Bug: 514928480,513249847
+Change-Id: Ie6772184dfec4d9ed7ec7b23afb814670ebb47fd
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311335
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/native/opengl/UtilsGL.cpp b/src/dawn/native/opengl/UtilsGL.cpp
+index 42a161c46cad0286f2b1f59f210e5439ca989e36..32eccdc28f553ddf160348d2335e0f34a77ce9b5 100644
+--- a/src/dawn/native/opengl/UtilsGL.cpp
++++ b/src/dawn/native/opengl/UtilsGL.cpp
+@@ -140,6 +140,10 @@ MaybeError CopyImageSubData(const OpenGLFunctions& gl,
+             if (srcTarget == GL_TEXTURE_2D) {
+                 DAWN_GL_TRY(gl, FramebufferTexture2D(GL_READ_FRAMEBUFFER, glAttachment, srcTarget,
+                                                      srcHandle, srcLevel));
++            } else if (srcTarget == GL_TEXTURE_CUBE_MAP) {
++                GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + src.z + layer;
++                DAWN_GL_TRY(gl, FramebufferTexture2D(GL_READ_FRAMEBUFFER, glAttachment, target,
++                                                     srcHandle, srcLevel));
+             } else {
+                 DAWN_GL_TRY(gl, FramebufferTextureLayer(GL_READ_FRAMEBUFFER, glAttachment,
+                                                         srcHandle, srcLevel, src.z + layer));
+@@ -148,7 +152,7 @@ MaybeError CopyImageSubData(const OpenGLFunctions& gl,
+                 DAWN_GL_TRY(gl, FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, glAttachment, dstTarget,
+                                                      dstHandle, dstLevel));
+             } else if (dstTarget == GL_TEXTURE_CUBE_MAP) {
+-                GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + layer;
++                GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + dst.z + layer;
+                 DAWN_GL_TRY(gl, FramebufferTexture2D(GL_DRAW_FRAMEBUFFER, glAttachment, target,
+                                                      dstHandle, dstLevel));
+             } else {

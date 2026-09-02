@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 17 Apr 2026 18:03:58 -0400
+Subject: GL: Mark StateManagerGL internal buffer state dirty on bind
+
+When changing state, StateManagerGL would set local dirty bits which
+would be synchronized on the next syncState by ORing them with the
+frontend dirty bits. This was not done for internal buffer binding
+changes and allowed for incorrect pixel buffers to be bound on
+ReadPixels or TexImage calls.
+
+Fixed: chromium:498904293
+Fixed: chromium:503768143
+Change-Id: I42f5acfdb709f327205f0f8cc04c3f11f1bd2b79
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7774027
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index 2d25bb886d3e63378cc067506aa38d55bb2eb971..31aa2aff1fd85c3b5c1ee1a1f6f09f6c0b6ddf8b 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -482,6 +482,7 @@ void StateManagerGL::bindBuffer(gl::BufferBinding target, GLuint buffer)
+     {
+         mBuffers[target] = buffer;
+         mFunctions->bindBuffer(gl::ToGLenum(target), buffer);
++        setBufferBindingDirty(target);
+     }
+ }
+ 
+@@ -500,6 +501,7 @@ void StateManagerGL::bindBufferBase(gl::BufferBinding target, size_t index, GLui
+         binding.size     = static_cast<size_t>(-1);
+         mBuffers[target] = buffer;
+         mFunctions->bindBufferBase(gl::ToGLenum(target), static_cast<GLuint>(index), buffer);
++        setBufferBindingDirty(target);
+     }
+ }
+ 
+@@ -2998,6 +3000,56 @@ void StateManagerGL::validateState() const
+                         "GL_VERTEX_ARRAY_BINDING");
+ }
+ 
++void StateManagerGL::setBufferBindingDirty(gl::BufferBinding binding)
++{
++    switch (binding)
++    {
++        case gl::BufferBinding::Array:
++            // Nothing to do. Array buffer bindings are set before vertex attrib calls.
++            break;
++        case gl::BufferBinding::AtomicCounter:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_ATOMIC_COUNTER_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::CopyRead:
++            // Nothing to do. CopyRead does not affect any operations.
++            break;
++        case gl::BufferBinding::CopyWrite:
++            // Nothing to do. CopyWrite does not affect any operations.
++            break;
++        case gl::BufferBinding::DispatchIndirect:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_DISPATCH_INDIRECT_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::DrawIndirect:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_DRAW_INDIRECT_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::ElementArray:
++            // Managed by the VAO
++            break;
++        case gl::BufferBinding::PixelPack:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_PACK_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::PixelUnpack:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_UNPACK_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::ShaderStorage:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_SHADER_STORAGE_BUFFER_BINDING);
++            break;
++        case gl::BufferBinding::Texture:
++            // Not implemented in the GL backend
++            UNREACHABLE();
++            break;
++        case gl::BufferBinding::TransformFeedback:
++            // Transform feedback buffer bindings are tracked in TransformFeedbackGL
++            UNREACHABLE();
++            break;
++        case gl::BufferBinding::Uniform:
++            mLocalDirtyBits.set(gl::state::DIRTY_BIT_UNIFORM_BUFFER_BINDINGS);
++            break;
++        default:
++            UNREACHABLE();
++    }
++}
++
+ template <>
+ void StateManagerGL::get(GLenum name, GLboolean *value)
+ {
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index d17590ea651d0b9a5b6a5081473f05ae871d05fe..cc1bf28371ff887e32fc67a8de8adb2e2639ab33 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -368,6 +368,8 @@ class StateManagerGL final : angle::NonCopyable
+     void updateDispatchIndirectBufferBinding(const gl::Context *context);
+     void updateDrawIndirectBufferBinding(const gl::Context *context);
+ 
++    void setBufferBindingDirty(gl::BufferBinding binding);
++
+     template <typename T>
+     void get(GLenum name, T *value);
+ 

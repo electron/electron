@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 15 Apr 2026 14:40:20 -0400
+Subject: D3D11: Use uint64_t for buffer storage LRU count
+
+The 32-bit counter has a chance of wrapping around with intentional
+churn of the cache. Increase this to 64 bits which should be an
+infeasible number of allocations.
+
+Fixed: chromium:497574371
+Change-Id: If8e50445515fe1a0231ca4c57644614a49e811c1
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7765257
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Buffer11.h b/src/libANGLE/renderer/d3d/d3d11/Buffer11.h
+index 620f96fa32902cecca7577025ac4cb5d5640e467..4055a4267f0cc513b67be704a12e06cd94495b7b 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Buffer11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/Buffer11.h
+@@ -152,7 +152,7 @@ class Buffer11 : public BufferD3D
+         BufferCacheEntry() : storage(nullptr), lruCount(0) {}
+ 
+         BufferStorage *storage;
+-        unsigned int lruCount;
++        uint64_t lruCount;
+     };
+ 
+     struct StructuredBufferKey

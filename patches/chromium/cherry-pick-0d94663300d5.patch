@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 22 Jun 2026 16:35:14 -0700
+Subject: [M148] ozone/x11: Fix UAF inside X11Window::GetBoundsInPixels()
+
+Original change's description:
+> ozone/x11: Fix UAF inside X11Window::GetBoundsInPixels()
+>
+> When GetBoundsInPixels() triggers synchronous nested message loops
+> within GeometryCache, the calling X11Window instance can be
+> synchronously destroyed. Subsequent operations in X11Window continue
+> executing on the freed this context, leading to potential memory
+> corruption in the browser process.
+>
+> This CL resolves the issue by:
+> 1. Making weak_ptr_factory_ mutable in X11Window.
+> 2. Guarding GetBoundsInPixels() calls in all critical X11Window methods
+>    using base::WeakPtrFactory to prevent executing subsequent code if
+>    this has been destroyed.
+> 3. Adding a regression/POC unit test verifying the safety of
+>    SetBoundsInPixels under re-entrancy deletion conditions.
+>
+> Fixed: 516653777
+> Change-Id: I812afc95f56e77770cda51ad783e206ba0f1b4c1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7875980
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Commit-Queue: Lei Zhang <thestig@chromium.org>
+> Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636605}
+
+(cherry picked from commit e3ce9901de36bda58a50b1c5005dc5100b8d0991)
+
+Fixed: 517405897
+Bug: 516653777
+Change-Id: I812afc95f56e77770cda51ad783e206ba0f1b4c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881125
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Owners-Override: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4408}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index 42a1e756d1b0b3405f0e63f03a8804f088fcdb89..2c5a7853b8c834d036a5d5fe266ee3f2c514d385 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -544,10 +544,16 @@ void X11Window::SetBoundsInPixels(const gfx::Rect& bounds) {
+   gfx::Rect new_bounds_in_pixels(bounds.origin(),
+                                  AdjustSizeForDisplay(bounds.size()));
+ 
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Rect current_bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
++
+   const bool size_changed =
+-      GetBoundsInPixels().size() != new_bounds_in_pixels.size();
++      current_bounds.size() != new_bounds_in_pixels.size();
+   const bool origin_changed =
+-      GetBoundsInPixels().origin() != new_bounds_in_pixels.origin();
++      current_bounds.origin() != new_bounds_in_pixels.origin();
+ 
+   // Assume that the resize will go through as requested, which should be the
+   // case if we're running without a window manager.  If there's a window
+@@ -605,6 +611,10 @@ void X11Window::SetBoundsInPixels(const gfx::Rect& bounds) {
+   platform_window_delegate_->OnBoundsChanged({origin_changed});
+ }
+ 
++// Note: geometry_cache_->GetBoundsPx() can dispatch pending X server events
++// synchronously, which can trigger window destruction and invalidate `this`.
++// Callers should retrieve a WeakPtr before calling GetBoundsInPixels() and
++// check its validity afterward if they access any member of `this`.
+ gfx::Rect X11Window::GetBoundsInPixels() const {
+   return bounds_wm_sync_ || !geometry_cache_ ? last_set_bounds_px_
+                                              : geometry_cache_->GetBoundsPx();
+@@ -616,7 +626,12 @@ void X11Window::SetBoundsInDIP(const gfx::Rect& bounds_in_dip) {
+ }
+ 
+ gfx::Rect X11Window::GetBoundsInDIP() const {
+-  return platform_window_delegate_->ConvertRectToDIP(GetBoundsInPixels());
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Rect bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return {};
++  }
++  return platform_window_delegate_->ConvertRectToDIP(bounds);
+ }
+ 
+ void X11Window::SetTitle(const std::u16string& title) {
+@@ -706,7 +721,11 @@ void X11Window::SetFullscreen(bool fullscreen, int64_t target_display_id) {
+   // - works around Flash content which expects to have the size updated
+   //   synchronously.
+   // See https://crbug.com/361408
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   gfx::Rect new_bounds_px = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
+   if (fullscreen) {
+     restored_bounds_in_pixels_ = new_bounds_px;
+     if (x11_extension_delegate_) {
+@@ -729,7 +748,11 @@ void X11Window::SetFullscreen(bool fullscreen, int64_t target_display_id) {
+ 
+   // Pretend the bounds changed immediately, and wait for a WM sync to use the
+   // server's bounds.
+-  bool origin_changed = GetBoundsInPixels().origin() != new_bounds_px.origin();
++  const gfx::Rect current_bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
++  bool origin_changed = current_bounds.origin() != new_bounds_px.origin();
+   SetBoundsWithWmSync(new_bounds_px);
+ 
+   // This must be the final call in this function, as `this` may be deleted
+@@ -738,26 +761,40 @@ void X11Window::SetFullscreen(bool fullscreen, int64_t target_display_id) {
+ }
+ 
+ void X11Window::Maximize() {
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   if (IsFullscreen()) {
+     // Unfullscreen the window if it is fullscreen.
+     SetFullscreen(false, display::kInvalidDisplayId);
++    if (!weak_this) {
++      return;
++    }
+ 
+     // Resize the window so that it does not have the same size as a monitor.
+     // (Otherwise, some window managers immediately put the window back in
+     // fullscreen mode).
+     gfx::Rect bounds_in_pixels = GetBoundsInPixels();
++    if (!weak_this) {
++      return;
++    }
+     gfx::Rect adjusted_bounds_in_pixels(
+         bounds_in_pixels.origin(),
+         AdjustSizeForDisplay(bounds_in_pixels.size()));
+     if (adjusted_bounds_in_pixels != bounds_in_pixels) {
+       SetBoundsInPixels(adjusted_bounds_in_pixels);
++      if (!weak_this) {
++        return;
++      }
+     }
+   }
+ 
+   // When we are in the process of requesting to maximize a window, we can
+   // accurately keep track of our restored bounds instead of relying on the
+   // heuristics that are in the PropertyNotify and ConfigureNotify handlers.
+-  restored_bounds_in_pixels_ = GetBoundsInPixels();
++  gfx::Rect bounds_in_pixels = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
++  restored_bounds_in_pixels_ = bounds_in_pixels;
+ 
+   // Some WMs do not respect maximization hints on unmapped windows, so we
+   // save this one for later too.
+@@ -890,10 +927,15 @@ void X11Window::SetCursor(scoped_refptr<PlatformCursor> cursor) {
+ }
+ 
+ void X11Window::MoveCursorTo(const gfx::Point& location_px) {
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Rect bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
+   connection_->WarpPointer(x11::WarpPointerRequest{
+       .dst_window = x_root_window_,
+-      .dst_x = static_cast<int16_t>(GetBoundsInPixels().x() + location_px.x()),
+-      .dst_y = static_cast<int16_t>(GetBoundsInPixels().y() + location_px.y()),
++      .dst_x = static_cast<int16_t>(bounds.x() + location_px.x()),
++      .dst_y = static_cast<int16_t>(bounds.y() + location_px.y()),
+   });
+   // The cached cursor location is no longer valid.
+   X11EventSource::GetInstance()->ClearLastCursorLocation();
+@@ -906,7 +948,12 @@ void X11Window::ConfineCursorToBounds(const gfx::Rect& bounds) {
+     return;
+   }
+ 
+-  gfx::Rect barrier = bounds + GetBoundsInPixels().OffsetFromOrigin();
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Vector2d offset = GetBoundsInPixels().OffsetFromOrigin();
++  if (!weak_this) {
++    return;
++  }
++  gfx::Rect barrier = bounds + offset;
+ 
+   auto make_barrier = [&](uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,
+                           x11::XFixes::BarrierDirections directions) {
+@@ -1975,8 +2022,13 @@ void X11Window::Map(bool inactive) {
+   x11::SizeHints size_hints = {};
+   connection_->GetWmNormalHints(xwindow_, &size_hints);
+   size_hints.flags |= x11::SIZE_HINT_P_POSITION;
+-  size_hints.x = GetBoundsInPixels().x();
+-  size_hints.y = GetBoundsInPixels().y();
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Rect bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
++  size_hints.x = bounds.x();
++  size_hints.y = bounds.y();
+   // Set STATIC_GRAVITY so that the window position is not affected by the
+   // frame width when running with window manager.
+   size_hints.flags |= x11::SIZE_HINT_P_WIN_GRAVITY;
+@@ -2053,7 +2105,11 @@ bool X11Window::IsFullscreen() const {
+ }
+ 
+ gfx::Rect X11Window::GetOuterBounds() const {
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   gfx::Rect outer_bounds(GetBoundsInPixels());
++  if (!weak_this) {
++    return {};
++  }
+   outer_bounds.Inset(-native_window_frame_borders_in_pixels_);
+   return outer_bounds;
+ }
+@@ -2643,7 +2699,12 @@ void X11Window::SetBoundsWithWmSync(const gfx::Rect& bounds_px) {
+ 
+ void X11Window::OnWmSynced() {
+   bounds_wm_sync_.reset();
+-  OnBoundsChanged(last_set_bounds_px_, GetBoundsInPixels());
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  const gfx::Rect current_bounds = GetBoundsInPixels();
++  if (!weak_this) {
++    return;
++  }
++  OnBoundsChanged(last_set_bounds_px_, current_bounds);
+ }
+ 
+ void X11Window::OnBoundsChanged(const std::optional<gfx::Rect>& old_bounds_px,
+diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
+index fe318a0e05c63810a4b724dcfa3695d773490d17..81e480a7fddf22e189348effba520d90c26d0c84 100644
+--- a/ui/ozone/platform/x11/x11_window.h
++++ b/ui/ozone/platform/x11/x11_window.h
+@@ -518,7 +518,7 @@ class X11Window : public PlatformWindow,
+ 
+   base::CancelableOnceCallback<void(x11::Cursor)> on_cursor_loaded_;
+ 
+-  base::WeakPtrFactory<X11Window> weak_ptr_factory_{this};
++  mutable base::WeakPtrFactory<X11Window> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ui

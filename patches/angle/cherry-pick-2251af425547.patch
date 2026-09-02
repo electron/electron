@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 20 Apr 2026 12:14:55 -0400
+Subject: Disallow palleted texture formats in glCopyTex[Sub]Image2D
+
+The spec disallows these as CopyTexImage destinations.
+
+Fixed: chromium:500429259
+Change-Id: Ic4dd7839ae4867b421ee7fcf5d1c1cd681c48062
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7775619
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 868c1ad4d1c73c7a4834209175d94bb92eed4749..c872bcc1c4d7e4c4bd17db7f31b1a4df6e487849 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -3924,7 +3924,7 @@ bool ValidateCopyTexImageParametersBase(const Context *context,
+         isSubImage ? *texture->getFormat(target, level).info
+                    : GetInternalFormatInfo(internalformat, GL_UNSIGNED_BYTE);
+ 
+-    if (formatInfo.depthBits > 0 || formatInfo.compressed)
++    if (formatInfo.depthBits > 0 || formatInfo.compressed || formatInfo.paletted)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidFormat);
+         return false;

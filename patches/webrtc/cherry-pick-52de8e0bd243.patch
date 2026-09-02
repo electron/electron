@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Wed, 22 Apr 2026 05:02:28 +0200
+Subject: Fix short-circuit evaluation in RollbackTransports
+
+This prevents Use-After-Free by ensuring all map_change_callback_
+invocations occur during rollback, even if one fails.
+
+Bug: chromium:504597736
+Change-Id: If5dd44bcdec27d06af18fc74c526264ab08ae9d1
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465880
+Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+Auto-Submit: Tomas Gunnarsson <tommi@webrtc.org>
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#47513}
+
+diff --git a/pc/jsep_transport_collection.cc b/pc/jsep_transport_collection.cc
+index 2f10c6ad244c1e94c3d3c3f44d994bc2b5d70872..df88a38b51ebbb5ad5bce607babd837e76452744 100644
+--- a/pc/jsep_transport_collection.cc
++++ b/pc/jsep_transport_collection.cc
+@@ -270,14 +270,16 @@ bool JsepTransportCollection::RollbackTransports() {
+   // First, remove any new mid->transport mappings.
+   for (const auto& kv : mid_to_transport_) {
+     if (stable_mid_to_transport_.count(kv.first) == 0) {
+-      ret = ret && map_change_callback_(kv.first, nullptr);
++      bool success = map_change_callback_(kv.first, nullptr);
++      ret = ret && success;
+     }
+   }
+   // Next, restore old mappings.
+   for (const auto& kv : stable_mid_to_transport_) {
+     auto it = mid_to_transport_.find(kv.first);
+     if (it == mid_to_transport_.end() || it->second != kv.second) {
+-      ret = ret && map_change_callback_(kv.first, kv.second);
++      bool success = map_change_callback_(kv.first, kv.second);
++      ret = ret && success;
+     }
+   }
+   mid_to_transport_ = stable_mid_to_transport_;

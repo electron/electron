@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 20 May 2026 16:16:56 -0400
+Subject: M149: Translator: Don't cap object sizes to INT_MAX
+
+The calculations are done in size_t, so the cap is changed to size_t's
+MAX value instead.
+
+Fixes a crash if a _very_ big struct is declared, but used only in a way
+that's constant folded.  The test itself is impossible to put in the CQ
+due to its long execution time.
+
+Bug: chromium:513468021
+Change-Id: I4bd57199fd4ea65e8a4b7e86f4fff7b5e72d30c9
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7880316
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/Types.cpp b/src/compiler/translator/Types.cpp
+index c0882da9b13b749e135a6f44e30379e3fe846d0e..2874c758524259296248406f84fc6f79f587201a 100644
+--- a/src/compiler/translator/Types.cpp
++++ b/src/compiler/translator/Types.cpp
+@@ -513,8 +513,10 @@ size_t TType::getObjectSize() const
+ 
+     for (size_t arraySize : mArraySizes)
+     {
+-        if (arraySize > INT_MAX / totalSize)
+-            totalSize = INT_MAX;
++        if (arraySize > std::numeric_limits<size_t>::max() / totalSize)
++        {
++            totalSize = std::numeric_limits<size_t>::max();
++        }
+         else
+             totalSize *= arraySize;
+     }
+@@ -873,8 +875,10 @@ size_t TFieldListCollection::calculateObjectSize() const
+     for (const TField *field : *mFields)
+     {
+         size_t fieldSize = field->type()->getObjectSize();
+-        if (fieldSize > INT_MAX - size)
+-            size = INT_MAX;
++        if (fieldSize > std::numeric_limits<size_t>::max() - size)
++        {
++            size = std::numeric_limits<size_t>::max();
++        }
+         else
+             size += fieldSize;
+     }

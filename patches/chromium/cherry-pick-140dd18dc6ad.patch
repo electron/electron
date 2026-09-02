@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Sun, 24 May 2026 23:12:21 -0700
+Subject: [M149] Reland "media/gpu/vaapiWrapper: Add native pixmap validation"
+
+Original change's description:
+> Reland "media/gpu/vaapiWrapper: Add native pixmap validation"
+>
+> > This CL introduces more rigorous validation for plane metadata when
+> > populating VADRMPRIMESurfaceDescriptor:
+> >
+> > - Verifying that plane pitch is at least the minimum required stride.
+> > - Ensuring that the plane's memory range (offset + size) stays within
+> >   the bounds of the DMA-buf.
+> >
+> > Bug: 495819067
+> > Test: webrtc.RTCPeerConnection.*
+> > Change-Id: I5d27d3a21ab692367931406e9c345a4a61ee2bb6
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7834744
+> > Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> > Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#1631660}
+>
+> Bug: 495819067
+> Test: video_decode_accelerator_tests
+> Change-Id: Ie3b60a2e066c86b6bff7e85b115f90d9d8a3c259
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7855566
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Reviewed-by: Nathan Hebert <nhebert@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1632269}
+
+(cherry picked from commit caa9eb0fc5dacaa21a90eff43c093906e43d8c1a)
+
+Bug: 514929009,495819067
+Change-Id: Ie3b60a2e066c86b6bff7e85b115f90d9d8a3c259
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7873758
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#1676}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/media/gpu/vaapi/BUILD.gn b/media/gpu/vaapi/BUILD.gn
+index 98b03e5864b6b411cf27fdf7298b10bb1b80345c..fd1540905af4512e7ae1176d4fa15e7c05220048 100644
+--- a/media/gpu/vaapi/BUILD.gn
++++ b/media/gpu/vaapi/BUILD.gn
+@@ -144,6 +144,7 @@ source_set("common") {
+     "//base",
+     "//build/config/linux/libdrm",
+     "//media",
++    "//media/gpu:buffer_validation",
+     "//media/gpu:common",
+     "//media/gpu/chromeos:fourcc",
+     "//ui/gfx/geometry",
+diff --git a/media/gpu/vaapi/vaapi_wrapper.cc b/media/gpu/vaapi/vaapi_wrapper.cc
+index f67de041edfc17d11647659f0593b1992a06e8aa..4651d3ec2e659f1cf550fe06bc91022aaaafbabf 100644
+--- a/media/gpu/vaapi/vaapi_wrapper.cc
++++ b/media/gpu/vaapi/vaapi_wrapper.cc
+@@ -50,12 +50,14 @@
+ #include "base/types/pass_key.h"
+ #include "base/version.h"
+ #include "build/build_config.h"
++#include "media/base/format_utils.h"
+ #include "media/base/limits.h"
+ #include "media/base/media_switches.h"
+ #include "media/base/platform_features.h"
+ #include "media/base/video_codecs.h"
+ #include "media/base/video_frame.h"
+ #include "media/base/video_types.h"
++#include "media/gpu/buffer_validation.h"
+ #include "media/gpu/chromeos/frame_resource.h"
+ #include "media/gpu/macros.h"
+ // Auto-generated for dlopen libva libraries
+@@ -417,6 +419,66 @@ bool UseGlobalVaapiLock(media::VAImplementation implementation_type) {
+          base::FeatureList::IsEnabled(media::kGlobalVaapiLock);
+ }
+ 
++bool ValidateAndGetPlaneInfo(const gfx::NativePixmap& pixmap,
++                             const media::VideoPixelFormat format,
++                             const gfx::Size& resolution,
++                             const int dma_buf_fd,
++                             const size_t plane_index,
++                             uint32_t& dmabuf_size,
++                             uint32_t& plane_offset,
++                             uint32_t& plane_pitch) {
++  size_t dmabuf_size_sz = 0;
++  if (!media::GetFileSize(dma_buf_fd, &dmabuf_size_sz)) {
++    LOG(ERROR) << "Failed to get the size of the dma-buf";
++    return false;
++  }
++  if (!base::IsValueInRangeForNumericType<uint32_t>(dmabuf_size_sz)) {
++    LOG(ERROR) << "Invalid data size: " << dmabuf_size_sz;
++    return false;
++  }
++  dmabuf_size = static_cast<uint32_t>(dmabuf_size_sz);
++
++  const size_t plane_offset_sz = pixmap.GetDmaBufOffset(plane_index);
++  if (!base::IsValueInRangeForNumericType<uint32_t>(plane_offset_sz)) {
++    LOG(ERROR) << "Invalid plane offset: " << plane_offset_sz;
++    return false;
++  }
++  plane_offset = static_cast<uint32_t>(plane_offset_sz);
++
++  plane_pitch = pixmap.GetDmaBufPitch(plane_index);
++  const size_t min_stride =
++      media::VideoFrame::RowBytes(plane_index, format, resolution.width());
++  if (base::saturated_cast<size_t>(plane_pitch) < min_stride) {
++    LOG(ERROR) << "Invalid stride for plane " << plane_index << ": "
++               << plane_pitch << " < " << min_stride;
++    return false;
++  }
++  const size_t plane_height =
++      media::VideoFrame::Rows(plane_index, format, resolution.height());
++  base::CheckedNumeric<size_t> min_plane_size =
++      base::CheckMul(plane_pitch, plane_height);
++  if (!min_plane_size.IsValid()) {
++    LOG(ERROR) << "Invalid plane size for plane " << plane_index;
++    return false;
++  }
++
++  base::CheckedNumeric<uint64_t> min_buffer_size =
++      base::CheckAdd(plane_offset, min_plane_size.ValueOrDie());
++  if (!min_buffer_size.IsValid()) {
++    LOG(ERROR) << "Invalid buffer size for plane " << plane_index;
++    return false;
++  }
++
++  if (min_buffer_size.ValueOrDie() >
++      base::checked_cast<uint64_t>(dmabuf_size)) {
++    LOG(ERROR) << "Plane " << plane_index << " is out of bounds: "
++               << static_cast<uint64_t>(min_buffer_size.ValueOrDie()) << " > "
++               << dmabuf_size;
++    return false;
++  }
++  return true;
++}
++
+ bool FillVADRMPRIMESurfaceDescriptor(const gfx::NativePixmap& pixmap,
+                                      VADRMPRIMESurfaceDescriptor& descriptor) {
+   UNSAFE_TODO(memset(&descriptor, 0, sizeof(VADRMPRIMESurfaceDescriptor)));
+@@ -433,6 +495,14 @@ bool FillVADRMPRIMESurfaceDescriptor(const gfx::NativePixmap& pixmap,
+     LOG(ERROR) << "Failed to get the DRM format from the buffer format";
+     return false;
+   }
++
++  const std::optional<media::VideoPixelFormat> format =
++      media::SharedImageFormatToVideoPixelFormat(shared_image_format);
++  if (!format) {
++    LOG(ERROR) << "Failed to get the VideoPixelFormat from the buffer format";
++    return false;
++  }
++
+   if (num_planes > std::size(descriptor.objects)) {
+     LOG(ERROR) << "Too many planes in the NativePixmap; got " << num_planes
+                << " but the maximum number is "
+@@ -466,32 +536,23 @@ bool FillVADRMPRIMESurfaceDescriptor(const gfx::NativePixmap& pixmap,
+       LOG(ERROR) << "Failed to get dmabuf from a NativePixmap";
+       return false;
+     }
+-    const off_t data_size = lseek(dma_buf_fd, /*offset=*/0, SEEK_END);
+-    if (data_size == static_cast<off_t>(-1)) {
+-      PLOG(ERROR) << "Failed to get the size of the dma-buf";
+-      return false;
+-    }
+-    if (lseek(dma_buf_fd, /*offset=*/0, SEEK_SET) == static_cast<off_t>(-1)) {
+-      PLOG(ERROR) << "Failed to reset the file offset of the dma-buf";
++    uint32_t plane_offset = 0u;
++    uint32_t plane_pitch = 0u;
++    uint32_t dmabuf_size = 0u;
++    if (!ValidateAndGetPlaneInfo(pixmap, *format, size, dma_buf_fd, i,
++                                 dmabuf_size, plane_offset, plane_pitch)) {
+       return false;
+     }
+ 
+     UNSAFE_TODO(descriptor.objects[i]).fd = dma_buf_fd;
+-    UNSAFE_TODO(descriptor.objects[i]).size =
+-        base::checked_cast<uint32_t>(data_size);
++    UNSAFE_TODO(descriptor.objects[i]).size = dmabuf_size;
+     UNSAFE_TODO(descriptor.objects[i]).drm_format_modifier =
+         pixmap.GetFormatModifier();
+ 
+     UNSAFE_TODO(descriptor.layers[0].object_index[i]) =
+         base::checked_cast<uint32_t>(i);
+-    if (!base::IsValueInRangeForNumericType<uint32_t>(
+-            pixmap.GetDmaBufOffset(i))) {
+-      LOG(ERROR) << "The offset for plane " << i << " is out-of-range";
+-      return false;
+-    }
+-    UNSAFE_TODO(descriptor.layers[0].offset[i]) =
+-        base::checked_cast<uint32_t>(pixmap.GetDmaBufOffset(i));
+-    UNSAFE_TODO(descriptor.layers[0].pitch[i]) = pixmap.GetDmaBufPitch(i);
++    UNSAFE_TODO(descriptor.layers[0].offset[i]) = plane_offset;
++    UNSAFE_TODO(descriptor.layers[0].pitch[i]) = plane_pitch;
+   }
+ 
+   return true;

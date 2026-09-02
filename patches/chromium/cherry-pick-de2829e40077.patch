@@ -1,0 +1,227 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Danil Somsikov <dsv@chromium.org>
+Date: Mon, 4 May 2026 09:51:35 -0700
+Subject: Verify sessionId in incoming protocol messages from renderer
+
+In DevTools "flattened" protocol mode, the renderer process is responsible
+for including the correct sessionId in every protocol response and
+notification. Previously, the browser process forwarded these messages to
+the client without verification. A compromised renderer could deliberately
+omit or spoof the sessionId, potentially allowing it to inject events into
+the root session or other child sessions.
+
+This CL fixes the vulnerability by having the browser process verify the
+sessionId of every protocol message originating from a renderer-side
+session. If the sessionId is missing, incorrect, or unexpectedly present
+(in the case of the root session), the browser now considers the renderer
+compromised and terminates it using bad_message::ReceivedBadMessage.
+
+Bug: 497532918
+Change-Id: I7667858f0b3f7de56c6a3242ba01a079840ac55b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7718168
+Auto-Submit: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Danil Somsikov <dsv@chromium.org>
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1624769}
+
+diff --git a/content/browser/devtools/devtools_agent_host_impl.cc b/content/browser/devtools/devtools_agent_host_impl.cc
+index d7c727ed9362be483babc0dd004dd052a1a0a810..92437febd77c2957df8932e0120389dd06ce4011 100644
+--- a/content/browser/devtools/devtools_agent_host_impl.cc
++++ b/content/browser/devtools/devtools_agent_host_impl.cc
+@@ -315,6 +315,23 @@ DevToolsSession* DevToolsAgentHostImpl::SessionByClient(
+   return it == session_by_client_.end() ? nullptr : it->second.get();
+ }
+ 
++DevToolsSession* DevToolsAgentHostImpl::GetSessionByIdForTesting(
++    const std::string& session_id) {
++  DevToolsSession* session = nullptr;
++  if (session_id.empty()) {
++    session = sessions_.empty() ? nullptr : sessions_.front();
++  } else {
++    for (DevToolsSession* root_session : sessions_) {
++      if (root_session->HasChildSession(session_id)) {
++        session = root_session->GetSessionById(session_id);
++        break;
++      }
++    }
++  }
++  CHECK(session) << "Session not found: " << session_id;
++  return session;
++}
++
+ bool DevToolsAgentHostImpl::AttachInternal(
+     std::unique_ptr<DevToolsSession> session_owned) {
+   scoped_refptr<DevToolsAgentHostImpl> protect(this);
+diff --git a/content/browser/devtools/devtools_agent_host_impl.h b/content/browser/devtools/devtools_agent_host_impl.h
+index 4a83684a13626044c0fa02cb2973651d3bca77ac..78239cec61e62aa2d549e461d9cd332576b511b2 100644
+--- a/content/browser/devtools/devtools_agent_host_impl.h
++++ b/content/browser/devtools/devtools_agent_host_impl.h
+@@ -121,6 +121,8 @@ class CONTENT_EXPORT DevToolsAgentHostImpl : public DevToolsAgentHost {
+ 
+   base::ProcessId GetProcessId() const { return process_id_; }
+ 
++  DevToolsSession* GetSessionByIdForTesting(const std::string& session_id);
++
+  protected:
+   explicit DevToolsAgentHostImpl(const std::string& id);
+   ~DevToolsAgentHostImpl() override;
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index b473017975c3200d3a0ef827bb33ce49286d4b0d..213146bcad0385151936f4d22db2aa18264ec81a 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -10,7 +10,9 @@
+ #include "base/containers/flat_set.h"
+ #include "base/functional/bind.h"
+ #include "base/trace_event/trace_event.h"
++#include "content/browser/bad_message.h"
+ #include "content/browser/devtools/devtools_manager.h"
++#include "content/public/browser/render_process_host.h"
+ #include "content/browser/devtools/protocol/devtools_domain_handler.h"
+ #include "content/browser/devtools/protocol/protocol.h"
+ #include "content/browser/devtools/render_frame_devtools_agent_host.h"
+@@ -537,10 +539,19 @@ void DevToolsSession::FlushProtocolNotifications() {}
+ // parsed and sent as is, since a renderer may be compromised; so therefore,
+ // we're not sending them via the DevToolsAgentHostClientChannel interface
+ // (::DispatchProtocolMessageToClient) but directly to the client instead.
+-static void DispatchProtocolResponseOrNotification(
++void DevToolsSession::DispatchProtocolResponseOrNotification(
+     DevToolsAgentHostClient* client,
+     DevToolsAgentHostImpl* agent_host,
+-    blink::mojom::DevToolsMessagePtr message) {
++    blink::mojom::DevToolsMessagePtr message,
++    const std::string& session_id) {
++  base::span<const uint8_t> message_span = message->data;
++  if (!ValidateSessionId(session_id, message_span)) {
++    if (RenderProcessHost* process_host = agent_host->GetProcessHost()) {
++      bad_message::ReceivedBadMessage(
++          process_host, bad_message::RFH_INCONSISTENT_DEVTOOLS_MESSAGE);
++    }
++    return;
++  }
+   client->DispatchProtocolMessage(agent_host, message->data);
+ }
+ 
+@@ -560,7 +571,7 @@ void DevToolsSession::DispatchProtocolResponse(
+   pending_messages_.erase(it->second);
+   waiting_for_response_.erase(it);
+   DispatchProtocolResponseOrNotification(client_, agent_host_,
+-                                         std::move(message));
++                                         std::move(message), session_id_);
+   // |this| may be deleted at this point.
+ }
+ 
+@@ -569,7 +580,7 @@ void DevToolsSession::DispatchProtocolNotification(
+     blink::mojom::DevToolsSessionStatePtr updates) {
+   ApplySessionStateUpdates(std::move(updates));
+   DispatchProtocolResponseOrNotification(client_, agent_host_,
+-                                         std::move(message));
++                                         std::move(message), session_id_);
+   // |this| may be deleted at this point.
+ }
+ 
+@@ -694,4 +705,54 @@ DevToolsSession::MaybeGetDurableMessageCollector() {
+              : nullptr;
+ }
+ 
++DevToolsSession* DevToolsSession::GetSessionById(const std::string& session_id) {
++  auto it = child_sessions_.find(session_id);
++  return it == child_sessions_.end() ? nullptr : it->second.get();
++}
++
++// static
++bool DevToolsSession::ValidateSessionId(const std::string& expected_session_id,
++                                        base::span<const uint8_t> message) {
++  std::vector<uint8_t> cbor_message;
++  crdtp::span<uint8_t> span_message = crdtp::SpanFrom(message);
++
++  if (!crdtp::cbor::IsCBORMessage(span_message)) {
++    if (!crdtp::json::ConvertJSONToCBOR(span_message, &cbor_message).ok()) {
++      return false;  // Safely terminate renderer on malformed JSON
++    }
++    span_message = crdtp::SpanFrom(cbor_message);
++  }
++
++  // Do NOT use crdtp::Dispatchable here. It enforces the presence of both
++  // 'id' and 'method', which are not guaranteed in Responses and Notifications.
++  crdtp::span<uint8_t> extracted_session_id =
++      crdtp::cbor::GetString8ValueFromMap(span_message,
++                                          crdtp::SpanFrom("sessionId"));
++
++  if (expected_session_id.empty()) {
++    if (!extracted_session_id.empty()) {
++      DLOG(ERROR) << "Root session expected no sessionId but received one: "
++                  << (extracted_session_id.empty()
++                          ? ""
++                          : std::string(extracted_session_id.begin(),
++                                        extracted_session_id.end()));
++      return false;
++    }
++    return true;
++  } else {
++    if (extracted_session_id.empty() ||
++        !crdtp::SpanEquals(crdtp::SpanFrom(expected_session_id),
++                           extracted_session_id)) {
++      DLOG(ERROR) << "Child session expected sessionId: " << expected_session_id
++                  << ", but got: "
++                  << (extracted_session_id.empty()
++                          ? ""
++                          : std::string(extracted_session_id.begin(),
++                                        extracted_session_id.end()));
++      return false;
++    }
++    return true;
++  }
++}
++
+ }  // namespace content
+diff --git a/content/browser/devtools/devtools_session.h b/content/browser/devtools/devtools_session.h
+index 8450c847f6969bbae06f2462f9ef5346caf68b8c..83e1a57e598abfd59dd0122636d9087308959c9e 100644
+--- a/content/browser/devtools/devtools_session.h
++++ b/content/browser/devtools/devtools_session.h
+@@ -12,6 +12,7 @@
+ 
+ #include "base/containers/flat_map.h"
+ #include "base/containers/span.h"
++#include "base/functional/callback_forward.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+@@ -29,6 +30,8 @@ namespace content {
+ class DevToolsAgentHostClient;
+ class DevToolsAgentHostImpl;
+ class DevToolsExternalAgentProxyDelegate;
++class DevToolsSession;
++class RenderProcessHost;
+ 
+ namespace protocol {
+ class DevToolsDomainHandler;
+@@ -126,11 +129,16 @@ class DevToolsSession : public protocol::FrontendChannel,
+                                       base::OnceClosure resume_callback);
+   void DetachChildSession(const std::string& session_id);
+   bool HasChildSession(const std::string& session_id);
++  static bool ValidateSessionId(const std::string& expected_session_id,
++                                base::span<const uint8_t> message);
++  DevToolsSession* GetSessionById(const std::string& session_id);
+   Mode session_mode() const { return mode_; }
+ 
+   void AddObserver(ChildObserver* obs);
+   void RemoveObserver(ChildObserver* obs);
+ 
++  friend class FlattenedDevToolsProtocolTest;
++
+   base::RepeatingCallback<void(std::string)> MakePrepareForReloadCallback() {
+     return base::BindRepeating(&DevToolsSession::PrepareForReload,
+                                base::Unretained(this));
+@@ -203,6 +211,12 @@ class DevToolsSession : public protocol::FrontendChannel,
+   void DispatchOnClientHost(base::span<const uint8_t> message) override;
+   void ConnectionClosed() override;
+ 
++  static void DispatchProtocolResponseOrNotification(
++      DevToolsAgentHostClient* client,
++      DevToolsAgentHostImpl* agent_host,
++      blink::mojom::DevToolsMessagePtr message,
++      const std::string& session_id);
++
+   // Merges the |updates| received from the renderer into session_state_cookie_.
+   void ApplySessionStateUpdates(blink::mojom::DevToolsSessionStatePtr updates);
+ 

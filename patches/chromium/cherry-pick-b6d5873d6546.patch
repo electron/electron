@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Thu, 30 Apr 2026 18:23:14 -0700
+Subject: Initialize VAImage and improve error handling
+
+Make sure we return an error when vaCreateImage or vaDeriveImage fails,
+since it means we can't actually upload anything.
+
+Bug: 507258786
+Change-Id: Ifff8fc3cdc8e4d29d8330976fea384b8570baf97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7804995
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Evan Liu <evliu@google.com>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1623631}
+
+diff --git a/media/gpu/vaapi/vaapi_wrapper.cc b/media/gpu/vaapi/vaapi_wrapper.cc
+index 4651d3ec2e659f1cf550fe06bc91022aaaafbabf..354be7cff513928fc856623d9cff8fa646423003 100644
+--- a/media/gpu/vaapi/vaapi_wrapper.cc
++++ b/media/gpu/vaapi/vaapi_wrapper.cc
+@@ -133,7 +133,7 @@ std::pair<base::ScopedFD, bool> LoadDrmFD(const base::FilePath& dev_path) {
+ 
+ // These values are logged to UMA. Entries should not be renumbered and numeric
+ // values should never be reused. Please keep in sync with
+-// "VaapiFunctions" in src/tools/metrics/histograms/enums.xml.
++// "VaapiFunctions" in src/tools/metrics/histograms/metadata/media/enums.xml.
+ enum class VaapiFunctions {
+   kVABeginPicture = 0,
+   kVACreateBuffer = 1,
+@@ -167,9 +167,11 @@ enum class VaapiFunctions {
+   kVADetachProtectedSession = 28,
+   kVAProtectedSessionHwUpdate_Deprecated = 29,
+   kVAProtectedSessionExecute = 30,
+-  // Anything else is captured in this last entry.
++  // Anything else is captured in this entry. It used to be last, but more
++  // library calls have since been added, and we can't change the number.
+   kOtherVAFunction = 31,
+-  kMaxValue = kOtherVAFunction,
++  kVADeriveImage = 32,
++  kMaxValue = kVADeriveImage,
+ };
+ 
+ void ReportVaapiErrorToUMA(const std::string& histogram_name,
+@@ -211,7 +213,8 @@ constexpr std::array<const char*,
+         "vaDetachProtectedSession",
+         "vaProtectedSessionHwUpdate (Deprecated)",
+         "vaProtectedSessionExecute",
+-        "Other VA function"};
++        "Other VA function",
++        "vaDeriveImage"};
+ 
+ // Translates |function| into a human readable string for logging.
+ const char* VaapiFunctionName(VaapiFunctions function) {
+@@ -2907,7 +2910,7 @@ bool VaapiWrapper::UploadVideoFrameToSurface(const VideoFrame& frame,
+ 
+   const gfx::Size visible_size = frame.visible_rect().size();
+   bool needs_va_put_image = false;
+-  VAImage image;
++  VAImage image = {};
+   VAStatus va_res = vaDeriveImage(va_display_, va_surface_id, &image);
+   if (va_res == VA_STATUS_ERROR_OPERATION_FAILED) {
+     DVLOG(4) << "vaDeriveImage failed and fallback to Create_PutImage";
+@@ -2920,6 +2923,8 @@ bool VaapiWrapper::UploadVideoFrameToSurface(const VideoFrame& frame,
+                            va_surface_size.height(), &image);
+     VA_SUCCESS_OR_RETURN(va_res, VaapiFunctions::kVACreateImage, false);
+     needs_va_put_image = true;
++  } else {
++    VA_SUCCESS_OR_RETURN(va_res, VaapiFunctions::kVADeriveImage, false);
+   }
+   absl::Cleanup vaimage_deleter =
+       [this, &image]() EXCLUSIVE_LOCKS_REQUIRED(va_lock_.get()) {
+diff --git a/tools/metrics/histograms/metadata/media/enums.xml b/tools/metrics/histograms/metadata/media/enums.xml
+index dda1f1999c9bac6dc967ec60ca47317baba1f163..a99792e203b8187852cf63632c7d0c0040f6d94d 100644
+--- a/tools/metrics/histograms/metadata/media/enums.xml
++++ b/tools/metrics/histograms/metadata/media/enums.xml
+@@ -2375,6 +2375,7 @@ chromium-metrics-reviews@google.com.
+   <int value="29" label="vaProtectedSessionHwUpdate() (deprecated)"/>
+   <int value="30" label="kVAProtectedSessionExecute()"/>
+   <int value="31" label="Other VA functions"/>
++  <int value="32" label="vaDeriveImage()"/>
+ </enum>
+ 
+ <enum name="VideoCaptureApi">

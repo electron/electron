@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 22 May 2026 12:29:21 -0700
+Subject: [M149] media: Invalidate dependent PPS when SPS is overwritten
+
+Original change's description:
+> media: Invalidate dependent PPS when SPS is overwritten
+>
+> In the H.264 and H.265 parsers, overwriting an existing SPS left
+> dependent PPS active. This could lead to an inconsistent state where
+> a PPS bypasses validation checks against the new SPS geometry,
+> potentially causing out-of-bounds math in downstream hardware delegates.
+>
+> This change fixes the issue by erasing dependent PPSes when their parent
+> SPS is overwritten, safely failing the decoder on subsequent slices
+> until a new, valid PPS is provided.
+>
+> Bug: 511713779
+> Change-Id: I5f6e82af1f013c57fb70de638780d0058ca507a2
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7846848
+> Auto-Submit: Eugene Zemtsov <eugene@chromium.org>
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1631472}
+
+(cherry picked from commit e1c30db0cf70257ba3a14b98a40195d2cbd8d571)
+
+Bug: 514928220,511713779
+Change-Id: I5f6e82af1f013c57fb70de638780d0058ca507a2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7871689
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#1510}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/media/gpu/BUILD.gn b/media/gpu/BUILD.gn
+index f1ff209d0b5fbe0ba7be2cc0b60b1aad13c4afa0..9599146d7a9c2083a351239143cb64bc30d5fd6d 100644
+--- a/media/gpu/BUILD.gn
++++ b/media/gpu/BUILD.gn
+@@ -53,6 +53,7 @@ component("gpu") {
+     "//media/gpu/test/*",
+     "//media/gpu/vaapi/*",
+     "//media/mojo/*",
++    "//media/parsers:unit_tests",
+     "//remoting/codec:encoder",
+     "//third_party/blink/renderer/modules:unit_tests",
+     "//third_party/blink/renderer/modules/mediarecorder",
+@@ -454,8 +455,8 @@ source_set("common") {
+ }
+ 
+ if (is_linux || is_chromeos) {
+-  # The buffer validation functionality is in its own component so that it can be
+-  # depended on without pulling the entire //media/gpu target.
++  # The buffer validation functionality is in its own component so that it can
++  # be depended on without pulling the entire //media/gpu target.
+   component("buffer_validation") {
+     defines = [ "IS_MEDIA_GPU_BUFFER_VALIDATION_IMPL" ]
+     sources = [
+diff --git a/media/parsers/BUILD.gn b/media/parsers/BUILD.gn
+index f6200a9ad1d8a819c32ceed8b5646be8938a5fd7..210debc68fd1540338b9dd433acf167867a3c751 100644
+--- a/media/parsers/BUILD.gn
++++ b/media/parsers/BUILD.gn
+@@ -11,7 +11,8 @@ rust_static_library("safe_parsers") {
+   sources = [ "parse_jpeg.rs" ]
+   cxx_bindings = [ "parse_jpeg.rs" ]
+ 
+-  # Required by Chromium policy because cxx generates unsafe code under the hood.
++  # Required by Chromium policy because cxx generates unsafe code under the
++  # hood.
+   allow_unsafe = true
+ }
+ 
+@@ -111,6 +112,7 @@ source_set("unit_tests") {
+   deps = [
+     "//base/test:test_support",
+     "//media:test_support",
++    "//media/gpu",
+     "//testing/gtest",
+     "//third_party/libgav1:libgav1_parser",
+   ]
+diff --git a/media/parsers/h264_parser.cc b/media/parsers/h264_parser.cc
+index 8708264acd8364bc5054af8e983a28133f073b2c..f5fc92a4620022760fd7ba99a212c99b9d733ef1 100644
+--- a/media/parsers/h264_parser.cc
++++ b/media/parsers/h264_parser.cc
+@@ -1078,6 +1078,18 @@ H264Parser::Result H264Parser::ParseSPS(int* sps_id) {
+ 
+   // If an SPS with the same id already exists, replace it.
+   *sps_id = sps->seq_parameter_set_id;
++
++  if (validate_extended_bitstream_) {
++    auto it = active_SPSes_.find(*sps_id);
++    if (it == active_SPSes_.end() || *(it->second) != *sps) {
++      // Invalidate dependent PPSes since their validations against the old SPS
++      // are no longer guaranteed to hold under the new SPS.
++      std::erase_if(active_PPSes_, [id = *sps_id](const auto& pair) {
++        return pair.second->seq_parameter_set_id == id;
++      });
++    }
++  }
++
+   active_SPSes_[*sps_id] = std::move(sps);
+ 
+   return kOk;
+diff --git a/media/parsers/h265_parser.cc b/media/parsers/h265_parser.cc
+index 788d66c5fecd2a1e5b278f0394d80bc6f544b4c3..a1690ce9864aff6603088b402f76dbfd034a5e3f 100644
+--- a/media/parsers/h265_parser.cc
++++ b/media/parsers/h265_parser.cc
+@@ -883,6 +883,18 @@ H265Parser::Result H265Parser::ParseSPS(int* sps_id) {
+ 
+   // If an SPS with the same id already exists, replace it.
+   *sps_id = sps->sps_seq_parameter_set_id;
++
++  if (validate_extended_bitstream_) {
++    auto it = active_sps_.find(*sps_id);
++    if (it == active_sps_.end() || *(it->second) != *sps) {
++      // Invalidate dependent PPSes since their validations against the old SPS
++      // are no longer guaranteed to hold under the new SPS.
++      base::EraseIf(active_pps_, [id = *sps_id](const auto& pair) {
++        return pair.second->pps_seq_parameter_set_id == id;
++      });
++    }
++  }
++
+   active_sps_[*sps_id] = std::move(sps);
+ 
+   return res;
+diff --git a/media/parsers/h265_parser.h b/media/parsers/h265_parser.h
+index b2c3d7ccbd239b5d9037e9b9a62e4df731775992..727639648de0f3c31c248812981bc8381a06d8eb 100644
+--- a/media/parsers/h265_parser.h
++++ b/media/parsers/h265_parser.h
+@@ -39,6 +39,7 @@ enum {
+ 
+ struct MEDIA_EXPORT H265ProfileTierLevel {
+   H265ProfileTierLevel();
++  bool operator==(const H265ProfileTierLevel&) const = default;
+ 
+   enum H265ProfileIdc {
+     kProfileIdcMain = 1,
+@@ -72,6 +73,7 @@ struct MEDIA_EXPORT H265ProfileTierLevel {
+ 
+ struct MEDIA_EXPORT H265ScalingListData {
+   H265ScalingListData();
++  bool operator==(const H265ScalingListData&) const = default;
+ 
+   enum {
+     kDefaultScalingListSize0Values = 16,  // Table 7-5, all values are 16
+@@ -113,6 +115,8 @@ struct MEDIA_EXPORT H265ScalingListData {
+ };
+ 
+ struct MEDIA_EXPORT H265StRefPicSet {
++  bool operator==(const H265StRefPicSet&) const = default;
++
+   // Syntax elements.
+   int num_negative_pics = 0;
+   int num_positive_pics = 0;
+@@ -129,6 +133,7 @@ struct MEDIA_EXPORT H265StRefPicSet {
+ struct MEDIA_EXPORT H265VUIParameters {
+   H265VUIParameters();
+   H265VUIParameters(H265VUIParameters&&) noexcept;
++  bool operator==(const H265VUIParameters&) const = default;
+ 
+   // Syntax elements.
+   int sar_width = 0;
+@@ -176,6 +181,7 @@ struct MEDIA_EXPORT H265VPS {
+ struct MEDIA_EXPORT H265SPS {
+   H265SPS();
+   H265SPS(H265SPS&&) noexcept;
++  bool operator==(const H265SPS&) const = default;
+ 
+   // Syntax elements.
+   int sps_video_parameter_set_id = 0;
+@@ -209,8 +215,8 @@ struct MEDIA_EXPORT H265SPS {
+   bool amp_enabled_flag = false;
+   bool sample_adaptive_offset_enabled_flag = false;
+   bool pcm_enabled_flag = false;
+-  int pcm_sample_bit_depth_luma_minus1 = {};
+-  int pcm_sample_bit_depth_chroma_minus1 = {};
++  int pcm_sample_bit_depth_luma_minus1 = 0;
++  int pcm_sample_bit_depth_chroma_minus1 = 0;
+   int log2_min_pcm_luma_coding_block_size_minus3 = 0;
+   int log2_diff_max_min_pcm_luma_coding_block_size = 0;
+   bool pcm_loop_filter_disabled_flag = false;

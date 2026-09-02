@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anton Bikineev <bikineev@chromium.org>
+Date: Tue, 12 May 2026 14:02:17 +0200
+Subject: [M149] [cppgc] Fix memory ordering race in ObjectStartBitmap
+
+Original change's description:
+> [cppgc] Fix memory ordering race in ObjectStartBitmap
+>
+> A memory ordering race on weak memory architectures (like ARM64) between
+> mutator allocations and the concurrent marker could lead to an integer
+> underflow in ObjectStartBitmap::FindHeader. This happened because the
+> concurrent marker could observe a new pointer in a cppgc::Member before
+> the corresponding bit was set in the ObjectStartBitmap.
+>
+> The CL fixes it by using a seq-cst OSB write. As a drive-by, it fixes
+> the issue with conservative object lookup.
+>
+> Bug: 511218177
+> Change-Id: I89e8fa26966daf755380719277be0a1656268940
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7840600
+> Auto-Submit: Anton Bikineev <bikineev@chromium.org>
+> Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+> Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#107284}
+
+(cherry picked from commit c055ccbcde8ea8c6f5356fd9f5fb3d6a6b73a9ee)
+
+Bug: 515275150,511218177
+Change-Id: I89e8fa26966daf755380719277be0a1656268940
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7874018
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Commit-Queue: Anton Bikineev <bikineev@chromium.org>
+Reviewed-by: Anton Bikineev <bikineev@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.9@{#36}
+Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{#1}
+Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
+
+diff --git a/src/heap/cppgc/heap-page.cc b/src/heap/cppgc/heap-page.cc
+index 94b33ba41e903f926ad87d12b4b95d0971c4919d..98d22b44dc8358ad5e6bbe032756f64a057b1b18 100644
+--- a/src/heap/cppgc/heap-page.cc
++++ b/src/heap/cppgc/heap-page.cc
+@@ -105,8 +105,10 @@ const HeapObjectHeader* BasePage::TryObjectHeaderFromInnerAddress(
+     const void* address) const {
+   if (is_large()) {
+     if (!LargePage::From(this)->PayloadContains(
+-            static_cast<ConstAddress>(address)))
++            static_cast<ConstAddress>(address))) {
+       return nullptr;
++    }
++    return LargePage::From(this)->ObjectHeader();
+   } else {
+     const NormalPage* normal_page = NormalPage::From(this);
+     if (!normal_page->PayloadContains(static_cast<ConstAddress>(address)))
+@@ -115,14 +117,20 @@ const HeapObjectHeader* BasePage::TryObjectHeaderFromInnerAddress(
+     DCHECK(!NormalPageSpace::From(normal_page->space())
+                 .linear_allocation_buffer()
+                 .size());
+-  }
+ 
+-  // |address| is on the heap, so we FromInnerAddress can get the header.
+-  const HeapObjectHeader* header =
+-      ObjectHeaderFromInnerAddressImpl(this, address);
+-  if (header->IsFree()) return nullptr;
+-  DCHECK_NE(kFreeListGCInfoIndex, header->GetGCInfoIndex());
+-  return header;
++    const PlatformAwareObjectStartBitmap& bitmap =
++        NormalPage::From(this)->object_start_bitmap();
++    const HeapObjectHeader* header = bitmap.FindHeader<AccessMode::kNonAtomic>(
++        static_cast<ConstAddress>(address));
++    if (address >= reinterpret_cast<ConstAddress>(header) +
++                       header->AllocatedSize<AccessMode::kAtomic>()) {
++      // Found an object below the current address.
++      return nullptr;
++    }
++    if (header->IsFree()) return nullptr;
++    DCHECK_NE(kFreeListGCInfoIndex, header->GetGCInfoIndex());
++    return header;
++  }
+ }
+ 
+ #if defined(CPPGC_YOUNG_GENERATION)
+diff --git a/src/heap/cppgc/heap-page.h b/src/heap/cppgc/heap-page.h
+index 313f2f5c3b12308f045853ddc1eb6d4ebb18d56f..cf3afb2d12811492a24805659bce559bfd49fd0d 100644
+--- a/src/heap/cppgc/heap-page.h
++++ b/src/heap/cppgc/heap-page.h
+@@ -321,21 +321,6 @@ const BasePage* BasePage::FromPayload(const void* payload) {
+   return static_cast<const BasePage*>(BasePageHandle::FromPayload(payload));
+ }
+ 
+-template <AccessMode mode = AccessMode::kNonAtomic>
+-const HeapObjectHeader* ObjectHeaderFromInnerAddressImpl(const BasePage* page,
+-                                                         const void* address) {
+-  if (page->is_large()) {
+-    return LargePage::From(page)->ObjectHeader();
+-  }
+-  const PlatformAwareObjectStartBitmap& bitmap =
+-      NormalPage::From(page)->object_start_bitmap();
+-  const HeapObjectHeader* header =
+-      bitmap.FindHeader<mode>(static_cast<ConstAddress>(address));
+-  DCHECK_LT(address, reinterpret_cast<ConstAddress>(header) +
+-                         header->AllocatedSize<AccessMode::kAtomic>());
+-  return header;
+-}
+-
+ template <AccessMode mode>
+ HeapObjectHeader& BasePage::ObjectHeaderFromInnerAddress(void* address) const {
+   return const_cast<HeapObjectHeader&>(
+@@ -352,8 +337,15 @@ const HeapObjectHeader& BasePage::ObjectHeaderFromInnerAddress(
+   // the page |type_| field). This can occur when tracing a Member holding a
+   // reference to a mixin type
+   SynchronizedLoad();
++  if (is_large()) {
++    return *LargePage::From(this)->ObjectHeader();
++  }
++  const PlatformAwareObjectStartBitmap& bitmap =
++      NormalPage::From(this)->object_start_bitmap();
+   const HeapObjectHeader* header =
+-      ObjectHeaderFromInnerAddressImpl<mode>(this, address);
++      bitmap.FindHeader<mode>(static_cast<ConstAddress>(address));
++  DCHECK_LT(address, reinterpret_cast<ConstAddress>(header) +
++                         header->AllocatedSize<AccessMode::kAtomic>());
+   DCHECK_NE(kFreeListGCInfoIndex, header->GetGCInfoIndex<mode>());
+   return *header;
+ }
+diff --git a/src/heap/cppgc/object-start-bitmap.h b/src/heap/cppgc/object-start-bitmap.h
+index 112ed653ac1ab9015a4f915d4b0bb0c6ce057952..15b9de4069993b03ff24ff196d3dab79498e1022 100644
+--- a/src/heap/cppgc/object-start-bitmap.h
++++ b/src/heap/cppgc/object-start-bitmap.h
+@@ -129,6 +129,8 @@ HeapObjectHeader* ObjectStartBitmap::FindHeader(
+     DCHECK_LT(0u, cell_index);
+     byte = load<mode>(--cell_index);
+   }
++  // Crash safely instead of returning page_base - 8.
++  CHECK_NE(0, byte);
+   const int leading_zeroes = v8::base::bits::CountLeadingZeros(byte);
+   object_start_number =
+       (cell_index * kBitsPerCell) + (kBitsPerCell - 1) - leading_zeroes;
+@@ -166,8 +168,11 @@ void ObjectStartBitmap::store(size_t cell_index, uint8_t value) {
+     object_start_bit_map_[cell_index] = value;
+     return;
+   }
++  // Use seq cst here to avoid a situation when a pointer write may be reordered
++  // before the setting of the mark bit, which may lead to the concurrent marker
++  // missing the right object (because the bit is not yet propagated).
+   std::atomic_ref<uint8_t>(object_start_bit_map_[cell_index])
+-      .store(value, std::memory_order_release);
++      .store(value, std::memory_order_seq_cst);
+ }
+ 
+ template <AccessMode mode>

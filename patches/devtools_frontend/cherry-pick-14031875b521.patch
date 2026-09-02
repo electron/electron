@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Mon, 18 May 2026 13:33:30 +0200
+Subject: Validate callback session IDs in DevTools CDP connection
+
+Bug: 513713927
+Change-Id: I522d8b6f12130f9dae15a28cea7ea67eb7ba15ee
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/7849385
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+
+diff --git a/front_end/core/protocol_client/DevToolsCDPConnection.ts b/front_end/core/protocol_client/DevToolsCDPConnection.ts
+index 8b5aa5dd30b24d4ab72a99246a3f973996368d73..d97292441406d7f139e413bc2e1d90b0388c8a7c 100644
+--- a/front_end/core/protocol_client/DevToolsCDPConnection.ts
++++ b/front_end/core/protocol_client/DevToolsCDPConnection.ts
+@@ -137,6 +137,15 @@ export class DevToolsCDPConnection implements CDPConnection {
+         return;
+       }
+ 
++      // DevTools inconsistently uses empty string or undefined to denote root
++      // session. Generally, empty string should not be used for the root
++      // session but to avoid potentially breaking callers we use '' for
++      // comparison here if the sessionId is undefined.
++      if ((callback.sessionId ?? '') !== (messageObject.sessionId ?? '')) {
++        // Ignore messages where ID does not match the session.
++        return;
++      }
++
+       callback.resolve(messageObject);
+       --this.#pendingResponsesCount;
+       this.#pendingLongPollingMessageIds.delete(messageObject.id);

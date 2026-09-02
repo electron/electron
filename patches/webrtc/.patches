@@ -2,3 +2,7 @@ fix_handle_pipewire_capturer_initialization_and_management.patch
 check_rtp_sequence_number_order_when_assembling_h264_frame_in.patch
 in_packetbuffer_use_helper_to_find_packet_slot_in_the_buffer.patch
 use_unwrappred_rtp_sequence_numbers_in_packetbuffer.patch
+cherry-pick-bc4f3f308398.patch
+cherry-pick-52de8e0bd243.patch
+cherry-pick-f3931994406c.patch
+cherry-pick-5a7e0ff57a52.patch

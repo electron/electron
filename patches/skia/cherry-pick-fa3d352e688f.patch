@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Angulo <angdaniel@google.com>
+Date: Thu, 16 Apr 2026 16:59:03 +0000
+Subject: added bounds check for glyph access on typeface
+
+quick fix for a  potential security issue
+
+Bug: 500071763
+Change-Id: I24a6f4a6a4b58706b792668037011d86da8bd1d4
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1210036
+Reviewed-by: Ben Wagner <bungeman@google.com>
+Commit-Queue: Ben Wagner <bungeman@google.com>
+Auto-Submit: Daniel Angulo <angdaniel@google.com>
+
+diff --git a/src/ports/SkTypeface_mac_ct.cpp b/src/ports/SkTypeface_mac_ct.cpp
+index f52a5e58bd8df61af640f27516ca62babe164e1f..21d6e9cfd5b80753a9d5f61b0e59eac5639ee654 100644
+--- a/src/ports/SkTypeface_mac_ct.cpp
++++ b/src/ports/SkTypeface_mac_ct.cpp
+@@ -376,16 +376,17 @@ SkFontStyle SkCTFontDescriptorGetSkFontStyle(CTFontDescriptorRef desc, bool from
+ // Web fonts added to the CTFont registry do not return their character set.
+ // Iterate through the font in this case. The existing caller caches the result,
+ // so the performance impact isn't too bad.
+-static void populate_glyph_to_unicode_slow(CTFontRef ctFont, CFIndex glyphCount,
++static void populate_glyph_to_unicode_slow(CTFontRef ctFont, const CFIndex glyphCount,
+                                            SkUnichar* out) {
+     sk_bzero(out, glyphCount * sizeof(SkUnichar));
++    CFIndex glyphsRemaining = glyphCount;
+     UniChar unichar = 0;
+-    while (glyphCount > 0) {
++    while (glyphsRemaining > 0) {
+         CGGlyph glyph;
+         if (CTFontGetGlyphsForCharacters(ctFont, &unichar, &glyph, 1)) {
+-            if (out[glyph] == 0) {
++            if (glyph < glyphCount && out[glyph] == 0) {
+                 out[glyph] = unichar;
+-                --glyphCount;
++                --glyphsRemaining;
+             }
+         }
+         if (++unichar == 0) {

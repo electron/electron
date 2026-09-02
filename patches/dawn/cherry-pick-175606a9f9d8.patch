@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Thu, 23 Apr 2026 11:15:32 -0700
+Subject: [dawn] Fix backends not consuming data of empty WriteBuffer commands
+
+Fixed: 500090141
+Change-Id: I3ceb070c59cc9c865c1d5bcc0451c80d25b50d4a
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/304675
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Auto-Submit: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+
+diff --git a/src/dawn/native/Commands.cpp b/src/dawn/native/Commands.cpp
+index 05d9afa640714b402fd1c12c2a16da9ffc184ea8..f131c971f2c90ca8bbb337878096e2c825632451 100644
+--- a/src/dawn/native/Commands.cpp
++++ b/src/dawn/native/Commands.cpp
+@@ -422,9 +422,7 @@ void SkipCommand(CommandIterator* commands, Command type) {
+ 
+         case Command::WriteBuffer: {
+             auto cmd = commands->NextCommand<WriteBufferCmd>();
+-            if (cmd->size > 0) {
+-                commands->NextData<uint8_t>(cmd->size);
+-            }
++            commands->NextData<uint8_t>(cmd->size);
+             break;
+         }
+ 
+diff --git a/src/dawn/native/d3d11/CommandBufferD3D11.cpp b/src/dawn/native/d3d11/CommandBufferD3D11.cpp
+index d7a5b2730d8d087adbf22dc4aa9dba3454bade05..a96e59c1f66efa8ae5f8ee81ecf957576dfbf194 100644
+--- a/src/dawn/native/d3d11/CommandBufferD3D11.cpp
++++ b/src/dawn/native/d3d11/CommandBufferD3D11.cpp
+@@ -502,6 +502,8 @@ MaybeError CommandBuffer::Execute(const ScopedSwapStateCommandRecordingContext*
+ 
+             case Command::WriteBuffer: {
+                 WriteBufferCmd* cmd = mCommands.NextCommand<WriteBufferCmd>();
++                uint8_t* data = mCommands.NextData<uint8_t>(cmd->size);
++
+                 if (cmd->size == 0) {
+                     // Skip no-op writes.
+                     continue;
+@@ -509,7 +511,6 @@ MaybeError CommandBuffer::Execute(const ScopedSwapStateCommandRecordingContext*
+ 
+                 Buffer* dstBuffer = ToBackend(cmd->buffer.Get());
+                 DAWN_TRY(dstBuffer->TrackUsage(commandContext, pendingSerial));
+-                uint8_t* data = mCommands.NextData<uint8_t>(cmd->size);
+                 DAWN_TRY(dstBuffer->Write(commandContext, cmd->offset, data, cmd->size));
+ 
+                 break;
+diff --git a/src/dawn/native/d3d12/CommandBufferD3D12.cpp b/src/dawn/native/d3d12/CommandBufferD3D12.cpp
+index a34f81b1698fedfb03ab2056c9773dce82159967..900b4738f7cec47a3024e72ef3c0cede1f7ccb07 100644
+--- a/src/dawn/native/d3d12/CommandBufferD3D12.cpp
++++ b/src/dawn/native/d3d12/CommandBufferD3D12.cpp
+@@ -1379,12 +1379,13 @@ MaybeError CommandBuffer::RecordCommands(CommandRecordingContext* commandContext
+                 WriteBufferCmd* write = mCommands.NextCommand<WriteBufferCmd>();
+                 const uint64_t offset = write->offset;
+                 const uint64_t size = write->size;
++                uint8_t* data = mCommands.NextData<uint8_t>(size);
++
+                 if (size == 0) {
+                     continue;
+                 }
+ 
+                 Buffer* dstBuffer = ToBackend(write->buffer.Get());
+-                uint8_t* data = mCommands.NextData<uint8_t>(size);
+ 
+                 DAWN_TRY(device->GetDynamicUploader()->WithUploadReservation(
+                     size, kCopyBufferToBufferOffsetAlignment,
+diff --git a/src/dawn/native/metal/CommandBufferMTL.mm b/src/dawn/native/metal/CommandBufferMTL.mm
+index 56fe9bcc0e370a2746cd053cd39c25dc1e98ce26..e0f02cc9d81467d908f069e8400f3813e4946588 100644
+--- a/src/dawn/native/metal/CommandBufferMTL.mm
++++ b/src/dawn/native/metal/CommandBufferMTL.mm
+@@ -1513,12 +1513,13 @@ void RecordCopyBufferToTexture(CommandRecordingContext* commandContext,
+                 WriteBufferCmd* write = mCommands.NextCommand<WriteBufferCmd>();
+                 const uint64_t offset = write->offset;
+                 const uint64_t size = write->size;
++                uint8_t* data = mCommands.NextData<uint8_t>(size);
++
+                 if (size == 0) {
+                     continue;
+                 }
+ 
+                 Buffer* dstBuffer = ToBackend(write->buffer.Get());
+-                uint8_t* data = mCommands.NextData<uint8_t>(size);
+                 Device* device = ToBackend(GetDevice());
+ 
+                 DAWN_TRY(device->GetDynamicUploader()->WithUploadReservation(
+diff --git a/src/dawn/native/opengl/CommandBufferGL.cpp b/src/dawn/native/opengl/CommandBufferGL.cpp
+index df7fc7d36f9342b3b1605b532b617b39abd82ee6..b69c7649ccc1c7bde4dcf16686b1dd42565d2820 100644
+--- a/src/dawn/native/opengl/CommandBufferGL.cpp
++++ b/src/dawn/native/opengl/CommandBufferGL.cpp
+@@ -1142,12 +1142,13 @@ MaybeError CommandBuffer::Execute(const OpenGLFunctions& gl) {
+                 WriteBufferCmd* write = mCommands.NextCommand<WriteBufferCmd>();
+                 uint64_t offset = write->offset;
+                 uint64_t size = write->size;
++                uint8_t* data = mCommands.NextData<uint8_t>(size);
++
+                 if (size == 0) {
+                     continue;
+                 }
+ 
+                 Buffer* dstBuffer = ToBackend(write->buffer.Get());
+-                uint8_t* data = mCommands.NextData<uint8_t>(size);
+                 DAWN_TRY(dstBuffer->EnsureDataInitializedAsDestination(offset, size));
+ 
+                 DAWN_GL_TRY(gl, BindBuffer(GL_ARRAY_BUFFER, dstBuffer->GetHandle()));
+diff --git a/src/dawn/native/vulkan/CommandBufferVk.cpp b/src/dawn/native/vulkan/CommandBufferVk.cpp
+index 1c857555b880ee408afb5333d48aa55ad765e694..b5c302658c4ebd4783ecbc1ec6031d8d4bbb60be 100644
+--- a/src/dawn/native/vulkan/CommandBufferVk.cpp
++++ b/src/dawn/native/vulkan/CommandBufferVk.cpp
+@@ -1441,12 +1441,13 @@ MaybeError CommandBuffer::RecordCommands(CommandRecordingContext* recordingConte
+                 WriteBufferCmd* write = mCommands.NextCommand<WriteBufferCmd>();
+                 const uint64_t offset = write->offset;
+                 const uint64_t size = write->size;
++                uint8_t* data = mCommands.NextData<uint8_t>(size);
++
+                 if (size == 0) {
+                     continue;
+                 }
+ 
+                 Buffer* dstBuffer = ToBackend(write->buffer.Get());
+-                uint8_t* data = mCommands.NextData<uint8_t>(size);
+ 
+                 DAWN_TRY(device->GetDynamicUploader()->WithUploadReservation(
+                     size, kCopyBufferToBufferOffsetAlignment,

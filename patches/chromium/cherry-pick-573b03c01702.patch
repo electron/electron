@@ -1,0 +1,202 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 14 May 2026 15:58:35 -0700
+Subject: [M149] media: Fix TransferList and Attachment key value collapse
+
+Original change's description:
+> media: Fix TransferList and Attachment key value collapse
+>
+> Blink uses `const void* const` keys initialized to `nullptr` for
+> TransferList and Attachment hash map lookups. In release builds,
+> Identical Code Folding (ICF) merges these keys into a single memory
+> address. During serialization, this causes a dictionary collision
+> leading to a type confusion where objects like `AudioData` are
+> incorrectly cast and stored in a `VideoFrameTransferList`.
+>
+> This change fixes the issue by adopting the Chromium idiom of
+> initializing these static keys to their own memory addresses
+> (`&ClassName::kKey`). This guarantees globally unique addresses and
+> prevents the linker from merging them.
+>
+> Bug: 511006880
+> Change-Id: Idbe69db7fca51437e0d510fe6602ba2a95a6e2d1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7842089
+> Reviewed-by: Colin Blundell <blundell@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1629958}
+
+(cherry picked from commit f66bd3243b2c7963db52ad5863c74d9931cda686)
+
+Bug: 513255152,511006880
+Change-Id: Idbe69db7fca51437e0d510fe6602ba2a95a6e2d1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7847836
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#762}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/third_party/blink/renderer/modules/mediasource/media_source_handle_attachment.cc b/third_party/blink/renderer/modules/mediasource/media_source_handle_attachment.cc
+index c2d955a6e258d4f24a3dcc34593578f5c1b68b94..3cd5fad9e72f00f939cc071fc3698054eefbd635 100644
+--- a/third_party/blink/renderer/modules/mediasource/media_source_handle_attachment.cc
++++ b/third_party/blink/renderer/modules/mediasource/media_source_handle_attachment.cc
+@@ -7,7 +7,8 @@
+ namespace blink {
+ 
+ // static
+-const void* const MediaSourceHandleAttachment::kAttachmentKey = nullptr;
++const void* const MediaSourceHandleAttachment::kAttachmentKey =
++    &MediaSourceHandleAttachment::kAttachmentKey;
+ 
+ MediaSourceHandleAttachment::MediaSourceHandleAttachment() = default;
+ 
+diff --git a/third_party/blink/renderer/modules/mediasource/media_source_handle_transfer_list.cc b/third_party/blink/renderer/modules/mediasource/media_source_handle_transfer_list.cc
+index eede9c59a26d28058ee8fef6d9f568877c739c86..991788a48cfa256a804a80d9c7e5d815ff77d02d 100644
+--- a/third_party/blink/renderer/modules/mediasource/media_source_handle_transfer_list.cc
++++ b/third_party/blink/renderer/modules/mediasource/media_source_handle_transfer_list.cc
+@@ -10,7 +10,8 @@
+ namespace blink {
+ 
+ // static
+-const void* const MediaSourceHandleTransferList::kTransferListKey = nullptr;
++const void* const MediaSourceHandleTransferList::kTransferListKey =
++    &MediaSourceHandleTransferList::kTransferListKey;
+ 
+ MediaSourceHandleTransferList::MediaSourceHandleTransferList() = default;
+ 
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_attachment.cc b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_attachment.cc
+index 8b361f0db4e88a0b5cd06602e1b43feac0171971..7ea1bfcfa905f18d951ff5ecfa2b23aef271f500 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_attachment.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_attachment.cc
+@@ -6,6 +6,7 @@
+ 
+ namespace blink {
+ 
+-const void* const RTCDataChannelAttachment::kAttachmentKey = nullptr;
++const void* const RTCDataChannelAttachment::kAttachmentKey =
++    &RTCDataChannelAttachment::kAttachmentKey;
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_transfer_list.cc b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_transfer_list.cc
+index 0727c5f511ca99c19a7106ec4529f5b58c2f510c..9910df477bde6bf47c9d44288df32af19a057f58 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_transfer_list.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel_transfer_list.cc
+@@ -8,7 +8,8 @@
+ 
+ namespace blink {
+ 
+-const void* const RTCDataChannelTransferList::kTransferListKey = nullptr;
++const void* const RTCDataChannelTransferList::kTransferListKey =
++    &RTCDataChannelTransferList::kTransferListKey;
+ 
+ void RTCDataChannelTransferList::Trace(Visitor* visitor) const {
+   visitor->Trace(data_channel_collection);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.cc
+index a4afde95ea7874f01860f032dac912ce820ae5f6..8a3dc9f42cb5e32d8bb91a8f37d83c55d94bb02a 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.cc
+@@ -28,7 +28,8 @@ namespace blink {
+ static constexpr char kRTCEncodedAudioFrameDetachKey[] = "RTCEncodedAudioFrame";
+ static constexpr int kAcceptableCaptureTimeDeltaMs = 1;
+ 
+-const void* RTCEncodedAudioFramesAttachment::kAttachmentKey;
++const void* const RTCEncodedAudioFramesAttachment::kAttachmentKey =
++    &RTCEncodedAudioFramesAttachment::kAttachmentKey;
+ 
+ RTCEncodedAudioFrameDelegate::RTCEncodedAudioFrameDelegate(
+     std::unique_ptr<webrtc::TransformableAudioFrameInterface> webrtc_frame,
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.h b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.h
+index 3734a337ebf2f9e9a06ada281bb295683354dd71..3322d303b86e6d2fe92c43557e2fd2b087b93351 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.h
+@@ -93,7 +93,7 @@ class RTCEncodedAudioFrameDelegate
+ class MODULES_EXPORT RTCEncodedAudioFramesAttachment
+     : public SerializedScriptValue::Attachment {
+  public:
+-  static const void* kAttachmentKey;
++  static const void* const kAttachmentKey;
+   RTCEncodedAudioFramesAttachment() = default;
+   ~RTCEncodedAudioFramesAttachment() override = default;
+ 
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame_delegate.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame_delegate.cc
+index 3511f67d34d059ee41da1fb0498f19eb6968a8d2..9525cbaccbcb70cc1f6d4bedd6e422c7e39a66b0 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame_delegate.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame_delegate.cc
+@@ -23,7 +23,8 @@ namespace blink {
+ 
+ static constexpr char kRTCEncodedVideoFrameDetachKey[] = "RTCEncodedVideoFrame";
+ 
+-const void* const RTCEncodedVideoFramesAttachment::kAttachmentKey = nullptr;
++const void* const RTCEncodedVideoFramesAttachment::kAttachmentKey =
++    &RTCEncodedVideoFramesAttachment::kAttachmentKey;
+ 
+ RTCEncodedVideoFrameDelegate::RTCEncodedVideoFrameDelegate(
+     std::unique_ptr<webrtc::TransformableVideoFrameInterface> webrtc_frame)
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_data_attachment.cc b/third_party/blink/renderer/modules/webcodecs/audio_data_attachment.cc
+index f6f43fc8bc8fbbceb3fe02a5674e59babc79bd1c..ece9b95ab8e19f62872f305cbb7574ab3966e984 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_data_attachment.cc
++++ b/third_party/blink/renderer/modules/webcodecs/audio_data_attachment.cc
+@@ -6,6 +6,7 @@
+ 
+ namespace blink {
+ 
+-const void* const AudioDataAttachment::kAttachmentKey = nullptr;
++const void* const AudioDataAttachment::kAttachmentKey =
++    &AudioDataAttachment::kAttachmentKey;
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/audio_data_transfer_list.cc b/third_party/blink/renderer/modules/webcodecs/audio_data_transfer_list.cc
+index ec6fa7fc623fe1b9dfd3370494be096cf56ed005..6a430f4a249431dc83735bb937324155b9a2b270 100644
+--- a/third_party/blink/renderer/modules/webcodecs/audio_data_transfer_list.cc
++++ b/third_party/blink/renderer/modules/webcodecs/audio_data_transfer_list.cc
+@@ -8,7 +8,8 @@
+ 
+ namespace blink {
+ 
+-const void* const AudioDataTransferList::kTransferListKey = nullptr;
++const void* const AudioDataTransferList::kTransferListKey =
++    &AudioDataTransferList::kTransferListKey;
+ 
+ void AudioDataTransferList::FinalizeTransfer(ExceptionState& exception_state) {
+   for (AudioData* audio_data : audio_data_collection)
+diff --git a/third_party/blink/renderer/modules/webcodecs/decoder_buffer_attachment.cc b/third_party/blink/renderer/modules/webcodecs/decoder_buffer_attachment.cc
+index ca20185de8837e0703bcde1c2c7f3374925f1151..4c7151e4e6d785ee798bd09b4cfdb16bddfe1df3 100644
+--- a/third_party/blink/renderer/modules/webcodecs/decoder_buffer_attachment.cc
++++ b/third_party/blink/renderer/modules/webcodecs/decoder_buffer_attachment.cc
+@@ -6,6 +6,7 @@
+ 
+ namespace blink {
+ 
+-const void* const DecoderBufferAttachment::kAttachmentKey = nullptr;
++const void* const DecoderBufferAttachment::kAttachmentKey =
++    &DecoderBufferAttachment::kAttachmentKey;
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_frame_attachment.cc b/third_party/blink/renderer/modules/webcodecs/video_frame_attachment.cc
+index f21fa682f48dc6ceabcda048997867253e97ac81..1206b01dea167d144abdb3921a29ac6e9f8df7ec 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_frame_attachment.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_frame_attachment.cc
+@@ -6,6 +6,7 @@
+ 
+ namespace blink {
+ 
+-const void* const VideoFrameAttachment::kAttachmentKey = nullptr;
++const void* const VideoFrameAttachment::kAttachmentKey =
++    &VideoFrameAttachment::kAttachmentKey;
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_frame_transfer_list.cc b/third_party/blink/renderer/modules/webcodecs/video_frame_transfer_list.cc
+index cfa3fa03e13cbddea5393191c32b929f46979e85..a1db41499de62e84c16b0daeb367fbc55935d986 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_frame_transfer_list.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_frame_transfer_list.cc
+@@ -8,7 +8,8 @@
+ 
+ namespace blink {
+ 
+-const void* const VideoFrameTransferList::kTransferListKey = nullptr;
++const void* const VideoFrameTransferList::kTransferListKey =
++    &VideoFrameTransferList::kTransferListKey;
+ 
+ void VideoFrameTransferList::FinalizeTransfer(ExceptionState& exception_state) {
+   for (VideoFrame* frame : video_frames)

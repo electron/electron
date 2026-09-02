@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Tue, 23 Jun 2026 09:35:59 -0700
+Subject: [M148] [native][d3d12] SharedBufferMemory: Make Unmap after EndAccess
+ fail
+
+Calling Unamp on a SBM after EndAccess should fail. Otherwise, a
+compromised renderer could take advantage of this to gain concurrent,
+unbarriered access to the SBM.
+
+Bug: 511758373
+Fixed: 514925541
+Change-Id: I3de036c0b71f05b2483fa5e0ae5ab7f543742197
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/307916
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+Reviewed-by: Loko Kung <lokokung@google.com>
+(manually cherry picked from commit 63321f623f725e52bfc92675581cba683a4b98bd)
+
+Change-Id: Ia6f0aaab430613a96b194b637f13c595ae2f0199
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/319215
+Reviewed-by: James Price <jrprice@google.com>
+
+diff --git a/src/dawn/native/Buffer.cpp b/src/dawn/native/Buffer.cpp
+index e356b48540797589f2b68af7bc1dc7f3a8066d2d..0203e39e463bdb7915d74b80a774cdeaf96cb52a 100644
+--- a/src/dawn/native/Buffer.cpp
++++ b/src/dawn/native/Buffer.cpp
+@@ -882,7 +882,7 @@ MaybeError BufferBase::Unmap(bool forDestroy) {
+         case BufferState::Unmapped:
+             return {};
+         case BufferState::SharedMemoryNoAccess:
+-            break;
++            return DAWN_VALIDATION_ERROR("%s unmapped without shared memory access.", this);
+         case BufferState::PendingMap:
+         case BufferState::Destroyed:
+             // UnmapInternal() already handled waiting for PendingMap to be done so there must have
