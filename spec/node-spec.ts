@@ -593,6 +593,35 @@ describe('node feature', () => {
     });
   });
 
+  describe('native addons', () => {
+    // Regression test for https://github.com/electron/electron/issues/53387:
+    // Node.js 24.19.0 made node::ObjectWrap register an environment cleanup
+    // hook, and removing it from ~ObjectWrap() during garbage collection
+    // aborted the process until nodejs/node#63985 and nodejs/node#65630 were
+    // picked up. The addon is loaded in a child process because the failure
+    // mode is a CHECK abort.
+    it('node::ObjectWrap instances survive garbage collection and teardown', async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'object-wrap-gc.js')], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.setEncoding('utf8');
+      child.stderr.setEncoding('utf8');
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+      });
+      const [code, signal] = await once(child, 'close');
+      expect(signal, stderr).to.be.null();
+      expect(code, stderr).to.equal(0);
+      expect(stdout.trim()).to.equal('ok');
+    });
+  });
+
   describe('message loop in renderer', () => {
     useRemoteContext();
 
