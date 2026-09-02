@@ -97,6 +97,16 @@ async function main() {
   if (somethingChanged && !args.skipYarnInstall) {
     await installSpecModules(path.resolve(__dirname, '..', 'spec'));
     await getSpecHash().then(saveSpecHash);
+  } else if (somethingChanged) {
+    // Without the spec install the native addon fixtures stay as the root
+    // install built them, against the system Node.js headers, so the ones
+    // that need Electron's headers (see installSpecModules) cannot be loaded.
+    // CI passes --skipYarnInstall on linux-arm; gate their specs there rather
+    // than fail with an ABI error.
+    console.log(
+      `${warn} --skipYarnInstall leaves the native addon fixtures needing Electron's headers unbuilt; their specs will be skipped`
+    );
+    process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS = '1';
   }
 
   if (!fs.existsSync(path.resolve(__dirname, '../electron.d.ts'))) {
@@ -475,7 +485,9 @@ async function installSpecModules(dir) {
     if (toolchainEnv === null) {
       // Not silent: the specs covering these fixtures are gated on this
       // variable and report as skipped, see spec/node-spec.ts.
-      console.log(`${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`);
+      console.log(
+        `${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`
+      );
       process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS = '1';
       continue;
     }
@@ -526,9 +538,15 @@ function getNativeAddonToolchainEnv() {
     console.log('Chromium clang/libc++ not found, building native addons with the system compiler');
     return {};
   }
-  const { error: clangError, status: clangStatus } = childProcess.spawnSync(path.join(clangDir, 'clang++'), ['--version'], { stdio: 'ignore' });
+  const { error: clangError, status: clangStatus } = childProcess.spawnSync(
+    path.join(clangDir, 'clang++'),
+    ['--version'],
+    { stdio: 'ignore' }
+  );
   if (clangError || clangStatus !== 0) {
-    console.log(`${warn} Chromium clang cannot run on this ${process.arch} host (${clangError ? clangError.code : `exit code ${clangStatus}`})`);
+    console.log(
+      `${warn} Chromium clang cannot run on this ${process.arch} host (${clangError ? clangError.code : `exit code ${clangStatus}`})`
+    );
     return null;
   }
   const ldflags = ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxLibDir}"`];
