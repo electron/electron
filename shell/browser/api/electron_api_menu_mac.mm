@@ -12,9 +12,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/task/sequenced_task_runner.h"
-#include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"  // nogncheck
-#include "content/browser/renderer_host/render_widget_host_view_mac.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "gin/persistent.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
@@ -180,12 +179,9 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
       frame_ptr && frame_ptr->render_frame_host()) {
     auto* rfh =
         frame_ptr->render_frame_host()->GetOutermostMainFrameOrEmbedder();
-    if (rfh && rfh->IsRenderFrameLive()) {
-      auto* rwhvm =
-          static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
-      RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
-      view = cocoa_view;
-
+    auto* rwhv = rfh && rfh->IsRenderFrameLive() ? rfh->GetView() : nullptr;
+    NSView* frame_view = rwhv ? rwhv->GetNativeView().GetNativeNSView() : nil;
+    if (frame_view) {
       // TODO: ui::ShowContextMenu does not dispatch the event correctly
       // if no frame is found. Fix this to remove if/else condition.
       NSEvent* dummy_event =
@@ -198,7 +194,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                           eventNumber:0
                            clickCount:1
                              pressure:0];
-      ui::ShowContextMenu(menu, dummy_event, view, true);
+      ui::ShowContextMenu(menu, dummy_event, frame_view, true);
       return;
     }
   }
