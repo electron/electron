@@ -8,6 +8,7 @@
 #include <objc/objc-runtime.h>
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -1184,7 +1185,8 @@ void NativeWindowMac::InvalidateShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
+  const double boundedOpacity =
+      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
 }
 
