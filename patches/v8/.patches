@@ -28,3 +28,4 @@ m152_compiler_invalidate_tracked_fields_on_checkmaps_with.patch
 cherry-pick-24134ecc1d1a.patch
 cherry-pick-8120dd10e82d.patch
 cherry-pick-303a64b51072.patch
+cherry-pick-67c8f3a91447.patch
