@@ -571,6 +571,66 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('Notification module', () => {
+    it('does not crash on exit with a live wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, Notification } = require('electron');
+        (globalThis as any).notificationRef = new Notification({ title: 'cppgc' });
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { Notification } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).notificationRef = new Notification({ title: 'cppgc' });
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / Notification']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / Notification'
+          ]);
+          return present && !isPersistentRooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after GC when no JS references remain', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { Notification } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let notification: any = new Notification({ title: 'cppgc' });
+        const weakRef = new WeakRef(notification);
+        notification = null;
+
+        return waitForGC(() => weakRef.deref() === undefined);
+      });
+      expect(released).to.equal(true, 'Notification should be released after GC when no JS references remain');
+    });
+  });
+
   describe('url loader module', () => {
     it('should not leak when performing chunked (streaming) uploads', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
