@@ -626,6 +626,30 @@ async function installSpecModules(dir) {
       process.exit(1);
     }
   }
+
+  // The native addon fixtures are workspaces, so yarn only runs their build
+  // scripts once per install state and keeps whatever the root `yarn install`
+  // built them against (the system Node.js headers in CI). N-API addons get
+  // away with that, but addons using Node's C++ API embed NODE_MODULE_VERSION
+  // and fail to load in Electron, so rebuild them all against the headers
+  // configured above.
+  const nodeGyp = path.resolve(__dirname, '..', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
+  const nativeAddonsDir = path.resolve(dir, 'fixtures', 'native-addon');
+  for (const addon of fs.readdirSync(nativeAddonsDir)) {
+    const addonDir = path.join(nativeAddonsDir, addon);
+    if (!fs.existsSync(path.join(addonDir, 'binding.gyp'))) {
+      continue;
+    }
+    const { status: rebuildStatus } = childProcess.spawnSync(process.execPath, [nodeGyp, 'rebuild'], {
+      env,
+      cwd: addonDir,
+      stdio: 'inherit'
+    });
+    if (rebuildStatus !== 0) {
+      console.log(`${fail} Failed to rebuild native addon '${addon}' in '${addonDir}'`);
+      process.exit(1);
+    }
+  }
 }
 
 function getSpecHash() {
