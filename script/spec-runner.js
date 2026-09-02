@@ -17,6 +17,7 @@ const unknownFlags = [];
 
 const pass = styleText('green', '✓');
 const fail = styleText('red', '✗');
+const warn = styleText('yellow', '⚠');
 
 const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
@@ -451,7 +452,8 @@ async function installSpecModules(dir) {
   // rebuilt here.
   const nodeGyp = path.resolve(__dirname, '..', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
   const nativeAddonsDir = path.resolve(dir, 'fixtures', 'native-addon');
-  const rebuildEnv = { ...env, ...getNativeAddonToolchainEnv() };
+  const toolchainEnv = getNativeAddonToolchainEnv();
+  const rebuildEnv = { ...env, ...toolchainEnv };
   // CI pins NPM_CONFIG_MSVS_VERSION=2022 for the spec install, but the Windows
   // test runners only ship a newer Visual Studio; let node-gyp detect the
   // installed one, as the root install that built the fixtures did.
@@ -468,6 +470,13 @@ async function installSpecModules(dir) {
     }
     const addonPackage = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
     if (!addonPackage['electron:requiresElectronHeaders']) {
+      continue;
+    }
+    if (toolchainEnv === null) {
+      // Not silent: the specs covering these fixtures are gated on this
+      // variable and report as skipped, see spec/node-spec.ts.
+      console.log(`${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`);
+      process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS = '1';
       continue;
     }
     console.log(`Rebuilding native addon '${addon}' against Electron's node headers`);
@@ -488,7 +497,13 @@ async function installSpecModules(dir) {
 // which is what the Linux CI test image ships. When the Chromium toolchain
 // from the source checkout is available (CI restores it into the test job's
 // src_artifacts) build the addons with clang and Electron's libc++, mirroring
-// script/nan-spec-runner.js. Otherwise fall back to the system compiler.
+// script/nan-spec-runner.js. Without it fall back to the system compiler.
+//
+// Returns null when the Chromium toolchain is present but cannot run on this
+// host: the linux-arm64 test job runs on an arm64 host but restores the x64
+// clang of the (cross-compiling) build job, and the system compiler there is
+// the same GCC that rejects the headers, so nothing on that host can build
+// the fixtures.
 function getNativeAddonToolchainEnv() {
   if (args.electronVersion || process.platform !== 'linux') {
     return {};
@@ -505,12 +520,25 @@ function getNativeAddonToolchainEnv() {
     libcxxConfigDir,
     libcxxIncludeDir,
     libcxxabiIncludeDir,
-    libcxxLibDir,
-    libcxxabiLibDir
+    libcxxLibDir
   ];
   if (!required.every((p) => fs.existsSync(p))) {
     console.log('Chromium clang/libc++ not found, building native addons with the system compiler');
     return {};
+  }
+  const { error: clangError, status: clangStatus } = childProcess.spawnSync(path.join(clangDir, 'clang++'), ['--version'], { stdio: 'ignore' });
+  if (clangError || clangStatus !== 0) {
+    console.log(`${warn} Chromium clang cannot run on this ${process.arch} host (${clangError ? clangError.code : `exit code ${clangStatus}`})`);
+    return null;
+  }
+  const ldflags = ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxLibDir}"`];
+  // Sanitizer builds compile libc++abi into the electron executable and export
+  // it from there (export_libcxxabi_from_executables in Chromium's
+  // build/config/c++/c++.gni) instead of producing a static library, so link
+  // against it only when it exists; otherwise the symbols resolve from the
+  // executable when the addon is loaded.
+  if (fs.existsSync(path.join(libcxxabiLibDir, 'libc++abi.a'))) {
+    ldflags.push(`-L"${libcxxabiLibDir}"`, '-lc++abi');
   }
   return {
     CC: path.join(clangDir, 'clang'),
@@ -528,7 +556,7 @@ function getNativeAddonToolchainEnv() {
       '-D_LIBCPP_ABI_NAMESPACE=Cr',
       '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE'
     ].join(' '),
-    LDFLAGS: ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxabiLibDir}"`, `-L"${libcxxLibDir}"`, '-lc++abi'].join(' ')
+    LDFLAGS: ldflags.join(' ')
   };
 }
 
