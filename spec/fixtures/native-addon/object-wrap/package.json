@@ -1,0 +1,8 @@
+{
+  "name": "@electron-ci/object-wrap",
+  "version": "0.0.1",
+  "main": "./lib/object-wrap.js",
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
+}
