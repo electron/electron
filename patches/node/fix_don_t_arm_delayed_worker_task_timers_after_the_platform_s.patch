@@ -26,7 +26,7 @@ TaskQueue<T> without a priority member since the queue became a
 priority_queue.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 142cb4a13becacae680feb25050506a3671b4b1b..47cafc6634c14ea3d656e8819ca8351356d09254 100644
+index 7f4004b4cb94b813be693818d3c4d96923442eea..c13d363cde2cf028ba3f364db489bb5d6bedf7a6 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -139,6 +139,7 @@ class WorkerThreadsTaskRunner::DelayedTaskScheduler {

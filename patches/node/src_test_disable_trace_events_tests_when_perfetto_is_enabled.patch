@@ -32,10 +32,10 @@ index f308232804352a72f81aa75dc42487b7a0697a47..077b8bff2c29cf35291e30b1bbfc8bdb
    bench.end(n);
  }
 diff --git a/src/debug_utils.h b/src/debug_utils.h
-index ffb8fe270018ee6d05b179c80fb52602350fafbf..724696f9e27fa7577518f587f05a28510281ef9b 100644
+index 52895a474b4ea478158ed28d036f2d8582ac6796..616f6c03e49ae9d9b56faf32155db7da5c217349 100644
 --- a/src/debug_utils.h
 +++ b/src/debug_utils.h
-@@ -60,6 +60,7 @@ void NODE_EXTERN_PRIVATE FWrite(FILE* file, const std::string& str);
+@@ -61,6 +61,7 @@ void NODE_EXTERN_PRIVATE FWrite(FILE* file, const std::string& str);
    V(MODULE)                                                                    \
    V(MKSNAPSHOT)                                                                \
    V(SNAPSHOT_SERDES)                                                           \
@@ -87,10 +87,10 @@ index 2193cfa48c9b8a2971de01ab1dee26ea0a152781..98d70037777a28910239aac866ebd416
    perfetto::Tracing::Initialize(init_args);
  
 diff --git a/test/common/index.js b/test/common/index.js
-index 6cfebae8f4998961fd94050b8dfc17be42ec6e1e..8692b50a8ed6923e2a839ad15506dea542994d8d 100755
+index 9d15b57bf6b85bb006496069149f41110a2664b5..309c7301f2bbf842aad00c31f57c8a455e6b2228 100755
 --- a/test/common/index.js
 +++ b/test/common/index.js
-@@ -56,6 +56,7 @@ const hasCrypto = Boolean(process.versions.openssl) &&
+@@ -58,6 +58,7 @@ const hasCrypto = Boolean(process.versions.openssl) &&
  
  const hasInspector = Boolean(process.features.inspector);
  const hasSQLite = Boolean(process.versions.sqlite);
@@ -98,7 +98,7 @@ index 6cfebae8f4998961fd94050b8dfc17be42ec6e1e..8692b50a8ed6923e2a839ad15506dea5
  
  const hasQuic = hasCrypto && !!process.features.quic;
  
-@@ -732,6 +733,18 @@ function skipIfSQLiteMissing() {
+@@ -734,6 +735,18 @@ function skipIfSQLiteMissing() {
    }
  }
  
@@ -117,7 +117,7 @@ index 6cfebae8f4998961fd94050b8dfc17be42ec6e1e..8692b50a8ed6923e2a839ad15506dea5
  function getArrayBufferViews(buf) {
    const { buffer, byteOffset, byteLength } = buf;
  
-@@ -973,6 +986,8 @@ const common = {
+@@ -1006,6 +1019,8 @@ const common = {
    skipIfEslintMissing,
    skipIfInspectorDisabled,
    skipIfSQLiteMissing,
@@ -125,7 +125,7 @@ index 6cfebae8f4998961fd94050b8dfc17be42ec6e1e..8692b50a8ed6923e2a839ad15506dea5
 +  skipIfPerfettoDisabled,
    spawnPromisified,
    sleepSync,
- 
+   usesSharedLibrary,
 diff --git a/test/common/index.mjs b/test/common/index.mjs
 index a9704d83c2b91dd5b012ba7dfe85a6917784c4bb..e2fa37e8ffecc120891abd27811bd423777ca353 100644
 --- a/test/common/index.mjs
