@@ -456,6 +456,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/object-wrap@npm:*, @electron-ci/object-wrap@workspace:spec/fixtures/native-addon/object-wrap":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/object-wrap@workspace:spec/fixtures/native-addon/object-wrap"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/osr-gpu@npm:*, @electron-ci/osr-gpu@workspace:spec/fixtures/native-addon/osr-gpu":
   version: 0.0.0-use.local
   resolution: "@electron-ci/osr-gpu@workspace:spec/fixtures/native-addon/osr-gpu"
@@ -3316,6 +3322,7 @@ __metadata:
     "@electron-ci/echo": "npm:*"
     "@electron-ci/external-ab": "npm:*"
     "@electron-ci/is-valid-window": "npm:*"
+    "@electron-ci/object-wrap": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
     "@electron-ci/virtual-display": "npm:*"
