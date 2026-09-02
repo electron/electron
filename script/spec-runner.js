@@ -616,19 +616,21 @@ async function installSpecModules(dir) {
 
   // The native addon fixtures are workspaces, so yarn only runs their build
   // scripts once per install state and keeps whatever the root `yarn install`
-  // built them against (the system Node.js headers in CI). N-API addons get
-  // away with that, but addons using Node's C++ API embed NODE_MODULE_VERSION
-  // and fail to load in Electron, so rebuild them all against the headers
-  // configured above.
+  // built them against (the system Node.js headers in CI). N-API addons are
+  // ABI-stable, so that is fine for them, but addons using Node's C++ module
+  // API embed NODE_MODULE_VERSION and fail to load in Electron unless they are
+  // compiled against the headers configured above, so rebuild those.
   const nodeGyp = path.resolve(__dirname, '..', 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
   const nativeAddonsDir = path.resolve(dir, 'fixtures', 'native-addon');
+  const rebuildEnv = { ...env, ...getNativeAddonToolchainEnv() };
   for (const addon of fs.readdirSync(nativeAddonsDir)) {
     const addonDir = path.join(nativeAddonsDir, addon);
-    if (!fs.existsSync(path.join(addonDir, 'binding.gyp'))) {
+    if (!fs.existsSync(path.join(addonDir, 'binding.gyp')) || !usesNodeModuleApi(addonDir)) {
       continue;
     }
+    console.log(`Rebuilding native addon '${addon}' against Electron's node headers`);
     const { status: rebuildStatus } = childProcess.spawnSync(process.execPath, [nodeGyp, 'rebuild'], {
-      env,
+      env: rebuildEnv,
       cwd: addonDir,
       stdio: 'inherit'
     });
@@ -637,6 +639,78 @@ async function installSpecModules(dir) {
       process.exit(1);
     }
   }
+}
+
+const NATIVE_SOURCE_EXTENSIONS = new Set(['.c', '.cc', '.cpp', '.cxx', '.h', '.hpp', '.m', '.mm']);
+
+// Whether an addon registers itself through Node's C++ module API
+// (NODE_MODULE / NODE_MODULE_INIT) rather than N-API (NAPI_MODULE). Only those
+// embed NODE_MODULE_VERSION and depend on Electron's node headers.
+function usesNodeModuleApi(addonDir) {
+  const walk = (current) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === 'node_modules' || entry.name === 'build') continue;
+      const entryPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (walk(entryPath)) return true;
+      } else if (NATIVE_SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
+        if (/\bNODE_MODULE(?:_INIT|_CONTEXT_AWARE)?\s*\(/.test(fs.readFileSync(entryPath, 'utf8'))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+  return walk(addonDir);
+}
+
+// Electron's V8 headers do not compile with GCC <= 12 (attribute ordering on
+// deprecated classes, see https://github.com/electron/electron/issues/53284),
+// which is what the Linux CI test image ships. When the Chromium toolchain
+// from the source checkout is available (CI restores it into the test job's
+// src_artifacts) build the addons with clang and Electron's libc++, mirroring
+// script/nan-spec-runner.js. Otherwise fall back to the system compiler.
+function getNativeAddonToolchainEnv() {
+  if (args.electronVersion || process.platform !== 'linux') {
+    return {};
+  }
+  const outDir = utils.getOutDir();
+  const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
+  const libcxxConfigDir = path.resolve(BASE, 'buildtools', 'third_party', 'libc++');
+  const libcxxIncludeDir = path.resolve(BASE, 'third_party', 'libc++', 'src', 'include');
+  const libcxxabiIncludeDir = path.resolve(BASE, 'third_party', 'libc++abi', 'src', 'include');
+  const libcxxLibDir = path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++');
+  const libcxxabiLibDir = path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++abi');
+  const required = [
+    path.join(clangDir, 'clang++'),
+    libcxxConfigDir,
+    libcxxIncludeDir,
+    libcxxabiIncludeDir,
+    libcxxLibDir,
+    libcxxabiLibDir
+  ];
+  if (!required.every((p) => fs.existsSync(p))) {
+    console.log('Chromium clang/libc++ not found, building native addons with the system compiler');
+    return {};
+  }
+  return {
+    CC: path.join(clangDir, 'clang'),
+    CXX: path.join(clangDir, 'clang++'),
+    LD: path.join(clangDir, 'lld'),
+    CFLAGS: '-Wno-trigraphs -fPIC',
+    CXXFLAGS: [
+      '-Wno-trigraphs',
+      '-nostdinc++',
+      `-isystem "${libcxxConfigDir}"`,
+      `-isystem "${libcxxIncludeDir}"`,
+      `-isystem "${libcxxabiIncludeDir}"`,
+      '-fvisibility-inlines-hidden',
+      '-fPIC',
+      '-D_LIBCPP_ABI_NAMESPACE=Cr',
+      '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE'
+    ].join(' '),
+    LDFLAGS: ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxabiLibDir}"`, `-L"${libcxxLibDir}"`, '-lc++abi'].join(' ')
+  };
 }
 
 function getSpecHash() {
