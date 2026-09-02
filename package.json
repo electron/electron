@@ -24,7 +24,7 @@
     "events": "^3.2.0",
     "folder-hash": "^4.1.2",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.8",
+    "lint-staged": "^17.3.0",
     "markdownlint-cli2": "^0.18.0",
     "minimist": "^1.2.8",
     "node-gyp": "^12.3.0",
