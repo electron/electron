@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Mon, 18 May 2026 08:36:02 +0200
+Subject: [M149] Cap RTCConfiguration certificates and enforce 32-bit overflow
+ checks
+
+1. Bounded the maximum number of certificates in RTCConfiguration to
+   1000 to prevent reference counter overflow while maintaining ample
+   headroom for legitimate multi-algorithm DTLS interoperability.
+2. Updated webrtc_impl::RefCounter to declare IncRef() out-of-line
+   unconditionally across all architectures.
+3. Implemented RefCounter::IncRef() out-of-line in ref_counter.cc with
+   an explicit RTC_CHECK_LT(prev, INT_MAX) guard on all architectures,
+   preventing 32-bit integer overflow and Use-After-Free vulnerabilities
+   unconditionally without causing inlined binary bloat.
+
+(cherry picked from commit 34505048c030ee72ad6ee99f46534861ebb0e365)
+
+Bug: chromium:513154132
+Fixed: chromium:513154132, chromium:514928807
+Change-Id: I9894ef08519423b24139b0250cc9da0f9737827a
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/472722
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#47722}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/475720
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7827@{#4}
+Cr-Branched-From: d606bc991592fbf4dcbe85e9d05db5e501a5ad42-refs/heads/main@{#47595}
+
+diff --git a/api/peer_connection_interface.h b/api/peer_connection_interface.h
+index 48b38d57ad96943bd68097a708957a9884ce249a..79e3677883c1807895b8b62901c5f12b19c6aacf 100644
+--- a/api/peer_connection_interface.h
++++ b/api/peer_connection_interface.h
+@@ -417,6 +417,10 @@ class RTC_EXPORT PeerConnectionInterface : public RefCountInterface {
+     static const int kAudioJitterBufferMaxPackets = 200;
+     // ICE connection receiving timeout for aggressive configuration.
+     static const int kAggressiveIceConnectionReceivingTimeout = 1000;
++    // Maximum number of certificates allowed in the configuration.
++    // Capped at 1000 which still provides ample headroom for interoperability
++    // of multiple key algorithms.
++    static const int kMaxCertificates = 1000;
+ 
+     ////////////////////////////////////////////////////////////////////////
+     // The below few fields mirror the standard RTCConfiguration dictionary:
+diff --git a/pc/peer_connection_factory.cc b/pc/peer_connection_factory.cc
+index 299d151774e4e7505fc9286543e71ca85aab1ad8..e5649c72a4d26513296cec839616d688a69908f6 100644
+--- a/pc/peer_connection_factory.cc
++++ b/pc/peer_connection_factory.cc
+@@ -236,6 +236,12 @@ PeerConnectionFactory::CreatePeerConnectionOrError(
+     return err;
+   }
+ 
++  if (configuration.certificates.size() >
++      PeerConnectionInterface::RTCConfiguration::kMaxCertificates) {
++    return RTCError(RTCErrorType::INVALID_PARAMETER,
++                    "Too many certificates in RTCConfiguration.");
++  }
++
+   ServerAddresses stun_servers;
+   std::vector<RelayServerConfig> turn_servers;
+   err = ParseAndValidateIceServersFromConfiguration(configuration, stun_servers,
+diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
+index 380090a9f722dc339194958a225d6a97d8cc72dd..16b33ed9c18f9a322bfe4d021bc91042f881c67c 100644
+--- a/rtc_base/BUILD.gn
++++ b/rtc_base/BUILD.gn
+@@ -390,16 +390,19 @@ rtc_library("platform_thread_types") {
+   deps = [ ":checks" ]
+ }
+ 
+-rtc_source_set("refcount") {
++rtc_library("refcount") {
+   visibility = [ "*" ]
+   sources = [
+     "ref_count.h",
+     "ref_counted_object.h",
++    "ref_counter.cc",
+     "ref_counter.h",
+   ]
+   deps = [
++    ":checks",
+     "../api:ref_count",
+     "../api:scoped_refptr",
++    "system:rtc_export",
+   ]
+ }
+ 
+diff --git a/rtc_base/ref_counter.cc b/rtc_base/ref_counter.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc3c6a765b52c45d29d46e7d6b37cb84568d130b
+--- /dev/null
++++ b/rtc_base/ref_counter.cc
+@@ -0,0 +1,30 @@
++/*
++ *  Copyright 2026 The WebRTC Project Authors. All rights reserved.
++ *
++ *  Use of this source code is governed by a BSD-style license
++ *  that can be found in the LICENSE file in the root of the source
++ *  tree. An additional intellectual property rights grant can be found
++ *  in the file PATENTS.  All contributing project authors may
++ *  be found in the AUTHORS file in the root of the source tree.
++ */
++
++#include "rtc_base/ref_counter.h"
++
++#include <atomic>
++#include <climits>
++
++#include "rtc_base/checks.h"
++
++namespace webrtc {
++namespace webrtc_impl {
++
++void RefCounter::IncRef() {
++  // Relaxed memory order: The current thread is allowed to act on the
++  // resource protected by the reference counter both before and after the
++  // atomic op, so this function doesn't prevent memory access reordering.
++  int prev = ref_count_.fetch_add(1, std::memory_order_relaxed);
++  RTC_CHECK_LT(prev, INT_MAX);
++}
++
++}  // namespace webrtc_impl
++}  // namespace webrtc
+diff --git a/rtc_base/ref_counter.h b/rtc_base/ref_counter.h
+index af253914b43cc8bbaeb48b79a8bb7068df26bd2c..6e52e4ef547807963414da0c385fdb4fc8e57f94 100644
+--- a/rtc_base/ref_counter.h
++++ b/rtc_base/ref_counter.h
+@@ -13,21 +13,17 @@
+ #include <atomic>
+ 
+ #include "api/ref_count.h"
++#include "rtc_base/system/rtc_export.h"
+ 
+ namespace webrtc {
+ namespace webrtc_impl {
+ 
+-class RefCounter {
++class RTC_EXPORT RefCounter {
+  public:
+   explicit RefCounter(int ref_count) : ref_count_(ref_count) {}
+   RefCounter() = delete;
+ 
+-  void IncRef() {
+-    // Relaxed memory order: The current thread is allowed to act on the
+-    // resource protected by the reference counter both before and after the
+-    // atomic op, so this function doesn't prevent memory access reordering.
+-    ref_count_.fetch_add(1, std::memory_order_relaxed);
+-  }
++  void IncRef();
+ 
+   // Returns kDroppedLastRef if this call dropped the last reference; the caller
+   // should therefore free the resource protected by the reference counter.

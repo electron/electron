@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Wed, 22 Apr 2026 15:34:12 -0700
+Subject: Break circular reference on WebRTC source termination
+
+The WebRtcAudioDeviceImpl and WebRtcAudioRenderer hold references to
+each other during normal operation. To prevent memory leaks or
+unexpected behavior when the audio source is terminated, this circular
+dependency must be explicitly broken.
+
+This change introduces a DisconnectSource() method to the audio
+renderer. When WebRtcAudioDeviceImpl::Terminate() is called, the device
+now clears its internal capturers, releases its lock to avoid deadlocks,
+and calls this new method to drop the renderer's reference to the
+source.
+
+Additionally, WebRtcAudioRenderer is updated to gracefully handle a null
+source. Access to the source is strictly guarded by locks, preventing
+crashes if operations like stopping or switching the output device occur
+after the source has been disconnected.
+
+Fixed: 503502607
+Change-Id: I6f1491aabb7de9734213a79e119dfc1dd3d0b4c7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7780754
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1619143}
+
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+index dfb5d18956a004199288849df1d2f198e28d2dc0..5935f96a9f37eb69fa62626f577be3c63170dd1a 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+@@ -212,13 +212,21 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+   StopRecording();
+   StopPlayout();
+ 
++  // Temporarily hold the audio renderer so that we can disconnect the source
++  // from it after we have released the lock, avoiding a deadlock.
++  scoped_refptr<blink::WebRtcAudioRenderer> renderer_to_disconnect;
+   {
+     base::AutoLock auto_lock(lock_);
+     DCHECK(!renderer_ || !renderer_->IsStarted())
+         << "The shared audio renderer shouldn't be running";
++    renderer_to_disconnect = renderer_;
+     capturers_.clear();
+   }
+ 
++  if (renderer_to_disconnect) {
++    renderer_to_disconnect->DisconnectSource();
++  }
++
+   initialized_ = false;
+   return 0;
+ }
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.cc b/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.cc
+index 632689b40ab8375c5892359ca4cf83ac374ee0e7..18417a8612713242f0c13ffe2b01a5b6e2e316cf 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.cc
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.cc
+@@ -345,14 +345,19 @@ bool WebRtcAudioRenderer::Initialize(WebRtcAudioRendererSource* source) {
+ 
+     // User must call Play() before any audio can be heard.
+     state_ = kPaused;
++    source_->SetOutputDeviceForAec(output_device_id_);
+   }
+-  source_->SetOutputDeviceForAec(output_device_id_);
+   sink_->Start();
+   sink_->Play();  // Not all the sinks play on start.
+ 
+   return true;
+ }
+ 
++void WebRtcAudioRenderer::DisconnectSource() {
++  base::AutoLock auto_lock(lock_);
++  source_ = nullptr;
++}
++
+ scoped_refptr<MediaStreamAudioRenderer>
+ WebRtcAudioRenderer::CreateSharedAudioRendererProxy(
+     MediaStreamDescriptor* media_stream_descriptor) {
+@@ -466,8 +471,10 @@ void WebRtcAudioRenderer::Stop() {
+       return;
+ 
+     audio_stream_tracker_.reset();
+-    source_->RemoveAudioRenderer(this);
+-    source_ = nullptr;
++    if (source_) {
++      source_->RemoveAudioRenderer(this);
++      source_ = nullptr;
++    }
+     state_ = kUninitialized;
+   }
+ 
+@@ -514,18 +521,23 @@ void WebRtcAudioRenderer::SwitchOutputDevice(
+   SendLogMessage(
+       UNSAFE_TODO(String::Format("%s({device_id=%s} [state=%s])", __func__,
+                                  device_id.c_str(), StateToString(state_))));
+-  if (!source_) {
++
++  bool has_source = false;
++  {
++    base::AutoLock auto_lock(lock_);
++    has_source = (source_ != nullptr);
++    if (has_source) {
++      DCHECK_NE(state_, kUninitialized);
++    }
++  }
++
++  if (!has_source) {
+     SendLogMessage(String::Format(
+         "%s => (ERROR: OUTPUT_DEVICE_STATUS_ERROR_INTERNAL)", __func__));
+     std::move(callback).Run(media::OUTPUT_DEVICE_STATUS_ERROR_INTERNAL);
+     return;
+   }
+ 
+-  {
+-    base::AutoLock auto_lock(lock_);
+-    DCHECK_NE(state_, kUninitialized);
+-  }
+-
+   auto* web_frame =
+       static_cast<WebLocalFrame*>(WebFrame::FromCoreFrame(source_frame_));
+   if (!web_frame) {
+@@ -568,9 +580,11 @@ void WebRtcAudioRenderer::SwitchOutputDevice(
+   output_device_id_ = String::FromUtf8(device_id);
+   {
+     base::AutoLock auto_lock(lock_);
+-    source_->AudioRendererThreadStopped();
++    if (source_) {
++      source_->AudioRendererThreadStopped();
++      source_->SetOutputDeviceForAec(output_device_id_);
++    }
+   }
+-  source_->SetOutputDeviceForAec(output_device_id_);
+   PrepareSink();
+   sink_->Start();
+   sink_->Play();  // Not all the sinks play on start.
+@@ -633,6 +647,11 @@ void WebRtcAudioRenderer::SourceCallback(int fifo_frame_delay,
+   TRACE_EVENT("audio", "WebRtcAudioRenderer::SourceCallback", "delay (frames)",
+               fifo_frame_delay);
+   DCHECK(sink_->CurrentThreadIsRenderingThread());
++  // The call to SourceCallback is initiated by WebrtcAudioRenderer::Render(),
++  // either directly or via AudioPullFifo. Both of those call with the lock
++  // held, so we can assert that we hold the lock here.
++  lock_.AssertAcquired();
++
+   base::TimeTicks start_time = base::TimeTicks::Now();
+   DVLOG(2) << "WRAR::SourceCallback(" << fifo_frame_delay << ", "
+            << audio_bus->channels() << ", " << audio_bus->frames() << ")";
+@@ -644,6 +663,7 @@ void WebRtcAudioRenderer::SourceCallback(int fifo_frame_delay,
+ 
+   // We need to keep render data for the |source_| regardless of |state_|,
+   // otherwise the data will be buffered up inside |source_|.
++  DCHECK(source_);
+   source_->RenderData(audio_bus, sink_params_.sample_rate(), output_delay,
+                       &current_time_, glitch_info_accumulator_.GetAndReset());
+ 
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.h b/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.h
+index 64c77d63520a295ab2feba5b3c14ddd65b5d142e..feb7a4fa9db8833e12bec4a98b308df12b32e346 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.h
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_renderer.h
+@@ -118,6 +118,10 @@ class MODULES_EXPORT WebRtcAudioRenderer
+   // Stop() has to be called before |source| is deleted.
+   bool Initialize(WebRtcAudioRendererSource* source);
+ 
++  // Called when the source is going away to clear the reference to the source
++  // and remove circular references.
++  void DisconnectSource();
++
+   // When sharing a single instance of WebRtcAudioRenderer between multiple
+   // users (e.g. WebMediaPlayerMS), call this method to create a proxy object
+   // that maintains the Play and Stop states per caller.
+@@ -324,7 +328,7 @@ class MODULES_EXPORT WebRtcAudioRenderer
+   // Audio data source from the browser process.
+   //
+   // TODO(crbug.com/704136): Make it a Member.
+-  raw_ptr<WebRtcAudioRendererSource> source_;
++  raw_ptr<WebRtcAudioRendererSource> source_ GUARDED_BY(lock_);
+ 
+   // Protects access to |state_|, |source_|, |audio_fifo_|,
+   // |audio_delay_milliseconds_|, |fifo_delay_milliseconds_|, |current_time_|,

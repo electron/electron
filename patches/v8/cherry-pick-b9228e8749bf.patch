@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Wed, 15 Apr 2026 09:46:10 +0200
+Subject: [compiler] Skip loop back-edges when computing dominating_frame_state
+
+The Turboshaft graph builder visits blocks in RPO order, so at
+loop-header-visit time the back-edge predecessor's final_frame_state is
+still default-Invalid. The existing predecessor-merge treated that
+default as a value that disagreed with the forward-edge FS, fell back to
+Invalid, and propagated Invalid through the loop -- stranding any
+downstream Check* op whose dominating Checkpoint was emitted before the
+loop. crbug/502439789 hits this in the inlined sort: a pre-loop
+Checkpoint (#28) dominates a post-copy-loop CheckedTaggedToTaggedSigned,
+but the side-effect-free copy loop wipes it out during the RPO merge.
+
+The bailout is unnecessarily conservative. A FrameState is a valid
+resume point for any program point which isn't also dominated by a
+closer framestate. Skip back-edge predecessors in the header merge so
+RPO visit order stops manufacturing a spurious disagreement.
+
+Fixed: 502439789
+Change-Id: I8c3f1d19f31b47b4aad21b62b5d96790a640711b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7761805
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106483}
+
+diff --git a/src/compiler/turboshaft/graph-builder.cc b/src/compiler/turboshaft/graph-builder.cc
+index 0825365557ae9048c01729d80f0e0480326a7197..1c85d35655fe88de9de6b2a7aadcfbcc8853ca3e 100644
+--- a/src/compiler/turboshaft/graph-builder.cc
++++ b/src/compiler/turboshaft/graph-builder.cc
+@@ -253,16 +253,23 @@ std::optional<BailoutReason> GraphBuilder::Run() {
+                        predecessors[j]->rpo_number();
+               });
+ 
++    // Skip loop back-edge predecessors: their final_frame_state hasn't been
++    // computed yet at header-visit time.
+     OpIndex dominating_frame_state = OpIndex::Invalid();
+-    if (!predecessors.empty()) {
+-      dominating_frame_state =
+-          block_mapping[predecessors[0]->rpo_number()].final_frame_state;
+-      for (size_t i = 1; i < predecessors.size(); ++i) {
+-        if (block_mapping[predecessors[i]->rpo_number()].final_frame_state !=
+-            dominating_frame_state) {
+-          dominating_frame_state = OpIndex::Invalid();
+-          break;
+-        }
++    bool first_fs = true;
++    for (BasicBlock* pred : predecessors) {
++      if (pred->rpo_number() >= block->rpo_number()) {
++        // Skipping loop backedge.
++        DCHECK(block->IsLoopHeader());
++        continue;
++      }
++      OpIndex pred_fs = block_mapping[pred->rpo_number()].final_frame_state;
++      if (first_fs) {
++        dominating_frame_state = pred_fs;
++        first_fs = false;
++      } else if (pred_fs != dominating_frame_state) {
++        dominating_frame_state = OpIndex::Invalid();
++        break;
+       }
+     }
+ 

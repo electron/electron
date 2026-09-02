@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Wed, 13 May 2026 15:51:57 +0200
+Subject: [M149] Reland "[scanner] Fix integer overflow in LiteralBuffer and
+ guard stream limits"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Reland "[scanner] Fix integer overflow in LiteralBuffer and guard stream limits"
+>
+> This is a reland of commit 4095047c346827c127d2e701cc591b5b39190a4b
+>
+> Changed the unittest to not expect a concrete death message, since
+> official builds strip CHECK messages.
+>
+> Original change's description:
+> > [scanner] Fix integer overflow in LiteralBuffer and guard stream limits
+> >
+> > Upgrade internal capacity tracking indices in LiteralBuffer from signed
+> > int to size_t to securely accumulate giant identifier sequences.
+> > Refactor backing store boundary evaluations to leverage .size()
+> > arithmetic securely, preventing downward memory aliasing overwrites
+> > triggered by integer wraps during literal conversion.
+> >
+> > Additionally, safeguard character streaming channels (ChunkedStream and
+> > Utf8ExternalStreamingStream) with strict cumulative size threshold
+> > checks (CHECK_LE) prior to fetching chunks to halt processing cleanly on
+> > excessive input streams.
+> >
+> > TAG=agy
+> > CONV=ce6c0a42-1907-4d61-8bf9-5b621b040509
+> >
+> > Bug: 511228272
+> > Change-Id: Iedc5410cd2db9e0eb68eae70bed2cec1932c4a36
+> > Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7836623
+> > Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> > Reviewed-by: Marja Hölttä <marja@chromium.org>
+> > Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#107291}
+>
+> Bug: 511228272
+> Change-Id: I84c44b934875a2be48b2a23296e84e6c43af479b
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7845236
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Marja Hölttä <marja@chromium.org>
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#107314}
+
+(cherry picked from commit 9180d91eb6e294e92756504fa9871d892f9693b5)
+
+Bug: 517405563,511228272
+Change-Id: I84c44b934875a2be48b2a23296e84e6c43af479b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7880153
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.9@{#40}
+Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{#1}
+Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
+
+diff --git a/src/parsing/literal-buffer.cc b/src/parsing/literal-buffer.cc
+index c7e5560b9601edc184a5c37d3eac2e84d35636e5..4ff207157854eeb38f5bdf2179b81e6671c11d3b 100644
+--- a/src/parsing/literal-buffer.cc
++++ b/src/parsing/literal-buffer.cc
+@@ -26,14 +26,14 @@ template DirectHandle<String> LiteralBuffer::Internalize(
+ template DirectHandle<String> LiteralBuffer::Internalize(
+     LocalIsolate* isolate) const;
+ 
+-int LiteralBuffer::NewCapacity(int min_capacity) {
++size_t LiteralBuffer::NewCapacity(size_t min_capacity) {
+   return min_capacity < (kMaxGrowth / (kGrowthFactor - 1))
+              ? min_capacity * kGrowthFactor
+              : min_capacity + kMaxGrowth;
+ }
+ 
+ void LiteralBuffer::ExpandBuffer() {
+-  int min_capacity = std::max({kInitialCapacity, backing_store_.length()});
++  size_t min_capacity = std::max(kInitialCapacity, backing_store_.size());
+   base::Vector<uint8_t> new_store =
+       base::Vector<uint8_t>::New(NewCapacity(min_capacity));
+   if (position_ > 0) {
+@@ -46,18 +46,19 @@ void LiteralBuffer::ExpandBuffer() {
+ void LiteralBuffer::ConvertToTwoByte() {
+   DCHECK(is_one_byte());
+   base::Vector<uint8_t> new_store;
+-  int new_content_size = position_ * base::kUC16Size;
+-  if (new_content_size >= backing_store_.length()) {
++  size_t new_content_size = position_ * base::kUC16Size;
++  if (new_content_size >= backing_store_.size()) {
+     // Ensure room for all currently read code units as UC16 as well
+     // as the code unit about to be stored.
+     new_store = base::Vector<uint8_t>::New(NewCapacity(new_content_size));
+   } else {
+     new_store = backing_store_;
+   }
++  CHECK_LE(position_, new_store.size());
+   uint8_t* src = backing_store_.begin();
+   uint16_t* dst = reinterpret_cast<uint16_t*>(new_store.begin());
+-  for (int i = position_ - 1; i >= 0; i--) {
+-    dst[i] = src[i];
++  for (size_t i = position_; i > 0; i--) {
++    dst[i - 1] = src[i - 1];
+   }
+   if (new_store.begin() != backing_store_.begin()) {
+     backing_store_.Dispose();
+@@ -69,7 +70,7 @@ void LiteralBuffer::ConvertToTwoByte() {
+ 
+ void LiteralBuffer::AddTwoByteChar(base::uc32 code_unit) {
+   DCHECK(!is_one_byte());
+-  if (position_ >= backing_store_.length()) ExpandBuffer();
++  if (position_ >= backing_store_.size()) ExpandBuffer();
+   if (code_unit <=
+       static_cast<base::uc32>(unibrow::Utf16::kMaxNonSurrogateCharCode)) {
+     *reinterpret_cast<uint16_t*>(&backing_store_[position_]) = code_unit;
+@@ -78,7 +79,7 @@ void LiteralBuffer::AddTwoByteChar(base::uc32 code_unit) {
+     *reinterpret_cast<uint16_t*>(&backing_store_[position_]) =
+         unibrow::Utf16::LeadSurrogate(code_unit);
+     position_ += base::kUC16Size;
+-    if (position_ >= backing_store_.length()) ExpandBuffer();
++    if (position_ >= backing_store_.size()) ExpandBuffer();
+     *reinterpret_cast<uint16_t*>(&backing_store_[position_]) =
+         unibrow::Utf16::TrailSurrogate(code_unit);
+     position_ += base::kUC16Size;
+diff --git a/src/parsing/literal-buffer.h b/src/parsing/literal-buffer.h
+index 92ed94bfbcade983df041d648056364e1a2f0a43..d11fdbd0973bbe25a29f01f43aeec352e3300173 100644
+--- a/src/parsing/literal-buffer.h
++++ b/src/parsing/literal-buffer.h
+@@ -41,7 +41,7 @@ class LiteralBuffer final {
+   bool is_one_byte() const { return is_one_byte_; }
+ 
+   bool Equals(base::Vector<const char> keyword) const {
+-    return is_one_byte() && keyword.length() == position_ &&
++    return is_one_byte() && keyword.size() == position_ &&
+            (memcmp(keyword.begin(), backing_store_.begin(), position_) == 0);
+   }
+ 
+@@ -62,7 +62,9 @@ class LiteralBuffer final {
+         position_ >> (sizeof(Char) - 1));
+   }
+ 
+-  int length() const { return is_one_byte() ? position_ : (position_ >> 1); }
++  int length() const {
++    return static_cast<int>(is_one_byte() ? position_ : (position_ >> 1));
++  }
+ 
+   void Start() {
+     position_ = 0;
+@@ -73,9 +75,9 @@ class LiteralBuffer final {
+   DirectHandle<String> Internalize(IsolateT* isolate) const;
+ 
+  private:
+-  static constexpr int kInitialCapacity = 256;
+-  static constexpr int kGrowthFactor = 4;
+-  static constexpr int kMaxGrowth = 1 * MB;
++  static constexpr size_t kInitialCapacity = 256;
++  static constexpr size_t kGrowthFactor = 4;
++  static constexpr size_t kMaxGrowth = 1 * MB;
+ 
+   inline bool IsValidAscii(char code_unit) {
+     // Control characters and printable characters span the range of
+@@ -87,18 +89,18 @@ class LiteralBuffer final {
+ 
+   V8_INLINE void AddOneByteChar(uint8_t one_byte_char) {
+     DCHECK(is_one_byte());
+-    if (position_ >= backing_store_.length()) ExpandBuffer();
++    if (position_ >= backing_store_.size()) ExpandBuffer();
+     backing_store_[position_] = one_byte_char;
+     position_ += kOneByteSize;
+   }
+ 
+   void AddTwoByteChar(base::uc32 code_unit);
+-  int NewCapacity(int min_capacity);
++  size_t NewCapacity(size_t min_capacity);
+   V8_NOINLINE V8_PRESERVE_MOST void ExpandBuffer();
+   void ConvertToTwoByte();
+ 
+   base::Vector<uint8_t> backing_store_;
+-  int position_ = 0;
++  size_t position_ = 0;
+   bool is_one_byte_ = true;
+ };
+ 
+diff --git a/src/parsing/scanner-character-streams.cc b/src/parsing/scanner-character-streams.cc
+index fe3703841d23939114890e6b20d506181e2036e1..c0965445b7e4459c7bcd564bb7178436d6fd899e 100644
+--- a/src/parsing/scanner-character-streams.cc
++++ b/src/parsing/scanner-character-streams.cc
+@@ -213,6 +213,7 @@ class ChunkedStream {
+     // Cloned ChunkedStreams have a null source, and therefore can't fetch any
+     // new data.
+     DCHECK_NOT_NULL(source_);
++    CHECK_LE(position, static_cast<size_t>(v8::String::kMaxLength));
+ 
+     const uint8_t* data = nullptr;
+     size_t length;
+@@ -220,6 +221,9 @@ class ChunkedStream {
+       RCS_SCOPE(stats, RuntimeCallCounterId::kGetMoreDataCallback);
+       length = source_->GetMoreData(&data);
+     }
++    // We can't handle more data than the max string length.
++    CHECK_LE(length / sizeof(Char),
++             static_cast<size_t>(v8::String::kMaxLength) - position);
+     ProcessChunk(data, position, length);
+   }
+ 
+@@ -746,9 +750,13 @@ bool Utf8ExternalStreamingStream::FetchChunk() {
+   // Utf8ExternalStreamingStreams that have been cloned are not allowed to fetch
+   // any more.
+   DCHECK_EQ(chunks_.use_count(), 1);
++  CHECK_LE(current_.pos.bytes, static_cast<size_t>(v8::String::kMaxLength));
+ 
+   const uint8_t* chunk = nullptr;
+   size_t length = source_stream_->GetMoreData(&chunk);
++  // We can't handle more data than the max string length.
++  CHECK_LE(length,
++           static_cast<size_t>(v8::String::kMaxLength) - current_.pos.bytes);
+   chunks_->emplace_back(chunk, length, current_.pos);
+   return length > 0;
+ }

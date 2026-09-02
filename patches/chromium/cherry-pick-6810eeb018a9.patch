@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Mon, 20 Apr 2026 16:30:29 -0700
+Subject: Fix potential crash in SpdyStream::IncreaseRecvWindowSize
+
+This CL fixes a potential crash in SpdyStream::IncreaseRecvWindowSize
+caused by accessing a destroyed object.
+
+SpdyStream::IncreaseRecvWindowSize calls
+session_->SendStreamWindowUpdate, which can trigger session draining and
+stream destruction if the number of queued capped frames exceeds the
+limit. If the stream is destroyed during this call, accessing member
+variables like unacked_recv_window_bytes_ after the call results in
+accessing a invalid memory.
+
+This CL adds a base::WeakPtr check after SendStreamWindowUpdate to
+ensure the stream is still alive before proceeding.
+
+Bug: 503420443
+Test: SpdySessionTest.WindowUpdateExceedsCappedFramesLimit
+Change-Id: Idb1f5252c9e05ef24701647ad2e70fd386547640
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7775828
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1617854}
+
+diff --git a/net/spdy/spdy_stream.cc b/net/spdy/spdy_stream.cc
+index 6610b2be81234404195294679f10e20e91f4479d..8ddbe24cc591cc3eefe455b7866d4114201399a3 100644
+--- a/net/spdy/spdy_stream.cc
++++ b/net/spdy/spdy_stream.cc
+@@ -276,8 +276,15 @@ void SpdyStream::IncreaseRecvWindowSize(int32_t delta_window_size) {
+   if (unacked_recv_window_bytes_ > max_recv_window_size_ / 2 ||
+       elapsed >= session_->TimeToBufferSmallWindowUpdates()) {
+     last_recv_window_update_ = base::TimeTicks::Now();
++    // SendStreamWindowUpdate() can result in session draining and stream
++    // destruction if the number of queued capped frames exceeds the limit.
++    // Check weak_this after the call to detect this.
++    base::WeakPtr<SpdyStream> weak_this = weak_ptr_factory_.GetWeakPtr();
+     session_->SendStreamWindowUpdate(
+         stream_id_, static_cast<uint32_t>(unacked_recv_window_bytes_));
++    if (!weak_this) {
++      return;
++    }
+     unacked_recv_window_bytes_ = 0;
+   }
+ }

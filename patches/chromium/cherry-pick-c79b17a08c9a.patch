@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Wed, 22 Apr 2026 15:51:22 -0700
+Subject: media/cast: Fix Heap OOB in VpxEncoder during resize
+
+Identified that VpxEncoder was reusing libvpx instances based on frame
+area, which is unsafe for VP9 if a dimension increases.
+
+Updated the reuse logic in ConfigureForNewFrameSize to check both width
+and height against the last initialized size (last_init_size_).
+
+Bug: 504587797
+Change-Id: I4df4c1b28742d32ec50068d01e6365d66e7c7688
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7779614
+Reviewed-by: Muyao Xu <muyaoxu@google.com>
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Jordan Bayles <jophba@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1619153}
+
+diff --git a/media/cast/encoding/vpx_encoder.cc b/media/cast/encoding/vpx_encoder.cc
+index 7226784f077324ef09ad690ab643e597be9e96c2..1f467484c9e3523caae53b5567ff56457f2d936b 100644
+--- a/media/cast/encoding/vpx_encoder.cc
++++ b/media/cast/encoding/vpx_encoder.cc
+@@ -108,14 +108,17 @@ void VpxEncoder::Initialize() {
+ 
+ void VpxEncoder::ConfigureForNewFrameSize(const gfx::Size& frame_size) {
+   if (is_initialized()) {
+-    // NOTE: Do we need this workaround for VP9?
+-    // Workaround for VP8 bug: If the new size is strictly less-than-or-equal to
+-    // the old size, in terms of area, the existing encoder instance can
+-    // continue.  Otherwise, completely tear-down and re-create a new encoder to
+-    // avoid a shutdown crash.
+-    if (frame_size.GetArea() <= gfx::Size(config_.g_w, config_.g_h).GetArea()) {
++    // Workaround for libvpx bug: If the new size is strictly less-than-or-equal
++    // to the old size, in terms of both dimensions, the existing encoder
++    // instance can continue.  Otherwise, completely tear-down and re-create a
++    // new encoder to avoid a shutdown crash or OOB read/write.
++    // More info can be found here:
++    //   https://bugs.chromium.org/p/webm/issues/detail?id=1642
++    //   https://bugs.chromium.org/p/webm/issues/detail?id=912
++    if (frame_size.width() <= last_init_size_->width() &&
++        frame_size.height() <= last_init_size_->height()) {
+       DVLOG(1) << "Continuing to use existing encoder at smaller frame size: "
+-               << gfx::Size(config_.g_w, config_.g_h).ToString() << " --> "
++               << last_init_size_->ToString() << " --> "
+                << frame_size.ToString();
+       config_.g_w = frame_size.width();
+       config_.g_h = frame_size.height();
+@@ -128,9 +131,9 @@ void VpxEncoder::ConfigureForNewFrameSize(const gfx::Size& frame_size) {
+     }
+ 
+     DVLOG(1) << "Destroying/Re-Creating encoder for larger frame size: "
+-             << gfx::Size(config_.g_w, config_.g_h).ToString() << " --> "
+-             << frame_size.ToString();
++             << last_init_size_->ToString() << " --> " << frame_size.ToString();
+     vpx_codec_destroy(&encoder_);
++    last_init_size_.reset();
+   } else {
+     DVLOG(1) << "Creating encoder for the first frame; size: "
+              << frame_size.ToString();
+@@ -186,6 +189,8 @@ void VpxEncoder::ConfigureForNewFrameSize(const gfx::Size& frame_size) {
+         {media::EncoderStatus::Codes::kEncoderInitializationError,
+          base::StrCat(
+              {"libvpx failed to initialize: ", vpx_codec_err_to_string(ret)})});
++  } else {
++    last_init_size_ = frame_size;
+   }
+ 
+   // Raise the threshold for considering macroblocks as static.  The default is
+@@ -238,7 +243,7 @@ void VpxEncoder::Encode(scoped_refptr<media::VideoFrame> video_frame,
+   // Initialize on-demand.  Later, if the video frame size has changed, update
+   // the encoder configuration.
+   const gfx::Size frame_size = video_frame->visible_rect().size();
+-  if (!is_initialized() || gfx::Size(config_.g_w, config_.g_h) != frame_size) {
++  if (!is_initialized() || *last_init_size_ != frame_size) {
+     ConfigureForNewFrameSize(frame_size);
+   }
+ 
+diff --git a/media/cast/encoding/vpx_encoder.h b/media/cast/encoding/vpx_encoder.h
+index 7053c946159d9390e211cf4c48e63ea6aa2fc7de..7eda7c10648b16e661741504e5b3bba9f9d8382d 100644
+--- a/media/cast/encoding/vpx_encoder.h
++++ b/media/cast/encoding/vpx_encoder.h
+@@ -7,6 +7,8 @@
+ 
+ #include <stdint.h>
+ 
++#include <optional>
++
+ #include "base/memory/raw_ref.h"
+ #include "base/threading/thread_checker.h"
+ #include "base/time/time.h"
+@@ -45,12 +47,7 @@ class VpxEncoder final : public SoftwareVideoEncoder {
+   void GenerateKeyFrame() final;
+ 
+  private:
+-  bool is_initialized() const {
+-    // ConfigureForNewFrameSize() sets the timebase denominator value to
+-    // non-zero if the encoder is successfully initialized, and it is zero
+-    // otherwise.
+-    return config_.g_timebase.den != 0;
+-  }
++  bool is_initialized() const { return last_init_size_.has_value(); }
+ 
+   // If the |encoder_| is live, attempt reconfiguration to allow it to encode
+   // frames at a new |frame_size|.  Otherwise, tear it down and re-create a new
+@@ -91,6 +88,9 @@ class VpxEncoder final : public SoftwareVideoEncoder {
+ 
+   // The higher the speed, the less CPU usage, and the lower quality.
+   int encoding_speed_;
++
++  // The size used for the last initialization of the encoder.
++  std::optional<gfx::Size> last_init_size_;
+ };
+ 
+ }  // namespace cast

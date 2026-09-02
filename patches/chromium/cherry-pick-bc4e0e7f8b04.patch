@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vikram Pasupathy <vpasupathy@chromium.org>
+Date: Tue, 7 Apr 2026 19:25:28 -0700
+Subject: media: Remove legacy IPC traits for EncryptionPattern
+
+encryption_pattern_mojom_traits.h exists.
+
+Bug: 40621529, 497929481
+Change-Id: I4a125a0627418a384ed6f21d663bc1ca3c9d5197
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7732451
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Commit-Queue: Vikram Pasupathy <vpasupathy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1611151}
+
+diff --git a/media/base/ipc/media_param_traits.cc b/media/base/ipc/media_param_traits.cc
+index efbcb7fb5aa3ce104b5f7b5e2ba36603566f7b65..b79d726d9469affdfc33c9856317dbf18bfc72e4 100644
+--- a/media/base/ipc/media_param_traits.cc
++++ b/media/base/ipc/media_param_traits.cc
+@@ -8,7 +8,6 @@
+ #include "ipc/param_traits_utils.h"
+ #include "media/base/audio_parameters.h"
+ #include "media/base/audio_point.h"
+-#include "media/base/encryption_pattern.h"
+ #include "media/base/encryption_scheme.h"
+ #include "media/base/limits.h"
+ #include "media/base/media_switches.h"
+@@ -121,25 +120,6 @@ bool ParamTraits<AudioParameters::HardwareCapabilities>::Read(
+   return true;
+ }
+ 
+-void ParamTraits<media::EncryptionPattern>::Write(base::Pickle* m,
+-                                                  const param_type& p) {
+-  WriteParam(m, p.crypt_byte_block());
+-  WriteParam(m, p.skip_byte_block());
+-}
+-
+-bool ParamTraits<media::EncryptionPattern>::Read(const base::Pickle* m,
+-                                                 base::PickleIterator* iter,
+-                                                 param_type* r) {
+-  uint32_t crypt_byte_block, skip_byte_block;
+-  if (!ReadParam(m, iter, &crypt_byte_block) ||
+-      !ReadParam(m, iter, &skip_byte_block)) {
+-    return false;
+-  }
+-
+-  *r = media::EncryptionPattern(crypt_byte_block, skip_byte_block);
+-  return true;
+-}
+-
+ }  // namespace IPC
+ 
+ // Generate param traits write methods.
+diff --git a/media/base/ipc/media_param_traits.h b/media/base/ipc/media_param_traits.h
+index 82390aa47c1f10d06cfc94316040ba6dfcceb885..f2062fd5c4dd37229ffdfaae37e6edf05fb20ef8 100644
+--- a/media/base/ipc/media_param_traits.h
++++ b/media/base/ipc/media_param_traits.h
+@@ -11,7 +11,6 @@
+ 
+ namespace media {
+ class AudioParameters;
+-class EncryptionPattern;
+ }
+ 
+ namespace IPC {
+@@ -34,15 +33,6 @@ struct ParamTraits<media::AudioParameters::HardwareCapabilities> {
+                    param_type* r);
+ };
+ 
+-template <>
+-struct ParamTraits<media::EncryptionPattern> {
+-  typedef media::EncryptionPattern param_type;
+-  static void Write(base::Pickle* m, const param_type& p);
+-  static bool Read(const base::Pickle* m,
+-                   base::PickleIterator* iter,
+-                   param_type* r);
+-};
+-
+ }  // namespace IPC
+ 
+ #endif  // MEDIA_BASE_IPC_MEDIA_PARAM_TRAITS_H_

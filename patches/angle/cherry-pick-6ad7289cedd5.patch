@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 25 May 2026 16:46:48 -0400
+Subject: M149: Translator: Disallow equality check on structs-with-samplers
+
+The spec doesn't say it, but glslang and drivers don't allow equality
+check on structs with samplers.  This was already checked for ESSL 100.
+
+Spec clarification requested at
+https://gitlab.khronos.org/opengl/API/-/issues/297
+
+Bug: chromium:513135862
+Change-Id: I8daed10eadb59400768ccc77d8b11b3c9eb07d16
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7880318
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index c4509f3d89bfd5a2338712296df6b56fec8faa67..bfe8686b445243db3180b70dadbd0920413f4781 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -8934,8 +8934,10 @@ bool TParseContext::binaryOpCommonCheck(TOperator op,
+             // Samplers as l-values are disallowed also in ESSL 3.00, see section 4.1.7,
+             // we interpret the spec so that this extends to structs containing samplers,
+             // similarly to ESSL 1.00 spec.
+-            if ((mShaderVersion < 300 || op == EOpAssign || op == EOpInitialize) &&
+-                left->getType().isStructureContainingSamplers())
++            //
++            // ESSL 3.00 doesn't disallow comparison between structs with samplers, but glslang, the
++            // reference implementation does, as do many drivers.
++            if (left->getType().isStructureContainingSamplers())
+             {
+                 error(loc, "undefined operation for structs containing samplers",
+                       GetOperatorString(op));

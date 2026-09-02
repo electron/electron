@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sergio Gonzalez Martin <sergiog@microsoft.com>
+Date: Wed, 22 Apr 2026 13:12:25 +0000
+Subject: [rust icc] Reject unsupported A2B/B2A channel counts and grid
+ dimensions
+
+Fixes:
+- Check ToSkcmsIccProfile return; return nullptr on failure.
+- Validate channel counts (1-4) in both FFI.rs and FFI.cpp.
+- Validate grid_points[i] >= 2 for every active CLUT dimension.
+- Fix Lut arm to populate grid_points for all active input channels.
+- Move FFI.cpp writes to output struct after validation (don't write
+  input_channels=64 before returning false).
+
+Bug: 503958940
+Bug: 504160794
+Bug: 504103236
+Change-Id: Ic034ec283807e665d50d6377a1757dee4451574b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1215636
+Reviewed-by: Florin Malita <fmalita@google.com>
+Commit-Queue: Florin Malita <fmalita@google.com>
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+
+diff --git a/rust/icc/FFI.cpp b/rust/icc/FFI.cpp
+index 26bb5334ba143be599b4ad18710265740b06bdda..06e16ef9665e531b7155aa37994e037efde0714c 100644
+--- a/rust/icc/FFI.cpp
++++ b/rust/icc/FFI.cpp
+@@ -65,11 +65,11 @@ static bool ToSkcmsA2B(const rust_icc::A2B& rust_a2b, skcms_A2B* out_skcms) {
+     memset(out_skcms, 0, sizeof(skcms_A2B));
+ 
+     // Input curves: If input_channels is non-zero, ensure we have enough curves
++    if (rust_a2b.input_channels > 4) {
++        return false;
++    }
+     out_skcms->input_channels = rust_a2b.input_channels;
+     if (rust_a2b.input_channels > 0) {
+-        if (rust_a2b.input_channels < 1 || rust_a2b.input_channels > 4) {
+-            return false;
+-        }
+         // Only validate curve count if input_channels is specified
+         if (!rust_a2b.input_curves.empty() && rust_a2b.input_channels > rust_a2b.input_curves.size()) {
+             return false;
+@@ -89,6 +89,13 @@ static bool ToSkcmsA2B(const rust_icc::A2B& rust_a2b, skcms_A2B* out_skcms) {
+     }
+     memcpy(out_skcms->grid_points, rust_a2b.grid_points.data(), 4);
+     if (!rust_a2b.grid_data.empty()) {
++        // Each active CLUT dimension must have >= 2 grid points, matching the
++        // constraint enforced by skcms_Parse (crbug.com/504103236).
++        for (uint32_t i = 0; i < out_skcms->input_channels; i++) {
++            if (out_skcms->grid_points[i] < 2) {
++                return false;
++            }
++        }
+         if (rust_a2b.is_16bit_grid) {
+             out_skcms->grid_16 = rust_a2b.grid_data.data();
+         } else {
+@@ -129,11 +136,11 @@ static bool ToSkcmsA2B(const rust_icc::A2B& rust_a2b, skcms_A2B* out_skcms) {
+     }
+ 
+     // Output curves: If output_channels is non-zero, ensure we have enough curves
++    if (rust_a2b.output_channels > 4) {
++        return false;
++    }
+     out_skcms->output_channels = rust_a2b.output_channels;
+     if (rust_a2b.output_channels > 0) {
+-        if (rust_a2b.output_channels > 4) {
+-            return false;
+-        }
+         // Only validate curve count if output_channels is specified
+         if (!rust_a2b.output_curves.empty() && rust_a2b.output_channels > rust_a2b.output_curves.size()) {
+             return false;
+@@ -203,6 +210,12 @@ static bool ToSkcmsB2A(const rust_icc::B2A& rust_b2a, skcms_B2A* out_skcms) {
+     }
+     memcpy(out_skcms->grid_points, rust_b2a.grid_points.data(), 4);
+     if (!rust_b2a.grid_data.empty()) {
++        // Each active CLUT dimension must have >= 2 grid points (crbug.com/504103236).
++        for (uint32_t i = 0; i < rust_b2a.output_channels; i++) {
++            if (out_skcms->grid_points[i] < 2) {
++                return false;
++            }
++        }
+         if (rust_b2a.is_16bit_grid) {
+             out_skcms->grid_16 = rust_b2a.grid_data.data();
+         } else {
+diff --git a/rust/icc/FFI.rs b/rust/icc/FFI.rs
+index a369b1851b9427ddaf6c51e67204b8c1d3056492..b0954d865a52b9125c40e209a08ffc6650c1e367 100644
+--- a/rust/icc/FFI.rs
++++ b/rust/icc/FFI.rs
+@@ -517,6 +517,18 @@ fn convert_to_a2b(
+ 
+     match lut {
+         LutWarehouse::Multidimensional(mdt) => {
++            // ICC.1:2022 §7.2.6 defines colour spaces up to 15 channels
++            // (nCLR), but skcms_A2B/B2A structs use fixed-size arrays of
++            // 4 elements for input_curves[] and grid_points[], so we can
++            // only represent device spaces with 1-4 channels (up to CMYK).
++            // Reject anything outside that range (crbug.com/504160794).
++            if mdt.num_input_channels > 4
++                || mdt.num_output_channels == 0
++                || mdt.num_output_channels > 4
++            {
++                return None;
++            }
++
+             let input_curves: Vec<ffi::Curve> =
+                 mdt.a_curves.iter().filter_map(convert_to_curve).collect();
+ 
+@@ -548,6 +560,17 @@ fn convert_to_a2b(
+                 return None;
+             }
+ 
++            // ICC.1:2022 §10.14/§10.15: each active CLUT dimension must
++            // have at least 2 grid points.  A zero would cause skcms clut()
++            // to underflow when computing grid_points[i] - 1 (crbug.com/504103236).
++            if !grid_data.is_empty() {
++                for i in 0..mdt.num_input_channels.min(4) as usize {
++                    if grid_points[i] < 2 {
++                        return None;
++                    }
++                }
++            }
++
+             // If there is no CLUT, input and output channels must match
+             // and we set input_channels to 0 to signal "skip this stage"
+             let (final_input_channels, final_input_curves) = if grid_data.is_empty() {
+@@ -580,6 +603,14 @@ fn convert_to_a2b(
+             // Legacy Lut8Type/Lut16Type (mft1/mft2 tags)
+             // Similar structure to Multidimensional, but uses uniform grid size
+ 
++            // Same channel-count constraint as Multidimensional above.
++            if ldt.num_input_channels > 4
++                || ldt.num_output_channels == 0
++                || ldt.num_output_channels > 4
++            {
++                return None;
++            }
++
+             let input_curves: Vec<ffi::Curve> = {
+                 let curve_data = lut_store_to_u16(&ldt.input_table);
+                 split_table_to_curves(
+@@ -592,11 +623,16 @@ fn convert_to_a2b(
+             let (grid_data, is_16bit_grid) = convert_grid_data(&ldt.clut_table);
+ 
+             let grid_size = ldt.num_clut_grid_points;
+-            let grid_points: [u8; 4] = match ldt.num_input_channels {
+-                3 => [grid_size, grid_size, grid_size, 0],
+-                4 => [grid_size, grid_size, grid_size, grid_size],
+-                _ => [grid_size, 0, 0, 0], // 1D or 2D case
+-            };
++            let mut grid_points = [0u8; 4];
++            for i in 0..ldt.num_input_channels.min(4) as usize {
++                grid_points[i] = grid_size;
++            }
++
++            // Legacy lut8/lut16 types always have a CLUT.  Each active
++            // dimension must have >= 2 grid points (crbug.com/504103236).
++            if grid_size < 2 {
++                return None;
++            }
+ 
+             let mut matrix = matrix3d_to_ffi(&ldt.matrix);
+             // Legacy LUT matrix is typically applied post-CLUT, so bias is zero
+diff --git a/src/codec/SkCodecColorProfileRust.cpp b/src/codec/SkCodecColorProfileRust.cpp
+index 66707db4bcc407aa1c3b81671fe182fa4f17f7ec..739859589532fca92ea4d867ffe324f7889bd2b3 100644
+--- a/src/codec/SkCodecColorProfileRust.cpp
++++ b/src/codec/SkCodecColorProfileRust.cpp
+@@ -26,7 +26,9 @@ std::unique_ptr<ColorProfile> MakeICCProfileWithRust(
+                         new rust_icc::IccProfile(std::move(rust_profile)));
+ 
+                 skcms_ICCProfile profile;
+-                rust_icc::ToSkcmsIccProfile(*retained, &profile);
++                if (!rust_icc::ToSkcmsIccProfile(*retained, &profile)) {
++                    return nullptr;
++                }
+                 auto result = std::unique_ptr<ColorProfile>(
+                         new ColorProfile(profile, std::move(data)));
+                 result->fRetainedData = retained;

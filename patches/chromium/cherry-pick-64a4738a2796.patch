@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Mon, 20 Apr 2026 02:21:33 -0700
+Subject: Ensure AudioSessionCreationObserverWin is not freed too early
+
+This CL changes AudioDuckerWin's audio session creation observer to be
+a COM object that lives in a ComPtr so that when the audio system holds
+a reference to it it is guaranteed to stay alive. This prevents a
+theoretically possible race condition where the audio system has queued
+callbacks to the observer when it is being deleted.
+
+Bug: 501557633
+Change-Id: I1087efce7815bdb458d9f5f93391fd2083bb7b0d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7770577
+Reviewed-by: Henrik Andreasson <henrika@chromium.org>
+Commit-Queue: Henrik Andreasson <henrika@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1617341}
+
+diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
+index a82ca8b52a4b8f96ccb013abd5c0bf7c2765b073..d17d8d1c4620592a896ea0b9b058461ad88d1160 100644
+--- a/media/audio/BUILD.gn
++++ b/media/audio/BUILD.gn
+@@ -531,6 +531,7 @@ source_set("unit_tests") {
+       "win/audio_low_latency_input_win_unittest.cc",
+       "win/audio_low_latency_output_win_unittest.cc",
+       "win/audio_output_win_unittest.cc",
++      "win/audio_session_creation_observer_win_unittest.cc",
+       "win/audio_session_event_listener_win_unittest.cc",
+       "win/core_audio_util_win_unittest.cc",
+       "win/device_enumeration_win_unittest.cc",
+diff --git a/media/audio/win/audio_ducker_win.cc b/media/audio/win/audio_ducker_win.cc
+index 0afab9a6eb4f5ea9d60b3a3ef348b85b8c2d3e8a..def972f78512c27701876b005312394846ff30d7 100644
+--- a/media/audio/win/audio_ducker_win.cc
++++ b/media/audio/win/audio_ducker_win.cc
+@@ -121,13 +121,13 @@ void AudioDuckerWin::StartDuckingOtherWindowsApplications() {
+ 
+   if (!session_creation_observer_) {
+     session_creation_observer_ =
+-        std::make_unique<AudioSessionCreationObserverWin>(
++        Microsoft::WRL::Make<AudioSessionCreationObserverWin>(
+             base::BindPostTaskToCurrentDefault(base::BindRepeating(
+                 &AudioDuckerWin::DuckNewAudioSessionsIfNecessary,
+                 weak_factory_.GetWeakPtr())));
+   }
+   ducked_audio_session_manager_->RegisterSessionNotification(
+-      session_creation_observer_.get());
++      session_creation_observer_.Get());
+ 
+   // `base::Unretained()` is safe here because this callback is called
+   // synchronously.
+@@ -151,7 +151,7 @@ void AudioDuckerWin::StopDuckingOtherWindowsApplications() {
+     if (ducked_audio_session_manager_) {
+       CHECK(session_creation_observer_);
+       ducked_audio_session_manager_->UnregisterSessionNotification(
+-          session_creation_observer_.get());
++          session_creation_observer_.Get());
+       ducked_audio_session_manager_.Reset();
+     }
+     return;
+@@ -174,7 +174,7 @@ void AudioDuckerWin::StopDuckingOtherWindowsApplications() {
+ 
+   ducked_applications_.clear();
+   ducked_audio_session_manager_->UnregisterSessionNotification(
+-      session_creation_observer_.get());
++      session_creation_observer_.Get());
+   ducked_audio_session_manager_.Reset();
+ }
+ 
+diff --git a/media/audio/win/audio_ducker_win.h b/media/audio/win/audio_ducker_win.h
+index 691dc5e86f9ad58460f1a6d1d3a852c529ce2712..18bf98ffe8df64c4e8b8fe69b8f199cf58f2c9ec 100644
+--- a/media/audio/win/audio_ducker_win.h
++++ b/media/audio/win/audio_ducker_win.h
+@@ -58,7 +58,8 @@ class MEDIA_EXPORT AudioDuckerWin {
+   void DuckNewAudioSessionsIfNecessary();
+ 
+   // Listens for audio session creation notifications from the OS.
+-  std::unique_ptr<AudioSessionCreationObserverWin> session_creation_observer_;
++  Microsoft::WRL::ComPtr<AudioSessionCreationObserverWin>
++      session_creation_observer_;
+ 
+   // Used to determine which applications we should duck.
+   ShouldDuckProcessCallback should_duck_process_callback_;
+diff --git a/media/audio/win/audio_session_creation_observer_win.cc b/media/audio/win/audio_session_creation_observer_win.cc
+index 4fdf90e2dfed1b8ed911109885dbcec10a51504a..3df84ef3219d8a76aeca4782ea8716e21439cee9 100644
+--- a/media/audio/win/audio_session_creation_observer_win.cc
++++ b/media/audio/win/audio_session_creation_observer_win.cc
+@@ -16,25 +16,6 @@ AudioSessionCreationObserverWin::AudioSessionCreationObserverWin(
+ 
+ AudioSessionCreationObserverWin::~AudioSessionCreationObserverWin() = default;
+ 
+-ULONG AudioSessionCreationObserverWin::AddRef() {
+-  return 1;
+-}
+-
+-ULONG AudioSessionCreationObserverWin::Release() {
+-  return 1;
+-}
+-
+-HRESULT AudioSessionCreationObserverWin::QueryInterface(REFIID iid,
+-                                                        void** object) {
+-  if (iid == IID_IUnknown || iid == __uuidof(IAudioSessionNotification)) {
+-    *object = static_cast<IAudioSessionNotification*>(this);
+-    return S_OK;
+-  }
+-
+-  *object = nullptr;
+-  return E_NOINTERFACE;
+-}
+-
+ HRESULT AudioSessionCreationObserverWin::OnSessionCreated(
+     IAudioSessionControl* session) {
+   session_created_cb_.Run();
+diff --git a/media/audio/win/audio_session_creation_observer_win.h b/media/audio/win/audio_session_creation_observer_win.h
+index 54982dfdf635a58bb3b141eec3c0859af2f577f1..8a5ef670ef65c54dc6f6cc151a82821d2cd1999c 100644
+--- a/media/audio/win/audio_session_creation_observer_win.h
++++ b/media/audio/win/audio_session_creation_observer_win.h
+@@ -6,14 +6,19 @@
+ #define MEDIA_AUDIO_WIN_AUDIO_SESSION_CREATION_OBSERVER_WIN_H_
+ 
+ #include <audiopolicy.h>
++#include <wrl/implements.h>
+ 
+ #include "base/functional/callback.h"
++#include "media/base/media_export.h"
+ 
+ namespace media {
+ 
+ // Calls the given callback when notified by the IAudioSessionManager2 that an
+ // audio session was created.
+-class AudioSessionCreationObserverWin : public IAudioSessionNotification {
++class MEDIA_EXPORT AudioSessionCreationObserverWin
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IAudioSessionNotification> {
+  public:
+   // `session_created_callback` is called when the system notifies us of a new
+   // audio session via `OnSessionCreated()`.
+@@ -23,12 +28,9 @@ class AudioSessionCreationObserverWin : public IAudioSessionNotification {
+       delete;
+   AudioSessionCreationObserverWin& operator=(
+       const AudioSessionCreationObserverWin&) = delete;
+-  virtual ~AudioSessionCreationObserverWin();
++  ~AudioSessionCreationObserverWin() override;
+ 
+   // IAudioSessionNotification:
+-  IFACEMETHODIMP_(ULONG) AddRef() override;
+-  IFACEMETHODIMP_(ULONG) Release() override;
+-  IFACEMETHODIMP QueryInterface(REFIID iid, void** object) override;
+   IFACEMETHODIMP OnSessionCreated(IAudioSessionControl* session) override;
+ 
+  private:

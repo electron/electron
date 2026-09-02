@@ -1,0 +1,356 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: S Ganesh <ganesh@chromium.org>
+Date: Wed, 22 Apr 2026 14:36:45 -0700
+Subject: Harden Mojo IPCz and verify server privilege in updater and EC
+
+This change addresses a Local Privilege Escalation vulnerability in the
+updater and enterprise companion by making two security improvements:
+
+1. In Mojo IPCz driver (invitation.cc), OpenRemoteProcess now
+dynamically identifies the remote process ID by querying both client and
+server PIDs, rather than relying on an assumption about the remote's
+role. This prevents handle confusion where the caller queries its own
+PID.
+
+2. Added a `verify_server_privilege` option to NamedPlatformChannel on
+Windows. When enabled, it verifies that the server process is running
+at the same or higher integrity level as the client. This prevents
+named pipe squatting attacks where a lower-privileged process
+intercepts connections.
+
+Fixed: 504104263
+Change-Id: Iec25825708be810effb5b29b5308939a9b7a0f65
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7785274
+Commit-Queue: S Ganesh <ganesh@chromium.org>
+Reviewed-by: Long Cheng <lgcheng@google.com>
+Reviewed-by: Noah Rose Ledesma <noahrose@google.com>
+Reviewed-by: Will Harris <wfh@chromium.org>
+Auto-Submit: S Ganesh <ganesh@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1619094}
+
+diff --git a/chrome/enterprise_companion/enterprise_companion_client.cc b/chrome/enterprise_companion/enterprise_companion_client.cc
+index c572cf2da832796f7314c7e4c1d9ba24f5b79ee9..1a1ccd1d8e68bc242ba15412a878103de32e93a1 100644
+--- a/chrome/enterprise_companion/enterprise_companion_client.cc
++++ b/chrome/enterprise_companion/enterprise_companion_client.cc
+@@ -103,8 +103,16 @@ void ConnectWithRetries(
+     return;
+   }
+ 
++#if BUILDFLAG(IS_WIN)
++  mojo::NamedPlatformChannel::Options options;
++  options.server_name = server_name;
++  options.verify_server_privilege = true;
++  mojo::PlatformChannelEndpoint endpoint =
++      named_mojo_ipc_server::ConnectToServer(options);
++#else
+   mojo::PlatformChannelEndpoint endpoint =
+       named_mojo_ipc_server::ConnectToServer(server_name);
++#endif
+   if (endpoint.is_valid()) {
+     std::move(callback).Run(std::move(endpoint));
+     return;
+@@ -132,7 +140,14 @@ void ConnectToServer(
+       FROM_HERE, {base::MayBlock()},
+       base::BindOnce(
+           [](const mojo::NamedPlatformChannel::ServerName& server_name) {
++#if BUILDFLAG(IS_WIN)
++            mojo::NamedPlatformChannel::Options options;
++            options.server_name = server_name;
++            options.verify_server_privilege = true;
++            return named_mojo_ipc_server::ConnectToServer(options);
++#else
+             return named_mojo_ipc_server::ConnectToServer(server_name);
++#endif
+           },
+           server_name)
+           .Then(base::BindPostTaskToCurrentDefault(
+diff --git a/chrome/updater/ipc/update_service_dialer_posix.cc b/chrome/updater/ipc/update_service_dialer_posix.cc
+index 9724c9f4c5189539569b83033d7ba5d31e1ba393..b5d2e5665168444d9e3dfc7f3bc0a77f592c4004 100644
+--- a/chrome/updater/ipc/update_service_dialer_posix.cc
++++ b/chrome/updater/ipc/update_service_dialer_posix.cc
+@@ -45,10 +45,11 @@ void ConnectMojoImpl(
+       return std::nullopt;
+     }
+ 
+-    return named_mojo_ipc_server::ConnectToServer(
+-        {.server_name = is_internal_service
+-                            ? GetUpdateServiceInternalServerName(scope)
+-                            : GetUpdateServiceServerName(scope)});
++    mojo::NamedPlatformChannel::Options options;
++    options.server_name = is_internal_service
++                              ? GetUpdateServiceInternalServerName(scope)
++                              : GetUpdateServiceServerName(scope);
++    return named_mojo_ipc_server::ConnectToServer(options);
+   }();
+ 
+   if (!endpoint) {
+diff --git a/chrome/updater/ipc/update_service_dialer_win.cc b/chrome/updater/ipc/update_service_dialer_win.cc
+index 87a924bb13dbfbd9de451f15e4d3d957309d38b1..5c5f06f0bb75e64ce113d08182f1233699967408 100644
+--- a/chrome/updater/ipc/update_service_dialer_win.cc
++++ b/chrome/updater/ipc/update_service_dialer_win.cc
+@@ -84,12 +84,13 @@ void ConnectMojoImpl(
+     }
+ 
+     server = result;
+-    return named_mojo_ipc_server::ConnectToServer({
+-        .server_name = is_internal_service
+-                           ? GetUpdateServiceInternalServerName(scope)
+-                           : GetUpdateServiceServerName(scope),
+-        .allow_impersonation = true,
+-    });
++    mojo::NamedPlatformChannel::Options options;
++    options.server_name = is_internal_service
++                              ? GetUpdateServiceInternalServerName(scope)
++                              : GetUpdateServiceServerName(scope);
++    options.allow_impersonation = true;
++    options.verify_server_privilege = true;
++    return named_mojo_ipc_server::ConnectToServer(options);
+   }();
+ 
+   if (tries >= 1 && !endpoint) {
+diff --git a/chromeos/ash/experiences/arc/session/arc_session_impl.cc b/chromeos/ash/experiences/arc/session/arc_session_impl.cc
+index fdd5282601bcc275b1bd8b2adbc8f028e03284ba..99658e4ad7aa956964697b70cf849c3522f2bee3 100644
+--- a/chromeos/ash/experiences/arc/session/arc_session_impl.cc
++++ b/chromeos/ash/experiences/arc/session/arc_session_impl.cc
+@@ -271,7 +271,9 @@ base::ScopedFD ArcSessionDelegateImpl::CreateSocketInternal() {
+     }
+   }
+ 
+-  auto endpoint = mojo::NamedPlatformChannel({socket_path.value()});
++  mojo::NamedPlatformChannel::Options options;
++  options.server_name = socket_path.value();
++  auto endpoint = mojo::NamedPlatformChannel(options);
+   // TODO(cmtm): use NamedPlatformChannel to bootstrap mojo connection after
+   // libchrome uprev in android.
+   base::ScopedFD socket_fd =
+diff --git a/components/named_mojo_ipc_server/named_mojo_ipc_server_client_util.cc b/components/named_mojo_ipc_server/named_mojo_ipc_server_client_util.cc
+index d3c3173c9b0669b0b8cbfeb2831acbdbbb8f69d8..f4bcbf65b33d8d4c691ed860294109b91210652b 100644
+--- a/components/named_mojo_ipc_server/named_mojo_ipc_server_client_util.cc
++++ b/components/named_mojo_ipc_server/named_mojo_ipc_server_client_util.cc
+@@ -57,7 +57,9 @@ mojo::PlatformChannelEndpoint ConnectToServer(
+ // static
+ mojo::PlatformChannelEndpoint ConnectToServer(
+     const mojo::NamedPlatformChannel::ServerName& server_name) {
+-  return ConnectToServer({.server_name = server_name});
++  mojo::NamedPlatformChannel::Options options;
++  options.server_name = server_name;
++  return ConnectToServer(options);
+ }
+ 
+ }  // namespace named_mojo_ipc_server
+diff --git a/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_linux.cc b/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_linux.cc
+index 1cfa150c7baaa482c3becd8a6f89425f96f1cebf..c5cf0b732f8502bf119b81f246999b49c1471874 100644
+--- a/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_linux.cc
++++ b/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_linux.cc
+@@ -106,8 +106,10 @@ void NamedMojoServerEndpointConnectorLinux::OnSocketReady() {
+ bool NamedMojoServerEndpointConnectorLinux::TryStart() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
++  mojo::NamedPlatformChannel::Options options;
++  options.server_name = options_.server_name;
+   mojo::PlatformChannelServerEndpoint server_endpoint =
+-      mojo::NamedPlatformChannel({options_.server_name}).TakeServerEndpoint();
++      mojo::NamedPlatformChannel(options).TakeServerEndpoint();
+   if (!server_endpoint.is_valid()) {
+     return false;
+   }
+diff --git a/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_mac.cc b/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_mac.cc
+index a6bb651992c2f53aff4afbdce8719a91c080d8ff..1ed8928ce0cd71e3ebe7ecef3391c9109b8c4404 100644
+--- a/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_mac.cc
++++ b/components/named_mojo_ipc_server/named_mojo_server_endpoint_connector_mac.cc
+@@ -112,8 +112,10 @@ mach_port_t NamedMojoServerEndpointConnectorMac::port() {
+ bool NamedMojoServerEndpointConnectorMac::TryStart() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
++  mojo::NamedPlatformChannel::Options options;
++  options.server_name = options_.server_name;
+   mojo::PlatformChannelServerEndpoint server_endpoint =
+-      mojo::NamedPlatformChannel({options_.server_name}).TakeServerEndpoint();
++      mojo::NamedPlatformChannel(options).TakeServerEndpoint();
+   if (!server_endpoint.is_valid() ||
+       !server_endpoint.platform_handle().is_valid_mach_receive()) {
+     return false;
+diff --git a/mojo/core/ipcz_driver/invitation.cc b/mojo/core/ipcz_driver/invitation.cc
+index 9f808aefb9d8f96f1f7eda29d8d65bfc28468c90..69ec2887f86e5ec39afaa5d51f2de3c92b8ff1f8 100644
+--- a/mojo/core/ipcz_driver/invitation.cc
++++ b/mojo/core/ipcz_driver/invitation.cc
+@@ -109,31 +109,38 @@ IpczDriverHandle CreateTransportForMojoEndpoint(
+ // given a handle to a connected named pipe. It may return an invalid process
+ // object if either the handle does not refer to a named pipe or the handle
+ // refers to a named pipe that is not connected.
+-base::Process OpenRemoteProcess(const MojoInvitationTransportEndpoint& endpoint,
+-                                bool remote_is_server) {
+-  base::ProcessId remote_process_id = 0;
++base::Process OpenRemoteProcess(
++    const MojoInvitationTransportEndpoint& endpoint) {
+   // Extract the handle to the connected named pipe from mojo invitation
+   // transport endpoint.
+   HANDLE handle =
+       LongToHandle(static_cast<long>(endpoint.platform_handles[0].value));
+-  auto get_remote_pid = remote_is_server ? &GetNamedPipeServerProcessId
+-                                         : &GetNamedPipeClientProcessId;
+-  // Try to get the remote client process id given the extracted handle via
+-  // GetNamedPipe(Server|Client)ProcessId API.
+-  if ((!get_remote_pid(handle, &remote_process_id) ||
+-       remote_process_id == base::Process::Current().Pid())) {
+-    DVLOG(2) << "Failed to get remote process id via the connected named pipe";
++
++  base::ProcessId client_pid = 0;
++  base::ProcessId server_pid = 0;
++  base::ProcessId current_pid = base::GetCurrentProcId();
++
++  if (!GetNamedPipeClientProcessId(handle, &client_pid)) {
++    PLOG(ERROR) << "GetNamedPipeClientProcessId failed";
+     return base::Process();
+   }
++  if (!GetNamedPipeServerProcessId(handle, &server_pid)) {
++    PLOG(ERROR) << "GetNamedPipeServerProcessId failed";
++    return base::Process();
++  }
++
++  // The remote PID is whichever one isn't us.
++  base::ProcessId remote_pid =
++      (client_pid == current_pid) ? server_pid : client_pid;
+ 
+-  if (remote_process_id == 0) {
+-    DVLOG(2) << "Remote process id is invalid";
++  if (remote_pid == 0 || remote_pid == current_pid) {
++    DLOG(ERROR) << "Could not identify remote process ID.";
+     return base::Process();
+   }
+ 
+   // Try to open the remote process.
+   base::Process remote_process =
+-      base::Process::OpenWithAccess(remote_process_id, PROCESS_DUP_HANDLE);
++      base::Process::OpenWithAccess(remote_pid, PROCESS_DUP_HANDLE);
+   if (!remote_process.IsValid()) {
+     DVLOG(2) << "Remote process is invalid";
+     return base::Process();
+@@ -287,8 +294,7 @@ MojoResult Invitation::Send(
+   // in such case, rely on the connected named pipe to get the remote process
+   // id, then open and set the remote process.
+   if (!remote_process.IsValid()) {
+-    remote_process =
+-        OpenRemoteProcess(*transport_endpoint, /* remote_is_server= */ false);
++    remote_process = OpenRemoteProcess(*transport_endpoint);
+   }
+ #endif
+ 
+@@ -422,8 +428,7 @@ MojoHandle Invitation::Accept(
+   base::Process remote_process;
+ #if BUILDFLAG(IS_WIN)
+   if (is_elevated) {
+-    remote_process =
+-        OpenRemoteProcess(*transport_endpoint, /* remote_is_server= */ true);
++    remote_process = OpenRemoteProcess(*transport_endpoint);
+   }
+ #endif
+   if (remote_process.IsValid()) {
+diff --git a/mojo/public/cpp/platform/named_platform_channel.cc b/mojo/public/cpp/platform/named_platform_channel.cc
+index 078f8aabf8dcf26e4524d87030bafe384e98dc9e..e8edd10bfa38de016b4e715ed720fcebc4e55d81 100644
+--- a/mojo/public/cpp/platform/named_platform_channel.cc
++++ b/mojo/public/cpp/platform/named_platform_channel.cc
+@@ -13,6 +13,9 @@ namespace mojo {
+ const char NamedPlatformChannel::kNamedHandleSwitch[] =
+     "mojo-named-platform-channel-pipe";
+ 
++NamedPlatformChannel::Options::Options() = default;
++NamedPlatformChannel::Options::~Options() = default;
++
+ NamedPlatformChannel::NamedPlatformChannel(const Options& options) {
+   server_endpoint_ = PlatformChannelServerEndpoint(
+       CreateServerEndpoint(options, &server_name_));
+@@ -45,7 +48,8 @@ void NamedPlatformChannel::PassServerNameOnCommandLine(
+ PlatformChannelEndpoint NamedPlatformChannel::ConnectToServer(
+     const ServerName& server_name) {
+   DCHECK(!server_name.empty());
+-  Options options = {.server_name = server_name};
++  Options options;
++  options.server_name = server_name;
+   return CreateClientEndpoint(options);
+ }
+ 
+diff --git a/mojo/public/cpp/platform/named_platform_channel.h b/mojo/public/cpp/platform/named_platform_channel.h
+index 3633b29fd6c2e54a0bfa166dea2ea473c6126d79..74ccec4c658664e3758b2fa430fc1c8cafb6a90d 100644
+--- a/mojo/public/cpp/platform/named_platform_channel.h
++++ b/mojo/public/cpp/platform/named_platform_channel.h
+@@ -40,6 +40,9 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) NamedPlatformChannel {
+ #endif
+ 
+   struct COMPONENT_EXPORT(MOJO_CPP_PLATFORM) Options {
++    Options();
++    ~Options();
++
+     // Specifies the name to use for the server. If empty, a random name is
+     // generated.
+     ServerName server_name;
+@@ -64,6 +67,12 @@ class COMPONENT_EXPORT(MOJO_CPP_PLATFORM) NamedPlatformChannel {
+     // Acceptable values are in the range 1 through PIPE_UNLIMITED_INSTANCES
+     // (255).
+     size_t max_clients = 1;
++
++    // If |true|, the client will verify that the server process is running
++    // at the same or higher integrity level as the client. This is useful
++    // to prevent named pipe squatting attacks, where a lower-privilege
++    // process attempts to impersonate a trusted server.
++    bool verify_server_privilege = false;
+ #elif BUILDFLAG(IS_POSIX)
+     // On POSIX, every new unnamed NamedPlatformChannel creates a server socket
+     // with a random name. This controls the directory where that happens.
+diff --git a/mojo/public/cpp/platform/named_platform_channel_win.cc b/mojo/public/cpp/platform/named_platform_channel_win.cc
+index abf32b2e486e48dcd8a5f382b8b22dbfa9c86053..cf96b30d4c98773391bee72046f6282b46521b38 100644
+--- a/mojo/public/cpp/platform/named_platform_channel_win.cc
++++ b/mojo/public/cpp/platform/named_platform_channel_win.cc
+@@ -17,6 +17,7 @@
+ #include "base/strings/strcat_win.h"
+ #include "base/strings/string_number_conversions_win.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "base/win/access_token.h"
+ #include "base/win/scoped_handle.h"
+ #include "base/win/windows_version.h"
+ 
+@@ -33,6 +34,28 @@ namespace {
+ constexpr wchar_t kDefaultSecurityDescriptor[] =
+     L"D:(A;;GA;;;SY)(A;;GA;;;BA)(A;;GA;;;OW)";
+ 
++bool VerifyServerPrivilege(HANDLE pipe_handle) {
++  DWORD pid = 0;
++  if (!GetNamedPipeServerProcessId(pipe_handle, &pid)) {
++    return false;
++  }
++
++  base::win::ScopedHandle process(
++      OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid));
++  if (!process.is_valid()) {
++    return false;
++  }
++
++  auto server_token = base::win::AccessToken::FromProcess(process.get());
++  auto client_token = base::win::AccessToken::FromCurrentProcess();
++
++  if (!server_token || !client_token) {
++    return false;
++  }
++
++  return server_token->IntegrityLevel() >= client_token->IntegrityLevel();
++}
++
+ }  // namespace
+ 
+ // static
+@@ -133,6 +156,14 @@ PlatformChannelEndpoint NamedPlatformChannel::CreateClientEndpoint(
+   DPLOG_IF(ERROR, !handle.is_valid())
+       << "Named pipe " << pipe_name
+       << " could not be opened after WaitNamedPipe succeeded";
++
++  if (handle.is_valid() && options.verify_server_privilege) {
++    if (!VerifyServerPrivilege(handle.GetHandle().Get())) {
++      DLOG(ERROR) << "Server privilege check failed.";
++      return PlatformChannelEndpoint();
++    }
++  }
++
+   return PlatformChannelEndpoint(std::move(handle));
+ }
+ 

@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Thu, 21 May 2026 03:57:22 -0700
+Subject: [M149] Validate that CDP events have no top-level ID
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL renames ValidateSessionId to ValidateMessage in DevTools session
+and makes use ofcbor::HasKeyInMap to ensure that events do not have an
+ID.
+
+(cherry picked from commit 9f7740bf8b5b2ebc5dc5eba8c9748911c3299442)
+
+Bug: 513713927
+Fixed: 514929228
+Change-Id: I0bba98b2ca7e5636dc85fb8f2f0689bffa38dc98
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7855285
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1632775}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7865903
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7827@{#1363}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index 213146bcad0385151936f4d22db2aa18264ec81a..ff7141c291decd8e0444760476a157f58fb5ca84 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -543,9 +543,11 @@ void DevToolsSession::DispatchProtocolResponseOrNotification(
+     DevToolsAgentHostClient* client,
+     DevToolsAgentHostImpl* agent_host,
+     blink::mojom::DevToolsMessagePtr message,
+-    const std::string& session_id) {
++    const std::string& session_id,
++    const bool& is_notification) {
+   base::span<const uint8_t> message_span = message->data;
+-  if (!ValidateSessionId(session_id, message_span)) {
++  if (!ValidateMessage(session_id, /*expected_has_id=*/!is_notification,
++                       message_span)) {
+     if (RenderProcessHost* process_host = agent_host->GetProcessHost()) {
+       bad_message::ReceivedBadMessage(
+           process_host, bad_message::RFH_INCONSISTENT_DEVTOOLS_MESSAGE);
+@@ -571,7 +573,8 @@ void DevToolsSession::DispatchProtocolResponse(
+   pending_messages_.erase(it->second);
+   waiting_for_response_.erase(it);
+   DispatchProtocolResponseOrNotification(client_, agent_host_,
+-                                         std::move(message), session_id_);
++                                         std::move(message), session_id_,
++                                         /*is_notification=*/false);
+   // |this| may be deleted at this point.
+ }
+ 
+@@ -580,7 +583,8 @@ void DevToolsSession::DispatchProtocolNotification(
+     blink::mojom::DevToolsSessionStatePtr updates) {
+   ApplySessionStateUpdates(std::move(updates));
+   DispatchProtocolResponseOrNotification(client_, agent_host_,
+-                                         std::move(message), session_id_);
++                                         std::move(message), session_id_,
++                                         /*is_notification=*/true);
+   // |this| may be deleted at this point.
+ }
+ 
+@@ -711,8 +715,9 @@ DevToolsSession* DevToolsSession::GetSessionById(const std::string& session_id)
+ }
+ 
+ // static
+-bool DevToolsSession::ValidateSessionId(const std::string& expected_session_id,
+-                                        base::span<const uint8_t> message) {
++bool DevToolsSession::ValidateMessage(const std::string& expected_session_id,
++                                      const bool expected_has_id,
++                                      base::span<const uint8_t> message) {
+   std::vector<uint8_t> cbor_message;
+   crdtp::span<uint8_t> span_message = crdtp::SpanFrom(message);
+ 
+@@ -729,6 +734,12 @@ bool DevToolsSession::ValidateSessionId(const std::string& expected_session_id,
+       crdtp::cbor::GetString8ValueFromMap(span_message,
+                                           crdtp::SpanFrom("sessionId"));
+ 
++  if (!expected_has_id &&
++      crdtp::cbor::HasKeyInMap(span_message, crdtp::SpanFrom("id"))) {
++    DLOG(ERROR) << "Expected no id in the message but received one";
++    return false;
++  }
++
+   if (expected_session_id.empty()) {
+     if (!extracted_session_id.empty()) {
+       DLOG(ERROR) << "Root session expected no sessionId but received one: "
+diff --git a/content/browser/devtools/devtools_session.h b/content/browser/devtools/devtools_session.h
+index 83e1a57e598abfd59dd0122636d9087308959c9e..8b7f9cfa27965c23487994fe018a4d9b03cd2fe9 100644
+--- a/content/browser/devtools/devtools_session.h
++++ b/content/browser/devtools/devtools_session.h
+@@ -17,6 +17,7 @@
+ #include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "content/browser/devtools/protocol/protocol.h"
++#include "content/common/content_export.h"
+ #include "content/public/browser/devtools_agent_host_client_channel.h"
+ #include "content/public/browser/devtools_external_agent_proxy.h"
+ #include "mojo/public/cpp/bindings/associated_receiver.h"
+@@ -59,6 +60,10 @@ class DevToolsSession : public protocol::FrontendChannel,
+                         public content::DevToolsAgentHostClientChannel {
+  public:
+   static int GetRootSessionCount();
++  static CONTENT_EXPORT bool ValidateMessage(
++      const std::string& expected_session_id,
++      const bool expected_has_id,
++      base::span<const uint8_t> message);
+ 
+   // For sessions attached to the Tab target, the mode is set to TabTarget.
+   // For other sessions, the mode is inherited from the parent.
+@@ -129,8 +134,6 @@ class DevToolsSession : public protocol::FrontendChannel,
+                                       base::OnceClosure resume_callback);
+   void DetachChildSession(const std::string& session_id);
+   bool HasChildSession(const std::string& session_id);
+-  static bool ValidateSessionId(const std::string& expected_session_id,
+-                                base::span<const uint8_t> message);
+   DevToolsSession* GetSessionById(const std::string& session_id);
+   Mode session_mode() const { return mode_; }
+ 
+@@ -215,7 +218,8 @@ class DevToolsSession : public protocol::FrontendChannel,
+       DevToolsAgentHostClient* client,
+       DevToolsAgentHostImpl* agent_host,
+       blink::mojom::DevToolsMessagePtr message,
+-      const std::string& session_id);
++      const std::string& session_id,
++      const bool& is_notification);
+ 
+   // Merges the |updates| received from the renderer into session_state_cookie_.
+   void ApplySessionStateUpdates(blink::mojom::DevToolsSessionStatePtr updates);

@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 1 May 2026 12:15:55 -0400
+Subject: D3D11: Disassociate storage before recovering image data.
+
+If staging texture creation fails due to OOM or context loss,
+Image11::mAssociatedStorage is left pointing to a potentially deleted
+storage.
+
+Instead, call disassociateStorage early to clean up the references.
+
+No test since this requires injecting a driver-level error and forcing a
+context loss.
+
+Fixed: chromium:497450927
+Change-Id: I631c43289ea955ff713b19a0fba6e6296a63f5a7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7807740
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+index 8b18ce74e7ad395f18c8168a05829166af3f54c8..f25ff486088034b6c5b703eb0ad21c86dc5b8725 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+@@ -193,14 +193,17 @@ angle::Result Image11::recoverFromAssociatedStorage(const gl::Context *context)
+ {
+     if (mRecoverFromStorage)
+     {
+-        ANGLE_TRY(createStagingTexture(context));
++        TextureStorage11 *storage = mAssociatedStorage;
++        gl::ImageIndex imageIndex = mAssociatedImageIndex;
++        storage->verifyAssociatedImageValid(imageIndex, this);
++        disassociateStorage();
+ 
+-        mAssociatedStorage->verifyAssociatedImageValid(mAssociatedImageIndex, this);
++        ANGLE_TRY(createStagingTexture(context));
+ 
+         // CopySubResource from the Storage to the Staging texture
+         gl::Box region(0, 0, 0, mWidth, mHeight, mDepth);
+-        ANGLE_TRY(mAssociatedStorage->copySubresourceLevel(
+-            context, mStagingTexture, mStagingSubresource, mAssociatedImageIndex, region));
++        ANGLE_TRY(storage->copySubresourceLevel(context, mStagingTexture, mStagingSubresource,
++                                                imageIndex, region));
+         mRecoveredFromStorageCount += 1;
+ 
+         // Reset all the recovery parameters, even if the texture storage association is broken.

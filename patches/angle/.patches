@@ -47,3 +47,12 @@ translator_handle_comma_and_ternary_for_array_checks.patch
 unset_active_textures_on_program_relink.patch
 d3d11_fix_buffer-overflow_during_robust_texture_initialization.patch
 m151_gl_workaround_flush_queries_before_deleting_or_unbinding.patch
+cherry-pick-1c82f3a0bd18.patch
+cherry-pick-3dc586d1786f.patch
+cherry-pick-31151bbc3505.patch
+cherry-pick-0bcb689c7059.patch
+cherry-pick-cad8fd6da0f0.patch
+cherry-pick-2251af425547.patch
+cherry-pick-059d08299b2d.patch
+cherry-pick-6ad7289cedd5.patch
+cherry-pick-520da581bdb5.patch

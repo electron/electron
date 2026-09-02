@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anton Bikineev <bikineev@chromium.org>
+Date: Wed, 13 May 2026 11:41:09 +0200
+Subject: [M149] cppgc: Fix memory order for OSB store
+
+Original change's description:
+> cppgc: Fix memory order for OSB store
+>
+> seq_cst doesn't prevent subsequent relaxed writes to bubble up.
+> Use an acq_rel RMW for that.
+>
+> Bug: 511218177
+> Change-Id: I8b61ff54faee61db1de695462d1fc03e15721953
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7843194
+> Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+> Auto-Submit: Anton Bikineev <bikineev@chromium.org>
+> Commit-Queue: Anton Bikineev <bikineev@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#107447}
+
+(cherry picked from commit faa4a23b3296debb16c5d767118c13c20c8bc7e6)
+
+Bug: 515275150,511218177
+Change-Id: I8b61ff54faee61db1de695462d1fc03e15721953
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7875230
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Anton Bikineev <bikineev@chromium.org>
+Commit-Queue: Anton Bikineev <bikineev@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.9@{#48}
+Cr-Branched-From: 8f08364a351ad38a60421137a09ef23953ecdd56-refs/heads/14.9.207@{#1}
+Cr-Branched-From: 8de67b11924d5e8c0032029165a52d800cf05f1f-refs/heads/main@{#106999}
+
+diff --git a/src/heap/cppgc/object-start-bitmap.h b/src/heap/cppgc/object-start-bitmap.h
+index 15b9de4069993b03ff24ff196d3dab79498e1022..eaa57969e942e714eb06e508802b2cf8f9f02a08 100644
+--- a/src/heap/cppgc/object-start-bitmap.h
++++ b/src/heap/cppgc/object-start-bitmap.h
+@@ -168,11 +168,12 @@ void ObjectStartBitmap::store(size_t cell_index, uint8_t value) {
+     object_start_bit_map_[cell_index] = value;
+     return;
+   }
+-  // Use seq cst here to avoid a situation when a pointer write may be reordered
+-  // before the setting of the mark bit, which may lead to the concurrent marker
+-  // missing the right object (because the bit is not yet propagated).
++  // Use acq rel rmw here to avoid a situation when a pointer write may be
++  // reordered before the setting of the mark bit, which may lead to the
++  // concurrent marker missing the right object (because the bit is not yet
++  // propagated).
+   std::atomic_ref<uint8_t>(object_start_bit_map_[cell_index])
+-      .store(value, std::memory_order_seq_cst);
++      .exchange(value, std::memory_order_acq_rel);
+ }
+ 
+ template <AccessMode mode>
