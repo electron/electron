@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakhi Sharma <atbrakhi@igalia.com>
+Date: Wed, 22 Jul 2026 14:39:57 -0700
+Subject: Fix wrong line number and range when using macOS Accessibility in
+ text fields/areas
+
+When the caret was not at the beginning of a line, AXLineForIndex
+returned the wrong line number and AXRangeForLine failed to return the
+range for the current line.
+
+This patch makes AXLineForIndex return the line containing the caret
+index, and AXRangeForLine return the range for that same line. Also
+added a new test.
+
+Bug: 423048796
+Change-Id: Icc6bfd41f455b7372bacce888784f6b9afc34203
+AX-Relnotes: Fixes line number and line range returning wrong data when using macOS Accessibility in text fields/area
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8092671
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Reviewed-by: Valerie Young <spectranaut@igalia.com>
+Commit-Queue: Rakhi Sharma <atbrakhi@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#1666634}
+
+diff --git a/ui/accessibility/platform/ax_platform_node_cocoa.mm b/ui/accessibility/platform/ax_platform_node_cocoa.mm
+index 3d661db219278b20fe725c819deb040062cc5d7a..e0020501800a1f1f07ab952eebb45498389f1990 100644
+--- a/ui/accessibility/platform/ax_platform_node_cocoa.mm
++++ b/ui/accessibility/platform/ax_platform_node_cocoa.mm
+@@ -2574,12 +2574,8 @@ - (id)AXRangeForLine:(id)parameter {
+     return nil;
+   }
+ 
+-  int lineIndex = [lineNumber intValue];
+-  if (lineIndex != 0) {
+-    return nil;
+-  }
+-
+-  return [NSValue valueWithRange:[self accessibilityRangeForLine:lineIndex]];
++  return [NSValue
++      valueWithRange:[self accessibilityRangeForLine:[lineNumber intValue]]];
+ }
+ 
+ - (id)AXStringForRange:(id)parameter {
+diff --git a/ui/accessibility/platform/browser_accessibility_cocoa.mm b/ui/accessibility/platform/browser_accessibility_cocoa.mm
+index ad5f38a05615a613897c1151493ca6bdc64e8f01..2841ff2533c8facaa9bd9f771e6bea7898ac6126 100644
+--- a/ui/accessibility/platform/browser_accessibility_cocoa.mm
++++ b/ui/accessibility/platform/browser_accessibility_cocoa.mm
+@@ -1717,10 +1717,19 @@ - (NSString*)accessibilityStringForRange:(NSRange)range {
+ }
+ 
+ - (NSInteger)accessibilityLineForIndex:(NSInteger)index {
++  if (index < 0 ||
++      index >= static_cast<int>(_owner->GetValueForControl().size())) {
++    return NSNotFound;
++  }
++
+   const std::vector<int> lineStarts =
+       _owner->GetIntListAttribute(ax::mojom::IntListAttribute::kLineStarts);
+-  auto iterator = std::lower_bound(lineStarts.begin(), lineStarts.end(), index);
+-  return std::distance(lineStarts.begin(), iterator);
++  auto iterator = std::upper_bound(lineStarts.begin(), lineStarts.end(), index);
++  if (iterator == lineStarts.begin()) {
++    return 0;
++  }
++
++  return std::distance(lineStarts.begin(), iterator) - 1;
+ }
+ 
+ - (NSRange)accessibilityRangeForLine:(NSInteger)lineIndex {
+diff --git a/ui/accessibility/platform/inspect/ax_call_statement_invoker_mac.mm b/ui/accessibility/platform/inspect/ax_call_statement_invoker_mac.mm
+index c735d36d044551da5b3ee183bae3508f0ecb9abd..5ab48958ac0971f2433885054272a17561d3042f 100644
+--- a/ui/accessibility/platform/inspect/ax_call_statement_invoker_mac.mm
++++ b/ui/accessibility/platform/inspect/ax_call_statement_invoker_mac.mm
+@@ -486,7 +486,7 @@
+   }
+ 
+   // Otherwise parse argument node value.
+-  if (attribute == "AXLineForIndex" ||
++  if (attribute == "AXLineForIndex" || attribute == "AXRangeForLine" ||
+       attribute == "AXTextMarkerForIndex") {  // Int
+     return AXOptionalNSObject::NotNullOrError(PropertyNodeToInt(argument));
+   }
