@@ -7,6 +7,7 @@
 #include "electron/fuses.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/protocol_source.h"
 
 namespace electron {
 
@@ -41,11 +42,10 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
     }
   }
 
-  for (const auto& it : handlers_) {
-    factories->emplace(it.first, ElectronURLLoaderFactory::Create(
-                                     it.second.first, it.second.second,
-                                     browser_context_->GetWeakPtr()));
-  }
+  for (const auto& it : handlers_)
+    factories->emplace(it.first, CreateRegisteredFactory(it.first));
+  for (const auto& it : sources_)
+    factories->emplace(it.first, CreateRegisteredFactory(it.first));
 }
 
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
@@ -56,19 +56,45 @@ ProtocolRegistry::CreateNonNetworkNavigationURLLoaderFactory(
       return AsarURLLoaderFactory::Create();
     }
   } else {
-    auto handler = handlers_.find(scheme);
-    if (handler != handlers_.end()) {
-      return ElectronURLLoaderFactory::Create(handler->second.first,
-                                              handler->second.second,
-                                              browser_context_->GetWeakPtr());
-    }
+    return CreateRegisteredFactory(scheme);
   }
   return {};
+}
+
+mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ProtocolRegistry::CreateRegisteredFactory(std::string_view scheme) const {
+  if (auto it = handlers_.find(scheme); it != handlers_.end()) {
+    return ElectronURLLoaderFactory::Create(it->second.first, it->second.second,
+                                            browser_context_->GetWeakPtr());
+  }
+  if (auto it = sources_.find(scheme); it != sources_.end())
+    return CreateProtocolSourceURLLoaderFactory(it->second);
+  return {};
+}
+
+bool ProtocolRegistry::RegisterSource(
+    const std::string& scheme,
+    scoped_refptr<const ProtocolSource> source) {
+  if (handlers_.contains(scheme))
+    return false;
+  return sources_.try_emplace(scheme, std::move(source)).second;
+}
+
+bool ProtocolRegistry::UnregisterSource(const std::string& scheme) {
+  return sources_.erase(scheme) != 0;
+}
+
+const ProtocolSource* ProtocolRegistry::FindSource(
+    std::string_view scheme) const {
+  auto it = sources_.find(scheme);
+  return it == sources_.end() ? nullptr : it->second.get();
 }
 
 bool ProtocolRegistry::RegisterProtocol(ProtocolType type,
                                         const std::string& scheme,
                                         const ProtocolHandler& handler) {
+  if (sources_.contains(scheme))
+    return false;
   return handlers_.try_emplace(scheme, type, handler).second;
 }
 

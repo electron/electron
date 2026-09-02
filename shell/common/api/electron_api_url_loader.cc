@@ -647,14 +647,11 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
-    if (const auto* const protocol_handler =
-            protocol_registry->FindRegistered(scheme)) {
+    if (auto factory = protocol_registry->CreateRegisteredFactory(scheme)) {
       return browser_context_->InterceptURLLoaderFactory(
           network::SharedURLLoaderFactory::Create(
               std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-                  ElectronURLLoaderFactory::Create(
-                      protocol_handler->first, protocol_handler->second,
-                      browser_context_->GetWeakPtr()))));
+                  std::move(factory))));
     }
   }
 

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/compiler_specific.h"
+#include "base/files/file_util.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
@@ -70,13 +71,14 @@ class AsarURLLoader : public network::mojom::URLLoader {
       const network::ResourceRequest& request,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+      scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+      bool read_plain_files) {
     // Owns itself. Will live as long as its URLLoader and URLLoaderClientPtr
     // bindings are alive - essentially until either the client gives up or all
     // file data has been sent to it.
     auto* asar_url_loader = new AsarURLLoader;
     asar_url_loader->Start(request, std::move(loader), std::move(client),
-                           std::move(extra_response_headers));
+                           std::move(extra_response_headers), read_plain_files);
     // Tell analyzer to ignore the leak of the self-owned AsarURLLoader
     ANALYZER_SKIP_THIS_PATH();
   }
@@ -99,7 +101,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
   void Start(const network::ResourceRequest& request,
              mojo::PendingReceiver<network::mojom::URLLoader> loader,
              mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-             scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+             scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+             bool read_plain_files) {
     auto head = network::mojom::URLResponseHead::New();
     head->request_start = base::TimeTicks::Now();
     head->response_start = base::TimeTicks::Now();
@@ -117,7 +120,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     // Determine whether it is an asar file.
     base::FilePath asar_path, relative_path;
-    if (!GetAsarArchivePath(path, &asar_path, &relative_path)) {
+    const bool in_archive =
+        GetAsarArchivePath(path, &asar_path, &relative_path);
+    if (!in_archive && !read_plain_files) {
       content::CreateFileURLLoaderBypassingSecurityChecks(
           request, std::move(loader), std::move(client), nullptr, false,
           extra_response_headers);
@@ -130,21 +135,34 @@ class AsarURLLoader : public network::mojom::URLLoader {
     receiver_.set_disconnect_handler(base::BindOnce(
         &AsarURLLoader::OnConnectionError, base::Unretained(this)));
 
-    // Parse asar archive.
-    std::shared_ptr<Archive> archive = GetOrCreateAsarArchive(asar_path);
+    std::shared_ptr<Archive> archive;
     Archive::FileInfo info;
-    if (!archive || !archive->GetFileInfo(relative_path, &info)) {
-      OnClientComplete(net::ERR_FILE_NOT_FOUND);
-      return;
+    base::FilePath real_path;
+    if (in_archive) {
+      archive = GetOrCreateAsarArchive(asar_path);
+      if (!archive || !archive->GetFileInfo(relative_path, &info)) {
+        OnClientComplete(net::ERR_FILE_NOT_FOUND);
+        return;
+      }
+      // For unpacked path, read like normal file.
+      if (info.unpacked) {
+        archive->CopyFileOut(relative_path, &real_path);
+        info.offset = 0;
+      }
+    } else {
+      // A plain file reads like an unpacked entry.
+      base::File::Info file_info;
+      if (!base::GetFileInfo(path, &file_info) || file_info.is_directory ||
+          file_info.size < 0) {
+        OnClientComplete(net::ERR_FILE_NOT_FOUND);
+        return;
+      }
+      info.unpacked = true;
+      info.size = static_cast<uint64_t>(file_info.size);
+      info.offset = 0;
+      real_path = path;
     }
     bool is_verifying_file = info.integrity.has_value();
-
-    // For unpacked path, read like normal file.
-    base::FilePath real_path;
-    if (info.unpacked) {
-      archive->CopyFileOut(relative_path, &real_path);
-      info.offset = 0;
-    }
 
     auto range_header =
         request.headers.GetHeader(net::HttpRequestHeaders::kRange);
@@ -406,14 +424,16 @@ void CreateAsarURLLoader(
     const network::ResourceRequest& request,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-    scoped_refptr<net::HttpResponseHeaders> extra_response_headers) {
+    scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
+    bool read_plain_files) {
   auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
       {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
   task_runner->PostTask(
       FROM_HERE,
       base::BindOnce(&AsarURLLoader::CreateAndStart, request, std::move(loader),
-                     std::move(client), std::move(extra_response_headers)));
+                     std::move(client), std::move(extra_response_headers),
+                     read_plain_files));
 }
 
 }  // namespace asar
