@@ -64,6 +64,9 @@ See [`Menu`](menu.md) for examples.
   * `afterGroupContaining` string[] (optional) - Provides a means for a single context menu to declare
     the placement of their containing group after the containing group of the item
     with the specified id.
+  * `badge` [MenuItemBadge](structures/menu-item-badge.md) (optional) _macOS_ - A badge shown alongside
+    the label, either a system-styled count (`alerts`, `updates`, `new-items`) or a custom string.
+    Only available on macOS 14 and up.
 
 > [!NOTE]
 > `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
@@ -188,3 +191,10 @@ A `number` indicating an item's sequential unique id.
 #### `menuItem.menu`
 
 A [`Menu`](menu.md) that the item is a part of.
+
+#### `menuItem.badge` _macOS_
+
+A [`MenuItemBadge`](structures/menu-item-badge.md) (optional) indicating the badge for the menu item.
+
+This property can be dynamically changed; setting it to `undefined` removes the badge. Only available on
+macOS 14 and up.
