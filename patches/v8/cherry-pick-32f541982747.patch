@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Fri, 28 Aug 2026 10:31:44 +0200
+Subject: [M152] [turboshaft] Invalidate in-loop bases in
+ store-store-elimination
+
+Original change's description:
+> [turboshaft] Invalidate in-loop bases in store-store-elimination
+>
+> In a nutshell, if after a loop there is a `a[0] = 42` and in the loop
+> there is also a `a[0] = 42`, when we merging at the header,
+> store-store elimination will decide that `a[0]` is unobservable and
+> when revisiting the loop it will thus eliminate the `a[0] = 42`.
+> In general, this is OK, except if `a` was allocated in the loop
+> itself, since in that case `a` is redefined at each iteration, and the
+> fact that `a[0]` was unobservable at iteration `i` doesn't mean that
+> it won't be at iteration `i+1`. So for instance if the loop stored
+> `a` somewhere and we removed the `a[0] = 42`, then `a[0]` could be
+> observed as stale/uninitialized.
+>
+> Fixed: 547936520
+> Change-Id: If102dfd81cf69cbddd6375be08f20213991a8b2d
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8308714
+> Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109560}
+
+(cherry picked from commit 67c8f3a91447f9b8b15c16b6f6d0e1702f02e7a7)
+
+Bug: 554320653,547936520
+Change-Id: If102dfd81cf69cbddd6375be08f20213991a8b2d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8312371
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#38}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/compiler/turboshaft/store-store-elimination-reducer-inl.h b/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
+index 3c4f4ed907fe81ceba0c7c9ae6399190f9acb1b2..a292ef081a194ed135108cb197e08b0afcd92eef 100644
+--- a/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
++++ b/src/compiler/turboshaft/store-store-elimination-reducer-inl.h
+@@ -230,6 +230,15 @@ class MaybeRedundantStoresTable
+     }
+   }
+ 
++  void InvalidateBasesInRange(BlockIndex start, BlockIndex end) {
++    for (Key key : active_keys_) {
++      BlockIndex base_block = graph_.BlockOf(key.data().base);
++      if (base_block >= start && base_block <= end) {
++        Set(key, StoreObservability::kObservable);
++      }
++    }
++  }
++
+   void MarkAllStoresAsGCObservable() {
+     TRACE("> MarkAllStoresAsGCObservable");
+     for (Key key : active_keys_) {
+@@ -330,14 +339,26 @@ class RedundantStoreAnalysis {
+       // If this block is a loop header, check if this loop needs to be
+       // revisited.
+       if (block.IsLoop()) {
++        Block* back_edge = block.LastPredecessor();
++        DCHECK_GE(back_edge->index(), block_index);
++        // Objects allocated inside the loop body belong to a specific loop
++        // iteration and are distinct across iterations. We must invalidate
++        // their store observability across the backedge so that stores to a
++        // fresh object in one iteration are not incorrectly eliminated by
++        // stores to an object from the next iteration.
++        // Note that checking the BlockIndex range [block_index,
++        // back_edge->index()] is a slight overapproximation since some blocks
++        // in this range might not belong to the loop. However, this is
++        // conservative and safe, and using LoopFinder here would be both more
++        // complicated and significantly more expensive.
++        table_.InvalidateBasesInRange(block_index, back_edge->index());
++
+         TRACE("Considering Loop revisit for " << block.index());
+         DCHECK(!table_.IsSealed());
+         bool needs_revisit = false;
+         table_.Seal(&needs_revisit);
+         TRACE("> needs_revisit=" << needs_revisit);
+         if (needs_revisit) {
+-          Block* back_edge = block.LastPredecessor();
+-          DCHECK_GE(back_edge->index(), block_index);
+           // We need a +2 to process the backedge at the next iteration:
+           //   - the `--processed` at the end of the loop will undo a +1.
+           //   - `block_index` is computed with `processed - 1`, which will undo
+@@ -374,6 +395,14 @@ class RedundantStoreAnalysis {
+           // For now we consider only stores of fixed offsets of objects on the
+           // heap.
+           if (is_on_heap_store && is_fixed_offset_store) {
++            // If we're revisiting a loop, then {eliminable_stores_} and
++            // {mergeable_store_pairs_} might contain {index} because a previous
++            // visit of the loop decided that it could be eliminated/merged; we
++            // remove it now and might add it back below if it can still be
++            // eliminated.
++            eliminable_stores_->erase(index);
++            mergeable_store_pairs_->erase(index);
++
+             bool is_eliminable_store = false;
+             switch (table_.GetObservability(store.base(), store.offset, size)) {
+               case StoreObservability::kUnobservable:
+diff --git a/test/mjsunit/turboshaft/regress-547936520.js b/test/mjsunit/turboshaft/regress-547936520.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc017a26141f4bf0ea88ab8bda8844ef762c060e
+--- /dev/null
++++ b/test/mjsunit/turboshaft/regress-547936520.js
+@@ -0,0 +1,41 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --verify-heap
++
++// `pad` ensures `holder.y` is at in-object offset 16 to avoid alias
++// collision with `object.target` at offset 12 in StoreStoreElimination.
++const holder = { pad: null, y: null, prev: null };
++
++function candidate() {
++  let object;
++  let sink = 0;
++  let i = 0;
++  while (true) {
++    holder.prev = holder.y;
++    object = { target: null };
++    holder.y = object;
++    if (i < 6) {
++      object.target = 0x42;
++      sink = sink ^ i ^ (sink << 1) ^ (sink << 2) ^ (sink << 3) ^ (sink << 4) ^
++             (sink << 5) ^ (sink << 6) ^ (sink << 7) ^ (sink << 8) ^ (sink << 9) ^
++             (sink << 10) ^ (sink << 11) ^ (sink << 12) ^ (sink << 13) ^
++             (sink << 14) ^ (sink << 15);
++      i = (i + 1) | 0;
++    } else {
++      break;
++    }
++  }
++  object.target = 0x43;
++  return [object, sink];
++}
++
++%PrepareFunctionForOptimization(candidate);
++candidate();
++candidate();
++
++%OptimizeFunctionOnNextCall(candidate);
++candidate();
++
++assertEquals(0x42, holder.prev.target);

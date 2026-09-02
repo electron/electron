@@ -1,0 +1,1077 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Fri, 28 Aug 2026 01:43:09 -0700
+Subject: [M152] gles2_implementation: Clamp the number of values returned by
+ glGet*
+
+Original change's description:
+> gles2_implementation: Clamp the number of values returned by glGet*
+>
+> glGet*'s autogen implementation reads the number of bytes returned by
+> the GPU process and writes them directly to the return pointer, without
+> checking that it matches the number of parameters for the given `pname`.
+>
+> Modify build_cmd_buffer_lib so that in gles2_implementation_impl_autogen.cc,
+> GLES2Util::GLGetNumValuesReturned is used to clamp the number of returned
+> results.
+>
+> Other required changes:
+>  - Add more cases to GLES2Util::GLGetNumValuesReturned to cover all the
+>    enums that the gles2_cmd_decoder may handle.
+>  - Modify the codegen of gles2_implementation_unittest_autogen.h to use
+>    a real uncached pname for "ValidNonCached" parameters.
+>  - Update PixelLocalStorage function definition in the GLES2 command
+>    decoder to use a "named enum set" similarly to all other glGet*. This
+>    also changes the gles2_cmd_decoder autogen files in a noop way
+>    because PLS is only exposed via the passthrough command decoder.
+>  - Adds a test of glGetShaderiv that would fail without the fix.
+>
+> Fixed: 551593376
+> Change-Id: I0db53a77709f2a51de203923cb306a2f414039c3
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8285102
+> Reviewed-by: Geoff Lang <geofflang@chromium.org>
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1686513}
+
+(cherry picked from commit 6454cd98685d08547fdf80ae56c31267381050ed)
+
+Bug: 553316659,551593376
+Change-Id: I0db53a77709f2a51de203923cb306a2f414039c3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8299775
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2029}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/gpu/command_buffer/build_cmd_buffer_lib.py b/gpu/command_buffer/build_cmd_buffer_lib.py
+index 7c8b303efc473727dd4fec5e4b265f2c4c1f89f5..f6f420f6398be5e8e9dc220c0cbd0b2b4cd4d2bf 100644
+--- a/gpu/command_buffer/build_cmd_buffer_lib.py
++++ b/gpu/command_buffer/build_cmd_buffer_lib.py
+@@ -2883,6 +2883,12 @@ class GETnHandler(TypeHandler):
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++    std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(%(last_arg_name)s);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -5009,6 +5015,14 @@ class EnumBaseArgument(Argument):
+     index = func.GetCmdArgs().index(self)
+     return str(index + 1)
+ 
++  def GetValidNonCachedClientSideArg(self, _):
++    """Return a glGet pname so that GLES2Util::GLGetNumValuesReturned returns
++    1, but that is also not cached on the GLES2Implementation"""
++    return 'GL_COMPILE_STATUS'
++
++  def GetValidNonCachedClientSideCmdArg(self, func):
++    return self.GetValidNonCachedClientSideArg(func)
++
+   def GetValidGLArg(self, func):
+     """Gets a valid value for this argument."""
+     return self.GetValidArg(func)
+diff --git a/gpu/command_buffer/build_gles2_cmd_buffer.py b/gpu/command_buffer/build_gles2_cmd_buffer.py
+index 67300ec63cea12b1702924d7cda5774d1dca9b87..284cbef81ce05f0db453e969ea34b1bb8b7669e1 100755
+--- a/gpu/command_buffer/build_gles2_cmd_buffer.py
++++ b/gpu/command_buffer/build_gles2_cmd_buffer.py
+@@ -1549,6 +1549,22 @@ _NAMED_TYPE_INFO = {
+       'GL_SHARED_IMAGE_ACCESS_MODE_READ_CHROMIUM',
+     ],
+   },
++  'FramebufferPixelLocalStorageParameter': {
++    'type': 'GLenum',
++    'valid': [
++      'GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE',
++      'GL_MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_ANGLE',
++      'GL_PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE',
++      'GL_PIXEL_LOCAL_INTERNAL_FORMAT_ANGLE',
++      'GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE',
++      'GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE',
++      'GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE',
++      'GL_PIXEL_LOCAL_USAGE_ANGLE',
++      'GL_PIXEL_LOCAL_CLEAR_VALUE_FLOAT_ANGLE',
++      'GL_PIXEL_LOCAL_CLEAR_VALUE_INT_ANGLE',
++      'GL_PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_ANGLE',
++    ],
++  },
+ }
+ 
+ # A function info object specifies the type and other special data for the
+diff --git a/gpu/command_buffer/client/gles2_implementation_impl_autogen.h b/gpu/command_buffer/client/gles2_implementation_impl_autogen.h
+index f84de1522b3c2c9d8406d9c29a6a72d50b6cc4c7..4c9d45d5d144525c0a94586d2bd4bf0592870fd3 100644
+--- a/gpu/command_buffer/client/gles2_implementation_impl_autogen.h
++++ b/gpu/command_buffer/client/gles2_implementation_impl_autogen.h
+@@ -884,6 +884,12 @@ void GLES2Implementation::GetBooleanv(GLenum pname, GLboolean* params) {
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -915,6 +921,12 @@ void GLES2Implementation::GetBufferParameteri64v(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -947,6 +959,12 @@ void GLES2Implementation::GetBufferParameteriv(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -974,6 +992,12 @@ void GLES2Implementation::GetFloatv(GLenum pname, GLfloat* params) {
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1011,6 +1035,12 @@ void GLES2Implementation::GetFramebufferAttachmentParameteriv(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1038,6 +1068,12 @@ void GLES2Implementation::GetInteger64v(GLenum pname, GLint64* params) {
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1068,6 +1104,12 @@ void GLES2Implementation::GetIntegeri_v(GLenum pname,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(data);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1097,6 +1139,12 @@ void GLES2Implementation::GetInteger64i_v(GLenum pname,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(data);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1125,6 +1173,12 @@ void GLES2Implementation::GetIntegerv(GLenum pname, GLint* params) {
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1155,6 +1209,12 @@ void GLES2Implementation::GetProgramiv(GLuint program,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1214,6 +1274,12 @@ void GLES2Implementation::GetRenderbufferParameteriv(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1245,6 +1311,12 @@ void GLES2Implementation::GetSamplerParameterfv(GLuint sampler,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1277,6 +1349,12 @@ void GLES2Implementation::GetSamplerParameteriv(GLuint sampler,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1307,6 +1385,12 @@ void GLES2Implementation::GetShaderiv(GLuint shader,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1398,6 +1482,12 @@ void GLES2Implementation::GetSynciv(GLsync sync,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(values);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1431,6 +1521,12 @@ void GLES2Implementation::GetTexParameterfv(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -1462,6 +1558,12 @@ void GLES2Implementation::GetTexParameteriv(GLenum target,
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -3751,10 +3853,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameterfvANGLE(
+     GLenum pname,
+     GLfloat* params) {
+   GPU_CLIENT_SINGLE_THREAD_CHECK();
+-  GPU_CLIENT_LOG("[" << GetLogPrefix()
+-                     << "] glGetFramebufferPixelLocalStorageParameterfvANGLE("
+-                     << plane << ", " << GLES2Util::GetStringEnum(pname) << ", "
+-                     << static_cast<const void*>(params) << ")");
++  GPU_CLIENT_LOG(
++      "[" << GetLogPrefix()
++          << "] glGetFramebufferPixelLocalStorageParameterfvANGLE(" << plane
++          << ", "
++          << GLES2Util::GetStringFramebufferPixelLocalStorageParameter(pname)
++          << ", " << static_cast<const void*>(params) << ")");
+   TRACE_EVENT0(
+       "gpu",
+       "GLES2Implementation::GetFramebufferPixelLocalStorageParameterfvANGLE");
+@@ -3773,6 +3877,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameterfvANGLE(
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -3787,10 +3897,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameterivANGLE(
+     GLint* params) {
+   GPU_CLIENT_SINGLE_THREAD_CHECK();
+   GPU_CLIENT_VALIDATE_DESTINATION_INITALIZATION(GLint, params);
+-  GPU_CLIENT_LOG("[" << GetLogPrefix()
+-                     << "] glGetFramebufferPixelLocalStorageParameterivANGLE("
+-                     << plane << ", " << GLES2Util::GetStringEnum(pname) << ", "
+-                     << static_cast<const void*>(params) << ")");
++  GPU_CLIENT_LOG(
++      "[" << GetLogPrefix()
++          << "] glGetFramebufferPixelLocalStorageParameterivANGLE(" << plane
++          << ", "
++          << GLES2Util::GetStringFramebufferPixelLocalStorageParameter(pname)
++          << ", " << static_cast<const void*>(params) << ")");
+   TRACE_EVENT0(
+       "gpu",
+       "GLES2Implementation::GetFramebufferPixelLocalStorageParameterivANGLE");
+@@ -3809,6 +3921,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameterivANGLE(
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+@@ -3822,10 +3940,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameteruivANGLE(
+     GLenum pname,
+     GLuint* params) {
+   GPU_CLIENT_SINGLE_THREAD_CHECK();
+-  GPU_CLIENT_LOG("[" << GetLogPrefix()
+-                     << "] glGetFramebufferPixelLocalStorageParameteruivANGLE("
+-                     << plane << ", " << GLES2Util::GetStringEnum(pname) << ", "
+-                     << static_cast<const void*>(params) << ")");
++  GPU_CLIENT_LOG(
++      "[" << GetLogPrefix()
++          << "] glGetFramebufferPixelLocalStorageParameteruivANGLE(" << plane
++          << ", "
++          << GLES2Util::GetStringFramebufferPixelLocalStorageParameter(pname)
++          << ", " << static_cast<const void*>(params) << ")");
+   TRACE_EVENT0(
+       "gpu",
+       "GLES2Implementation::GetFramebufferPixelLocalStorageParameteruivANGLE");
+@@ -3844,6 +3964,12 @@ void GLES2Implementation::GetFramebufferPixelLocalStorageParameteruivANGLE(
+   if (!WaitForCmd()) {
+     return;
+   }
++
++  int expected_num_results = util_.GLGetNumValuesReturned(pname);
++  DCHECK(expected_num_results != 0) << pname;
++  result->SetNumResults(
++      std::min(result->GetNumResults(), expected_num_results));
++
+   result->CopyResult(params);
+   GPU_CLIENT_LOG_CODE_BLOCK({
+     for (int32_t i = 0; i < result->GetNumResults(); ++i) {
+diff --git a/gpu/command_buffer/client/gles2_implementation_unittest.cc b/gpu/command_buffer/client/gles2_implementation_unittest.cc
+index 0de18a57d2966d6338cbfde1a4f456a5376db536..610de5528d119b2f67c125042daa21443d7dd780 100644
+--- a/gpu/command_buffer/client/gles2_implementation_unittest.cc
++++ b/gpu/command_buffer/client/gles2_implementation_unittest.cc
+@@ -810,6 +810,31 @@ TEST_F(GLES2ImplementationTest, GetShaderSource) {
+   EXPECT_EQ(buf[sizeof(kString)], kBad);
+ }
+ 
++// Check that for GETn functions (like glShaderiv) the writes to the result
++// pointer are clamped even if the service side returns more data. See
++// http://issues.chromium.org/issues/551593376.
++TEST_F(GLES2ImplementationTest, GetShaderiv_OversizeReturn) {
++  // Make the SizedResult hold two GLints instead of the single one for
++  // GL_SHADER_TYPE.
++  struct TwoInts {
++    GLint first = 0xBEEF;
++    GLint second = 0xCAFE;
++  };
++
++  ExpectedMemoryInfo resultBuffer =
++      GetExpectedResultMemory(sizeof(uint32_t) + sizeof(TwoInts));
++  EXPECT_CALL(*command_buffer(), OnFlush())
++      .WillOnce(SetMemory(resultBuffer.ptr, SizedResultHelper<TwoInts>({})))
++      .RetiresOnSaturation();
++
++  std::array<GLint, 2> resultAndGuard = {{0, 0}};
++  gl_->GetShaderiv(123, GL_SHADER_TYPE, resultAndGuard.data());
++
++  // Only the first GLint should be written to the output.
++  EXPECT_EQ(0xBEEF, resultAndGuard[0]);
++  EXPECT_EQ(0, resultAndGuard[1]);
++}
++
+ TEST_F(GLES2ImplementationTest, ReadPixels2Reads) {
+   struct Cmds {
+     cmds::ReadPixels read1;
+diff --git a/gpu/command_buffer/client/gles2_implementation_unittest_autogen.h b/gpu/command_buffer/client/gles2_implementation_unittest_autogen.h
+index 3a6b1e1180f563ecbe88e1ae6b2c036fca9ba71d..f91f16af60d113e0497aeb689935a0dacab267a0 100644
+--- a/gpu/command_buffer/client/gles2_implementation_unittest_autogen.h
++++ b/gpu/command_buffer/client/gles2_implementation_unittest_autogen.h
+@@ -662,11 +662,11 @@ TEST_F(GLES2ImplementationTest, GetBooleanv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetBooleanv(123, &result);
++  gl_->GetBooleanv(GL_COMPILE_STATUS, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -680,11 +680,12 @@ TEST_F(GLES2ImplementationTest, GetBufferParameteri64v) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_BUFFER_SIZE, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_BUFFER_SIZE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetBufferParameteri64v(123, GL_BUFFER_SIZE, &result);
++  gl_->GetBufferParameteri64v(GL_COMPILE_STATUS, GL_BUFFER_SIZE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -698,11 +699,12 @@ TEST_F(GLES2ImplementationTest, GetBufferParameteriv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_BUFFER_SIZE, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_BUFFER_SIZE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetBufferParameteriv(123, GL_BUFFER_SIZE, &result);
++  gl_->GetBufferParameteriv(GL_COMPILE_STATUS, GL_BUFFER_SIZE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -716,11 +718,11 @@ TEST_F(GLES2ImplementationTest, GetFloatv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetFloatv(123, &result);
++  gl_->GetFloatv(GL_COMPILE_STATUS, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -734,15 +736,15 @@ TEST_F(GLES2ImplementationTest, GetFramebufferAttachmentParameteriv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_COLOR_ATTACHMENT0,
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_COLOR_ATTACHMENT0,
+                     GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, result1.id,
+                     result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+   gl_->GetFramebufferAttachmentParameteriv(
+-      123, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE,
+-      &result);
++      GL_COMPILE_STATUS, GL_COLOR_ATTACHMENT0,
++      GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -756,11 +758,11 @@ TEST_F(GLES2ImplementationTest, GetInteger64v) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetInteger64v(123, &result);
++  gl_->GetInteger64v(GL_COMPILE_STATUS, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -774,11 +776,11 @@ TEST_F(GLES2ImplementationTest, GetIntegeri_v) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, 2, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, 2, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetIntegeri_v(123, 2, &result);
++  gl_->GetIntegeri_v(GL_COMPILE_STATUS, 2, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -792,11 +794,11 @@ TEST_F(GLES2ImplementationTest, GetInteger64i_v) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, 2, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, 2, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetInteger64i_v(123, 2, &result);
++  gl_->GetInteger64i_v(GL_COMPILE_STATUS, 2, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -810,11 +812,11 @@ TEST_F(GLES2ImplementationTest, GetIntegerv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, result1.id, result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetIntegerv(123, &result);
++  gl_->GetIntegerv(GL_COMPILE_STATUS, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -846,11 +848,13 @@ TEST_F(GLES2ImplementationTest, GetRenderbufferParameteriv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_RENDERBUFFER_RED_SIZE, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_RENDERBUFFER_RED_SIZE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetRenderbufferParameteriv(123, GL_RENDERBUFFER_RED_SIZE, &result);
++  gl_->GetRenderbufferParameteriv(GL_COMPILE_STATUS, GL_RENDERBUFFER_RED_SIZE,
++                                  &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -937,11 +941,12 @@ TEST_F(GLES2ImplementationTest, GetTexParameterfv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_TEXTURE_MAG_FILTER, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_TEXTURE_MAG_FILTER, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetTexParameterfv(123, GL_TEXTURE_MAG_FILTER, &result);
++  gl_->GetTexParameterfv(GL_COMPILE_STATUS, GL_TEXTURE_MAG_FILTER, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -955,11 +960,12 @@ TEST_F(GLES2ImplementationTest, GetTexParameteriv) {
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, GL_TEXTURE_MAG_FILTER, result1.id, result1.offset);
++  expected.cmd.Init(GL_COMPILE_STATUS, GL_TEXTURE_MAG_FILTER, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetTexParameteriv(123, GL_TEXTURE_MAG_FILTER, &result);
++  gl_->GetTexParameteriv(GL_COMPILE_STATUS, GL_TEXTURE_MAG_FILTER, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -3083,11 +3089,13 @@ TEST_F(GLES2ImplementationTest,
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, 2, result1.id, result1.offset);
++  expected.cmd.Init(123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetFramebufferPixelLocalStorageParameterfvANGLE(123, 2, &result);
++  gl_->GetFramebufferPixelLocalStorageParameterfvANGLE(
++      123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -3103,11 +3111,13 @@ TEST_F(GLES2ImplementationTest,
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, 2, result1.id, result1.offset);
++  expected.cmd.Init(123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetFramebufferPixelLocalStorageParameterivANGLE(123, 2, &result);
++  gl_->GetFramebufferPixelLocalStorageParameterivANGLE(
++      123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+@@ -3123,11 +3133,13 @@ TEST_F(GLES2ImplementationTest,
+   Cmds expected;
+   ExpectedMemoryInfo result1 =
+       GetExpectedResultMemory(sizeof(uint32_t) + sizeof(ResultType));
+-  expected.cmd.Init(123, 2, result1.id, result1.offset);
++  expected.cmd.Init(123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, result1.id,
++                    result1.offset);
+   EXPECT_CALL(*command_buffer(), OnFlush())
+       .WillOnce(SetMemory(result1.ptr, SizedResultHelper<ResultType>(1)))
+       .RetiresOnSaturation();
+-  gl_->GetFramebufferPixelLocalStorageParameteruivANGLE(123, 2, &result);
++  gl_->GetFramebufferPixelLocalStorageParameteruivANGLE(
++      123, GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE, &result);
+   EXPECT_EQ(0, UNSAFE_TODO(memcmp(&expected, commands_, sizeof(expected))));
+   EXPECT_EQ(static_cast<ResultType>(1), result);
+ }
+diff --git a/gpu/command_buffer/common/gles2_cmd_utils.cc b/gpu/command_buffer/common/gles2_cmd_utils.cc
+index f75833855830e0f5a8e163de11f4865542ebf9d0..684f3b2a1e465829790a676ac393ec06f12b7565 100644
+--- a/gpu/command_buffer/common/gles2_cmd_utils.cc
++++ b/gpu/command_buffer/common/gles2_cmd_utils.cc
+@@ -110,6 +110,8 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_LINE_WIDTH:
+       return 1;
++    case GL_MAJOR_VERSION:
++      return 1;
+     case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+       return 1;
+     case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+@@ -132,8 +134,12 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_MAX_VIEWPORT_DIMS:
+       return 2;
++    case GL_MINOR_VERSION:
++      return 1;
+     case GL_NUM_COMPRESSED_TEXTURE_FORMATS:
+       return 1;
++    case GL_NUM_PROGRAM_BINARY_FORMATS:
++      return 1;
+     case GL_NUM_SHADER_BINARY_FORMATS:
+       return 1;
+     case GL_PACK_ALIGNMENT:
+@@ -150,10 +156,14 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_SAMPLE_BUFFERS:
+       return 1;
++    case GL_SAMPLE_COVERAGE:
++      return 1;
+     case GL_SAMPLE_COVERAGE_INVERT:
+       return 1;
+     case GL_SAMPLE_COVERAGE_VALUE:
+       return 1;
++    case GL_SAMPLE_ALPHA_TO_COVERAGE:
++      return 1;
+     case GL_SAMPLES:
+       return 1;
+     case GL_SCISSOR_BOX:
+@@ -202,6 +212,10 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_TEXTURE_BINDING_2D:
+       return 1;
++    case GL_TEXTURE_BINDING_2D_ARRAY:
++      return 1;
++    case GL_TEXTURE_BINDING_3D:
++      return 1;
+     case GL_TEXTURE_BINDING_CUBE_MAP:
+       return 1;
+     case GL_TEXTURE_BINDING_EXTERNAL_OES:
+@@ -222,12 +236,16 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_MAX_ARRAY_TEXTURE_LAYERS:
+       return 1;
++    case GL_MAX_COLOR_ATTACHMENTS_EXT:
++      return 1;
+     case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
+       return 1;
+     case GL_MAX_COMBINED_UNIFORM_BLOCKS:
+       return 1;
+     case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
+       return 1;
++    case GL_MAX_DRAW_BUFFERS:
++      return 1;
+     case GL_MAX_ELEMENT_INDEX:
+       return 1;
+     case GL_MAX_ELEMENTS_INDICES:
+@@ -266,10 +284,32 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_MIN_PROGRAM_TEXEL_OFFSET:
+       return 1;
++    case GL_NUM_EXTENSIONS:
++      return 1;
++    case GL_PACK_ROW_LENGTH:
++      return 1;
++    case GL_PACK_SKIP_PIXELS:
++      return 1;
++    case GL_PACK_SKIP_ROWS:
++      return 1;
+     case GL_PIXEL_PACK_BUFFER_BINDING:
+       return 1;
+     case GL_PIXEL_UNPACK_BUFFER_BINDING:
+       return 1;
++    case GL_PRIMITIVE_RESTART_FIXED_INDEX:
++      return 1;
++    case GL_RASTERIZER_DISCARD:
++      return 1;
++    case GL_READ_BUFFER:
++      return 1;
++    case GL_READ_FRAMEBUFFER_BINDING:
++      return 1;
++    case GL_SAMPLER_BINDING:
++      return 1;
++    case GL_TRANSFORM_FEEDBACK_ACTIVE:
++      return 1;
++    case GL_TRANSFORM_FEEDBACK_BINDING:
++      return 1;
+     case GL_TRANSFORM_FEEDBACK_BUFFER_BINDING:
+       return 1;
+     case GL_TRANSFORM_FEEDBACK_BUFFER_MODE:
+@@ -278,6 +318,8 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_TRANSFORM_FEEDBACK_BUFFER_START:
+       return 1;
++    case GL_TRANSFORM_FEEDBACK_PAUSED:
++      return 1;
+     case GL_UNIFORM_BUFFER_BINDING:
+       return 1;
+     case GL_UNIFORM_BUFFER_SIZE:
+@@ -286,6 +328,16 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT:
+       return 1;
++    case GL_UNPACK_ROW_LENGTH:
++      return 1;
++    case GL_UNPACK_IMAGE_HEIGHT:
++      return 1;
++    case GL_UNPACK_SKIP_PIXELS:
++      return 1;
++    case GL_UNPACK_SKIP_ROWS:
++      return 1;
++    case GL_UNPACK_SKIP_IMAGES:
++      return 1;
+ 
+     // ES31
+     case GL_ATOMIC_COUNTER_BUFFER_BINDING:
+@@ -326,6 +378,8 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+       return 1;
+     case GL_NUM_WINDOW_RECTANGLES_EXT:
+       return 1;
++    case GL_WINDOW_RECTANGLE_EXT:
++      return 4;
+ 
+     // -- glGetBufferParameteriv
+     case GL_BUFFER_SIZE:
+@@ -510,6 +564,98 @@ int GLES2Util::GLGetNumValuesReturned(int id) const {
+     case GL_FRAGMENT_SHADER_DERIVATIVE_HINT_OES:
+       return 1;
+ 
++    // -- GL_ANGLE_shader_pixel_local_storage
++    case GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE:
++    case GL_MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_ANGLE:
++    case GL_PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE:
++    case GL_PIXEL_LOCAL_INTERNAL_FORMAT_ANGLE:
++    case GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE:
++    case GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE:
++    case GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE:
++    case GL_PIXEL_LOCAL_USAGE_ANGLE:
++      return 1;
++    case GL_PIXEL_LOCAL_CLEAR_VALUE_FLOAT_ANGLE:
++    case GL_PIXEL_LOCAL_CLEAR_VALUE_INT_ANGLE:
++    case GL_PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_ANGLE:
++      return 4;
++
++    // -- GL_EXT_clip_control
++    case GL_CLIP_ORIGIN_EXT:
++    case GL_CLIP_DEPTH_MODE_EXT:
++      return 1;
++
++    // -- GL_EXT_depth_clamp
++    case GL_DEPTH_CLAMP_EXT:
++      return 1;
++
++    // -- GL_EXT_polygon_offset_clamp
++    case GL_POLYGON_OFFSET_CLAMP_EXT:
++      return 1;
++
++    // -- GL_KHR_parallel_shader_compile
++    case GL_COMPLETION_STATUS_KHR:
++      return 1;
++
++    // -- GL_ANGLE_polygon_mode
++    case GL_POLYGON_MODE_ANGLE:
++    case GL_POLYGON_OFFSET_LINE_ANGLE:
++      return 1;
++
++    // -- GL_OES_shader_multisample_interpolation
++    case GL_MIN_FRAGMENT_INTERPOLATION_OFFSET_OES:
++    case GL_MAX_FRAGMENT_INTERPOLATION_OFFSET_OES:
++    case GL_FRAGMENT_INTERPOLATION_OFFSET_BITS_OES:
++      return 1;
++
++    // -- GL_EXT_clip_cull_distance
++    case GL_MAX_CLIP_DISTANCES_ANGLE:
++    case GL_MAX_CULL_DISTANCES_ANGLE:
++    case GL_MAX_COMBINED_CLIP_AND_CULL_DISTANCES_ANGLE:
++    case GL_CLIP_DISTANCE0_ANGLE:
++    case GL_CLIP_DISTANCE1_ANGLE:
++    case GL_CLIP_DISTANCE2_ANGLE:
++    case GL_CLIP_DISTANCE3_ANGLE:
++    case GL_CLIP_DISTANCE4_ANGLE:
++    case GL_CLIP_DISTANCE5_ANGLE:
++    case GL_CLIP_DISTANCE6_ANGLE:
++    case GL_CLIP_DISTANCE7_ANGLE:
++      return 1;
++
++    // -- GL_ANGLE_provoking_vertex
++    case GL_PROVOKING_VERTEX_ANGLE:
++      return 1;
++
++    // -- GL_ANGLE_stencil_texturing
++    case GL_DEPTH_STENCIL_TEXTURE_MODE_ANGLE:
++      return 1;
++
++    // -- GL_EXT_framebuffer_sRGB
++    case GL_FRAMEBUFFER_SRGB_EXT:
++      return 1;
++
++    // -- GL_EXT_disjoint_timer_query
++    case GL_GPU_DISJOINT_EXT:
++      return 1;
++
++    // -- GL_EXT_blend_func_extended
++    case GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT:
++      return 1;
++
++    // -- GL_EXT_multisample_compatibility
++    case GL_MULTISAMPLE_EXT:
++    case GL_SAMPLE_ALPHA_TO_ONE_EXT:
++      return 1;
++
++    // -- GL_OES_vertex_array_object
++    case GL_VERTEX_ARRAY_BINDING_OES:
++      return 1;
++
++    // -- GL_OVR_multiview2
++    case GL_MAX_VIEWS_OVR:
++    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_NUM_VIEWS_OVR:
++    case GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_BASE_VIEW_INDEX_OVR:
++      return 1;
++
+     // bad enum
+     default:
+       return 0;
+diff --git a/gpu/command_buffer/common/gles2_cmd_utils_autogen.h b/gpu/command_buffer/common/gles2_cmd_utils_autogen.h
+index c15bacd41264debef7bc80660112bfe4b44914c6..5d1f50d1b149423f8a2551039e71814dd10dd9e2 100644
+--- a/gpu/command_buffer/common/gles2_cmd_utils_autogen.h
++++ b/gpu/command_buffer/common/gles2_cmd_utils_autogen.h
+@@ -34,6 +34,8 @@ static std::string GetStringFaceMode(uint32_t value);
+ static std::string GetStringFaceType(uint32_t value);
+ static std::string GetStringFramebufferAttachmentParameter(uint32_t value);
+ static std::string GetStringFramebufferParameter(uint32_t value);
++static std::string GetStringFramebufferPixelLocalStorageParameter(
++    uint32_t value);
+ static std::string GetStringFramebufferTarget(uint32_t value);
+ static std::string GetStringGLState(uint32_t value);
+ static std::string GetStringGetMaxIndexType(uint32_t value);
+diff --git a/gpu/command_buffer/common/gles2_cmd_utils_implementation_autogen.h b/gpu/command_buffer/common/gles2_cmd_utils_implementation_autogen.h
+index 5325160f8d28a72149f1cbcc4fccfd2188c04f62..3dd2e30880ac8f9e7d8b129cf7142159b00529a4 100644
+--- a/gpu/command_buffer/common/gles2_cmd_utils_implementation_autogen.h
++++ b/gpu/command_buffer/common/gles2_cmd_utils_implementation_autogen.h
+@@ -287,6 +287,34 @@ std::string GLES2Util::GetStringFramebufferParameter(uint32_t value) {
+   return GLES2Util::GetQualifiedEnumString(nullptr, 0, value);
+ }
+ 
++std::string GLES2Util::GetStringFramebufferPixelLocalStorageParameter(
++    uint32_t value) {
++  static const EnumToString string_table[] = {
++      {GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE,
++       "GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE"},
++      {GL_MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_ANGLE,
++       "GL_MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_ANGLE"},
++      {GL_PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE,
++       "GL_PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE"},
++      {GL_PIXEL_LOCAL_INTERNAL_FORMAT_ANGLE,
++       "GL_PIXEL_LOCAL_INTERNAL_FORMAT_ANGLE"},
++      {GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE, "GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE"},
++      {GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE,
++       "GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE"},
++      {GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE,
++       "GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE"},
++      {GL_PIXEL_LOCAL_USAGE_ANGLE, "GL_PIXEL_LOCAL_USAGE_ANGLE"},
++      {GL_PIXEL_LOCAL_CLEAR_VALUE_FLOAT_ANGLE,
++       "GL_PIXEL_LOCAL_CLEAR_VALUE_FLOAT_ANGLE"},
++      {GL_PIXEL_LOCAL_CLEAR_VALUE_INT_ANGLE,
++       "GL_PIXEL_LOCAL_CLEAR_VALUE_INT_ANGLE"},
++      {GL_PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_ANGLE,
++       "GL_PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_ANGLE"},
++  };
++  return GLES2Util::GetQualifiedEnumString(string_table,
++                                           std::size(string_table), value);
++}
++
+ std::string GLES2Util::GetStringFramebufferTarget(uint32_t value) {
+   static const EnumToString string_table[] = {
+       {GL_FRAMEBUFFER, "GL_FRAMEBUFFER"},
+diff --git a/gpu/command_buffer/gles2_cmd_buffer_functions.txt b/gpu/command_buffer/gles2_cmd_buffer_functions.txt
+index f55dbd34c437e50c60d189e352dffcc2b64c0657..bbf0b851f495af596288423c0833e90ec16ca65b 100644
+--- a/gpu/command_buffer/gles2_cmd_buffer_functions.txt
++++ b/gpu/command_buffer/gles2_cmd_buffer_functions.txt
+@@ -379,9 +379,9 @@ GL_APICALL void         GL_APIENTRY glEndPixelLocalStorageImplicitANGLE (void);
+ GL_APICALL void         GL_APIENTRY glPixelLocalStorageBarrierANGLE (void);
+ GL_APICALL void         GL_APIENTRY glFramebufferPixelLocalStorageInterruptANGLE (void);
+ GL_APICALL void         GL_APIENTRY glFramebufferPixelLocalStorageRestoreANGLE (void);
+-GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameterfvANGLE (GLint plane, GLenum pname, GLfloat* params);
+-GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameterivANGLE (GLint plane, GLenum pname, GLint* params);
+-GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameteruivANGLE (GLint plane, GLenum pname, GLuint* params);
++GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameterfvANGLE (GLint plane, GLenumFramebufferPixelLocalStorageParameter pname, GLfloat* params);
++GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameterivANGLE (GLint plane, GLenumFramebufferPixelLocalStorageParameter pname, GLint* params);
++GL_APICALL void         GL_APIENTRY glGetFramebufferPixelLocalStorageParameteruivANGLE (GLint plane, GLenumFramebufferPixelLocalStorageParameter pname, GLuint* params);
+ 
+ // Extension EXT_clip_control
+ GL_APICALL void         GL_APIENTRY glClipControlEXT (GLenum origin, GLenum depth);
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_autogen.h b/gpu/command_buffer/service/gles2_cmd_decoder_autogen.h
+index 04cdc430104a8926c625af71cd61158e06a93dec..cff709e25da28af69e48e45dbbb1fcbbfb248eb6 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_autogen.h
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_autogen.h
+@@ -5652,6 +5652,11 @@ GLES2DecoderImpl::HandleGetFramebufferPixelLocalStorageParameterfvANGLE(
+   Result* result = GetSharedMemoryAs<Result*>(
+       c.params_shm_id, c.params_shm_offset, checked_size);
+   GLfloat* params = result ? result->GetData() : nullptr;
++  if (!validators_->framebuffer_pixel_local_storage_parameter.IsValid(pname)) {
++    LOCAL_SET_GL_ERROR_INVALID_ENUM(
++        "glGetFramebufferPixelLocalStorageParameterfvANGLE", pname, "pname");
++    return error::kNoError;
++  }
+   if (params == nullptr) {
+     return error::kOutOfBounds;
+   }
+@@ -5698,6 +5703,11 @@ GLES2DecoderImpl::HandleGetFramebufferPixelLocalStorageParameterivANGLE(
+   Result* result = GetSharedMemoryAs<Result*>(
+       c.params_shm_id, c.params_shm_offset, checked_size);
+   GLint* params = result ? result->GetData() : nullptr;
++  if (!validators_->framebuffer_pixel_local_storage_parameter.IsValid(pname)) {
++    LOCAL_SET_GL_ERROR_INVALID_ENUM(
++        "glGetFramebufferPixelLocalStorageParameterivANGLE", pname, "pname");
++    return error::kNoError;
++  }
+   if (params == nullptr) {
+     return error::kOutOfBounds;
+   }
+@@ -5744,6 +5754,11 @@ GLES2DecoderImpl::HandleGetFramebufferPixelLocalStorageParameteruivANGLE(
+   Result* result = GetSharedMemoryAs<Result*>(
+       c.params_shm_id, c.params_shm_offset, checked_size);
+   GLuint* params = result ? result->GetData() : nullptr;
++  if (!validators_->framebuffer_pixel_local_storage_parameter.IsValid(pname)) {
++    LOCAL_SET_GL_ERROR_INVALID_ENUM(
++        "glGetFramebufferPixelLocalStorageParameteruivANGLE", pname, "pname");
++    return error::kNoError;
++  }
+   if (params == nullptr) {
+     return error::kOutOfBounds;
+   }
+diff --git a/gpu/command_buffer/service/gles2_cmd_validation_autogen.h b/gpu/command_buffer/service/gles2_cmd_validation_autogen.h
+index f6f7741375d9c97d41fc2e3031e87f160ec505fc..8e55517417569e4a8f4782f1272ed14b679e02ed 100644
+--- a/gpu/command_buffer/service/gles2_cmd_validation_autogen.h
++++ b/gpu/command_buffer/service/gles2_cmd_validation_autogen.h
+@@ -114,6 +114,7 @@ FaceTypeValidator face_type;
+ 
+ ValueValidator<GLenum> framebuffer_attachment_parameter;
+ ValueValidator<GLenum> framebuffer_parameter;
++ValueValidator<GLenum> framebuffer_pixel_local_storage_parameter;
+ ValueValidator<GLenum> framebuffer_target;
+ ValueValidator<GLenum> g_l_state;
+ class GetMaxIndexTypeValidator {
+diff --git a/gpu/command_buffer/service/gles2_cmd_validation_implementation_autogen.h b/gpu/command_buffer/service/gles2_cmd_validation_implementation_autogen.h
+index bbaa938d1738825d3db6542595a867989d3cca4c..747b599cbc2c48f65365e11e89bac0f068381822 100644
+--- a/gpu/command_buffer/service/gles2_cmd_validation_implementation_autogen.h
++++ b/gpu/command_buffer/service/gles2_cmd_validation_implementation_autogen.h
+@@ -251,6 +251,20 @@ static const GLenum valid_framebuffer_attachment_parameter_table_es3[] = {
+     GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER,
+ };
+ 
++static const GLenum valid_framebuffer_pixel_local_storage_parameter_table[] = {
++    GL_MAX_PIXEL_LOCAL_STORAGE_PLANES_ANGLE,
++    GL_MAX_COMBINED_DRAW_BUFFERS_AND_PIXEL_LOCAL_STORAGE_PLANES_ANGLE,
++    GL_PIXEL_LOCAL_STORAGE_ACTIVE_PLANES_ANGLE,
++    GL_PIXEL_LOCAL_INTERNAL_FORMAT_ANGLE,
++    GL_PIXEL_LOCAL_TEXTURE_NAME_ANGLE,
++    GL_PIXEL_LOCAL_TEXTURE_LEVEL_ANGLE,
++    GL_PIXEL_LOCAL_TEXTURE_LAYER_ANGLE,
++    GL_PIXEL_LOCAL_USAGE_ANGLE,
++    GL_PIXEL_LOCAL_CLEAR_VALUE_FLOAT_ANGLE,
++    GL_PIXEL_LOCAL_CLEAR_VALUE_INT_ANGLE,
++    GL_PIXEL_LOCAL_CLEAR_VALUE_UNSIGNED_INT_ANGLE,
++};
++
+ static const GLenum valid_framebuffer_target_table[] = {
+     GL_FRAMEBUFFER,
+ };
+@@ -1268,6 +1282,8 @@ Validators::Validators()
+       framebuffer_attachment_parameter(
+           valid_framebuffer_attachment_parameter_table),
+       framebuffer_parameter(),
++      framebuffer_pixel_local_storage_parameter(
++          valid_framebuffer_pixel_local_storage_parameter_table),
+       framebuffer_target(valid_framebuffer_target_table),
+       g_l_state(valid_g_l_state_table),
+       get_tex_param_target(valid_get_tex_param_target_table),

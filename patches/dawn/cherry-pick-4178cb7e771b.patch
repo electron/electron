@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Mon, 24 Aug 2026 15:56:13 -0700
+Subject: [M152] [vulkan] Add workaround for UAF in DestroyDescriptorPool.
+
+Original change's description:
+> [vulkan] Add workaround for UAF in DestroyDescriptorPool.
+>
+> - As per the bug and the related internal Android issue,
+>   this works around a temporary issue in the IMG driver
+>   that causes a UAF when we attempt to call
+>   AllocateDescriptorSets and run into an OOM.
+> - The more "proper" fix would probably be to implement
+>   suballocations, but since that is a much larger effort,
+>   this is a band-aid fix to avoid the UAF issue for now.
+> - Note that since the error that is generated is an
+>   internal error, this eventually leads to a device loss
+>   so it is acceptable to skip the Destroy call in this
+>   case since even if it would lead to a leak, it cannot
+>   propagate further.
+>
+> Bug: 549311485
+> Change-Id: I8c951e879bb405943698c179962275687e828168
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/334695
+> Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+> Commit-Queue: Loko Kung <lokokung@google.com>
+
+(cherry picked from commit daa0cc047acd570fbd5c127db4262e1a98637eb7)
+
+Bug: 551225908,549311485
+Change-Id: I8c951e879bb405943698c179962275687e828168
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/335556
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/native/vulkan/DescriptorSetAllocator.cpp b/src/dawn/native/vulkan/DescriptorSetAllocator.cpp
+index ad097a67392afd0565994369dfa14a5ce1ca1d34..f6354828b0ac0961a396ae8bdb740e7c7031c3a1 100644
+--- a/src/dawn/native/vulkan/DescriptorSetAllocator.cpp
++++ b/src/dawn/native/vulkan/DescriptorSetAllocator.cpp
+@@ -30,6 +30,8 @@
+ #include <algorithm>
+ #include <utility>
+ 
++#include "src/dawn/common/GPUInfo.h"
++#include "src/dawn/native/PhysicalDevice.h"
+ #include "src/dawn/native/Queue.h"
+ #include "src/dawn/native/vulkan/DeviceVk.h"
+ #include "src/dawn/native/vulkan/FencedDeleter.h"
+@@ -183,15 +185,25 @@ MaybeError DescriptorSetAllocator::AllocateDescriptorPool(VkDescriptorSetLayout
+     allocateInfo.pSetLayouts = AsVkArray(layouts.data());
+ 
+     std::vector<VkDescriptorSet> sets(mMaxSets);
+-    MaybeError result =
+-        CheckVkSuccess(mDevice->fn.AllocateDescriptorSets(mDevice->GetVkDevice(), &allocateInfo,
+-                                                          AsVkArray(sets.data())),
+-                       "AllocateDescriptorSets");
++    VkResult vkResult = VkResult::WrapUnsafe(
++        INJECT_ERROR_OR_RUN(mDevice->fn.AllocateDescriptorSets(
++                                mDevice->GetVkDevice(), &allocateInfo, AsVkArray(sets.data())),
++                            VK_FAKE_ERROR_FOR_TESTING));
++    MaybeError result = CheckVkSuccessImpl(vkResult, "AllocateDescriptorSets");
+     if (result.IsError()) {
+-        // On an error we can destroy the pool immediately because no command references it.
+-        mDevice->fn.DestroyDescriptorPool(mDevice->GetVkDevice(), descriptorPool, nullptr);
+-        DAWN_TRY(std::move(result));
++        // TODO(crbug.com/549311485): On Imagination (PowerVR) drivers, when AllocateDescriptorSets
++        // fails with host or device OOM, the driver's chunk allocation path publishes the chunk
++        // before allocation and fails to unpublish on error. Calling vkDestroyDescriptorPool
++        // dereferences the dangling freed meminfo pointer and crashes (UAF read / wild free).
++        bool isCorruptedImaginationPool =
++            gpu_info::IsImgTec(mDevice->GetPhysicalDevice()->GetVendorId()) &&
++            (vkResult == VK_ERROR_OUT_OF_HOST_MEMORY || vkResult == VK_ERROR_OUT_OF_DEVICE_MEMORY);
++        if (!isCorruptedImaginationPool) {
++            // On an error we can destroy the pool immediately because no command references it.
++            mDevice->fn.DestroyDescriptorPool(mDevice->GetVkDevice(), descriptorPool, nullptr);
++        }
+     }
++    DAWN_TRY(std::move(result));
+ 
+     std::vector<SetIndex> freeSetIndices;
+     freeSetIndices.reserve(mMaxSets);
