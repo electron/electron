@@ -104,8 +104,9 @@ runs:
 
         # remove homebrew packages we don't need
         if command -v brew &> /dev/null; then
-          brew uninstall -f --zap aws-sam-cli session-manager-plugin gcc gcc@13 gcc@14 gcc@15 llvm@18 gradle maven ant azure-cli bazel
-          brew autoremove
+          # Best-effort: brew fetches formulae.brew.sh metadata even to uninstall, and a DNS blip there must not fail the build (the rm -rf above is the real reclaim).
+          brew uninstall -f --zap aws-sam-cli session-manager-plugin gcc gcc@13 gcc@14 gcc@15 llvm@18 gradle maven ant azure-cli bazel || true
+          brew autoremove || true
         fi
 
         # lipo off some huge binaries arm64 versions to save space
