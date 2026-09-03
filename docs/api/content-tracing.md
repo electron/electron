@@ -125,8 +125,6 @@ Returns `Promise<Object>` - Resolves with an object containing the `value` and `
 * `value` number
 * `percentage` number
 
-For recordings started with `heap_profiler_options`, `value` is always `0`.
-
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state.
 
