@@ -1484,6 +1484,45 @@ describe('cpp heap', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('inAppPurchase module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { inAppPurchase } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(inAppPurchase.canMakePayments());
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { inAppPurchase } = require('electron');
+          console.log(inAppPurchase.canMakePayments());
+        }
+        {
+          const { inAppPurchase } = require('electron');
+          console.log(inAppPurchase.getReceiptURL());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { inAppPurchase } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(inAppPurchase.canMakePayments());
+          return containsRetainingPath(recordState().snapshot, ['Electron / InAppPurchase']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('autoUpdater module', () => {
     it('is retained after garbage collection', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
