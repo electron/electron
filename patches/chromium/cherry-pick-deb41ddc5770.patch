@@ -1,0 +1,243 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Fri, 28 Aug 2026 13:20:18 -0700
+Subject: Promote DCHECK to CHECK in cc animation downcasts
+
+Promotes `DCHECK` downcast assertions to `CHECK` across `cc/animation/`
+downcasting helpers (`ToScrollTimeline`, `ToWorkletAnimation`,
+`ToScrollOffsetAnimationCurve`, and `ToFilterAnimationCurve`).
+Introduces `ToTimelineTrigger` helper functions with `CHECK` verification
+and uses them in `AnimationHost::UpdateTriggers`.
+
+This ensures downcasts between base and derived animation, timeline, trigger,
+and curve instances are always validated.
+
+Bug: 553449113
+Change-Id: I06849cde7d144966b89ec2899eebef5f5a66fee0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8308916
+Reviewed-by: David A <awogbemila@chromium.org>
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1688263}
+(cherry picked from commit deb41ddc5770bd74cc7d0e4d6a7d7b12e2c5ecec)
+
+diff --git a/cc/animation/animation_host.cc b/cc/animation/animation_host.cc
+index f55272ee870710242d9103c49cbc8dc1fccd02b8..51f2052ea056ef3ac4cf455d0d63d1a1efd88f89 100644
+--- a/cc/animation/animation_host.cc
++++ b/cc/animation/animation_host.cc
+@@ -1077,8 +1077,7 @@ void AnimationHost::UpdateTriggers(const ScrollTree& scroll_tree,
+   for (const auto& kv : id_to_trigger_map_.Read(*this)) {
+     AnimationTrigger* trigger = kv.second.get();
+     // NOTE(crbug.com/451238244): Only timeline triggers are supported for now.
+-    DCHECK(trigger->IsTimelineTrigger());
+-    static_cast<TimelineTrigger*>(trigger)->Update(scroll_tree, events);
++    ToTimelineTrigger(trigger)->Update(scroll_tree, events);
+   }
+ }
+ 
+diff --git a/cc/animation/filter_animation_curve.cc b/cc/animation/filter_animation_curve.cc
+index 8a01901f65d5392e713a7b490ca34a8e54fb7aa1..003a1f43a5c31a0a5186bbeb90d15f71c12d9376 100644
+--- a/cc/animation/filter_animation_curve.cc
++++ b/cc/animation/filter_animation_curve.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "cc/animation/filter_animation_curve.h"
+ 
++#include "base/check_op.h"
+ #include "base/memory/ptr_util.h"
+ #include "ui/gfx/animation/keyframe/keyframed_animation_curve-inl.h"
+ 
+@@ -30,13 +31,13 @@ const char* FilterAnimationCurve::TypeName() const {
+ 
+ const FilterAnimationCurve* FilterAnimationCurve::ToFilterAnimationCurve(
+     const gfx::AnimationCurve* c) {
+-  DCHECK_EQ(gfx::AnimationCurve::FILTER, c->Type());
++  CHECK_EQ(gfx::AnimationCurve::FILTER, c->Type());
+   return static_cast<const FilterAnimationCurve*>(c);
+ }
+ 
+ FilterAnimationCurve* FilterAnimationCurve::ToFilterAnimationCurve(
+     gfx::AnimationCurve* c) {
+-  DCHECK_EQ(AnimationCurve::FILTER, c->Type());
++  CHECK_EQ(AnimationCurve::FILTER, c->Type());
+   return static_cast<FilterAnimationCurve*>(c);
+ }
+ 
+diff --git a/cc/animation/scroll_offset_animation_curve.cc b/cc/animation/scroll_offset_animation_curve.cc
+index f2d5475d625785d7d4c6ef9a462d5509b5423500..3e57ae37b0899b5000f895215de3def3c32ad1dd 100644
+--- a/cc/animation/scroll_offset_animation_curve.cc
++++ b/cc/animation/scroll_offset_animation_curve.cc
+@@ -412,13 +412,13 @@ void ScrollOffsetAnimationCurve::UpdateTarget(base::TimeDelta t,
+ const ScrollOffsetAnimationCurve*
+ ScrollOffsetAnimationCurve::ToScrollOffsetAnimationCurve(
+     const AnimationCurve* c) {
+-  DCHECK_EQ(ScrollOffsetAnimationCurve::SCROLL_OFFSET, c->Type());
++  CHECK_EQ(ScrollOffsetAnimationCurve::SCROLL_OFFSET, c->Type());
+   return static_cast<const ScrollOffsetAnimationCurve*>(c);
+ }
+ 
+ ScrollOffsetAnimationCurve*
+ ScrollOffsetAnimationCurve::ToScrollOffsetAnimationCurve(AnimationCurve* c) {
+-  DCHECK_EQ(ScrollOffsetAnimationCurve::SCROLL_OFFSET, c->Type());
++  CHECK_EQ(ScrollOffsetAnimationCurve::SCROLL_OFFSET, c->Type());
+   return static_cast<ScrollOffsetAnimationCurve*>(c);
+ }
+ 
+diff --git a/cc/animation/scroll_timeline.h b/cc/animation/scroll_timeline.h
+index afb6f71b0207e78d115779ea8915f193ce7c541e..5621ba8223fcbb287039abf890665a4c26bb180e 100644
+--- a/cc/animation/scroll_timeline.h
++++ b/cc/animation/scroll_timeline.h
+@@ -8,6 +8,7 @@
+ #include <optional>
+ #include <vector>
+ 
++#include "base/check.h"
+ #include "base/time/time.h"
+ #include "cc/animation/animation_export.h"
+ #include "cc/animation/animation_timeline.h"
+@@ -185,13 +186,13 @@ class CC_ANIMATION_EXPORT ScrollTimeline : public AnimationTimeline {
+ };
+ 
+ inline ScrollTimeline* ToScrollTimeline(AnimationTimeline* timeline) {
+-  DCHECK(timeline->IsScrollTimeline());
++  CHECK(timeline->IsScrollTimeline());
+   return static_cast<ScrollTimeline*>(timeline);
+ }
+ 
+ inline const ScrollTimeline* ToScrollTimeline(
+     const AnimationTimeline* timeline) {
+-  DCHECK(timeline->IsScrollTimeline());
++  CHECK(timeline->IsScrollTimeline());
+   return static_cast<const ScrollTimeline*>(timeline);
+ }
+ 
+diff --git a/cc/animation/scroll_timeline_unittest.cc b/cc/animation/scroll_timeline_unittest.cc
+index 4418ba994cf59e2f6f1dfe373d2a269b2f5b38cd..40e9bfd1e20f52f7798f4bdf789992992643fd72 100644
+--- a/cc/animation/scroll_timeline_unittest.cc
++++ b/cc/animation/scroll_timeline_unittest.cc
+@@ -437,4 +437,22 @@ TEST_F(ScrollTimelineTest, Activeness) {
+       active_timeline->IsActive(scroll_tree(), true /*is_active_tree*/));
+ }
+ 
++TEST_F(ScrollTimelineTest, ToScrollTimeline) {
++  ScrollTimeline::ScrollOffsets scroll_offsets(0, 100);
++  scoped_refptr<ScrollTimeline> scroll_timeline = ScrollTimeline::Create(
++      scroller_id(), ScrollTimeline::ScrollDown, scroll_offsets);
++  scoped_refptr<AnimationTimeline> plain_timeline =
++      AnimationTimeline::Create(1);
++
++  EXPECT_EQ(ToScrollTimeline(scroll_timeline.get()), scroll_timeline.get());
++  const AnimationTimeline* const_scroll_timeline = scroll_timeline.get();
++  EXPECT_EQ(ToScrollTimeline(const_scroll_timeline), scroll_timeline.get());
++
++#if GTEST_HAS_DEATH_TEST
++  EXPECT_DEATH_IF_SUPPORTED(ToScrollTimeline(plain_timeline.get()), "");
++  const AnimationTimeline* const_plain_timeline = plain_timeline.get();
++  EXPECT_DEATH_IF_SUPPORTED(ToScrollTimeline(const_plain_timeline), "");
++#endif
++}
++
+ }  // namespace cc
+diff --git a/cc/animation/timeline_trigger.cc b/cc/animation/timeline_trigger.cc
+index ead5bd059d015e6affe1243bc2ef269df3437e83..81112e33acd3e1ab13d7136c7ef3ed0e78f48e11 100644
+--- a/cc/animation/timeline_trigger.cc
++++ b/cc/animation/timeline_trigger.cc
+@@ -61,8 +61,7 @@ AnimationTrigger::State TimelineTrigger::ComputeState(base::TimeTicks time) {
+ void TimelineTrigger::Update(const ScrollTree& scroll_tree,
+                              AnimationEvents* events) {
+   ScrollTimeline* scroll_timeline =
+-      reinterpret_cast<ScrollTimeline*>(timeline_.Read(*this).get());
+-  DCHECK(scroll_timeline);
++      ToScrollTimeline(timeline_.Read(*this).get());
+ 
+   // Triggers only function based on the active tree.
+   if (!scroll_timeline->IsActive(scroll_tree, /*is_active_tree=*/true)) {
+diff --git a/cc/animation/timeline_trigger.h b/cc/animation/timeline_trigger.h
+index 80e6fcedb59955bd54fefebcc2195b12d5d7f920..749411c749ce79a3a7ca8ca15d29c10d26dc1b8b 100644
+--- a/cc/animation/timeline_trigger.h
++++ b/cc/animation/timeline_trigger.h
+@@ -5,6 +5,7 @@
+ #ifndef CC_ANIMATION_TIMELINE_TRIGGER_H_
+ #define CC_ANIMATION_TIMELINE_TRIGGER_H_
+ 
++#include "base/check.h"
+ #include "cc/animation/animation_trigger.h"
+ 
+ namespace cc {
+@@ -63,6 +64,17 @@ class CC_ANIMATION_EXPORT TimelineTrigger : public AnimationTrigger {
+   State state_ = State::kIdle;
+ };
+ 
++inline TimelineTrigger* ToTimelineTrigger(AnimationTrigger* trigger) {
++  CHECK(trigger->IsTimelineTrigger());
++  return static_cast<TimelineTrigger*>(trigger);
++}
++
++inline const TimelineTrigger* ToTimelineTrigger(
++    const AnimationTrigger* trigger) {
++  CHECK(trigger->IsTimelineTrigger());
++  return static_cast<const TimelineTrigger*>(trigger);
++}
++
+ }  // namespace cc
+ 
+ #endif  // CC_ANIMATION_TIMELINE_TRIGGER_H_
+diff --git a/cc/animation/worklet_animation.h b/cc/animation/worklet_animation.h
+index e4323e7ee818331b144df43aef11fe8f81fedb81..1b4c5e4f083ac5c870c038b32531d0af3d8818e3 100644
+--- a/cc/animation/worklet_animation.h
++++ b/cc/animation/worklet_animation.h
+@@ -9,6 +9,7 @@
+ #include <optional>
+ #include <string>
+ 
++#include "base/check.h"
+ #include "base/time/time.h"
+ #include "cc/animation/animation.h"
+ #include "cc/animation/animation_export.h"
+@@ -154,10 +155,15 @@ class CC_ANIMATION_EXPORT WorkletAnimation final : public Animation {
+ };
+ 
+ inline WorkletAnimation* ToWorkletAnimation(Animation* animation) {
+-  DCHECK(animation->IsWorkletAnimation());
++  CHECK(animation->IsWorkletAnimation());
+   return static_cast<WorkletAnimation*>(animation);
+ }
+ 
++inline const WorkletAnimation* ToWorkletAnimation(const Animation* animation) {
++  CHECK(animation->IsWorkletAnimation());
++  return static_cast<const WorkletAnimation*>(animation);
++}
++
+ }  // namespace cc
+ 
+ #endif  // CC_ANIMATION_WORKLET_ANIMATION_H_
+diff --git a/cc/animation/worklet_animation_unittest.cc b/cc/animation/worklet_animation_unittest.cc
+index b8e5d60dd43c032e61bf8a5629071629a5c9cd99..204e17b0d3d518f324d573cff890de38705eb701 100644
+--- a/cc/animation/worklet_animation_unittest.cc
++++ b/cc/animation/worklet_animation_unittest.cc
+@@ -548,6 +548,26 @@ TEST_F(WorkletAnimationTest, SkipLockedAnimations) {
+   EXPECT_EQ(input->updated_animations.size(), 1u);
+ }
+ 
++TEST_F(WorkletAnimationTest, ToWorkletAnimation) {
++  scoped_refptr<WorkletAnimation> worklet_animation =
++      WorkletAnimation::Create(worklet_animation_id_, "test_name", 1.0,
++                               /* options */ nullptr,
++                               /* effect_timings */ nullptr);
++  scoped_refptr<Animation> plain_animation = Animation::Create(1);
++
++  EXPECT_EQ(ToWorkletAnimation(worklet_animation.get()),
++            worklet_animation.get());
++  const Animation* const_worklet_animation = worklet_animation.get();
++  EXPECT_EQ(ToWorkletAnimation(const_worklet_animation),
++            worklet_animation.get());
++
++#if GTEST_HAS_DEATH_TEST
++  EXPECT_DEATH_IF_SUPPORTED(ToWorkletAnimation(plain_animation.get()), "");
++  const Animation* const_plain_animation = plain_animation.get();
++  EXPECT_DEATH_IF_SUPPORTED(ToWorkletAnimation(const_plain_animation), "");
++#endif
++}
++
+ }  // namespace
+ 
+ }  // namespace cc

@@ -1,0 +1,210 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Wed, 26 Aug 2026 13:46:54 -0700
+Subject: Fix re-entrancy bug in UpdateActivationDependencies()
+
+Surface::UpdateActivationDependencies() first removes all existing
+activation dependencies and clears blocking_allocation_groups_. It then
+does a loop through new activation dependencies that either activates
+dependent surfaces or registers the surface as a blocked embedder. If a
+surface S0 had two activation dependencies, S1 and S2, it could register
+as blocked embedder for S1 group G1 in the first loop iteration if S1
+didn't have an active frame. It would also store G1 in
+new_blocking_allocation_groups for S0. The second loop iteration could
+activate S2, which could in turn active S1, which allows G1 to be
+deleted if S1 is destroyed. The pointer to G1 is stored in
+blocking_allocation_groups_ for S0 at the end of
+UpdateActivationDependencies() when it shouldn't be. S0 won't be
+notified that G1 is being deleted and the pointer can go stale.
+
+The fix here is to split that problematic loop into two loops. The first
+loop updates last pending reference and maybe activates surfaces for the
+SurfaceAllocationGroup. The second loop checks for active surfaces and
+registers as a blocked embedder. Since the surface isn't registered as a
+blocked embedder when other surfaces activate it reduces reentrancy and
+prevents the stale pointer.
+
+A logic change is that UpdateLastPendingReferenceAndMaybeActivate() is
+now called for all activation dependencies, even when two of them have
+the same SurfaceAllocationGroup. Having a surface be blocked on
+activation of multiple surface in the same group, aka with the same
+embed token, doesn't make much sense but it's allowed by the code.
+
+Lastly change the DCHECK into a CHECK in
+OnActivationDependencyResolved(), that ensures dependency being removed
+was actually registered. It should always be the case now.
+
+Bug: 540357382
+Change-Id: I4bb5858c274c7d76f3da03fcabbf8f947ccd7750
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8297301
+Reviewed-by: Saifuddin Hitawala <hitawala@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1686642}
+(cherry picked from commit 053609913f8db7469fff46fe0170001d4123b094)
+
+diff --git a/components/viz/service/frame_sinks/surface_synchronization_unittest.cc b/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
+index d98140b6b2d5b5e6e99307ec49a88619cb0bcddb..030ec2643118cc518420a5cc9b0bd018ba553a7a 100644
+--- a/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
++++ b/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
+@@ -3300,10 +3300,10 @@ TEST_F(SurfaceSynchronizationTest,
+   // This shouldn't crash.
+   parent_support().SubmitCompositorFrame(parent_id.local_surface_id(),
+                                          std::move(parent_frame));
+-  // When multiple dependencies have the same embed token, only the first one
+-  // should be taken into account.
+-  EXPECT_EQ(1u, parent_surface()->activation_dependencies().size());
+-  EXPECT_EQ(child1_id1, *parent_surface()->activation_dependencies().begin());
++  // When multiple dependencies have the same embed token, the latest should
++  // be taken into account.
++  EXPECT_THAT(parent_surface()->activation_dependencies(),
++              testing::ElementsAre(child1_id2));
+ }
+ 
+ class SurfaceSynchronizationTestMayAlwaysAckOnActivation
+diff --git a/components/viz/service/surfaces/surface.cc b/components/viz/service/surfaces/surface.cc
+index 560f5404c8fc81d8c476d202d014506ed95792a3..81daf29958b0ae595d59a82d623ff946a0f443dd 100644
+--- a/components/viz/service/surfaces/surface.cc
++++ b/components/viz/service/surfaces/surface.cc
+@@ -444,8 +444,8 @@ bool Surface::RequestCopyOfOutputOnActiveFrameRenderPassId(
+ void Surface::OnActivationDependencyResolved(
+     const SurfaceId& activation_dependency,
+     SurfaceAllocationGroup* group) {
+-  DCHECK(activation_dependencies_.count(activation_dependency));
+-  activation_dependencies_.erase(activation_dependency);
++  size_t erased = activation_dependencies_.erase(activation_dependency);
++  CHECK_EQ(erased, 1u);
+   blocking_allocation_groups_.erase(group);
+   if (!activation_dependencies_.empty() ||
+       !view_transition_dependencies_.empty()) {
+@@ -798,6 +798,22 @@ void Surface::UpdateActivationDependencies(
+     return;
+   }
+ 
++  // Update the last pending reference in each allocation group. This
++  // may trigger fallback or deadline inheritance activations in those
++  // allocation groups. This surface isn't registered as a blocked embedder
++  // while this happens to avoid re-entrancy.
++  for (const SurfaceId& surface_id :
++       current_frame.metadata.activation_dependencies) {
++    SurfaceAllocationGroup* group =
++        surface_manager_->GetOrCreateAllocationGroupForSurfaceId(surface_id);
++    if (group) {
++      group->UpdateLastPendingReferenceAndMaybeActivate(surface_id);
++    }
++  }
++
++  // Now that all surface activations have happened, inspect which
++  // dependencies remain unresolved and register as a blocked embedder only for
++  // those.
+   base::flat_set<raw_ptr<SurfaceAllocationGroup, CtnExperimental>>
+       new_blocking_allocation_groups;
+   std::vector<SurfaceId> new_activation_dependencies;
+@@ -807,8 +823,7 @@ void Surface::UpdateActivationDependencies(
+         surface_manager_->GetOrCreateAllocationGroupForSurfaceId(surface_id);
+     if (new_blocking_allocation_groups.contains(group))
+       continue;
+-    if (group)
+-      group->UpdateLastPendingReferenceAndMaybeActivate(surface_id);
++
+     Surface* dependency = surface_manager_->GetSurfaceForId(surface_id);
+     if (dependency && dependency->HasActiveFrame()) {
+       // Normally every creation of SurfaceAllocationGroup should be followed by
+diff --git a/components/viz/service/surfaces/surface_unittest.cc b/components/viz/service/surfaces/surface_unittest.cc
+index 368eacb1358084296ee6b1dbdde7c1e8353461ec..7dbb0568e16901d312c55684e2729246067f109d 100644
+--- a/components/viz/service/surfaces/surface_unittest.cc
++++ b/components/viz/service/surfaces/surface_unittest.cc
+@@ -14,6 +14,7 @@
+ #include "cc/test/scheduler_test_common.h"
+ #include "components/viz/common/features.h"
+ #include "components/viz/common/frame_sinks/copy_output_result.h"
++#include "components/viz/common/quads/compositor_frame_transition_directive.h"
+ #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
+ #include "components/viz/common/surfaces/subtree_capture_id.h"
+ #include "components/viz/service/frame_sinks/compositor_frame_sink_support.h"
+@@ -537,5 +538,86 @@ TEST_F(SurfaceTest, ActiveEmbeddersIteratorInvalidation) {
+   EXPECT_TRUE(surface_manager->GetSurfaceForId(SurfaceId(fs_target, g1_lsid)));
+ }
+ 
++// Tests that reentrant surface activation doesn't cause a stale
++// SurfaceAllocationGroup* to be stored. See crbug.com/540357382 for details.
++TEST_F(SurfaceTest, ReentrantSurfaceActivationStaleAllocationGroup) {
++  SurfaceManager* surface_manager = frame_sink_manager_.surface_manager();
++
++  constexpr FrameSinkId fs_c1(10, 1);
++  constexpr FrameSinkId fs_c2(20, 1);
++  constexpr FrameSinkId fs_s(30, 1);
++
++  auto c1_support = std::make_unique<CompositorFrameSinkSupport>(
++      nullptr, &frame_sink_manager_, fs_c1, /*is_root=*/false);
++  auto c2_support = std::make_unique<CompositorFrameSinkSupport>(
++      nullptr, &frame_sink_manager_, fs_c2, /*is_root=*/false);
++  auto s_support = std::make_unique<CompositorFrameSinkSupport>(
++      nullptr, &frame_sink_manager_, fs_s, /*is_root=*/false);
++
++  const base::UnguessableToken token_c1 = base::UnguessableToken::Create();
++  const base::UnguessableToken token_c2 = base::UnguessableToken::Create();
++  const base::UnguessableToken token_s = base::UnguessableToken::Create();
++
++  SurfaceId unresolvable_dep(
++      FrameSinkId(99, 1),
++      LocalSurfaceId(1, 1, base::UnguessableToken::Create()));
++
++  auto build_frame = [](std::vector<SurfaceId> deps,
++                        std::vector<SurfaceRange> refs) {
++    return CompositorFrameBuilder()
++        .AddRenderPass(gfx::Rect(10, 10), gfx::Rect(10, 10))
++        .SetActivationDependencies(std::move(deps))
++        .SetReferencedSurfaces(std::move(refs))
++        .SetDeadline(FrameDeadline(base::TimeTicks::Now(), 10000u,
++                                   base::Milliseconds(16), false))
++        .Build();
++  };
++
++  // Step 1: Submit C1 frame with an unresolvable dependency. This creates
++  // allocation group G1 and keeps C1 pending.
++  LocalSurfaceId c1_lsid(2, 1, token_c1);
++  SurfaceId c1_surface_id(fs_c1, c1_lsid);
++  c1_support->SubmitCompositorFrame(
++      c1_lsid,
++      build_frame({unresolvable_dep}, {SurfaceRange(unresolvable_dep)}));
++
++  // Step 2: Submit C2 frame with an unresolvable dependency and referencing
++  // C1's surface. This creates allocation group G2 and keeps C2 pending.
++  LocalSurfaceId c2_lsid(1, 1, token_c2);
++  c2_support->SubmitCompositorFrame(
++      c2_lsid, build_frame({unresolvable_dep}, {SurfaceRange(unresolvable_dep),
++                                                SurfaceRange(c1_surface_id)}));
++
++  // Step 3: Submit surface S that would trigger reentrancy. S depends on an
++  // older surface in G1, so C1(2, 1) satisfies it, and a newer surface in G2,
++  // so C2(1, 1) activates as a fallback. The animate transition directive
++  // ensures that reentrant OnActivationDependencyResolved() returns early
++  // instead of hitting `CHECK(pending_frame_data_)`.
++  SurfaceId c1_older_surface_id(fs_c1, LocalSurfaceId(1, 1, token_c1));
++  SurfaceId c2_newer_surface_id(fs_c2, LocalSurfaceId(2, 1, token_c2));
++
++  CompositorFrame s_frame = build_frame(
++      {c1_older_surface_id, c2_newer_surface_id},
++      {SurfaceRange(c1_older_surface_id), SurfaceRange(c2_newer_surface_id)});
++  s_frame.metadata.transition_directives.push_back(
++      CompositorFrameTransitionDirective::CreateAnimate(
++          blink::ViewTransitionToken(), /*maybe_cross_frame_sink=*/false,
++          /*sequence_id=*/1, /*delay_layer_tree_view_deletion=*/true));
++
++  LocalSurfaceId s_lsid(1, 1, token_s);
++  s_support->SubmitCompositorFrame(s_lsid, std::move(s_frame));
++
++  // Step 4: Remove C2's reference to C1 so G1 has no active embedders.
++  c2_support->SubmitCompositorFrame(c2_lsid, build_frame({}, {}));
++
++  // Destroy C1 and garbage collect. This deletes C1 and destroys G1.
++  c1_support.reset();
++  surface_manager->GarbageCollectSurfaces();
++
++  // Step 5: Submit a new frame for S. UpdateActivationDependencies() iterates
++  // `blocking_allocation_groups_` which shouldn't contain G1.
++  s_support->SubmitCompositorFrame(s_lsid, build_frame({}, {}));
++}
++
+ }  // namespace
+ }  // namespace viz

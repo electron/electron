@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Thu, 27 Aug 2026 09:47:10 +0000
+Subject: Fix UAF in SkCachedData::internalUnref
+
+Destroy AutoMutexWritable before calling delete this in
+SkCachedData::internalUnref to avoid unlocking the mutex after the
+object has been deleted.
+
+This was found while trying to enable the MiraclePtr rewrite
+that would protect "this" and cause deterministic termination.
+Fixed: 553345874
+Bug: 351867706
+Doc: https://bit.ly/miracleptr-skia
+Change-Id: I0a1d3aed3b3d41e4ed06505295a14028ff634788
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1340596
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Arthur Sonzogni <arthursonzogni@chromium.org>
+
+(cherry picked from commit d7c15613590bfe9f9a40e82542c2873766a2e558)
+
+diff --git a/src/core/SkCachedData.cpp b/src/core/SkCachedData.cpp
+index 522d650c43cb29d082ebe81ecca4db9253e9ccb4..d6a42f3fe77dc16492b8a700eec5078a6ee361e7 100644
+--- a/src/core/SkCachedData.cpp
++++ b/src/core/SkCachedData.cpp
+@@ -65,7 +65,12 @@ void SkCachedData::internalRef(bool fromCache) const {
+ }
+ 
+ void SkCachedData::internalUnref(bool fromCache) const {
+-    if (AutoMutexWritable(this)->inMutexUnref(fromCache)) {
++    bool shouldDelete = false;
++    {
++        AutoMutexWritable amw(this);
++        shouldDelete = amw->inMutexUnref(fromCache);
++    }
++    if (shouldDelete) {
+         // can't delete inside doInternalUnref, since it is locking a mutex (which we own)
+         delete this;
+     }

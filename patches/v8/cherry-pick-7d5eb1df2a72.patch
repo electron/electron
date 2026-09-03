@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 19 Aug 2026 14:06:55 +0200
+Subject: [maglev] Materialize a fresh HeapNumber per deoptimization
+
+This matches what Turbolev graph builder already does to Maglev.
+
+Fixed: 547819997
+Change-Id: Iafc1185ef96db8816db36b295a3a4b7e528f9863
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8255554
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109347}
+(cherry picked from commit 7d5eb1df2a721c8fe3aa03b999464c4b86242080)
+
+diff --git a/src/maglev/maglev-code-generator.cc b/src/maglev/maglev-code-generator.cc
+index aedc43d241db3e8fc5077abca3b295c605680af9..17037546ebc140c71997b822fb69fd625e2b85e0 100644
+--- a/src/maglev/maglev-code-generator.cc
++++ b/src/maglev/maglev-code-generator.cc
+@@ -1504,17 +1504,9 @@ class MaglevFrameTranslationBuilder {
+     return kNotDuplicated;
+   }
+ 
+-  void BuildHeapNumber(const VirtualObject* vobject) {
+-    DCHECK_EQ(vobject->object_type(), vobj::ObjectType::kHeapNumber);
+-    ValueNode* value_node = vobject->get(HeapNumber::kValueOffset);
+-    return BuildHeapNumber(value_node->Cast<Float64Constant>()->value());
+-  }
+-
+-  void BuildHeapNumber(Float64 number) {
+-    DirectHandle<Object> value =
+-        local_isolate_->factory()->NewHeapNumberFromBits<AllocationType::kOld>(
+-            number.get_bits());
+-    translation_array_builder_->StoreLiteral(GetDeoptLiteral(*value));
++  int CreateUnduplicatableId() {
++    object_ids_.push_back(kNotDuplicated);
++    return kNotDuplicated;
+   }
+ 
+   void BuildNestedValue(const ValueNode* value,
+@@ -1569,12 +1561,15 @@ class MaglevFrameTranslationBuilder {
+                           const InputLocation*& input_location,
+                           const VirtualObjectList& virtual_objects) {
+     vobj::ObjectType object_type = object->object_type();
+-    if (object_type == vobj::ObjectType::kHeapNumber) {
+-      // TODO(jgruber): Could we use the standard path below instead?
+-      return BuildHeapNumber(object);
+-    }
++    // HeapNumbers may be mutable object fields; each materialization must
++    // create a fresh box, so they are never deduplicated.
++    // TODO(victorgomes): Constrain which objects may contain mutable
++    // HeapNumbers. Immutable HeapNumbers can be stored as a literal object
++    // instead of a captured object.
+     int dup_id =
+-        GetDuplicatedId(reinterpret_cast<intptr_t>(object->allocation()));
++        object_type == vobj::ObjectType::kHeapNumber
++            ? CreateUnduplicatableId()
++            : GetDuplicatedId(reinterpret_cast<intptr_t>(object->allocation()));
+     if (dup_id != kNotDuplicated) {
+       translation_array_builder_->DuplicateObject(dup_id);
+       object->ForEachNestedRuntimeInput(
+@@ -1734,7 +1729,7 @@ class MaglevFrameTranslationBuilder {
+   ZoneVector<IndirectHandle<TrustedObject>>* protected_deopt_literals_vector_;
+   ZoneVector<IndirectHandle<Object>>* deopt_literals_vector_;
+ 
+-  static const int kNotDuplicated = -1;
++  static constexpr int kNotDuplicated = -1;
+   std::vector<intptr_t> object_ids_;
+ };
+ 
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index a94c1b89ab7c3ebd719419bc0908753fe83dc662..052719208e290e27e5f73ee386f1b07bdb1044de 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -5628,11 +5628,9 @@ class VirtualObject : public FixedInputValueNodeT<0, VirtualObject> {
+         vobj::Field snd = FieldForOffset(ConsString::kSecondOffset);
+         return callback(slots_[snd.slot_index], snd);
+       }
+-      if (object_type() == vobj::ObjectType::kHeapNumber) {
+-        // HeapNumber materialization creates a literal object instead of
+-        // slot traversal.
+-        return true;
+-      }
++      // TODO(victorgomes): Constrain which objects may contain mutable
++      // HeapNumbers. Immutable HeapNumbers can be stored as a literal object
++      // instead of traversing their slots.
+     }
+     for (int i = 0; i < slot_count(); i++) {
+       if (!callback(slots_[i], FieldForSlot(i))) {
+@@ -5923,8 +5921,8 @@ struct VirtualPrimitiveHeapObjectShape : VirtualHeapObjectShape {};
+ 
+ struct VirtualHeapNumberShape : VirtualPrimitiveHeapObjectShape {
+   using T = HeapNumber;
+-  // Special handling needed; deopt materialization uses a special path.
+-  // TODO(jgruber): .. but could it take the standard path instead?
++  // Special handling needed; instances may be mutable object fields and thus
++  // must never be deduplicated in deopt frames.
+   static constexpr vobj::ObjectType kObjectType = vobj::ObjectType::kHeapNumber;
+ #define FIELD_LIST(V) V(value, T::kValueOffset, vobj::FieldType::kFloat64)
+   DEF_SHAPE(VirtualPrimitiveHeapObjectShape, FIELD_LIST);
+diff --git a/test/mjsunit/maglev/regress-547819997.js b/test/mjsunit/maglev/regress-547819997.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..43a8e395d3fcf5f3518fd9f79fc163c046fad5e3
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-547819997.js
+@@ -0,0 +1,38 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++const boxes = [];
++
++// Never called during warm-up, so this call site has no feedback and Maglev
++// emits an unconditional deopt for it. The literal below is therefore only
++// used by deopt frames and gets elided by escape analysis.
++function sink(o) {
++  boxes.push(o);
++}
++
++function foo(depth, take) {
++  const o = {x: 1.5};
++  if (depth > 0) foo(depth - 1, take);
++  if (take) sink(o);
++}
++
++%PrepareFunctionForOptimization(foo);
++foo(3, false);
++foo(3, false);
++%OptimizeMaglevOnNextCall(foo);
++foo(3, false);
++
++// Deopts the innermost activation eagerly and the outer ones lazily, so every
++// activation materializes its own object.
++foo(3, true);
++
++assertEquals(4, boxes.length);
++for (let i = 0; i < boxes.length; i++) {
++  boxes[i].x = i;
++}
++for (let i = 0; i < boxes.length; i++) {
++  assertEquals(i, boxes[i].x);
++}
