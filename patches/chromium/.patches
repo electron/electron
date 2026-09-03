@@ -225,3 +225,4 @@ fix_systemd-escape_the_app_name_in_the_xdg_portal_scope_unit_name.patch
 cherry-pick-f4cb4a33442a.patch
 cherry-pick-6454cd98685d.patch
 cherry-pick-78fb4f541c61.patch
+cherry-pick-36ac8f31796a.patch
