@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 19 Aug 2026 14:06:55 +0200
+Subject: [M152] [maglev] Materialize a fresh HeapNumber per deoptimization
+
+Original change's description:
+> [maglev] Materialize a fresh HeapNumber per deoptimization
+>
+> This matches what Turbolev graph builder already does to Maglev.
+>
+> Fixed: 547819997
+> Change-Id: Iafc1185ef96db8816db36b295a3a4b7e528f9863
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8255554
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109347}
+
+(cherry picked from commit 7d5eb1df2a721c8fe3aa03b999464c4b86242080)
+
+Bug: 550172704,547819997
+Change-Id: Iafc1185ef96db8816db36b295a3a4b7e528f9863
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8335674
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#42}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/maglev/maglev-code-generator.cc b/src/maglev/maglev-code-generator.cc
+index 7abc14ca28ab69f6f087c47f06841bc5bfe5edb2..d893cee4d9fd54e15f7664757676dd8b878a5e5c 100644
+--- a/src/maglev/maglev-code-generator.cc
++++ b/src/maglev/maglev-code-generator.cc
+@@ -1549,17 +1549,9 @@ class MaglevFrameTranslationBuilder {
+     return kNotDuplicated;
+   }
+ 
+-  void BuildHeapNumber(const VirtualObject* vobject) {
+-    DCHECK_EQ(vobject->object_type(), vobj::ObjectType::kHeapNumber);
+-    ValueNode* value_node = vobject->get(offsetof(HeapNumber, value_));
+-    return BuildHeapNumber(value_node->Cast<Float64Constant>()->value());
+-  }
+-
+-  void BuildHeapNumber(Float64 number) {
+-    DirectHandle<Object> value =
+-        local_isolate_->factory()->NewHeapNumberFromBits<AllocationType::kOld>(
+-            number.get_bits());
+-    translation_array_builder_->StoreLiteral(GetDeoptLiteral(*value));
++  int CreateUnduplicatableId() {
++    object_ids_.push_back(kNotDuplicated);
++    return kNotDuplicated;
+   }
+ 
+   void BuildNestedValue(const ValueNode* value,
+@@ -1614,13 +1606,16 @@ class MaglevFrameTranslationBuilder {
+                           const InputLocation*& input_location,
+                           const VirtualObjectList& virtual_objects) {
+     vobj::ObjectType object_type = object->object_type();
+-    if (object_type == vobj::ObjectType::kHeapNumber) {
+-      // TODO(jgruber): Could we use the standard path below instead?
+-      return BuildHeapNumber(object);
+-    }
+     DCHECK_NOT_NULL(object->allocation());
++    // HeapNumbers may be mutable object fields; each materialization must
++    // create a fresh box, so they are never deduplicated.
++    // TODO(victorgomes): Constrain which objects may contain mutable
++    // HeapNumbers. Immutable HeapNumbers can be stored as a literal object
++    // instead of a captured object.
+     int dup_id =
+-        GetDuplicatedId(reinterpret_cast<intptr_t>(object->allocation()));
++        object_type == vobj::ObjectType::kHeapNumber
++            ? CreateUnduplicatableId()
++            : GetDuplicatedId(reinterpret_cast<intptr_t>(object->allocation()));
+     if (dup_id != kNotDuplicated) {
+       translation_array_builder_->DuplicateObject(dup_id);
+       object->ForEachNestedRuntimeInput(
+@@ -1788,7 +1783,7 @@ class MaglevFrameTranslationBuilder {
+   ZoneVector<IndirectHandle<TrustedObject>>* protected_deopt_literals_vector_;
+   ZoneVector<IndirectHandle<Object>>* deopt_literals_vector_;
+ 
+-  static const int kNotDuplicated = -1;
++  static constexpr int kNotDuplicated = -1;
+   std::vector<intptr_t> object_ids_;
+ };
+ 
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 58f997a9b6775ccbe9e1bd65af5ee71e1ab12360..5062cc86dc7d4e20330405a4813ee1beed2bdf67 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -6004,11 +6004,9 @@ class VirtualObject : public FixedInputValueNodeT<0, VirtualObject> {
+         vobj::Field snd = FieldForOffset(offsetof(ConsString, second_));
+         return callback(slots_[snd.slot_index], snd);
+       }
+-      if (object_type() == vobj::ObjectType::kHeapNumber) {
+-        // HeapNumber materialization creates a literal object instead of
+-        // slot traversal.
+-        return true;
+-      }
++      // TODO(victorgomes): Constrain which objects may contain mutable
++      // HeapNumbers. Immutable HeapNumbers can be stored as a literal object
++      // instead of traversing their slots.
+     }
+     for (int i = 0; i < slot_count(); i++) {
+       vobj::Field field = FieldForSlot(i);
+@@ -6364,8 +6362,8 @@ struct VirtualPrimitiveHeapObjectShape : VirtualHeapObjectShape {};
+ 
+ struct VirtualHeapNumberShape : VirtualPrimitiveHeapObjectShape {
+   using T = HeapNumber;
+-  // Special handling needed; deopt materialization uses a special path.
+-  // TODO(jgruber): .. but could it take the standard path instead?
++  // Special handling needed; instances may be mutable object fields and thus
++  // must never be deduplicated in deopt frames.
+   static constexpr vobj::ObjectType kObjectType = vobj::ObjectType::kHeapNumber;
+ #define FIELD_LIST(V) V(value, offsetof(T, value_), vobj::FieldType::kFloat64)
+   DEF_SHAPE(VirtualPrimitiveHeapObjectShape, FIELD_LIST);
+diff --git a/test/mjsunit/maglev/regress-547819997.js b/test/mjsunit/maglev/regress-547819997.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..43a8e395d3fcf5f3518fd9f79fc163c046fad5e3
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-547819997.js
+@@ -0,0 +1,38 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++const boxes = [];
++
++// Never called during warm-up, so this call site has no feedback and Maglev
++// emits an unconditional deopt for it. The literal below is therefore only
++// used by deopt frames and gets elided by escape analysis.
++function sink(o) {
++  boxes.push(o);
++}
++
++function foo(depth, take) {
++  const o = {x: 1.5};
++  if (depth > 0) foo(depth - 1, take);
++  if (take) sink(o);
++}
++
++%PrepareFunctionForOptimization(foo);
++foo(3, false);
++foo(3, false);
++%OptimizeMaglevOnNextCall(foo);
++foo(3, false);
++
++// Deopts the innermost activation eagerly and the outer ones lazily, so every
++// activation materializes its own object.
++foo(3, true);
++
++assertEquals(4, boxes.length);
++for (let i = 0; i < boxes.length; i++) {
++  boxes[i].x = i;
++}
++for (let i = 0; i < boxes.length; i++) {
++  assertEquals(i, boxes[i].x);
++}

@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maksim Sadym <sadym@chromium.org>
+Date: Wed, 2 Sep 2026 11:04:18 -0700
+Subject: [M152] Prevent UAF in TargetHandler::SetAttachedTargetsOfType
+
+Original change's description:
+> Prevent UAF in TargetHandler::SetAttachedTargetsOfType
+>
+> Collect strong DevToolsAgentHost references prior to detachment to prevent
+> use-after-free when in-loop detachment synchronously destroys sibling
+> agent hosts.
+>
+> Bug: 553119925
+> Change-Id: I406b611dedd30fea7be7ffee1252e35493107480
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8301599
+> Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+> Commit-Queue: Maksim Sadym <sadym@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1689188}
+
+(cherry picked from commit 76d750b581336a8426fc135270395b01b3af8e97)
+
+Bug: 555568329,553119925
+Change-Id: I406b611dedd30fea7be7ffee1252e35493107480
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8343051
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2315}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/devtools/protocol/target_handler.cc b/content/browser/devtools/protocol/target_handler.cc
+index f051aaf1c55ed686d6652c4b32622532f0692487..b6f859e1d12b96396a26855fffc137f03083d68c 100644
+--- a/content/browser/devtools/protocol/target_handler.cc
++++ b/content/browser/devtools/protocol/target_handler.cc
+@@ -972,18 +972,30 @@ void TargetHandler::SetAttachedTargetsOfType(
+     const base::flat_set<scoped_refptr<DevToolsAgentHost>>& new_hosts,
+     const std::string& type) {
+   DCHECK(!type.empty());
+-  auto old_sessions = auto_attached_sessions_;
+-  for (auto& entry : old_sessions) {
++  // Detaching a target (e.g. a subframe) can synchronously dispose child
++  // sessions and tear down owned resources (e.g. hidden targets), which may
++  // destroy sibling DevToolsAgentHost instances and mutate
++  // `auto_attached_sessions_`.
++  // To avoid use-after-free on bare pointer keys or session objects, first
++  // collect strong references to the hosts that need to be detached while all
++  // entries are still alive and valid.
++  std::vector<scoped_refptr<DevToolsAgentHost>> hosts_to_detach;
++  for (const auto& entry : auto_attached_sessions_) {
+     scoped_refptr<DevToolsAgentHost> host(entry.first);
+     if (host->GetType() == type &&
+         entry.second->auto_attacher_id_ ==
+             reinterpret_cast<uintptr_t>(source) &&
+         !new_hosts.contains(host)) {
+-      AutoDetach(source, host.get());
++      hosts_to_detach.push_back(std::move(host));
+     }
+   }
+-  for (auto& host : new_hosts) {
+-    if (!old_sessions.contains(host.get())) {
++  // AutoDetach re-validates each host against the live `auto_attached_sessions_`
++  // map, safely skipping any targets already detached by earlier cascades.
++  for (const auto& host : hosts_to_detach) {
++    AutoDetach(source, host.get());
++  }
++  for (const auto& host : new_hosts) {
++    if (!auto_attached_sessions_.contains(host.get())) {
+       AutoAttach(source, host.get(), false);
+     }
+   }
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach-expected.txt b/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..35bd945594bff69e35e2cad2ad5ecb6846c298fb
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach-expected.txt
+@@ -0,0 +1,4 @@
++Tests that navigating a page with an auto-attached iframe and hidden targets detaches cleanly without crashing.
++iframe session detached
++SUCCESS: Navigated and detached without crash
++
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach.js b/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fd3cfec4bf7e7b30d670ed7cb4dfcadd7475bf14
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/target/auto-attach-related-hidden-targets-detach.js
+@@ -0,0 +1,56 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  testRunner.log('Tests that navigating a page with an auto-attached iframe and hidden targets detaches cleanly without crashing.');
++  const bp = testRunner.browserP();
++
++  const page = await testRunner.createPage();
++  const pageSession = await page.createSession();
++
++  // Auto-attach related targets for the page.
++  await bp.Target.autoAttachRelated({
++    targetId: page.targetId(),
++    waitForDebuggerOnStart: false,
++  });
++
++  // Create an OOPIF.
++  const [attached] = await Promise.all([
++    bp.Target.onceAttachedToTarget(),
++    pageSession.evaluate(() => {
++      const iframe = document.createElement('iframe');
++      iframe.src = 'http://devtools.oopif.test:8080/inspector-protocol/resources/iframe.html';
++      document.body.appendChild(iframe);
++    }),
++  ]);
++  const iframeSession = testRunner.createSessionFor(attached.params.sessionId);
++
++  // Create hidden targets under the iframe session and auto-attach them.
++  const kHiddenTargetCount = 20;
++  for (let i = 0; i < kHiddenTargetCount; ++i) {
++    const {result: hiddenTarget} =
++        await iframeSession.protocol.Target.createTarget({
++          url: 'about:blank',
++          hidden: true,
++        });
++    await bp.Target.autoAttachRelated({
++      targetId: hiddenTarget.targetId,
++      waitForDebuggerOnStart: false,
++    });
++  }
++
++  // Cross-site navigation detaches the iframe and disposes its hidden targets.
++  await page.navigate('http://devtools.oopif-b.test:8080/inspector-protocol/resources/iframe.html');
++
++  // Assert that iframeSession was cleanly detached.
++  const evalResult = await iframeSession.protocol.Runtime.evaluate({expression: '1 + 1'});
++  if (evalResult.error) {
++    testRunner.log('iframe session detached');
++  } else {
++    testRunner.log('ERROR: iframe session should be detached but it was not');
++  }
++
++  testRunner.log('SUCCESS: Navigated and detached without crash');
++  testRunner.completeTest();
++});

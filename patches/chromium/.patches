@@ -171,3 +171,9 @@ fix_wayland_window_stuck_maximized_after_early_maximize.patch
 fix_register_the_spare_renderer_before_initializing_it.patch
 fix_fall_back_to_an_unlocalized_touch_id_prompt_reason_when_the.patch
 revert_only_preload_swiftshader_in_gpu_sandbox_init_when_allowed.patch
+cherry-pick-71067ec79d.patch
+cherry-pick-1e944c7f19.patch
+cherry-pick-29a203e805.patch
+cherry-pick-92e11f6fe0.patch
+cherry-pick-4dfbc081b5.patch
+cherry-pick-4d2a827481.patch

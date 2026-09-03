@@ -1,0 +1,281 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chris Fredrickson <cfredric@chromium.org>
+Date: Tue, 1 Sep 2026 10:52:21 -0700
+Subject: [M152] Ensure SharedWorkers use distinct code caches based on
+ SiteForCookies
+
+Original change's description:
+> Ensure SharedWorkers use distinct code caches based on SiteForCookies
+>
+> Without partitioning the code cache based on this property of the
+> SharedWorker, two shared workers with the same StorageKey would share
+> the code cache, even if one is not supposed to have access to 3P cookies
+> and the other is.
+>
+> Fixed: 552689418
+> Change-Id: Ice36567846bfab93b6242cfc526b0191f992a7ad
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8308172
+> Commit-Queue: Chris Fredrickson <cfredric@chromium.org>
+> Reviewed-by: Joe Mason <joenotcharles@google.com>
+> Reviewed-by: mmenke <mmenke@chromium.org>
+> Reviewed-by: Asami Doi <asamidoi@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1689294}
+
+(cherry picked from commit 0b4f1821f123f397738a9ca6fd9f1666c55f9d45)
+
+Bug: 555569277,552689418
+Change-Id: Ice36567846bfab93b6242cfc526b0191f992a7ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8335708
+Commit-Queue: Chris Fredrickson <cfredric@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2265}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
+index 7ca6258922a2a4704757da569f9e38291fca59fa..221c91a9eaa3713afa18a597c72c876a56450c43 100644
+--- a/content/browser/worker_host/shared_worker_host.cc
++++ b/content/browser/worker_host/shared_worker_host.cc
+@@ -93,6 +93,20 @@ void RecordDestructionSource(SharedWorkerHostDestructionSource source) {
+                                 source);
+ }
+ 
++net::IsolationInfo ComputeIsolationInfoWithPartition(
++    const blink::StorageKey& storage_key,
++    net::NetworkIsolationPartition partition) {
++  net::IsolationInfo isolation_info = storage_key.ToPartialNetIsolationInfo();
++  if (partition != net::NetworkIsolationPartition::kGeneral &&
++      !isolation_info.IsEmpty()) {
++    return net::IsolationInfo::Create(
++        isolation_info.request_type(), *isolation_info.top_frame_origin(),
++        *isolation_info.frame_origin(), isolation_info.site_for_cookies(),
++        isolation_info.nonce(), partition);
++  }
++  return isolation_info;
++}
++
+ }  // namespace
+ 
+ namespace content {
+@@ -974,6 +988,14 @@ base::WeakPtr<SharedWorkerHost> SharedWorkerHost::AsWeakPtr() {
+   return weak_factory_.GetWeakPtr();
+ }
+ 
++net::NetworkIsolationPartition SharedWorkerHost::GetNetworkIsolationPartition()
++    const {
++  return instance_.same_site_cookies() ==
++                 blink::mojom::SharedWorkerSameSiteCookies::kNone
++             ? net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone
++             : net::NetworkIsolationPartition::kGeneral;
++}
++
+ net::NetworkIsolationKey SharedWorkerHost::GetNetworkIsolationKey() const {
+   // Note: Since shared workers are partitioned by the storage key, we'll use
+   // the storage key to create a NIK that matches the current partitioning
+@@ -981,15 +1003,15 @@ net::NetworkIsolationKey SharedWorkerHost::GetNetworkIsolationKey() const {
+   // different top-level sites will be able to share the same shared worker, so
+   // it doesn't make sense to incorporate the top-level site into the NIK in
+   // that case either.
+-  return GetWorkerStorageKey()
+-      .ToPartialNetIsolationInfo()
++  return ComputeIsolationInfoWithPartition(GetWorkerStorageKey(),
++                                           GetNetworkIsolationPartition())
+       .network_isolation_key();
+ }
+ 
+ net::NetworkAnonymizationKey SharedWorkerHost::GetNetworkAnonymizationKey()
+     const {
+-  return GetWorkerStorageKey()
+-      .ToPartialNetIsolationInfo()
++  return ComputeIsolationInfoWithPartition(GetWorkerStorageKey(),
++                                           GetNetworkIsolationPartition())
+       .network_anonymization_key();
+ }
+ 
+diff --git a/content/browser/worker_host/shared_worker_host.h b/content/browser/worker_host/shared_worker_host.h
+index 18d345a0f3e8b06b9d9c26a57333e67c6551e4e9..3e8ef4a58d3530b7d6dadd043181ee48111ac68c 100644
+--- a/content/browser/worker_host/shared_worker_host.h
++++ b/content/browser/worker_host/shared_worker_host.h
+@@ -34,6 +34,7 @@
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/bindings/unique_receiver_set.h"
+ #include "net/base/network_isolation_key.h"
++#include "net/base/network_isolation_partition.h"
+ #include "services/device/public/cpp/compute_pressure/buildflags.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "services/network/public/cpp/cross_origin_embedder_policy.h"
+@@ -240,6 +241,8 @@ class CONTENT_EXPORT SharedWorkerHost
+ 
+   base::WeakPtr<SharedWorkerHost> AsWeakPtr();
+ 
++  net::NetworkIsolationPartition GetNetworkIsolationPartition() const;
++
+   net::NetworkIsolationKey GetNetworkIsolationKey() const;
+ 
+   net::NetworkAnonymizationKey GetNetworkAnonymizationKey() const;
+diff --git a/content/browser/worker_host/shared_worker_host_unittest.cc b/content/browser/worker_host/shared_worker_host_unittest.cc
+index 925de9e005f255fc9146beac1e15ab0d8348f08b..68eb091dd4a9703b8f140ecf17865f6813edc008 100644
+--- a/content/browser/worker_host/shared_worker_host_unittest.cc
++++ b/content/browser/worker_host/shared_worker_host_unittest.cc
+@@ -86,6 +86,18 @@ class SharedWorkerHostTest : public testing::Test {
+ 
+   base::WeakPtr<SharedWorkerHost> CreateHostWithExtendedLifetime(
+       bool extended_lifetime) {
++    return CreateHostWithParams(blink::mojom::SharedWorkerSameSiteCookies::kAll,
++                                extended_lifetime);
++  }
++
++  base::WeakPtr<SharedWorkerHost> CreateHostWithSameSiteCookies(
++      blink::mojom::SharedWorkerSameSiteCookies same_site_cookies) {
++    return CreateHostWithParams(same_site_cookies, /*extended_lifetime=*/false);
++  }
++
++  base::WeakPtr<SharedWorkerHost> CreateHostWithParams(
++      blink::mojom::SharedWorkerSameSiteCookies same_site_cookies,
++      bool extended_lifetime) {
+     blink::StorageKey creator_storage_key =
+         blink::StorageKey::CreateFirstParty(url::Origin::Create(kWorkerUrl));
+     bool is_opaque_origin_enabled = base::FeatureList::IsEnabled(
+@@ -99,7 +111,7 @@ class SharedWorkerHostTest : public testing::Test {
+         network::mojom::CredentialsMode::kSameOrigin, "name",
+         creator_storage_key, worker_storage_key, renderer_origin,
+         blink::mojom::SharedWorkerCreationContextType::kSecure,
+-        blink::mojom::SharedWorkerSameSiteCookies::kAll, extended_lifetime);
++        same_site_cookies, extended_lifetime);
+     auto host = std::make_unique<SharedWorkerHost>(
+         &service_, instance, site_instance_,
+         std::vector<network::mojom::ContentSecurityPolicyPtr>(),
+@@ -667,4 +679,37 @@ TEST_F(SharedWorkerHostTest,
+   }
+ }
+ 
++TEST_F(SharedWorkerHostTest, NetworkIsolationPartitionForSameSiteCookies) {
++  base::WeakPtr<SharedWorkerHost> host_all = CreateHostWithSameSiteCookies(
++      blink::mojom::SharedWorkerSameSiteCookies::kAll);
++  base::WeakPtr<SharedWorkerHost> host_none = CreateHostWithSameSiteCookies(
++      blink::mojom::SharedWorkerSameSiteCookies::kNone);
++
++  ASSERT_TRUE(host_all);
++  ASSERT_TRUE(host_none);
++
++  EXPECT_EQ(host_all->GetNetworkIsolationPartition(),
++            net::NetworkIsolationPartition::kGeneral);
++  EXPECT_EQ(host_none->GetNetworkIsolationPartition(),
++            net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone);
++
++  EXPECT_EQ(host_all->GetNetworkIsolationKey().GetNetworkIsolationPartition(),
++            net::NetworkIsolationPartition::kGeneral);
++  EXPECT_EQ(host_none->GetNetworkIsolationKey().GetNetworkIsolationPartition(),
++            net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone);
++  EXPECT_NE(host_all->GetNetworkIsolationKey(),
++            host_none->GetNetworkIsolationKey());
++  EXPECT_NE(host_all->GetNetworkIsolationKey().ToCacheKeyString(),
++            host_none->GetNetworkIsolationKey().ToCacheKeyString());
++
++  EXPECT_EQ(
++      host_all->GetNetworkAnonymizationKey().network_isolation_partition(),
++      net::NetworkIsolationPartition::kGeneral);
++  EXPECT_EQ(
++      host_none->GetNetworkAnonymizationKey().network_isolation_partition(),
++      net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone);
++  EXPECT_NE(host_all->GetNetworkAnonymizationKey(),
++            host_none->GetNetworkAnonymizationKey());
++}
++
+ }  // namespace content
+diff --git a/net/base/network_isolation_key_unittest.cc b/net/base/network_isolation_key_unittest.cc
+index 89131568819d498a85d7b73049462d84a7e65b39..d75938ad3607468be8f244e208a29534a49d55d7 100644
+--- a/net/base/network_isolation_key_unittest.cc
++++ b/net/base/network_isolation_key_unittest.cc
+@@ -133,6 +133,24 @@ TEST(NetworkIsolationKeyTest, KeyWithNonGeneralNetworkPartition) {
+   EXPECT_TRUE(key4.IsTransient());
+ }
+ 
++TEST(NetworkIsolationKeyTest, SharedWorkerSameSiteCookiesNonePartition) {
++  SchemefulSite site1 = SchemefulSite(GURL("http://a.test/"));
++  SchemefulSite site2 = SchemefulSite(GURL("http://b.test/"));
++
++  NetworkIsolationKey general_key(site1, site2, /*nonce=*/std::nullopt,
++                                  NetworkIsolationPartition::kGeneral);
++
++  NetworkIsolationKey shared_worker_none_key(
++      site1, site2, /*nonce=*/std::nullopt,
++      NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone);
++
++  EXPECT_EQ(NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone,
++            shared_worker_none_key.GetNetworkIsolationPartition());
++  EXPECT_EQ(site1.Serialize() + " " + site2.Serialize() + " 4",
++            shared_worker_none_key.ToCacheKeyString());
++  EXPECT_NE(general_key, shared_worker_none_key);
++}
++
+ TEST(NetworkIsolationKeyTest, CreateEmptyWithPartition) {
+   NetworkIsolationKey key = NetworkIsolationKey::CreateEmptyWithPartition(
+       NetworkIsolationPartition::kDnsOverHttps);
+diff --git a/net/base/network_isolation_partition.cc b/net/base/network_isolation_partition.cc
+index 062fb49d277ab095610d5824196f5ddd5a7309bd..3cb58aa85338f3118068513020331f6751fbc4d0 100644
+--- a/net/base/network_isolation_partition.cc
++++ b/net/base/network_isolation_partition.cc
+@@ -19,6 +19,8 @@ std::string NetworkIsolationPartitionToDebugString(
+       return "fedcm uncredentialed requests";
+     case NetworkIsolationPartition::kDnsOverHttps:
+       return "dns over https";
++    case NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone:
++      return "shared worker same site cookies none";
+   }
+ }
+ 
+diff --git a/net/base/network_isolation_partition.h b/net/base/network_isolation_partition.h
+index 599ce382d0e922025d6dc2668ca6faffdc4af0be..3b52dad15bd28bc311553fb7a565b4756f2c8f98 100644
+--- a/net/base/network_isolation_partition.h
++++ b/net/base/network_isolation_partition.h
+@@ -32,8 +32,15 @@ enum class NetworkIsolationPartition : int32_t {
+   kFedCmUncredentialedRequests = 2,
+   // This use case isolates network state for DNS over HTTPS requests.
+   kDnsOverHttps = 3,
+-
+-  kMaxValue = kDnsOverHttps,
++  // This use case isolates network state and V8 code cache for SharedWorkers
++  // with SameSite=None cookie access restrictions (e.g. StorageAccessHandle).
++  //
++  // SharedWorkers that were created via the Storage Access API use a
++  // first-party NetworkIsolationKey, but do not have access to
++  // SameSite=Strict/Lax cookies.
++  kSharedWorkerSameSiteCookiesNone = 4,
++
++  kMaxValue = kSharedWorkerSameSiteCookiesNone,
+ };
+ 
+ std::string NetworkIsolationPartitionToDebugString(
+diff --git a/services/network/public/cpp/network_isolation_partition_mojom_traits.cc b/services/network/public/cpp/network_isolation_partition_mojom_traits.cc
+index 0e275d33300630e2728fecb4a0f8e9eff51ca738..d89bd4e807ca013ba228bf08674c12359cee96e3 100644
+--- a/services/network/public/cpp/network_isolation_partition_mojom_traits.cc
++++ b/services/network/public/cpp/network_isolation_partition_mojom_traits.cc
+@@ -26,6 +26,8 @@ EnumTraits<network::mojom::NetworkIsolationPartition,
+       return net::NetworkIsolationPartition::kFedCmUncredentialedRequests;
+     case NetworkIsolationPartition::kDnsOverHttps:
+       return net::NetworkIsolationPartition::kDnsOverHttps;
++    case NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone:
++      return net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone;
+   }
+   NOTREACHED();
+ }
+@@ -45,6 +47,8 @@ network::mojom::NetworkIsolationPartition EnumTraits<
+       return NetworkIsolationPartition::kFedCmUncredentialedRequests;
+     case net::NetworkIsolationPartition::kDnsOverHttps:
+       return NetworkIsolationPartition::kDnsOverHttps;
++    case net::NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone:
++      return NetworkIsolationPartition::kSharedWorkerSameSiteCookiesNone;
+   }
+   NOTREACHED();
+ }
+diff --git a/services/network/public/mojom/network_isolation_partition.mojom b/services/network/public/mojom/network_isolation_partition.mojom
+index 815fd33fffc30cc1531ea5f12d6ef5244dc547c8..baf42c42cc1ff6109d30a3685d75ef4732b2e27c 100644
+--- a/services/network/public/mojom/network_isolation_partition.mojom
++++ b/services/network/public/mojom/network_isolation_partition.mojom
+@@ -11,4 +11,5 @@ enum NetworkIsolationPartition {
+   kProtectedAudienceSellerWorklet,
+   kFedCmUncredentialedRequests,
+   kDnsOverHttps,
++  kSharedWorkerSameSiteCookiesNone,
+ };
