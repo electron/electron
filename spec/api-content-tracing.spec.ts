@@ -121,7 +121,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(() =>
         contentTracing.startRecording({
           heap_profiler_options: {
-            sampling_interval_bytes: Number.MAX_SAFE_INTEGER + 1
+            sampling_interval_bytes: 2 ** 32
           }
         })
       ).to.throw();
@@ -132,7 +132,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const firstStop = contentTracing.stopRecording(outputFilePath);
       await expect(contentTracing.stopRecording(`${outputFilePath}.second`)).to.eventually.be.rejectedWith(
-        'trace is already stopping'
+        'Failed to stop tracing'
       );
       await firstStop;
     });
