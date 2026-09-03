@@ -36,45 +36,49 @@ if os.environ.get('CI'):
 Step = collections.namedtuple('Step', ['source', 'output', 'compiler', 'flags'])
 
 
-def compile_flags(command, source):
-  """Splits a clang++ or clang-cl compile command into (compiler, flags),
-  dropping the source file and the output/depfile/pdb arguments since the
+def parse_compile_command(command, source):
+  """Splits a clang++ or clang-cl compile command into (compiler, object, flags).
+  flags omits the source file and the output/depfile/pdb arguments, since the
   wrapper supplies its own."""
   compiler, *args = shlex.split(command)
   flags = []
-  skip_next = False
+  obj = None
+  args = iter(args)
   for arg in args:
-    if skip_next:
-      skip_next = False
-    elif arg in ('-o', '-MF'):
-      skip_next = True
-    elif arg in ('-c', '/c', '-MMD', source) or arg.startswith(('/Fo', '/Fd', '/showIncludes')):
+    if arg == '-o':
+      obj = next(args)
+    elif arg.startswith('/Fo'):
+      obj = arg[len('/Fo'):]
+    elif arg == '-MF':
+      next(args)
+    elif arg in ('-c', '/c', '-MMD', source) or arg.startswith(('/Fd', '/showIncludes')):
       pass
     else:
       flags.append(arg)
-  return compiler, flags
+  return compiler, obj, flags
 
 
 def tidy_steps(out_dir):
   with open(os.path.join(out_dir, 'compile_commands.json'), encoding='utf-8') as f:
     compile_commands = json.load(f)
 
-  steps = {}
+  # A file built by several targets (with different flags) gets a step per
+  # target, told apart by object path like the compiles themselves.
+  steps = []
   for entry in compile_commands:
     path = os.path.normpath(os.path.join(entry['directory'], entry['file']))
-    electron_path = os.path.relpath(path, ELECTRON_DIR)
     if not path.startswith(SHELL_DIR + os.sep) or not path.endswith(('.cc', '.mm')):
       continue
-    if electron_path in SKIPPED_SOURCES or path in steps:
+    if os.path.relpath(path, ELECTRON_DIR) in SKIPPED_SOURCES:
       continue
-    compiler, flags = compile_flags(entry['command'], entry['file'])
-    steps[path] = Step(
+    compiler, obj, flags = parse_compile_command(entry['command'], entry['file'])
+    steps.append(Step(
         source=os.path.relpath(path, out_dir),
-        output=f'obj/electron/clang_tidy/{electron_path}.tidy',
+        output=f'{obj}.tidy',
         compiler=compiler,
-        flags=flags,
-    )
-  return sorted(steps.values())
+        flags=tuple(flags),
+    ))
+  return sorted(set(steps), key=lambda step: step.output)
 
 
 def ninja_escape(text):
