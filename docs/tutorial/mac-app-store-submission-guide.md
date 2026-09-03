@@ -282,6 +282,7 @@ signAsync({
 })
 ```
 
+
 #### Child (helper) entitlements: sandbox vs. hardened-runtime keys
 
 When using the App Sandbox together with the hardened runtime (required for
