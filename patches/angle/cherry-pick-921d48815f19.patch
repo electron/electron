@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Thu, 20 Aug 2026 13:54:51 -0700
+Subject: Insert flush before generateMipmap on IMG
+
+Adds a feature which forces a flush before generating a mipmap,
+which avoids a bad state in the IMG driver if the texture's base
+level is still bound to an active FBO.
+
+Fixed: chromium:549350408
+Change-Id: Id69684690a0fb04a45e0fca7d912bac68f82052c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8265721
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 4014d7b83c23632322ea4d538c93af923f75386c..4af51effaa692ba3e309b740432c3b40583ae7b3 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -746,6 +746,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo flushBeforeGenerateMipmap = {
++        "flushBeforeGenerateMipmap",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo splitLevel0PboFullSubImage2D = {
+         "splitLevel0PboFullSubImage2D",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 397075897b91fe81a7ab336ebe48dd0dfb6d2a56..5814fe23c59ed86f3cefc84455c11fd82f98415e 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -978,6 +978,14 @@
+             ],
+             "issue": "http://crbug.com/499602793"
+         },
++        {
++            "name": "flush_before_generate_mipmap",
++            "category": "Workarounds",
++            "description": [
++                "Force a flush before calling generateMipmap to work around driver bugs."
++            ],
++            "issue": "http://crbug.com/549350408"
++        },
+         {
+             "name": "split_level_0_pbo_full_sub_image_2D",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index d7e4578f7d8ed3b49970869039e937ca33ee2cb8..977baa71dde65d7067b9abb9af7ee93e91f50014 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1608,6 +1608,13 @@ angle::Result TextureGL::generateMipmap(const gl::Context *context)
+     StateManagerGL *stateManager      = GetStateManagerGL(context);
+     const angle::FeaturesGL &features = GetFeaturesGL(context);
+ 
++    if (features.flushBeforeGenerateMipmap.enabled)
++    {
++        // Force a flush before generating the mipmap, which avoids a bad state in the IMG driver if
++        // the texture's base level is still bound to an active FBO.
++        ANGLE_GL_TRY(context, functions->flush());
++    }
++
+     stateManager->bindTexture(getType(), mTextureID);
+ 
+     bool recreateMipmapLevelsBeforeGenerate =
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 47f7d0cdfe596c05ade11fa484e9f834e7c2b78a..7a631c49260a0d2b159e6422aada327413167f7c 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2855,6 +2855,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // Disable EXT_clear_texture entirely on IMG as a speculative fix for driver crashes.
+     ANGLE_FEATURE_CONDITION(features, disableClearTexture, IsPowerVR(vendor));
+ 
++    // Forces a flush before generating a mipmap, which avoids a bad state in the IMG driver if
++    // the texture's base level is still bound to an active FBO.
++    ANGLE_FEATURE_CONDITION(features, flushBeforeGenerateMipmap, IsPowerVR(vendor));
++
+     // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
+     ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
+                             IsPowerVR(vendor));
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 2e08cb0a1f48d6e2a048a13bce931d48c6f4f431..b0dca14967492af4f5d935203a2391f2b2bcdcff 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -187,6 +187,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::FlushAfterEndingTransformFeedback, "flushAfterEndingTransformFeedback"},
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+     {Feature::FlushBeforeDeleteTextureIfCopiedTo, "flushBeforeDeleteTextureIfCopiedTo"},
++    {Feature::FlushBeforeGenerateMipmap, "flushBeforeGenerateMipmap"},
+     {Feature::FlushOnFramebufferChange, "flushOnFramebufferChange"},
+     {Feature::FlushQueriesBeforeDeletingOrUnbindingFbo, "flushQueriesBeforeDeletingOrUnbindingFbo"},
+     {Feature::ForceAtomicValueResolution, "forceAtomicValueResolution"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index b32bf8d06c5c4ffe0953a4d3ca49263d4ba89f60..18c622cb29026700cf9a1e06499ad40d2ae1e41e 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -187,6 +187,7 @@ enum class Feature
+     FlushAfterEndingTransformFeedback,
+     FlushAfterStreamVertexData,
+     FlushBeforeDeleteTextureIfCopiedTo,
++    FlushBeforeGenerateMipmap,
+     FlushOnFramebufferChange,
+     FlushQueriesBeforeDeletingOrUnbindingFbo,
+     ForceAtomicValueResolution,

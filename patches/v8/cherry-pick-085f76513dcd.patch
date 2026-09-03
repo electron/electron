@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Fri, 7 Aug 2026 08:52:18 +0200
+Subject: [M150] [compiler] Don't inline Array.prototype.sort on mixed elements
+ kinds
+
+Original change's description:
+> [compiler] Don't inline Array.prototype.sort on mixed elements kinds
+>
+> CanInlineArrayIteratingBuiltin unions the receiver elements kinds, so
+> polymorphic feedback yields a kind that no single receiver need have:
+> {PACKED_SMI,PACKED} unions to PACKED_ELEMENTS. That is fine for the
+> iterating builtins, which only read the receiver, but the inlined sort
+> snapshots the elements, runs comparefn, and copies the snapshot back
+> specialized on the union kind.
+>
+> A comparefn can narrow the live receiver to another kind in the map set
+> (a.fill(0) turns PACKED_ELEMENTS into PACKED_SMI_ELEMENTS). The
+> post-callback check accepts that map because it is in the original set,
+> and the copy-back then stores the snapshotted HeapObjects into a
+> Smi-elements array. Smi consumers of the resulting array read those
+> HeapObjects as Smis and move them without write barriers.
+>
+> Require all receiver maps to agree on their elements kind before
+> inlining, in both Maglev and Turbofan. Monomorphic feedback is
+> unaffected, as is polymorphism whose maps share an elements kind; sites
+> with mixed kinds fall back to the generic builtin.
+>
+> Fixed: 542403045
+> Change-Id: I38d9d3efc5942bd0122bbbe48bc26417a080821f
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8213162
+> Auto-Submit: Jakob Linke <jgruber@chromium.org>
+> Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+> Commit-Queue: Jakob Linke <jgruber@chromium.org>
+> Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109116}
+
+(cherry picked from commit e0562d87ad9c17042b581582c99237d798572e67)
+
+Bug: 546215236,542403045
+Change-Id: I38d9d3efc5942bd0122bbbe48bc26417a080821f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8335047
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.0@{#73}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 798e9627574265a9c48ddf7db5ac517c870742e4..592d743eb8c143a5dd66495be7c13a516eb93962 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -4069,6 +4069,10 @@ class IteratingArrayBuiltinHelper {
+       return;
+     }
+ 
++    all_elements_kinds_equal_ = std::all_of(
++        receiver_maps.begin(), receiver_maps.end(),
++        [&](MapRef map) { return map.elements_kind() == elements_kind_; });
++
+     // TODO(jgruber): May only be needed for holey elements kinds.
+     if (!dependencies->DependOnNoElementsProtector()) return;
+ 
+@@ -4084,10 +4088,13 @@ class IteratingArrayBuiltinHelper {
+   Control control() const { return control_; }
+   MapInference* inference() { return &inference_; }
+   ElementsKind elements_kind() const { return elements_kind_; }
++  // False when elements_kind() is a union over differing receiver kinds.
++  bool all_elements_kinds_equal() const { return all_elements_kinds_equal_; }
+ 
+  private:
+   bool can_reduce_ = false;
+   bool has_stability_dependency_ = false;
++  bool all_elements_kinds_equal_ = false;
+   Node* receiver_;
+   Effect effect_;
+   Control control_;
+@@ -4127,6 +4134,11 @@ Reduction JSCallReducer::ReduceArraySort(Node* node,
+   IteratingArrayBuiltinHelper h(node, broker(), jsgraph(), dependencies());
+   if (!h.can_reduce()) return h.inference()->NoChange();
+ 
++  // The union kind is only an upper bound on each receiver's own kind. Loads
++  // through it widen and are sound; stores narrow and are not. Unlike the
++  // iterating builtins, sort writes its snapshot back into the receiver.
++  if (!h.all_elements_kinds_equal()) return h.inference()->NoChange();
++
+   // Only non-holey, non-double PACKED kinds are supported.  Holey arrays need
+   // hole handling; double arrays need a FixedDoubleArray temp copy.
+   if (IsHoleyElementsKind(h.elements_kind())) return h.inference()->NoChange();
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index c4facfe62aa2fd8a0535e268e59a8dfb7eb34935..b9f1f3c3deb0be93f8ab640e59f044dd3e7b8f43 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -10599,6 +10599,16 @@ MaybeReduceResult MaglevGraphBuilder::TryReduceArrayPrototypeSort(
+         " array iteration");
+   }
+ 
++  // The union kind is only an upper bound on each receiver's own kind. Loads
++  // through it widen and are sound; stores narrow and are not. Unlike the
++  // iterating builtins, sort writes its snapshot back into the receiver.
++  if (std::any_of(possible_maps->begin(), possible_maps->end(),
++                  [&](compiler::MapRef map) {
++                    return map.elements_kind() != elements_kind;
++                  })) {
++    FAIL(" to reduce Array.prototype.sort - receiver elements kinds disagree");
++  }
++
+   // Holey arrays require holes to be moved to the end of the sorted result
+   // (ECMA-262 23.1.3.30 step 5, skip-holes mode).  The insertion sort does
+   // not implement this, so bail out for any holey kind.
+diff --git a/test/mjsunit/regress/regress-crbug-542403045.js b/test/mjsunit/regress/regress-crbug-542403045.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e60a974f8784fd8ee69900b0cb88744e02cbabc5
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-542403045.js
+@@ -0,0 +1,89 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// The inlined sort snapshots the receiver's elements, runs comparefn, then
++// copies the snapshot back specialized on the receiver's elements kind. With
++// polymorphic {PACKED_SMI,PACKED} feedback that kind is the union
++// PACKED_ELEMENTS, which no longer describes a receiver that comparefn has
++// narrowed back to PACKED_SMI_ELEMENTS.
++
++function sort(a) {
++  function compare() {
++    a.fill(0);
++    return 0;
++  }
++  return a.sort(compare);
++}
++
++%PrepareFunctionForOptimization(sort);
++for (let i = 0; i < 100; ++i) {
++  sort([1, 2]);
++  sort([{}, {}]);
++}
++%OptimizeMaglevOnNextCall(sort);
++sort([1, 2]);
++
++const object = {};
++const bad = [object, {}];
++sort(bad);
++
++// A Smi-elements array must never hold a HeapObject.
++assertFalse(%HasSmiElements(bad) && bad[0] === object);
++
++// Mixed-kind feedback is not inlined, but still sorts correctly.
++function sortMixed(a) {
++  return a.sort((x, y) => x - y);
++}
++%PrepareFunctionForOptimization(sortMixed);
++for (let i = 0; i < 100; ++i) {
++  sortMixed([2, 1]);
++  sortMixed([{}, {}]);
++}
++%OptimizeMaglevOnNextCall(sortMixed);
++assertEquals([1, 2, 3], sortMixed([3, 1, 2]));
++
++// Same via a Smi/double mix, whose union kind PACKED_DOUBLE_ELEMENTS is
++// rejected by the double bailout rather than the kind-agreement one.
++function sortDouble(a) {
++  function compare(x, y) {
++    a.fill(0);
++    return x - y;
++  }
++  return a.sort(compare);
++}
++%PrepareFunctionForOptimization(sortDouble);
++for (let i = 0; i < 100; ++i) {
++  sortDouble([2, 1]);
++  sortDouble([2.5, 1.5]);
++}
++%OptimizeMaglevOnNextCall(sortDouble);
++sortDouble([2, 1]);
++// The sort writes its snapshot back, so comparefn's fill is not observable.
++assertEquals([1.5, 2.5], sortDouble([2.5, 1.5]));
++
++// Sites whose receiver kinds agree keep the inlined path, including when the
++// maps themselves differ.
++function withProperty() {
++  const a = [{}, {}];
++  a.foo = 1;
++  return a;
++}
++function sortSameKind(a) {
++  return a.sort((x, y) => 0);
++}
++%PrepareFunctionForOptimization(sortSameKind);
++for (let i = 0; i < 100; ++i) {
++  sortSameKind([{}, {}]);
++  sortSameKind(withProperty());
++}
++%OptimizeMaglevOnNextCall(sortSameKind);
++sortSameKind([{}, {}]);
++assertOptimized(sortSameKind);
++for (let i = 0; i < 100; ++i) {
++  sortSameKind([{}, {}]);
++  sortSameKind(withProperty());
++}
++assertOptimized(sortSameKind);
