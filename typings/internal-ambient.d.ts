@@ -47,6 +47,7 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
+    exitImmediately(code: number): never;
   }
 
   type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
