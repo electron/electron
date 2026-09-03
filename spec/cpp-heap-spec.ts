@@ -81,6 +81,48 @@ describe('cpp heap', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('pushNotifications module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { pushNotifications } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof pushNotifications.registerForAPNSNotifications);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { pushNotifications } = require('electron');
+          console.log(typeof pushNotifications.unregisterForAPNSNotifications);
+        }
+        {
+          const { pushNotifications } = require('electron');
+          console.log(pushNotifications.eventNames());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { pushNotifications } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof pushNotifications.registerForAPNSNotifications);
+          return containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / PushNotifications'
+          ]);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
