@@ -149,6 +149,18 @@ jobs:
     # The RBE workers are Linux; on macOS stage the Linux clang and clang-tidy
     # they will run (clang_remote_wrapper + Release+Asserts_linux, the same
     # arrangement fix-sync sets up for the build jobs' compiles).
+    # The src cache is produced on Linux, so host tools fetched from CIPD are
+    # Linux binaries; swap in the macOS ones this job runs (as fix-sync does
+    # for the build job).
+    - name: Install siso (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: siso
+        deps-file: src/DEPS
+        installation-dir: src/third_party/siso/cipd
+        target-platform: ${{ inputs.target-platform }}
+        package: build/siso/${platform}
     - name: Install reclient (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
