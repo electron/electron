@@ -593,6 +593,47 @@ describe('node feature', () => {
     });
   });
 
+  describe('native addons', () => {
+    // Regression test for https://github.com/electron/electron/issues/53387:
+    // Node.js 24.19.0 made node::ObjectWrap register an environment cleanup
+    // hook, and removing it from ~ObjectWrap() during garbage collection
+    // aborted the process until nodejs/node#63985 and nodejs/node#65630 were
+    // picked up. The addon is loaded in a child process because the failure
+    // mode is a CHECK abort.
+    //
+    // The fixture has to be compiled against Electron's headers, which
+    // script/spec-runner.js does after installing the spec modules. That does
+    // not happen on the Linux arm CI test jobs: linux-arm skips the spec
+    // install (--skipYarnInstall) and on linux-arm64 nothing can compile the
+    // headers, as the restored Chromium clang is an x64 binary and the image's
+    // GCC rejects the V8 headers
+    // (https://github.com/electron/electron/issues/53284). spec-runner sets
+    // this variable in those cases and the test is reported as skipped.
+    ifit(!process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS)(
+      'node::ObjectWrap instances survive garbage collection and teardown',
+      async () => {
+        const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'object-wrap-gc.js')], {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk;
+        });
+        const [code, signal] = await once(child, 'close');
+        expect(signal, stderr).to.be.null();
+        expect(code, stderr).to.equal(0);
+        expect(stdout.trim()).to.equal('ok');
+      }
+    );
+  });
+
   describe('message loop in renderer', () => {
     useRemoteContext();
 

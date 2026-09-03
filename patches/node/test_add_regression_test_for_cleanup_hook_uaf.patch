@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Caleb Everett <everett.caleb@gmail.com>
+Date: Wed, 19 Aug 2026 22:39:13 +0000
+Subject: test: add regression test for cleanup hook UAF
+
+Add a cctest that registers an environment cleanup hook which removes
+itself while the cleanup queue is drained. It exercises
+CleanupHookThunkRun(), which must not read the CleanupHookThunk after
+invoking the hook, because the hook has already erased and freed it.
+
+The hook is registered directly rather than through node::ObjectWrap.
+ObjectWrap is what makes this reachable for addons since #63642,
+because its destructor removes its own hook, and #65195 reproduces the
+fault that way with test/addons/worker-addon-exit. That reproducer
+needs an addon build and depends on when the wrapper is collected,
+whereas this test drives the self-removal directly.
+
+The use-after-free is silent in ordinary builds and is caught by the
+ASan/Valgrind CI, which is how the original assertion (#63923)
+surfaced. Verified locally with an ASan build: without the preceding
+commit both this test and test/addons/worker-addon-exit report
+heap-use-after-free in CleanupHookThunkRun(); both are clean with it.
+
+Refs: https://github.com/nodejs/node/issues/65195
+Refs: https://github.com/nodejs/node/pull/65196
+Assisted-by: a closed-source coding agent
+Co-authored-by: Sreehari Annam <sreehari.annam@gmail.com>
+Co-authored-by: nsavoire <19255994+nsavoire@users.noreply.github.com>
+Signed-off-by: Caleb Everett <everett.caleb@gmail.com>
+Cherry-pick of https://github.com/nodejs/node/pull/65630 at
+fd325a7fc2b33839c024220aa0c44b9104749686 (not yet landed upstream);
+regression test accompanying the CleanupHookThunkRun() fix.
+See https://github.com/electron/electron/issues/53387.
+
+(cherry picked from commit fd325a7fc2b33839c024220aa0c44b9104749686)
+
+diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
+index c489cd3ce46347279d33dc229e55294245862dff..2ab0d899be8932158d57280831374ed3cb3ceb32 100644
+--- a/test/cctest/test_environment.cc
++++ b/test/cctest/test_environment.cc
+@@ -27,6 +27,12 @@ static void at_exit_callback_ordered2(void* arg);
+ static void at_exit_js(void* arg);
+ static std::string cb_1_arg;  // NOLINT(runtime/string)
+ 
++struct SelfRemovingCleanupHookState {
++  v8::Isolate* isolate;
++  bool ran = false;
++};
++static void self_removing_cleanup_hook(void* arg);
++
+ class EnvironmentTest : public EnvironmentTestFixture {
+  private:
+   void TearDown() override {
+@@ -288,6 +294,27 @@ TEST_F(EnvironmentTest, AtExitRunsJS) {
+   EXPECT_TRUE(called_at_exit_js);
+ }
+ 
++// A cleanup hook that removes itself while the environment cleanup queue is
++// being drained must not cause a use-after-free. This registers such a hook
++// directly rather than through node::ObjectWrap, whose destructor removes
++// its own hook and is what makes this reachable for addons since #63642.
++// The use-after-free is silent in ordinary builds; it is caught by the
++// ASan/Valgrind CI, which is also how the original assertion (#63923)
++// surfaced. Regression test for https://github.com/nodejs/node/issues/65195.
++TEST_F(EnvironmentTest, RemoveEnvironmentCleanupHookDuringCleanup) {
++  const v8::HandleScope handle_scope(isolate_);
++  const Argv argv;
++  SelfRemovingCleanupHookState state{isolate_};
++  {
++    Env env{handle_scope, argv};
++    node::AddEnvironmentCleanupHook(
++        isolate_, self_removing_cleanup_hook, &state);
++    // Destroying `env` runs FreeEnvironment() -> RunCleanup(), which drains
++    // the cleanup queue and invokes CleanupHookThunkRun() for the hook above.
++  }
++  EXPECT_TRUE(state.ran);
++}
++
+ TEST_F(EnvironmentTest, MultipleEnvironmentsPerIsolate) {
+   const v8::HandleScope handle_scope(isolate_);
+   const Argv argv;
+@@ -371,6 +398,19 @@ static void at_exit_js(void* arg) {
+   called_at_exit_js = true;
+ }
+ 
++// Reproduces the sequence node::ObjectWrap performs since
++// https://github.com/nodejs/node/pull/63642, without using ObjectWrap
++// itself: the hook removes its own environment cleanup hook. When that runs
++// while the cleanup queue is being drained, CleanupHookThunkRun() must not
++// read the CleanupHookThunk after invoking the hook -- the hook has already
++// erased and freed it. See https://github.com/nodejs/node/issues/65195.
++static void self_removing_cleanup_hook(void* arg) {
++  auto* state = static_cast<SelfRemovingCleanupHookState*>(arg);
++  state->ran = true;
++  node::RemoveEnvironmentCleanupHook(
++      state->isolate, self_removing_cleanup_hook, state);
++}
++
+ TEST_F(EnvironmentTest, SetImmediateCleanup) {
+   int called = 0;
+   int called_unref = 0;
