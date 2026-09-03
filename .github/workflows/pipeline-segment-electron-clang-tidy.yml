@@ -190,6 +190,15 @@ jobs:
         python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
         cd src/electron
         e build --gen=off --target electron_clang_tidy -f clang_tidy.ninja -batch -k 0
+    - name: Upload siso metrics
+      if: always() && !cancelled()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: clang_tidy_siso_${{ env.ARTIFACT_KEY }}
+        path: |
+          src/out/Default/siso_metrics.json
+          src/out/Default/siso_output
+        if-no-files-found: ignore
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
