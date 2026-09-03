@@ -7,6 +7,7 @@ import type * as Crypto from 'crypto';
 import type * as os from 'os';
 
 const asar = process._linkedBinding('electron_common_asar');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -424,7 +425,7 @@ const integrityViolation = (actual: string, expected: string): never => {
   }
   // Bypass libc exit(): it runs static destructors under still-live Chromium
   // threads, which on Windows intermittently faults with 0xC0000005.
-  return asar.exitImmediately(1);
+  return v8Util.exitImmediately(1);
 };
 
 const sha256HexSync = (buffer: Uint8Array) => getCrypto().createHash('sha256').update(buffer).digest('hex');
