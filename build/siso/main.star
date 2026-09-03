@@ -41,6 +41,17 @@ def init(ctx):
           "clang_large": step_config["platforms"]["default"],          
       })      
 
+      # Chromium's clang rules carry a 2 minute timeout that siso applies
+      # client-side to the whole remote step (upload + RBE queue + execution
+      # + download). When it fires siso re-runs the compile locally, and on
+      # the 5-core / 14 GB macOS CI runners a local ThinLTO compile takes
+      # 5-10 minutes and lands on the critical path (75 such fallbacks in
+      # one release build). Give remote compiles a deadline that survives
+      # RBE queueing; local fallback stays as the safety net.
+      for rule in step_config["rules"]:
+        if rule["name"].startswith("clang/") and rule.get("remote"):
+          rule["timeout"] = "10m"
+
     # Add additional Windows SDK headers needed by Electron. Use
     # win_sdk.enabled() (target_os == "win") rather than runtime.os so this
     # also applies when cross-compiling Windows on a Linux host.
