@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fda2aada88 100644
+index eede532d87e042dbf899850457a4cc826a6847ae..3486d6e7a4170b3b6816d81797f0f7d2c2ccf0a0 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -61,7 +61,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -583,7 +590,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -587,7 +594,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -70,7 +70,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -644,14 +651,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+@@ -648,14 +655,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
  void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
  
@@ -87,7 +87,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -694,6 +701,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -698,6 +705,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -735,6 +743,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -739,6 +747,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
                                 std::move(pip_options), initial_bounds);
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -745,6 +754,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -749,6 +758,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -783,6 +793,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -787,6 +797,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -121,7 +121,7 @@ index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fd
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e9294842877 100644
+index 157b6fab36e5aff99021765c7b6655b568cf8fd3..b2f4bc3d3267ad980895e8f55dde30c79202f7e7 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -132,7 +132,7 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  #include "build/build_config.h"
  #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
  #include "ui/display/display.h"
-@@ -202,6 +203,7 @@ class PictureInPictureWindowManager {
+@@ -206,6 +207,7 @@ class PictureInPictureWindowManager {
    void NotifyObserversOnExitPictureInPicture();
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -140,7 +140,7 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
    // Shows a standalone Document Picture-in-Picture window using a
    // `DocumentPipHost` instead of a `Browser`. Used when the
    // `kDocumentPipStandaloneWindow` feature is enabled. Takes ownership of the
-@@ -212,6 +214,7 @@ class PictureInPictureWindowManager {
+@@ -216,6 +218,7 @@ class PictureInPictureWindowManager {
        content::WebContents* parent_web_contents,
        std::unique_ptr<content::WebContents> child_web_contents,
        blink::mojom::PictureInPictureWindowOptions pip_options);
@@ -148,7 +148,7 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  
    std::unique_ptr<AutoPipSettingOverlayView> GetOverlayView(
        views::View* anchor_view,
-@@ -414,10 +417,12 @@ class PictureInPictureWindowManager {
+@@ -418,10 +421,12 @@ class PictureInPictureWindowManager {
  
    std::unique_ptr<PictureInPictureWindowManagerUmaHelper> uma_helper_;
  
@@ -162,10 +162,10 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6b0753da0 100644
+index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907197b4ca4 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -115,8 +115,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
+@@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
  
  constexpr int kOverlayBorderThickness = 10;
  
@@ -176,7 +176,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
  // Size for action buttons.
  constexpr gfx::Size kActionButtonSize(28, 28);
-@@ -416,11 +418,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -417,11 +419,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -190,7 +190,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
    return overlay_window;
  }
-@@ -453,9 +457,11 @@ VideoOverlayWindowViews::VideoOverlayWindowViews(
+@@ -454,9 +458,11 @@ VideoOverlayWindowViews::VideoOverlayWindowViews(
  }
  
  VideoOverlayWindowViews::~VideoOverlayWindowViews() {
@@ -202,7 +202,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    display::Screen::Get()->RemoveObserver(this);
    PictureInPictureWindowManager::GetInstance()->OnPictureInPictureWindowHidden(
        this);
-@@ -553,6 +559,7 @@ void VideoOverlayWindowViews::OnNativeBlur() {
+@@ -554,6 +560,7 @@ void VideoOverlayWindowViews::OnNativeBlur() {
  }
  
  gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
@@ -210,7 +210,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    if (IsOverlayViewShown()) {
      // Make sure that our minimum is sufficiently large to enclose the bubble,
      // plus some margin to make it look nicer.
-@@ -561,6 +568,7 @@ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
+@@ -562,6 +569,7 @@ gfx::Size VideoOverlayWindowViews::GetMinimumSize() const {
      overlay_size.SetToMax(min_size_);
      return overlay_size;
    }
@@ -218,7 +218,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    return min_size_;
  }
  
-@@ -919,6 +927,7 @@ void VideoOverlayWindowViews::OnDisplayMetricsChanged(
+@@ -920,6 +928,7 @@ void VideoOverlayWindowViews::OnDisplayMetricsChanged(
    }
  }
  
@@ -226,7 +226,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  void VideoOverlayWindowViews::OnViewVisibilityChanged(
      views::View* observed_view,
      views::View* starting_view,
-@@ -932,6 +941,7 @@ void VideoOverlayWindowViews::OnViewVisibilityChanged(
+@@ -933,6 +942,7 @@ void VideoOverlayWindowViews::OnViewVisibilityChanged(
    // The visibility of `overlay_view_` affects our minimum size.
    OnSizeConstraintsChanged();
  }
@@ -234,7 +234,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
  void VideoOverlayWindowViews::SetForcedTucking(bool tuck) {
    if (!tucker_) {
-@@ -951,10 +961,12 @@ void VideoOverlayWindowViews::OnAnyBrowserEnteredFullscreen() {
+@@ -952,10 +962,12 @@ void VideoOverlayWindowViews::OnAnyBrowserEnteredFullscreen() {
  }
  #endif  // BUILDFLAG(IS_MAC)
  
@@ -247,7 +247,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
  gfx::Rect VideoOverlayWindowViews::GetWorkAreaForWindow() const {
    return display::Screen::Get()
-@@ -1008,6 +1020,7 @@ void VideoOverlayWindowViews::UpdateMaxSize(const gfx::Rect& work_area) {
+@@ -1009,6 +1021,7 @@ void VideoOverlayWindowViews::UpdateMaxSize(const gfx::Rect& work_area) {
  
  bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
      const gfx::Point& point) {
@@ -255,7 +255,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    if (overlay_view_) {
      // Let the overlay view consume this event if it wants to.  If not, then
      // ignore any of our controls as well.  This will still permit dragging the
-@@ -1016,6 +1029,7 @@ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
+@@ -1017,6 +1030,7 @@ bool VideoOverlayWindowViews::ControlsHitTestContainsPoint(
          views::View::ConvertPointToScreen(non_client_view(), point);
      return overlay_view_->WantsEvent(point_in_screen);
    }
@@ -263,7 +263,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
    if (!AreControlsVisible()) {
      return false;
-@@ -1479,9 +1493,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
+@@ -1480,9 +1494,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
    video_view_->SetBoundsRect(video_bounds);
    video_view_->layer()->AsSurface()->SetSurfaceSize(video_bounds.size());
  
@@ -275,7 +275,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
    // Notify the controller that the bounds have changed.
    controller_->UpdateLayerBounds();
-@@ -1754,6 +1770,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+@@ -1755,6 +1771,7 @@ void VideoOverlayWindowViews::ShowInactive() {
    non_client_view()->frame_view()->UpdateWindowRoundedCorners();
  #endif
  
@@ -283,7 +283,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    // If there is an existing overlay view, remove it now.
    RemoveOverlayViewIfExists();
  
-@@ -1775,6 +1792,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+@@ -1776,6 +1793,7 @@ void VideoOverlayWindowViews::ShowInactive() {
      overlay_view_->ShowBubble(GetNativeView());
      SetBounds(CalculateAndUpdateWindowBounds());
    }
@@ -291,7 +291,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
  
    // When the window is first shown, make the title and top controls
    // visible for a few seconds.
-@@ -2366,10 +2384,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+@@ -2367,10 +2385,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
  }
  
  bool VideoOverlayWindowViews::IsOverlayViewShown() const {
@@ -307,7 +307,7 @@ index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6
    if (overlay_view_) {
      // Remove and delete the outgoing view.  Note the trailing `T` on the method
      // name -- this removes `overlay_view_` and returns a unique_ptr to it which
-@@ -2378,6 +2401,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+@@ -2379,6 +2402,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
      GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
      OnSizeConstraintsChanged();
    }
