@@ -340,6 +340,33 @@ app
       if (err?.stack) console.log(err.stack.split('\n').slice(0, 3).join('\n'));
       console.log(`Retrying test (${test.currentRetry() + 1}/${test.retries()})...`);
     });
+
+    // Per-file wall time, consumed by script/gen-spec-weights.js to balance CI
+    // shards. Skipped for grep'd runs so a rerun doesn't overwrite the full run.
+    if (process.env.CI && !argv.grep && !process.env.MOCHA_GREP) {
+      const started = new Map();
+      const timings = {};
+      runner.on('suite', (suite) => {
+        if (suite.parent?.root) started.set(suite, Date.now());
+      });
+      runner.on('suite end', (suite) => {
+        if (!started.has(suite) || !suite.file) return;
+        const file = path.relative(baseElectronDir, suite.file).split(path.sep).join('/');
+        timings[file] = (timings[file] || 0) + (Date.now() - started.get(suite)) / 1000;
+      });
+      runner.on('end', () => {
+        const artifactsDir = path.join(__dirname, 'artifacts');
+        fs.mkdirSync(artifactsDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(artifactsDir, 'spec-timings.json'),
+          JSON.stringify(
+            { platform: process.platform, arch: process.arch, mas: !!process.mas, files: timings },
+            null,
+            2
+          )
+        );
+      });
+    }
   })
   .catch((err) => {
     console.error('An error occurred while running the spec runner');
