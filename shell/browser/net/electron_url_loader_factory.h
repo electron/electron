@@ -39,6 +39,10 @@ class PendingReceiver;
 
 namespace electron {
 
+namespace api {
+class SimpleURLLoaderWrapper;
+}
+
 class ElectronBrowserContext;
 
 // Old Protocol API can only serve one type of response for one scheme.
@@ -173,6 +177,12 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       base::WeakPtr<ElectronBrowserContext> browser_context,
       const gin_helper::Dictionary& dict,
       bool tag_response_opaque);
+  static void StartLoadingRelay(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      network::mojom::URLResponseHeadPtr head,
+      api::SimpleURLLoaderWrapper* fetch_loader,
+      std::string prefix);
   static void StartLoadingStream(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
