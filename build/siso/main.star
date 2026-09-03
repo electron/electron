@@ -100,25 +100,37 @@ def init(ctx):
     # are shaped like compiles so scandeps finds their inputs, and are cached
     # and executed remotely like compiles.
     tidy_wrapper = "electron/build/run-clang-tidy-action.sh"
-    llvm_bin = "third_party/llvm-build/Release+Asserts/bin/"
-    step_config["rules"].insert(0, {
+    tidy_rule = {
         "name": "electron/clang-tidy",
         "action": "clang_tidy",
         "command_prefix": "../../" + tidy_wrapper + " ",
         "inputs": [
             tidy_wrapper,
-            llvm_bin + "clang-tidy",
-            llvm_bin + "clang++",
+            "third_party/llvm-build/Release+Asserts/bin/clang-tidy",
             ".clang-tidy",
             "electron/.clang-tidy",
         ],
         "exclude_input_patterns": ["*.stamp"],
         "remote": True,
         "timeout": "10m",
-    })
-    step_config["input_deps"][llvm_bin + "clang-tidy"] = step_config["input_deps"].get(llvm_bin + "clang++", [])
+    }
+    step_config["input_deps"][tidy_rule["inputs"][1]] = step_config["input_deps"].get(
+        "third_party/llvm-build/Release+Asserts/bin/clang++", [])
     step_config.setdefault("executables", [])
-    step_config["executables"].extend([tidy_wrapper, llvm_bin + "clang-tidy"])
+    step_config["executables"].extend(tidy_rule["inputs"][:2])
+    if runtime.os != "linux":
+      # Same arrangement as the clang rules above: the RBE workers are Linux, so
+      # run through clang_remote_wrapper with the Linux toolchain staged next to
+      # the host one. The clang-tidy job downloads the Linux clang-tidy there.
+      linux_tools = [
+          "buildtools/reclient_cfgs/chromium-browser-clang/clang_remote_wrapper",
+          "third_party/llvm-build/Release+Asserts_linux/bin/clang",
+          "third_party/llvm-build/Release+Asserts_linux/bin/clang-tidy",
+      ]
+      tidy_rule["remote_wrapper"] = "../../" + linux_tools[0]
+      tidy_rule["inputs"].extend(linux_tools)
+      step_config["executables"].extend(linux_tools)
+    step_config["rules"].insert(0, tidy_rule)
 
     return module(
       "config",
