@@ -11,6 +11,7 @@
     "@electron-ci/echo": "*",
     "@electron-ci/external-ab": "*",
     "@electron-ci/is-valid-window": "*",
+    "@electron-ci/object-wrap": "*",
     "@electron-ci/osr-gpu": "*",
     "@electron-ci/uv-dlopen": "*",
     "@electron/fuses": "^1.8.0",
