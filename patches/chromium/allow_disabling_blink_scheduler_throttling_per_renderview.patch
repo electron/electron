@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index b1f2c21911a15c51dffc183880b432edfbf132ab..977b6a9869aa45628aaa0aa7734ce5689c9028a4 100644
+index 06fc4a2bc7d40fd9299b06fd237ce69f3c869990..0dde47c0dd0e09ae8144018fee09b5350aa40aed 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -167,6 +167,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -23,10 +23,10 @@ index b1f2c21911a15c51dffc183880b432edfbf132ab..977b6a9869aa45628aaa0aa7734ce568
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 5d8a61248db78a90f0a6c8a38b25a85bbcf16a72..d2a849d3d785319b9a13024eba80eb64d1d37a69 100644
+index 02444a76180dde087332685ce8481df6811d9913..c7b45ceb58beedfe94c69c50eebdfcc86b8d190c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -755,6 +755,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -758,6 +758,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -51,10 +51,10 @@ index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 7c2de5c89b45d24fe8b33a1c9d3a96afb7949e09..39cbf896c84550a0f5a9c8c7b08a7c6c7e13ea2c 100644
+index 4ff08b167d6702fcdf8a02c2d80beffd5abf026b..fc8d8f5badd0b56d7acc77f17311552e173da260 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -686,8 +686,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -692,8 +692,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.

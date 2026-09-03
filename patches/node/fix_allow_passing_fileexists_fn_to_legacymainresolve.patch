@@ -11,16 +11,16 @@ We can fix this by allowing the C++ implementation of legacyMainResolve to use
 a fileExists function that does take Asar into account.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 185793fa305edbeab299f743e0018f34b2aaa655..b44eab420fe1bbec7ce34bde2ca4974b9d24a6dd 100644
+index beb3452ea134e4b408f8a3335a6cc65e97c8055a..a1c743cde5063a6ca504e8d2c32e9f2e13802cd9 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,11 +28,10 @@ const { BuiltinModule } = require('internal/bootstrap/realm');
  const fs = require('fs');
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
--const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
+-const { sep, posix: { relative: relativePosixPath }, resolve, join } = require('path');
 -const { URL, pathToFileURL, fileURLToPath, isURL, URLParse } = require('internal/url');
-+const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve } = require('path');
++const { sep, posix: { relative: relativePosixPath }, toNamespacedPath, resolve, join } = require('path');
 +const { URL, pathToFileURL, fileURLToPath, isURL, URLParse, toPathIfFileURL } = require('internal/url');
  const { getCWDURL, setOwnProperty } = require('internal/util');
  const { canParse: URLCanParse } = internalBinding('url');
@@ -28,7 +28,7 @@ index 185793fa305edbeab299f743e0018f34b2aaa655..b44eab420fe1bbec7ce34bde2ca4974b
  const {
    ERR_INPUT_TYPE_NOT_ALLOWED,
    ERR_INVALID_ARG_TYPE,
-@@ -180,6 +179,11 @@ const legacyMainResolveExtensionsIndexes = {
+@@ -181,6 +180,11 @@ const legacyMainResolveExtensionsIndexes = {
    kResolvedByPackageAndNode: 9,
  };
  
@@ -40,7 +40,7 @@ index 185793fa305edbeab299f743e0018f34b2aaa655..b44eab420fe1bbec7ce34bde2ca4974b
  /**
   * Legacy CommonJS main resolution:
   * 1. let M = pkg_url + (json main field)
-@@ -198,7 +202,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
+@@ -199,7 +203,7 @@ function legacyMainResolve(packageJSONUrl, packageConfig, base) {
  
    const baseStringified = isURL(base) ? base.href : base;
  
@@ -50,10 +50,10 @@ index 185793fa305edbeab299f743e0018f34b2aaa655..b44eab420fe1bbec7ce34bde2ca4974b
    const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
      packageConfig.main || './' : '';
 diff --git a/src/node_file.cc b/src/node_file.cc
-index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3ad847aaf6 100644
+index 126913185e0cd3e0e78cb2fb92177c9a8d9de044..5be1b553e29dbcc78c4bee1b778587ede6bc60f8 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3648,13 +3648,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3877,13 +3877,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
  }
  
  BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
@@ -80,7 +80,7 @@ index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3a
    uv_fs_t req;
  
    int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
-@@ -3712,6 +3724,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3941,6 +3953,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
    std::optional<std::string> initial_file_path;
    std::string file_path;
  
@@ -92,7 +92,7 @@ index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3a
    if (args.Length() >= 2 && args[1]->IsString()) {
      auto package_config_main = Utf8Value(isolate, args[1]).ToString();
  
-@@ -3732,7 +3749,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3961,7 +3978,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
        BufferValue buff_file_path(isolate, local_file_path);
        ToNamespacedPath(env, &buff_file_path);
  
@@ -101,7 +101,7 @@ index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3a
          case BindingData::FilePathIsFileReturnType::kIsFile:
            return args.GetReturnValue().Set(i);
          case BindingData::FilePathIsFileReturnType::kIsNotFile:
-@@ -3769,7 +3786,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3998,7 +4015,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
      BufferValue buff_file_path(isolate, local_file_path);
      ToNamespacedPath(env, &buff_file_path);
  
@@ -111,10 +111,10 @@ index c46adc83d8542ae28c84b41821204b4608b1f34f..d828e7e78f9b41e053c306b01a71ad3a
          return args.GetReturnValue().Set(i);
        case BindingData::FilePathIsFileReturnType::kIsNotFile:
 diff --git a/src/node_file.h b/src/node_file.h
-index c276a873f8516a5c7c6efcf8a400e07f78f92620..fe314d2a2c0fa9e2b71e12ae83b915c4314986a0 100644
+index 17f3b4203c8eddc8d050243d9cc26ba2ee61ff86..f2ae912dbe28f6165befb07f34c1dbf2430afce6 100644
 --- a/src/node_file.h
 +++ b/src/node_file.h
-@@ -102,7 +102,8 @@ class BindingData : public SnapshotableObject {
+@@ -101,7 +101,8 @@ class BindingData : public SnapshotableObject {
    InternalFieldInfo* internal_field_info_ = nullptr;
  
    static FilePathIsFileReturnType FilePathIsFile(Environment* env,

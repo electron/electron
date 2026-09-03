@@ -49,7 +49,7 @@ index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a2
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0e678e9dc 100644
+index b3cd207b8a535575cd0ab68ed003efcbfdba0328..36a87d6bfceb505930764160bc3bff5f052a12c3 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -647,8 +647,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
@@ -74,7 +74,7 @@ index ad3fe3e168882dcd8dce22cbaaeb81a626efb182..6ad1b95d5340c3f0f439388edde652d0
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
 diff --git a/src/node.cc b/src/node.cc
-index dcb0ee4dece17406be5afc7313a35c921fd0d6ef..5f7103dffef71955f728256352105a5ac3761e88 100644
+index 0a2635c11f498cc0c8351de88d7a21ffa88f147e..787f21586025d76f6959b002a2fb2d2ce94533a5 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -47,6 +47,10 @@
@@ -88,7 +88,7 @@ index dcb0ee4dece17406be5afc7313a35c921fd0d6ef..5f7103dffef71955f728256352105a5a
  #if HAVE_OPENSSL
  #include "ncrypto.h"
  #include "node_crypto.h"
-@@ -1136,6 +1140,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1135,6 +1139,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      }
    }
  
@@ -132,7 +132,7 @@ index 952161d9e2cf1c92c3600fc2da0af594cc3f53bd..17976d01e4f4f2bf87a38a4fdb36fc70
    if (GET_TRACE_ENABLED) {                                                     \
      TRACE_EVENT0(TRACING_CATEGORY_NODE2(fs_dir, sync), TRACE_NAME(syscall));   \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 7f9ed234f3bc94973e358fe8cf96821e2dc3b73f..ecd5af293ed6fc4cc1780b363f07c192fe53deb3 100644
+index d4ef107d870859d256e12f5829d6085eb7851bb0..846cff26c16ecf70309c57091fa22d88b52981a0 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -147,8 +147,7 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {

@@ -70,10 +70,10 @@ index 6c87611f7cbaf8a0b4c04f812f65381ede112056..da2ed4bae5a552117ad808c19a2e57f8
    return GET_RETURN_STATUS(env);
  }
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 5ab30502fd232196739ca2b450e35cc995f02d74..b394d25d8d4f957f04ad8ef31c00c7a92265dbe6 100644
+index 8004c8ed06cac33853b227df377b8e2bef2af7e2..134fcd561af053e2a42f54398a28abaa0bf2b118 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1000,7 +1000,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
+@@ -986,7 +986,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
    Isolate* isolate = args.GetIsolate();
    Environment* env = Environment::GetCurrent(isolate);
    ModuleWrap* obj;
@@ -83,7 +83,7 @@ index 5ab30502fd232196739ca2b450e35cc995f02d74..b394d25d8d4f957f04ad8ef31c00c7a9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 9d8d2005b7f40710470a2cce7763080b8568ace6..5508d55ed12b49366d433830877e7e480a8bc6b1 100644
+index 01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5..2543d6f3b5e357cf9090f2f7d51d67d084b34f38 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -279,7 +279,7 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -96,10 +96,10 @@ index 9d8d2005b7f40710470a2cce7763080b8568ace6..5508d55ed12b49366d433830877e7e48
      return MaybeLocal<Uint8Array>();
    }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 972f341a0559e37d8f6aaa70554bfdd33cdde76e..08bfe9e8f98ef69911a7fe245dd792493743166a 100644
+index 1dba37d373218b791aa73c14cb41f7f9d057d0bf..e15501e174f1e04d2f58e8ec3f2d032390774dc1 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1281,7 +1281,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1331,7 +1331,7 @@ void CreatePerContextProperties(Local<Object> target,
    Environment* env = Environment::GetCurrent(context);
  
    CHECK(
@@ -135,10 +135,10 @@ index 34ced47c7142be3ab8d97840ea88770c18b0742b..d12bf33f2f6b15a0f571d1dd43252758
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index a3660223bb93493c64c7b0c77d5eb1558fb461c9..357269ffc9aa98af82d2294eaeb356bac0a46c8e 100644
+index 9435a20299b817cef92125375a6d08143cc88c2d..9a329d5f91f7396c36b1e3e9b47175b4f177091d 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1791,7 +1791,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1814,7 +1814,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
  
    Local<Map> options = Map::New(isolate);
    if (options
@@ -147,7 +147,7 @@ index a3660223bb93493c64c7b0c77d5eb1558fb461c9..357269ffc9aa98af82d2294eaeb356ba
                             env->primordials_safe_map_prototype_object())
            .IsNothing()) {
      return;
-@@ -1832,7 +1832,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1855,7 +1855,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
    if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
  
    if (aliases.As<Object>()
@@ -157,7 +157,7 @@ index a3660223bb93493c64c7b0c77d5eb1558fb461c9..357269ffc9aa98af82d2294eaeb356ba
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index f68e986b18e24aceca0848efb17ed88a0db17c5d..5d61435c1f525a6c48f8c564c997ca15983c87a8 100644
+index 272e6ffd0aebac5b8f075d6ba9911f96347bc2a4..1b9fdd75da8ce7207b0b41a439e1b0f1e3e0cf4f 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -178,7 +178,7 @@ index f68e986b18e24aceca0848efb17ed88a0db17c5d..5d61435c1f525a6c48f8c564c997ca15
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -2967,9 +2967,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
+@@ -2998,9 +2998,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
    }
  
    if (iter->object()
@@ -191,7 +191,7 @@ index f68e986b18e24aceca0848efb17ed88a0db17c5d..5d61435c1f525a6c48f8c564c997ca15
      return BaseObjectPtr<StatementSyncIterator>();
    }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index 8be8a8b5726a265a838841a21bb023fa41ceeb13..bf8391694f662d34bcf4da72f81f2e52836c389f 100644
+index 6d3373caae6c5cc22e16fc32e7ea007178aa1a20..ad979ff1c223b571486265d27b35cb617dfc82a9 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
 @@ -366,7 +366,7 @@ static void DefineLazyPropertiesGetter(

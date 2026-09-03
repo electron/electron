@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 5019477c55e5ff1121a2b51168f12e008d54d59e..8eb390fbe16401a7abf836030233832925ab5c9e 100644
+index 87190b71909592aa939ac8fb0cd519b69225b6ed..bfa97ad20d57611083cbef5e1618679092229674 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -35,7 +35,7 @@ const {
+@@ -36,7 +36,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
@@ -23,7 +23,7 @@ index 5019477c55e5ff1121a2b51168f12e008d54d59e..8eb390fbe16401a7abf8360302338329
  const {
    emitExperimentalWarning,
    kEmptyObject,
-@@ -286,12 +286,13 @@ let _shouldSpawnLoaderHookWorker = true;
+@@ -287,12 +287,13 @@ let _shouldSpawnLoaderHookWorker = true;
   *   should be spawned later.
   */
  function initializeESM(shouldSpawnLoaderHookWorker = true) {
@@ -40,10 +40,10 @@ index 5019477c55e5ff1121a2b51168f12e008d54d59e..8eb390fbe16401a7abf8360302338329
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 5703590b5ee2a91a504cf8491716773fc4a302bd..52483740bb377a2bc2a16af701615d9a4e448eae 100644
+index bc1ce3ad3c2d2c85173d98fd1a9c69d08b18e6a4..fbcf8f0f99ccaac583040e1ecebcbf65bd03cfa6 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1099,7 +1099,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+@@ -1085,7 +1085,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
    return Just(module_wrap);
  }
  
@@ -52,7 +52,7 @@ index 5703590b5ee2a91a504cf8491716773fc4a302bd..52483740bb377a2bc2a16af701615d9a
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -1187,14 +1187,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -1173,14 +1173,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -72,7 +72,7 @@ index 5703590b5ee2a91a504cf8491716773fc4a302bd..52483740bb377a2bc2a16af701615d9a
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -1236,13 +1238,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1222,13 +1224,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  

@@ -39,10 +39,10 @@ index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd
    if (secureOptions) {
      validateInteger(secureOptions, 'secureOptions');
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 55cdd9acc0dd957de7f1c404d2ee295840506097..b561041ca79f0680819ae8ccd6989f15bd8e53a2 100644
+index b531f3649d44c700af92f454302c11d2d8660f2c..05592ab02db0ba482136f1d6827829737cbdd693 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1447,10 +1447,8 @@ SecureContext::SecureContext(Environment* env, Local<Object> wrap)
+@@ -1513,10 +1513,8 @@ SecureContext::SecureContext(Environment* env, Local<Object> wrap)
  }
  
  inline void SecureContext::Reset() {
