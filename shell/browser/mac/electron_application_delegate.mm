@@ -201,10 +201,8 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 
 - (void)application:(NSApplication*)application
     didReceiveRemoteNotification:(NSDictionary*)userInfo {
-  electron::api::PushNotifications* push_notifications =
-      electron::api::PushNotifications::Get();
-  if (push_notifications) {
-    electron::api::PushNotifications::Get()->OnDidReceiveAPNSNotification(
+  if (auto* push_notifications = electron::api::PushNotifications::Get()) {
+    push_notifications->OnDidReceiveAPNSNotification(
         electron::NSDictionaryToValue(userInfo));
   }
 }

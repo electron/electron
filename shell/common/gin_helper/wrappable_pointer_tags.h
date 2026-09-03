@@ -37,6 +37,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
   kElectronProtocol,                        // electron::api::Protocol
+  kElectronPushNotifications,               // electron::api::PushNotifications
   kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
   kElectronScreen,                  // electron::api::Screen
   kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
