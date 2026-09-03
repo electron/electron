@@ -187,6 +187,7 @@ jobs:
         node script/gen-hunspell-filenames.js --check
 
         node script/gen-libc++-filenames.js --check
+        node script/gen-siso-revision.js --check
         node script/yarn.js ts-node script/gen-filenames.ts -- --check
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
