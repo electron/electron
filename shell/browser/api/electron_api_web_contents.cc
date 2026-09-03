@@ -3235,7 +3235,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   std::string user_agent;
   if (options.Get("userAgent", &user_agent)) {
-    absl::optional<blink::UserAgentMetadata> ua_metadata;
+    std::optional<blink::UserAgentMetadata> ua_metadata;
     options.Get("userAgentMetadata", &ua_metadata);
     SetUserAgent(user_agent, std::move(ua_metadata));
   }
@@ -3692,13 +3692,14 @@ void WebContents::ForcefullyCrashRenderer() {
   }
 }
 
-void WebContents::SetUserAgentForJS(gin_helper::Arguments* args) {
+void WebContents::SetUserAgentForJS(gin::Arguments* args) {
   std::string user_agent;
-  absl::optional<blink::UserAgentMetadata> ua_metadata;
+  std::optional<blink::UserAgentMetadata> ua_metadata;
 
   gin_helper::Dictionary opts;
-  if (args->GetNext(&user_agent)) {
-  } else if (args->GetNext(&opts)) {
+  const auto value = args->PeekNext();
+  if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
+  } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
     opts.Get("userAgent", &user_agent);
     opts.Get("userAgentMetadata", &ua_metadata);
   } else {
@@ -3713,7 +3714,7 @@ void WebContents::SetUserAgentForJS(gin_helper::Arguments* args) {
 
 void WebContents::SetUserAgent(
     const std::string& user_agent,
-    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = user_agent;
   if (ua_metadata) {

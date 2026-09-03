@@ -134,7 +134,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void SetUserAgent(const std::string& user_agent);
   blink::UserAgentMetadata GetUserAgentMetadata() override;
   void SetUserAgentMetadata(
-      absl::optional<blink::UserAgentMetadata> ua_metadata);
+      std::optional<blink::UserAgentMetadata> ua_metadata);
 
   content::SerialDelegate* GetSerialDelegate() override;
 
@@ -414,7 +414,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   raw_ptr<Delegate> delegate_ = nullptr;
 
   std::string user_agent_override_ = "";
-  absl::optional<blink::UserAgentMetadata> ua_metadata_override_;
+  std::optional<blink::UserAgentMetadata> ua_metadata_override_;
 
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.

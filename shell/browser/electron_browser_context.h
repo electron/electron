@@ -92,7 +92,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
   void SetUserAgentMetadata(
-      absl::optional<blink::UserAgentMetadata> ua_metadata);
+      std::optional<blink::UserAgentMetadata> ua_metadata);
   blink::UserAgentMetadata GetUserAgentMetadata() const;
   bool can_use_http_cache() const { return use_cache_; }
   int max_cache_size() const { return max_cache_size_; }
@@ -224,8 +224,8 @@ class ElectronBrowserContext : public content::BrowserContext {
       preconnect_manager_delegate_;
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
-  absl::optional<std::string> user_agent_;
-  absl::optional<blink::UserAgentMetadata> ua_metadata_;
+  std::optional<std::string> user_agent_;
+  std::optional<blink::UserAgentMetadata> ua_metadata_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;

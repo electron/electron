@@ -525,7 +525,7 @@ void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
 }
 
 void ElectronBrowserContext::SetUserAgentMetadata(
-    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
   ua_metadata_ = std::move(ua_metadata);
 }
 
