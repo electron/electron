@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Thu, 20 Aug 2026 13:54:51 -0700
+Subject: [M152] Insert flush before generateMipmap on IMG
+
+Original change's description:
+> Insert flush before generateMipmap on IMG
+>
+> Adds a feature which forces a flush before generating a mipmap,
+> which avoids a bad state in the IMG driver if the texture's base
+> level is still bound to an active FBO.
+>
+> Fixed: chromium:549350408
+> Change-Id: Id69684690a0fb04a45e0fca7d912bac68f82052c
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8265721
+> Commit-Queue: Kenneth Russell <kbr@chromium.org>
+> Reviewed-by: Geoff Lang <geofflang@chromium.org>
+> Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+(cherry picked from commit 921d48815f191d63b93aeb9c9921ba6dd95b054e)
+
+Bug: chromium:553316302,chromium:549350408
+Change-Id: Id69684690a0fb04a45e0fca7d912bac68f82052c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8302858
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 5eed5e6dbcee83a0a5667ef7c3b059e435aab809..bd7bb2cdf841810aa7b36c162523e14435b399ae 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -728,6 +728,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo flushBeforeGenerateMipmap = {
++        "flushBeforeGenerateMipmap",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo splitLevel0PboFullSubImage2D = {
+         "splitLevel0PboFullSubImage2D",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index f6cd33d5c1c115242ed6793384a387b8f5a6dc95..96082d8f4a63c508b608eb9757a14806503e41f2 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -953,6 +953,14 @@
+             ],
+             "issue": "http://crbug.com/475877320"
+         },
++        {
++            "name": "flush_before_generate_mipmap",
++            "category": "Workarounds",
++            "description": [
++                "Force a flush before calling generateMipmap to work around driver bugs."
++            ],
++            "issue": "http://crbug.com/549350408"
++        },
+         {
+             "name": "split_level_0_pbo_full_sub_image_2D",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 7ece705c007f5e9b7c999000fcb1518748e61025..ffca3d93f83d4eb4f1cc545a39d1d70b548ee333 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1601,6 +1601,13 @@ angle::Result TextureGL::generateMipmap(const gl::Context *context)
+     StateManagerGL *stateManager      = GetStateManagerGL(context);
+     const angle::FeaturesGL &features = GetFeaturesGL(context);
+ 
++    if (features.flushBeforeGenerateMipmap.enabled)
++    {
++        // Force a flush before generating the mipmap, which avoids a bad state in the IMG driver if
++        // the texture's base level is still bound to an active FBO.
++        ANGLE_GL_TRY(context, functions->flush());
++    }
++
+     stateManager->bindTexture(getType(), mTextureID);
+ 
+     bool recreateMipmapLevelsBeforeGenerate =
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index efba1815d0f49501e795971b86b3bc134dd8cb2b..9e16d2c5ce16aeb2632251896ee3be494a7b81f1 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2778,6 +2778,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // Disable EXT_clear_texture entirely on IMG as a speculative fix for driver crashes.
+     ANGLE_FEATURE_CONDITION(features, disableClearTexture, IsPowerVR(vendor));
+ 
++    // Forces a flush before generating a mipmap, which avoids a bad state in the IMG driver if
++    // the texture's base level is still bound to an active FBO.
++    ANGLE_FEATURE_CONDITION(features, flushBeforeGenerateMipmap, IsPowerVR(vendor));
++
+     // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
+     ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
+                             IsPowerVR(vendor));
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index ed34de98bdbbccbe01b55ae0bc47a672a09bd18d..a5c51f6a4ae797bdd024d2ab5751853900f5f1a8 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -188,6 +188,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::FlushAfterEndingTransformFeedback, "flushAfterEndingTransformFeedback"},
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+     {Feature::FlushBeforeDeleteTextureIfCopiedTo, "flushBeforeDeleteTextureIfCopiedTo"},
++    {Feature::FlushBeforeGenerateMipmap, "flushBeforeGenerateMipmap"},
+     {Feature::FlushOnFramebufferChange, "flushOnFramebufferChange"},
+     {Feature::FlushQueriesBeforeDeletingOrUnbindingFbo, "flushQueriesBeforeDeletingOrUnbindingFbo"},
+     {Feature::ForceAtomicValueResolution, "forceAtomicValueResolution"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 5d63579b8a65dc1552867c0b5e2fd5a1ea7681be..c452c86577004c02bf76a9a0a5e134d38b460891 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -188,6 +188,7 @@ enum class Feature
+     FlushAfterEndingTransformFeedback,
+     FlushAfterStreamVertexData,
+     FlushBeforeDeleteTextureIfCopiedTo,
++    FlushBeforeGenerateMipmap,
+     FlushOnFramebufferChange,
+     FlushQueriesBeforeDeletingOrUnbindingFbo,
+     ForceAtomicValueResolution,
