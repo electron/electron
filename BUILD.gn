@@ -580,7 +580,7 @@ source_set("electron_lib") {
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
-    "//third_party/perfetto/protos/perfetto/config:lite",
+    "//third_party/perfetto/protos/perfetto/config:cpp",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
