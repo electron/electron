@@ -48,6 +48,7 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
+    exitImmediately(code: number): never;
   }
 
   type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
@@ -101,7 +102,6 @@ declare namespace NodeJS {
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
     createSentinelFd(): number | -1;
-    exitImmediately(code: number): never;
     splitPath(path: string):
       | {
           isAsar: false;
