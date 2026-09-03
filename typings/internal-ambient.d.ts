@@ -101,6 +101,7 @@ declare namespace NodeJS {
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
     createSentinelFd(): number | -1;
+    exitImmediately(code: number): never;
     splitPath(path: string):
       | {
           isAsar: false;

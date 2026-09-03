@@ -422,6 +422,10 @@ const integrityViolation = (actual: string, expected: string): never => {
   } catch {
     console.error(message);
   }
+  // Terminate without libc exit(): its atexit handlers and static destructors
+  // would run while Chromium's threads are still live, which on Windows
+  // intermittently faults (0xC0000005) instead of exiting with code 1.
+  if (typeof asar.exitImmediately === 'function') asar.exitImmediately(1);
   const reallyExit = (process as any).reallyExit;
   if (typeof reallyExit === 'function') reallyExit(1);
   process.exit(1);
