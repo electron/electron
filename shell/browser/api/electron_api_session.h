@@ -144,7 +144,7 @@ class Session final : public gin::Wrappable<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(gin::Arguments* args);
   std::string GetUserAgent();
-  void SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_meta);
+  void SetUserAgentMetadata(std::optional<blink::UserAgentMetadata> ua_meta);
   v8::Local<v8::Value> GetUserAgentMetadata(v8::Isolate* isolate);
   void SetSSLConfig(network::mojom::SSLConfigPtr config);
   bool IsPersistent();

@@ -94,7 +94,6 @@
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
@@ -1021,21 +1020,20 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
       std::move(auth_dynamic_params));
 }
 
-void Session::SetUserAgent(gin::Arguments* gin_args) {
-  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
-
+void Session::SetUserAgent(gin::Arguments* args) {
   std::string user_agent;
   std::string accept_lang;
-  absl::optional<blink::UserAgentMetadata> ua_metadata;
+  std::optional<blink::UserAgentMetadata> ua_metadata;
   bool has_user_agent = false;
   bool has_ua_metadata = false;
   bool has_accept_lang = false;
 
   gin_helper::Dictionary opts;
 
-  if (args->GetNext(&user_agent)) {
+  const auto value = args->PeekNext();
+  if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
     has_user_agent = true;
-  } else if (args->GetNext(&opts)) {
+  } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
     has_user_agent = opts.Get("userAgent", &user_agent);
     has_ua_metadata = opts.Get("userAgentMetadata", &ua_metadata);
     has_accept_lang = opts.Get("acceptLanguages", &accept_lang);
@@ -1065,7 +1063,7 @@ std::string Session::GetUserAgent() {
 }
 
 void Session::SetUserAgentMetadata(
-    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
   browser_context_->SetUserAgentMetadata(std::move(ua_metadata));
 }
 

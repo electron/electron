@@ -3617,6 +3617,24 @@ describe('chromium features', () => {
     let serverUrl: string;
     before(async () => {
       server = http.createServer((req, res) => {
+        if (req.url === '/user-agent-worker.js') {
+          res.setHeader('Content-Type', 'text/javascript');
+          res.end(`
+            navigator.userAgentData.getHighEntropyValues(['formFactors'])
+              .then(({ formFactors }) => postMessage(formFactors));
+          `);
+          return;
+        }
+        if (req.url === '/user-agent-shared-worker.js') {
+          res.setHeader('Content-Type', 'text/javascript');
+          res.end(`
+            onconnect = ({ ports: [port] }) => {
+              navigator.userAgentData.getHighEntropyValues(['formFactors'])
+                .then(({ formFactors }) => port.postMessage(formFactors));
+            };
+          `);
+          return;
+        }
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
@@ -3644,6 +3662,34 @@ describe('chromium features', () => {
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
         expect(platform).to.equal('electron');
+      });
+
+      it('preserves form factors in pages and workers after a getter/setter round trip', async () => {
+        const userAgentMetadata = app.userAgentMetadataFallback;
+        app.userAgentMetadataFallback = userAgentMetadata;
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(serverUrl);
+        const formFactors = await w.webContents.executeJavaScript(`
+          Promise.all([
+            navigator.userAgentData.getHighEntropyValues(['formFactors'])
+              .then(({ formFactors }) => formFactors),
+            new Promise((resolve) => {
+              const worker = new Worker('/user-agent-worker.js');
+              worker.onmessage = ({ data }) => resolve(data);
+            }),
+            new Promise((resolve) => {
+              const worker = new SharedWorker('/user-agent-shared-worker.js');
+              worker.port.onmessage = ({ data }) => resolve(data);
+              worker.port.start();
+            })
+          ])
+        `);
+
+        expect(formFactors).to.deep.equal([
+          userAgentMetadata.formFactors,
+          userAgentMetadata.formFactors,
+          userAgentMetadata.formFactors
+        ]);
       });
 
       it('global override via setting setUserAgentFallback', async () => {

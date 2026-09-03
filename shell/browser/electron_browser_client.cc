@@ -1231,7 +1231,7 @@ blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
 }
 
 void ElectronBrowserClient::SetUserAgentMetadata(
-    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
   ua_metadata_override_ = std::move(ua_metadata);
 }
 

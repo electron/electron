@@ -2162,6 +2162,29 @@ describe('session module', () => {
     });
   });
 
+  describe('ses.setUserAgentMetadata()', () => {
+    it('preserves every metadata field', () => {
+      const userAgentMetadata = {
+        brands: [{ brand: 'Electron', version: '46' }],
+        fullVersionList: [{ brand: 'Electron', version: '46.0.0' }],
+        fullVersion: '46.0.0',
+        platform: 'test-platform',
+        platformVersion: '1.0.0',
+        model: 'test-model',
+        mobile: false,
+        architecture: 'test-architecture',
+        bitness: '64',
+        wow64: false,
+        formFactors: ['Desktop']
+      };
+      const ses = session.fromPartition(`${Math.random()}`);
+
+      ses.setUserAgentMetadata(userAgentMetadata);
+
+      expect(ses.getUserAgentMetadata()).to.deep.equal(userAgentMetadata);
+    });
+  });
+
   describe('session-created event', () => {
     it('is emitted when a session is created', async () => {
       const sessionCreated = once(app, 'session-created') as Promise<[any, Session]>;

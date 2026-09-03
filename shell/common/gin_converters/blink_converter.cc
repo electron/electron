@@ -781,6 +781,7 @@ v8::Local<v8::Value> Converter<blink::UserAgentMetadata>::ToV8(
   dict.Set("mobile", ConvertToV8(isolate, val.mobile));
   dict.Set("bitness", ConvertToV8(isolate, val.bitness));
   dict.Set("wow64", ConvertToV8(isolate, val.wow64));
+  dict.Set("formFactors", ConvertToV8(isolate, val.form_factors));
   return gin::ConvertToV8(isolate, dict);
 }
 //
@@ -803,6 +804,7 @@ bool Converter<blink::UserAgentMetadata>::FromV8(
   dict.Get("mobile", &out->mobile);
   dict.Get("bitness", &out->bitness);
   dict.Get("wow64", &out->wow64);
+  dict.Get("formFactors", &out->form_factors);
   return true;
 }
 

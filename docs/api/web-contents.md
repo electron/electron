@@ -1386,6 +1386,11 @@ Overrides the user agent and metadata for this web page.
 
 Returns `string` - The user agent for this web page.
 
+#### `contents.getUserAgentMetadata()`
+
+Returns [`UserAgentMetadata`](structures/user-agent-metadata.md) - The user
+agent metadata for this web page.
+
 #### `contents.insertCSS(css[, options])`
 
 * `css` string

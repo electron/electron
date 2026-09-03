@@ -44,6 +44,7 @@
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -1667,20 +1668,19 @@ v8::Local<v8::Promise> App::ResolveProxy(gin::Arguments* args) {
   return handle;
 }
 
-void App::SetUserAgentFallback(gin::Arguments* gin_args) {
-  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
-
+void App::SetUserAgentFallback(gin::Arguments* args) {
   std::string user_agent;
   gin_helper::Dictionary opts;
 
-  if (args->GetNext(&user_agent)) {
+  const auto value = args->PeekNext();
+  if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
     ElectronBrowserClient::Get()->SetUserAgent(user_agent);
     return;
-  } else if (args->GetNext(&opts)) {
+  } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
     if (opts.Get("userAgent", &user_agent)) {
       ElectronBrowserClient::Get()->SetUserAgent(user_agent);
     }
-    absl::optional<blink::UserAgentMetadata> ua_metadata;
+    std::optional<blink::UserAgentMetadata> ua_metadata;
     if (opts.Get("userAgentMetadata", &ua_metadata)) {
       ElectronBrowserClient::Get()->SetUserAgentMetadata(
           std::move(ua_metadata));
@@ -1689,7 +1689,7 @@ void App::SetUserAgentFallback(gin::Arguments* gin_args) {
 }
 
 void App::SetUserAgentMetadataFallback(
-    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
   ElectronBrowserClient::Get()->SetUserAgentMetadata(std::move(ua_metadata));
 }
 
