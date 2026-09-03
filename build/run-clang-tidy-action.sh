@@ -35,16 +35,29 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-mkdir -p "$(dirname "$output")"
+json_list() {
+  local item items=()
+  for item in "$@"; do
+    item=${item//\\/\\\\}
+    items+=("\"${item//\"/\\\"}\"")
+  done
+  local IFS=,
+  echo "[${items[*]}]"
+}
+
+# Give clang-tidy the command through a one-entry compilation database rather
+# than `-- <flags>`: it then uses the command as written (compiler name, and
+# the source path kept relative) instead of appending an absolute source path,
+# which clang-cl would parse as an option when it starts with e.g. /U or /w.
+mkdir -p "$output.compdb"
+trap 'rm -rf "$output.compdb"' EXIT
+echo "[{\"directory\": \"$PWD\", \"file\": \"$source\", \"arguments\": $(json_list "$clang" "${flags[@]}" "$source")}]" \
+    > "$output.compdb/compile_commands.json"
+"$clang_tidy" -p "$output.compdb" --quiet --header-filter= --warnings-as-errors='*' "$source"
 
 if [[ $(basename "$clang") == clang-cl* ]]; then
-  "$clang_tidy" --quiet --header-filter= --warnings-as-errors='*' \
-      --extra-arg-before=--driver-mode=cl --extra-arg=-Wno-unused-command-line-argument \
-      "$source" -- "${flags[@]}"
   "$clang" "${flags[@]}" /showIncludes:user /E "$source" >/dev/null
 else
-  "$clang_tidy" --quiet --header-filter= --warnings-as-errors='*' "$source" -- "${flags[@]}"
   "$clang" "${flags[@]}" -w -M -MF "$output.d" -MT "$output" "$source"
 fi
-
 touch "$output"
