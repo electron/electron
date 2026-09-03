@@ -4,7 +4,9 @@
 
 #include <vector>
 
+#include "base/process/process.h"
 #include "build/build_config.h"
+#include "gin/converter.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -238,6 +240,17 @@ static void CreateSentinelFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(gin::ConvertToV8(isolate, fd));
 }
 
+// Ends the process now with the given exit code, running no atexit handlers
+// or static destructors. The asar fs wrapper calls this on an integrity
+// violation: libc exit() would tear down statics while Chromium's threads are
+// still live, which intermittently faults (0xC0000005 on Windows).
+static void ExitImmediately(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  int code = 1;
+  if (args.Length() > 0)
+    gin::ConvertFromV8(args.GetIsolate(), args[0], &code);
+  base::Process::TerminateCurrentProcessImmediately(code);
+}
+
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
 
@@ -275,6 +288,7 @@ void Initialize(v8::Local<v8::Object> exports,
       .Check();
   NODE_SET_METHOD(exports, "splitPath", &SplitPath);
   NODE_SET_METHOD(exports, "createSentinelFd", &CreateSentinelFd);
+  NODE_SET_METHOD(exports, "exitImmediately", &ExitImmediately);
 }
 
 }  // namespace
