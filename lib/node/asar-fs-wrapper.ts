@@ -7,6 +7,7 @@ import type * as Crypto from 'crypto';
 import type * as os from 'os';
 
 const asar = process._linkedBinding('electron_common_asar');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -258,8 +259,19 @@ function validateBufferIntegrity(buffer: Buffer, integrity: NodeJS.AsarFileInfo[
   crypto = crypto || require('crypto');
   const actual = crypto.createHash(integrity.algorithm).update(buffer).digest('hex');
   if (actual !== integrity.hash) {
-    console.error(`ASAR Integrity Violation: got a hash mismatch (${actual} vs ${integrity.hash})`);
-    process.exit(1);
+    const message = `ASAR Integrity Violation: got a hash mismatch (${actual} vs ${integrity.hash})\n`;
+    // Written with a blocking write so it is not lost on the way out.
+    try {
+      (require('fs') as typeof import('fs')).writeSync(2, message);
+    } catch {
+      console.error(message);
+    }
+    // Terminate synchronously and bypass libc exit(): in the main process
+    // process.exit() maps to the asynchronous app.exit(), which would let JS
+    // keep running on the tampered bytes, and libc exit() runs static
+    // destructors under still-live Chromium threads, which on Windows
+    // intermittently faults with 0xC0000005.
+    v8Util.exitImmediately(1);
   }
 }
 

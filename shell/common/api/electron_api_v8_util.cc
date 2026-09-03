@@ -6,8 +6,10 @@
 #include <utility>
 
 #include "base/dcheck_is_on.h"
+#include "base/process/process.h"
 #include "base/run_loop.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/arguments.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -92,6 +94,16 @@ void RunUntilIdle() {
   base::RunLoop().RunUntilIdle();
 }
 
+// Ends the process now with the given exit code, running no atexit handlers
+// or static destructors. The asar fs wrapper calls this on an integrity
+// violation: libc exit() would tear down statics while Chromium's threads are
+// still live, which intermittently faults (0xC0000005 on Windows).
+void ExitImmediately(gin::Arguments* args) {
+  int code = 1;
+  args->GetNext(&code);
+  base::Process::TerminateCurrentProcessImmediately(code);
+}
+
 #if DCHECK_IS_ON()
 // Test-only (DCHECK builds): per-process map of builtin id (electron/js2c/*
 // bundles and Node's own lib/ builtins compiled so far in this process) ->
@@ -118,6 +130,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
+  dict.SetMethod("exitImmediately", &ExitImmediately);
 #if DCHECK_IS_ON()
   dict.SetMethod("getJs2cCodeCacheStatus", &GetJs2cCodeCacheStatus);
 #endif
