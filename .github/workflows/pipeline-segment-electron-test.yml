@@ -201,8 +201,10 @@ jobs:
             git config --global core.longpaths true
             git config --global core.preloadindex true
             git config --global core.longpaths true
-            # googlesource.com sometimes cuts a clone off mid-pack; retry it.
-            bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+            # googlesource.com sometimes cuts a clone off mid-pack; retry it. A
+            # clone that fails during checkout leaves ./depot_tools behind, so
+            # have the retry remove it first.
+            RETRY_CLEAN_PATH=depot_tools bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
             # Ensure depot_tools does not update.
             test -d depot_tools && cd depot_tools
             touch .disable_auto_update
