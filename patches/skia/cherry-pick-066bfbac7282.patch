@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Tue, 16 Jun 2026 11:08:01 -0400
+Subject: [graphite] Track resources before adding barriers to
+ VulkanCommandBuffer
+
+Bug: 514078656
+Change-Id: I8e26fb2b7b193b33428818079ea2570f729476a7
+Fixed: 514078656
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1267777
+Commit-Queue: Nicolette Prevost <nicolettep@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Nicolette Prevost <nicolettep@google.com>
+(cherry picked from commit 066bfbac72820a8b7ec8159aef3c3e630063ee5d)
+
+diff --git a/src/gpu/graphite/vk/VulkanCommandBuffer.cpp b/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
+index 43ccdd8c1b5a4564d111167fdde73bd4f86f903c..41e0b911b162d4ac24c1f8746bc9e8096badb29f 100644
+--- a/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
++++ b/src/gpu/graphite/vk/VulkanCommandBuffer.cpp
+@@ -615,6 +615,11 @@ bool VulkanCommandBuffer::onAddRenderPass(const RenderPassDesc& rpDesc,
+                                           const DrawPassList& drawPasses) {
+     SkASSERT(resolveOffset.isZero());
+     for (const auto& drawPass : drawPasses) {
++        // Track resources now since the barriers will reference them.
++        if (!drawPass->addResourceRefs(fResourceProvider, this)) SK_UNLIKELY {
++            return false;
++        }
++
+         // Our current implementation of setting texture image layouts does not allow layout changes
+         // once we have already begun a render pass, so prior to any other commands, set the layout
+         // of all sampled textures from the drawpass so they can be sampled from the shader.
+@@ -649,10 +654,7 @@ bool VulkanCommandBuffer::onAddRenderPass(const RenderPassDesc& rpDesc,
+             viewport, rpDesc.fDstReadStrategy == DstReadStrategy::kReadFromInput);
+ 
+     for (const auto& drawPass : drawPasses) {
+-        if (!this->addDrawPass(drawPass.get())) SK_UNLIKELY {
+-            this->endRenderPass();
+-            return false;
+-        }
++        this->addDrawPass(drawPass.get());
+     }
+ 
+     this->endRenderPass();
+@@ -1111,17 +1113,13 @@ void VulkanCommandBuffer::endRenderPass() {
+     fTargetTexture = nullptr;
+ }
+ 
+-bool VulkanCommandBuffer::addDrawPass(DrawPass* drawPass) {
++void VulkanCommandBuffer::addDrawPass(DrawPass* drawPass) {
+     // If there is gradient data to bind, it must be done prior to draws.
+     if (drawPass->floatStorageManager()->hasData()) {
+         this->recordBufferBindingInfo(drawPass->floatStorageManager()->getBufferInfo(),
+                                       UniformSlot::kGradient);
+     }
+ 
+-    if (!drawPass->addResourceRefs(fResourceProvider, this)) SK_UNLIKELY {
+-        return false;
+-    }
+-
+     for (auto [type, cmdPtr] : drawPass->commands()) {
+         switch (type) {
+             case DrawPassCommands::Type::kBindGraphicsPipeline: {
+@@ -1220,8 +1218,6 @@ bool VulkanCommandBuffer::addDrawPass(DrawPass* drawPass) {
+             }
+         }
+     }
+-
+-    return true;
+ }
+ 
+ void VulkanCommandBuffer::bindGraphicsPipeline(const GraphicsPipeline* graphicsPipeline) {
+diff --git a/src/gpu/graphite/vk/VulkanCommandBuffer.h b/src/gpu/graphite/vk/VulkanCommandBuffer.h
+index bdd412827a47c64282184804212e1c4d8d4c2964..4c8f767020259ddd160e4734c79c9d257c02cf2f 100644
+--- a/src/gpu/graphite/vk/VulkanCommandBuffer.h
++++ b/src/gpu/graphite/vk/VulkanCommandBuffer.h
+@@ -96,7 +96,7 @@ private:
+ 
+     void endRenderPass();
+ 
+-    [[nodiscard]] bool addDrawPass(DrawPass*);
++    void addDrawPass(DrawPass*);
+ 
+     // Track descriptor changes for binding prior to draw calls
+     void recordBufferBindingInfo(const BindBufferInfo& info, UniformSlot);

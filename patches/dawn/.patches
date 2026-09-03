@@ -6,6 +6,7 @@ m149_trim_data_returned_for_vkpipelinecache.patch
 cherry-pick-b8cea1289d76.patch
 tint_msl_add_switchreturn_ir_transform.patch
 tint_minor_fixup_to_switchreturn_transform.patch
+cherry-pick-daa0cc047acd.patch
 cherry-pick-a9185ea4ddcc.patch
 cherry-pick-175606a9f9d8.patch
 cherry-pick-32a0be6bd641.patch
