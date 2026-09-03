@@ -5,8 +5,13 @@
 #
 # For CI steps that fetch over the network and fail on transient errors (a
 # truncated pack from googlesource.com, a GitHub 5xx, a connection reset). Only
-# wrap commands that are safe to run twice: a failed `git clone` removes its
-# partial directory and a failed `git fetch` leaves the repository as it was.
+# wrap commands that are safe to run twice. A failed `git fetch` leaves the
+# repository as it was, but a failed `git clone` does not always remove its
+# directory: once the pack has been written, a failure in the checkout stage
+# (which still fetches objects with --filter=) leaves the partial clone behind
+# and every later attempt fails with "destination path already exists". Set
+# RETRY_CLEAN_PATH to the clone destination and it is removed before each
+# retry. It is never touched before the first attempt.
 #
 # By default it makes 4 attempts, waiting 1s, 4s and 16s between them. Override
 # with RETRY_ATTEMPTS (total attempts), RETRY_DELAY (first wait, in seconds) and
@@ -23,6 +28,7 @@ fi
 attempts="${RETRY_ATTEMPTS:-4}"
 delay="${RETRY_DELAY:-1}"
 factor="${RETRY_FACTOR:-4}"
+clean_path="${RETRY_CLEAN_PATH:-}"
 
 attempt=1
 while true; do
@@ -34,6 +40,10 @@ while true; do
   fi
   echo "::warning::'$*' failed with exit code $status (attempt $attempt of $attempts); retrying in ${delay}s"
   sleep "$delay"
+  if [ -n "$clean_path" ] && [ -e "$clean_path" ]; then
+    echo "removing '$clean_path' left behind by the failed attempt"
+    rm -rf -- "$clean_path"
+  fi
   delay=$((delay * factor))
   attempt=$((attempt + 1))
 done
