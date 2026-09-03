@@ -32,7 +32,62 @@ env:
   ELECTRON_OUT_DIR: Default
 
 jobs:
+  # Pull requests only check the translation units they touch (plus any that
+  # include a header they touch). Pushes, and PRs that change clang-tidy's own
+  # inputs, check the whole tree.
+  files:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      scope: ${{ steps.select.outputs.scope }}
+      files: ${{ steps.select.outputs.files }}
+    steps:
+    - name: Checkout Electron
+      if: ${{ github.event_name == 'pull_request' }}
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+    - name: Select files
+      id: select
+      env:
+        GH_TOKEN: ${{ github.token }}
+        EVENT_NAME: ${{ github.event_name }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set -eo pipefail
+        if [ "$EVENT_NAME" != "pull_request" ]; then
+          echo "Not a pull request; checking the whole tree"
+          echo "scope=all" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        changed=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[] | select(.status != "removed") | .filename')
+        # Config, driver, this workflow, or DEPS (which carries Chromium's
+        # clang/clang-tidy roll): re-check everything.
+        if grep -qE '(^|/)\.clang-tidy$|^DEPS$|^script/run-clang-tidy\.ts$|^\.github/workflows/pipeline-segment-electron-clang-tidy\.yml$' <<< "$changed"; then
+          echo "clang-tidy inputs changed; checking the whole tree"
+          echo "scope=all" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        tus=$(grep -E '^shell/.+\.(cc|mm)$' <<< "$changed" || true)
+        while IFS= read -r header; do
+          [ -n "$header" ] || continue
+          tus+=$'\n'$(git grep -lF -e "#include \"${header}\"" -e "#import \"${header}\"" -- 'shell/*.cc' 'shell/*.mm' || true)
+        done <<< "$(grep -E '^shell/.+\.h$' <<< "$changed" || true)"
+        files=$(sed '/^$/d' <<< "$tus" | sort -u | tr '\n' ' ')
+        if [ -z "$files" ]; then
+          echo "No translation units under shell/ affected; skipping clang-tidy"
+          echo "scope=none" >> "$GITHUB_OUTPUT"
+        else
+          echo "Checking: $files"
+          echo "scope=changed" >> "$GITHUB_OUTPUT"
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+        fi
   clang-tidy:
+    needs: files
+    if: ${{ needs.files.outputs.scope != 'none' }}
     defaults:
       run:
         shell: bash
@@ -146,6 +201,8 @@ jobs:
       env:
         # macOS runners have fewer CPU cores, so use fewer jobs for better results
         CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
+        # Empty when checking the whole tree.
+        CLANG_TIDY_FILES: ${{ needs.files.outputs.files }}
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
@@ -176,7 +233,7 @@ jobs:
         fi
 
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
+        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR} ${CLANG_TIDY_FILES}
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"

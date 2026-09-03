@@ -135,6 +135,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-clang-tidy.yml
     permissions:
       contents: read
+      pull-requests: read
     needs: build
     if: ${{ inputs.run-clang-tidy }}
     with:
