@@ -30,6 +30,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
   kElectronMenu,                            // electron::api::Menu
   kElectronNativeImage,                     // electron::api::NativeImage
+  kElectronNativeTheme,                     // electron::api::NativeTheme
   kElectronNetLog,                          // electron::api::NetLog
   kElectronParentPort,                      // electron::ParentPort
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
