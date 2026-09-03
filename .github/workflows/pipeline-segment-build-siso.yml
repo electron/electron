@@ -1,8 +1,9 @@
 name: Pipeline Segment - Build Siso
 
 # Builds a patched siso binary for a single CI build host. Reads the siso
-# revision from the Chromium DEPS file at the pinned chromium_version,
-# shallow-clones chromium.googlesource.com/build at that revision, applies the
+# revision from build/siso_revision (kept in step with Chromium's DEPS by the
+# gen_siso_revision gclient hook and checked in gn-check; nothing is fetched
+# here), shallow-clones chromium.googlesource.com/build at that revision, applies the
 # patches under .github/siso-patches/, and cross-compiles siso for the requested
 # build host. siso runs on the build host (not the target), so three host arches
 # cover every build job: Windows targets use windows-amd64, Linux targets (any
@@ -55,27 +56,21 @@ jobs:
         fetch-depth: 1
         ref: ${{ github.event.pull_request.head.sha }}
         sparse-checkout: |
-          DEPS
+          build/siso_revision
           .github/siso-patches
-    - name: Resolve siso revision from Chromium DEPS
+    - name: Resolve siso revision
       id: resolve
       run: |
         set -euo pipefail
-        CHROMIUM_VERSION=$(python3 -c "import re; print(re.search(r\"'chromium_version':\s*\n\s*'([^']+)'\", open('DEPS').read()).group(1))")
-        if ! [[ "$CHROMIUM_VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
-          echo "error: unexpected chromium_version format: $CHROMIUM_VERSION" >&2
-          exit 1
-        fi
-        curl -sfL "https://raw.githubusercontent.com/chromium/chromium/${CHROMIUM_VERSION}/DEPS" -o /tmp/chromium-DEPS
-        SISO_SHA=$(python3 -c "import re; print(re.search(r\"'siso_version':\s*'git_revision:([0-9a-f]+)'\", open('/tmp/chromium-DEPS').read()).group(1))")
+        SISO_SHA=$(tr -d '[:space:]' < build/siso_revision)
         if ! [[ "$SISO_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-          echo "error: unexpected siso_version SHA: $SISO_SHA" >&2
+          echo "error: build/siso_revision does not hold a 40-char git SHA: '$SISO_SHA'" >&2
           exit 1
         fi
         PATCHES_HASH=$(find .github/siso-patches -type f -name '*.patch' | sort | xargs sha256sum | sha256sum | awk '{print $1}')
         echo "siso-sha=${SISO_SHA}" >> "$GITHUB_OUTPUT"
         echo "patches-hash=${PATCHES_HASH}" >> "$GITHUB_OUTPUT"
-        echo "Chromium ${CHROMIUM_VERSION} pins siso at ${SISO_SHA}"
+        echo "build/siso_revision pins siso at ${SISO_SHA}"
         echo "Patches hash: ${PATCHES_HASH}"
     - name: Restore cached siso binary
       id: cache-siso
