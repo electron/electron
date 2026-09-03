@@ -156,13 +156,16 @@ runs:
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
+        RETRY="$PWD/src/electron/script/actions/retry.sh"
         cd src/third_party/angle
         rm -f .git/objects/info/alternates
         git remote set-url origin https://github.com/google/angle.git
         cp .git/config .git/config.backup
         git remote remove origin
         mv .git/config.backup .git/config
-        git fetch
+        # A large fetch from github.com sometimes times out mid-transfer
+        # ("curl 56", "invalid index-pack output"); retry it.
+        bash "$RETRY" git fetch
     - name: Get Windows toolchain
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
