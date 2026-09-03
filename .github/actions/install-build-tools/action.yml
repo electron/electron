@@ -17,9 +17,12 @@ runs:
         git config --global core.longpaths true
       fi
       export BUILD_TOOLS_SHA=458c9bf2a51da7015351686f077d77e404149511
-      npm i -g @electron/build-tools
+      # Both fetch over the network (the first `e` command clones depot_tools),
+      # so retry them on transient failures.
+      RETRY="$PWD/src/electron/script/actions/retry.sh"
+      bash "$RETRY" npm i -g @electron/build-tools
       # Update depot_tools to ensure python
-      e d update_depot_tools
+      bash "$RETRY" e d update_depot_tools
       e auto-update disable
       # Disable further updates of depot_tools
       e d auto-update disable
