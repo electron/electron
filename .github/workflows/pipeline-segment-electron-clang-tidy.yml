@@ -197,8 +197,7 @@ jobs:
           cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
         fi
 
-        (cd src && e d gn gen out/${ELECTRON_OUT_DIR} --add-export-compile-commands='//electron:*')
-        python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
+        e d python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
         cd src/electron
         e build --gen=off --target electron_clang_tidy -f clang_tidy.ninja -batch -k 0
     - name: Upload siso metrics

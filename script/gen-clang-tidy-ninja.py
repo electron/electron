@@ -7,9 +7,12 @@ build/run-clang-tidy-action.sh in front of it. That shape is what lets siso
 scan the step's #includes, look it up in the RBE action cache and run it
 remotely (see the electron/clang-tidy rule in build-tools' tools/main.star).
 
-Usage:
-  gn gen out/X --add-export-compile-commands='//electron:*'
-  script/gen-clang-tidy-ninja.py out/X
+This is CI plumbing, run by the clang-tidy job. To run clang-tidy locally use
+`yarn lint:clang-tidy`. If you do run this yourself, the out dir must already
+be built (the steps need its generated headers), and it has to run through
+`e d` so that gn is on PATH:
+
+  e d python3 script/gen-clang-tidy-ninja.py ../out/X
   e build -f clang_tidy.ninja --target electron_clang_tidy
 """
 
@@ -17,9 +20,12 @@ import collections
 import json
 import os
 import shlex
+import shutil
+import subprocess
 import sys
 
 ELECTRON_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SRC_DIR = os.path.dirname(ELECTRON_DIR)
 SHELL_DIR = os.path.join(ELECTRON_DIR, 'shell')
 
 # Keep in sync with script/run-clang-tidy.ts.
@@ -118,8 +124,13 @@ def main():
   if len(sys.argv) != 2:
     sys.exit(__doc__)
   out_dir = os.path.abspath(sys.argv[1])
-  if not os.path.exists(os.path.join(out_dir, 'compile_commands.json')):
-    sys.exit(f"No compile_commands.json in {out_dir}; run gn gen with --add-export-compile-commands='//electron:*'")
+
+  # Regenerate compile_commands.json here rather than trusting an old one, so
+  # the steps always carry the out dir's current flags.
+  gn = shutil.which('gn')
+  if not gn:
+    sys.exit('gn is not on PATH; run this through `e d`')
+  subprocess.check_call([gn, 'gen', out_dir, '--add-export-compile-commands=//electron:*'], cwd=SRC_DIR)
 
   steps = tidy_steps(out_dir)
   if not steps:
