@@ -712,6 +712,69 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('MessagePort module', () => {
+    it('should be rooted while a started port is entangled', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const { port1, port2 } = new MessageChannelMain();
+          port1.start();
+          const snapshot = recordState().snapshot;
+          port2.close();
+          return containsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after a started port is closed', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { MessageChannelMain } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        const weakRef = new WeakRef((port1 as any)._internalPort);
+        port1.close();
+        port1 = null as any;
+
+        const released = await waitForGC(() => weakRef.deref() === undefined);
+        port2.close();
+        return released;
+      });
+      expect(released).to.equal(true, 'MessagePort should be released after close and GC');
+    });
+
+    it('does not crash on exit with a live started port', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, MessageChannelMain } = require('electron');
+        const { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        port2.start();
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('url loader module', () => {
     it('should not leak when performing chunked (streaming) uploads', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
