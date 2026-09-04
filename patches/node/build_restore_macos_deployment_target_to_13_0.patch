@@ -10,10 +10,10 @@ Fixes native addons not working on macOS 13.0 - 13.4 (https://github.com/electro
 This patch can be removed when Chromium drops support for macOS 13.
 
 diff --git a/common.gypi b/common.gypi
-index becac7d2ae219f56b730fa668f442358d3e849df..456f3d86e49f6cefda6d3a7c93ead63945f74049 100644
+index b3a70d0523033bd91fdc97f4fc6c81bca98d44c5..4c5e8ee2a6e97d0877550a836cf371f800e33bc5 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -743,7 +743,7 @@
+@@ -726,7 +726,7 @@
            'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
            'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
            'PREBINDING': 'NO',                       # No -Wl,-prebind
