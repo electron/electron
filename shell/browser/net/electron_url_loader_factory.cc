@@ -47,6 +47,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/net/node_stream_loader.h"
+#include "shell/common/api/electron_api_url_loader.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -717,8 +718,18 @@ void ElectronURLLoaderFactory::StartLoading(
       else
         data = response;
 
-      // |data| can be either a string, a buffer or a stream.
-      if (data->IsArrayBufferView()) {
+      // |data| can be either a string, a buffer or a stream; |loader| relays
+      // an untouched net.fetch response's body without going through JS.
+      api::SimpleURLLoaderWrapper* fetch_loader = nullptr;
+      if (!dict.IsEmpty() && dict.Get("loader", &fetch_loader) &&
+          fetch_loader) {
+        std::string prefix;
+        if (data->IsArrayBufferView()) {
+          prefix.assign(node::Buffer::Data(data), node::Buffer::Length(data));
+        }
+        StartLoadingRelay(std::move(client), std::move(loader), std::move(head),
+                          fetch_loader, std::move(prefix));
+      } else if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
       } else if (data->IsString()) {
@@ -837,6 +848,38 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       std::move(loader), std::move(client),
       static_cast<net::NetworkTrafficAnnotationTag>(traffic_annotation),
       std::move(upload_data));
+}
+
+// static
+void ElectronURLLoaderFactory::StartLoadingRelay(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    network::mojom::URLResponseHeadPtr head,
+    api::SimpleURLLoaderWrapper* fetch_loader,
+    std::string prefix) {
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client));
+  // Grow the pipe for a body the upstream declared large; never below mojo's
+  // 64 KB default, since the declared length may describe an encoded body.
+  constexpr int64_t kMojoDefaultPipeSize = 64 * 1024;
+  const int64_t length = fetch_loader->content_length();
+  const uint32_t pipe_size =
+      length > kMojoDefaultPipeSize
+          ? base::saturated_cast<uint32_t>(std::min<int64_t>(
+                length, network::GetDataPipeDefaultAllocationSize()))
+          : 0;
+  mojo::ScopedDataPipeProducerHandle producer;
+  mojo::ScopedDataPipeConsumerHandle consumer;
+  if (mojo::CreateDataPipe(pipe_size, producer, consumer) != MOJO_RESULT_OK) {
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
+    fetch_loader->Cancel();
+    return;
+  }
+  client_remote->OnReceiveResponse(std::move(head), std::move(consumer),
+                                   std::nullopt);
+  fetch_loader->RelayTo(client_remote.Unbind(), std::move(loader),
+                        std::move(producer), std::move(prefix));
 }
 
 // static
