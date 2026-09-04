@@ -3905,7 +3905,10 @@ describe('chromium features', () => {
     });
     after(() => {
       server.close();
-      // clears the user agent metadata
+    });
+
+    // The fallback is process-global.
+    afterEach(() => {
       app.userAgentMetadataFallback = null as any;
     });
 
@@ -3919,12 +3922,12 @@ describe('chromium features', () => {
 
       it('global override via setting userAgentMetadataFallback property', async () => {
         const userAgentMetadata = app.userAgentMetadataFallback;
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'app-scope';
         app.userAgentMetadataFallback = userAgentMetadata;
         const w = new BrowserWindow({ show: false });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).to.equal('electron');
+        expect(platform).to.equal('app-scope');
       });
 
       it('preserves form factors in pages and workers after a getter/setter round trip', async () => {
@@ -3957,12 +3960,12 @@ describe('chromium features', () => {
 
       it('global override via setting setUserAgentFallback', async () => {
         const userAgentMetadata = app.userAgentMetadataFallback;
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'fallback-scope';
         app.setUserAgentFallback({ userAgentMetadata });
         const w = new BrowserWindow({ show: false });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).to.equal('electron');
+        expect(platform).to.equal('fallback-scope');
       });
 
       it('when there is a session-wide UA override', async () => {
@@ -3977,12 +3980,12 @@ describe('chromium features', () => {
       it('when there is a session-wide UA metadata override', async () => {
         const ses = session.fromPartition(`${Math.random()}`);
         const userAgentMetadata = ses.getUserAgentMetadata();
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'session-scope';
         ses.setUserAgentMetadata(userAgentMetadata);
         const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).not.to.be.empty();
+        expect(platform).to.equal('session-scope');
       });
 
       it('when there is a WebContents-specific UA override', async () => {
@@ -3995,25 +3998,47 @@ describe('chromium features', () => {
 
       it('when there is a WebContents-specific UA metadata override', async () => {
         const userAgentMetadata = app.userAgentMetadataFallback;
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'webcontents-scope';
         const w = new BrowserWindow({ show: false });
         w.webContents.setUserAgent({ userAgent: 'foo', userAgentMetadata });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).to.equal('electron');
+        expect(platform).to.equal('webcontents-scope');
       });
 
-      it('for child window when there is a WebContents-specific UA metadata override', async () => {
+      it('does not carry a WebContents-specific override into a child window', async () => {
+        const appMetadata = app.userAgentMetadataFallback;
+        appMetadata.platform = 'app-scope';
+        app.userAgentMetadataFallback = appMetadata;
+
         const userAgentMetadata = app.userAgentMetadataFallback;
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'opener-scope';
         const w = new BrowserWindow({ show: false });
         w.webContents.setUserAgent({ userAgent: 'foo', userAgentMetadata });
         await w.loadURL(serverUrl);
+        expect(
+          await w.webContents.executeJavaScript('navigator.userAgentData.platform')
+        ).to.equal('opener-scope');
+
         const childPromise = once(w.webContents, 'did-create-window');
         w.webContents.executeJavaScript('window.open("about:blank")', true);
         const [childWindow] = await childPromise;
         const platform = await childWindow.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).to.equal('electron');
+        expect(platform).to.equal('app-scope');
+      });
+
+      it('does not attach metadata to an empty user agent', async () => {
+        const w = new BrowserWindow({ show: false });
+        expect(() => w.webContents.setUserAgent('')).to.not.throw();
+        await w.loadURL(serverUrl, { userAgent: '' });
+
+        const ses = session.fromPartition(`${Math.random()}`);
+        ses.setUserAgent('');
+        const w2 = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w2.loadURL(serverUrl);
+        expect(
+          await w2.webContents.executeJavaScript('navigator.userAgentData.platform')
+        ).to.not.be.empty();
       });
 
       it('when there is a WebContents-specific UA override at load time', async () => {
@@ -4027,14 +4052,14 @@ describe('chromium features', () => {
 
       it('when there is a WebContents-specific UA metadata override at load time', async () => {
         const userAgentMetadata = app.userAgentMetadataFallback;
-        userAgentMetadata.platform = 'electron';
+        userAgentMetadata.platform = 'loadurl-scope';
         const w = new BrowserWindow({ show: false });
         await w.loadURL(serverUrl, {
           userAgent: 'foo',
           userAgentMetadata: userAgentMetadata
         });
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).to.equal('electron');
+        expect(platform).to.equal('loadurl-scope');
       });
     });
 
