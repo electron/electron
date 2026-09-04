@@ -24,6 +24,7 @@ runs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         BEFORE_SHA: ${{ github.event.before }}
         CURRENT_SHA: ${{ github.sha }}
+        FORCED_PUSH: ${{ github.event.forced }}
       run: |
         set -eo pipefail
 
@@ -33,8 +34,11 @@ runs:
               gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]? | .filename, (.previous_filename // empty)'
               ;;
             push)
+              if [[ "$FORCED_PUSH" == "true" ]]; then
+                # Endpoint diffs can hide changes retained across a history rewrite.
+                git ls-files
               # Redirect git fetch to stderr so its output won't pollute the captured file list
-              if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]] &&
+              elif [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]] &&
                   git fetch origin --depth=1 "$BEFORE_SHA" >&2; then
                 git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
               else
