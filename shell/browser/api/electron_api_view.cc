@@ -199,12 +199,8 @@ View::View(views::View* view) : view_(view) {
 }
 
 View::View() : View(new views::View()) {
-  // A default-constructed View wraps a plain container that has no content of
-  // its own. While it is childless, hide it from assistive technology:
-  // otherwise it is exposed as an empty "pane" that wins accessibility
-  // hit-tests over content painted beneath it, e.g. a BrowserWindow's
-  // WebContentsView, which is a sibling painted below the window's
-  // contentView. See https://github.com/electron/electron/issues/42945.
+  // A plain container with no children is an empty "pane" to assistive
+  // technology; keep it out of the accessibility tree (#42945).
   hide_from_ax_when_childless_ = true;
   UpdateChildlessAccessibilityState();
 }
@@ -576,12 +572,7 @@ void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
 void View::UpdateChildlessAccessibilityState() {
   if (!hide_from_ax_when_childless_ || !view_)
     return;
-  const bool childless = view_->children().empty();
-  // Ignored removes the node from the accessibility tree; invisible makes
-  // ViewAXPlatformNodeDelegate::HitTestSync skip it, letting hit-tests fall
-  // through to content painted beneath it.
-  view_->GetViewAccessibility().SetIsIgnored(childless);
-  view_->GetViewAccessibility().SetIsInvisible(childless);
+  view_->GetViewAccessibility().SetIsIgnored(view_->children().empty());
 }
 
 // static

@@ -493,6 +493,12 @@ class NativeWindow : public views::WidgetDelegate {
   const views::Widget* GetWidget() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
+
+  // Makes |content_view| hit-test-transparent except where one of its
+  // children covers the target point, so that mouse targeting and
+  // accessibility hit-tests fall through to the sibling WebContentsView that
+  // BrowserWindow places beneath it.
+  static void InstallContentViewTargeter(views::View* content_view);
   void FlushPendingRootLayout(views::View* view);
 
   static inline constexpr base::cstring_view kNativeWindowKey =

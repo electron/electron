@@ -571,6 +571,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   }
   set_content_view(view);
   focused_view_ = view;
+  InstallContentViewTargeter(view);
   root_view_.GetMainView()->AddChildViewRaw(content_view());
   FlushPendingRootLayout(root_view_.GetMainView());
 }

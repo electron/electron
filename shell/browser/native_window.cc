@@ -5,6 +5,7 @@
 #include "shell/browser/native_window.h"
 
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -32,6 +33,10 @@
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/display/types/display_constants.h"
+#include "ui/gfx/geometry/rect_conversions.h"
+#include "ui/gfx/geometry/rect_f.h"
+#include "ui/views/view_targeter.h"
+#include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -76,6 +81,38 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
 };
 
 }  // namespace gin
+
+namespace {
+
+// In BrowserWindow, the WebContentsView is a sibling of content_view_ placed
+// beneath it so user-added child views paint above web content. content_view_
+// covers the whole window, so the default bounds check would make every
+// hit-test stop at it. Only intersect where a child does, so the parent's
+// targeter and ViewAXPlatformNodeDelegate::HitTestSync both skip content_view_
+// and fall through to the WebContentsView. Only DoesIntersectRect is narrowed;
+// TargetForRect must keep its contract (see #51576).
+class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
+ public:
+  bool DoesIntersectRect(const views::View* target,
+                         const gfx::Rect& rect) const override {
+    if (!views::ViewTargeterDelegate::DoesIntersectRect(target, rect)) {
+      return false;
+    }
+    for (const views::View* child : target->children()) {
+      if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree()) {
+        continue;
+      }
+      gfx::RectF rect_in_child(rect);
+      views::View::ConvertRectToTarget(target, child, &rect_in_child);
+      if (child->HitTestRect(gfx::ToEnclosingRect(rect_in_child))) {
+        return true;
+      }
+    }
+    return false;
+  }
+};
+
+}  // namespace
 
 namespace electron {
 
@@ -173,6 +210,12 @@ NativeWindow::~NativeWindow() {
   if (widget_->widget_delegate())
     widget_->OnNativeWidgetDestroyed();
   NotifyWindowClosed();
+}
+
+// static
+void NativeWindow::InstallContentViewTargeter(views::View* content_view) {
+  content_view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
+      std::make_unique<ContentViewTargeterDelegate>()));
 }
 
 void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
