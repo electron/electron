@@ -80,20 +80,16 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
     });
 
-    it("emits 'exit' when child process exits gracefully", (done) => {
+    it("emits 'exit' when child process exits gracefully", async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      child.on('exit', (code) => {
-        expect(code).to.equal(0);
-        done();
-      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
 
-    it("emits 'exit' when the child process file does not exist", (done) => {
+    it("emits 'exit' when the child process file does not exist", async () => {
       const child = utilityProcess.fork('nonexistent');
-      child.on('exit', (code) => {
-        expect(code).to.equal(1);
-        done();
-      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
     });
 
     ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
