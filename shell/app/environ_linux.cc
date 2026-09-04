@@ -24,6 +24,11 @@
 //
 // A getenv() on another thread therefore sees either the old or the new state,
 // and every pointer it reads stays valid.
+//
+// On glibc 2.41 and later these functions call glibc's own. Those versions are
+// already safe, and their unsetenv() and clearenv() also bump a private counter
+// that getenv() checks to retry a lookup that raced with a removal. The code
+// here cannot bump that counter.
 
 #ifdef UNSAFE_BUFFERS_BUILD
 // These are libc functions over `environ`, a null-terminated array of C
@@ -32,9 +37,12 @@
 #pragma allow_unsafe_libc_calls
 #endif
 
+#include <dlfcn.h>
 #include <errno.h>
+#include <gnu/libc-version.h>
 #include <pthread.h>
 #include <search.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -48,6 +56,36 @@
 #if !defined(MEMORY_SANITIZER)
 
 namespace {
+
+// glibc's own functions, when the running glibc is 2.41 or later.
+struct GlibcFunctions {
+  decltype(&::setenv) setenv;
+  decltype(&::unsetenv) unsetenv;
+  decltype(&::putenv) putenv;
+  decltype(&::clearenv) clearenv;
+};
+
+const GlibcFunctions* GetGlibcFunctionsIfSafe() {
+  static const GlibcFunctions* const functions = []() -> GlibcFunctions* {
+    int major = 0;
+    int minor = 0;
+    if (sscanf(gnu_get_libc_version(), "%d.%d", &major, &minor) != 2 ||
+        major < 2 || (major == 2 && minor < 41)) {
+      return nullptr;
+    }
+    static GlibcFunctions glibc = {
+        reinterpret_cast<decltype(&::setenv)>(dlsym(RTLD_NEXT, "setenv")),
+        reinterpret_cast<decltype(&::unsetenv)>(dlsym(RTLD_NEXT, "unsetenv")),
+        reinterpret_cast<decltype(&::putenv)>(dlsym(RTLD_NEXT, "putenv")),
+        reinterpret_cast<decltype(&::clearenv)>(dlsym(RTLD_NEXT, "clearenv")),
+    };
+    if (!glibc.setenv || !glibc.unsetenv || !glibc.putenv || !glibc.clearenv) {
+      return nullptr;
+    }
+    return &glibc;
+  }();
+  return functions;
+}
 
 pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -206,6 +244,9 @@ extern "C" {
 __attribute__((visibility("default"))) int setenv(const char* name,
                                                   const char* value,
                                                   int replace) noexcept {
+  if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
+    return glibc->setenv(name, value, replace);
+  }
   if (!IsValidName(name)) {
     errno = EINVAL;
     return -1;
@@ -234,6 +275,9 @@ __attribute__((visibility("default"))) int setenv(const char* name,
 }
 
 __attribute__((visibility("default"))) int unsetenv(const char* name) noexcept {
+  if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
+    return glibc->unsetenv(name);
+  }
   if (!IsValidName(name)) {
     errno = EINVAL;
     return -1;
@@ -244,6 +288,9 @@ __attribute__((visibility("default"))) int unsetenv(const char* name) noexcept {
 }
 
 __attribute__((visibility("default"))) int putenv(char* string) noexcept {
+  if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
+    return glibc->putenv(string);
+  }
   const char* equals = strchr(string, '=');
   ScopedLock lock;
   if (!equals) {
@@ -264,6 +311,9 @@ __attribute__((visibility("default"))) int putenv(char* string) noexcept {
 }
 
 __attribute__((visibility("default"))) int clearenv() noexcept {
+  if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
+    return glibc->clearenv();
+  }
   ScopedLock lock;
   // The array is dropped, not freed, like every array this file gives up.
   PublishArray(nullptr);
