@@ -11,7 +11,7 @@ import * as path from 'node:path';
 import { copyApp } from './lib/fs-helpers';
 import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
 
-// Asserts the build-time V8 code cache for each electron/js2c/* bundle -- and
+// Asserts the build-time V8 code cache for each internal/electron/js2c/* bundle -- and
 // for Node's own builtins, from the embedded Node snapshot in the browser
 // process and from the build-time cache everywhere else -- is consumed (not
 // compiled from source) in every process type. Runs in a separately-spawned
@@ -56,7 +56,7 @@ function expectConsumed(status: Status, id: string) {
 // to pull one in.
 function expectNodeBuiltinsConsumed(status: Status, processType: string) {
   const nodeIds = Object.keys(status).filter(
-    (id) => !id.startsWith('electron/js2c/') && !id.startsWith('internal/deps/')
+    (id) => !id.startsWith('internal/electron/js2c/') && !id.startsWith('internal/deps/')
   );
   expect(nodeIds.length, `${processType} should have compiled some Node builtins`).to.be.greaterThan(20);
   const notConsumed = nodeIds.filter((id) => !status[id]);
@@ -67,18 +67,18 @@ ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
   it('is consumed across browser / sandboxed renderer / renderer / utility / run-as-node', async () => {
     const r = await runFixtureApp(process.execPath);
 
-    expectConsumed(r.browser, 'electron/js2c/browser_init');
-    expectConsumed(r.browser, 'electron/js2c/node_init');
+    expectConsumed(r.browser, 'internal/electron/js2c/browser_init');
+    expectConsumed(r.browser, 'internal/electron/js2c/node_init');
 
-    expectConsumed(r.sandbox, 'electron/js2c/sandbox_bundle');
+    expectConsumed(r.sandbox, 'internal/electron/js2c/sandbox_bundle');
 
-    expectConsumed(r.renderer, 'electron/js2c/renderer_init');
-    expectConsumed(r.renderer, 'electron/js2c/node_init');
+    expectConsumed(r.renderer, 'internal/electron/js2c/renderer_init');
+    expectConsumed(r.renderer, 'internal/electron/js2c/node_init');
 
-    expectConsumed(r.utility, 'electron/js2c/utility_init');
-    expectConsumed(r.utility, 'electron/js2c/node_init');
+    expectConsumed(r.utility, 'internal/electron/js2c/utility_init');
+    expectConsumed(r.utility, 'internal/electron/js2c/node_init');
 
-    expectConsumed(r.runAsNode, 'electron/js2c/node_init');
+    expectConsumed(r.runAsNode, 'internal/electron/js2c/node_init');
 
     for (const processType of ['browser', 'renderer', 'utility', 'runAsNode'] as const) {
       expectNodeBuiltinsConsumed(r[processType], processType);
@@ -120,8 +120,8 @@ ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
       const r = await runFixtureApp(
         process.platform === 'darwin' ? path.resolve(appPath, 'Contents/MacOS/Electron') : appPath
       );
-      expectConsumed(r.utility, 'electron/js2c/utility_init');
-      expectConsumed(r.runAsNode, 'electron/js2c/node_init');
+      expectConsumed(r.utility, 'internal/electron/js2c/utility_init');
+      expectConsumed(r.runAsNode, 'internal/electron/js2c/node_init');
       for (const processType of ['browser', 'renderer', 'utility', 'runAsNode'] as const) {
         expectNodeBuiltinsConsumed(r[processType], processType);
       }

@@ -34,13 +34,13 @@ enum class Js2cCacheFlavor {
 // one (true): pass `node::Environment::GetCurrent(context) != nullptr`.
 Js2cCacheFlavor CurrentProcessJs2cCacheFlavor(bool has_node_env = true);
 
-// Build-time V8 code cache for the embedded electron/js2c/* bundles -- plus,
-// for flavors whose Node environment is bootstrapped from scratch rather than
-// deserialized from the embedded Node startup snapshot, Node's own builtins --
-// fed to the BuiltinLoader so they are deserialized rather than parsed +
-// compiled from source on startup. Empty when no generated cache was built; V8
-// also gracefully falls back to compiling from source on a stale/mismatched
-// blob.
+// Build-time V8 code cache for the embedded internal/electron/js2c/* bundles --
+// plus, for flavors whose Node environment is bootstrapped from scratch rather
+// than deserialized from the embedded Node startup snapshot, Node's own
+// builtins -- fed to the BuiltinLoader so they are deserialized rather than
+// parsed + compiled from source on startup. Empty when no generated cache was
+// built; V8 also gracefully falls back to compiling from source on a
+// stale/mismatched blob.
 const std::vector<node::builtins::CodeCacheInfo>& GetNativesCodeCache(
     Js2cCacheFlavor flavor);
 
