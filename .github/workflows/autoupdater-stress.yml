@@ -14,7 +14,7 @@ on:
       iterations:
         description: 'How many times each job runs the spec'
         required: false
-        default: '3'
+        default: '2'
 
 permissions: {}
 
@@ -26,7 +26,7 @@ env:
   # Build workflow run on main whose artifacts are tested. Its commit is this
   # branch's base, so the specs match the binary.
   SOURCE_RUN_ID: '33843471218'
-  ITERATIONS: ${{ github.event.inputs.iterations || '3' }}
+  ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
   ELECTRON_OUT_DIR: Default
   SENTRYCLI_SKIP_DOWNLOAD: 1
 
@@ -41,34 +41,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # The spec now defaults to concurrency 2 on x64. A CI test shard always
+        # runs on a fresh runner, and only a job's first iteration is cold, so
+        # several jobs sample that case better than more iterations.
         include:
-          - name: x64-concurrency-default
+          - name: x64-a
             runs-on: macos-15-large
             arch: x64
-            concurrency: ''
-            ramdisk: false
-          - name: x64-concurrency-2
+          - name: x64-b
             runs-on: macos-15-large
             arch: x64
-            concurrency: '2'
-            ramdisk: false
-          - name: x64-concurrency-default-ramdisk
+          - name: x64-c
             runs-on: macos-15-large
             arch: x64
-            concurrency: ''
-            ramdisk: true
-          - name: arm64-concurrency-default
+          - name: x64-d
+            runs-on: macos-15-large
+            arch: x64
+          - name: arm64
             runs-on: macos-15
             arch: arm64
-            concurrency: ''
-            ramdisk: false
     defaults:
       run:
         shell: bash
     env:
       BUILD_TYPE: darwin
       TARGET_ARCH: ${{ matrix.arch }}
-      SPEC_CONCURRENCY: ${{ matrix.concurrency }}
     steps:
     - name: Turn off macOS prompts
       run: |
@@ -121,18 +118,6 @@ jobs:
         echo "IDENTITY=$identity" >> "$GITHUB_ENV"
         codesign -s "$identity" --deep --force src/out/Default/Electron.app
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f src/out/Default/Electron.app
-    - name: Create Ramdisk
-      if: ${{ matrix.ramdisk }}
-      run: |
-        # 10 GiB APFS ramdisk. The spec makes every fixture app, update zip
-        # and template under os.tmpdir(), so TMPDIR moves all of them.
-        DEV=$(hdiutil attach -nomount ram://$((10 * 1024 * 1024 * 2)) | awk '{print $1}')
-        diskutil erasevolume APFS AURam "$DEV"
-        mkdir -p /Volumes/AURam/tmp
-        echo "RAMDISK_TMP=/Volumes/AURam/tmp" >> "$GITHUB_ENV"
-        df -h /Volumes/AURam
-    - name: Probe Gatekeeper Scan Costs
-      run: bash src/electron/script/actions/autoupdater-stress-probe.sh src/out/Default/Electron.app "$IDENTITY" "${RAMDISK_TMP:-}"
     - name: Start Log Collection
       run: |
         mkdir -p "$RUNNER_TEMP/au/logs" "$RUNNER_TEMP/au/shipit"
@@ -161,13 +146,7 @@ jobs:
         AU_TIMING: 1
       run: |
         cd src/electron
-        if [ -n "$SPEC_CONCURRENCY" ]; then
-          export ELECTRON_SPEC_UPDATER_CONCURRENCY="$SPEC_CONCURRENCY"
-        fi
-        if [ -n "${RAMDISK_TMP:-}" ]; then
-          export TMPDIR="$RAMDISK_TMP/"
-        fi
-        echo "concurrency=${ELECTRON_SPEC_UPDATER_CONCURRENCY:-default} tmpdir=${TMPDIR:-default}" | tee "$RUNNER_TEMP/au/logs/summary.txt"
+        echo "arch=$TARGET_ARCH concurrency=${ELECTRON_SPEC_UPDATER_CONCURRENCY:-default}" | tee "$RUNNER_TEMP/au/logs/summary.txt"
         failures=0
         for i in $(seq 1 "$ITERATIONS"); do
           echo "$i" > "$RUNNER_TEMP/au/iteration"

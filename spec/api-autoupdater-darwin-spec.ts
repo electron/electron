@@ -10,6 +10,7 @@ import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 import {
   copyMacOSFixtureApp,
@@ -29,8 +30,19 @@ import { ifdescribe, ifit } from './lib/spec-helpers';
 const CONCURRENCY = (() => {
   const fromEnv = parseInt(process.env.ELECTRON_SPEC_UPDATER_CONCURRENCY || '', 10);
   if (fromEnv > 0) return fromEnv;
+  // The Intel CI runners do this work several times slower than Apple silicon,
+  // and at 4 their slowest run came within 15% of its budget.
+  if (process.arch === 'x64') return 2;
   return os.availableParallelism() >= 8 ? 4 : 2;
 })();
+
+// A run may hold its slot for this multiple of its test's timeout, counted from
+// when it gets the slot. Time spent queued for a slot does not count.
+// ELECTRON_SPEC_UPDATER_RUN_BUDGET_MS overrides it, to exercise the abort path.
+const RUN_BUDGET_MULTIPLIER = 2;
+const RUN_BUDGET_OVERRIDE_MS = parseInt(process.env.ELECTRON_SPEC_UPDATER_RUN_BUDGET_MS || '', 10);
+// How long a stopped run gets to unwind before its slot is retired.
+const ABORT_GRACE_MS = 20000;
 
 // Stress-run diagnostics, on with AU_TIMING=1: per-phase timings, slot
 // queueing, and a watchdog that dumps ShipIt state for tasks that run long.
@@ -81,9 +93,21 @@ const makeSlot = (index: number): Slot => {
 class SlotPool {
   private free: Slot[];
   private waiters: ((slot: Slot) => void)[] = [];
+  private nextIndex: number;
 
   constructor(public readonly slots: Slot[]) {
     this.free = [...slots];
+    this.nextIndex = slots.length;
+  }
+
+  /**
+   * Replaces a slot whose run could not be stopped with a fresh one, so no
+   * later run shares its bundle id, ShipIt job or cache dir.
+   */
+  retire() {
+    const fresh = makeSlot(this.nextIndex++);
+    this.slots.push(fresh);
+    this.release(fresh);
   }
 
   acquire({ jumpQueue = false } = {}): Promise<Slot> {
@@ -115,6 +139,8 @@ type UpdatableAppOptions = {
 // Per-run state for a pooled test, bound to one slot.
 type TaskContext = {
   slot: Slot;
+  /** Aborted when the run overruns its budget or the suite is finishing. */
+  signal: AbortSignal;
   server: RoutedServer;
   port: number;
   requests: RoutedRequest[];
@@ -150,6 +176,17 @@ type Task = {
   started: boolean;
   // True once the mocha test has awaited a run, i.e. the next call is a retry.
   awaited: boolean;
+  // Stops the current run.
+  controller?: AbortController;
+};
+
+// What a run started, so that it can be stopped if it overruns.
+type RunState = {
+  signal: AbortSignal;
+  children: Set<cp.ChildProcess>;
+  // Fixture apps the run launched. The app, its ShipIt and the relaunched app
+  // all run from these paths.
+  appPaths: Set<string>;
 };
 
 // We can only test the auto updater on darwin non-component builds
@@ -198,16 +235,6 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
 
   const spawnAppWithHandle = (appPath: string, args: string[] = []) => {
     return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
-  };
-
-  const launchAppSandboxed = (appPath: string, profilePath: string, args: string[] = []) => {
-    return spawn('/usr/bin/sandbox-exec', [
-      '-f',
-      profilePath,
-      path.resolve(appPath, 'Contents/MacOS/Electron'),
-      ...args,
-      '--no-sandbox'
-    ]);
   };
 
   const logOnError = (what: any, fn: () => void) => {
@@ -377,33 +404,92 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
     // start in declaration order, so keep nested describes last (mocha runs
     // them after this suite's own tests).
     const pool = new SlotPool(Array.from({ length: CONCURRENCY }, (_, i) => makeSlot(i)));
+    aulog(`concurrency=${CONCURRENCY} arch=${process.arch} parallelism=${os.availableParallelism()}`);
     const tasks: Task[] = [];
     const inflight = new Set<Promise<void>>();
     let scheduled = false;
     let draining = false;
 
+    // Kills what a run left behind and clears its slot's ShipIt job and
+    // downloaded updates, so the next run on the slot starts clean.
+    const stopRun = async (slot: Slot, run: RunState) => {
+      for (const child of run.children) child.kill('SIGKILL');
+      const prefixes = [...run.appPaths].flatMap((appPath) => [appPath, `/private${appPath}`]);
+      for (const p of await psList()) {
+        if (p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix))) {
+          try {
+            process.kill(p.pid, 'SIGKILL');
+          } catch {
+            // Already gone.
+          }
+        }
+      }
+      cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
+      await cleanSquirrelCache(slot);
+    };
+
     const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
       const queuedAt = Date.now();
       const slot = await pool.acquire({ jumpQueue });
+      if (draining || generation !== task.generation) {
+        aulog(`slot${slot.index} skipped superseded run gen=${generation} of "${task.title}"`);
+        pool.release(slot);
+        return;
+      }
+
       const startedAt = Date.now();
-      try {
-        if (draining || generation !== task.generation) {
-          aulog(`slot${slot.index} skipped superseded run gen=${generation} of "${task.title}"`);
-          return;
-        }
-        aulog(
-          `slot${slot.index} start "${task.title}" gen=${generation} after waiting ${startedAt - queuedAt}ms for a slot`
+      const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
+      const controller = new AbortController();
+      task.controller = controller;
+      task.started = true;
+      slot.title = task.title;
+      aulog(
+        `slot${slot.index} start "${task.title}" gen=${generation} after waiting ${startedAt - queuedAt}ms for a slot`
+      );
+
+      const run: RunState = { signal: controller.signal, children: new Set(), appPaths: new Set() };
+      const stopped = new Promise<never>((resolve, reject) => {
+        controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
+      });
+      stopped.catch(() => {});
+      const timer = setTimeout(() => {
+        controller.abort(
+          new Error(
+            `"${task.title}" ran out of its ${budget / 1000}s budget in slot ${slot.index} (phase: ${slot.phase})`
+          )
         );
-        task.started = true;
-        slot.title = task.title;
-        await withTaskContext(slot, task.body);
+      }, budget);
+
+      const body = withTaskContext(slot, task.body, run);
+      const settled = body.then(
+        () => true,
+        () => true
+      );
+      let retire = false;
+      try {
+        await Promise.race([body, stopped]);
         aulog(`slot${slot.index} done "${task.title}" gen=${generation} in ${Date.now() - startedAt}ms`);
       } catch (err) {
         aulog(`slot${slot.index} FAILED "${task.title}" gen=${generation} after ${Date.now() - startedAt}ms: ${err}`);
+        if (controller.signal.aborted) {
+          // Killing the run's processes rejects whatever the body is waiting on.
+          await stopRun(slot, run);
+          retire = !(await Promise.race([settled, delay(ABORT_GRACE_MS).then(() => false)]));
+        }
+        // After any failure, clean up what the run left. After an abort this
+        // also catches anything the body started while unwinding.
+        await stopRun(slot, run);
         throw err;
       } finally {
+        clearTimeout(timer);
+        if (task.controller === controller) task.controller = undefined;
         setPhase(slot, 'idle');
-        pool.release(slot);
+        if (retire) {
+          aulog(`slot${slot.index} retired: its run did not unwind within ${ABORT_GRACE_MS / 1000}s`);
+          pool.retire();
+        } else {
+          pool.release(slot);
+        }
       }
     };
 
@@ -430,9 +516,9 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const index = tasks.push(task) - 1;
       it(title, async function () {
         aulog(`it start "${title}" run=${task.run ? 'yes' : 'no'} started=${task.started} awaited=${task.awaited}`);
-        // The task may have only just got a slot and shares the machine with
-        // lookahead work, so give it headroom over its own budget.
-        this.timeout(timeout * 2);
+        // Each run enforces its own budget from when it gets a slot, so this is
+        // only a backstop in case the pool stops making progress.
+        this.timeout(30 * 60 * 1000);
         scheduleFrom(index);
         // Run now, ahead of the queue, if there is no lookahead run, this is a
         // retry, or --grep left ours queued behind tests that never ran.
@@ -444,9 +530,10 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
 
     after(async function () {
       // With --grep, lookahead runs for tests that never executed may still be
-      // going; let them finish, and make queued ones bail.
+      // going; stop them, and make queued ones bail.
       draining = true;
       this.timeout(10 * 60 * 1000);
+      for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
       await Promise.allSettled([...inflight]);
       for (const slot of pool.slots) {
         cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
@@ -455,7 +542,32 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       }
     });
 
-    const withTaskContext = async (slot: Slot, body: (ctx: TaskContext) => Promise<void>) => {
+    // Like spawn() from codesign-helpers, but records the child so an
+    // overrunning run can kill it.
+    const spawnForRun = (run: RunState, cmd: string, args: string[]) => {
+      let out = '';
+      const child = cp.spawn(cmd, args);
+      run.children.add(child);
+      child.stdout.on('data', (chunk: Buffer) => {
+        out += chunk.toString();
+      });
+      child.stderr.on('data', (chunk: Buffer) => {
+        out += chunk.toString();
+      });
+      return new Promise<{ code: number; out: string }>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code, signal) => {
+          run.children.delete(child);
+          if (signal) {
+            reject(new Error(`${path.basename(cmd)} was killed by ${signal}`));
+          } else {
+            resolve({ code: code!, out });
+          }
+        });
+      });
+    };
+
+    const withTaskContext = async (slot: Slot, body: (ctx: TaskContext) => Promise<void>, run: RunState) => {
       const requests: RoutedRequest[] = [];
       const server = createRoutedServer();
       server.use((req, res, next) => {
@@ -470,7 +582,8 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const timedLaunch = async (appPath: string, args: string[] = []) => {
         setPhase(slot, 'launch');
         const t0 = Date.now();
-        const result = await launchApp(appPath, args);
+        run.appPaths.add(appPath);
+        const result = await spawnForRun(run, path.resolve(appPath, 'Contents/MacOS/Electron'), args);
         aulog(`slot${slot.index} app exited code=${result.code} after ${Date.now() - t0}ms`);
         setPhase(slot, 'after-launch');
         return result;
@@ -478,17 +591,38 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
 
       const ctx: TaskContext = {
         slot,
+        signal: run.signal,
         server,
         port,
         requests,
         launchApp: timedLaunch,
-        launchAppSandboxed,
-        spawnAppWithHandle,
-        copySignedApp: (dir, fixture) => prepareApp(slot, dir, fixture, '1.0.0'),
+        launchAppSandboxed: (appPath, profilePath, args = []) => {
+          run.appPaths.add(appPath);
+          return spawnForRun(run, '/usr/bin/sandbox-exec', [
+            '-f',
+            profilePath,
+            path.resolve(appPath, 'Contents/MacOS/Electron'),
+            ...args,
+            '--no-sandbox'
+          ]);
+        },
+        spawnAppWithHandle: (appPath, args = []) => {
+          run.appPaths.add(appPath);
+          const child = spawnAppWithHandle(appPath, args);
+          run.children.add(child);
+          child.on('exit', () => run.children.delete(child));
+          return child;
+        },
+        copySignedApp: async (dir, fixture) => {
+          const appPath = await prepareApp(slot, dir, fixture, '1.0.0');
+          run.appPaths.add(appPath);
+          return appPath;
+        },
         getUpdateZip: (version, fixture, pre, post) => getUpdateZip(slot, version, fixture, pre, post),
         withUpdatableApp: async (opts, fn) => {
           await withTempDirectory(async (dir) => {
             const appPath = await prepareApp(slot, dir, opts.startFixture, '1.0.0', opts.mutateAppPreSign);
+            run.appPaths.add(appPath);
             const zipPath = await getUpdateZip(
               slot,
               opts.nextVersion,
@@ -512,15 +646,21 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
             });
           });
         },
-        relaunched: () =>
-          new Promise<void>((resolve) => {
+        relaunched: () => {
+          const relaunch = new Promise<void>((resolve, reject) => {
             const t0 = Date.now();
             server.get('/update-check/updated/:version', (req, res) => {
               aulog(`slot${slot.index} relaunched app phoned home (${req.url}) ${Date.now() - t0}ms after listening`);
               res.status(204).send();
               resolve();
             });
-          }),
+            // Otherwise a relaunch that never comes keeps the run going forever.
+            run.signal.addEventListener('abort', () => reject(run.signal.reason), { once: true });
+          });
+          // Tests create this before launching the app and await it later.
+          relaunch.catch(() => {});
+          return relaunch;
+        },
         getUpdateDirectoriesInCache: () => getUpdateDirectoriesInCache(slot),
         cleanSquirrelCache: () => cleanSquirrelCache(slot),
         getRunningShipIts: (appPath) => getRunningShipIts(slot, appPath),
@@ -533,6 +673,9 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         await body(ctx);
       } finally {
         if (watchdog) clearInterval(watchdog);
+        // A killed app can leave a keep-alive connection open, and close()
+        // waits for those.
+        if (run.signal.aborted) httpServer.closeAllConnections();
         await new Promise<void>((resolve) => httpServer.close(() => resolve()));
       }
     };
