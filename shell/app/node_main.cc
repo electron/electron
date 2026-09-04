@@ -197,6 +197,9 @@ int NodeMain() {
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
+    // Match the other process types (see NodeBindings::ParseNodeCliFlags); an
+    // explicit --js-source-phase-imports later on the command line still wins.
+    args.insert(args.begin() + 1, "--no-js-source-phase-imports");
 
     uint64_t process_flags =
         node::ProcessInitializationFlags::kNoInitializeV8 |

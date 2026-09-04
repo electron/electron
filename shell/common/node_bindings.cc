@@ -631,8 +631,11 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   // TODO(codebytere): We need to set the first entry in args to the
   // process name owing to src/node_options-inl.h#L286-L290 but this is
   // redundant and so should be refactored upstream.
-  args.reserve(argv.size() + 1);
+  args.reserve(argv.size() + 2);
   args.emplace_back("electron");
+  // Blink owns this V8 flag in renderers and flips it before Node runs; Node
+  // enabling it afterwards would write a frozen flag.
+  args.emplace_back("--no-js-source-phase-imports");
 
   for (const auto& arg : argv) {
 #if BUILDFLAG(IS_WIN)
