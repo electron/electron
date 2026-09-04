@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joshua Peraza <jperaza@google.com>
+Date: Tue, 1 Sep 2026 11:56:07 -0700
+Subject: [m152] Round up OOB stack pointers in ScanStackForPointers
+
+Bug: 502304489
+Change-Id: I95ce1aa997e52aad13b06f2412c68ce361ee4f82
+Fixed: 553316023
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8332269
+Auto-Submit: Joshua Peraza <jperaza@chromium.org>
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Joshua Peraza <jperaza@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2267}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/crashpad/README.chromium b/third_party/crashpad/README.chromium
+index c58e1743dcaafaa4075a85d099c752cd0de33e58..52e6ad2291bdd0a84e5b01cb36e71a9e0d6bd2d0 100644
+--- a/third_party/crashpad/README.chromium
++++ b/third_party/crashpad/README.chromium
+@@ -64,3 +64,4 @@ Local Modifications:
+  - ece2fa50a313 Fix MemorySnapshotSanitized for 32-bit builds, where size_t
+              ≠ VMAddress
+  - ad1827ddbc03 Update cpp-httplib to d66d9a95997d (0.51.0)
++ - 60dd943f48d7 Round up OOB stack pointers in ScanStackForPointers
+diff --git a/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc b/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
+index afa1c9f849351dee309413331d48a802f57fd570..5d44229888984d630b683db201a6cabd7eb1fffd 100644
+--- a/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
++++ b/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
+@@ -52,7 +52,11 @@ class StackReferencesAddressRange : public MemorySnapshot::Delegate {
+   template <typename Pointer>
+   bool ScanStackForPointers(void* data, size_t size) {
+     size_t sp_offset;
+-    if (!AssignIfInRange(&sp_offset, stack_pointer_ - stack_->Address())) {
++    // stack_pointer_ might point below the stack region if ProcessReaderLinux
++    // interpreted it as pointing to a guard page.
++    if (stack_pointer_ < stack_->Address()) {
++      sp_offset = 0;
++    } else if (!AssignIfInRange(&sp_offset, stack_pointer_ - stack_->Address())) {
+       return false;
+     }
+     const size_t aligned_sp_offset =
