@@ -1007,14 +1007,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  // Re-assert Electron's build-time cache for the electron/js2c/* framework
-  // bundles (browser_init etc.). Every BuiltinLoader already starts from it
-  // (InstallProcessCodeCache), but when booting from the Node startup snapshot
-  // Environment's constructor then merges the caches node_mksnapshot embedded
-  // for the same bundle ids over it; RefreshCodeCache uses insert_or_assign, so
-  // this puts the build-time (eagerly compiled) entries back on top while the
-  // node-internal entries are kept. A no-op merge when bootstrapped from
-  // scratch.
+  // Re-assert Electron's build-time cache for the internal/electron/js2c/*
+  // framework bundles (browser_init etc.). Every BuiltinLoader already starts
+  // from it (InstallProcessCodeCache), but when booting from the Node startup
+  // snapshot Environment's constructor then merges the caches node_mksnapshot
+  // embedded for the same bundle ids over it; RefreshCodeCache uses
+  // insert_or_assign, so this puts the build-time (eagerly compiled) entries
+  // back on top while the node-internal entries are kept. A no-op merge when
+  // bootstrapped from scratch.
   electron::util::FeedEnvironmentCodeCache(env);
 
   // The init bundle is this process's entry script: like Node's own runMain it
@@ -1028,7 +1028,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   const bool break_first_line = debug_options->break_first_line;
   debug_options->break_first_line = false;
   const std::string bundle_id =
-      "electron/js2c/" + std::string(ProcessType()) + "_init";
+      "internal/electron/js2c/" + std::string(ProcessType()) + "_init";
   node::LoadEnvironment(
       env,
       [&](const node::StartExecutionCallbackInfo& info) {
