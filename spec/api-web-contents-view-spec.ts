@@ -522,12 +522,43 @@ describe('WebContentsView', () => {
       });
 
       it('should allow resetting corners', async () => {
+        // Exercise the layer-backed path, where an empty clip path would create
+        // a fully transparent mask and hide the view.
+        v.setBackgroundBlur(10);
         v.setBorderRadius(0);
 
         await nextFrameTime();
         const capture = ScreenCapture.forWindow(w);
         await capture.expectColorAtPointMatches(HexColors.GREEN, corners[0]);
         await capture.expectColorAtCenterMatches(HexColors.GREEN);
+      });
+
+      it('should preserve valid asymmetric radii', async () => {
+        const parent = new View();
+        w.setContentView(parent);
+        parent.addChildView(v);
+        v.setBounds({ x: 0, y: 0, width: 100, height: 100 });
+        v.setBorderRadius({ topLeft: 80, topRight: 20, bottomRight: 30, bottomLeft: 10 });
+
+        const capture = ScreenCapture.forWindow(w);
+        await capture.expectColorAtPointMatches(HexColors.BLUE, () => ({ x: 25, y: 15 }));
+        await capture.expectColorAtPointMatches(HexColors.GREEN, () => ({ x: 90, y: 10 }));
+        await capture.expectColorAtPointMatches(HexColors.GREEN, () => ({ x: 90, y: 90 }));
+        await capture.expectColorAtPointMatches(HexColors.GREEN, () => ({ x: 5, y: 95 }));
+      });
+
+      it('should keep the clip and compositor radii in sync after resizing', async () => {
+        const parent = new View();
+        w.setContentView(parent);
+        parent.addChildView(v);
+        v.setBorderRadius(100);
+
+        const capture = ScreenCapture.forWindow(w);
+        v.setBounds({ x: 0, y: 0, width: 40, height: 40 });
+        await capture.expectColorAtPointMatches(HexColors.GREEN, corners[0]);
+
+        v.setBounds({ x: 0, y: 0, width: 200, height: 200 });
+        await capture.expectColorAtPointMatches(HexColors.BLUE, corners[0]);
       });
 
       it('should render when set before attached', async () => {
