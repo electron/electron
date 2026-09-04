@@ -1676,6 +1676,7 @@ if (is_mac) {
     } else if (is_linux) {
       sources = [
         "shell/app/electron_main_linux.cc",
+        "shell/app/environ_linux.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
       ]
