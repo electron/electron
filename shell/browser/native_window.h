@@ -190,6 +190,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
   virtual double GetOpacity() const = 0;
+  // NaN is treated as fully opaque, then the value is clamped to [0, 1].
+  static double ClampOpacity(double opacity);
   virtual void SetRepresentedFilename(const std::string& filename) {}
   virtual std::string GetRepresentedFilename() const;
   virtual void SetDocumentEdited(bool edited) {}

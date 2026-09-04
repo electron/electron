@@ -5,6 +5,7 @@
 #include "shell/browser/native_window.h"
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -311,6 +312,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
   DCHECK(widget);
   return static_cast<NativeWindow*>(
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
+}
+
+double NativeWindow::ClampOpacity(double opacity) {
+  return std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
 }
 
 void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {

@@ -3563,6 +3563,12 @@ describe('BrowserWindow module', () => {
       w.setOpacity(-100);
       expect(w.getOpacity()).to.equal(0.0);
     });
+
+    it('treats NaN opacity as fully opaque', () => {
+      const w = new BrowserWindow({ show: false, opacity: 0.5 });
+      w.setOpacity(Number.NaN);
+      expect(w.getOpacity()).to.equal(1.0);
+    });
   });
 
   describe('BrowserWindow.setShape(rects)', () => {
