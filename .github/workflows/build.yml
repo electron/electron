@@ -337,7 +337,8 @@ jobs:
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
-      test-runs-on: macos-15-large
+      # TEMP(macos-x64 runner timing): second pass, Rosetta only.
+      test-runs-on: macos-15
       target-platform: macos
       target-arch: x64
       is-release: false
@@ -361,6 +362,7 @@ jobs:
   # display-server only names this variant, keeping its concurrency group and
   # artifact names apart from the other x64 test runs.
   macos-x64-test-rosetta:
+    if: false # TEMP(macos-x64 runner timing): first pass only
     permissions:
       contents: read
       issues: read
@@ -387,6 +389,7 @@ jobs:
   # display-server only names this variant, keeping its concurrency group and
   # artifact names apart from the other x64 test runs.
   macos-x64-test-intel:
+    if: false # TEMP(macos-x64 runner timing): first pass only
     permissions:
       contents: read
       issues: read

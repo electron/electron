@@ -338,13 +338,23 @@ jobs:
         NPM_CONFIG_MSVS_VERSION: '2022'
         TARGET_PLATFORM: ${{ inputs.target-platform }}
         DISPLAY_SERVER: ${{ inputs.display-server }}
-        # Build the spec's native addons for the Electron under test, not the host:
-        # an x64 build can run on an arm64 runner under Rosetta.
+        # Build the spec's native addons for the Electron under test, not the
+        # host: an x64 build can run on an arm64 runner under Rosetta.
         npm_config_arch: ${{ inputs.target-arch }}
         SHARD: ${{ matrix.shard }}
         SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
+        # yarn install built the native addons for the host. Under Rosetta the
+        # Electron under test is x64, so rebuild them for x64. (The spec runner
+        # rebuilds the ones that need Electron's headers itself, using
+        # npm_config_arch.)
+        if [ "$TARGET_PLATFORM" = "macos" ] && [ "$(uname -m)" = "arm64" ] && [ "$TARGET_ARCH" = "x64" ]; then
+          for addon in spec/fixtures/native-addon/*/; do
+            echo "Rebuilding $addon for x64"
+            (cd "$addon" && node "$OLDPWD/node_modules/node-gyp/bin/node-gyp.js" rebuild --arch=x64)
+          done
+        fi
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
         tests_files=$(node script/split-tests "$SHARD" "$SHARD_COUNT")
