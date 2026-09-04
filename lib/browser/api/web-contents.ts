@@ -829,12 +829,12 @@ WebContents.prototype._init = function () {
   });
 
   this.on('newListener' as any, (eventName: string | symbol) => {
-    if (eventName === 'console-message') {
+    if (eventName === 'console-message' && !this.isDestroyed()) {
       this._setConsoleMessageObserved(true);
     }
   });
   this.on('removeListener' as any, (eventName: string | symbol) => {
-    if (eventName === 'console-message' && this.listenerCount('console-message') === 0) {
+    if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
       this._setConsoleMessageObserved(false);
     }
   });
