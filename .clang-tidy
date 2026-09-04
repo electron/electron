@@ -5,8 +5,6 @@ Checks: 'clang-analyzer-core.*,
          clang-analyzer-nullability.*,
          clang-analyzer-osx.*,
          clang-analyzer-security.*,
-         clang-analyzer-unix.*,
-         -clang-analyzer-core.CallAndMessage,
-         -clang-analyzer-security.PointerSub'
+         clang-analyzer-unix.*'
 InheritParentConfig: true
 ...
