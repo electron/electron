@@ -39,6 +39,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronProtocol,                        // electron::api::Protocol
   kElectronPushNotifications,               // electron::api::PushNotifications
   kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
+  kElectronSafeStorage,             // electron::api::SafeStorage
   kElectronScreen,                  // electron::api::Screen
   kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
   kElectronServiceWorkerMain,       // electron::api::ServiceWorkerMain

@@ -123,6 +123,45 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('safeStorage module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { safeStorage } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof safeStorage.isEncryptionAvailable);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.encryptString);
+        }
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.decryptString);
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { safeStorage } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof safeStorage.isEncryptionAvailable);
+          return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
