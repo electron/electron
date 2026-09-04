@@ -2,8 +2,8 @@
 // os.homedir() reaches getenv() through libuv without taking Node's
 // environment lock, the same way Chromium's threads and system libraries do.
 //
-// Everything runs synchronously in the main script and the app exits before
-// it is ready, so nothing else in the process is running at exit.
+// The race runs synchronously in the main script. The app exits once the
+// worker has been torn down, before the app is ready.
 const { app } = require('electron');
 
 const { Worker } = require('node:worker_threads');
@@ -40,5 +40,4 @@ if (!waitWhile(STARTING)) {
   Atomics.store(state, 0, STOP);
   console.log(waitWhile(STOP) ? 'done' : 'the worker did not stop');
 }
-worker.unref();
-app.exit(0);
+worker.once('exit', () => app.exit(0));
