@@ -7669,7 +7669,15 @@ describe('BrowserWindow module', () => {
       // wheel-end. The second packet must begin a new sequence at the point
       // under the pointer instead of remaining latched to the root scroller.
       w.webContents.sendInputEvent(event);
-      await setTimeout(300);
+      await waitUntil(async () => {
+        const eventCount = await w.webContents.executeJavaScript('window.wheelEvents.length');
+        return eventCount === 1;
+      });
+      // The DOM event is recorded before its gesture ack reaches the browser.
+      // Advance the renderer without consuming the latching window with a fixed delay.
+      await w.webContents.executeJavaScript(
+        'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+      );
       w.webContents.sendInputEvent({ ...event, deltaY: -120 });
 
       await waitUntil(async () => {
