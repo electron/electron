@@ -4,6 +4,7 @@
 
 #include "shell/renderer/electron_render_frame_observer.h"
 
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -214,6 +215,13 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
 }
 
 bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) const {
+  // Once this frame has a Node.js environment, only the world of its context
+  // is notified. Choosing from the current WebPreferences instead would create
+  // a second environment, or skip the release of the first, when they change.
+  if (std::optional<int> env_world_id =
+          renderer_client_->GetEnvironmentWorldId(render_frame_))
+    return *env_world_id == world_id;
+
   const auto& prefs = render_frame_->GetBlinkPreferences();
 
   // about:blank subframes commit synchronously in the renderer and never get
