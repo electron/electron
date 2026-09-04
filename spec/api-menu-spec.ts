@@ -828,14 +828,28 @@ describe('Menu module', function () {
     let w: BrowserWindow;
     let menu: Menu;
 
+    // closePopup() only asks the menu to close. AppKit runs one menu at a time,
+    // so a popup opened before the previous one has closed never shows. Wait
+    // for the close before the next test opens its menu.
+    let popupOpen = false;
+
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 200, height: 200 });
       menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }, { label: '3' }]);
+      popupOpen = false;
+      menu.on('menu-will-show', () => {
+        popupOpen = true;
+      });
+      menu.on('menu-will-close', () => {
+        popupOpen = false;
+      });
     });
 
     afterEach(async () => {
+      const closed = popupOpen ? once(menu, 'menu-will-close') : null;
       menu.closePopup();
       menu.closePopup(w);
+      if (closed) await Promise.race([closed, setTimeout(5000)]);
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
     });
