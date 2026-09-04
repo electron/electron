@@ -746,7 +746,7 @@ v8::Local<v8::Value> Converter<blink::UserAgentBrandVersion>::ToV8(
   dict.Set("version", ConvertToV8(isolate, val.version));
   return gin::ConvertToV8(isolate, dict);
 }
-//
+
 // static
 bool Converter<blink::UserAgentBrandVersion>::FromV8(
     v8::Isolate* isolate,
@@ -784,7 +784,7 @@ v8::Local<v8::Value> Converter<blink::UserAgentMetadata>::ToV8(
   dict.Set("formFactors", ConvertToV8(isolate, val.form_factors));
   return gin::ConvertToV8(isolate, dict);
 }
-//
+
 // static
 bool Converter<blink::UserAgentMetadata>::FromV8(
     v8::Isolate* isolate,
