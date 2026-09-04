@@ -18,7 +18,7 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/common.gypi b/common.gypi
-index 4c5e8ee2a6e97d0877550a836cf371f800e33bc5..483a145d65aa9f3ba836e7abaf403aa45cbe8fb1 100644
+index 7e67f7575c866c7628c980c77d131a4766caf58f..990b97cddc8099f2c9c6f2b00d810b71aab1e295 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -92,6 +92,7 @@
@@ -29,7 +29,7 @@ index 4c5e8ee2a6e97d0877550a836cf371f800e33bc5..483a145d65aa9f3ba836e7abaf403aa4
  
      'using_electron_config_gypi%': 0,
  
-@@ -560,6 +561,9 @@
+@@ -559,6 +560,9 @@
        ['v8_enable_direct_local == 1', {
          'defines': ['V8_ENABLE_DIRECT_LOCAL',],
        }],
