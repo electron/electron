@@ -141,7 +141,7 @@
 // function for each built-in bindings explicitly. This is only
 // forward declaration. The definitions are in each binding's
 // implementation when calling the NODE_LINKED_BINDING_CONTEXT_AWARE.
-#define V(modname)             \
+#define V(modname)            \
   void _register_##modname(); \
   node::node_module* get_linked_module_##modname();
 ELECTRON_BROWSER_BINDINGS(V)
