@@ -1477,10 +1477,21 @@ Returns `string` - The user agent for this session.
 
 * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 
-Overrides the `userAgentMetadata` for this session.
+Overrides the user agent metadata reported as `navigator.userAgentData` for this
+session. Call it with no argument to remove the override and fall back to
+`app.userAgentMetadataFallback`.
 
-This doesn't affect existing `WebContents`, and each `WebContents` can use
-`webContents.setUserAgent` to override the session-wide user agent.
+This doesn't affect existing `WebContents`; the metadata is read when a
+`WebContents` is created. A single `WebContents` can override it for itself with
+`webContents.setUserAgent({ userAgent, userAgentMetadata })`.
+
+The override applies to that `WebContents`' frames and their dedicated workers.
+Shared workers, service workers and cross-process iframes read the process-wide
+value, so `app.userAgentMetadataFallback` is the only level that reaches them.
+
+This changes `navigator.userAgentData` and the client hints Blink attaches to
+subresource requests. It does not change the `Sec-CH-UA*` headers on navigation
+requests.
 
 #### `ses.getUserAgentMetadata()`
 

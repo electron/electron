@@ -1380,7 +1380,19 @@ the user agent string.
   * `userAgent` string - The user agent string.
   * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
 
-Overrides the user agent and metadata for this web page.
+Overrides the user agent and metadata for this web page. Passing a bare string
+sets the user agent alone and leaves the metadata resolving through the session
+and then `app.userAgentMetadataFallback`.
+
+The override applies to this `WebContents`' frames and their dedicated workers,
+and is not carried into windows it opens — a child window resolves its own
+metadata from the session and app level. Shared workers, service workers and
+cross-process iframes read the process-wide value, so
+`app.userAgentMetadataFallback` is the only level that reaches them.
+
+This changes `navigator.userAgentData` and the client hints Blink attaches to
+subresource requests. It does not change the `Sec-CH-UA*` headers on navigation
+requests.
 
 #### `contents.getUserAgent()`
 

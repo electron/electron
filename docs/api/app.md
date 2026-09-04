@@ -1986,7 +1986,7 @@ This is the user agent that will be used when no user agent is set at the
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
 
-#### `app.userAgentMetadataFallback`
+### `app.userAgentMetadataFallback`
 
 A [`UserAgentMetadata`](structures/user-agent-metadata.md) object.
 
