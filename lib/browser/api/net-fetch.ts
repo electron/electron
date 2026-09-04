@@ -1,4 +1,4 @@
-import { allowAnyProtocol } from '@electron/internal/common/api/net-client-request';
+import { allowAnyProtocol, toByteString } from '@electron/internal/common/api/net-client-request';
 
 import { ClientRequestConstructorOptions, ClientRequest, IncomingMessage, Session as SessionT } from 'electron/main';
 
@@ -110,25 +110,35 @@ export function fetchWithSession(
 
   r.on('response', (resp: IncomingMessage) => {
     if (locallyAborted) return;
-    const headers = new Headers();
-    for (const [k, v] of Object.entries(resp.headers)) {
-      headers.set(k, Array.isArray(v) ? v.join(', ') : v);
+    try {
+      const headers = new Headers();
+      for (const [k, v] of Object.entries(resp.headers)) {
+        if (Array.isArray(v)) {
+          for (const item of v) {
+            headers.append(k, toByteString(item));
+          }
+        } else if (typeof v === 'string') {
+          headers.set(k, toByteString(v));
+        }
+      }
+      const nullBodyStatus = [101, 204, 205, 304];
+      const body =
+        nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD'
+          ? null
+          : (Readable.toWeb(resp as unknown as Readable) as ReadableStream);
+      const rResp = new Response(body, {
+        headers,
+        status: resp.statusCode,
+        statusText: resp.statusMessage
+      });
+      (rResp as any).__original_resp = resp;
+      // protocol.handle relays a Response that comes back untouched without
+      // pumping its body through JS; it needs the loader and the exact stream.
+      if (body) (rResp as any).__fetch = { request: r, body: rResp.body };
+      p.resolve(rResp);
+    } catch (err: any) {
+      p.reject(err);
     }
-    const nullBodyStatus = [101, 204, 205, 304];
-    const body =
-      nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD'
-        ? null
-        : (Readable.toWeb(resp as unknown as Readable) as ReadableStream);
-    const rResp = new Response(body, {
-      headers,
-      status: resp.statusCode,
-      statusText: resp.statusMessage
-    });
-    (rResp as any).__original_resp = resp;
-    // protocol.handle relays a Response that comes back untouched without
-    // pumping its body through JS; it needs the loader and the exact stream.
-    if (body) (rResp as any).__fetch = { request: r, body: rResp.body };
-    p.resolve(rResp);
   });
 
   r.on('error', (err) => {
