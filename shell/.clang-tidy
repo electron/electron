@@ -1,0 +1,5 @@
+---
+Checks: 'clang-analyzer-core.CallAndMessage,
+         clang-analyzer-security.PointerSub'
+InheritParentConfig: true
+...
