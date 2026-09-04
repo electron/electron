@@ -32,6 +32,14 @@ const CONCURRENCY = (() => {
   return os.availableParallelism() >= 8 ? 4 : 2;
 })();
 
+// Stress-run diagnostics, on with AU_TIMING=1: per-phase timings, slot
+// queueing, and a watchdog that dumps ShipIt state for tasks that run long.
+const AU_TIMING = !!process.env.AU_TIMING;
+const AU_T0 = Date.now();
+const aulog = (msg: string) => {
+  if (AU_TIMING) console.log(`[AU +${((Date.now() - AU_T0) / 1000).toFixed(1)}s] ${msg}`);
+};
+
 // Squirrel derives its ShipIt launchd job, XPC name and cache dir from
 // CFBundleIdentifier, so concurrent apps each need their own.
 type Slot = {
@@ -43,6 +51,16 @@ type Slot = {
   nameSuffix: string;
   // Update zips carry the slot's bundle id, so they are cached per slot.
   zips: Record<string, string>;
+  // Diagnostics only.
+  title: string;
+  phase: string;
+  phaseAt: number;
+};
+
+const setPhase = (slot: Slot, phase: string) => {
+  slot.phase = phase;
+  slot.phaseAt = Date.now();
+  aulog(`slot${slot.index} phase=${phase} "${slot.title}"`);
 };
 
 const makeSlot = (index: number): Slot => {
@@ -53,7 +71,10 @@ const makeSlot = (index: number): Slot => {
     shipItLabel: `${bundleId}.ShipIt`,
     cacheDir: path.join(os.homedir(), 'Library', 'Caches', `${bundleId}.ShipIt`),
     nameSuffix: `-spec${index}`,
-    zips: {}
+    zips: {},
+    title: '',
+    phase: 'idle',
+    phaseAt: Date.now()
   };
 };
 
@@ -219,14 +240,17 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   };
 
   const prepareApp = async (slot: Slot, dir: string, fixture: string, version: string, preSign?: Mutation) => {
+    const t0 = Date.now();
     const appPath = await copyMacOSFixtureApp(dir, fixture, {
       sourceApp: templateApp,
       bundleId: slot.bundleId,
       appNameSuffix: slot.nameSuffix
     });
+    const t1 = Date.now();
     await setBundleVersion(appPath, version);
     await preSign?.mutate(appPath);
     await shallowSign(appPath);
+    aulog(`slot${slot.index} prepared ${fixture}@${version}: copy=${t1 - t0}ms sign=${Date.now() - t1}ms`);
     return appPath;
   };
 
@@ -238,7 +262,9 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const appPath = await prepareApp(slot, dir, fixture, version, pre);
       await post?.mutate(appPath);
       const zipPath = path.resolve(dir, 'update.zip');
+      const tz = Date.now();
       await spawn('zip', ['-0', '-r', '--symlinks', zipPath, './'], { cwd: dir });
+      aulog(`slot${slot.index} zipped ${key} in ${Date.now() - tz}ms`);
       slot.zips[key] = zipPath;
     }
     return slot.zips[key];
@@ -357,12 +383,26 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
     let draining = false;
 
     const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
+      const queuedAt = Date.now();
       const slot = await pool.acquire({ jumpQueue });
+      const startedAt = Date.now();
       try {
-        if (draining || generation !== task.generation) return;
+        if (draining || generation !== task.generation) {
+          aulog(`slot${slot.index} skipped superseded run gen=${generation} of "${task.title}"`);
+          return;
+        }
+        aulog(
+          `slot${slot.index} start "${task.title}" gen=${generation} after waiting ${startedAt - queuedAt}ms for a slot`
+        );
         task.started = true;
+        slot.title = task.title;
         await withTaskContext(slot, task.body);
+        aulog(`slot${slot.index} done "${task.title}" gen=${generation} in ${Date.now() - startedAt}ms`);
+      } catch (err) {
+        aulog(`slot${slot.index} FAILED "${task.title}" gen=${generation} after ${Date.now() - startedAt}ms: ${err}`);
+        throw err;
       } finally {
+        setPhase(slot, 'idle');
         pool.release(slot);
       }
     };
@@ -389,6 +429,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const task: Task = { title, timeout, body, generation: 0, started: false, awaited: false };
       const index = tasks.push(task) - 1;
       it(title, async function () {
+        aulog(`it start "${title}" run=${task.run ? 'yes' : 'no'} started=${task.started} awaited=${task.awaited}`);
         // The task may have only just got a slot and shares the machine with
         // lookahead work, so give it headroom over its own budget.
         this.timeout(timeout * 2);
@@ -426,12 +467,21 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       });
       const port = (httpServer.address() as AddressInfo).port;
 
+      const timedLaunch = async (appPath: string, args: string[] = []) => {
+        setPhase(slot, 'launch');
+        const t0 = Date.now();
+        const result = await launchApp(appPath, args);
+        aulog(`slot${slot.index} app exited code=${result.code} after ${Date.now() - t0}ms`);
+        setPhase(slot, 'after-launch');
+        return result;
+      };
+
       const ctx: TaskContext = {
         slot,
         server,
         port,
         requests,
-        launchApp,
+        launchApp: timedLaunch,
         launchAppSandboxed,
         spawnAppWithHandle,
         copySignedApp: (dir, fixture) => prepareApp(slot, dir, fixture, '1.0.0'),
@@ -464,7 +514,9 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         },
         relaunched: () =>
           new Promise<void>((resolve) => {
+            const t0 = Date.now();
             server.get('/update-check/updated/:version', (req, res) => {
+              aulog(`slot${slot.index} relaunched app phoned home (${req.url}) ${Date.now() - t0}ms after listening`);
               res.status(204).send();
               resolve();
             });
@@ -475,10 +527,32 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         setUserDefault: (key, value) => setUserDefault(slot, key, value)
       };
 
+      const startedAt = Date.now();
+      const watchdog = AU_TIMING ? setInterval(() => dumpSlot(slot, startedAt), 60000) : undefined;
       try {
         await body(ctx);
       } finally {
+        if (watchdog) clearInterval(watchdog);
         await new Promise<void>((resolve) => httpServer.close(() => resolve()));
+      }
+    };
+
+    // Prints what a long-running task is doing: its phase, the tail of its
+    // ShipIt log, and the fixture, ShipIt and Gatekeeper processes.
+    const dumpSlot = (slot: Slot, startedAt: number) => {
+      const secs = (t: number) => Math.round((Date.now() - t) / 1000);
+      aulog(
+        `WATCHDOG slot${slot.index} "${slot.title}" running ${secs(startedAt)}s, phase=${slot.phase} for ${secs(slot.phaseAt)}s`
+      );
+      try {
+        const lines = fs.readFileSync(path.join(slot.cacheDir, 'ShipIt_stderr.log'), 'utf8').trim().split('\n');
+        for (const line of lines.slice(-12)) aulog(`  shipit${slot.index}| ${line.slice(0, 240)}`);
+      } catch {
+        aulog(`  shipit${slot.index}| (no ShipIt_stderr.log yet)`);
+      }
+      const ps = cp.spawnSync('/bin/ps', ['-axo', 'pid,ppid,etime,%cpu,command']).stdout?.toString() ?? '';
+      for (const line of ps.split('\n')) {
+        if (/electron-update-spec|ShipIt|syspolicyd|XprotectService/.test(line)) aulog(`  ps| ${line.slice(0, 240)}`);
       }
     };
 

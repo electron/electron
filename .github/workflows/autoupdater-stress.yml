@@ -1,0 +1,197 @@
+name: Autoupdater Stress (temporary)
+
+# Temporary investigation workflow: reruns spec/api-autoupdater-darwin-spec.ts
+# against the Testing build from an existing main run, with per-phase timing
+# (AU_TIMING=1), ShipIt logs, and syspolicyd scan events, to reproduce the
+# updater test timeouts on the Intel runners.
+
+on:
+  push:
+    branches:
+      - sam/autoupdater-stress
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: 'How many times each job runs the spec'
+        required: false
+        default: '3'
+
+permissions: {}
+
+concurrency:
+  group: autoupdater-stress-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Build workflow run on main whose artifacts are tested. Its commit is this
+  # branch's base, so the specs match the binary.
+  SOURCE_RUN_ID: '33843471218'
+  ITERATIONS: ${{ github.event.inputs.iterations || '3' }}
+  ELECTRON_OUT_DIR: Default
+  SENTRYCLI_SKIP_DOWNLOAD: 1
+
+jobs:
+  stress:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x64-concurrency-default
+            runs-on: macos-15-large
+            arch: x64
+            concurrency: ''
+            ramdisk: false
+          - name: x64-concurrency-2
+            runs-on: macos-15-large
+            arch: x64
+            concurrency: '2'
+            ramdisk: false
+          - name: x64-concurrency-default-ramdisk
+            runs-on: macos-15-large
+            arch: x64
+            concurrency: ''
+            ramdisk: true
+          - name: arm64-concurrency-default
+            runs-on: macos-15
+            arch: arm64
+            concurrency: ''
+            ramdisk: false
+    defaults:
+      run:
+        shell: bash
+    env:
+      BUILD_TYPE: darwin
+      TARGET_ARCH: ${{ matrix.arch }}
+      SPEC_CONCURRENCY: ${{ matrix.concurrency }}
+    steps:
+    - name: Turn off macOS prompts
+      run: |
+        defaults write com.apple.CrashReporter DialogType server
+        sudo su root -c "killall 'Setup Assistant'" || true
+        defaults write com.github.Electron ApplePersistenceIgnoreState YES
+        sudo xcode-select --switch /Applications/Xcode_16.4.app
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        persist-credentials: false
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
+    - name: Get Depot Tools
+      timeout-minutes: 5
+      run: |
+        RETRY_CLEAN_PATH=depot_tools bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+        touch depot_tools/.disable_auto_update
+        echo "$(pwd)/depot_tools" >> "$GITHUB_PATH"
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: generated_artifacts_darwin_${{ matrix.arch }}
+        path: ./generated_artifacts_darwin_${{ matrix.arch }}
+        run-id: ${{ env.SOURCE_RUN_ID }}
+        repository: ${{ github.repository }}
+        github-token: ${{ github.token }}
+    - name: Download Src Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: src_artifacts_darwin_${{ matrix.arch }}
+        path: ./src_artifacts_darwin_${{ matrix.arch }}
+        run-id: ${{ env.SOURCE_RUN_ID }}
+        repository: ${{ github.repository }}
+        github-token: ${{ github.token }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:oq dist.zip
+    - name: Import & Trust Self-Signed Codesigning Cert
+      run: |
+        cd src/electron
+        ./script/codesign/generate-identity.sh
+    - name: Sign Electron.app
+      run: |
+        identity=$(src/electron/script/codesign/get-trusted-identity.sh)
+        echo "IDENTITY=$identity" >> "$GITHUB_ENV"
+        codesign -s "$identity" --deep --force src/out/Default/Electron.app
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f src/out/Default/Electron.app
+    - name: Create Ramdisk
+      if: ${{ matrix.ramdisk }}
+      run: |
+        # 10 GiB APFS ramdisk. The spec makes every fixture app, update zip
+        # and template under os.tmpdir(), so TMPDIR moves all of them.
+        DEV=$(hdiutil attach -nomount ram://$((10 * 1024 * 1024 * 2)) | awk '{print $1}')
+        diskutil erasevolume APFS AURam "$DEV"
+        mkdir -p /Volumes/AURam/tmp
+        echo "RAMDISK_TMP=/Volumes/AURam/tmp" >> "$GITHUB_ENV"
+        df -h /Volumes/AURam
+    - name: Probe Gatekeeper Scan Costs
+      run: bash src/electron/script/actions/autoupdater-stress-probe.sh src/out/Default/Electron.app "$IDENTITY" "${RAMDISK_TMP:-}"
+    - name: Start Log Collection
+      run: |
+        mkdir -p "$RUNNER_TEMP/au/logs" "$RUNNER_TEMP/au/shipit"
+        echo 0 > "$RUNNER_TEMP/au/iteration"
+        # Gatekeeper scan start/end events, to see queueing behind syspolicyd.
+        nohup /usr/bin/log stream --style compact \
+          --predicate 'process == "syspolicyd" AND (eventMessage CONTAINS "GK performScan" OR eventMessage CONTAINS "GK evaluateScanResult")' \
+          > "$RUNNER_TEMP/au/logs/syspolicyd.log" 2>&1 &
+        # The spec deletes each slot's ShipIt cache dir, and its logs, at the
+        # end of the suite, so copy them out as they change.
+        nohup bash -c '
+          shopt -s nullglob
+          while true; do
+            i=$(cat "$RUNNER_TEMP/au/iteration")
+            for d in "$HOME"/Library/Caches/com.github.Electron.spec*.ShipIt; do
+              dest="$RUNNER_TEMP/au/shipit/iteration-$i/$(basename "$d")"
+              mkdir -p "$dest"
+              cp -p "$d"/*.log "$d"/*.plist "$dest/" 2>/dev/null
+            done
+            sleep 2
+          done' > /dev/null 2>&1 &
+    - name: Run Autoupdater Spec
+      timeout-minutes: 150
+      env:
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        AU_TIMING: 1
+      run: |
+        cd src/electron
+        if [ -n "$SPEC_CONCURRENCY" ]; then
+          export ELECTRON_SPEC_UPDATER_CONCURRENCY="$SPEC_CONCURRENCY"
+        fi
+        if [ -n "${RAMDISK_TMP:-}" ]; then
+          export TMPDIR="$RAMDISK_TMP/"
+        fi
+        echo "concurrency=${ELECTRON_SPEC_UPDATER_CONCURRENCY:-default} tmpdir=${TMPDIR:-default}" | tee "$RUNNER_TEMP/au/logs/summary.txt"
+        failures=0
+        for i in $(seq 1 "$ITERATIONS"); do
+          echo "$i" > "$RUNNER_TEMP/au/iteration"
+          echo "::group::Iteration $i"
+          start=$(date +%s)
+          # Same flags as the CI test job.
+          if node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --files spec/api-autoupdater-darwin-spec.ts 2>&1 | tee "$RUNNER_TEMP/au/logs/iteration-$i.log"; then
+            result=pass
+          else
+            result=FAIL
+            failures=$((failures + 1))
+          fi
+          echo "::endgroup::"
+          retries=$(grep -c 'Failure in test' "$RUNNER_TEMP/au/logs/iteration-$i.log" || true)
+          echo "iteration $i: $result in $(($(date +%s) - start))s, $retries retried attempts" | tee -a "$RUNNER_TEMP/au/logs/summary.txt"
+        done
+        cat "$RUNNER_TEMP/au/logs/summary.txt" >> "$GITHUB_STEP_SUMMARY"
+        if [ "$failures" -gt 0 ]; then
+          echo "::error::$failures of $ITERATIONS iterations failed"
+          exit 1
+        fi
+    - name: Upload Logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: autoupdater-stress-${{ matrix.name }}
+        path: ${{ runner.temp }}/au
