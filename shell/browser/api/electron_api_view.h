@@ -68,8 +68,12 @@ class View : public gin_helper::EventEmitter<View>,
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
   void OnViewIsDeleting(views::View* observed_view) override;
+  void OnChildViewAdded(views::View* observed_view,
+                        views::View* child) override;
   void OnChildViewRemoved(views::View* observed_view,
                           views::View* child) override;
+
+  void UpdateChildlessAccessibilityState();
 
   ui::Layer* GetLayer();
   void ApplyBorderRadius();
@@ -79,6 +83,7 @@ class View : public gin_helper::EventEmitter<View>,
   std::optional<int> border_radius_;
 
   bool delete_view_ = true;
+  bool hide_from_ax_when_childless_ = false;
   raw_ptr<views::View> view_ = nullptr;
 };
 

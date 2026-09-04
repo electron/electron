@@ -21,6 +21,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/compositor/layer.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
@@ -197,7 +198,16 @@ View::View(views::View* view) : view_(view) {
   view_->AddObserver(this);
 }
 
-View::View() : View(new views::View()) {}
+View::View() : View(new views::View()) {
+  // A default-constructed View wraps a plain container that has no content of
+  // its own. While it is childless, hide it from assistive technology:
+  // otherwise it is exposed as an empty "pane" that wins accessibility
+  // hit-tests over content painted beneath it, e.g. a BrowserWindow's
+  // WebContentsView, which is a sibling painted below the window's
+  // contentView. See https://github.com/electron/electron/issues/42945.
+  hide_from_ax_when_childless_ = true;
+  UpdateChildlessAccessibilityState();
+}
 
 View::~View() {
   if (!view_)
@@ -552,10 +562,26 @@ void View::OnViewIsDeleting(views::View* observed_view) {
   view_ = nullptr;
 }
 
+void View::OnChildViewAdded(views::View* observed_view, views::View* child) {
+  UpdateChildlessAccessibilityState();
+}
+
 void View::OnChildViewRemoved(views::View* observed_view, views::View* child) {
   std::erase_if(child_views_, [child](const ChildPair& child_view) {
     return child_view.first == child;
   });
+  UpdateChildlessAccessibilityState();
+}
+
+void View::UpdateChildlessAccessibilityState() {
+  if (!hide_from_ax_when_childless_ || !view_)
+    return;
+  const bool childless = view_->children().empty();
+  // Ignored removes the node from the accessibility tree; invisible makes
+  // ViewAXPlatformNodeDelegate::HitTestSync skip it, letting hit-tests fall
+  // through to content painted beneath it.
+  view_->GetViewAccessibility().SetIsIgnored(childless);
+  view_->GetViewAccessibility().SetIsInvisible(childless);
 }
 
 // static
