@@ -37,6 +37,14 @@ inputs:
     description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots; mksnapshot fixup on non-release builds). Only disable when no test job consumes this build.'
     required: false
     default: 'true'
+  upload-artifacts:
+    description: 'Upload the generated, src and out/gen artifacts from this action. Set to false when the caller uploads them with the upload-build-artifacts action instead, for example as a background step.'
+    required: false
+    default: 'true'
+  upload-src-artifacts:
+    description: 'Package and upload the src artifacts. Set to false when another variant of the same build uploads identical ones.'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -87,6 +95,11 @@ runs:
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
+      env:
+        GENERATE_CHROMEDRIVER: ${{ inputs.generate-chromedriver }}
+        # Lets siso grow its output download concurrency past the static 200
+        # when RBE keeps up. Cache-hit builds are bound by those downloads.
+        SISO_EXPERIMENTS: ${{ inputs.target-platform == 'macos' && inputs.is-release != 'true' && 'adaptive-flush' || '' }}
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
         rm -rf src/out/Default/Electron*.app
@@ -103,10 +116,18 @@ runs:
 
         export NINJA_SUMMARIZE_BUILD=1
         export NO_COLOR=1
+
+        # Build chromedriver in the same siso invocation: a separate `e build`
+        # reruns gn gen and reloads the siso state.
+        EXTRA_TARGETS=""
+        if [ "$GENERATE_CHROMEDRIVER" = "true" ]; then
+          EXTRA_TARGETS="electron:electron_chromedriver_zip"
+        fi
+
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          e build --target electron:release_build
+          e build --target electron:release_build $EXTRA_TARGETS
         else
-          e build --target electron:testing_build
+          e build --target electron:testing_build $EXTRA_TARGETS
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -224,7 +245,10 @@ runs:
       if: ${{ inputs.generate-chromedriver == 'true' }}
       run: |
         cd src
-        e build --target electron:electron_chromedriver_zip
+        # The main build step already built chromedriver everywhere but Windows.
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          e build --target electron:electron_chromedriver_zip
+        fi
 
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
@@ -338,22 +362,36 @@ runs:
       if: always() && !cancelled()
       shell: bash
       env:
-        GENERATE_TEST_ARTIFACTS: ${{ inputs.generate-test-artifacts }}
+        GENERATE_TEST_ARTIFACTS: ${{ inputs.generate-test-artifacts == 'true' && inputs.upload-src-artifacts == 'true' }}
       run: ./src/electron/script/actions/move-artifacts.sh
+    # A caller that uploads in the background keeps building in this out dir,
+    # so snapshot out/Default/gen first. cp -c clones on APFS, so this is cheap.
+    - name: Stage Out Gen Artifacts ${{ inputs.step-suffix }}
+      if: ${{ inputs.upload-out-gen-artifacts == 'true' && inputs.upload-artifacts != 'true' }}
+      shell: bash
+      env:
+        STAGED_GEN: out_gen_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+      run: |
+        rm -rf "$STAGED_GEN"
+        if [ "$(uname)" = "Darwin" ]; then
+          cp -cR src/out/Default/gen "$STAGED_GEN"
+        else
+          cp -R src/out/Default/gen "$STAGED_GEN"
+        fi
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
-      if: always() && !cancelled()
+      if: ${{ always() && !cancelled() && inputs.upload-artifacts == 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
-      if: ${{ inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.generate-test-artifacts == 'true' && inputs.upload-src-artifacts == 'true' && inputs.upload-artifacts == 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Out Gen Artifacts ${{ inputs.step-suffix }}
-      if: ${{ inputs.upload-out-gen-artifacts == 'true' }}
+      if: ${{ inputs.upload-out-gen-artifacts == 'true' && inputs.upload-artifacts == 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
