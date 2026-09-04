@@ -59,7 +59,8 @@ async function runClangTidy(
   filenames: string[],
   checks: string = '',
   jobs: number = 1,
-  fix: boolean = false
+  fix: boolean = false,
+  allowEmpty: boolean = false
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
   const args = [`-p=${outDir}`, "-header-filter=''"];
@@ -109,6 +110,10 @@ async function runClangTidy(
   filenames = (await filterCompilationDatabase()).map((filename) => path.relative(SOURCE_ROOT, filename));
 
   if (filenames.length === 0) {
+    if (allowEmpty) {
+      console.log('None of the given files are built in this configuration; nothing to check');
+      return true;
+    }
     throw new Error('No filenames to run');
   }
 
@@ -219,36 +224,37 @@ async function main(): Promise<boolean> {
     }
   }
 
-  const filenames = [];
+  const isCheckable = (filename: string) => {
+    // TODO(dsanders11): This file has clang-tidy compilation errors in CI that don't
+    //                   appear locally, so exclude it for now until that's resolved
+    if (process.env.CI && filename.endsWith('/electron_smooth_round_rect.cc')) {
+      return false;
+    }
 
-  if (opts._.length > 0) {
+    // Build-only host tool compiled in v8_snapshot_toolchain; its
+    // transitively-included generated buildflag headers aren't present
+    // for clang-tidy in CI.
+    if (filename.endsWith('/electron_natives_codecache_main.cc')) {
+      return false;
+    }
+
+    return /.*\.(?:cc|mm)$/.test(filename);
+  };
+
+  const filenames = [];
+  const explicit = opts._.length > 0;
+
+  if (explicit) {
     if (opts._.some((filename) => filename.endsWith('.h'))) {
       throw new ErrorWithExitCode('Filenames must be for translation units, not headers', 3);
     }
 
-    filenames.push(...opts._.map((filename) => path.resolve(filename)));
+    filenames.push(...opts._.map((filename) => path.resolve(filename)).filter(isCheckable));
   } else {
-    filenames.push(
-      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) => {
-        // TODO(dsanders11): This file has clang-tidy compilation errors in CI that don't
-        //                   appear locally, so exclude it for now until that's resolved
-        if (process.env.CI && filename.endsWith('/electron_smooth_round_rect.cc')) {
-          return false;
-        }
-
-        // Build-only host tool compiled in v8_snapshot_toolchain; its
-        // transitively-included generated buildflag headers aren't present
-        // for clang-tidy in CI.
-        if (filename.endsWith('/electron_natives_codecache_main.cc')) {
-          return false;
-        }
-
-        return /.*\.(?:cc|mm)$/.test(filename);
-      }))
-    );
+    filenames.push(...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), isCheckable)));
   }
 
-  return runClangTidy(outDir, filenames, opts.checks, opts.jobs, opts.fix);
+  return runClangTidy(outDir, filenames, opts.checks, opts.jobs, opts.fix, explicit);
 }
 
 if (require.main === module) {
