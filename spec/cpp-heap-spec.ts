@@ -162,6 +162,63 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('systemPreferences module', () => {
+    it('does not crash on exit with a live wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, systemPreferences } = require('electron');
+        systemPreferences.getAnimationSettings();
+        if (process.platform === 'darwin') {
+          systemPreferences.subscribeLocalNotification(null, () => {});
+        }
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { systemPreferences } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof systemPreferences.getAnimationSettings);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { systemPreferences } = require('electron');
+          console.log(typeof systemPreferences.getAccentColor);
+        }
+        {
+          const { systemPreferences } = require('electron');
+          console.log(systemPreferences.eventNames());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { systemPreferences } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof systemPreferences.getAnimationSettings);
+          return containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / SystemPreferences'
+          ]);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
