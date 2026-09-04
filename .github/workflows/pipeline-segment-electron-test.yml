@@ -207,10 +207,12 @@ jobs:
           with:
             name: generated_artifacts_${{ env.ARTIFACT_KEY }}
             path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+        # The build job uploads one set of src artifacts for both macOS
+        # variants (they hold no variant-specific files), under the darwin key.
         - name: Download Src Artifacts
           uses: MarshallOfSound/download-artifact@bbfa5717ecb46c82dc6248b7d261d45f77a7c71a # v8.0.1 + lazy event payload read
           with:
-            name: src_artifacts_${{ env.ARTIFACT_KEY }}
+            name: src_artifacts_${{ matrix.build-type == 'mas' && format('darwin_{0}', inputs.target-arch) || env.ARTIFACT_KEY }}
             path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
         - name: Setup CUPS virtual printer (linux)
           if: ${{ inputs.target-platform == 'linux' }}
