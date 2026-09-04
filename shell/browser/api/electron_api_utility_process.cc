@@ -369,26 +369,10 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   }
 
   v8::Local<v8::Value> transferables;
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  v8::LocalVector<v8::Value> wrapped_ports(isolate);
   if (args->GetNext(&transferables)) {
-    std::vector<v8::Local<v8::Value>> wrapped_port_values;
-    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
-      args->ThrowTypeError("transferables must be an array of MessagePorts");
-      return;
-    }
-
-    for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
-      if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
-                                        &MessagePort::kWrapperInfo)) {
-        args->ThrowTypeError(
-            base::StrCat({"Port at index ", base::NumberToString(i),
-                          " is not a valid port"}));
-        return;
-      }
-    }
-
     if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
-      args->ThrowTypeError("Passed an invalid MessagePort");
+      args->ThrowTypeError("transferables must be an array of MessagePorts");
       return;
     }
   }
