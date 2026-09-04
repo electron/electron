@@ -16,6 +16,19 @@ BaseWindow.prototype._init = function (this: TLWT) {
     const menu = app.applicationMenu;
     if (menu) this.setMenu(menu);
   }
+
+  if (process.platform === 'darwin') {
+    EventEmitter.prototype.on.call(this, 'newListener', (event: string | symbol) => {
+      if (event === 'swipe-gesture' && this.listenerCount(event) === 0) {
+        this._setSwipeGestureEnabled(true);
+      }
+    });
+    EventEmitter.prototype.on.call(this, 'removeListener', (event: string | symbol) => {
+      if (event === 'swipe-gesture' && this.listenerCount(event) === 0) {
+        this._setSwipeGestureEnabled(false);
+      }
+    });
+  }
 };
 
 BaseWindow.prototype.setTouchBar = function (touchBar) {

@@ -305,6 +305,12 @@ void BaseWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
+void BaseWindow::OnWindowSwipeGesture(const std::string& direction,
+                                      const std::string& phase,
+                                      double progress) {
+  Emit("swipe-gesture", direction, phase, progress);
+}
+
 void BaseWindow::OnWindowRotateGesture(float rotation) {
   Emit("rotate-gesture", rotation);
 }
@@ -912,6 +918,10 @@ bool BaseWindow::IsHiddenInMissionControl() {
 void BaseWindow::SetHiddenInMissionControl(bool hidden) {
   window_->SetHiddenInMissionControl(hidden);
 }
+
+void BaseWindow::SetSwipeGestureEnabled(bool enabled) {
+  window_->SetSwipeGestureEnabled(enabled);
+}
 #endif
 
 void BaseWindow::SetTouchBar(
@@ -1349,6 +1359,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::IsHiddenInMissionControl)
       .SetMethod("setHiddenInMissionControl",
                  &BaseWindow::SetHiddenInMissionControl)
+      .SetMethod("_setSwipeGestureEnabled", &BaseWindow::SetSwipeGestureEnabled)
 #endif
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
