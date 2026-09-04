@@ -1568,6 +1568,8 @@ Returns `Object`:
 <!--
 ```YAML history
 changes:
+  - pr-url: https://github.com/electron/electron/pull/53052
+    description: "This method now returns a Promise."
   - pr-url: https://github.com/electron/electron/pull/52351
     description: "Removed `openAsHidden` option."
 ```
@@ -1597,6 +1599,9 @@ changes:
   * `name` string (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
 
 Set the app's login item settings.
+
+Returns `Promise<void>` - Resolves when the operating system has handled the
+request.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
 you'll want to set the launch path to your executable's name but a directory up, which is

@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_BROWSER_H_
 #define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -176,7 +177,8 @@ class Browser : private WindowListObserver {
   bool SetBadgeCount(std::optional<int> count);
   [[nodiscard]] int badge_count() const { return badge_count_; }
 
-  void SetLoginItemSettings(LoginItemSettings settings);
+  v8::Local<v8::Promise> SetLoginItemSettings(v8::Isolate* isolate,
+                                              LoginItemSettings settings);
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
@@ -396,11 +398,10 @@ class Browser : private WindowListObserver {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  void FinishLoginItemPortalRequest();
+  void FinishLoginItemPortalRequest(size_t request_id);
 
-  bool login_item_request_in_flight_ = false;
-  std::optional<LoginItemSettings> pending_login_item_settings_;
-  std::unique_ptr<dbus_xdg::Request> login_item_request_;
+  size_t next_login_item_request_id_ = 0;
+  std::map<size_t, std::unique_ptr<dbus_xdg::Request>> login_item_requests_;
 #endif
 
   base::DictValue about_panel_options_;

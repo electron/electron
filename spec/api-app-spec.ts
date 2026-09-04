@@ -1141,17 +1141,9 @@ describe('app module', () => {
         await clearCalls();
       });
 
-      async function waitForPortalCall(methodName: string) {
-        await waitUntil(async () => {
-          const calls = await getCalls();
-          return calls.some((call) => call[1] === methodName);
-        });
-
+      async function getPortalCall(methodName: string) {
         const calls = await getCalls();
         const matchingCalls = calls.filter((call) => call[1] === methodName);
-        // Let the mock response complete so the next test starts without an
-        // in-flight request.
-        await setTimeout(100);
         return matchingCalls[matchingCalls.length - 1];
       }
 
@@ -1189,9 +1181,9 @@ describe('app module', () => {
       }
 
       it('defaults the commandline to process.execPath', async () => {
-        app.setLoginItemSettings({ openAtLogin: true });
+        await app.setLoginItemSettings({ openAtLogin: true });
 
-        const call = await waitForPortalCall('RequestBackground');
+        const call = await getPortalCall('RequestBackground');
         const options = unmarshalOptions(call);
 
         expect(options.autostart).to.equal(true);
@@ -1202,29 +1194,27 @@ describe('app module', () => {
         const executable = '/tmp/electron app';
         const args = ['--flag=value with spaces', '100%', ''];
 
-        app.setLoginItemSettings({ openAtLogin: true, path: executable, args });
+        await app.setLoginItemSettings({ openAtLogin: true, path: executable, args });
 
-        const call = await waitForPortalCall('RequestBackground');
+        const call = await getPortalCall('RequestBackground');
         const options = unmarshalOptions(call);
 
         expect(options.autostart).to.equal(true);
         expect(options.commandline).to.deep.equal(['"/tmp/electron app"', '"--flag=value with spaces"', '100%%', '""']);
       });
 
-      it('applies the latest setting after an in-flight request', async () => {
-        app.setLoginItemSettings({ openAtLogin: true });
-        app.setLoginItemSettings({ openAtLogin: false });
+      it('settles concurrent requests', async () => {
+        await Promise.all([
+          app.setLoginItemSettings({ openAtLogin: true }),
+          app.setLoginItemSettings({ openAtLogin: false })
+        ]);
 
-        await waitUntil(async () => {
-          const calls = await getCalls();
-          return calls.filter((call) => call[1] === 'RequestBackground').length === 2;
-        });
         const calls = await getCalls();
         const requestCalls = calls.filter((call) => call[1] === 'RequestBackground');
-        const options = unmarshalOptions(requestCalls[1]);
+        const options = requestCalls.map(unmarshalOptions);
 
-        expect(options.autostart).to.equal(false);
-        expect(options).to.not.have.property('commandline');
+        expect(options.map(({ autostart }) => autostart)).to.have.members([true, false]);
+        expect(options.find(({ autostart }) => !autostart)).to.not.have.property('commandline');
       });
     }
   );
