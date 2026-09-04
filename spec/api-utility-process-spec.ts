@@ -504,6 +504,26 @@ describe('utilityProcess module', () => {
       expect(child.kill()).to.be.true();
       await exit;
     });
+
+    it('validates transferred MessagePorts', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'));
+      deferKillUtilityProcess(child);
+      await once(child, 'spawn');
+
+      expect(() => {
+        child.postMessage(null, [123 as any]);
+      }).to.throw(/Port at index 0 is not a valid port/);
+
+      const { port1 } = new MessageChannelMain();
+      expect(() => {
+        child.postMessage(null, [port1, port1]);
+      }).to.throw(/duplicate/);
+
+      child.postMessage(null, [port1]);
+      expect(() => {
+        child.postMessage(null, [port1]);
+      }).to.throw(/already neutered/);
+    });
   });
 
   describe('behavior', () => {
