@@ -53,10 +53,12 @@ app.commandLine.appendSwitch(
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
+global.portScheme = 'port';
 global.serviceWorkerScheme = 'sw';
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true, stream: false } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.portScheme, privileges: { standard: true, secure: true, corsEnabled: true, supportFetchAPI: true } },
   { scheme: global.serviceWorkerScheme, privileges: { allowServiceWorkers: true, standard: true, secure: true } },
   { scheme: 'http-like', privileges: { standard: true, secure: true, corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
