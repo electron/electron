@@ -286,7 +286,6 @@ declare namespace NodeJS {
   }
 
   interface Process {
-    internalBinding?(name: string): any;
     _linkedBinding(name: string): any;
     _linkedBinding(name: 'electron_common_asar'): AsarBinding;
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
