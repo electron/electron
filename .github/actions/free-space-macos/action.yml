@@ -8,11 +8,16 @@ runs:
       run: |
         echo "Disk usage before cleanup:"
         df -h
-        sudo mkdir -p $TMPDIR/del-target
+        # Everything below is renamed into DEL_TARGET (an instant same-volume
+        # move) and deleted by a detached process at the end of this step, so
+        # the ~230GB of deletes run alongside the src cache restore instead of
+        # blocking it. Callers wait for enough free space, not for the deletes.
+        DEL_TARGET="$TMPDIR/del-target-$$"
+        sudo mkdir -p "$DEL_TARGET"
 
         tmpify() {
           if [ -d "$1" ]; then
-            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
+            sudo mv "$1" "$DEL_TARGET/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)"
           fi
         }
 
@@ -61,15 +66,13 @@ runs:
         tmpify ~/Library/Caches/Homebrew
         tmpify /usr/local/Homebrew
 
-        sudo rm -rf $TMPDIR/del-target
-
         # Remove every Xcode install except the one currently selected.
         # The image ships many versions (16.0-26.x) and each is tens of GB.
         active_xcode=$(xcode-select -p 2>/dev/null | sed -E 's#(/Applications/Xcode[^/]*\.app)/.*#\1#')
         if [[ "$active_xcode" == /Applications/Xcode*.app ]]; then
           for app in /Applications/Xcode*.app; do
             if [ "$app" != "$active_xcode" ]; then
-              sudo rm -rf "$app"
+              tmpify "$app"
             fi
           done
         fi
@@ -77,30 +80,30 @@ runs:
         # Simulator runtime images (iOS/xrOS/watchOS/tvOS) staged as MobileAssets.
         # tmpify of /Library/Developer/CoreSimulator above only removes the mount
         # points; the backing images here are ~113GB that Electron never uses.
-        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime
-        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_xrOSSimulatorRuntime
-        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_watchOSSimulatorRuntime
-        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_appleTVOSSimulatorRuntime
+        tmpify /System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime
+        tmpify /System/Library/AssetsV2/com_apple_MobileAsset_xrOSSimulatorRuntime
+        tmpify /System/Library/AssetsV2/com_apple_MobileAsset_watchOSSimulatorRuntime
+        tmpify /System/Library/AssetsV2/com_apple_MobileAsset_appleTVOSSimulatorRuntime
 
-        sudo rm -rf /Applications/Safari.app
-        sudo rm -rf "/Applications/Google Chrome.app"
-        sudo rm -rf "/Applications/Google Chrome for Testing.app"
-        sudo rm -rf /Applications/Firefox.app
-        sudo rm -rf "/Applications/Microsoft Edge.app"
-        sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
-        sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
-        sudo rm -rf /Users/runner/Library/Android
-        sudo rm -rf $JAVA_HOME_11_arm64
-        sudo rm -rf $JAVA_HOME_17_arm64
-        sudo rm -rf $JAVA_HOME_21_arm64
-        sudo rm -rf $JAVA_HOME_25_arm64
-        sudo rm -rf /Users/runner/.dotnet/
-        sudo rm -rf /Users/runner/.rustup
+        tmpify /Applications/Safari.app
+        tmpify "/Applications/Google Chrome.app"
+        tmpify "/Applications/Google Chrome for Testing.app"
+        tmpify /Applications/Firefox.app
+        tmpify "/Applications/Microsoft Edge.app"
+        tmpify ~/project/src/third_party/catapult/tracing/test_data
+        tmpify ~/project/src/third_party/angle/third_party/VK-GL-CTS
+        tmpify /Users/runner/Library/Android
+        tmpify $JAVA_HOME_11_arm64
+        tmpify $JAVA_HOME_17_arm64
+        tmpify $JAVA_HOME_21_arm64
+        tmpify $JAVA_HOME_25_arm64
+        tmpify /Users/runner/.dotnet/
+        tmpify /Users/runner/.rustup
         # CodeQL bundle and unused cached runtimes in the hosted toolcache
-        sudo rm -rf /Users/runner/hostedtoolcache/CodeQL
-        sudo rm -rf /Users/runner/hostedtoolcache/go
-        sudo rm -rf /Users/runner/hostedtoolcache/Ruby
-        sudo rm -rf /Users/runner/hostedtoolcache/PyPy
+        tmpify /Users/runner/hostedtoolcache/CodeQL
+        tmpify /Users/runner/hostedtoolcache/go
+        tmpify /Users/runner/hostedtoolcache/Ruby
+        tmpify /Users/runner/hostedtoolcache/PyPy
 
         # remove homebrew packages we don't need
         if command -v brew &> /dev/null; then
@@ -112,3 +115,8 @@ runs:
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
         sudo mdutil -a -i off
+
+        # Delete the renamed directories in a detached process. The runner only
+        # reaps orphaned processes when the job ends, and by then the deletes
+        # have long finished.
+        sudo nohup rm -rf "$DEL_TARGET" > /dev/null 2>&1 &

@@ -201,10 +201,12 @@ jobs:
           with:
             name: generated_artifacts_${{ env.ARTIFACT_KEY }}
             path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+        # The build job uploads one set of src artifacts for both macOS
+        # variants (they hold no variant-specific files), under the darwin key.
         - name: Download Src Artifacts
           uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
           with:
-            name: src_artifacts_${{ env.ARTIFACT_KEY }}
+            name: src_artifacts_${{ matrix.build-type == 'mas' && format('darwin_{0}', inputs.target-arch) || env.ARTIFACT_KEY }}
             path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
