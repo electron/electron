@@ -184,7 +184,6 @@ jobs:
         if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
-        export ELECTRON_BUILD_TOOLS_MAIN_STAR=$(pwd)/src/electron/build/siso/main.star
         e build --gen=only
 
         # Squirrel and friends are included via -F framework paths that only

@@ -5,7 +5,7 @@ translation unit.
 Each step's command line is an ordinary compile command with
 build/run-clang-tidy-action.sh in front of it. That shape is what lets siso
 scan the step's #includes, look it up in the RBE action cache and run it
-remotely (see the electron/clang-tidy rule in build/siso/main.star).
+remotely (see the electron/clang-tidy rule in build-tools' tools/main.star).
 
 Usage:
   gn gen out/X --add-export-compile-commands='//electron:*'

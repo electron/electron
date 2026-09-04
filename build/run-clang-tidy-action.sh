@@ -19,7 +19,8 @@ shift
 
 # A macOS host's toolchain can't run on the (Linux) RBE workers. There,
 # clang_remote_wrapper has run before us and staged a Linux clang and
-# clang-tidy under Release+Asserts_linux; see build/siso/main.star.
+# clang-tidy under Release+Asserts_linux; see the electron/clang-tidy rule in
+# build-tools' tools/main.star.
 if ! "$clang" --version >/dev/null 2>&1; then
   clang=${clang/Release+Asserts/Release+Asserts_linux}
 fi
