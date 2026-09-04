@@ -4333,6 +4333,74 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('window.open() child that does not inherit contextIsolation: false', () => {
+      // The child gets contextIsolation: true unless the handler overrides it,
+      // but its synchronous about:blank document starts with the opener's
+      // WebPreferences, so its Node.js environment is created in the main
+      // world. The Electron API has to stay in that context.
+      const preload = path.join(fixtures, 'module', 'preload-window-open-ping.js');
+
+      afterEach(closeAllWindows);
+
+      const waitForPreload = (href: string) =>
+        new Promise<void>((resolve) => {
+          const handler = (_e: Electron.IpcMainEvent, ranIn: string) => {
+            if (ranIn !== href) return;
+            ipcMain.removeListener('window-open-ping-preload-ran', handler);
+            resolve();
+          };
+          ipcMain.on('window-open-ping-preload-ran', handler);
+        });
+
+      const openChild = async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: false, contextIsolation: false }
+        });
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { show: false, webPreferences: { sandbox: false, preload } }
+        }));
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const preloadRan = waitForPreload('about:blank');
+        const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+        await w.webContents.executeJavaScript("void window.open('', 'child')");
+        const [child] = await created;
+        await preloadRan;
+        return { w, child };
+      };
+
+      // Rejects as soon as the renderer goes away, instead of timing out.
+      const unlessGone = <T>(w: BrowserWindow, promise: Promise<T>) =>
+        Promise.race([
+          promise,
+          once(w.webContents, 'render-process-gone').then(([, details]): never => {
+            throw new Error(`renderer went away: ${details.reason}`);
+          })
+        ]);
+
+      // Resolves with the URL of the document whose preload answered.
+      const ping = async (w: BrowserWindow, child: BrowserWindow) => {
+        const pong = once(ipcMain, 'window-open-pong');
+        child.webContents.send('window-open-ping');
+        const [, href] = await unlessGone(w, pong);
+        return href;
+      };
+
+      it('receives IPC from the main process in its preload', async () => {
+        const { w, child } = await openChild();
+        expect(await ping(w, child)).to.equal('about:blank');
+      });
+
+      it('receives IPC from the main process after it navigates', async () => {
+        const { w, child } = await openChild();
+        const preloadRan = waitForPreload('about:blank?next');
+        await w.webContents.executeJavaScript("window.open('', 'child').location.href = 'about:blank?next'");
+        await unlessGone(w, preloadRan);
+        expect(await ping(w, child)).to.equal('about:blank?next');
+      });
+    });
+
     describe('preload script stack traces', () => {
       afterEach(closeAllWindows);
       // Preloads are compiled via ScriptCompiler::CompileFunction(), which

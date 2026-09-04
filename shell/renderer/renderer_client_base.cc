@@ -589,11 +589,26 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     v8::Isolate* isolate) const {
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
+  if (render_frame) {
+    v8::Local<v8::Context> env_context = GetEnvironmentContext(render_frame);
+    if (!env_context.IsEmpty())
+      return env_context;
+  }
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
     return frame->GetScriptContextFromWorldId(isolate,
                                               WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
+}
+
+v8::Local<v8::Context> RendererClientBase::GetEnvironmentContext(
+    content::RenderFrame* render_frame) const {
+  return {};
+}
+
+std::optional<int> RendererClientBase::GetEnvironmentWorldId(
+    content::RenderFrame* render_frame) const {
+  return std::nullopt;
 }
 
 bool RendererClientBase::IsWebViewFrame(
