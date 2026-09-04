@@ -3222,12 +3222,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dirty-chai@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "dirty-chai@npm:2.0.1"
+"dirty-chai@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "dirty-chai@npm:3.0.0"
   peerDependencies:
-    chai: ">=2.2.1 <5"
-  checksum: 10c0/0fe24a077e7c7e9ce069ee95ffef913d600e32cc3277af9aeaa69a57c1f4ac365b04aa06b2cdba5dc4c1cf712fa8550898c3dce239735e32310b655f143f1856
+    chai: ">= 6.2.0 < 7"
+  checksum: 10c0/40f72674c2f8ad2651beafaf04f6901c3a488311036b068b3346e6fc76ed62ffd80a67c4d85858661e7e79bde4ad7ee386787c7d67725a5c8e6cbb1279d57ac1
   languageName: node
   linkType: hard
 
@@ -3313,7 +3313,7 @@ __metadata:
     chai: "npm:^4.2.0"
     chai-as-promised: "npm:^7.1.1"
     dbus-native: "patch:dbus-native@npm%3A0.4.0#~/.yarn/patches/dbus-native-npm-0.4.0-fd59c31eb6.patch"
-    dirty-chai: "npm:^2.0.1"
+    dirty-chai: "npm:^3.0.0"
     graceful-fs: "npm:^4.1.15"
     mocha: "npm:^10.0.0"
     mocha-junit-reporter: "npm:^1.18.0"

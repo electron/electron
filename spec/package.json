@@ -28,7 +28,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "dbus-native": "patch:dbus-native@npm%3A0.4.0#~/.yarn/patches/dbus-native-npm-0.4.0-fd59c31eb6.patch",
-    "dirty-chai": "^2.0.1",
+    "dirty-chai": "^3.0.0",
     "graceful-fs": "^4.1.15",
     "mocha": "^10.0.0",
     "mocha-junit-reporter": "^1.18.0",
