@@ -1,60 +1,72 @@
 #!/bin/bash
 # Downloads a single large file with parallel HTTP range requests.
 #
-# Usage: download-parallel.sh <url> <output-file> [parts]
+# Usage: download-parallel.sh <url> <output-file> [connections]
 #
 # azcopy always auto-tunes its connection count when the source is an Azure
 # Files share (AZCOPY_CONCURRENCY_VALUE is ignored for that case), and the
 # tuning rounds keep it running for about a minute after the data has arrived.
-# A fixed number of range requests avoids that. 16 connections is below what
-# azcopy itself probes (it tries up to 256), so the share sees no more load.
+# This fetches the file the way azcopy does once tuned, as 8 MiB ranges over a
+# fixed number of connections, which is below the 64 azcopy settles on.
 #
-# The URL carries a SAS token, so it is never echoed.
+# The URL carries a SAS token, so it is never echoed and only passed to curl
+# through a config file that only this user can read.
 
 set -euo pipefail
 
 URL=$1
 OUTPUT=$2
-PARTS=${3:-16}
+CONNECTIONS=${3:-32}
+CHUNK_BYTES=${CHUNK_BYTES:-8388608}
 
-SIZE=$(curl -sSfIL --retry 5 --connect-timeout 30 "$URL" | tr -d '\r' |
+PART_DIR=$(mktemp -d "${OUTPUT}.parts.XXXXXX")
+trap 'rm -rf "$PART_DIR"' EXIT
+CONFIG="$PART_DIR/curl.config"
+umask 077
+
+# Options that every transfer repeats: curl resets them after each `next`.
+COMMON='fail
+silent
+show-error
+location
+retry = 5
+retry-all-errors
+connect-timeout = 30'
+
+printf '%s\nhead\nurl = "%s"\n' "$COMMON" "$URL" > "$CONFIG"
+SIZE=$(curl --config "$CONFIG" | tr -d '\r' |
   awk 'tolower($1) == "content-length:" { size = $2 } END { print size }')
 if ! [[ "$SIZE" =~ ^[0-9]+$ ]] || [ "$SIZE" -eq 0 ]; then
   echo "Could not read the size of the src cache"
   exit 1
 fi
 
-PART_DIR=$(mktemp -d "${OUTPUT}.parts.XXXXXX")
-trap 'rm -rf "$PART_DIR"' EXIT
+PARTS=$(((SIZE + CHUNK_BYTES - 1) / CHUNK_BYTES))
+{
+  echo "parallel"
+  echo "parallel-max = $CONNECTIONS"
+  for ((i = 0; i < PARTS; i++)); do
+    START=$((i * CHUNK_BYTES))
+    END=$((START + CHUNK_BYTES - 1))
+    if [ "$END" -ge "$SIZE" ]; then
+      END=$((SIZE - 1))
+    fi
+    if [ "$i" -gt 0 ]; then
+      echo "next"
+    fi
+    printf '%s\nrange = "%d-%d"\noutput = "%s/part.%06d"\nurl = "%s"\n' \
+      "$COMMON" "$START" "$END" "$PART_DIR" "$i" "$URL"
+  done
+} > "$CONFIG"
 
-CHUNK=$(((SIZE + PARTS - 1) / PARTS))
-ARGS=(--parallel --parallel-max "$PARTS")
-PART_FILES=()
-for ((i = 0; i < PARTS; i++)); do
-  START=$((i * CHUNK))
-  if [ "$START" -ge "$SIZE" ]; then
-    break
-  fi
-  END=$((START + CHUNK - 1))
-  if [ "$END" -ge "$SIZE" ]; then
-    END=$((SIZE - 1))
-  fi
-  PART_FILE=$(printf '%s/part.%03d' "$PART_DIR" "$i")
-  PART_FILES+=("$PART_FILE")
-  if [ "$i" -gt 0 ]; then
-    ARGS+=(--next)
-  fi
-  ARGS+=(-sSfL --retry 5 --retry-all-errors --connect-timeout 30
-    -r "$START-$END" -o "$PART_FILE" "$URL")
-done
-
-echo "Downloading $SIZE bytes in ${#PART_FILES[@]} parts"
+echo "Downloading $SIZE bytes as $PARTS ranges over $CONNECTIONS connections"
 START_TIME=$(date +%s)
-curl "${ARGS[@]}"
+curl --config "$CONFIG"
+rm -f "$CONFIG"
 
 TOTAL=0
-for PART_FILE in "${PART_FILES[@]}"; do
-  TOTAL=$((TOTAL + $(wc -c < "$PART_FILE")))
+for ((i = 0; i < PARTS; i++)); do
+  TOTAL=$((TOTAL + $(wc -c < "$(printf '%s/part.%06d' "$PART_DIR" "$i")")))
 done
 if [ "$TOTAL" -ne "$SIZE" ]; then
   echo "Downloaded $TOTAL bytes but expected $SIZE"
@@ -62,7 +74,8 @@ if [ "$TOTAL" -ne "$SIZE" ]; then
 fi
 
 : > "$OUTPUT"
-for PART_FILE in "${PART_FILES[@]}"; do
+for ((i = 0; i < PARTS; i++)); do
+  PART_FILE=$(printf '%s/part.%06d' "$PART_DIR" "$i")
   cat "$PART_FILE" >> "$OUTPUT"
   rm -f "$PART_FILE"
 done

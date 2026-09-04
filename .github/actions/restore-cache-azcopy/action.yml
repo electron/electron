@@ -48,7 +48,7 @@ runs:
             # Range requests skip azcopy's connection tuning, which is forced on
             # for Azure Files sources and adds about a minute. azcopy stays as
             # the fallback.
-            if ! bash src/electron/.github/actions/restore-cache-azcopy/download-parallel.sh "$cache_url" $DEPSHASH.tar 16; then
+            if ! bash src/electron/.github/actions/restore-cache-azcopy/download-parallel.sh "$cache_url" $DEPSHASH.tar 32; then
               echo "Parallel download failed; falling back to azcopy"
               rm -f $DEPSHASH.tar
               azcopy copy --log-level=ERROR "$cache_url" $DEPSHASH.tar
