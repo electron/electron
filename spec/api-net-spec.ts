@@ -377,8 +377,9 @@ describe('net module', () => {
         const finishPromise = once(urlRequest, 'close');
         // request "response" event
         const response = await getResponse(urlRequest);
+        let responseError: Error | undefined;
         response.on('error', (error: Error) => {
-          expect(error).to.be.an('Error');
+          responseError = error;
         });
         const statusCode = response.statusCode;
         expect(statusCode).to.equal(200);
@@ -386,10 +387,13 @@ describe('net module', () => {
         // respond end event
         const body = await collectStreamBody(response);
         expect(body).to.equal(bodyData);
+        let requestError: Error | undefined;
         urlRequest.on('error', (error) => {
-          expect(error).to.be.an('Error');
+          requestError = error;
         });
         await Promise.all([closePromise, finishPromise]);
+        expect(responseError).to.be.undefined();
+        expect(requestError).to.be.undefined();
       });
 
       test('should be able to set a custom HTTP request header before first write', async () => {
@@ -786,8 +790,9 @@ describe('net module', () => {
         urlRequest.on('finish', () => {
           expect.fail('Unexpected finish event');
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.on('abort', () => {
           requestAbortEventEmitted = true;
@@ -797,6 +802,7 @@ describe('net module', () => {
         urlRequest.chunkedEncoding = true;
         urlRequest.write(randomString(kOneKiloByte));
         await p;
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestReceivedByServer).to.equal(true);
         expect(requestAbortEventEmitted).to.equal(true);
       });
@@ -925,8 +931,9 @@ describe('net module', () => {
         defer(() => protocol.uninterceptProtocol('http'));
 
         const urlRequest = net.request({ method: 'POST', url: 'http://aborted-upload-write' });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.chunkedEncoding = true;
         let writeCallbackCalled = false;
@@ -947,6 +954,7 @@ describe('net module', () => {
         const writeError = await writeCompleted;
         expect(writeError).to.be.an.instanceOf(Error);
         expect(writeError!.message).to.contain('ERR_ABORTED');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {
@@ -970,11 +978,13 @@ describe('net module', () => {
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.equal(true);
         expect(requestReceivedByServer).to.equal(true);
       });
@@ -990,6 +1000,7 @@ describe('net module', () => {
         let requestFinishEventEmitted = false;
         let requestResponseEventEmitted = false;
         let responseCloseEventEmitted = false;
+        let unexpectedError: Error | undefined;
 
         const urlRequest = net.request(serverUrl);
         urlRequest.on('response', (response) => {
@@ -1000,8 +1011,8 @@ describe('net module', () => {
           response.on('end', () => {
             expect.fail('Unexpected end event');
           });
-          response.on('error', () => {
-            expect.fail('Unexpected error event');
+          response.on('error', (error) => {
+            unexpectedError = error;
           });
           response.on('close' as any, () => {
             responseCloseEventEmitted = true;
@@ -1011,11 +1022,12 @@ describe('net module', () => {
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
         expect(requestReceivedByServer).to.be.true('request should be received by the server');
         expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted');
@@ -1040,14 +1052,16 @@ describe('net module', () => {
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.on('abort', () => {
           abortsEmitted++;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
         expect(requestReceivedByServer).to.be.true('request should be received by server');
         expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event');

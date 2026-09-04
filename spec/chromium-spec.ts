@@ -3380,14 +3380,16 @@ describe('chromium features', () => {
             ...extraPreferences
           });
           let redirected = false;
+          let rendererGone = false;
           w.webContents.on('render-process-gone', () => {
-            expect.fail('renderer crashed / was killed');
+            rendererGone = true;
           });
           w.webContents.on('did-redirect-navigation', (event, url) => {
             expect(url).to.equal(`${serverCrossSiteUrl}/redirected`);
             redirected = true;
           });
           await w.loadURL(`${serverUrl}/redirect-cross-site`);
+          expect(rendererGone).to.be.false('renderer crashed / was killed');
           expect(redirected).to.be.true('didnt redirect');
         });
       };

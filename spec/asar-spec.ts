@@ -2049,9 +2049,9 @@ describe('asar package', function () {
       itremote('streams a whole file, emitting open/ready/end/close', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const events: string[] = [];
+        const stream = fs.createReadStream(p);
         const content = await new Promise<Buffer>((resolve, reject) => {
           const chunks: Buffer[] = [];
-          const stream = fs.createReadStream(p);
           stream.on('open', (fd) => {
             events.push('open');
             expect(fd).to.be.a('number');
@@ -2062,10 +2062,10 @@ describe('asar package', function () {
           stream.on('end', () => events.push('end'));
           stream.on('close', () => {
             events.push('close');
-            expect(stream.bytesRead).to.equal(6);
             resolve(Buffer.concat(chunks));
           });
         });
+        expect(stream.bytesRead).to.equal(6);
         expect(content.toString()).to.equal('file1\n');
         expect(events).to.deep.equal(['open', 'ready', 'end', 'close']);
       });
@@ -3284,11 +3284,11 @@ describe('asar package', function () {
           async function (childProcess: string) {
             const echo = path.join(asarDir, 'echo.asar', 'echo');
             const process = require(childProcess).execFile(echo, ['test']);
-            const code = await new Promise((resolve) => process.once('close', resolve));
-            expect(code).to.equal(0);
-            process.on('error', function () {
-              throw new Error('error');
+            const code = await new Promise((resolve, reject) => {
+              process.once('close', resolve);
+              process.once('error', reject);
             });
+            expect(code).to.equal(0);
           },
           [childProcess]
         );
