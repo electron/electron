@@ -41,10 +41,6 @@ Module.wrapper = [
   '\n}.call(this, exports, require, module, __filename, __dirname); });'
 ];
 
-// We modified the original process.argv to let node.js load the
-// init.js, we need to restore it here.
-process.argv.splice(1, 1);
-
 // Import common settings.
 require('@electron/internal/common/init');
 
