@@ -7,17 +7,22 @@
 #include "shell/browser/api/electron_api_safe_storage.h"
 
 #include "base/functional/bind.h"
+#include "base/no_destructor.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace {
 
@@ -28,8 +33,8 @@ const char* kEncryptionVersionPrefixV11 = "v11";
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo SafeStorage::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo SafeStorage::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronSafeStorage);
 
 SafeStorage::PendingEncrypt::PendingEncrypt(
     gin_helper::Promise<v8::Local<v8::Value>> promise,
@@ -49,18 +54,32 @@ SafeStorage::PendingDecrypt::PendingDecrypt(PendingDecrypt&&) = default;
 SafeStorage::PendingDecrypt& SafeStorage::PendingDecrypt::operator=(
     PendingDecrypt&&) = default;
 
-gin_helper::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new SafeStorage(isolate));
+SafeStorage* SafeStorage::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<SafeStorage>> instance([isolate] {
+    return cppgc::Persistent<SafeStorage>(
+        cppgc::MakeGarbageCollected<SafeStorage>(
+            isolate->GetCppHeap()->GetAllocationHandle(), isolate));
+  }());
+  return instance->Get();
 }
 
-SafeStorage::SafeStorage(v8::Isolate* isolate) {}
+SafeStorage::SafeStorage(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+}
 
 SafeStorage::~SafeStorage() = default;
 
+void SafeStorage::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+  weak_factory_.Invalidate();
+  pending_availability_checks_.clear();
+  pending_encrypts_.clear();
+  pending_decrypts_.clear();
+}
+
 gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<SafeStorage>::GetObjectTemplateBuilder(
-             isolate)
+  return gin::ObjectTemplateBuilder(isolate, GetClassName())
       .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
       .SetMethod("isAsyncEncryptionAvailable",
                  &SafeStorage::IsAsyncEncryptionAvailable)
@@ -81,8 +100,11 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
   if (encryptor_requested_)
     return;
   encryptor_requested_ = true;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   g_browser_process->os_crypt_async()->GetInstance(
-      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)));
+      base::BindOnce(&SafeStorage::OnOsCryptReady,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))));
 }
 
 void SafeStorage::OnOsCryptReady(
@@ -139,8 +161,17 @@ void SafeStorage::OnOsCryptReady(
   pending_decrypts_.clear();
 }
 
-const char* SafeStorage::GetTypeName() {
-  return "SafeStorage";
+const gin::WrapperInfo* SafeStorage::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* SafeStorage::GetHumanReadableName() const {
+  return "Electron / SafeStorage";
+}
+
+void SafeStorage::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<SafeStorage>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 bool SafeStorage::IsEncryptionAvailable() {
