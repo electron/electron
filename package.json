@@ -29,7 +29,7 @@
     "minimist": "^1.2.8",
     "node-gyp": "^12.3.0",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "semver": "^7.6.3",
