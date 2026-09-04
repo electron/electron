@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
+index 504dd46249425a8e8396332bf061f1f75cdd9401..c9d450749b2ab31fdf9b69069f0fa59f2d8dc81e 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -424,7 +424,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +362,121 @@ template("node_gn_build") {
+@@ -328,26 +362,126 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -473,6 +473,11 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
 +          # InitializeOncePerProcess).
 +          "--electron-v8-snapshot-blob=" +
 +              rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
++
++          # V8 flags that Node would otherwise default differently must match
++          # the runtime isolate, or the builtins' code cache embedded here is
++          # rejected on its flags hash (see NodeBindings::ParseNodeCliFlags).
++          "--no-js-source-phase-imports",
 +        ]
 +      }
 +    }

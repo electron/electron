@@ -77,7 +77,7 @@ index ad22d64bc133b657de85a4012756a2aa0360339b..24d02400a6baf5f7df211a3c4c3551ea
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/unofficial.gni b/unofficial.gni
-index 0f5b0553e693f2011a9fd562be6677a8869b38af..a9b00893ab5e660a526b0d9de8316e510b95c06a 100644
+index c9d450749b2ab31fdf9b69069f0fa59f2d8dc81e..3af7a401e52ea1180abeb4ffd2f4d48b2416fb49 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -73,6 +73,12 @@ template("node_gn_build") {
