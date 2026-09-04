@@ -1690,11 +1690,11 @@ describe('asar package', function () {
           async function (childProcess: string) {
             const echo = path.join(asarDir, 'echo.asar', 'echo');
             const process = require(childProcess).execFile(echo, ['test']);
-            const code = await new Promise((resolve) => process.once('close', resolve));
-            expect(code).to.equal(0);
-            process.on('error', function () {
-              throw new Error('error');
+            const code = await new Promise((resolve, reject) => {
+              process.once('close', resolve);
+              process.once('error', reject);
             });
+            expect(code).to.equal(0);
           },
           [childProcess]
         );
