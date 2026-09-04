@@ -17,7 +17,7 @@ TODO(codebytere): figure out how to properly wait for paint-hold instead
 (carried over from feature_list.cc).
 
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
-index 461a128e6151b3f61da330c48dcf63dff0fe30e3..a75ddffded2d5d60c685c009241b2909cd7982a8 100644
+index 2ba1163cfff96afae075d061c7e758bf37af2fc4..ee0b70ccbaa1c39622e6361811e295458f1beef6 100644
 --- a/components/input/render_input_router.cc
 +++ b/components/input/render_input_router.cc
 @@ -31,6 +31,7 @@
