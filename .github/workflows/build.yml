@@ -132,7 +132,7 @@ jobs:
   # reported as skipped, which branch protection treats as satisfied.
   lint:
     needs: setup
-    if: ${{ !inputs.skip-lint }}
+    if: ${{ false && (!inputs.skip-lint) }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
@@ -145,7 +145,7 @@ jobs:
   # Docs Only Jobs
   docs-only:
     needs: [setup, checkout-linux]
-    if: ${{ needs.setup.outputs.docs-only == 'true' }}
+    if: ${{ false && (needs.setup.outputs.docs-only == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
     permissions:
       contents: read
@@ -189,7 +189,7 @@ jobs:
   # skip it via the docs-only output instead.
   checkout-linux:
     needs: setup
-    if: ${{ (needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux }}
+    if: ${{ false && ((needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux) }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -221,7 +221,7 @@ jobs:
 
   checkout-windows:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: ${{ false && (needs.setup.outputs.src == 'true' && !inputs.skip-windows) }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -269,7 +269,7 @@ jobs:
 
   build-siso-linux:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
@@ -278,7 +278,7 @@ jobs:
 
   build-siso-windows:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
@@ -287,6 +287,7 @@ jobs:
 
   # GN Check Jobs
   macos-gn-check:
+    if: false # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -303,7 +304,7 @@ jobs:
     permissions:
       contents: read
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       target-platform: linux
       target-archs: x64 arm64
@@ -313,6 +314,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   windows-gn-check:
+    if: false # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -355,12 +357,65 @@ jobs:
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   
+  # TEMP(macos-x64 runner timing): the x64 build's tests on the arm64 macos-15 runners, under Rosetta.
+  # display-server only names this variant, keeping its concurrency group and
+  # artifact names apart from the other x64 test runs.
+  macos-x64-test-rosetta:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    needs: [macos-x64]
+    with:
+      target-platform: macos
+      target-arch: x64
+      test-runs-on: macos-15
+      display-server: rosetta
+      enable-ssh: ${{ inputs.enable-ssh || false }}
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+
+  # TEMP(macos-x64 runner timing): the x64 build's tests on the standard (non-large) Intel runners.
+  # display-server only names this variant, keeping its concurrency group and
+  # artifact names apart from the other x64 test runs.
+  macos-x64-test-intel:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    needs: [macos-x64]
+    with:
+      target-platform: macos
+      target-arch: x64
+      test-runs-on: macos-15-intel
+      display-server: intel
+      enable-ssh: ${{ inputs.enable-ssh || false }}
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+
   # macos-arm64, linux-x64, and windows-x64 carry the clang-tidy legs. When a
   # change touches no native code (per setup's native filter), run-clang-tidy
   # skips the clang-tidy job inside the reusable workflow - like the lint
   # skip above, the check is still reported as skipped, which branch
   # protection treats as satisfied.
   macos-arm64:
+    if: false # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     permissions:
       contents: read
       issues: read
@@ -398,7 +453,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: [setup, checkout-linux, build-siso-linux]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
@@ -432,7 +487,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -464,7 +519,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -496,7 +551,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: ${{ false && (needs.setup.outputs.src == 'true') }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: ubuntu-22.04-arm
@@ -521,6 +576,7 @@ jobs:
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
     
   test-linux-arm64-64k:
+    if: false # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
     permissions:
       contents: read
@@ -538,7 +594,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
     needs: [setup, checkout-windows, build-siso-windows]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: ${{ false && (needs.setup.outputs.src == 'true' && !inputs.skip-windows) }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: garm-windows-x64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
@@ -570,7 +626,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso-windows]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: ${{ false && (needs.setup.outputs.src == 'true' && !inputs.skip-windows) }} # TEMP(macos-x64 runner timing): only the macOS x64 lanes run on this draft
     with:
       build-runs-on: garm-windows-x64-32core
       test-runs-on: windows-11-arm
