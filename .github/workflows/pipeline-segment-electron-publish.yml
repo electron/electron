@@ -220,6 +220,11 @@ jobs:
           echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
       - name: Wait for space cleanup to finish
         wait-all:
+      # free-space-macos deletes in a detached process, so the space comes back
+      # gradually. Wait only for what the src cache restore needs.
+      - name: Wait for free disk space
+        if: ${{ inputs.target-platform == 'macos' }}
+        run: bash src/electron/.github/actions/free-space-macos/wait-for-free-space.sh 80
       - name: Check disk space after freeing up space
         if: ${{ inputs.target-platform == 'macos' }}
         run: df -h

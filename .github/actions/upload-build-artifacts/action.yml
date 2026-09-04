@@ -1,0 +1,47 @@
+name: 'Upload Build Artifacts'
+description: 'Uploads the artifacts that build-electron staged when it was run with upload-artifacts: false'
+# Composite actions cannot declare background steps, but a whole composite
+# action can run as one. This is the upload tail of build-electron on its own,
+# so a workflow can upload one build variant while it builds the next.
+#
+# Everything comes from inputs rather than env: a background step keeps
+# running while later steps rewrite GITHUB_ENV (build-electron sets
+# ARTIFACT_KEY for each variant it builds).
+inputs:
+  artifact-key:
+    description: 'Artifact key, as computed by build-electron (for example darwin_arm64)'
+    required: true
+  artifact-platform:
+    description: 'Artifact platform, should be linux, win, darwin or mas'
+    required: true
+  target-arch:
+    description: 'Target arch'
+    required: true
+  upload-src-artifacts:
+    description: 'Upload the src artifacts'
+    required: false
+    default: 'true'
+  upload-out-gen-artifacts:
+    description: 'Upload the staged out/Default/gen artifacts'
+    required: false
+    default: 'false'
+runs:
+  using: "composite"
+  steps:
+    - name: Upload Generated Artifacts
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      with:
+        name: generated_artifacts_${{ inputs.artifact-key }}
+        path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+    - name: Upload Src Artifacts
+      if: ${{ inputs.upload-src-artifacts == 'true' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      with:
+        name: src_artifacts_${{ inputs.artifact-key }}
+        path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+    - name: Upload Out Gen Artifacts
+      if: ${{ inputs.upload-out-gen-artifacts == 'true' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+      with:
+        name: out_gen_artifacts_${{ inputs.artifact-key }}
+        path: ./out_gen_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
