@@ -31,10 +31,12 @@ declare namespace Electron {
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
   interface BaseWindow {
+    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
+    _setSwipeGestureEnabled: (enabled: boolean) => void;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(
       event: '-touch-bar-interaction',

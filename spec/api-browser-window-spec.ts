@@ -103,6 +103,26 @@ describe('BrowserWindow module', () => {
     expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
   });
 
+  ifit(process.platform === 'darwin')('tracks swipe gesture listeners on BrowserWindow', () => {
+    const window = new BrowserWindow({ show: false });
+    try {
+      const calls: boolean[] = [];
+      window._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      window.on('swipe-gesture', listener);
+      window.off('swipe-gesture', listener);
+      window.on('swipe-gesture', listener);
+      window.removeAllListeners();
+      window.on('swipe-gesture', listener);
+      window.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false, true, false, true, false]);
+    } finally {
+      window.destroy();
+    }
+  });
+
   describe('BrowserWindow constructor', () => {
     afterEach(closeAllWindows);
 

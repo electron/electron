@@ -84,7 +84,85 @@ describe('BaseWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('macOS events', () => {
-    eventSubscriptionTests(['swipe', 'rotate-gesture', 'new-window-for-tab']);
+    eventSubscriptionTests([
+      'swipe',
+      'swipe-gesture',
+      'rotate-gesture',
+      'new-window-for-tab'
+    ]);
+
+    it('observes swipe gestures only while listeners are registered', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const first = () => {};
+      const second = () => {};
+
+      w.on('swipe-gesture', first);
+      w.on('swipe-gesture', second);
+      w.off('swipe-gesture', first);
+      w.off('swipe-gesture', second);
+
+      expect(calls).to.deep.equal([true, false]);
+    });
+
+    it('continues observing after removing all swipe gesture listeners', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners('swipe-gesture');
+      w.on('swipe-gesture', listener);
+      w.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false, true, false]);
+    });
+
+    it('continues observing after removing all listeners', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners();
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners();
+      w.on('swipe-gesture', listener);
+      w.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false, true, false, true, false]);
+    });
+
+    it('restores swipe gesture hooks when their listener lists are cleared', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      w.removeAllListeners('newListener');
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners('removeListener');
+      w.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false]);
+    });
+
+    it('does not treat an explicit undefined event name as removing all listeners', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners(undefined);
+      expect(w.listenerCount('swipe-gesture')).to.equal(1);
+      w.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false]);
+    });
   });
 
   describe('BaseWindow.close()', () => {
