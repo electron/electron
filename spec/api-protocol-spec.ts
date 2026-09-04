@@ -960,6 +960,16 @@ describe('protocol module', () => {
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
+
+    it('preserves the port for a custom standard scheme', async () => {
+      const targetUrl = `${portScheme}://fake-host:12345/index.html`;
+      registerStringProtocol(portScheme, (request, callback) => {
+        callback(request.url);
+      });
+      defer(() => unregisterProtocol(portScheme));
+      const r = await ajax(targetUrl);
+      expect(r.data).to.equal(targetUrl);
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
