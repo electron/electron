@@ -1180,7 +1180,14 @@ if (is_mac) {
   electron_framework_name = "$electron_product_name Framework"
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
-  electron_framework_version = "A"
+
+  # Build the framework into a versioned bundle directory
+  # (Electron Framework.framework/Versions/<version>/) matching Chrome's
+  # chrome_framework_version = chrome_version_full convention, rather than the
+  # generic macOS "A". The top-level and Versions/Current symlinks created by
+  # mac_framework_bundle remain version-agnostic, so the @rpath-based
+  # install_name below still resolves without modification.
+  electron_framework_version = electron_version
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
@@ -1282,23 +1289,49 @@ if (is_mac) {
     configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
     configs += [ "//build/config/compiler:thinlto_optimize_max" ]
 
+    # The helper apps now live inside the framework's versioned bundle
+    # directory (Versions/<version>/Helpers/), so a "Helpers" symlink is
+    # required for all build variants, including MAS.
     framework_contents = [
+      "Helpers",
       "Resources",
       "Libraries",
     ]
-    if (!is_mas_build) {
-      framework_contents += [ "Helpers" ]
+
+    # Only actual link inputs belong in deps/public_deps here. The
+    # mac_framework_bundle template forwards deps and public_deps to the
+    # framework's shared_library, but attaches bundle_deps only to the
+    # create_bundle. The helper apps link that shared_library via +link_nested
+    # (there is no create_bundle "barrier" in between), so everything reachable
+    # from the shared_library's dep graph is also pulled into every helper app:
+    # bundle_data would be duplicated into each helper's bundle, and public_deps
+    # would propagate as direct link dependencies. Keeping the framework's
+    # resources, libraries, and nested helpers in bundle_deps mirrors
+    # content_shell's framework, keeps the helper apps minimal (they load
+    # ffmpeg/SwiftShader from the framework, not from their own bundle), and
+    # avoids a dependency cycle for :electron_framework_helpers (which depends
+    # back on the helper apps).
+    public_deps = electron_framework_link_deps
+    deps = []
+    if (!is_component_build && is_component_ffmpeg) {
+      # Link libffmpeg into the framework binary. The dylib itself is copied
+      # into the framework by the electron_framework_libraries bundle_data
+      # below; the link input must be a private dep here (rather than routed
+      # through that bundle_data's public_deps as it was previously) so the
+      # dependency is not propagated through +link_nested into the helper apps,
+      # which would give each helper an unresolvable
+      # @loader_path/libffmpeg.dylib load command.
+      deps += [ "//third_party/ffmpeg" ]
     }
-    public_deps =
-        [ ":electron_framework_libraries" ] + electron_framework_link_deps
-    deps = [
+    bundle_deps = [
+      ":electron_framework_helpers",
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
-      deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -1340,7 +1373,11 @@ if (is_mac) {
 
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
-        ":electron_framework+link",
+        # The helper is a nested component of the framework bundle (it lives in
+        # Versions/<version>/Helpers/), so link the framework's shared library
+        # via +link_nested to avoid a dependency cycle with the framework
+        # bundle target.
+        ":electron_framework+link_nested",
         "//electron/build/config:generate_mas_config",
       ]
       if (!is_mas_build) {
@@ -1356,14 +1393,22 @@ if (is_mac) {
       info_plist = "shell/renderer/resources/mac/Info.plist"
       extra_substitutions =
           [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
+
+      # The helper is at
+      # Electron.app/Contents/Frameworks/Electron Framework.framework/
+      #     Versions/<version>/Helpers/Electron Helper.app/Contents/MacOS
+      # Set up an rpath to Contents/Frameworks/ so that the framework is found
+      # via its @rpath-based install_name.
       ldflags = [
         "-rpath",
-        "@executable_path/../../..",
+        "@executable_path/../../../../../../..",
       ]
       if (is_component_build) {
+        # Add an rpath up to the root output directory so that the component
+        # build's shared libraries can be found.
         ldflags += [
           "-rpath",
-          "@executable_path/../../../../../..",
+          "@executable_path/../../../../../../../../../..",
         ]
       }
     }
@@ -1386,6 +1431,21 @@ if (is_mac) {
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
     }
+  }
+
+  # Bundle the helper apps into the framework's versioned Helpers directory
+  # (Versions/<version>/Helpers/), matching Chrome and content_shell. Because
+  # the helpers link the framework's shared library via +link_nested, this does
+  # not introduce a dependency cycle with the framework bundle target.
+  bundle_data("electron_framework_helpers") {
+    sources = []
+    public_deps = []
+    foreach(helper_params, electron_mac_helpers) {
+      sources +=
+          [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
+      public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
+    }
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
   }
 
   template("stripped_framework") {
@@ -1432,11 +1492,9 @@ if (is_mac) {
       ":stripped_squirrel_framework",
     ]
 
-    foreach(helper_params, electron_mac_helpers) {
-      sources +=
-          [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
-      public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
-    }
+    # The helper apps are no longer bundled here; they are copied into the
+    # framework's Versions/<version>/Helpers/ directory by
+    # :electron_framework_helpers (a dependency of :electron_framework).
   }
 
   mac_app_bundle("electron_login_helper") {

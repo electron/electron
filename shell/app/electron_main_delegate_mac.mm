@@ -27,7 +27,17 @@ base::FilePath GetFrameworksPath() {
   return MainApplicationBundlePath().Append("Contents").Append("Frameworks");
 }
 
-base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
+// The helper apps live inside the framework's versioned bundle directory, e.g.
+// Contents/Frameworks/Electron Framework.framework/Versions/<version>/Helpers/.
+// The framework's top-level "Helpers" symlink points into Versions/Current, so
+// resolving through the framework bundle keeps this version-agnostic.
+base::FilePath GetHelpersPath() {
+  return GetFrameworksPath()
+      .Append(ELECTRON_PRODUCT_NAME " Framework.framework")
+      .Append("Helpers");
+}
+
+base::FilePath GetHelperAppPath(const base::FilePath& helpers_path,
                                 const std::string& name) {
   // Figure out what helper we are running
   base::FilePath path;
@@ -43,7 +53,7 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
     helper_name += kElectronMacHelperSuffixPlugin;
   }
 
-  return frameworks_path.Append(name + " " + helper_name + ".app")
+  return helpers_path.Append(name + " " + helper_name + ".app")
       .Append("Contents")
       .Append("MacOS")
       .Append(name + " " + helper_name);
@@ -57,13 +67,24 @@ void ElectronMainDelegate::OverrideFrameworkBundlePath() {
 }
 
 void ElectronMainDelegate::OverrideChildProcessPath() {
-  base::FilePath frameworks_path = GetFrameworksPath();
+  base::FilePath helpers_path = GetHelpersPath();
   base::FilePath helper_path =
-      GetHelperAppPath(frameworks_path, ELECTRON_PRODUCT_NAME);
+      GetHelperAppPath(helpers_path, ELECTRON_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
-    helper_path = GetHelperAppPath(frameworks_path, GetApplicationName());
+    helper_path = GetHelperAppPath(helpers_path, GetApplicationName());
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
+  // The helper lives inside the framework's versioned bundle directory, reached
+  // via the framework's top-level "Helpers" symlink (which points through
+  // Versions/Current). Resolve the symlinks to the real versioned path so it
+  // matches the canonicalized program path that content computes via
+  // base::MakeAbsoluteFilePath — otherwise the safety check in
+  // ElectronBrowserClient::AppendExtraCommandLineSwitches would compare the
+  // symlinked path against the resolved path and abort the launch.
+  if (base::FilePath resolved = base::MakeAbsoluteFilePath(helper_path);
+      !resolved.empty()) {
+    helper_path = std::move(resolved);
+  }
   base::PathService::OverrideAndCreateIfNeeded(
       content::CHILD_PROCESS_EXE, helper_path, /*is_absolute=*/true,
       /*create=*/false);

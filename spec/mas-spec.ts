@@ -8,30 +8,24 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
     // Get paths to all Electron binaries
     const getElectronBinaries = () => {
       const contentsPath = path.dirname(path.dirname(process.execPath));
+      // Helper apps live inside the framework's versioned bundle directory,
+      // reachable via the framework's top-level "Helpers" symlink.
+      const helpersPath = path.join(contentsPath, 'Frameworks', 'Electron Framework.framework', 'Helpers');
       return {
         mainProcess: process.execPath,
         framework: path.join(contentsPath, 'Frameworks', 'Electron Framework.framework', 'Electron Framework'),
         helpers: {
-          main: path.join(contentsPath, 'Frameworks', 'Electron Helper.app', 'Contents', 'MacOS', 'Electron Helper'),
-          gpu: path.join(
-            contentsPath,
-            'Frameworks',
-            'Electron Helper (GPU).app',
-            'Contents',
-            'MacOS',
-            'Electron Helper (GPU)'
-          ),
+          main: path.join(helpersPath, 'Electron Helper.app', 'Contents', 'MacOS', 'Electron Helper'),
+          gpu: path.join(helpersPath, 'Electron Helper (GPU).app', 'Contents', 'MacOS', 'Electron Helper (GPU)'),
           plugin: path.join(
-            contentsPath,
-            'Frameworks',
+            helpersPath,
             'Electron Helper (Plugin).app',
             'Contents',
             'MacOS',
             'Electron Helper (Plugin)'
           ),
           renderer: path.join(
-            contentsPath,
-            'Frameworks',
+            helpersPath,
             'Electron Helper (Renderer).app',
             'Contents',
             'MacOS',

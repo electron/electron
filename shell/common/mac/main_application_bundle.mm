@@ -35,10 +35,20 @@ base::FilePath MainApplicationBundlePath() {
        path.value().ends_with(kElectronMacHelperSuffixPlugin) ||
        path.value().ends_with(content::kMacHelperSuffix_renderer) ||
        path.value().ends_with(content::kMacHelperSuffix_gpu))) {
-    // The running executable is the helper. Go up five steps:
-    // Contents/Frameworks/Helper.app/Contents/MacOS/Helper
-    // ^ to here                                     ^ from here
-    path = path.DirName().DirName().DirName().DirName().DirName();
+    // The running executable is a helper nested inside the framework's
+    // versioned bundle directory. Go up nine steps:
+    // Contents/Frameworks/Electron Framework.framework/Versions/<version>/
+    //     Helpers/Helper.app/Contents/MacOS/Helper
+    // ^ to here                                            ^ from here
+    path = path.DirName()
+               .DirName()
+               .DirName()
+               .DirName()
+               .DirName()
+               .DirName()
+               .DirName()
+               .DirName()
+               .DirName();
   } else {
     // One step up to MacOS, another to Contents.
     path = path.DirName().DirName();

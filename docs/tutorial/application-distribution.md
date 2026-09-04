@@ -89,7 +89,7 @@ before distributing it to users.
   following files:
 
   - `Electron.app/Contents/Info.plist`
-  - `Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist`
+  - `Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/Current/Helpers/Electron Helper.app/Contents/Info.plist`
 
   You can also rename the helper app to avoid showing `Electron Helper` in the
   Activity Monitor, but make sure you have renamed the helper app's executable
@@ -103,10 +103,14 @@ MyApp.app/Contents
 ├── MacOS/
 │   └── MyApp
 └── Frameworks/
-    └── MyApp Helper.app
-        ├── Info.plist
-        └── MacOS/
-            └── MyApp Helper
+    └── Electron Framework.framework/
+        └── Versions/
+            └── Current/
+                └── Helpers/
+                    └── MyApp Helper.app
+                        ├── Info.plist
+                        └── MacOS/
+                            └── MyApp Helper
 ```
 
 :::note
