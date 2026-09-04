@@ -3307,11 +3307,10 @@ void WebContents::SetUserAgent(
     std::optional<blink::UserAgentMetadata> ua_metadata) {
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = user_agent;
-  if (ua_metadata) {
-    ua_override.ua_metadata_override = std::move(ua_metadata);
-  } else {
+  if (!user_agent.empty()) {
     ua_override.ua_metadata_override =
-        ElectronBrowserClient::Get()->GetUserAgentMetadata();
+        ua_metadata ? std::move(ua_metadata)
+                    : GetBrowserContext()->GetUserAgentMetadata();
   }
 
   web_contents()->SetUserAgentOverride(ua_override, false);
