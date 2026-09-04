@@ -20,18 +20,14 @@ UpdateStyleAndLayoutTreeForThisDocument().
 Hoist the update to the callers that run outside a lifecycle update (the
 crbug.com/590369 TODO): MoveCommands, EditorKeyBindings,
 DragController::DragIsMove and the clipboard commands now update first;
-editor commands, SelectionController and EventHandler already did. The
-lifecycle-time callers read the current tree, as their own DCHECKs
-already require.
+editor commands, SelectionController and EventHandler already did.
+SelectionHasFocus() DCHECKs that layout is clean instead. The change is
+behind the SelectionHasFocusWithoutLayoutUpdate runtime flag (stable);
+with the flag off SelectionHasFocus() updates layout itself as before.
 
-The test reproduces the crash state: a pending selection commit and
-style dirtied after layout, then the hit-test lifecycle update. It is
-release-only because LayoutSelection::Commit() DCHECKs the tree clean
-first; how the tree gets dirty at that point in the field is not
-identified, and that DCHECK keeps flagging it in debug builds.
+Upstream's test is release-only and stays with the CL.
 
 Bug: 541952000
-Test: blink_unittests --gtest_filter=LocalFrameViewTest.CompositingInputsCommitsPendingSelectionWithoutUpdatingDirtyStyle
 
 Backport of https://chromium-review.googlesource.com/c/chromium/src/+/8252692
 
@@ -124,29 +120,35 @@ index 7980a6f4cd100b5a580a64959db97ad4a6d3b027..8e10cd98dd8da048d28142a42589e0ca
      return false;
  
 diff --git a/third_party/blink/renderer/core/editing/frame_selection.cc b/third_party/blink/renderer/core/editing/frame_selection.cc
-index 67b7f8281917f8efcdb6e68f467e103bb90f9bee..8db7c9cfa418afec89d1c2578ab3e514e75ee967 100644
+index 67b7f8281917f8efcdb6e68f467e103bb90f9bee..f7ecba2ab50d740af0d114eec78760abb2ed44f9 100644
 --- a/third_party/blink/renderer/core/editing/frame_selection.cc
 +++ b/third_party/blink/renderer/core/editing/frame_selection.cc
-@@ -725,9 +725,6 @@ void FrameSelection::Clear() {
+@@ -725,9 +725,12 @@ void FrameSelection::Clear() {
  }
  
  bool FrameSelection::SelectionHasFocus() const {
 -  // TODO(editing-dev): Hoist UpdateStyleAndLayout
 -  // to caller. See http://crbug.com/590369 for more details.
 -  GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
++  if (RuntimeEnabledFeatures::SelectionHasFocusWithoutLayoutUpdateEnabled()) {
++    DCHECK_GE(GetDocument().Lifecycle().GetState(),
++              DocumentLifecycle::kLayoutClean);
++  } else {
++    GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
++  }
    if (ComputeVisibleSelectionInFlatTree().IsNone())
      return false;
    const Node* current =
 diff --git a/third_party/blink/renderer/core/editing/frame_selection.h b/third_party/blink/renderer/core/editing/frame_selection.h
-index 686262c609011fc202bb83f57d4d8f69e2f3568e..2ac459d78011f0837d2ffd99686b52355bfb109e 100644
+index 686262c609011fc202bb83f57d4d8f69e2f3568e..ad496bcd1795c66896f1e43bddb8539944b9b7a0 100644
 --- a/third_party/blink/renderer/core/editing/frame_selection.h
 +++ b/third_party/blink/renderer/core/editing/frame_selection.h
 @@ -257,6 +257,8 @@ class CORE_EXPORT FrameSelection final
    bool IsCaretBlinkingSuspended() const;
  
    // Focus
-+  // Reads the current style and layout without updating them; callers that
-+  // run outside a lifecycle update do UpdateStyleAndLayout() first.
++  // Requires clean layout; callers outside a lifecycle update call
++  // UpdateStyleAndLayout() first.
    bool SelectionHasFocus() const;
    void SetFrameIsFocused(bool);
    bool FrameIsFocused() const { return focused_; }
@@ -169,3 +171,20 @@ index cdeab8c10de1ed99139df5e4e35d861ba68a60bd..54890791417fb60243db536b164f1200
      return false;
    }
    auto visible_selection =
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 52b223b26ce4692f12725aaf75a048acdee1b961..871d037f17453366be526c2a9bc5e2d4a92ed90f 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5558,6 +5558,12 @@
+       name: "SelectionHandleWithBottomClipped",
+       status: "stable",
+     },
++    {
++      // Kill switch for https://crbug.com/590369: SelectionHasFocus() reads
++      // the current layout instead of forcing a style and layout update.
++      name: "SelectionHasFocusWithoutLayoutUpdate",
++      status: "stable",
++    },
+     {
+       // https://issues.chromium.org/issues/40502558
+       name: "SelectionRemoveRangeNotFoundError",
