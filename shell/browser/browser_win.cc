@@ -678,7 +678,9 @@ void Browser::UpdateBadgeContents(
   taskbar_host_.SetOverlayIcon(hwnd, badge, badge_alt_string);
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+v8::Local<v8::Promise> Browser::SetLoginItemSettings(
+    v8::Isolate* isolate,
+    LoginItemSettings settings) {
   base::win::RegKey key(HKEY_CURRENT_USER, Run.c_str(), KEY_ALL_ACCESS);
 
   base::win::RegKey startup_approved_key(
@@ -713,6 +715,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
     startup_approved_key.DeleteValue(key_name);
     key.DeleteValue(key_name);
   }
+  return gin_helper::Promise<void>::ResolvedPromise(isolate);
 }
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(

@@ -373,10 +373,18 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   return true;
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  if (login_item_request_in_flight_) {
-    pending_login_item_settings_ = std::move(settings);
-    return;
+v8::Local<v8::Promise> Browser::SetLoginItemSettings(
+    v8::Isolate* isolate,
+    LoginItemSettings settings) {
+  gin_helper::Promise<void> promise(isolate);
+  const auto handle = promise.GetHandle();
+
+  auto bus = dbus_thread_linux::GetSharedSessionBus();
+  if (!bus) {
+    VLOG(1) << "Failed to get session D-Bus for XDG Background portal login "
+               "item.";
+    promise.Resolve();
+    return handle;
   }
 
   dbus_xdg::Dictionary options;
@@ -388,67 +396,62 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
     if (commandline.empty() || commandline.front().empty()) {
       VLOG(1) << "Failed to determine executable path for XDG Background "
                  "portal login item.";
-      return;
+      promise.Resolve();
+      return handle;
     }
 
     options[kCommandlineKey] =
         dbus_utils::Variant::Wrap<"as">(std::move(commandline));
   }
 
-  auto bus = dbus_thread_linux::GetSharedSessionBus();
-  if (!bus) {
-    VLOG(1) << "Failed to get session D-Bus for XDG Background portal login "
-               "item.";
-    return;
-  }
-
-  login_item_request_in_flight_ = true;
   dbus_xdg::RequestXdgDesktopPortal(
       bus.get(),
       base::BindOnce(
           [](base::WeakPtr<Browser> browser, scoped_refptr<dbus::Bus> bus,
              dbus_xdg::Dictionary options, bool open_at_login,
+             gin_helper::Promise<void> promise,
              uint32_t portal_version) {
             if (!browser) {
               return;
             }
             if (portal_version == 0) {
               VLOG(1) << "Failed to initialize XDG portal for login item.";
-              browser->FinishLoginItemPortalRequest();
+              promise.Resolve();
               return;
             }
 
             auto* object_proxy = bus->GetObjectProxy(
                 kFreedesktopPortalName,
                 dbus::ObjectPath(kFreedesktopPortalPath));
-            browser->login_item_request_ =
+            const size_t request_id = browser->next_login_item_request_id_++;
+            browser->login_item_requests_.emplace(
+                request_id,
                 std::make_unique<dbus_xdg::Request>(
                     bus, object_proxy, kFreedesktopPortalBackground,
                     kMethodRequestBackground, std::move(options),
                     base::BindOnce(
-                        [](base::WeakPtr<Browser> browser, bool open_at_login,
+                        [](base::WeakPtr<Browser> browser, size_t request_id,
+                           bool open_at_login,
+                           gin_helper::Promise<void> promise,
                            dbus_xdg::Results results) {
                           LogLoginItemPortalResponse(open_at_login,
                                                      std::move(results));
+                          promise.Resolve();
                           if (browser) {
-                            browser->FinishLoginItemPortalRequest();
+                            browser->FinishLoginItemPortalRequest(request_id);
                           }
                         },
-                        browser, open_at_login),
-                    std::string());
+                        browser, request_id, open_at_login,
+                        std::move(promise)),
+                    std::string()));
           },
           login_item_weak_factory_.GetWeakPtr(), std::move(bus),
-          std::move(options), settings.open_at_login));
+          std::move(options), settings.open_at_login, std::move(promise)));
+  return handle;
 }
 
-void Browser::FinishLoginItemPortalRequest() {
-  login_item_request_.reset();
-  login_item_request_in_flight_ = false;
-  if (pending_login_item_settings_) {
-    LoginItemSettings settings = std::move(*pending_login_item_settings_);
-    pending_login_item_settings_.reset();
-    SetLoginItemSettings(std::move(settings));
-  }
+void Browser::FinishLoginItemPortalRequest(size_t request_id) {
+  login_item_requests_.erase(request_id);
 }
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
