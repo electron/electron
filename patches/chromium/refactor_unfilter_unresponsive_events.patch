@@ -14,6 +14,67 @@ RendererUnresponsive events are filtered out when
 This CL removes these filters so the unresponsive event can still be
 accessed from our JS event. The filtering is moved into Electron's code.
 
+It also stops RenderWidgetHostImpl::WasHidden() from declaring a hung
+renderer responsive: StopInputEventAckTimeout() calls
+RendererIsResponsive(), so hiding a hung widget emitted `responsive`
+without any recovery and cleared is_unresponsive_, and the real recovery
+then emitted nothing. WasHidden() now uses a PauseInputEventAckTimeout()
+that only stops the timer; WasShown() re-arms it and a real input ack
+still goes through RendererIsResponsive(). Chrome relies on the old
+behavior only to dismiss its hung-page dialog on tab backgrounding, which
+Electron does not build. Upstreamable alongside making the hang monitor
+observe base::PowerMonitor.
+
+diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
+index 2cffb3a8812bd..abafa454cebab 100644
+--- a/components/input/render_input_router.cc
++++ b/components/input/render_input_router.cc
+@@ -391,9 +391,13 @@ void RenderInputRouter::StartInputEventAckTimeout() {
+ }
+ 
+ void RenderInputRouter::StopInputEventAckTimeout() {
++  PauseInputEventAckTimeout();
++  delegate_->RendererIsResponsive();
++}
++
++void RenderInputRouter::PauseInputEventAckTimeout() {
+   input_event_ack_timeout_.Stop();
+   hang_monitor_timer_state_ = HangMonitorTimerState::kStopped;  // Reset state
+-  delegate_->RendererIsResponsive();
+ }
+ 
+ void RenderInputRouter::RestartInputEventAckTimeoutIfNecessary() {
+diff --git a/components/input/render_input_router.h b/components/input/render_input_router.h
+index 3e47a795e9f4d..55e19177b71b7 100644
+--- a/components/input/render_input_router.h
++++ b/components/input/render_input_router.h
+@@ -220,6 +220,9 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
+   // Stops all existing hang monitor timeouts and assumes the renderer is
+   // responsive.
+   void StopInputEventAckTimeout();
++  // Stops the timeout without treating the renderer as responsive; used while
++  // the widget is hidden, when a missing ack says nothing either way.
++  void PauseInputEventAckTimeout();
+   void RestartInputEventAckTimeoutIfNecessary();
+ 
+   void StartInputEventAckTimeoutForTesting() { StartInputEventAckTimeout(); }
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 10909c6c4ac8e..8c7039ee47cd5 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -865,8 +865,10 @@ void RenderWidgetHostImpl::WasHidden() {
+   // show goes through immediately.
+   visual_properties_ack_pending_ = false;
+ 
+-  // Don't bother reporting hung state when we aren't active.
+-  GetRenderInputRouter()->StopInputEventAckTimeout();
++  // Don't report hung state when we aren't active, but don't take hiding as
++  // proof of recovery either: a hung widget stays unresponsive until its
++  // input is acked, and WasShown() re-arms the timeout.
++  GetRenderInputRouter()->PauseInputEventAckTimeout();
+ 
+   // Show/Hide state is not sent to the renderer when it has requested for us to
+   // wait until it requests them via Init().
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
 index 3bdc5b53366933c5946e7afac4a5400357dd60e8..d2bfb959e7a671372ecc3329624b1c1c63dfecec 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
