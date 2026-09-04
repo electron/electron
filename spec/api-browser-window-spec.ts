@@ -6916,9 +6916,11 @@ describe('BrowserWindow module', () => {
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
       describe('with properties', () => {
-        it('can be set with a constructor property', () => {
+        it('can be set with a constructor property', async () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.kiosk).to.be.true();
+          // Let the fullscreen transition finish; see leaveFullScreen().
+          await once(w, 'enter-full-screen');
         });
 
         it('can be changed ', async () => {
@@ -6937,9 +6939,11 @@ describe('BrowserWindow module', () => {
       });
 
       describe('with functions', () => {
-        it('can be set with a constructor property', () => {
+        it('can be set with a constructor property', async () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.isKiosk()).to.be.true();
+          // Let the fullscreen transition finish; see leaveFullScreen().
+          await once(w, 'enter-full-screen');
         });
 
         it('can be changed ', async () => {
