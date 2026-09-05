@@ -194,13 +194,72 @@ See the MDN docs for [`Request`](https://developer.mozilla.org/en-US/docs/Web/AP
 
 * `scheme` string - scheme for which to remove the handler.
 
-Removes a protocol handler registered with `protocol.handle`.
+Removes a protocol handler registered with `protocol.handle` or a source
+registered with `protocol.registerSource`.
+
+### `protocol.registerSource(scheme, source)`
+
+* `scheme` string - a custom scheme registered with `protocol.registerSchemesAsPrivileged`.
+* `source` [ProtocolSource](structures/protocol-source.md)
+
+Serves `scheme` from directories on disk without a JavaScript handler. Each
+request is matched against `routes` (a route with a `host` wins over one
+without, then the longest `path` prefix wins), the rest of the URL's path is
+resolved inside that route's `root`, and the file is streamed to the requester
+the way `file:` URLs are, including from `asar` archives, with `Content-Type`
+taken from the file extension. A path that resolves outside `root`, a missing
+file, a request that matches no route, or a method other than `GET`/`HEAD`
+fails with `net::ERR_FILE_NOT_FOUND`. A URL whose path ends in `/` serves the
+route's `index` file.
+
+Use this instead of `protocol.handle` when a scheme only serves an app's own
+bundled files: no request touches the main thread, so pages and their
+subresources load at the same speed whether or not the main process is busy.
+
+```js
+const { app, protocol } = require('electron')
+const path = require('node:path')
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }
+])
+
+app.whenReady().then(() => {
+  protocol.registerSource('app', {
+    routes: [
+      {
+        match: { host: 'bundle', path: '/assets/' },
+        source: { type: 'directory', root: path.join(process.resourcesPath, 'assets') }
+      },
+      {
+        match: { host: 'bundle' },
+        source: {
+          type: 'directory',
+          root: path.join(app.getAppPath(), 'dist'),
+          headers: { 'Cross-Origin-Opener-Policy': 'same-origin' }
+        }
+      }
+    ]
+  })
+})
+```
+
+A scheme has either a handler or a source; `protocol.unhandle` removes either,
+and `protocol.isProtocolHandled` reports both. `webRequest` listeners apply to
+these requests as to any other.
+
+### `protocol.getSource(scheme)`
+
+* `scheme` string
+
+Returns [`ProtocolSource | null`](structures/protocol-source.md) - The source
+registered for `scheme` with `protocol.registerSource`, or `null`.
 
 ### `protocol.isProtocolHandled(scheme)`
 
 * `scheme` string
 
-Returns `boolean` - Whether `scheme` is already handled.
+Returns `boolean` - Whether `scheme` already has a handler or a source.
 
 ### `protocol.registerFileProtocol(scheme, handler)` _Deprecated_
 
