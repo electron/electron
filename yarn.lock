@@ -415,7 +415,7 @@ __metadata:
     pre-flight: "npm:^2.0.0"
     process: "npm:^0.11.10"
     semver: "npm:^7.6.3"
-    stream-json: "npm:^1.9.1"
+    stream-json: "npm:^3.6.0"
     tap-xunit: "npm:^2.4.1"
     ts-loader: "npm:^8.0.2"
     ts-node: "npm:6.2.0"
@@ -7771,10 +7771,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stream-chain@npm:^2.2.5":
-  version: 2.2.5
-  resolution: "stream-chain@npm:2.2.5"
-  checksum: 10c0/c512f50190d7c92d688fa64e7af540c51b661f9c2b775fc72bca38ea9bca515c64c22c2197b1be463741daacbaaa2dde8a8ea24ebda46f08391224f15249121a
+"stream-chain@npm:^4.2.5":
+  version: 4.2.5
+  resolution: "stream-chain@npm:4.2.5"
+  checksum: 10c0/c47e3895344e356d0aa641b08735c9f4cc7486a12275cef9549a114ea0e8348f75443f31f75053eefef0eee620a13bf6e9841479c64954b8d4dcc1a41a5511b8
   languageName: node
   linkType: hard
 
@@ -7788,12 +7788,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stream-json@npm:^1.9.1":
-  version: 1.9.1
-  resolution: "stream-json@npm:1.9.1"
+"stream-json@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "stream-json@npm:3.6.0"
   dependencies:
-    stream-chain: "npm:^2.2.5"
-  checksum: 10c0/0521e5cb3fb6b0e2561d715975e891bd81fa77d0239c8d0b1756846392bc3c7cdd7f1ddb0fe7ed77e6fdef58daab9e665d3b39f7d677bd0859e65a2bff59b92c
+    stream-chain: "npm:^4.2.5"
+  checksum: 10c0/3215fdecefff103e761bab0f01b7dd88b6bf137b01e392ebe68bc0c28465c07a87dbec7a039893003c6e993b317e0444f48ace459f771bacdc65dc6b80f48658
   languageName: node
   linkType: hard
 
