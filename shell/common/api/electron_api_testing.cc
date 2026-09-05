@@ -13,6 +13,8 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -203,6 +205,15 @@ std::optional<gin_helper::Promise<void>>& GetHeldPromise() {
   return held_promise;
 }
 
+// Fires every window's pending debounced window-state save now. Bounds only
+// reach PrefService when the 200ms timer started by
+// NativeWindow::DebouncedSaveWindowState runs, which a test would otherwise
+// have to sleep through before committing the write below.
+void FlushPendingWindowStateSaves() {
+  for (auto* window : electron::WindowList::GetWindows())
+    window->FlushPendingWindowStateSaveForTesting();
+}
+
 // Writes any pending local state (window state persistence, per-host zoom
 // levels, ...) to disk now. PrefService otherwise batches writes on a 10s
 // timer, which is what a test polling the prefs file would wait on.
@@ -257,6 +268,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &InvokeHeldOnceCallbackForTesting);
   dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
   dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
+  dict.SetMethod("flushPendingWindowStateSaves", &FlushPendingWindowStateSaves);
   dict.SetMethod("commitPendingLocalStateWrites",
                  &CommitPendingLocalStateWrites);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
