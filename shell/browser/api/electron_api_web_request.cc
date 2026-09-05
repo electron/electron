@@ -514,9 +514,13 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
     } else {
       v8::Local<v8::Value> value;
       if (dict.Get("requestHeaders", &value) && value->IsObject()) {
-        user_modified_headers = true;
-        gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value,
-                                                        &new_headers);
+        if (!gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value,
+                                                             &new_headers)) {
+          util::EmitWarning(
+              isolate, "Invalid header provided in requestHeaders", "Warning");
+        } else {
+          user_modified_headers = true;
+        }
       }
     }
   }
@@ -524,7 +528,9 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
   // If the user passes |cancel|, |new_headers| should be nullptr.
   const auto updated_headers = CalculateOnBeforeSendHeadersDelta(
       old_headers,
-      result == net::ERR_BLOCKED_BY_CLIENT ? nullptr : &new_headers);
+      (result == net::ERR_BLOCKED_BY_CLIENT || !user_modified_headers)
+          ? nullptr
+          : &new_headers);
 
   // Leave |request.request_headers| unchanged if the user didn't modify it.
   if (user_modified_headers)
@@ -609,10 +615,14 @@ void WebRequest::OnHeadersReceivedListenerResult(
         status_line = request.status_line;
       v8::Local<v8::Value> value;
       if (dict.Get("responseHeaders", &value) && value->IsObject()) {
-        user_modified_headers = true;
         override_headers->ReplaceStatusLine(status_line);
-        gin::Converter<net::HttpResponseHeaders*>::FromV8(
-            isolate, value, override_headers.get());
+        if (!gin::Converter<net::HttpResponseHeaders*>::FromV8(
+                isolate, value, override_headers.get())) {
+          util::EmitWarning(
+              isolate, "Invalid header provided in responseHeaders", "Warning");
+        } else {
+          user_modified_headers = true;
+        }
       }
     }
   }
