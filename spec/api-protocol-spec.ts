@@ -18,7 +18,7 @@ import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, ifit } from './lib/spec-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
@@ -1045,13 +1045,67 @@ describe('protocol module', () => {
       }
     });
 
-    it('only answers GET and HEAD', async () => {
+    it('answers GET, and HEAD without a body', async () => {
       register();
       const head = await net.fetch('http-like://bundle/data.json', { method: 'HEAD' });
       expect(head.status).to.equal(200);
+      expect(head.headers.get('content-type')).to.equal('application/json');
+      expect(head.headers.get('content-length')).to.equal('11');
+      expect(await head.text()).to.equal('');
       await expect(
         net.fetch('http-like://bundle/data.json', { method: 'POST', body: 'x' })
       ).to.eventually.be.rejectedWith(/ERR_FILE_NOT_FOUND/);
+    });
+
+    it('serves byte ranges as 206 with Content-Range, and 416 when unsatisfiable', async () => {
+      register();
+      const part = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=2-5' } });
+      expect(part.status).to.equal(206);
+      expect(part.headers.get('content-range')).to.equal('bytes 2-5/11');
+      expect(part.headers.get('content-length')).to.equal('4');
+      expect(await part.text()).to.equal('ok":');
+      const whole = await net.fetch('http-like://bundle/data.json');
+      expect(whole.status).to.equal(200);
+      expect(whole.headers.get('content-range')).to.equal(null);
+      const bad = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=50-60' } });
+      expect(bad.status).to.equal(416);
+      expect(bad.headers.get('content-range')).to.equal('bytes */11');
+      expect(await bad.text()).to.equal('');
+    });
+
+    ifit(process.platform !== 'win32')('does not follow a symlink out of the root', async () => {
+      fs.symlinkSync(path.join(root, 'secret.txt'), path.join(root, 'dist', 'link.txt'));
+      fs.symlinkSync(root, path.join(root, 'dist', 'up'));
+      try {
+        register();
+        expect(await get('http-like://bundle/link.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/secret.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/dist/data.json')).to.deep.include({ status: 200 });
+      } finally {
+        fs.unlinkSync(path.join(root, 'dist', 'link.txt'));
+        fs.unlinkSync(path.join(root, 'dist', 'up'));
+      }
+    });
+
+    ifit(process.platform !== 'win32')('serves files larger than 4 GiB', async () => {
+      const big = path.join(root, 'dist', 'big.bin');
+      const size = 4 * 1024 * 1024 * 1024 + 4096;
+      const fd = fs.openSync(big, 'w');
+      fs.ftruncateSync(fd, size);
+      fs.writeSync(fd, Buffer.from('tail'), 0, 4, size - 4);
+      fs.closeSync(fd);
+      try {
+        register();
+        const head = await net.fetch('http-like://bundle/big.bin', { method: 'HEAD' });
+        expect(head.headers.get('content-length')).to.equal(String(size));
+        const tail = await net.fetch('http-like://bundle/big.bin', {
+          headers: { Range: `bytes=${size - 4}-${size - 1}` }
+        });
+        expect(tail.status).to.equal(206);
+        expect(await tail.text()).to.equal('tail');
+      } finally {
+        fs.unlinkSync(big);
+      }
     });
 
     it('adds the route headers to every response', async () => {
@@ -1115,6 +1169,12 @@ describe('protocol module', () => {
       expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
         /built-in/
       );
+      for (const scheme of ['https', 'file', 'blob', 'javascript', 'wss', 'devtools', 'chrome-extension']) {
+        expect(
+          () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
+          scheme
+        ).to.throw(/built-in/);
+      }
       expect(protocol.isProtocolHandled('http-like')).to.equal(false);
     });
   });

@@ -252,7 +252,7 @@ bool Protocol::IsProtocolRegistered(const std::string& scheme) {
 void Protocol::RegisterSource(gin_helper::ErrorThrower thrower,
                               const std::string& scheme,
                               const base::DictValue& options) {
-  if (std::ranges::contains(kBuiltinSchemes, scheme)) {
+  if (ProtocolRegistry::IsBuiltinScheme(scheme)) {
     thrower.ThrowError("Cannot register a source for built-in scheme " +
                        scheme);
     return;

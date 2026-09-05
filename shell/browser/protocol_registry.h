@@ -59,6 +59,8 @@ class ProtocolRegistry {
 
   // protocol.registerSource(): schemes served from directories on disk with
   // no JavaScript handler. A scheme has either a handler or a source.
+  // Schemes Chromium or the network service serve themselves.
+  static bool IsBuiltinScheme(std::string_view scheme);
   bool RegisterSource(const std::string& scheme,
                       scoped_refptr<const ProtocolSource> source);
   bool UnregisterSource(const std::string& scheme);

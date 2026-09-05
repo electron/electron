@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/memory/self_deleting.h"
 #include "base/strings/escape.h"
@@ -25,6 +26,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/common/thread_restrictions.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -39,11 +41,10 @@ bool Fail(std::string* error, std::string message) {
 bool ParseRoute(const base::DictValue& dict,
                 ProtocolSource::Route* route,
                 std::string* error) {
-  const base::DictValue* match = dict.FindDict("match");
   const base::DictValue* source = dict.FindDict("source");
   if (!source)
     return Fail(error, "Each route needs a 'source'");
-  if (match) {
+  if (const base::DictValue* match = dict.FindDict("match")) {
     if (const std::string* host = match->FindString("host"))
       route->host = base::ToLowerASCII(*host);
     if (const std::string* path = match->FindString("path")) {
@@ -55,15 +56,26 @@ bool ParseRoute(const base::DictValue& dict,
   if (route->path_prefix.empty() || route->path_prefix.back() != '/')
     route->path_prefix += '/';
 
-  const std::string* type = source->FindString("type");
-  if (!type || *type != "directory")
+  if (const std::string* type = source->FindString("type");
+      !type || *type != "directory") {
     return Fail(error, "'source.type' must be 'directory'");
-  const std::string* root = source->FindString("root");
-  if (!root || root->empty())
+  }
+  if (const std::string* root = source->FindString("root");
+      root && !root->empty()) {
+    route->root = base::FilePath::FromUTF8Unsafe(*root);
+  } else {
     return Fail(error, "A directory source needs a 'root'");
-  route->root = base::FilePath::FromUTF8Unsafe(*root);
+  }
   if (!route->root.IsAbsolute())
     return Fail(error, "'source.root' must be an absolute path");
+  // Requests are confined to the directory root really is, so a symlink under
+  // it cannot lead elsewhere; see AsarURLLoader's containment check.
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    base::FilePath real_root = base::MakeAbsoluteFilePath(route->root);
+    if (!real_root.empty())
+      route->root = real_root;
+  }
   route->root = route->root.StripTrailingSeparators();
   if (const std::string* index = source->FindString("index")) {
     if (index->find('/') != std::string::npos ||
@@ -121,7 +133,7 @@ class ProtocolSourceURLLoaderFactory
     file_request.url = net::FilePathToFileURL(match->file);
     asar::CreateAsarURLLoader(file_request, std::move(loader),
                               std::move(client), std::move(match->headers),
-                              /*read_plain_files=*/true);
+                              match->root);
   }
 
  private:
@@ -131,11 +143,6 @@ class ProtocolSourceURLLoaderFactory
 };
 
 }  // namespace
-
-ProtocolSource::Route::Route() = default;
-ProtocolSource::Route::Route(Route&&) = default;
-ProtocolSource::Route& ProtocolSource::Route::operator=(Route&&) = default;
-ProtocolSource::Route::~Route() = default;
 
 ProtocolSource::ProtocolSource() = default;
 ProtocolSource::~ProtocolSource() = default;
@@ -180,7 +187,7 @@ std::optional<ProtocolSource::Match> ProtocolSource::Resolve(
   // as the path.
   std::string host(url.host());
   std::string path =
-      url.has_path() ? std::string(url.path()) : std::string(url.GetContent());
+      url.has_path() ? std::string(url.path()) : url.GetContent();
   if (path.empty() || path.front() != '/')
     path.insert(path.begin(), '/');
   for (const Route& route : routes_) {
@@ -207,7 +214,7 @@ std::optional<ProtocolSource::Match> ProtocolSource::Resolve(
     if (relative.IsAbsolute() || relative.ReferencesParent())
       return std::nullopt;
     // The loader adds Content-Type etc. to what it is given; hand it a copy.
-    return Match{route.root.Append(relative),
+    return Match{route.root, route.root.Append(relative),
                  base::MakeRefCounted<net::HttpResponseHeaders>(
                      route.headers->raw_headers())};
   }

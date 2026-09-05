@@ -26,10 +26,6 @@ namespace electron {
 class ProtocolSource : public base::RefCountedThreadSafe<ProtocolSource> {
  public:
   struct Route {
-    Route();
-    Route(Route&&);
-    Route& operator=(Route&&);
-    ~Route();
     std::optional<std::string> host;  // nullopt matches any host
     std::string path_prefix;          // always starts and ends with '/'
     base::FilePath root;
@@ -45,6 +41,7 @@ class ProtocolSource : public base::RefCountedThreadSafe<ProtocolSource> {
   // The file `url` maps to and the headers to send with it, or nullopt when
   // no route matches or the path escapes the route's root.
   struct Match {
+    base::FilePath root;
     base::FilePath file;
     scoped_refptr<net::HttpResponseHeaders> headers;
   };

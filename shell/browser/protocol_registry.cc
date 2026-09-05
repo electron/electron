@@ -8,6 +8,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/net/protocol_source.h"
+#include "url/url_constants.h"
 
 namespace electron {
 
@@ -72,10 +73,29 @@ ProtocolRegistry::CreateRegisteredFactory(std::string_view scheme) const {
   return {};
 }
 
+// static
+bool ProtocolRegistry::IsBuiltinScheme(std::string_view scheme) {
+  static constexpr std::string_view kSchemes[] = {url::kAboutScheme,
+                                                  url::kBlobScheme,
+                                                  url::kDataScheme,
+                                                  url::kFileScheme,
+                                                  url::kFileSystemScheme,
+                                                  url::kHttpScheme,
+                                                  url::kHttpsScheme,
+                                                  url::kJavaScriptScheme,
+                                                  url::kWsScheme,
+                                                  url::kWssScheme,
+                                                  "chrome",
+                                                  "chrome-extension",
+                                                  "chrome-untrusted",
+                                                  "devtools"};
+  return std::ranges::contains(kSchemes, scheme);
+}
+
 bool ProtocolRegistry::RegisterSource(
     const std::string& scheme,
     scoped_refptr<const ProtocolSource> source) {
-  if (handlers_.contains(scheme))
+  if (IsBuiltinScheme(scheme) || handlers_.contains(scheme))
     return false;
   return sources_.try_emplace(scheme, std::move(source)).second;
 }
