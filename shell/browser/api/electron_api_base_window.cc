@@ -242,10 +242,14 @@ void BaseWindow::OnWindowHide() {
 }
 
 void BaseWindow::OnWindowMaximize() {
+  // Persist the display mode; bounds events fired during the transition
+  // are skipped by SaveWindowState, so nothing else would.
+  window_->DebouncedSaveWindowState();
   Emit("maximize");
 }
 
 void BaseWindow::OnWindowUnmaximize() {
+  window_->DebouncedSaveWindowState();
   Emit("unmaximize");
 }
 
@@ -296,10 +300,12 @@ void BaseWindow::OnWindowMoved() {
 }
 
 void BaseWindow::OnWindowEnterFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("enter-full-screen");
 }
 
 void BaseWindow::OnWindowLeaveFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("leave-full-screen");
 }
 
