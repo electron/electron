@@ -269,7 +269,8 @@ class WebContents final : public ExclusiveAccessContext,
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void Print(gin::Arguments* args);
+  void Print(std::optional<base::DictValue> options,
+             base::OnceCallback<void(bool, const std::string&)> callback);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
 #endif
@@ -911,10 +912,6 @@ class WebContents final : public ExclusiveAccessContext,
 
   const scoped_refptr<base::SequencedTaskRunner> file_task_runner_ =
       base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
-
-#if BUILDFLAG(ENABLE_PRINTING)
-  const scoped_refptr<base::TaskRunner> print_task_runner_;
-#endif
 
   // Track navigation state in order to avoid potential re-entrancy crashes
   // in LoadURL. Checked by LoadURL to reject re-entrant navigation attempts.
