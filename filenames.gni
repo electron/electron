@@ -468,6 +468,8 @@ filenames = {
     "shell/browser/net/client_certificate_responder_delegate.h",
     "shell/browser/net/electron_url_loader_factory.cc",
     "shell/browser/net/electron_url_loader_factory.h",
+    "shell/browser/net/header_rules.cc",
+    "shell/browser/net/header_rules.h",
     "shell/browser/net/network_context_service.cc",
     "shell/browser/net/network_context_service.h",
     "shell/browser/net/network_context_service_factory.cc",
