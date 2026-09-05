@@ -44,10 +44,12 @@ if (process.platform === 'linux') {
   const childProcess = __non_webpack_require__(
     'internal/child_process'
   ) as typeof import('@node/lib/internal/child_process');
-  const addCrashpadEnv = (options: { file?: string; envPairs?: string[] }) => {
+  // Invalid options are left for Node's own validation to reject.
+  const addCrashpadEnv = (options: any) => {
     if (
-      options.file !== process.execPath ||
-      !options.envPairs?.some((pair) => pair.startsWith('ELECTRON_RUN_AS_NODE='))
+      options?.file !== process.execPath ||
+      !Array.isArray(options.envPairs) ||
+      !options.envPairs.some((pair: unknown) => typeof pair === 'string' && pair.startsWith('ELECTRON_RUN_AS_NODE='))
     ) {
       return;
     }
