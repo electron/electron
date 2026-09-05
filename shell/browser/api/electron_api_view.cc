@@ -10,16 +10,17 @@
 #include <string>
 #include <utility>
 
-#include "ash/style/rounded_rect_cutout_path_builder.h"
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "third_party/skia/include/core/SkRRect.h"
 #include "ui/compositor/layer.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
@@ -170,6 +171,10 @@ struct Converter<gfx::Tween::Type> {
 }  // namespace gin
 
 namespace electron::api {
+
+constexpr char kBorderRadiusTypeError[] =
+    "`borderRadius` must be an integer or an object with integer `topLeft`, "
+    "`topRight`, `bottomRight`, and `bottomLeft` properties";
 
 using LayoutCallback = base::RepeatingCallback<views::ProposedLayout(
     const views::SizeBounds& size_bounds)>;
@@ -485,37 +490,87 @@ void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
                              : nullptr);
 }
 
-void View::SetBorderRadius(int radius) {
-  border_radius_ = radius;
+void View::SetBorderRadius(gin_helper::ErrorThrower thrower,
+                           v8::Local<v8::Value> value) {
+  v8::Isolate* const isolate = thrower.isolate();
+  if (value->IsNumber()) {
+    int radius = 0;
+    if (!gin::ConvertFromV8(isolate, value, &radius)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
+      return;
+    }
+    border_radii_ = gfx::RoundedCornersF(static_cast<float>(radius));
+  } else if (value->IsObject()) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, value, &dict)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
+      return;
+    }
+    int top_left = 0;
+    int top_right = 0;
+    int bottom_right = 0;
+    int bottom_left = 0;
+    if (!dict.Get("topLeft", &top_left) || !dict.Get("topRight", &top_right) ||
+        !dict.Get("bottomRight", &bottom_right) ||
+        !dict.Get("bottomLeft", &bottom_left)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
+      return;
+    }
+    border_radii_ = gfx::RoundedCornersF(
+        static_cast<float>(top_left), static_cast<float>(top_right),
+        static_cast<float>(bottom_right), static_cast<float>(bottom_left));
+  } else {
+    thrower.ThrowTypeError(kBorderRadiusTypeError);
+    return;
+  }
   ApplyBorderRadius();
 }
 
 void View::ApplyBorderRadius() {
-  if (!border_radius_.has_value() || !view_)
+  if (!border_radii_.has_value() || !view_)
     return;
 
-  auto size = view_->bounds().size();
-
-  // Restrict border radius to the constraints set in the path builder class.
-  // If the constraints are exceeded, the builder will crash.
-  int radius;
-  {
-    float r = border_radius_.value() * 1.f;
-    r = std::min(r, size.width() / 2.f);
-    r = std::min(r, size.height() / 2.f);
-    r = std::max(r, 0.f);
-    radius = std::floor(r);
+  const auto size = view_->bounds().size();
+  if (size.IsEmpty()) {
+    // An empty clip path creates a fully transparent mask on a layer-backed
+    // view. Leave an existing layer mask alone until the view has bounds again.
+    if (!view_->layer())
+      view_->SetClipPath(SkPath());
+    view_->SchedulePaint();
+    OnBorderRadiusApplied(gfx::RoundedCornersF());
+    return;
   }
 
-  // RoundedRectCutoutPathBuilder has a minimum size of 32 x 32.
-  if (radius > 0 && size.width() >= 32 && size.height() >= 32) {
-    auto builder = ash::RoundedRectCutoutPathBuilder(gfx::SizeF(size));
-    builder.CornerRadius(radius);
-    view_->SetClipPath(builder.Build());
-  } else {
+  const SkRect rect = SkRect::MakeWH(static_cast<SkScalar>(size.width()),
+                                     static_cast<SkScalar>(size.height()));
+  const auto nonnegative = [](float radius) { return std::max(0.f, radius); };
+  const SkVector radii[4] = {{nonnegative(border_radii_->upper_left()),
+                              nonnegative(border_radii_->upper_left())},
+                             {nonnegative(border_radii_->upper_right()),
+                              nonnegative(border_radii_->upper_right())},
+                             {nonnegative(border_radii_->lower_right()),
+                              nonnegative(border_radii_->lower_right())},
+                             {nonnegative(border_radii_->lower_left()),
+                              nonnegative(border_radii_->lower_left())}};
+  SkRRect rrect;
+  rrect.setRectRadii(rect, radii);
+  const gfx::RoundedCornersF normalized_radii(
+      rrect.radii(SkRRect::kUpperLeft_Corner).x(),
+      rrect.radii(SkRRect::kUpperRight_Corner).x(),
+      rrect.radii(SkRRect::kLowerRight_Corner).x(),
+      rrect.radii(SkRRect::kLowerLeft_Corner).x());
+
+  // SetClipPath with an empty path creates a fully transparent mask when the
+  // view has a layer. Use the equivalent rectangular path in that case.
+  if (normalized_radii.IsEmpty() && !view_->layer())
     view_->SetClipPath(SkPath());
-  }
+  else
+    view_->SetClipPath(SkPath::RRect(rrect));
+  view_->SchedulePaint();
+  OnBorderRadiusApplied(normalized_radii);
 }
+
+void View::OnBorderRadiusApplied(const gfx::RoundedCornersF&) {}
 
 void View::SetBackgroundBlur(int blur_radius) {
   if (!view_)
