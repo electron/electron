@@ -135,6 +135,7 @@ class NativeWindowMac : public NativeWindow,
   std::optional<gfx::Point> GetWindowButtonPosition() const override;
   void RedrawTrafficLights() override;
   void UpdateFrame() override;
+  void SetSwipeGestureEnabled(bool enabled) override;
   void SetTouchBar(
       std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
@@ -214,6 +215,7 @@ class NativeWindowMac : public NativeWindow,
   ElectronTouchBar* touch_bar() const { return touch_bar_; }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
+  bool swipe_gesture_enabled() const { return swipe_gesture_enabled_; }
 
   // We need to save the result of windowWillUseStandardFrame:defaultFrame
   // because macOS calls it with what it refers to as the "best fit" frame for a
@@ -307,6 +309,7 @@ class NativeWindowMac : public NativeWindow,
   bool was_maximizable_ = false;
   bool was_movable_ = false;
   bool is_active_ = false;
+  bool swipe_gesture_enabled_ = false;
   NSRect original_frame_;
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;

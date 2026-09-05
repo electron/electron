@@ -1220,6 +1220,10 @@ void NativeWindowMac::SetHiddenInMissionControl(bool hidden) {
   SetCollectionBehavior(hidden, NSWindowCollectionBehaviorTransient);
 }
 
+void NativeWindowMac::SetSwipeGestureEnabled(bool enabled) {
+  swipe_gesture_enabled_ = enabled;
+}
+
 void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool forward) {
   [window_ setIgnoresMouseEvents:ignore];
   if (!ignore) {
