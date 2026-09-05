@@ -1,4 +1,7 @@
 ---
 Checks: '-modernize-use-nullptr'
+# Only report diagnostics in the file being checked, not in the headers it
+# includes. Chromium's headers would otherwise flood every run.
+HeaderFilterRegex: ''
 InheritParentConfig: true
 ...
