@@ -628,7 +628,7 @@ void NativeWindowViews::Show() {
 #endif
 }
 
-void NativeWindowViews::ShowInactive() {
+void NativeWindowViews::ShowInactive(bool order_front) {
   FlushPendingDisplayMode();
 
   widget()->ShowInactive();
@@ -644,6 +644,9 @@ void NativeWindowViews::ShowInactive() {
   if (x11_util::IsX11())
     widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
+
+  // Explicit front ordering is currently only implemented on macOS.
+  std::ignore = order_front;
 }
 
 void NativeWindowViews::Hide() {
