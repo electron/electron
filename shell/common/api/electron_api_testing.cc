@@ -268,8 +268,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &InvokeHeldOnceCallbackForTesting);
   dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
   dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
-  dict.SetMethod("flushPendingWindowStateSaves",
-                 &FlushPendingWindowStateSaves);
+  dict.SetMethod("flushPendingWindowStateSaves", &FlushPendingWindowStateSaves);
   dict.SetMethod("commitPendingLocalStateWrites",
                  &CommitPendingLocalStateWrites);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
