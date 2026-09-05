@@ -175,7 +175,12 @@ Deployment finished.
 MSIX Deployment completed.
 ```
 
-### `ELECTRON_DEBUG_DRAGGABLE_REGIONS`
+### `ELECTRON_DEBUG_DRAGGABLE_REGIONS` _Experimental_
+
+> [!WARNING]
+> This variable is a debugging aid, not part of Electron's formal API. It is
+> experimental and its behavior, output, or existence may change or be removed
+> in any release without warning.
 
 Visualizes and logs the [draggable regions](../tutorial/custom-window-interactions.md#custom-draggable-regions)
 of every window to aid in debugging custom title bars. Only takes effect when
