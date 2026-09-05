@@ -451,6 +451,11 @@ class NativeWindow : public views::WidgetDelegate {
   // Flushes save_window_state_timer_ that was queued by
   // DebouncedSaveWindowState. This does NOT flush the actual disk write.
   void FlushWindowState();
+  // Fires save_window_state_timer_ now if DebouncedSaveWindowState started it,
+  // so the electron_common_testing binding can make the debounced save
+  // deterministic in specs. Unlike FlushWindowState this has no other side
+  // effects, and it does NOT flush the actual disk write either.
+  void FlushPendingWindowStateSaveForTesting();
 
   // Restores window state - bounds first and then display mode.
   void RestoreWindowState(const gin_helper::Dictionary& options);
