@@ -4682,7 +4682,12 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            sandbox: true
+            sandbox: true,
+            // The child opens http://localhost at zoomFactor 2.0, which records a
+            // per-host zoom level for `localhost` that is persisted to the session's
+            // prefs. Use a throwaway partition so it can't leak into other specs
+            // that load localhost in the default session.
+            partition: 'window-open-zoom-factor'
           }
         });
 
