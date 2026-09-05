@@ -8,5 +8,8 @@ Checks: 'clang-analyzer-core.*,
          clang-analyzer-unix.*,
          -clang-analyzer-core.CallAndMessage,
          -clang-analyzer-security.PointerSub'
+# Only report diagnostics in the file being checked, not in the headers it
+# includes. Chromium's headers would otherwise flood every run.
+HeaderFilterRegex: ''
 InheritParentConfig: true
 ...
