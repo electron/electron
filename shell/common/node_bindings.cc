@@ -55,6 +55,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "third_party/electron_node/src/node_realm-inl.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "v8/include/v8-statistics.h"
 
@@ -1164,6 +1165,12 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
 void OnNodePreload(node::Environment* env,
                    v8::Local<v8::Value> process,
                    v8::Local<v8::Value> require) {
+  // Node also runs the embedder preload when it bootstraps a ShadowRealm; the
+  // init bundle (asar, child_process hooks) belongs in the principal realm.
+  if (node::Realm::GetCurrent(env->isolate()->GetCurrentContext()) !=
+      env->principal_realm()) {
+    return;
+  }
   // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
   // the callback holders created in it. Free them when the environment is torn
   // down, which happens on the worker's thread after its JavaScript has ended.
