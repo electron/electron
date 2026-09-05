@@ -55,6 +55,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "third_party/electron_node/src/node_realm-inl.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "v8/include/v8-statistics.h"
 
@@ -141,7 +142,9 @@
 // function for each built-in bindings explicitly. This is only
 // forward declaration. The definitions are in each binding's
 // implementation when calling the NODE_LINKED_BINDING_CONTEXT_AWARE.
-#define V(modname) void _register_##modname();
+#define V(modname)            \
+  void _register_##modname(); \
+  node::node_module* get_linked_module_##modname();
 ELECTRON_BROWSER_BINDINGS(V)
 ELECTRON_COMMON_BINDINGS(V)
 ELECTRON_RENDERER_BINDINGS(V)
@@ -616,6 +619,28 @@ void NodeBindings::RegisterBuiltinBindings() {
   ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
+}
+
+// static
+node::node_module* NodeBindings::GetLinkedBinding(std::string_view name) {
+#define V(modname)      \
+  if (name == #modname) \
+    return get_linked_module_##modname();
+  if (IsBrowserProcess()) {
+    ELECTRON_BROWSER_BINDINGS(V)
+  }
+  ELECTRON_COMMON_BINDINGS(V)
+  if (IsRendererProcess()) {
+    ELECTRON_RENDERER_BINDINGS(V)
+  }
+  if (IsUtilityProcess()) {
+    ELECTRON_UTILITY_BINDINGS(V)
+  }
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_BINDINGS(V)
+#endif
+#undef V
+  return nullptr;
 }
 
 bool NodeBindings::IsInitialized() {
@@ -1164,6 +1189,12 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
 void OnNodePreload(node::Environment* env,
                    v8::Local<v8::Value> process,
                    v8::Local<v8::Value> require) {
+  // Node also runs the embedder preload when it bootstraps a ShadowRealm; the
+  // init bundle (asar, child_process hooks) belongs in the principal realm.
+  if (node::Realm::GetCurrent(env->isolate()->GetCurrentContext()) !=
+      env->principal_realm()) {
+    return;
+  }
   // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
   // the callback holders created in it. Free them when the environment is torn
   // down, which happens on the worker's thread after its JavaScript has ended.
