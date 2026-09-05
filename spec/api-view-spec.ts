@@ -80,6 +80,54 @@ describe('View', () => {
     v.setBorderRadius(-9999999);
   });
 
+  it('allows setting per-corner border radii', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius({ topLeft: 10, topRight: 8, bottomRight: 6, bottomLeft: 4 });
+    v.setBorderRadius({ topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 });
+  });
+
+  it('throws when per-corner keys are missing', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    const borderRadiusError = /must be an integer or an object/;
+    const borderRadius = { topLeft: 5, topRight: 5, bottomRight: 5, bottomLeft: 5 };
+    const keys = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'] as const;
+
+    for (const key of keys) {
+      const missing = { ...borderRadius } as Partial<typeof borderRadius>;
+      delete missing[key];
+      expect(() => v.setBorderRadius(missing as any)).to.throw(TypeError, borderRadiusError);
+    }
+  });
+
+  it('clamps negative and oversize per-corner radii', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius({ topLeft: -10, topRight: 9999, bottomRight: 0, bottomLeft: 5 });
+    v.setBorderRadius({ topLeft: -9999999, topRight: -1, bottomRight: -1, bottomLeft: -1 });
+  });
+
+  it('allows mixing integer and object forms', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius(8);
+    v.setBorderRadius({ topLeft: 16, topRight: 16, bottomRight: 0, bottomLeft: 0 });
+    v.setBorderRadius(0);
+  });
+
+  it('throws on invalid border radius input', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    expect(() => v.setBorderRadius('not valid' as any)).to.throw(TypeError, /must be an integer or an object/);
+    expect(() => v.setBorderRadius(1.5 as any)).to.throw(TypeError, /must be an integer or an object/);
+  });
+
   describe('view.getVisible|setVisible', () => {
     it('is visible by default', () => {
       const v = new View();
