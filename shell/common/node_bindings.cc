@@ -1190,7 +1190,7 @@ void OnNodePreload(node::Environment* env,
                    v8::Local<v8::Value> process,
                    v8::Local<v8::Value> require) {
   // Node also runs the embedder preload when it bootstraps a ShadowRealm; the
-  // init bundle (asar, child_process hooks) only belongs in the principal realm.
+  // init bundle (asar, child_process hooks) belongs in the principal realm.
   if (node::Realm::GetCurrent(env->isolate()->GetCurrentContext()) !=
       env->principal_realm()) {
     return;
