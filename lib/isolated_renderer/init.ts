@@ -5,6 +5,7 @@ declare const isolatedApi: WebViewImplHooks;
 
 if (isolatedApi.guestViewInternal) {
   // Must setup the WebView element in main world.
-  const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
+  const { setupWebView } =
+    require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
   setupWebView(isolatedApi);
 }

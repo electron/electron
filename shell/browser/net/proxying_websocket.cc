@@ -9,6 +9,7 @@
 #include "base/functional/bind.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/global_routing_id.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -36,8 +37,7 @@ ProxyingWebSocket::ProxyingWebSocket(
       has_extra_headers_(has_extra_headers),
       info_(extensions::WebRequestInfoInitParams(
           ++(*request_id_generator),
-          process_id,
-          render_frame_id,
+          content::GlobalRenderFrameHostId(process_id, render_frame_id),
           nullptr,
           request,
           /*is_download=*/false,
@@ -48,7 +48,7 @@ ProxyingWebSocket::ProxyingWebSocket(
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
-        .Run(net::ERR_ABORTED, std::nullopt);
+        .Run(net::ERR_ABORTED, std::nullopt, std::nullopt);
   }
   if (on_headers_received_callback_) {
     std::move(on_headers_received_callback_)
@@ -198,6 +198,7 @@ void ProxyingWebSocket::OnAuthRequired(
 }
 
 void ProxyingWebSocket::OnBeforeSendHeaders(
+    const GURL& request_url,
     const net::HttpRequestHeaders& headers,
     OnBeforeSendHeadersCallback callback) {
   DCHECK(receiver_as_header_client_.is_bound());
@@ -294,7 +295,7 @@ void ProxyingWebSocket::OnBeforeSendHeadersComplete(
   if (receiver_as_header_client_.is_bound()) {
     CHECK(on_before_send_headers_callback_);
     std::move(on_before_send_headers_callback_)
-        .Run(error_code, request_headers_);
+        .Run(error_code, request_headers_, std::nullopt);
   }
 
   info_.AddResponseInfoFromResourceResponse(*response_);

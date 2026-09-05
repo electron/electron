@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -22,7 +21,8 @@
 // static
 std::string PluginUtils::GetExtensionIdForMimeType(
     content::BrowserContext* browser_context,
-    const std::string& mime_type) {
+    const std::string& mime_type,
+    bool embedded) {
   auto map = GetMimeTypeToExtensionIdMap(browser_context);
   auto it = map.find(mime_type);
   if (it != map.end())
@@ -49,9 +49,8 @@ PluginUtils::GetMimeTypeToExtensionIdMap(
     if (!extension)  // extension might not be installed, so check for nullptr
       continue;
 
-    if (const MimeTypesHandler* handler =
-            MimeTypesHandler::GetHandler(extension)) {
-      for (const std::string& mime_type : handler->mime_type_set()) {
+    if (const MimeTypesHandler* handler = MimeTypesHandler::Get(*extension)) {
+      for (const std::string& mime_type : handler->GetSupportedMimeTypes()) {
         const auto [_, inserted] =
             mime_type_to_extension_id_map.insert_or_assign(mime_type, id);
         DCHECK(inserted);

@@ -4,6 +4,7 @@
 
 #include "shell/app/node_main.h"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -12,7 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
@@ -21,11 +21,9 @@
 #include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
-#include "gin/array_buffer.h"
-#include "gin/public/isolate_holder.h"
+#include "gin/converter.h"
 #include "gin/v8_initializer.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
@@ -37,6 +35,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/child/v8_crashpad_support_win.h"
@@ -133,7 +132,12 @@ int NodeMain() {
   }
 
 #if BUILDFLAG(IS_MAC)
-  if (!ProcessSignatureIsSameWithCurrentApp(getppid())) {
+  // Capture the parent's audit token as early as possible. The audit token
+  // (unlike a raw PID) is bound to a single process instance.
+  std::optional<audit_token_t> parent_audit_token =
+      GetParentProcessAuditToken();
+  if (!parent_audit_token ||
+      !ProcessSignatureIsSameWithCurrentApp(*parent_audit_token)) {
     // On macOS, it is forbidden to run sandboxed app with custom arguments
     // from another app, i.e. args are discarded in following call:
     //   exec("Sandboxed.app", ["--custom-args-will-be-discarded"])
@@ -194,6 +198,12 @@ int NodeMain() {
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
+    // Match the other process types (see NodeBindings::ParseNodeCliFlags); an
+    // explicit --js-source-phase-imports later on the command line still wins.
+    // Kept out of process.execArgv below so fork() does not accumulate it.
+    constexpr std::string_view kNoSourcePhaseImports =
+        "--no-js-source-phase-imports";
+    args.insert(args.begin() + 1, std::string(kNoSourcePhaseImports));
 
     uint64_t process_flags =
         node::ProcessInitializationFlags::kNoInitializeV8 |
@@ -256,12 +266,19 @@ int NodeMain() {
     // idle in the kernel’s event provider .
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
+    auto tracing_agent = node::tracing::Agent::CreateDefault();
+    CHECK(tracing_agent);
+
     // Initialize gin::IsolateHolder.
-    bool setup_wasm_streaming =
-        node::per_process::cli_options->get_per_isolate_options()
-            ->get_per_env_options()
-            ->experimental_fetch;
-    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
+    // Node.js now exposes fetch unconditionally, so WASM streaming (which
+    // relies on the fetch Response object) is always set up here.
+    // When this build embeds a Node startup snapshot (native builds) the
+    // isolate is created from it and no context exists yet; otherwise a fresh
+    // context was created and entered.
+    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true,
+                                  tracing_agent->GetTracingController());
+    const node::SnapshotData* const snapshot =
+        JavascriptEnvironment::NodeSnapshot();
 
     v8::Isolate* isolate = gin_env.isolate();
 
@@ -272,18 +289,48 @@ int NodeMain() {
     {
       v8::HandleScope scope(isolate);
 
-      isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
+      // With a snapshot, hand its per-isolate data to CreateIsolateData so the
+      // templates/primordials are deserialized, and an empty context to
+      // CreateEnvironment so node materializes the main context (and the whole
+      // bootstrapped environment) from the snapshot instead of running the
+      // bootstrap -- the same path the browser process takes in
+      // NodeBindings::CreateEnvironment.
+      auto snapshot_wrapper = snapshot ? snapshot->AsEmbedderWrapper()
+                                       : node::EmbedderSnapshotData::Pointer{};
+      isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform(),
+                                             /*allocator=*/nullptr,
+                                             snapshot_wrapper.get());
       CHECK_NE(nullptr, isolate_data);
 
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
+      std::vector<std::string> exec_args = result->exec_args();
+      if (auto it = std::ranges::find(exec_args, kNoSourcePhaseImports);
+          it != exec_args.end()) {
+        exec_args.erase(it);
+      }
       env = electron::util::CreateEnvironment(
-          isolate, isolate_data, isolate->GetCurrentContext(), result->args(),
-          result->exec_args(),
+          isolate, isolate_data,
+          snapshot ? v8::Local<v8::Context>() : isolate->GetCurrentContext(),
+          result->args(), exec_args,
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
-      node::SetIsolateUpForNode(isolate);
+      node::IsolateSettings isolate_settings;
+      if (snapshot) {
+        // The snapshot's main context was created inside CreateEnvironment and
+        // is not entered yet; enter it for the lifetime of the process, as
+        // JavascriptEnvironment does for the context it creates itself (its
+        // destructor exits the current context).
+        env->context()->Enter();
+        // node::CreateEnvironment already installed the per-isolate message
+        // listener while deserializing (SetIsolateErrorHandlers, snapshot path
+        // only). Listeners are additive, so don't let SetIsolateUpForNode add a
+        // second one -- every uncaught exception would be reported twice.
+        isolate_settings.flags &=
+            ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+      }
+      node::SetIsolateUpForNode(isolate, isolate_settings);
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);
@@ -305,6 +352,7 @@ int NodeMain() {
     }
 
     v8::HandleScope scope(isolate);
+    electron::util::FeedEnvironmentCodeCache(env);
     node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env
@@ -327,6 +375,11 @@ int NodeMain() {
   base::ThreadPoolInstance::Get()->Shutdown();
 
   v8::V8::Dispose();
+
+  // Matches node::InitializeOncePerProcess() above. In particular this joins
+  // the off-thread CA certificate loader that `require('tls')` starts, which
+  // would otherwise race the static destructors run by exit() and abort().
+  node::TearDownOncePerProcess();
 
   return exit_code;
 }

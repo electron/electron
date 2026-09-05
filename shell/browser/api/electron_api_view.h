@@ -43,6 +43,7 @@ class View : public gin_helper::EventEmitter<View>,
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
+  void SetBackgroundBlur(int blur_radius);
   void SetVisible(bool visible);
   bool GetVisible() const;
 

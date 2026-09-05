@@ -753,7 +753,8 @@ public:
         Napi::Function func = DefineClass(env, "ObjcMacosAddon", {
             InstanceMethod("helloWorld", &ObjcAddon::HelloWorld),
             InstanceMethod("helloGui", &ObjcAddon::HelloGui),
-            InstanceMethod("on", &ObjcAddon::On)
+            InstanceMethod("on", &ObjcAddon::On),
+            InstanceMethod("destroy", &ObjcAddon::Destroy)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -915,6 +916,18 @@ Napi::Value On(const Napi::CallbackInfo& info) {
     callbacks.Value().Set(info[0].As<Napi::String>(), info[1].As<Napi::Function>());
     return env.Undefined();
 }
+
+Napi::Value Destroy(const Napi::CallbackInfo& info) {
+    callbacks.Reset();
+    emitter.Reset();
+
+    if (tsfn_ != nullptr) {
+        napi_release_threadsafe_function(tsfn_, napi_tsfn_abort);
+        tsfn_ = nullptr;
+    }
+
+    return info.Env().Undefined();
+}
 ```
 
 Let's take a look at what we've added in this step:
@@ -922,10 +935,11 @@ Let's take a look at what we've added in this step:
 * `HelloWorld()`: Takes a string input, calls our Objective-C function, and returns the result
 * `HelloGui()`:  A simple wrapper around the Objective-C `hello_gui` function
 * `On`: Allows JavaScript to register event listeners that will be called when native events occur
+* `Destroy`: Releases all persistent references (callbacks and emitter) and aborts the threadsafe function, allowing the addon to be properly cleaned up on quit
 
 The `On` method is particularly important as it creates the event system that our JavaScript code will use to receive notifications from the native UI.
 
-Together, these three components form a complete bridge between our Objective-C code and the JavaScript world, allowing bidirectional communication. Here's what the finished file should look like:
+Together, these four components form a complete bridge between our Objective-C code and the JavaScript world, allowing bidirectional communication. Here's what the finished file should look like:
 
 ```objc title='src/objc_addon.mm'
 #include <napi.h>
@@ -938,7 +952,8 @@ public:
         Napi::Function func = DefineClass(env, "ObjcMacosAddon", {
             InstanceMethod("helloWorld", &ObjcAddon::HelloWorld),
             InstanceMethod("helloGui", &ObjcAddon::HelloGui),
-            InstanceMethod("on", &ObjcAddon::On)
+            InstanceMethod("on", &ObjcAddon::On),
+            InstanceMethod("destroy", &ObjcAddon::Destroy)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -1061,6 +1076,18 @@ private:
         callbacks.Value().Set(info[0].As<Napi::String>(), info[1].As<Napi::Function>());
         return env.Undefined();
     }
+
+    Napi::Value Destroy(const Napi::CallbackInfo& info) {
+        callbacks.Reset();
+        emitter.Reset();
+
+        if (tsfn_ != nullptr) {
+            napi_release_threadsafe_function(tsfn_, napi_tsfn_abort);
+            tsfn_ = nullptr;
+        }
+
+        return info.Env().Undefined();
+    }
 };
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -1101,6 +1128,10 @@ class ObjcMacosAddon extends EventEmitter {
     this.addon.helloGui()
   }
 
+  destroy () {
+    this.addon.destroy()
+  }
+
   parse (payload) {
     const parsed = JSON.parse(payload)
 
@@ -1122,7 +1153,11 @@ This wrapper:
 3. Loads the native addon
 4. Sets up event listeners and forwards them
 5. Provides a clean API for our functions
-6. Parses JSON payloads and converts timestamps to JavaScript Date objects
+6. Provides a `destroy()` method to release native resources
+7. Parses JSON payloads and converts timestamps to JavaScript Date objects
+
+> [!IMPORTANT]
+> You must call `destroy()` before the app quits (e.g. in the `will-quit` or `before-quit` event handler). Without this, persistent references to callbacks and the threadsafe function will prevent the native addon's destructor from running, causing Electron to hang on quit.
 
 ## 7) Building and Testing the Addon
 

@@ -25,10 +25,14 @@ Electron application, and this property only exists on macOS.
 One of the main uses for your app's Dock icon is to expose additional app menus. The Dock menu is
 triggered by right-clicking or <kbd>Ctrl</kbd>-clicking the app icon. By default, the app's Dock menu
 will come with system-provided window management utilities, including the ability to show all windows,
-hide the app, and switch betweeen different open windows.
+hide the app, and switch between different open windows.
 
 To set an app-defined custom Dock menu, pass any [Menu](../api/menu.md) instance into the
 [`dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API.
+
+> [!NOTE]
+> A [`badge`](../api/menu-item.md#menuitembadge-macos) on a `MenuItem` is not displayed in a Dock
+> menu, though the same item shows it in an application menu.
 
 > [!TIP]
 > For best practices to make your Dock menu feel more native, see Apple's

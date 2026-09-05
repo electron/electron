@@ -10,6 +10,7 @@
 #include "base/apple/scoped_nsautorelease_pool.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
+#include "base/compiler_specific.h"
 #include "base/i18n/icu_util.h"
 #include "base/notreached.h"
 #include "content/public/app/content_main.h"
@@ -18,7 +19,7 @@
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
-#include "uv.h"
+#include "shell/common/uv_includes.h"
 
 int ElectronMain(int argc, char* argv[]) {
   argv = uv_setup_args(argc, argv);
@@ -33,7 +34,10 @@ int ElectronMain(int argc, char* argv[]) {
   delegate.OverrideFrameworkBundlePath();
   delegate.SetUpBundleOverrides();
 
-  return content::ContentMain(content::ContentMainParams{&delegate});
+  content::ContentMainParams params{&delegate};
+  params.argc = argc;
+  params.argv = UNSAFE_BUFFERS(const_cast<const char**>(argv));
+  return content::ContentMain(std::move(params));
 }
 
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {

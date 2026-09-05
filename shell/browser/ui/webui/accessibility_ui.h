@@ -7,8 +7,6 @@
 
 #include "chrome/browser/ui/webui/accessibility/accessibility_ui.h"
 #include "content/public/browser/web_ui_controller.h"
-#include "content/public/browser/web_ui_data_source.h"
-#include "content/public/browser/web_ui_message_handler.h"
 
 // Controls the accessibility web UI page.
 class ElectronAccessibilityUI : public content::WebUIController {
@@ -34,12 +32,13 @@ class ElectronAccessibilityUIMessageHandler
   static void RegisterPrefs(user_prefs::PrefRegistrySyncable* registry);
 
  private:
-  void GetRequestTypeAndFilters(const base::Value::Dict& data,
+  void GetRequestTypeAndFilters(const base::DictValue& data,
                                 std::string& request_type,
                                 std::string& allow,
                                 std::string& allow_empty,
                                 std::string& deny);
-  void RequestNativeUITree(const base::Value::List& args);
+
+  void RequestNativeUITree(const base::ListValue& args);
 
   // content::WebContentsObserver:
   void OnVisibilityChanged(content::Visibility visibility) override;
@@ -49,7 +48,7 @@ class ElectronAccessibilityUIMessageHandler
   void OnUpdateDisplayTimer();
 
   // The last data for display sent to the UI by OnUpdateDisplayTimer.
-  base::Value::Dict last_data_;
+  base::DictValue last_data_;
 
   // A timer that runs while the UI is visible to call OnUpdateDisplayTimer.
   base::RepeatingTimer update_display_timer_;

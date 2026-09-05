@@ -5,35 +5,44 @@
 #include "shell/browser/native_window.h"
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "components/prefs/pref_service.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "include/core/SkColor.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
-#include "shell/browser/native_window_features.h"
-#include "shell/browser/ui/drag_util.h"
+#include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
+#include "ui/display/display.h"
+#include "ui/display/screen.h"
+#include "ui/display/types/display_constants.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
-#include "shell/browser/ui/views/frameless_view.h"
+#include "ui/views/view_utils.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/views/views_features.h"
+#include "shell/browser/ui/views/frameless_view.h"
+#elif BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #endif
 
 #if defined(USE_OZONE)
@@ -72,27 +81,11 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
 namespace electron {
 
 namespace {
-
-#if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window,
-                                bool transparent,
-                                gfx::Size size) {
-  if (!base::FeatureList::IsEnabled(
-          views::features::kEnableTransparentHwndEnlargement) ||
-      !transparent) {
-    return size;
-  }
-
-  gfx::Size min_size = display::win::GetScreenWin()->ScreenToDIPSize(
-      window->GetAcceleratedWidget(), gfx::Size{64, 64});
-
-  // Some AMD drivers can't display windows that are less than 64x64 pixels,
-  // so expand them to be at least that size. http://crbug.com/286609
-  gfx::Size expanded(std::max(size.width(), min_size.width()),
-                     std::max(size.height(), min_size.height()));
-  return expanded;
+// Check if display is fake (default display ID) or has invalid dimensions
+bool hasInvalidDisplay(const display::Display& display) {
+  return display.id() == display::kDefaultDisplayId ||
+         display.size().width() == 0 || display.size().height() == 0;
 }
-#endif
 
 }  // namespace
 
@@ -108,15 +101,48 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
       is_modal_{parent != nullptr &&
                 options.ValueOrDefault(options::kModal, false)},
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
-                 title_bar_style_ == TitleBarStyle::kNormal},
-      parent_{parent} {
+                 title_bar_style_ == TitleBarStyle::kNormal} {
   DCHECK_NE(base_window_id_, 0);
+  if (parent)
+    parent_ = parent->GetWeakPtr();
 
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)
   options.Get(options::kVibrancyType, &vibrancy_);
 #endif
+
+  options.Get(options::kName, &window_name_);
+
+  if (gin_helper::Dictionary persistence_options;
+      options.Get(options::kWindowStatePersistence, &persistence_options)) {
+    // Restore bounds by default
+    restore_bounds_ = true;
+    persistence_options.Get(options::kBounds, &restore_bounds_);
+    // Restore display mode by default
+    restore_display_mode_ = true;
+    persistence_options.Get(options::kDisplayMode, &restore_display_mode_);
+    window_state_persistence_enabled_ = true;
+  } else if (bool flag; options.Get(options::kWindowStatePersistence, &flag)) {
+    restore_bounds_ = flag;
+    restore_display_mode_ = flag;
+    window_state_persistence_enabled_ = flag;
+  }
+
+  // Initialize prefs_ to save/restore window bounds if we have a valid window
+  // name and window state persistence is enabled.
+  if (window_state_persistence_enabled_ && !window_name_.empty()) {
+    // Move this out if there's a need to initialize prefs_ for other features
+    if (auto* browser_process =
+            electron::ElectronBrowserMainParts::Get()->browser_process()) {
+      DCHECK(browser_process);
+      prefs_ = browser_process->local_state();
+    }
+  } else if (window_state_persistence_enabled_ && window_name_.empty()) {
+    window_state_persistence_enabled_ = false;
+    LOG(WARNING) << "Window state persistence enabled but no window name "
+                    "provided. Window state will not be persisted.";
+  }
 
   if (gin_helper::Dictionary dict;
       options.Get(options::ktitleBarOverlay, &dict)) {
@@ -127,6 +153,18 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
   }
 
   WindowList::AddWindow(this);
+}
+
+InspectableWebContentsView* NativeWindow::primary_web_contents_view() {
+  return static_cast<InspectableWebContentsView*>(
+      primary_web_contents_view_.view());
+}
+
+void NativeWindow::InitPrimaryWebContentsView(
+    InspectableWebContentsView* view) {
+  CHECK(view);
+  CHECK(!primary_web_contents_view_);
+  primary_web_contents_view_.SetView(view);
 }
 
 NativeWindow::~NativeWindow() {
@@ -140,24 +178,10 @@ NativeWindow::~NativeWindow() {
 
 void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // Setup window from options.
-  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point{x, y});
-
-#if BUILDFLAG(IS_WIN)
-    // FIXME(felixrieseberg): Dirty, dirty workaround for
-    // https://github.com/electron/electron/issues/10862
-    // Somehow, we need to call `SetBounds` twice to get
-    // usable results. The root cause is still unknown.
-    SetPosition(gfx::Point{x, y});
-#endif
-  } else if (bool center; options.Get(options::kCenter, &center) && center) {
-    Center();
-  }
-
   const bool use_content_size =
       options.ValueOrDefault(options::kUseContentSize, false);
 
-  // On Linux and Window we may already have maximum size defined.
+  // On Linux and Windows we may already have minimum and maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
 
@@ -184,9 +208,31 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
 
   if (use_content_size) {
+    gfx::Size clamped = size_constraints.ClampSize(GetContentSize());
+    if (clamped != GetContentSize()) {
+      SetContentSize(clamped);
+    }
     SetContentSizeConstraints(size_constraints);
   } else {
+    gfx::Size clamped = size_constraints.ClampSize(GetSize());
+    if (clamped != GetSize()) {
+      SetSize(clamped);
+    }
     SetSizeConstraints(size_constraints);
+  }
+
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
+    SetPosition(gfx::Point{x, y});
+
+#if BUILDFLAG(IS_WIN)
+    // FIXME(felixrieseberg): Dirty, dirty workaround for
+    // https://github.com/electron/electron/issues/10862
+    // Somehow, we need to call `SetBounds` twice to get
+    // usable results. The root cause is still unknown.
+    SetPosition(gfx::Point{x, y});
+#endif
+  } else if (bool center; options.Get(options::kCenter, &center) && center) {
+    Center();
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   if (bool val; options.Get(options::kClosable, &val))
@@ -196,8 +242,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (bool val; options.Get(options::kMovable, &val))
     SetMovable(val);
 
-  if (bool val; options.Get(options::kHasShadow, &val))
-    SetHasShadow(val);
+  SetHasShadow(options.ValueOrDefault(options::kHasShadow, true));
 
   if (double val; options.Get(options::kOpacity, &val))
     SetOpacity(val);
@@ -217,7 +262,14 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
 
-  if (fullscreen)
+  // Restore window state (bounds and display mode) at this point in
+  // initialization. We deliberately restore bounds before display modes
+  // (fullscreen/kiosk) since the target display for these states depends on the
+  // window's initial bounds. Also, restoring here ensures we respect min/max
+  // width/height and fullscreenable constraints.
+  RestoreWindowState(options);
+
+  if (fullscreen && !restore_display_mode_)
     SetFullScreen(true);
 
   if (bool val; options.Get(options::kResizable, &val))
@@ -226,7 +278,8 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (bool val; options.Get(options::kSkipTaskbar, &val))
     SetSkipTaskbar(val);
 
-  if (bool val; options.Get(options::kKiosk, &val) && val)
+  if (bool val;
+      options.Get(options::kKiosk, &val) && val && !restore_display_mode_)
     SetKiosk(val);
 
 #if BUILDFLAG(IS_MAC)
@@ -246,7 +299,9 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   SetBackgroundColor(background_color);
 
   SetTitle(options.ValueOrDefault(options::kTitle, Browser::Get()->GetName()));
-
+  // Save updated window state after restoration adjustments are complete if
+  // any.
+  SaveWindowState();
   // Then show it.
   if (options.ValueOrDefault(options::kShow, true))
     Show();
@@ -259,8 +314,19 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
 }
 
+double NativeWindow::ClampOpacity(double opacity) {
+  return std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+}
+
 void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
+}
+
+void NativeWindow::FlushPendingRootLayout(views::View* view) {
+  view->InvalidateLayout();
+
+  if (views::Widget* widget = view->GetWidget())
+    widget->LayoutRootViewIfNecessary();
 }
 
 bool NativeWindow::IsClosed() const {
@@ -391,15 +457,7 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  const auto size_constraints = GetContentSizeConstraints();
-  gfx::Size maximum_size = size_constraints.GetMaximumSize();
-
-#if BUILDFLAG(IS_WIN)
-  if (size_constraints.HasMaximumSize())
-    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
-#endif
-
-  return maximum_size;
+  return GetContentSizeConstraints().GetMaximumSize();
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
@@ -432,7 +490,10 @@ bool NativeWindow::IsFocusable() const {
 }
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
-  parent_ = parent;
+  if (parent)
+    parent_ = parent->GetWeakPtr();
+  else
+    parent_.reset();
 }
 
 bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
@@ -548,6 +609,12 @@ void NativeWindow::NotifyWindowHide() {
 }
 
 void NativeWindow::NotifyWindowMaximize() {
+  // A restoration-initiated maximize transition has completed; lift the guard
+  // so subsequent state changes are persisted again.
+  if (awaiting_restore_display_mode_transition_) {
+    awaiting_restore_display_mode_transition_ = false;
+    is_being_restored_ = false;
+  }
   observers_.Notify(&NativeWindowObserver::OnWindowMaximize);
 }
 
@@ -594,6 +661,13 @@ void NativeWindow::NotifyWindowMoved() {
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {
+  // A restoration-initiated fullscreen (or kiosk, which routes through
+  // fullscreen) transition has completed; lift the guard so subsequent state
+  // changes are persisted again.
+  if (awaiting_restore_display_mode_transition_) {
+    awaiting_restore_display_mode_transition_ = false;
+    is_being_restored_ = false;
+  }
   NotifyLayoutWindowControlsOverlay();
   observers_.Notify(&NativeWindowObserver::OnWindowEnterFullScreen);
 }
@@ -627,8 +701,9 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
   observers_.Notify(&NativeWindowObserver::OnWindowLeaveHtmlFullScreen);
 }
 
-void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
-  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged);
+void NativeWindow::NotifyWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged,
+                    is_always_on_top);
 }
 
 void NativeWindow::NotifyWindowExecuteAppCommand(
@@ -637,7 +712,7 @@ void NativeWindow::NotifyWindowExecuteAppCommand(
 }
 
 void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,
-                                                 base::Value::Dict details) {
+                                                 base::DictValue details) {
   observers_.Notify(&NativeWindowObserver::OnTouchBarItemResult, item_id,
                     details);
 }
@@ -659,6 +734,10 @@ void NativeWindow::NotifyLayoutWindowControlsOverlay() {
                       *bounds);
 }
 
+void NativeWindow::NotifyWindowStateRestored() {
+  observers_.Notify(&NativeWindowObserver::OnWindowStateRestored);
+}
+
 #if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
@@ -672,11 +751,20 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 #if !BUILDFLAG(IS_MAC)
   // We need to ensure we account for resizing borders on Windows and Linux.
   if ((!has_frame() || has_client_frame()) && IsResizable()) {
-    auto* frame =
-        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-    int border_hit = frame->ResizingBorderHitTest(point);
-    if (border_hit != HTNOWHERE)
-      return border_hit;
+    // TODO(mitchchn): bring back a cross-platform interface for
+    // frame operations. (Both Windows and Linux used to inherit
+    // from FramelessView.)
+#if BUILDFLAG(IS_WIN)
+    using ResizableFrameView = FramelessView;
+#else
+    using ResizableFrameView = ElectronFrameViewLinux;
+#endif
+    auto* frame_view = widget()->non_client_view()->frame_view();
+    if (auto* frame = views::AsViewClass<ResizableFrameView>(frame_view)) {
+      int border_hit = frame->ResizingBorderHitTest(point);
+      if (border_hit != HTNOWHERE)
+        return border_hit;
+    }
   }
 #endif
 
@@ -761,8 +849,12 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
   WidgetDelegate::SetAccessibleTitle(base::UTF8ToUTF16(title));
 }
 
-std::string NativeWindow::GetAccessibleTitle() {
+std::string NativeWindow::GetAccessibleTitle() const {
   return base::UTF16ToUTF8(GetAccessibleWindowTitle());
+}
+
+std::string NativeWindow::GetName() const {
+  return window_name_;
 }
 
 void NativeWindow::HandlePendingFullscreenTransitions() {
@@ -797,13 +889,288 @@ bool NativeWindow::IsTranslucent() const {
   return false;
 }
 
+void NativeWindow::DebouncedSaveWindowState() {
+  save_window_state_timer_.Start(
+      FROM_HERE, base::Milliseconds(200),
+      base::BindOnce(&NativeWindow::SaveWindowState, base::Unretained(this)));
+}
+
+void NativeWindow::SaveWindowState() {
+  if (!window_state_persistence_enabled_ || is_being_restored_ ||
+      is_transitioning_fullscreen())
+    return;
+
+  gfx::Rect bounds = GetBounds();
+
+  if (bounds.width() == 0 || bounds.height() == 0) {
+    LOG(WARNING) << "Window state not saved - window bounds are invalid";
+    return;
+  }
+
+  const display::Screen* screen = display::Screen::Get();
+  DCHECK(screen);
+  // GetDisplayMatching returns a fake display with 1920x1080 resolution at
+  // (0,0) when no physical displays are attached.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/display.cc;l=184;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  const display::Display display = screen->GetDisplayMatching(bounds);
+
+  // Skip window state persistence when display has invalid dimensions (0x0) or
+  // is fake (ID 0xFF). Invalid displays could cause incorrect window bounds to
+  // be saved, leading to positioning issues during restoration.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (hasInvalidDisplay(display)) {
+    LOG(WARNING)
+        << "Window state not saved - no physical display attached or current "
+           "display has invalid bounds";
+    return;
+  }
+
+  ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
+  const base::DictValue* existing_prefs = update->FindDict(window_name_);
+
+  // When the window is in a special display mode (fullscreen, kiosk, or
+  // maximized), save the previously stored window bounds instead of
+  // the current bounds. This ensures that when the window is restored, it can
+  // be restored to its original position and size if display mode is not
+  // preserved via windowStatePersistence.
+  if (!IsNormal() && existing_prefs) {
+    std::optional<int> left = existing_prefs->FindInt(electron::kLeft);
+    std::optional<int> top = existing_prefs->FindInt(electron::kTop);
+    std::optional<int> right = existing_prefs->FindInt(electron::kRight);
+    std::optional<int> bottom = existing_prefs->FindInt(electron::kBottom);
+
+    if (left && top && right && bottom) {
+      bounds = gfx::Rect(*left, *top, *right - *left, *bottom - *top);
+    }
+  }
+
+  base::DictValue window_preferences;
+  window_preferences.Set(electron::kLeft, bounds.x());
+  window_preferences.Set(electron::kTop, bounds.y());
+  window_preferences.Set(electron::kRight, bounds.right());
+  window_preferences.Set(electron::kBottom, bounds.bottom());
+
+  window_preferences.Set(electron::kMaximized, IsMaximized());
+  window_preferences.Set(electron::kFullscreen, IsFullscreen());
+  window_preferences.Set(electron::kKiosk, IsKiosk());
+
+  gfx::Rect work_area = display.work_area();
+
+  window_preferences.Set(electron::kWorkAreaLeft, work_area.x());
+  window_preferences.Set(electron::kWorkAreaTop, work_area.y());
+  window_preferences.Set(electron::kWorkAreaRight, work_area.right());
+  window_preferences.Set(electron::kWorkAreaBottom, work_area.bottom());
+
+  update->Set(window_name_, std::move(window_preferences));
+}
+
+void NativeWindow::FlushWindowState() {
+  // Window destroyed before Show()/ShowInactive() ever ran the deferred
+  // restore: drop the pending callback and clear the guard so the final save
+  // isn't suppressed. During a real restoration transition the callback has
+  // already been moved out, so this is a no-op and transitional bounds stay
+  // suppressed.
+  if (restore_display_mode_callback_) {
+    restore_display_mode_callback_.Reset();
+    is_being_restored_ = false;
+    awaiting_restore_display_mode_transition_ = false;
+  }
+
+  if (save_window_state_timer_.IsRunning()) {
+    save_window_state_timer_.FireNow();
+  } else {
+    SaveWindowState();
+  }
+}
+
+void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
+  if (!window_state_persistence_enabled_)
+    return;
+
+  const base::Value& value = prefs_->GetValue(electron::kWindowStates);
+  const base::DictValue* window_preferences =
+      value.is_dict() ? value.GetDict().FindDict(window_name_) : nullptr;
+
+  if (!window_preferences)
+    return;
+
+  std::optional<int> saved_left = window_preferences->FindInt(electron::kLeft);
+  std::optional<int> saved_top = window_preferences->FindInt(electron::kTop);
+  std::optional<int> saved_right =
+      window_preferences->FindInt(electron::kRight);
+  std::optional<int> saved_bottom =
+      window_preferences->FindInt(electron::kBottom);
+
+  std::optional<int> work_area_left =
+      window_preferences->FindInt(electron::kWorkAreaLeft);
+  std::optional<int> work_area_top =
+      window_preferences->FindInt(electron::kWorkAreaTop);
+  std::optional<int> work_area_right =
+      window_preferences->FindInt(electron::kWorkAreaRight);
+  std::optional<int> work_area_bottom =
+      window_preferences->FindInt(electron::kWorkAreaBottom);
+
+  if (!saved_left || !saved_top || !saved_right || !saved_bottom ||
+      !work_area_left || !work_area_top || !work_area_right ||
+      !work_area_bottom) {
+    LOG(WARNING) << "Window state not restored - corrupted values found";
+    return;
+  }
+
+  gfx::Rect saved_bounds =
+      gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
+                *saved_bottom - *saved_top);
+
+  display::Screen* screen = display::Screen::Get();
+  DCHECK(screen);
+
+  // Set the primary display as the target display for restoration.
+  display::Display display = screen->GetPrimaryDisplay();
+
+  // We identify the display with the minimal Manhattan distance to the saved
+  // bounds and set it as the target display for restoration.
+  int min_displacement = std::numeric_limits<int>::max();
+
+  for (const auto& candidate : screen->GetAllDisplays()) {
+    gfx::Rect test_bounds = saved_bounds;
+    test_bounds.AdjustToFit(candidate.work_area());
+    int displacement = std::abs(test_bounds.x() - saved_bounds.x()) +
+                       std::abs(test_bounds.y() - saved_bounds.y());
+
+    if (displacement < min_displacement) {
+      min_displacement = displacement;
+      display = candidate;
+    }
+  }
+
+  // Skip window state restoration if current display has invalid dimensions or
+  // is fake. Restoring from invalid displays (0x0) or fake displays (ID 0xFF)
+  // could cause incorrect window positioning when later moved to real displays.
+  // https://source.chromium.org/chromium/chromium/src/+/main:ui/display/types/display_constants.h;l=28;drc=e4f1aef5f3ec30a28950d766612cc2c04c822c71
+  if (hasInvalidDisplay(display)) {
+    LOG(WARNING) << "Window state not restored - no physical display attached "
+                    "or current display has invalid bounds";
+    return;
+  }
+
+  gfx::Rect saved_work_area = gfx::Rect(*work_area_left, *work_area_top,
+                                        *work_area_right - *work_area_left,
+                                        *work_area_bottom - *work_area_top);
+
+  // Set this to true before RestoreBounds to prevent SaveWindowState from being
+  // inadvertently triggered during the restoration process.
+  is_being_restored_ = true;
+
+  if (restore_bounds_) {
+    RestoreBounds(display, saved_work_area, saved_bounds);
+  }
+
+  if (restore_display_mode_) {
+    // The display-mode change (kiosk/fullscreen/maximize) runs from Show()/
+    // ShowInactive() via FlushPendingDisplayMode(). It triggers resize/move
+    // events that schedule DebouncedSaveWindowState. Keep is_being_restored_
+    // true until the transition completes so transitional bounds aren't
+    // persisted over the saved ones. Because these transitions are async on
+    // macOS, the reset is deferred to the matching Notify* observer
+    // (NotifyWindowEnterFullScreen/NotifyWindowMaximize) rather than reset
+    // synchronously here.
+    restore_display_mode_callback_ = base::BindOnce(
+        [](NativeWindow* window, base::DictValue prefs) {
+          bool transition_initiated = true;
+          if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
+            window->awaiting_restore_display_mode_transition_ = true;
+            window->SetKiosk(true);
+          } else if (auto fs = prefs.FindBool(electron::kFullscreen);
+                     fs && *fs) {
+            window->awaiting_restore_display_mode_transition_ = true;
+            window->SetFullScreen(true);
+          } else if (auto max = prefs.FindBool(electron::kMaximized);
+                     max && *max) {
+            window->awaiting_restore_display_mode_transition_ = true;
+            window->Maximize();
+          } else {
+            transition_initiated = false;
+          }
+          // No display-mode transition to wait on (saved state was normal):
+          // lift the guard immediately.
+          if (!transition_initiated)
+            window->is_being_restored_ = false;
+        },
+        base::Unretained(this), window_preferences->Clone());
+  } else {
+    is_being_restored_ = false;
+  }
+
+  NotifyWindowStateRestored();
+}
+
+void NativeWindow::FlushPendingDisplayMode() {
+  if (restore_display_mode_callback_) {
+    std::move(restore_display_mode_callback_).Run();
+  }
+}
+
+// This function is similar to Chromium's window bounds adjustment logic
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/ui/window_sizer/window_sizer.cc;l=350;drc=0ec56065ba588552f21633aa47280ba02c3cd160
+void NativeWindow::RestoreBounds(const display::Display& display,
+                                 const gfx::Rect& saved_work_area,
+                                 gfx::Rect& saved_bounds) {
+  if (saved_bounds.width() == 0 || saved_bounds.height() == 0) {
+    LOG(WARNING) << "Window bounds not restored - values are invalid";
+    return;
+  }
+
+  // Ensure that the window is at least kMinVisibleHeight * kMinVisibleWidth.
+  saved_bounds.set_height(std::max(kMinVisibleHeight, saved_bounds.height()));
+  saved_bounds.set_width(std::max(kMinVisibleWidth, saved_bounds.width()));
+
+  const gfx::Rect work_area = display.work_area();
+  // Ensure that the title bar is not above the work area.
+  if (saved_bounds.y() < work_area.y()) {
+    saved_bounds.set_y(work_area.y());
+  }
+
+  // Reposition and resize the bounds if the saved_work_area is different from
+  // the current work area and the current work area doesn't completely contain
+  // the bounds.
+  if (!saved_work_area.IsEmpty() && saved_work_area != work_area &&
+      !work_area.Contains(saved_bounds)) {
+    saved_bounds.AdjustToFit(work_area);
+  }
+
+#if BUILDFLAG(IS_MAC)
+  // On mac, we want to be aggressive about repositioning windows that are
+  // partially offscreen.  If the window is partially offscreen horizontally,
+  // snap to the nearest edge of the work area. This call also adjusts the
+  // height, width if needed to make the window fully visible.
+  saved_bounds.AdjustToFit(work_area);
+#else
+  // On non-Mac platforms, we are less aggressive about repositioning. Simply
+  // ensure that at least kMinVisibleWidth * kMinVisibleHeight is visible
+
+  const int min_y = work_area.y() + kMinVisibleHeight - saved_bounds.height();
+  const int min_x = work_area.x() + kMinVisibleWidth - saved_bounds.width();
+  const int max_y = work_area.bottom() - kMinVisibleHeight;
+  const int max_x = work_area.right() - kMinVisibleWidth;
+  // Reposition and resize the bounds to make it fully visible inside the work
+  // area. `min_x >= max_x` happens when work area and bounds are both small.
+  if (min_x >= max_x || min_y >= max_y) {
+    saved_bounds.AdjustToFit(work_area);
+  } else {
+    saved_bounds.set_y(std::clamp(saved_bounds.y(), min_y, max_y));
+    saved_bounds.set_x(std::clamp(saved_bounds.x(), min_x, max_x));
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  SetBounds(saved_bounds, false);
+}
+
 // static
 bool NativeWindow::PlatformHasClientFrame() {
 #if defined(USE_OZONE)
   // Ozone X11 likes to prefer custom frames,
   // but we don't need them unless on Wayland.
   static const bool has_client_frame =
-      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
       !ui::OzonePlatform::GetInstance()
            ->GetPlatformRuntimeProperties()
            .supports_server_side_window_decorations;

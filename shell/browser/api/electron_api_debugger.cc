@@ -13,12 +13,13 @@
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
+#include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -26,11 +27,11 @@ using content::DevToolsAgentHost;
 
 namespace electron::api {
 
-gin::WrapperInfo Debugger::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                           gin::kElectronDebugger};
+gin::WrapperInfo Debugger::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronDebugger);
 
 Debugger::Debugger(content::WebContents* web_contents)
-    : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
+    : content::WebContentsObserver{web_contents} {}
 
 Debugger::~Debugger() = default;
 
@@ -53,31 +54,31 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
     return;
-  base::Value::Dict& dict = parsed_message->GetDict();
+  base::DictValue& dict = parsed_message->GetDict();
   std::optional<int> id = dict.FindInt("id");
   if (!id) {
     std::string* method = dict.FindString("method");
     if (!method)
       return;
     std::string* session_id = dict.FindString("sessionId");
-    base::Value::Dict* params = dict.FindDict("params");
-    Emit("message", *method, params ? std::move(*params) : base::Value::Dict(),
+    base::DictValue* params = dict.FindDict("params");
+    Emit("message", *method, params ? std::move(*params) : base::DictValue(),
          session_id ? *session_id : "");
   } else {
     auto it = pending_requests_.find(*id);
     if (it == pending_requests_.end())
       return;
 
-    gin_helper::Promise<base::Value::Dict> promise = std::move(it->second);
+    gin_helper::Promise<base::DictValue> promise = std::move(it->second);
     pending_requests_.erase(it);
 
-    base::Value::Dict* error = dict.FindDict("error");
+    base::DictValue* error = dict.FindDict("error");
     if (error) {
       std::string* error_message = error->FindString("message");
       promise.RejectWithErrorMessage(error_message ? *error_message : "");
     } else {
-      base::Value::Dict* result = dict.FindDict("result");
-      promise.Resolve(result ? std::move(*result) : base::Value::Dict());
+      base::DictValue* result = dict.FindDict("result");
+      promise.Resolve(result ? std::move(*result) : base::DictValue());
     }
   }
 }
@@ -88,11 +89,25 @@ void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
   // so if the new_rfh is not the primary main frame, we don't want to
   // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
   // that already has a DevToolsAgentHost associated with it.
-  if (agent_host_ && new_rfh->IsInPrimaryMainFrame()) {
-    agent_host_->DisconnectWebContents();
-    auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
-    agent_host_->ConnectWebContents(web_contents);
-  }
+  if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
+    return;
+
+  auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
+
+  // The DevToolsAgentHost already follows primary main-frame RenderFrameHost
+  // changes within the same WebContents on its own. Disconnecting and
+  // reconnecting here is therefore redundant for such navigations, and is
+  // actively harmful: it tears down and rebinds the DevTools session mojo
+  // pipe, discarding any protocol notifications that the renderer has already
+  // emitted onto the pipe. With RenderDocument enabled the main-frame RFH
+  // changes on every navigation, so this dropped requests for every page load
+  // whenever a debugger was attached. Only reconnect when the WebContents
+  // actually changed, which the agent host does not track on its own.
+  if (agent_host_->GetWebContents() == web_contents)
+    return;
+
+  agent_host_->DisconnectWebContents();
+  agent_host_->ConnectWebContents(web_contents);
 }
 
 void Debugger::Attach(gin::Arguments* args) {
@@ -110,7 +125,14 @@ void Debugger::Attach(gin::Arguments* args) {
     return;
   }
 
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents_);
+  // web_contents() is reset to null by WebContentsObserver once the
+  // observed WebContents has been destroyed.
+  if (!web_contents()) {
+    args->ThrowTypeError("No target available");
+    return;
+  }
+
+  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents());
   if (!agent_host_) {
     args->ThrowTypeError("No target available");
     return;
@@ -132,7 +154,7 @@ void Debugger::Detach() {
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  gin_helper::Promise<base::Value::Dict> promise(isolate);
+  gin_helper::Promise<base::DictValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {
@@ -146,7 +168,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict command_params;
+  base::DictValue command_params;
   args->GetNext(&command_params);
 
   std::string session_id;
@@ -155,7 +177,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict request;
+  base::DictValue request;
   int request_id = ++previous_request_id_;
   pending_requests_.emplace(request_id, std::move(promise));
   request.Set("id", request_id);

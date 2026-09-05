@@ -10,7 +10,7 @@ hide_title: false
 ## Accelerators
 
 Accelerators are strings that can be used to represent keyboard shortcuts throughout your Electron.
-These strings can contain multiple modifiers keys and a single key code joined by the `+` character.
+These strings can contain multiple modifier keys and a single key code joined by the `+` character.
 
 > [!NOTE]
 > Accelerators are **case-insensitive**.

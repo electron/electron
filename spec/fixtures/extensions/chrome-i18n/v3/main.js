@@ -5,20 +5,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 const map = {
-  getAcceptLanguages () {
+  getAcceptLanguages() {
     chrome.i18n.getAcceptLanguages().then((languages) => {
       console.log(JSON.stringify(languages));
     });
   },
-  getMessage () {
+  getMessage() {
     const message = chrome.i18n.getMessage('extName');
     console.log(JSON.stringify(message));
   },
-  getUILanguage () {
+  getUILanguage() {
     const language = chrome.i18n.getUILanguage();
     console.log(JSON.stringify(language));
   },
-  async detectLanguage (texts) {
+  async detectLanguage(texts) {
     const result = [];
     for (const text of texts) {
       const language = await chrome.i18n.detectLanguage(text);

@@ -6,14 +6,15 @@ import { BrowserWindowConstructorOptions } from 'electron/main';
 
 type RequiredBrowserWindowConstructorOptions = Required<BrowserWindowConstructorOptions>;
 type IntegerBrowserWindowOptionKeys = {
-  [K in keyof RequiredBrowserWindowConstructorOptions]:
-    RequiredBrowserWindowConstructorOptions[K] extends number ? K : never
+  [K in keyof RequiredBrowserWindowConstructorOptions]: RequiredBrowserWindowConstructorOptions[K] extends number
+    ? K
+    : never;
 }[keyof RequiredBrowserWindowConstructorOptions];
 
 // This could be an array of keys, but an object allows us to add a compile-time
 // check validating that we haven't added an integer property to
 // BrowserWindowConstructorOptions that this module doesn't know about.
-const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] : true } = {
+const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys]: true } = {
   x: true,
   y: true,
   width: true,
@@ -31,7 +32,13 @@ const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] 
 // to `innerWidth` / `innerHeight`. However, our implementation currently incorrectly maps
 // `width` and `height` to `outerWidth` and `outerHeight`, or the size of the window
 // with all border and related window chrome.
-const keysOfTypeNumber = new Set(['top', 'left', 'innerWidth', 'innerHeight', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
+const keysOfTypeNumber = new Set([
+  'top',
+  'left',
+  'innerWidth',
+  'innerHeight',
+  ...Object.keys(keysOfTypeNumberCompileTimeCheck)
+]);
 
 /**
  * Note that we only allow "0" and "1" boolean conversion when the type is known
@@ -41,7 +48,7 @@ const keysOfTypeNumber = new Set(['top', 'left', 'innerWidth', 'innerHeight', ..
  * https://html.spec.whatwg.org/multipage/window-object.html#concept-window-open-features-parse-boolean
  */
 type CoercedValue = string | number | boolean;
-function coerce (key: string, value: string): CoercedValue {
+function coerce(key: string, value: string): CoercedValue {
   if (keysOfTypeNumber.has(key)) {
     return parseInt(value, 10);
   }
@@ -61,27 +68,89 @@ function coerce (key: string, value: string): CoercedValue {
   }
 }
 
-export function parseCommaSeparatedKeyValue (source: string) {
+export function parseCommaSeparatedKeyValue(source: string) {
   const parsed = {} as { [key: string]: any };
   for (const keyValuePair of source.split(',')) {
-    const [key, value] = keyValuePair.split('=').map(str => str.trim());
-    if (key) { parsed[key] = coerce(key, value); }
+    const [key, value] = keyValuePair.split('=').map((str) => str.trim());
+    if (key) {
+      parsed[key] = coerce(key, value);
+    }
   }
 
   return parsed;
 }
 
-export function parseWebViewWebPreferences (preferences: string) {
+export function parseWebViewWebPreferences(preferences: string) {
   return parseCommaSeparatedKeyValue(preferences);
 }
 
-const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'javascript', 'contextIsolation', 'webviewTag'] as const;
+const allowedWebPreferences = [
+  'zoomFactor',
+  'nodeIntegration',
+  'javascript',
+  'contextIsolation',
+  'webviewTag'
+] as const;
 type AllowedWebPreference = (typeof allowedWebPreferences)[number];
+
+// Top-level BrowserWindow options that may be set via the window.open()
+// features string. Options not listed here are silently dropped; apps that
+// need to pass other options should use setWindowOpenHandler in the main
+// process.
+const allowedWindowOptions = new Set<string>([
+  // standard window.open() position/size features
+  'top',
+  'left',
+  'innerWidth',
+  'innerHeight',
+  // numeric
+  'x',
+  'y',
+  'width',
+  'height',
+  'minWidth',
+  'minHeight',
+  'maxWidth',
+  'maxHeight',
+  'opacity',
+  // presentational booleans
+  'show',
+  'center',
+  'useContentSize',
+  'frame',
+  'transparent',
+  'hasShadow',
+  'movable',
+  'closable',
+  'focusable',
+  'minimizable',
+  'maximizable',
+  'fullscreenable',
+  'alwaysOnTop',
+  'skipTaskbar',
+  'modal',
+  'acceptFirstMouse',
+  'autoHideMenuBar',
+  'enableLargerThanScreen',
+  'paintWhenInitiallyHidden',
+  'roundedCorners',
+  'thickFrame',
+  'disableAutoHideCursor',
+  'hiddenInMissionControl',
+  // presentational strings (no filesystem/network side effects)
+  'title',
+  'backgroundColor',
+  'tabbingIdentifier',
+  'titleBarStyle',
+  'vibrancy',
+  'visualEffectState',
+  'backgroundMaterial'
+]);
 
 /**
  * Parses a feature string that has the format used in window.open().
  */
-export function parseFeatures (features: string) {
+export function parseFeatures(features: string) {
   const parsed = parseCommaSeparatedKeyValue(features);
 
   const webPreferences: { [K in AllowedWebPreference]?: any } = {};
@@ -100,8 +169,15 @@ export function parseFeatures (features: string) {
   if (parsed.left !== undefined) parsed.x = parsed.left;
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
+  const options: { [key: string]: CoercedValue } = {};
+  for (const key of Object.keys(parsed)) {
+    if (allowedWindowOptions.has(key)) {
+      options[key] = parsed[key];
+    }
+  }
+
   return {
-    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
+    options: options as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
     webPreferences
   };
 }

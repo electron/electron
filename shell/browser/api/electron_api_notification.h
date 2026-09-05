@@ -5,17 +5,17 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "build/build_config.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/notifications/notification.h"
-#include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
@@ -24,54 +24,73 @@ class Arguments;
 
 namespace gin_helper {
 class ErrorThrower;
-template <typename T>
-class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
 
-class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
+class NotificationDelegateProxy;
+
+class Notification final : public gin::Wrappable<Notification>,
                            public gin_helper::EventEmitterMixin<Notification>,
-                           public gin_helper::Constructible<Notification>,
-                           public gin_helper::CleanedUpAtExit,
-                           public NotificationDelegate {
+                           public gin_helper::Constructible<Notification> {
  public:
   static bool IsSupported();
+  static v8::Local<v8::Promise> GetHistory(v8::Isolate* isolate);
+  static void Remove(gin::Arguments* args);
+  static void RemoveAll();
+  static void RemoveGroup(const std::string& group_id);
+
+#if BUILDFLAG(IS_WIN)
+  // Register a callback to handle all notification activations.
+  // The callback is invoked for every activation (click, reply, action)
+  // regardless of whether the Notification object is still in memory.
+  // If an activation already occurred, callback is invoked immediately.
+  // Callback remains registered until replaced by another call.
+  static void HandleActivation(v8::Isolate* isolate,
+                               v8::Local<v8::Function> callback);
+#endif
 
   // gin_helper::Constructible
-  static gin_helper::Handle<Notification> New(gin_helper::ErrorThrower thrower,
-                                              gin::Arguments* args);
+  static Notification* New(gin_helper::ErrorThrower thrower,
+                           gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Notification"; }
 
-  // NotificationDelegate:
-  void NotificationAction(int index) override;
-  void NotificationClick() override;
-  void NotificationReplied(const std::string& reply) override;
-  void NotificationDisplayed() override;
-  void NotificationDestroyed() override;
-  void NotificationClosed() override;
-  void NotificationFailed(const std::string& error) override;
-
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
-
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
   // disable copy
   Notification(const Notification&) = delete;
   Notification& operator=(const Notification&) = delete;
 
- protected:
+  // Public for cppgc::MakeGarbageCollected.
   explicit Notification(gin::Arguments* args);
   ~Notification() override;
+
+  // Constructor for restored notifications (used by GetHistory).
+  // Does not set presenter_ or parse options — only populates fields from
+  // the delivered notification info.
+  Notification(v8::Isolate* isolate, const NotificationInfo& info);
+
+ private:
+  friend class NotificationDelegateProxy;
+
+  void NotificationAction(int action_index, int selection_index);
+  void NotificationClick();
+  void NotificationReplied(const std::string& reply);
+  void NotificationDisplayed();
+  void NotificationClosed(const std::string& reason);
+  void NotificationFailed(const std::string& error);
 
   void Show();
   void Close();
 
   // Prop Getters
+  const std::string& id() const { return id_; }
+  const std::string& group_id() const { return group_id_; }
+  const std::u16string& group_title() const { return group_title_; }
   const std::u16string& title() const { return title_; }
   const std::u16string& subtitle() const { return subtitle_; }
   const std::u16string& body() const { return body_; }
@@ -101,7 +120,9 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   void SetCloseButtonText(const std::u16string& text);
   void SetToastXml(const std::u16string& new_toast_xml);
 
- private:
+  std::string id_;
+  std::string group_id_;
+  std::u16string group_title_;
   std::u16string title_;
   std::u16string subtitle_;
   std::u16string body_;
@@ -115,10 +136,12 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   std::vector<electron::NotificationAction> actions_;
   std::u16string close_button_text_;
   std::u16string toast_xml_;
+  bool is_restored_ = false;
 
   raw_ptr<electron::NotificationPresenter> presenter_;
 
   base::WeakPtr<electron::Notification> notification_;
+  std::unique_ptr<NotificationDelegateProxy> delegate_;
 };
 
 }  // namespace electron::api

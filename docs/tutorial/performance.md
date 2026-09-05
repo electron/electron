@@ -276,7 +276,7 @@ variant.
 
 ### 4. Blocking the renderer process
 
-Since Electron ships with a current version of Chrome, you can make use of the
+Since Electron ships with a current version of Chromium, you can make use of the
 latest and greatest features the Web Platform offers to defer or offload heavy
 operations in a way that keeps your app smooth and responsive.
 
@@ -294,7 +294,7 @@ particularly useful if users complain about your app sometimes "stuttering".
 
 Generally speaking, all advice for building performant web apps for modern
 browsers apply to Electron's renderers, too. The two primary tools at your
-disposal  are currently `requestIdleCallback()` for small operations and
+disposal are currently `requestIdleCallback()` for small operations and
 `Web Workers` for long-running operations.
 
 _`requestIdleCallback()`_ allows developers to queue up a function to be
@@ -360,7 +360,7 @@ turning into a desktop application. As web developers, we are used to loading
 resources from a variety of content delivery networks. Now that you are
 shipping a proper desktop application, attempt to "cut the cord" where possible
 and avoid letting your users wait for resources that never change and could
-easily be included  in your app.
+easily be included in your app.
 
 A typical example is Google Fonts. Many developers make use of Google's
 impressive collection of free fonts, which comes with a content delivery

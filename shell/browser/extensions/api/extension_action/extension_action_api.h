@@ -17,9 +17,6 @@ class WebContents;
 
 namespace extensions {
 
-class ExtensionHost;
-class ExtensionPrefs;
-
 class ExtensionActionAPI : public BrowserContextKeyedAPI {
  public:
   class Observer {

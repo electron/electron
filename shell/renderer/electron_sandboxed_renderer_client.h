@@ -13,10 +13,6 @@ namespace base {
 class ProcessMetrics;
 }
 
-namespace blink {
-class WebLocalFrame;
-}
-
 namespace electron {
 
 class ElectronSandboxedRendererClient : public RendererClientBase {
@@ -57,7 +53,8 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
       v8::Local<v8::Context> context,
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
-      const GURL& script_url) override;
+      const GURL& script_url,
+      const blink::ServiceWorkerToken& service_worker_token) override;
 
  private:
   void EmitProcessEvent(content::RenderFrame* render_frame,

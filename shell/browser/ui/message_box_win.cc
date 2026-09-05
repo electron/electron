@@ -11,6 +11,9 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
+#include "base/logging.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -74,6 +77,17 @@ struct CommonButtonID {
   int button;
   int id;
 };
+
+struct TaskDialogCallbackData {
+  // Storage for the dialog's HWND, shared with CloseMessageBox across threads
+  // under GetHWNDLock(). Null when the caller does not track the HWND.
+  // Not a raw_ptr<> because it points at an HWND owned elsewhere.
+  RAW_PTR_EXCLUSION HWND* target = nullptr;
+  // The button IDs created for this dialog. Clicks for any other ID
+  // are treated as external/injected and ignored.
+  base::flat_set<int> button_ids;
+};
+
 CommonButtonID GetCommonID(const std::wstring& button) {
   std::wstring lower = base::ToLowerASCII(button);
   if (lower == L"ok")
@@ -118,19 +132,33 @@ void MapToCommonID(const std::vector<std::wstring>& buttons,
 // is possible for CloseMessageBox to be called before or all after the dialog
 // window is created.
 HRESULT CALLBACK
-TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
+TaskDialogCallback(HWND hwnd, UINT msg, WPARAM w_param, LPARAM, LONG_PTR data) {
+  auto* callback_data = reinterpret_cast<TaskDialogCallbackData*>(data);
   if (msg == TDN_CREATED) {
-    HWND* target = reinterpret_cast<HWND*>(data);
-    // Lock since CloseMessageBox might be called.
-    base::AutoLock lock(GetHWNDLock());
-    if (*target == kHwndCancel) {
-      // The dialog is cancelled before it is created, close it directly.
-      ::PostMessage(hwnd, WM_CLOSE, 0, 0);
-    } else if (*target == kHwndReserve) {
-      // Otherwise save the hwnd.
-      *target = hwnd;
-    } else {
-      NOTREACHED();
+    if (HWND* target = callback_data->target) {
+      // Lock since CloseMessageBox might be called.
+      base::AutoLock lock(GetHWNDLock());
+      if (*target == kHwndCancel) {
+        // The dialog is cancelled before it is created, close it directly.
+        ::PostMessage(hwnd, WM_CLOSE, 0, 0);
+      } else if (*target == kHwndReserve) {
+        // Otherwise save the hwnd.
+        *target = hwnd;
+      } else {
+        NOTREACHED();
+      }
+    }
+  } else if (msg == TDN_BUTTON_CLICKED) {
+    // Ignore clicks for button IDs that we never created. Some software
+    // (e.g. file-dialog enhancers) enumerates dialog (0x8002) windows and sends
+    // messages with colliding IDs, which would dismiss our message box.
+    // Returning S_FALSE keeps it open. IDCANCEL is
+    // always honored so Esc and the title-bar close keep working under
+    // TDF_ALLOW_DIALOG_CANCELLATION.
+    const int clicked_id = static_cast<int>(w_param);
+    if (clicked_id != IDCANCEL &&
+        !callback_data->button_ids.contains(clicked_id)) {
+      return S_FALSE;
     }
   }
   return S_OK;
@@ -158,7 +186,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
   config.hInstance = GetModuleHandle(nullptr);
   config.dwFlags = flags;
 
-  if (parent) {
+  if (parent && ::IsWindowEnabled(parent)) {
     config.hwndParent = parent;
     config.dwFlags |= TDF_POSITION_RELATIVE_TO_WINDOW;
   }
@@ -242,23 +270,36 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
       config.dwFlags |= TDF_USE_COMMAND_LINKS;  // custom buttons as links.
   }
 
-  // Pass a callback to receive the HWND of the message box.
-  if (hwnd) {
-    config.pfCallback = &TaskDialogCallback;
-    config.lpCallbackData = reinterpret_cast<LONG_PTR>(hwnd);
-  }
+  // Always register a callback, it receives the HWND of the message box (when
+  // the caller tracks it) and rejects button clicks for IDs we never created,
+  // so an external process cannot dismiss the dialog.
+  TaskDialogCallbackData callback_data;
+  callback_data.target = hwnd;
+  for (const auto& id_and_index : id_map)
+    callback_data.button_ids.insert(id_and_index.first);
+  for (const auto& button : dialog_buttons)
+    callback_data.button_ids.insert(button.nButtonID);
+  // With no buttons configured, TaskDialogIndirect shows an implicit OK button
+  // (e.g. ShowErrorBox), so allow its click through.
+  if (callback_data.button_ids.empty())
+    callback_data.button_ids.insert(IDOK);
+  config.pfCallback = &TaskDialogCallback;
+  config.lpCallbackData = reinterpret_cast<LONG_PTR>(&callback_data);
 
   int id = 0;
   BOOL verification_flag_checked = FALSE;
   TaskDialogIndirect(&config, &id, nullptr, &verification_flag_checked);
 
   int button_id;
-  if (id_map.contains(id))  // common button.
+  if (id_map.contains(id)) {
+    // common button.
     button_id = id_map[id];
-  else if (id >= kIDStart)  // custom button.
+  } else if (id >= kIDStart && callback_data.button_ids.contains(id)) {
+    // custom button.
     button_id = id - kIDStart;
-  else
+  } else {
     button_id = cancel_id;
+  }
 
   return {button_id, static_cast<bool>(verification_flag_checked)};
 }

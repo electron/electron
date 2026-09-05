@@ -12,19 +12,19 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/permission_result.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/buildflags/buildflags.h"
+#include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
-#include "ui/events/keycodes/dom/keycode_converter.h"
-#include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace gin {
 
@@ -89,8 +89,8 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
-  const auto& params = val.first;
-  content::RenderFrameHost* render_frame_host = val.second;
+  const auto& params = val.params;
+  content::RenderFrameHost* render_frame_host = val.render_frame_host;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
@@ -107,7 +107,8 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
-  dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
+  dict.Set("editFlags",
+           EditFlagsToV8(isolate, params.edit_flags, val.is_paste_enabled));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
   dict.Set("altText", params.alt_text);
@@ -187,7 +188,7 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "payment-handler");
     case blink::PermissionType::PERIODIC_BACKGROUND_SYNC:
       return StringToV8(isolate, "periodic-background-sync");
-    case blink::PermissionType::DURABLE_STORAGE:
+    case blink::PermissionType::PERSISTENT_STORAGE:
       return StringToV8(isolate, "persistent-storage");
     case blink::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");
@@ -303,10 +304,10 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate,
     const content::Referrer& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("url", ConvertToV8(isolate, val.url));
-  dict.Set("policy", ConvertToV8(isolate, val.policy));
-  return gin::ConvertToV8(isolate, dict);
+  return gin::DataObjectBuilder(isolate)
+      .Set("url", ConvertToV8(isolate, val.url))
+      .Set("policy", ConvertToV8(isolate, val.policy))
+      .Build();
 }
 
 // static

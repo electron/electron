@@ -65,7 +65,7 @@ The full list of certificate types can be found
 Apps signed with "Apple Development" and "Apple Distribution" certificates can
 only run under [App Sandbox][app-sandboxing], so they must use the MAS build of
 Electron. However, the "Developer ID Application" certificate does not have this
-restrictions, so apps signed with it can use either the normal build or the MAS
+restriction, so apps signed with it can use either the normal build or the MAS
 build of Electron.
 
 #### Legacy certificate names
@@ -107,7 +107,7 @@ When signing the app with `@electron/osx-sign`, it will automatically add the
 necessary entitlements to your app's entitlements.
 
 <details>
-<summary>Extra steps without `electron-osx-sign`</summary>
+<summary>Extra steps without `@electron/osx-sign`</summary>
 
 If you are signing your app without using `@electron/osx-sign`, you must ensure
 the app bundle's entitlements have at least following keys:
@@ -130,7 +130,7 @@ the app bundle's entitlements have at least following keys:
 The `TEAM_ID` should be replaced with your Apple Developer account's Team ID,
 and the `your.bundle.id` should be replaced with the App ID of the app.
 
-And the following entitlements must be added to the binaries and helpers in
+And the following entitlements must be added to the executables in
 the app's bundle:
 
 ```xml
@@ -208,7 +208,7 @@ signAsync({
 After signing the app with the "Apple Distribution" certificate, you can
 continue to submit it to Mac App Store.
 
-However, this guide do not ensure your app will be approved by Apple; you
+However, this guide does not ensure your app will be approved by Apple; you
 still need to read Apple's [Submitting Your App][submitting-your-app] guide on
 how to meet the Mac App Store requirements.
 

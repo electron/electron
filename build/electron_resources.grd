@@ -9,8 +9,187 @@
       <emit emit_type='prepend'></emit>
     </output>
     <output filename="electron_resources.pak" type="data_package" />
+    <output filename="electron_strings_af.pak" type="data_package" lang="af" />
+    <output filename="electron_strings_am.pak" type="data_package" lang="am" />
+    <output filename="electron_strings_ar.pak" type="data_package" lang="ar" />
+    <output filename="electron_strings_as.pak" type="data_package" lang="as" />
+    <output filename="electron_strings_az.pak" type="data_package" lang="az" />
+    <output filename="electron_strings_be.pak" type="data_package" lang="be" />
+    <output filename="electron_strings_bg.pak" type="data_package" lang="bg" />
+    <output filename="electron_strings_bn.pak" type="data_package" lang="bn" />
+    <output filename="electron_strings_bs.pak" type="data_package" lang="bs" />
+    <output filename="electron_strings_ca.pak" type="data_package" lang="ca" />
+    <output filename="electron_strings_cs.pak" type="data_package" lang="cs" />
+    <output filename="electron_strings_cy.pak" type="data_package" lang="cy" />
+    <output filename="electron_strings_da.pak" type="data_package" lang="da" />
+    <output filename="electron_strings_de.pak" type="data_package" lang="de" />
+    <output filename="electron_strings_el.pak" type="data_package" lang="el" />
+    <output filename="electron_strings_en-GB.pak" type="data_package" lang="en-GB" />
+    <output filename="electron_strings_en-US.pak" type="data_package" lang="en" />
+    <output filename="electron_strings_es-419.pak" type="data_package" lang="es-419" />
+    <output filename="electron_strings_es.pak" type="data_package" lang="es" />
+    <output filename="electron_strings_et.pak" type="data_package" lang="et" />
+    <output filename="electron_strings_eu.pak" type="data_package" lang="eu" />
+    <output filename="electron_strings_fa.pak" type="data_package" lang="fa" />
+    <output filename="electron_strings_fi.pak" type="data_package" lang="fi" />
+    <output filename="electron_strings_fil.pak" type="data_package" lang="fil" />
+    <output filename="electron_strings_fr-CA.pak" type="data_package" lang="fr-CA" />
+    <output filename="electron_strings_fr.pak" type="data_package" lang="fr" />
+    <output filename="electron_strings_gl.pak" type="data_package" lang="gl" />
+    <output filename="electron_strings_gu.pak" type="data_package" lang="gu" />
+    <output filename="electron_strings_hi.pak" type="data_package" lang="hi" />
+    <output filename="electron_strings_hr.pak" type="data_package" lang="hr" />
+    <output filename="electron_strings_hu.pak" type="data_package" lang="hu" />
+    <output filename="electron_strings_hy.pak" type="data_package" lang="hy" />
+    <output filename="electron_strings_id.pak" type="data_package" lang="id" />
+    <output filename="electron_strings_is.pak" type="data_package" lang="is" />
+    <output filename="electron_strings_it.pak" type="data_package" lang="it" />
+    <output filename="electron_strings_he.pak" type="data_package" lang="he" />
+    <output filename="electron_strings_ja.pak" type="data_package" lang="ja" />
+    <output filename="electron_strings_ka.pak" type="data_package" lang="ka" />
+    <output filename="electron_strings_kk.pak" type="data_package" lang="kk" />
+    <output filename="electron_strings_km.pak" type="data_package" lang="km" />
+    <output filename="electron_strings_kn.pak" type="data_package" lang="kn" />
+    <output filename="electron_strings_ko.pak" type="data_package" lang="ko" />
+    <output filename="electron_strings_ky.pak" type="data_package" lang="ky" />
+    <output filename="electron_strings_lo.pak" type="data_package" lang="lo" />
+    <output filename="electron_strings_lt.pak" type="data_package" lang="lt" />
+    <output filename="electron_strings_lv.pak" type="data_package" lang="lv" />
+    <output filename="electron_strings_mk.pak" type="data_package" lang="mk" />
+    <output filename="electron_strings_ml.pak" type="data_package" lang="ml" />
+    <output filename="electron_strings_mn.pak" type="data_package" lang="mn" />
+    <output filename="electron_strings_mr.pak" type="data_package" lang="mr" />
+    <output filename="electron_strings_ms.pak" type="data_package" lang="ms" />
+    <output filename="electron_strings_my.pak" type="data_package" lang="my" />
+    <output filename="electron_strings_ne.pak" type="data_package" lang="ne" />
+    <output filename="electron_strings_nl.pak" type="data_package" lang="nl" />
+    <!-- The translation console uses 'no' for Norwegian Bokmål. It should
+         be 'nb'. -->
+    <output filename="electron_strings_nb.pak" type="data_package" lang="no" />
+    <output filename="electron_strings_or.pak" type="data_package" lang="or" />
+    <output filename="electron_strings_pa.pak" type="data_package" lang="pa" />
+    <output filename="electron_strings_pl.pak" type="data_package" lang="pl" />
+    <output filename="electron_strings_pt-BR.pak" type="data_package" lang="pt-BR" />
+    <output filename="electron_strings_pt-PT.pak" type="data_package" lang="pt-PT" />
+    <output filename="electron_strings_ro.pak" type="data_package" lang="ro" />
+    <output filename="electron_strings_ru.pak" type="data_package" lang="ru" />
+    <output filename="electron_strings_si.pak" type="data_package" lang="si" />
+    <output filename="electron_strings_sk.pak" type="data_package" lang="sk" />
+    <output filename="electron_strings_sl.pak" type="data_package" lang="sl" />
+    <output filename="electron_strings_sq.pak" type="data_package" lang="sq" />
+    <output filename="electron_strings_sr-Latn.pak" type="data_package" lang="sr-Latn" />
+    <output filename="electron_strings_sr.pak" type="data_package" lang="sr" />
+    <output filename="electron_strings_sv.pak" type="data_package" lang="sv" />
+    <output filename="electron_strings_sw.pak" type="data_package" lang="sw" />
+    <output filename="electron_strings_ta.pak" type="data_package" lang="ta" />
+    <output filename="electron_strings_te.pak" type="data_package" lang="te" />
+    <output filename="electron_strings_th.pak" type="data_package" lang="th" />
+    <output filename="electron_strings_tr.pak" type="data_package" lang="tr" />
+    <output filename="electron_strings_uk.pak" type="data_package" lang="uk" />
+    <output filename="electron_strings_ur.pak" type="data_package" lang="ur" />
+    <output filename="electron_strings_uz.pak" type="data_package" lang="uz" />
+    <output filename="electron_strings_vi.pak" type="data_package" lang="vi" />
+    <output filename="electron_strings_zh-CN.pak" type="data_package" lang="zh-CN" />
+    <output filename="electron_strings_zh-HK.pak" type="data_package" lang="zh-HK" />
+    <output filename="electron_strings_zh-TW.pak" type="data_package" lang="zh-TW" />
+    <output filename="electron_strings_zu.pak" type="data_package" lang="zu" />
+    <!-- CARO TODO: Pseudolocales? -->
+    <output filename="electron_strings_ar-XB.pak" type="data_package" lang="ar-XB" />
+    <output filename="electron_strings_en-XA.pak" type="data_package" lang="en-XA" />
   </outputs>
-  <release seq="1" allow_pseudo="false">
+  <translations>
+    <file path="translations/electron_strings_af.xtb" lang="af" />
+    <file path="translations/electron_strings_am.xtb" lang="am" />
+    <file path="translations/electron_strings_ar.xtb" lang="ar" />
+    <file path="translations/electron_strings_as.xtb" lang="as" />
+    <file path="translations/electron_strings_az.xtb" lang="az" />
+    <file path="translations/electron_strings_be.xtb" lang="be" />
+    <file path="translations/electron_strings_bg.xtb" lang="bg" />
+    <file path="translations/electron_strings_bn.xtb" lang="bn" />
+    <file path="translations/electron_strings_bs.xtb" lang="bs" />
+    <file path="translations/electron_strings_ca.xtb" lang="ca" />
+    <file path="translations/electron_strings_cs.xtb" lang="cs" />
+    <file path="translations/electron_strings_cy.xtb" lang="cy" />
+    <file path="translations/electron_strings_da.xtb" lang="da" />
+    <file path="translations/electron_strings_de.xtb" lang="de" />
+    <file path="translations/electron_strings_el.xtb" lang="el" />
+    <file path="translations/electron_strings_en-GB.xtb" lang="en-GB" />
+    <file path="translations/electron_strings_es-419.xtb" lang="es-419" />
+    <file path="translations/electron_strings_es.xtb" lang="es" />
+    <file path="translations/electron_strings_et.xtb" lang="et" />
+    <file path="translations/electron_strings_eu.xtb" lang="eu" />
+    <file path="translations/electron_strings_fa.xtb" lang="fa" />
+    <file path="translations/electron_strings_fi.xtb" lang="fi" />
+    <file path="translations/electron_strings_fil.xtb" lang="fil" />
+    <file path="translations/electron_strings_fr-CA.xtb" lang="fr-CA" />
+    <file path="translations/electron_strings_fr.xtb" lang="fr" />
+    <file path="translations/electron_strings_gl.xtb" lang="gl" />
+    <file path="translations/electron_strings_gu.xtb" lang="gu" />
+    <file path="translations/electron_strings_hi.xtb" lang="hi" />
+    <file path="translations/electron_strings_hr.xtb" lang="hr" />
+    <file path="translations/electron_strings_hu.xtb" lang="hu" />
+    <file path="translations/electron_strings_hy.xtb" lang="hy" />
+    <file path="translations/electron_strings_id.xtb" lang="id" />
+    <file path="translations/electron_strings_is.xtb" lang="is" />
+    <file path="translations/electron_strings_it.xtb" lang="it" />
+    <!-- The translation console uses 'iw' for Hebrew, but we use 'he'. -->
+    <file path="translations/electron_strings_iw.xtb" lang="he" />
+    <file path="translations/electron_strings_ja.xtb" lang="ja" />
+    <file path="translations/electron_strings_ka.xtb" lang="ka" />
+    <file path="translations/electron_strings_kk.xtb" lang="kk" />
+    <file path="translations/electron_strings_km.xtb" lang="km" />
+    <file path="translations/electron_strings_kn.xtb" lang="kn" />
+    <file path="translations/electron_strings_ko.xtb" lang="ko" />
+    <file path="translations/electron_strings_ky.xtb" lang="ky" />
+    <file path="translations/electron_strings_lo.xtb" lang="lo" />
+    <file path="translations/electron_strings_lt.xtb" lang="lt" />
+    <file path="translations/electron_strings_lv.xtb" lang="lv" />
+    <file path="translations/electron_strings_mk.xtb" lang="mk" />
+    <file path="translations/electron_strings_ml.xtb" lang="ml" />
+    <file path="translations/electron_strings_mn.xtb" lang="mn" />
+    <file path="translations/electron_strings_mr.xtb" lang="mr" />
+    <file path="translations/electron_strings_ms.xtb" lang="ms" />
+    <file path="translations/electron_strings_my.xtb" lang="my" />
+    <file path="translations/electron_strings_ne.xtb" lang="ne" />
+    <file path="translations/electron_strings_nl.xtb" lang="nl" />
+    <file path="translations/electron_strings_no.xtb" lang="no" />
+    <file path="translations/electron_strings_or.xtb" lang="or" />
+    <file path="translations/electron_strings_pa.xtb" lang="pa" />
+    <file path="translations/electron_strings_pl.xtb" lang="pl" />
+    <file path="translations/electron_strings_pt-BR.xtb" lang="pt-BR" />
+    <file path="translations/electron_strings_pt-PT.xtb" lang="pt-PT" />
+    <file path="translations/electron_strings_ro.xtb" lang="ro" />
+    <file path="translations/electron_strings_ru.xtb" lang="ru" />
+    <file path="translations/electron_strings_si.xtb" lang="si" />
+    <file path="translations/electron_strings_sk.xtb" lang="sk" />
+    <file path="translations/electron_strings_sl.xtb" lang="sl" />
+    <file path="translations/electron_strings_sq.xtb" lang="sq" />
+    <file path="translations/electron_strings_sr-Latn.xtb" lang="sr-Latn" />
+    <file path="translations/electron_strings_sr.xtb" lang="sr" />
+    <file path="translations/electron_strings_sv.xtb" lang="sv" />
+    <file path="translations/electron_strings_sw.xtb" lang="sw" />
+    <file path="translations/electron_strings_ta.xtb" lang="ta" />
+    <file path="translations/electron_strings_te.xtb" lang="te" />
+    <file path="translations/electron_strings_th.xtb" lang="th" />
+    <file path="translations/electron_strings_tr.xtb" lang="tr" />
+    <file path="translations/electron_strings_uk.xtb" lang="uk" />
+    <file path="translations/electron_strings_ur.xtb" lang="ur" />
+    <file path="translations/electron_strings_uz.xtb" lang="uz" />
+    <file path="translations/electron_strings_vi.xtb" lang="vi" />
+    <file path="translations/electron_strings_zh-CN.xtb" lang="zh-CN" />
+    <file path="translations/electron_strings_zh-HK.xtb" lang="zh-HK" />
+    <file path="translations/electron_strings_zh-TW.xtb" lang="zh-TW" />
+    <file path="translations/electron_strings_zu.xtb" lang="zu" />
+  </translations>
+  <release seq="1">
+    <messages fallback_to_english="true">
+      <message name="IDS_MAC_NOTIFICATION_INLINE_REPLY_BUTTON" desc="Label for the inline reply button inside a macOS notification.">
+        Reply
+      </message>
+      <message name="IDS_MAC_NOTIFICATION_SHOW_BUTTON" desc="Label for the default action button inside a macOS notification.">
+        Show
+      </message>
+    </messages>
     <includes>
       <include name="IDR_CONTENT_SHELL_DEVTOOLS_DISCOVERY_PAGE" file="${target_gen_dir}/shell_devtools_discovery_page.html" use_base_dir="false" type="BINDATA" />
     </includes>

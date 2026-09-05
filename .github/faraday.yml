@@ -1,0 +1,29 @@
+# faraday trust configuration for electron/electron.
+# A bot listed here is "trusted": its pull requests need 1 maintainer
+# approval instead of 2, provided every commit is verifiably the bot's own.
+# See: https://github.com/electron/faraday
+
+trusted-bots:
+  # Backport PRs to release branches.
+  - login: trop[bot]
+    id: 37223003
+  # Chrome security cherry-pick PRs to release branches.
+  - login: electron-security-backports[bot]
+    id: 312726202
+  # PGO profile roll PRs; trusted only when every changed file is
+  # under build/pgo_profiles/.
+  - login: electron-pgo-updater[bot]
+    id: 290827142
+    paths:
+      - build/pgo_profiles/**
+  # Chromium / Node.js roll PRs.
+  - login: electron-roller[bot]
+    id: 84116207
+
+trusted-reviewers:
+  # Docs reviewer app — counts as at most one approval, and only
+  # when every changed file is under docs/.
+  - login: electron-docs-reviewer[bot]
+    id: 114909645
+    paths:
+      - docs/**

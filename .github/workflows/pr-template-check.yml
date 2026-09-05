@@ -1,0 +1,65 @@
+name: PR Template Check
+
+on:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] deliberate; only base-branch code runs, the PR head is never checked out (see SECURITY note)
+    types: [opened, ready_for_review]
+
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
+permissions: {}
+
+jobs:
+  check-pr-template:
+    if: ${{ github.event.pull_request.head.repo.fork && !github.event.pull_request.draft && !startsWith(github.head_ref, 'roller/') }}
+    name: Check PR Template
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          sparse-checkout: .github/PULL_REQUEST_TEMPLATE.md
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+      - name: Check for required sections
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const template = fs.readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf8');
+            const requiredSections = [...template.matchAll(/^(#{1,4} .+)$/gm)].map(
+              (m) => m[1],
+            );
+            if (requiredSections.length === 0) {
+              console.log('No heading sections found in PR template');
+              return;
+            }
+            const body = context.payload.pull_request.body || '';
+            // Allow through if body contains a valid backport line
+            const backportRegex = /Backport of (?:#|https:\/\/github.com\/electron\/electron\/pull\/)\d+/i;
+            if (backportRegex.test(body)) {
+              console.log('Backport PR detected, skipping required section check.');
+              return;
+            }
+            const missingSections = requiredSections.filter(
+              (section) => !body.includes(section),
+            );
+            if (missingSections.length > 0) {
+              const list = missingSections.map((s) => `- \`${s}\``).join('\n');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `This PR was automatically closed because the PR template was not properly filled out. The following required sections are missing:\n\n${list}\n\nPlease update your PR description to include all required sections and reopen the PR.`,
+              });
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                state: 'closed',
+              });
+            }

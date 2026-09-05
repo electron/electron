@@ -4,7 +4,9 @@
 
 #include "shell/browser/osr/osr_web_contents_view.h"
 
+#include "base/check.h"
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
@@ -45,6 +47,10 @@ void OffScreenWebContentsView::SetWebContents(
 
   if (auto* view = GetView())
     view->InstallTransparency();
+}
+
+void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
+  callback_ = callback;
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -137,6 +143,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
     embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
         web_contents_impl->GetRenderWidgetHostView());
   }
+  CHECK(embedder_host_view);
 
   return new OffScreenRenderWidgetHostView(
       transparent_, offscreen_use_shared_texture_,
@@ -157,17 +164,19 @@ bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
 #endif  // BUILDFLAG(IS_MAC)
 
 void OffScreenWebContentsView::StartDragging(
+    content::RenderFrameHost& source_rfh,
     const content::DropData& drop_data,
-    const url::Origin& source_origin,
     blink::DragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& cursor_offset,
     const gfx::Rect& drag_obj_rect,
-    const blink::mojom::DragEventSourceInfo& event_info,
-    content::RenderWidgetHostImpl* source_rwh) {
-  if (web_contents_)
+    const blink::mojom::DragEventSourceInfo& event_info) {
+  if (web_contents_) {
+    auto* source_rwh = static_cast<content::RenderWidgetHostImpl*>(
+        source_rfh.GetRenderWidgetHost());
     static_cast<content::WebContentsImpl*>(web_contents_)
         ->SystemDragEnded(source_rwh);
+  }
 }
 
 void OffScreenWebContentsView::SetPainting(bool painting) {

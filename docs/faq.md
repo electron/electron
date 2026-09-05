@@ -20,11 +20,12 @@ the [Advanced Installation](./tutorial/installation.md) documentation for more d
 
 ## How are Electron binaries downloaded?
 
-When you run `npm install electron`, the Electron binary for the corresponding version is downloaded
-into your project's `node_modules` folder via npm's `postinstall` lifecycle script.
+When you run `npm install electron`, the main `bin` script is downloaded.
+Once this is run (for example, via `npx electron`), the Electron binary for the corresponding version is downloaded into your project's node_modules folder dynamically via the `install-electron` script.
 
-This logic is handled by the [`@electron/get`](https://github.com/electron/get) utility package
-under the hood.
+The download logic is handled by the [`@electron/get`](https://github.com/electron/get) utility package under the hood.
+
+You can also call the `install-electron` script manually.
 
 ## When will Electron upgrade to latest Chromium?
 

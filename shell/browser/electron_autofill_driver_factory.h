@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/functional/callback_forward.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/common/api/api.mojom.h"
@@ -21,9 +20,6 @@ class AutofillDriverFactory
     : private content::WebContentsObserver,
       public content::WebContentsUserData<AutofillDriverFactory> {
  public:
-  typedef base::OnceCallback<std::unique_ptr<AutofillDriver>()>
-      CreationCallback;
-
   ~AutofillDriverFactory() override;
 
   static void BindAutofillDriver(
@@ -32,8 +28,6 @@ class AutofillDriverFactory
       content::RenderFrameHost* render_frame_host);
 
   AutofillDriver* DriverForFrame(content::RenderFrameHost* render_frame_host);
-  void AddDriverForFrame(content::RenderFrameHost* render_frame_host,
-                         CreationCallback factory_method);
   void DeleteDriverForFrame(content::RenderFrameHost* render_frame_host);
 
   void CloseAllPopups();

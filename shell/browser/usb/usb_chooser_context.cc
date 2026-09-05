@@ -70,7 +70,7 @@ UsbChooserContext::UsbChooserContext(ElectronBrowserContext* context)
 // static
 base::Value UsbChooserContext::DeviceInfoToValue(
     const device::mojom::UsbDeviceInfo& device_info) {
-  base::Value::Dict device_value;
+  base::DictValue device_value;
   device_value.Set(kDeviceNameKey, device_info.product_name
                                        ? *device_info.product_name
                                        : std::u16string_view());
@@ -100,9 +100,9 @@ base::Value UsbChooserContext::DeviceInfoToValue(
                    device_info.device_version_subminor);
 
   bool has_active_configuration = false;
-  base::Value::List configuration_list;
+  base::ListValue configuration_list;
   for (const auto& configuration : device_info.configurations) {
-    base::Value::Dict configuration_value;
+    base::DictValue configuration_value;
     configuration_value.Set("configurationValue",
                             configuration->configuration_value);
     configuration_value.Set("configurationName",
@@ -111,12 +111,12 @@ base::Value UsbChooserContext::DeviceInfoToValue(
                                 : std::u16string_view());
 
     for (const auto& interface : configuration->interfaces) {
-      base::Value::Dict interface_value;
+      base::DictValue interface_value;
       interface_value.Set("interfaceNumber", interface->interface_number);
 
-      base::Value::List alternate_list;
+      base::ListValue alternate_list;
       for (const auto& alternate : interface->alternates) {
-        base::Value::Dict alternate_value;
+        base::DictValue alternate_value;
         alternate_value.Set("alternateSetting", alternate->alternate_setting);
         alternate_value.Set("interfaceClass", alternate->class_code);
         alternate_value.Set("interfaceSubclass", alternate->subclass_code);
@@ -125,9 +125,9 @@ base::Value UsbChooserContext::DeviceInfoToValue(
                                                  ? *alternate->interface_name
                                                  : std::u16string_view());
 
-        base::Value::List endpoint_list;
+        base::ListValue endpoint_list;
         for (const auto& endpoint : alternate->endpoints) {
-          base::Value::Dict endpoint_value;
+          base::DictValue endpoint_value;
           endpoint_value.Set("endpointNumber", endpoint->endpoint_number);
 
           bool inbound = endpoint->direction ==
@@ -258,7 +258,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     const url::Origin& origin,
     const base::Value& object,
     bool revoked_by_website = false) {
-  const base::Value::Dict* object_dict = object.GetIfDict();
+  const base::DictValue* object_dict = object.GetIfDict();
   DCHECK(object_dict != nullptr);
 
   if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr) {

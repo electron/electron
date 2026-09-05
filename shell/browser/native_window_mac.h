@@ -28,7 +28,6 @@
 namespace electron {
 
 class RootViewMac;
-class NativeAppWindowFrameViewMacClient;
 
 class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
@@ -60,7 +59,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsMinimized() const override;
   void SetFullScreen(bool fullscreen) override;
   bool IsFullscreen() const override;
-  void SetBounds(const gfx::Rect& bounds, bool animate = false) override;
+  void SetBounds(const gfx::Rect& bounds, bool animate) override;
   gfx::Rect GetBounds() const override;
   bool IsNormal() const override;
   gfx::Rect GetNormalBounds() const override;
@@ -172,6 +171,12 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
+  // Hide/show traffic light buttons around miniaturize/deminiaturize to
+  // prevent them from flashing at the default position during the restore
+  // animation when a custom trafficLightPosition is configured.
+  void HideTrafficLights();
+  void RestoreTrafficLights();
+
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
@@ -248,6 +253,8 @@ class NativeWindowMac : public NativeWindow,
 
   void UpdateZoomButton();
 
+  int FrameViewNonClientHitTest(const gfx::Point& point);
+
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.
 
   ElectronNSWindowDelegate* __strong window_delegate_;
@@ -312,9 +319,6 @@ class NativeWindowMac : public NativeWindow,
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
-
-  // Client that provides app-specific frame behaviors to NativeFrameViewMac.
-  std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
 };
 
 }  // namespace electron

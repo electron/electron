@@ -11,9 +11,9 @@
 
 namespace gin {
 
-bool Converter<base::Value::Dict>::FromV8(v8::Isolate* isolate,
-                                          v8::Local<v8::Value> val,
-                                          base::Value::Dict* out) {
+bool Converter<base::DictValue>::FromV8(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> val,
+                                        base::DictValue* out) {
   std::unique_ptr<base::Value> value =
       content::V8ValueConverter::Create()->FromV8Value(
           val, isolate->GetCurrentContext());
@@ -46,9 +46,9 @@ v8::Local<v8::Value> Converter<base::ValueView>::ToV8(
       val, isolate->GetCurrentContext());
 }
 
-bool Converter<base::Value::List>::FromV8(v8::Isolate* isolate,
-                                          v8::Local<v8::Value> val,
-                                          base::Value::List* out) {
+bool Converter<base::ListValue>::FromV8(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> val,
+                                        base::ListValue* out) {
   std::unique_ptr<base::Value> value =
       content::V8ValueConverter::Create()->FromV8Value(
           val, isolate->GetCurrentContext());

@@ -37,10 +37,13 @@
   the same session. Default is the default session.
 * `zoomFactor` number (optional) - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
+* `zoomMode` string (optional) - The initial zoom mode for the page. See
+  [`contents.setZoomMode`](../web-contents.md#contentssetzoommodemode) for available
+  modes. Default is `'default'`.
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
 * `webSecurity` boolean (optional) - When `false`, it will disable the
   same-origin policy (usually using testing websites by people), and set
-  `allowRunningInsecureContent` to `true` if this options has not been set
+  `allowRunningInsecureContent` to `true` if this option has not been set
   by user. Default is `true`.
 * `allowRunningInsecureContent` boolean (optional) - Allow an https page to run
   JavaScript, CSS or plugins from http URLs. Default is `false`.
@@ -94,7 +97,8 @@
     The actual output pixel format and color space of the texture should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
     * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
     * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
-  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use primary display's scale factor as default.
+    * `nv12` - The requested output texture format is 12bpp with Y plane followed by a 2x2 interleaved UV plane, with REC709 color space.
+  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use `1` as default.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have
@@ -159,6 +163,7 @@
 * `enableDeprecatedPaste` boolean (optional) _Deprecated_ - Whether to enable the `paste` [execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand). Default is `false`.
 * `focusOnNavigation` boolean (optional) - Whether to focus the WebContents
   when navigating. Default is `true`.
+* `disableWakeLocks` boolean (optional) - Whether to disable the wake locks of the WebContents. Default is `false`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5

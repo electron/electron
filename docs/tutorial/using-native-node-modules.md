@@ -149,7 +149,7 @@ for an example delay-load hook if you're implementing your own.
 native Node modules with prebuilt binaries for multiple versions of Node
 and Electron.
 
-If the `prebuild`-powered module provide binaries for the usage in Electron,
+If the `prebuild`-powered module provides binaries for the usage in Electron,
 make sure to omit `--build-from-source` and the `npm_config_build_from_source`
 environment variable in order to take full advantage of the prebuilt binaries.
 

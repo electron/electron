@@ -10,20 +10,24 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/hid/hid_system_tray_icon.h"
+#include "chrome/browser/usb/usb_system_tray_icon.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
-#include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
+#include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
@@ -31,19 +35,42 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
-#include "content/public/common/content_switches.h"
 #include "extensions/common/constants.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+#include "chrome/browser/browser_features.h"
+#include "components/os_crypt/async/browser/freedesktop_secret_key_provider.h"
+#include "components/os_crypt/async/browser/secret_portal_key_provider.h"
+#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
+#include "shell/common/application_info.h"
+
+#endif
+
+#if BUILDFLAG(IS_WIN)
+#include "components/os_crypt/async/browser/dpapi_key_provider.h"
+#endif
+
+#if BUILDFLAG(IS_MAC)
+#include "chrome/common/chrome_features.h"
+#include "components/os_crypt/async/browser/keychain_key_provider.h"
+#endif
+
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+#include "components/os_crypt/async/browser/posix_key_provider.h"
 #endif
 
 BrowserProcessImpl::BrowserProcessImpl() {
@@ -116,24 +143,37 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
+  electron::ElectronMetricsServiceClient::RegisterMetricsPrefs(
+      pref_registry.get());
+
 #if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
+
+#if BUILDFLAG(IS_LINUX)
+  os_crypt_async::SecretPortalKeyProvider::RegisterLocalPrefs(
+      pref_registry.get());
+#endif
+
+  pref_registry->RegisterDictionaryPref(electron::kWindowStates);
 
   in_memory_pref_store_ = base::MakeRefCounted<ValueMapPrefStore>();
   ApplyProxyModeFromCommandLine(in_memory_pref_store());
   prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
-  // Only use a persistent prefs store when cookie encryption is enabled as that
-  // is the only key that needs it
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
+  if (!base::DirectoryExists(prefs_path))
+    base::CreateDirectory(prefs_path);
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
+
   electron::ScopedAllowBlockingForElectron allow_blocking;
   scoped_refptr<JsonPrefStore> user_pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   user_pref_store->ReadPrefs();
   prefs_factory.set_user_prefs(user_pref_store);
+  DCHECK(user_pref_store->IsInitializationComplete());
+
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 
@@ -147,6 +187,10 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
+
+  // Needs to be called here as per
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_browser_main.cc;l=1385-1389;drc=c3bda003554dad21313fb24b7a4f3e1aae6102d9.
+  CreateMetricsServiceClient();
 }
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
@@ -172,7 +216,8 @@ BrowserProcessImpl::GetMetricsServicesManager() {
 }
 
 metrics::MetricsService* BrowserProcessImpl::metrics_service() {
-  return nullptr;
+  return metrics_service_client_ ? metrics_service_client_->GetMetricsService()
+                                 : nullptr;
 }
 
 ProfileManager* BrowserProcessImpl::profile_manager() {
@@ -328,7 +373,18 @@ HidSystemTrayIcon* BrowserProcessImpl::hid_system_tray_icon() {
   return nullptr;
 }
 
+void BrowserProcessImpl::set_hid_system_tray_icon_for_test(
+    std::unique_ptr<HidSystemTrayIcon> icon) {}
+
 UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
+  return nullptr;
+}
+
+void BrowserProcessImpl::set_usb_system_tray_icon_for_test(
+    std::unique_ptr<UsbSystemTrayIcon> icon) {}
+
+speech::SpeechRecognitionSmallExpertModelInstaller*
+BrowserProcessImpl::speech_recognition_small_expert_model_installer() {
   return nullptr;
 }
 
@@ -419,16 +475,68 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
 }
 
 void BrowserProcessImpl::CreateOSCryptAsync() {
-  // source: https://chromium-review.googlesource.com/c/chromium/src/+/4455776
+  std::vector<std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>
+      providers;
 
-  // For now, initialize OSCryptAsync with no providers. This delegates all
-  // encryption operations to OSCrypt.
-  // TODO(crbug.com/1373092): Add providers behind features, as support for them
-  // is added.
-  os_crypt_async_ = std::make_unique<os_crypt_async::OSCryptAsync>(
-      std::vector<
-          std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
+#if BUILDFLAG(IS_WIN)
+  // The DPAPI key provider requires OSCrypt::Init to have already been called
+  // to initialize the key storage. This happens in
+  // BrowserMainPartsWin::PreCreateMainMessageLoop.
+  providers.emplace_back(
+      /*precedence=*/10u,
+      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
+#endif  // BUILDFLAG(IS_WIN)
 
-  // Trigger async initialization of OSCrypt key providers.
-  os_crypt_async_->GetInstance(base::DoNothing());
+#if BUILDFLAG(IS_LINUX)
+  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
+  const auto password_store =
+      cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
+
+  if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
+    // Use a higher priority than the FreedesktopSecretKeyProvider.
+    providers.emplace_back(
+        /*precedence=*/15u,
+        std::make_unique<os_crypt_async::SecretPortalKeyProvider>(
+            local_state(),
+            base::FeatureList::IsEnabled(
+                features::kSecretPortalKeyProviderUseForEncryption)));
+  }
+
+  auto freedesktop_config =
+      os_crypt_async::FreedesktopSecretKeyProvider::GetDefaultConfig();
+
+  const std::string app_name = electron::GetApplicationName();
+  freedesktop_config.app_name = app_name;
+  freedesktop_config.kwallet_folder = app_name + " Keys";
+  freedesktop_config.key_name = app_name + " Safe Storage";
+
+  providers.emplace_back(
+      /*precedence=*/10u,
+      std::make_unique<os_crypt_async::FreedesktopSecretKeyProvider>(
+          password_store, electron::GetApplicationName(), freedesktop_config,
+          nullptr));
+#endif  // BUILDFLAG(IS_LINUX)
+
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+  // On other POSIX systems, this is the only key provider. On Linux, it is used
+  // as a fallback.
+  providers.emplace_back(
+      /*precedence=*/5u, std::make_unique<os_crypt_async::PosixKeyProvider>());
+#endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+
+#if BUILDFLAG(IS_MAC)
+  if (base::FeatureList::IsEnabled(features::kUseKeychainKeyProvider)) {
+    providers.emplace_back(
+        /*precedence=*/10u,
+        std::make_unique<os_crypt_async::KeychainKeyProvider>());
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  os_crypt_async_ =
+      std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
+}
+
+void BrowserProcessImpl::CreateMetricsServiceClient() {
+  metrics_service_client_ =
+      std::make_unique<electron::ElectronMetricsServiceClient>();
 }

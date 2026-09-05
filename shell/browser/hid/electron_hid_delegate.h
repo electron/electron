@@ -15,12 +15,15 @@
 #include "services/device/public/mojom/hid.mojom-forward.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
-#include "url/origin.h"
 
 namespace content {
 class BrowserContext;
 class RenderFrameHost;
 }  // namespace content
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 

@@ -2,17 +2,19 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '146.0.7650.0',
+    '155.0.8038.2',
   'node_version':
-    'v24.13.0',
+    'v24.20.0',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
-    '0e5d146ba13101a1302d59ea6e6e0b3cace4ae38',
+    'fffea30e4a339a7f7d69a3391314b72548d209bd',
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
     '2a8e2123a3931038179ee06105c9e6ec336b12ea',
+  'sparkle_version':
+    '79bc9e872948e47877e76f194cb0c8e0412b0b90',
   'engflow_reclient_configs_version':
     '955335c30a752e9ef7bff375baab5e0819b6c00d',
 
@@ -25,6 +27,7 @@ vars = {
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
+  'sparkle_git': 'https://github.com/sparkle-project',
   'engflow_git': 'https://github.com/EngFlow',
   
   # The path of the sysroots.json file.
@@ -40,7 +43,11 @@ vars = {
   'checkout_chromium': True,
   'checkout_node': True,
   'checkout_nan': True,
-  'checkout_pgo_profiles': True,
+  # Chrome's published PGO profiles are not consumed - Electron release
+  # builds use Electron-generated profiles (see build/pgo_profiles/). Set to
+  # True (and set the pgo_data_path GN arg) to build against Chrome's
+  # profiles instead.
+  'checkout_pgo_profiles': False,
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
@@ -100,6 +107,10 @@ deps = {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
+  'src/third_party/squirrel.mac/vendor/Sparkle': {
+    'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
+    'condition': 'process_deps',
+  },
   'src/third_party/engflow-reclient-configs': {
     'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
     'condition': 'process_deps'
@@ -156,6 +167,17 @@ hooks = [
     ],
   },
   {
+    # Keep src/electron/build/siso_revision in step with the siso commit this
+    # Chromium pins; CI builds siso from that file (see the script header).
+    'name': 'gen_siso_revision',
+    'condition': 'checkout_chromium and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'node',
+      'src/electron/script/gen-siso-revision.js',
+    ],
+  },
+  {
     'name': 'sysroot_arm',
     'pattern': '.',
     'condition': 'install_sysroot and checkout_linux and checkout_arm',
@@ -202,6 +224,38 @@ hooks = [
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=x64'],
+  },
+  # Electron-collected PGO profiles, consumed by official builds in place of
+  # Chrome's published profiles (which cannot cover Electron's code). The
+  # state files in src/electron/build/pgo_profiles name the profile to use;
+  # these hooks download them.
+  {
+    'name': 'electron_pgo_profiles_linux',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_linux and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'linux-x64,linux-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_win',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_win and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'win-x64,win-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_mac',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_mac and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'macos-x64,macos-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_v8_builtins',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'v8-builtins'],
   },
 ]
 

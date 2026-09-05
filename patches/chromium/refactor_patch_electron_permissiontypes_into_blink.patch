@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 951682514323db7325496201f82716516e3e87f9..2d2358e1438013ba79963a692b45030692cefdca 100644
+index fcff902ca98c598659e4418f96b633eea2296fc8..9a63f8206823cec2a44d7477d821354110a58610 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,9 +554,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -584,9 +584,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -30,10 +30,10 @@ index 951682514323db7325496201f82716516e3e87f9..2d2358e1438013ba79963a692b450306
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..9aa94047dbd6067109988766584b915f40283b2c 100644
+index ebcda16a7972ce3d79342b91bd06000c269b17e9..b22c46226a543b3969f9086ca4567a322c884603 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -97,9 +97,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -98,9 +98,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
@@ -53,7 +53,7 @@ index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..9aa94047dbd6067109988766584b915f
  
  #if !BUILDFLAG(IS_ANDROID)
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 260951e60f5d805a044afe94cad6fca86bb7e365..f8e74586db1aef323d78f7ef6b5b31d26c1861b5 100644
+index d2ea06fa66c07baaf741382af40de154068a7d6b..3397e741fbc52ce45cd62dd3fe12e73b8c010c4b 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
 @@ -180,13 +180,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
@@ -90,10 +90,10 @@ index 260951e60f5d805a044afe94cad6fca86bb7e365..f8e74586db1aef323d78f7ef6b5b31d2
    NOTREACHED();
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8f073e907 100644
+index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603b0f78370 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -108,11 +108,21 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -110,11 +110,21 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
@@ -119,7 +119,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8
    }
    NOTREACHED();
  }
-@@ -192,7 +202,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -194,7 +204,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -135,7 +135,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -368,6 +386,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -372,6 +390,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
      case PermissionName::SMART_CARD:
        return PermissionType::SMART_CARD;
@@ -158,7 +158,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8
  }
  
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 38c20e7f0c597815ce5ee3333f12183ac1e18c62..7bce804a8ed1c8a2f2ac18524c6317db8bbc4442 100644
+index 31158388db2df745af999adc9d07fc9272a2d6f8..fed5994c8563792405838d8923d3502aedbe85a2 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -69,8 +69,17 @@ enum class PermissionType {
@@ -182,7 +182,7 @@ index 38c20e7f0c597815ce5ee3333f12183ac1e18c62..7bce804a8ed1c8a2f2ac18524c6317db
    MIN_VALUE = MIDI_SYSEX,
  };
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index cd200c6aadb304e440df65532a9ef86f0aef4fa7..88448c95da18953402b6de44676edfb19f657c05 100644
+index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905eb40ad2c4 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,8 +47,16 @@ enum PermissionName {
@@ -204,10 +204,10 @@ index cd200c6aadb304e440df65532a9ef86f0aef4fa7..88448c95da18953402b6de44676edfb1
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index ca46a15c03d72da4a301aff6fc18c173eaa7e6c8..7a52f09c49fbf8343b33f8c07057c5de894f6f28 100644
+index 490e3bdca2a092cfb98f8a7cda2666ec979d953b..8689da58e0e225e67fac695e6375468f1678aab9 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -151,8 +151,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -165,8 +165,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

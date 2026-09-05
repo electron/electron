@@ -11,8 +11,4 @@ const _global = typeof globalThis !== 'undefined' ? globalThis.global : (self ||
 const process = _global.process;
 const Buffer = _global.Buffer;
 
-export {
-  _global,
-  process,
-  Buffer
-};
+export { _global, process, Buffer };

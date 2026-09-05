@@ -13,12 +13,13 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "chrome/browser/pdf/pdf_pref_names.h"  // nogncheck
-#include "chrome/browser/pdf/pdf_viewer_stream_manager.h"
 #include "chrome/common/extensions/api/pdf_viewer_private.h"
 #include "chrome/common/pref_names.h"
 #include "components/pdf/common/constants.h"
 #include "components/prefs/pref_service.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
+#include "extensions/browser/mime_handler/mime_handler_stream_manager.h"
+#include "extensions/browser/mime_handler/stream_container.h"  // nogncheck
 #include "pdf/buildflags.h"
 #include "url/url_constants.h"
 
@@ -44,9 +45,8 @@ namespace SetPdfPluginAttributes =
 namespace SetPdfDocumentTitle = api::pdf_viewer_private::SetPdfDocumentTitle;
 
 // Check if the current URL is allowed based on a list of allowlisted domains.
-bool IsUrlAllowedToEmbedLocalFiles(
-    const GURL& current_url,
-    const base::Value::List& allowlisted_domains) {
+bool IsUrlAllowedToEmbedLocalFiles(const GURL& current_url,
+                                   const base::ListValue& allowlisted_domains) {
   if (!current_url.is_valid() || !current_url.SchemeIs(url::kHttpsScheme)) {
     return false;
   }
@@ -72,13 +72,14 @@ base::WeakPtr<StreamContainer> GetStreamContainer(
     return nullptr;
   }
 
-  auto* pdf_viewer_stream_manager =
-      pdf::PdfViewerStreamManager::FromRenderFrameHost(embedder_host);
-  if (!pdf_viewer_stream_manager) {
+  auto* mime_handler_stream_manager =
+      extensions::mime_handler::MimeHandlerStreamManager::FromRenderFrameHost(
+          embedder_host);
+  if (!mime_handler_stream_manager) {
     return nullptr;
   }
 
-  return pdf_viewer_stream_manager->GetStreamContainer(embedder_host);
+  return mime_handler_stream_manager->GetStreamContainer(embedder_host);
 }
 
 #if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
@@ -138,7 +139,7 @@ PdfViewerPrivateIsAllowedLocalFileAccessFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   return RespondNow(WithArguments(
-      IsUrlAllowedToEmbedLocalFiles(GURL(params->url), base::Value::List())));
+      IsUrlAllowedToEmbedLocalFiles(GURL(params->url), base::ListValue())));
 }
 
 PdfViewerPrivateSaveToDriveFunction::PdfViewerPrivateSaveToDriveFunction() =

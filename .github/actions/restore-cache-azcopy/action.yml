@@ -8,23 +8,25 @@ runs:
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+    uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-1
       enableCrossOsArchive: true
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+    uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
+      restore-keys: |
+        sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-
       enableCrossOsArchive: true
   - name: Download Src Cache from AKS
     # The cache will always exist here as a result of the checkout job
     # Either it was uploaded to Azure in the checkout job for this commit
     # or it was uploaded in the checkout job for a previous commit.
-    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30
       max_attempts: 3
@@ -61,9 +63,9 @@ runs:
         echo "Cache is empty - exiting"
         exit 1
       fi
-      
+
       mkdir temp-cache
-      tar -xf $DEPSHASH.tar -C temp-cache
+      zstd -d --long=30 -c $DEPSHASH.tar | tar -xf - -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
       if [ -d "temp-cache/src" ]; then
@@ -85,23 +87,21 @@ runs:
 
   - name: Unzip and Ensure Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
-    shell: powershell
+    shell: bash
     run: |
-      $src_cache = "$env:DEPSHASH.tar"
-      $cache_size = $(Get-Item $src_cache).length
-      Write-Host "Downloaded cache is $cache_size"
-      if ($cache_size -eq 0) {
-        Write-Host "Cache is empty - exiting"
+      echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+      if [ `du $DEPSHASH.tar | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
         exit 1
-      }
+      fi
 
-      $TEMP_DIR=New-Item -ItemType Directory -Path temp-cache
-      $TEMP_DIR_PATH = $TEMP_DIR.FullName
-      C:\ProgramData\Chocolatey\bin\7z.exe -y -snld20 x $src_cache -o"$TEMP_DIR_PATH"
+      mkdir temp-cache
+      zstd -d --long=30 -c $DEPSHASH.tar | tar -xf - -C temp-cache
+      rm -f $DEPSHASH.tar
 
   - name: Move Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
-    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30
       max_attempts: 3
@@ -112,9 +112,6 @@ runs:
           Write-Host "Relocating Cache"
           Remove-Item -Recurse -Force src
           Move-Item temp-cache\src src
-
-          Write-Host "Deleting zip file"
-          Remove-Item -Force $src_cache
         }
         if (-Not (Test-Path "src\third_party\blink")) {
           Write-Host "Cache was not correctly restored - exiting"

@@ -20,23 +20,23 @@ making three primary changes to Blink:
     * Controls whether the CSS rule is available.
 
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 3dc1e9241f708ebcb3148999f1c69fee86be1008..28765da85bcbed322546a80fd5f71bd4d5618700 100644
+index 78a23d7feb5980c4f27d54c83e014119ba2e711c..2b0610dc6e3d960436c94a9e303629bd7bb28617 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-@@ -50,7 +50,7 @@ enum CSSSampleId {
-     kInternalOverflowInline = 0,
-     kInternalOverscrollArea = 0,
+@@ -51,7 +51,7 @@ enum CSSSampleId {
+     kInternalOverscrollContainer = 0,
      kInternalOverscrollPosition = 0,
+     kInternalUnbounded = 0,
 -
 +    kElectronCornerSmoothing = 0,
      // This CSSSampleId represents page load for CSS histograms. It is recorded once
      // per page visit for each CSS histogram being logged on the blink side and the
      // browser side.
 diff --git a/third_party/blink/renderer/build/scripts/core/css/css_properties.py b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-index 576fb9bff78221a61236a76a597b6b66ae8a5e6a..78e844e7dd0bd85640b208bfcdd385fdd553e255 100755
+index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2e54534d8 100755
 --- a/third_party/blink/renderer/build/scripts/core/css/css_properties.py
 +++ b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-@@ -324,7 +324,7 @@ class CSSProperties(object):
+@@ -346,7 +346,7 @@ class CSSProperties(object):
                  name_without_leading_dash = name_without_leading_dash[1:]
              internal_visited_order = 1
              if name_without_leading_dash.startswith(
@@ -46,10 +46,10 @@ index 576fb9bff78221a61236a76a597b6b66ae8a5e6a..78e844e7dd0bd85640b208bfcdd385fd
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 82ab198abf549fc82d0fadba95e826fd77641261..1d58becfafb4035025aaac129b0f357750f9f38b 100644
+index 843f4a904ba6d29c9b6408bf426bbef5693aa01c..95da2e230ef15bbb704d7e8298279b83195b85d9 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9275,6 +9275,26 @@
+@@ -10299,6 +10299,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -66,6 +66,7 @@ index 82ab198abf549fc82d0fadba95e826fd77641261..1d58becfafb4035025aaac129b0f3577
 +      type_name: "Length",
 +      default_value: "Length::None()",
 +      keywords: ["system-ui"],
++      percentages_depend_on_used_value: false,
 +      converter: "ConvertCornerSmoothing",
 +      runtime_flag: "ElectronCSSCornerSmoothing",
 +      valid_for_permission_element: true,
@@ -77,10 +78,10 @@ index 82ab198abf549fc82d0fadba95e826fd77641261..1d58becfafb4035025aaac129b0f3577
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 2a6fdf1e705e1486e82bcaba248f9e6a369fc67f..101d1fc61e0802e5367b1ebc036076669ee44366 100644
+index d9983abcd27cb91c62c1a45689813bd01328b245..8bd8885d7d9c59d4059a3c33b6d3d6df3685f52d 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
-@@ -402,6 +402,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
+@@ -404,6 +404,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
        return a.DominantBaseline() == b.DominantBaseline();
      case CSSPropertyID::kDynamicRangeLimit:
        return a.GetDynamicRangeLimit() == b.GetDynamicRangeLimit();
@@ -90,10 +91,10 @@ index 2a6fdf1e705e1486e82bcaba248f9e6a369fc67f..101d1fc61e0802e5367b1ebc03607666
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 2f378422e277ea5fcb4ce436b9653023db07c100..98df9ac4e6c6301c560374912ea95131ca3cee59 100644
+index 72f103053983f59fff9ba0d8580a3401a972bff2..7ffed261bf14f4d3105b42496373eaee43386135 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12834,5 +12834,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12776,5 +12776,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -131,10 +132,10 @@ index 2f378422e277ea5fcb4ce436b9653023db07c100..98df9ac4e6c6301c560374912ea95131
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 6ef37baf747592faee92804fc96b36004f65ed92..6a0eb1dfb758eb6610819232dd1ca632118ad16c 100644
+index 5ce330adf9c576bf2ece98ff7a0964abf1685ed0..db372f47d321341291be583fde04d593b5e57bbd 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4180,6 +4180,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4235,6 +4235,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -147,19 +148,19 @@ index 6ef37baf747592faee92804fc96b36004f65ed92..6a0eb1dfb758eb6610819232dd1ca632
 +  return ConvertLength(state, value);
 +}
 +
- FitText StyleBuilderConverter::ConvertFitText(StyleResolverState& state,
+ TextFit StyleBuilderConverter::ConvertTextFit(StyleResolverState& state,
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index beca76bbbe2d31fde75652a73f5bf2dcfaf17731..bc42166596fdab9f0143b851b27ecfcdf6b716b8 100644
+index fa5c8716759cc482f6d68ba90a5fadbb51a1bb46..0f02a1cc9c5cbed510fd2ce8335cda7b4fa58dfa 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -457,6 +457,7 @@ class StyleBuilderConverter {
+@@ -470,6 +470,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
 +  static Length ConvertCornerSmoothing(StyleResolverState&, const CSSValue&);
-   static FitText ConvertFitText(StyleResolverState&, const CSSValue&);
+   static TextFit ConvertTextFit(StyleResolverState&, const CSSValue&);
    static TextOverflowData ConvertTextOverflow(StyleResolverState&,
                                                const CSSValue&);
 diff --git a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
@@ -202,10 +203,10 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index e2256766d7a01aee814ba0281b40921b2e261aa9..d55807d00042027fc91faa4479db4043d4ba4add 100644
+index 233618cf12e7b1516151780748d8fed164f3c0fd..e3d8d02d18d3b73423a8c51ed7667ac3c934016f 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1669,6 +1669,8 @@ component("platform") {
+@@ -1690,6 +1690,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -268,7 +269,7 @@ index 17c97038dc0fdb97021ee4b1aa3c8a4ca459fb2b..71d697d738f6aee8cbbb700f1e6ad9ac
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f256615f45f38e 100644
+index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9c463cf7d 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@
@@ -313,10 +314,10 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 65c7ddbba26c0456899dc084888205cef2e23380..689850b72dca601717ff025a9fc5cf9d85c64cca 100644
+index 43be24f50a97eea7d086819a49c20d0d139da0fa..52b223b26ce4692f12725aaf75a048acdee1b961 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -214,6 +214,10 @@
+@@ -215,6 +215,10 @@
    },
  
    data: [

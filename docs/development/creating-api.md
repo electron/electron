@@ -6,7 +6,7 @@ This is not a comprehensive end-all guide to creating an Electron Browser API, r
 
 ## Add your files to Electron's project configuration
 
-Electron uses [GN](https://gn.googlesource.com/gn) as a meta build system to generate files for its compiler, [Ninja](https://ninja-build.org/). This means that in order to tell Electron to compile your code, we have to add your API's code and header file names into [`filenames.gni`](https://github.com/electron/electron/blob/main/filenames.gni).
+Electron uses [GN](https://gn.googlesource.com/gn) as a meta build system to generate files for its compiler, [Ninja](https://ninja-build.org/). This means that in order to tell Electron to compile your code, we have to add your API's code and header file names into [`filenames.gni`](../../filenames.gni).
 
 You will need to append your API file names alphabetically into the appropriate files like so:
 
@@ -127,7 +127,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
 ## Link your Electron API with Node
 
-In the [`typings/internal-ambient.d.ts`](https://github.com/electron/electron/blob/main/typings/internal-ambient.d.ts) file, we need to append a new property onto the `Process` interface like so:
+In the [`typings/internal-ambient.d.ts`](../../typings/internal-ambient.d.ts) file, we need to append a new property onto the `Process` interface like so:
 
 ```ts title='typings/internal-ambient.d.ts' @ts-nocheck
 interface Process {
@@ -141,7 +141,7 @@ At the very bottom of your `api_name.cc` file:
 NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_{api_name},Initialize)
 ```
 
-In your [`shell/common/node_bindings.cc`](https://github.com/electron/electron/blob/main/shell/common/node_bindings.cc) file, add your node binding name to Electron's built-in modules.
+In your [`shell/common/node_bindings.cc`](../../shell/common/node_bindings.cc) file, add your node binding name to Electron's built-in modules.
 
 ```cpp title='shell/common/node_bindings.cc'
 #define ELECTRON_BROWSER_MODULES(V)      \
@@ -159,7 +159,7 @@ We will need to create a new TypeScript file in the path that follows:
 
 `"lib/browser/api/{electron_browser_{api_name}}.ts"`
 
-An example of the contents of this file can be found [here](https://github.com/electron/electron/blob/main/lib/browser/api/native-theme.ts).
+An example of the contents of this file can be found [here](../../lib/browser/api/native-theme.ts).
 
 ### Expose your module to TypeScript
 

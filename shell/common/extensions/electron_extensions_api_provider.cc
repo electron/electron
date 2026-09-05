@@ -19,8 +19,8 @@
 #include "extensions/common/manifest_handler.h"
 #include "extensions/common/manifest_handler_registry.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/manifest_url_handlers.h"
 #include "extensions/common/manifest_handlers/permissions_parser.h"
-#include "extensions/common/manifest_url_handlers.h"
 #include "extensions/common/permissions/permissions_info.h"
 #include "shell/common/extensions/api/api_features.h"
 #include "shell/common/extensions/api/manifest_features.h"
@@ -97,9 +97,8 @@ void ElectronExtensionsAPIProvider::RegisterPermissions(
                                         extensions::GetPermissionAliases());
 }
 
-void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
-  extensions::ManifestHandlerRegistry* registry =
-      extensions::ManifestHandlerRegistry::Get();
+void ElectronExtensionsAPIProvider::RegisterManifestHandlers(
+    extensions::ManifestHandlerRegistry* registry) {
   registry->RegisterHandler(
       std::make_unique<extensions::MinimumChromeVersionChecker>());
 }

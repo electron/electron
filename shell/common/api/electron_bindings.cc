@@ -5,9 +5,7 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/files/file.h"
 #include "base/process/process.h"
@@ -115,7 +113,7 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 // static
 void ElectronBindings::Crash() {
   volatile int* zero = nullptr;
-  *zero = 0;
+  *zero = 0;  // NOLINT(clang-analyzer-core.NullDereference)
 }
 
 // static
@@ -185,6 +183,10 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 #endif
   dict.Set("free", free.InKiB());
 
+#if BUILDFLAG(IS_LINUX)
+  dict.Set("available", mem_info.available.InKiB());
+#endif
+
 #if BUILDFLAG(IS_MAC)
   dict.Set("fileBacked", mem_info.file_backed.InKiB());
   dict.Set("purgeable", mem_info.purgeable.InKiB());
@@ -210,13 +212,11 @@ v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     return handle;
   }
 
-  v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           base::GetCurrentProcId(), {} /* allocator_dump_names */,
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(context), std::move(promise),
-                         base::GetCurrentProcId()));
+                         std::move(promise), base::GetCurrentProcId()));
   return handle;
 }
 
@@ -234,7 +234,6 @@ v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
 
 // static
 void ElectronBindings::DidReceiveMemoryDump(
-    v8::Global<v8::Context> context,
     gin_helper::Promise<gin_helper::Dictionary> promise,
     base::ProcessId target_pid,
     const memory_instrumentation::mojom::RequestOutcome outcome,
@@ -242,8 +241,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   DCHECK(electron::IsBrowserProcess());
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> local_context =
-      v8::Local<v8::Context>::New(isolate, context);
+  v8::Local<v8::Context> local_context = promise.GetContext();
   v8::Context::Scope context_scope(local_context);
 
   if (outcome != memory_instrumentation::mojom::RequestOutcome::kSuccess) {

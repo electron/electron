@@ -7,15 +7,18 @@
 #include <utility>
 
 #include "base/task/sequenced_task_runner.h"
+#include "content/public/browser/browser_thread.h"
+#include "content/public/browser/web_contents.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
+#include "net/http/http_response_headers.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 
 using content::BrowserThread;
 
@@ -34,12 +37,18 @@ LoginHandler::LoginHandler(
     : auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
+  // The WebContents may be destroyed before the posted task runs, so only
+  // carry a weak reference to it across the hop.
+  base::WeakPtr<content::WebContents> weak_web_contents;
+  if (web_contents)
+    weak_web_contents = web_contents->GetWeakPtr();
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
-      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
-                     auth_info, web_contents, is_request_for_primary_main_frame,
-                     is_request_for_navigation, process_id, url,
-                     response_headers, first_auth_attempt));
+      base::BindOnce(
+          &LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(), auth_info,
+          web_contents != nullptr, std::move(weak_web_contents),
+          is_request_for_primary_main_frame, is_request_for_navigation,
+          process_id, url, response_headers, first_auth_attempt));
 }
 
 LoginHandler::LoginHandler(
@@ -61,7 +70,8 @@ LoginHandler::LoginHandler(
 
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,
-    content::WebContents* web_contents,
+    bool has_web_contents,
+    base::WeakPtr<content::WebContents> web_contents,
     bool is_request_for_primary_main_frame,
     bool is_request_for_navigation,
     base::ProcessId process_id,
@@ -72,8 +82,11 @@ void LoginHandler::EmitEvent(
   v8::HandleScope scope(isolate);
 
   raw_ptr<api::WebContents> api_web_contents = nullptr;
-  if (web_contents) {
-    api_web_contents = api::WebContents::From(web_contents);
+  if (has_web_contents) {
+    // Cancel the request if the WebContents (or its JS wrapper) that issued
+    // it has since been destroyed.
+    if (web_contents)
+      api_web_contents = api::WebContents::From(web_contents.get());
     if (!api_web_contents) {
       std::move(auth_required_callback_).Run(std::nullopt);
       return;
@@ -83,14 +96,13 @@ void LoginHandler::EmitEvent(
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
   details.Set("pid", process_id);
-
-  // These parameters aren't documented, and I'm not sure that they're useful,
-  // but we might as well stick 'em on the details object. If it turns out they
-  // are useful, we can add them to the docs :)
-  details.Set("isMainFrame", is_request_for_primary_main_frame);
   details.Set("isRequestForNavigation", is_request_for_navigation);
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
+
+  // This parameter isn't documented in the Electron API because:
+  // https://github.com/electron/electron/pull/46630#pullrequestreview-2862305353
+  details.Set("isMainFrame", is_request_for_primary_main_frame);
 
   auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented = false;
@@ -99,6 +111,17 @@ void LoginHandler::EmitEvent(
         api_web_contents->Emit("login", std::move(details), auth_info,
                                base::BindOnce(&LoginHandler::CallbackFromJS,
                                               weak_factory_.GetWeakPtr()));
+  } else if (auto* utility_process =
+                 api::UtilityProcessWrapper::FromProcessId(process_id);
+             utility_process && utility_process->has_session()) {
+    // Route auth to the utility process wrapper when the request originated
+    // from a utility process with a session and
+    // respondToAuthRequestsFromMainProcess. Without a session, auth falls
+    // through to app.on('login') for backward compatibility.
+    default_prevented =
+        utility_process->Emit("login", std::move(details), auth_info,
+                              base::BindOnce(&LoginHandler::CallbackFromJS,
+                                             weak_factory_.GetWeakPtr()));
   } else {
     default_prevented =
         api::App::Get()->Emit("login", nullptr, std::move(details), auth_info,

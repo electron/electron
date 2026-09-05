@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 
 #include "base/memory/raw_ptr.h"
+#include "base/task/sequenced_task_runner_helpers.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -74,6 +75,11 @@ class DeprecatedWrappableBase {
  protected:
   DeprecatedWrappableBase();
   virtual ~DeprecatedWrappableBase();
+
+  // SecondWeakCallback posts destruction via DeleteSoon so that destructors
+  // (which may emit JS events) run outside V8's GC scope. DeleteSoon needs
+  // access to the protected destructor.
+  friend class base::DeleteHelper<DeprecatedWrappableBase>;
 
   // Overrides of this method should be declared final and not overridden again.
   virtual gin::ObjectTemplateBuilder GetObjectTemplateBuilder(

@@ -6,18 +6,13 @@
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
 
 #import <Foundation/Foundation.h>
+#import <UserNotifications/UserNotifications.h>
 
-#include <map>
 #include <string>
 
 #include "shell/browser/notifications/notification.h"
 
 namespace electron {
-
-// NSUserNotification is deprecated; all calls should be replaced with
-// UserNotifications.frameworks API
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 class CocoaNotification : public Notification {
  public:
@@ -28,25 +23,24 @@ class CocoaNotification : public Notification {
   // Notification:
   void Show(const NotificationOptions& options) override;
   void Dismiss() override;
+  void Restore() override;
 
   void NotificationDisplayed();
   void NotificationReplied(const std::string& reply);
-  void NotificationActivated();
-  void NotificationActivated(NSUserNotificationAction* action);
+  void NotificationActivated(int actionIndex);
   void NotificationDismissed();
 
-  NSUserNotification* notification() const { return notification_; }
+  UNNotificationRequest* notification_request() const {
+    return notification_request_;
+  }
 
  private:
   void LogAction(const char* action);
+  void ScheduleNotification(UNMutableNotificationContent* content);
 
-  NSUserNotification* __strong notification_;
-  std::map<std::string, unsigned> additional_action_indices_;
-  unsigned action_index_;
+  bool is_restored_ = false;
+  UNNotificationRequest* __strong notification_request_;
 };
-
-// -Wdeprecated-declarations
-#pragma clang diagnostic pop
 
 }  // namespace electron
 

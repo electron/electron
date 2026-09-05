@@ -14,8 +14,6 @@ require('@electron/internal/renderer/ipc-native-setup');
 
 switch (window.location.protocol) {
   case 'devtools:': {
-    // Override some inspector APIs.
-    require('@electron/internal/renderer/inspector');
     break;
   }
   case 'chrome-extension:': {
@@ -43,6 +41,7 @@ webFrameInit();
 
 // Warn about security issues
 if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
+  const { securityWarnings } =
+    require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
   securityWarnings(nodeIntegration);
 }

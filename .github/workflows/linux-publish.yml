@@ -6,7 +6,8 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb'
+        default: ''
+        required: false
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -20,82 +21,119 @@ on:
 permissions: {}
 
 jobs:
-  checkout-linux:
+  setup:
     if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+
+  checkout-linux:
+    needs: setup
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
+
+  # Build the patched siso binary in parallel with checkout-linux; the
+  # publish jobs consume the linux-amd64 artifact via SISO_PATH.
+  build-siso:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: linux-amd64
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-linux
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
       is-release: true
+      publish: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
-
-  publish-arm:
-    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
-    permissions:
-      attestations: write
-      contents: read
-      id-token: write
-    needs: checkout-linux
-    with:
-      environment: production-release
-      build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
-      target-arch: arm
-      is-release: true
-      gn-build-type: release
-      generate-symbols: true
-      upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   publish-arm64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-linux
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
       is-release: true
+      publish: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}

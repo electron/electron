@@ -31,7 +31,7 @@ jobs:
             echo "isLatestRelease=false" >> $GITHUB_OUTPUT
           fi
       - name: Trigger website docs update
-        if: ${{ steps.check-if-latest-release.outputs.isLatestRelease }}
+        if: ${{ steps.check-if-latest-release.outputs.isLatestRelease == 'true' }}
         env:
           GH_REPO: electron/website
           GH_TOKEN: ${{ fromJSON(steps.secret-service.outputs.secrets).WEBSITE_DOCS_UPDATER_APP_TOKEN }}

@@ -12,12 +12,19 @@ On the Electron side, we then expose an extra parameter to the
 app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
+Since the payload can be large, the POSIX implementation reads the
+message into a growable buffer until the client shuts down its end of
+the socket instead of a fixed 32 KiB array, and the client waits for
+the socket to become writable rather than giving up, so an oversized
+message no longer gets truncated or causes the second instance to kill
+the primary as unresponsive.
+
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a30654cffffa6 100644
+index 7da4c199de1d2721a2e6ba9cb10ba0bc146917b7..b100f5feb95aabf63558aebc4d0054c95b90c4a9 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -18,7 +18,8 @@
- #include "base/functional/callback.h"
+@@ -20,7 +20,8 @@
+ #include "base/functional/callback_helpers.h"
  #include "base/memory/scoped_refptr.h"
  #include "base/process/process.h"
 -
@@ -26,7 +33,7 @@ index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a3065
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
  #include "base/files/scoped_temp_dir.h"
  #endif
-@@ -99,21 +100,24 @@ class ProcessSingleton {
+@@ -102,21 +103,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
        base::RepeatingCallback<bool(base::CommandLine command_line,
@@ -53,7 +60,7 @@ index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a3065
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -177,7 +181,10 @@ class ProcessSingleton {
+@@ -191,7 +195,10 @@ class ProcessSingleton {
  #endif
  
   private:
@@ -65,10 +72,93 @@ index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a3065
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0aa3183a0b 100644
+index 5e7a66aafbbe6c388ac0ec780ef1eb0994bb3976..f1ac6b53fdabbcb5df53589be32c5a7ffbb62f0c 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -619,6 +619,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -41,6 +41,7 @@
+ 
+ #include <errno.h>
+ #include <fcntl.h>
++#include <poll.h>
+ #include <signal.h>
+ #include <stddef.h>
+ #include <string.h>
+@@ -144,7 +145,9 @@ constexpr std::string_view kStartToken = "START";
+ constexpr std::string_view kACKToken = "ACK";
+ constexpr std::string_view kShutdownToken = "SHUTDOWN";
+ const char kTokenDelimiter = '\0';
+-const int kMaxMessageLength = 32 * 1024;
++// The maximum length of a message the browser will buffer. Longer messages
++// are drained from the socket and dropped.
++const size_t kMaxMessageLength = 32 * 1024 * 1024;
+ 
+ bool g_disable_prompt = false;
+ bool g_skip_is_chrome_process_check = false;
+@@ -167,15 +170,32 @@ void CloseSocket(int fd) {
+   DPCHECK(rv == 0) << "Error closing socket";
+ }
+ 
+-// Write a message to a socket fd.
+-bool WriteToSocket(int fd, std::string_view message) {
++// Wait for a socket to become writable, for up to |timeout|.
++// Returns -1 if error occurred, 0 if timeout reached, > 0 if the socket is
++// ready for write.
++int WaitSocketForWrite(int fd, const base::TimeDelta& timeout) {
++  struct pollfd pfd = {};
++  pfd.fd = fd;
++  pfd.events = POLLOUT;
++  return HANDLE_EINTR(poll(
++      &pfd, 1, base::saturated_cast<int>(timeout.InMillisecondsRoundedUp())));
++}
++
++// Write a message to a socket fd. Whenever the socket would block, wait for it
++// to become writable again; |timeout| bounds the total time spent waiting.
++bool WriteToSocket(int fd,
++                   std::string_view message,
++                   const base::TimeDelta& timeout = base::TimeDelta()) {
+   DCHECK(!message.empty());
++  const base::TimeTicks deadline = base::TimeTicks::Now() + timeout;
+   while (!message.empty()) {
+     ssize_t rv = HANDLE_EINTR(write(fd, message.data(), message.size()));
+     if (rv < 0) {
+       if (errno == EAGAIN || errno == EWOULDBLOCK) {
+-        // The socket shouldn't block, we're sending so little data.  Just give
+-        // up here, since NotifyOtherProcess() doesn't have an asynchronous api.
++        const base::TimeDelta remaining = deadline - base::TimeTicks::Now();
++        if (remaining.is_positive() && WaitSocketForWrite(fd, remaining) > 0) {
++          continue;
++        }
+         LOG(ERROR) << "ProcessSingleton would block on write(), so it gave up.";
+         return false;
+       }
+@@ -548,10 +568,7 @@ class ProcessSingleton::LinuxWatcher
+     SocketReader(ProcessSingleton::LinuxWatcher* parent,
+                  scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+                  int fd)
+-        : parent_(parent),
+-          ui_task_runner_(ui_task_runner),
+-          fd_(fd),
+-          bytes_read_(0) {
++        : parent_(parent), ui_task_runner_(ui_task_runner), fd_(fd) {
+       DCHECK_CURRENTLY_ON(BrowserThread::IO);
+       // Wait for reads.
+       fd_watch_controller_ = base::FileDescriptorWatcher::WatchReadable(
+@@ -595,11 +612,10 @@ class ProcessSingleton::LinuxWatcher
+     const int fd_;
+ 
+     // Store the message in this buffer.
+-    std::array<char, kMaxMessageLength> buf_;
++    std::string buf_;
+ 
+-    // Tracks the number of bytes we've read in case we're getting partial
+-    // reads.
+-    size_t bytes_read_;
++    // Whether the message exceeded kMaxMessageLength and is being dropped.
++    bool message_too_long_ = false;
+ 
+     base::OneShotTimer timer_;
+   };
+@@ -621,6 +637,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -76,7 +166,19 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
                       SocketReader* reader);
  
    // Called when the ProcessSingleton that owns this class is about to be
-@@ -678,13 +679,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -665,8 +682,9 @@ void ProcessSingleton::LinuxWatcher::OnSocketCanReadWithoutBlocking(
+     PLOG(ERROR) << "accept() failed";
+     return;
+   }
+-  DCHECK(base::SetNonBlocking(connection_socket))
+-      << "Failed to make non-blocking socket.";
++  if (!base::SetNonBlocking(connection_socket)) {
++    PLOG(ERROR) << "Failed to make non-blocking socket.";
++  }
+   readers_.insert(
+       std::make_unique<SocketReader>(this, ui_task_runner_, connection_socket));
+ }
+@@ -680,13 +698,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -96,32 +198,109 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken);
    } else {
-@@ -714,7 +719,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
-   bytes_read_ += ReadFromSocketWithTimeout(
-       fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
+@@ -713,23 +735,58 @@ void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
+ void ProcessSingleton::LinuxWatcher::SocketReader::
+     OnSocketCanReadWithoutBlocking() {
+   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+-  bytes_read_ += ReadFromSocketWithTimeout(
+-      fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
  
 -  // Validate the message.  The shortest message is kStartToken\0x\0x
++  // The client shuts down its writing end after sending the message, so read
++  // until EOF to get the whole message.
++  std::array<char, 64 * 1024> chunk;
++  while (true) {
++    ssize_t rv = HANDLE_EINTR(read(fd_, chunk.data(), chunk.size()));
++    if (rv > 0) {
++      const size_t bytes_read = base::checked_cast<size_t>(rv);
++      if (message_too_long_) {
++        continue;
++      }
++      if (buf_.size() + bytes_read > kMaxMessageLength) {
++        LOG(ERROR) << "Socket message too long, dropping it";
++        message_too_long_ = true;
++        buf_.clear();
++        continue;
++      }
++      buf_.append(base::as_string_view(base::span(chunk).first(bytes_read)));
++      continue;
++    }
++    if (rv == 0) {  // The client has finished sending.
++      break;
++    }
++    if (errno == EAGAIN || errno == EWOULDBLOCK) {
++      return;  // Wait for the rest of the message.
++    }
++    PLOG(ERROR) << "read() failed";
++    CleanupAndDeleteSelf();
++    return;
++  }
++
++  if (message_too_long_) {
++    // Reply so the client exits instead of treating this process as hung.
++    fd_watch_controller_.reset();
++    timer_.Stop();
++    FinishWithACK(kACKToken);
++    return;
++  }
++
 +  // Validate the message.  The shortest message kStartToken\0\00
 +  // The shortest message with additional data is kStartToken\0\00\00\0.
    const size_t kMinMessageLength = kStartToken.length() + 4;
-   if (bytes_read_ < kMinMessageLength) {
-     buf_[bytes_read_] = 0;
-@@ -745,10 +751,26 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+-  if (bytes_read_ < kMinMessageLength) {
+-    buf_[bytes_read_] = 0;
+-    LOG(ERROR) << "Invalid socket message (wrong length):" << buf_.data();
++  if (buf_.size() < kMinMessageLength) {
++    LOG(ERROR) << "Invalid socket message (wrong length):" << buf_;
+     CleanupAndDeleteSelf();
+     return;
+   }
+ 
+-  std::string_view str =
+-      base::as_string_view(base::span(buf_).first(bytes_read_));
++  std::string_view str = buf_;
+   std::vector<std::string> tokens =
+       base::SplitString(str, std::string(1, kTokenDelimiter),
+-                        base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
++                        base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+ 
+   if (tokens.size() < 3 || tokens[0] != kStartToken) {
+     LOG(ERROR) << "Wrong message format: " << str;
+@@ -747,10 +804,45 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
 +  size_t num_args;
-+  base::StringToSizeT(tokens[0], &num_args);
-+  std::vector<std::string> command_line(tokens.begin() + 1, tokens.begin() + 1 + num_args);
++  if (!base::StringToSizeT(tokens[0], &num_args) ||
++      num_args > tokens.size() - 1) {
++    LOG(ERROR) << "Invalid num_args in socket message";
++    CleanupAndDeleteSelf();
++    return;
++  }
++  std::vector<std::string> command_line(tokens.begin() + 1,
++                                        tokens.begin() + 1 + num_args);
 +
 +  std::vector<uint8_t> additional_data;
-+  if (tokens.size() >= 3 + num_args) {
++  // After consuming [num_args, argv...], two more tokens are needed for
++  // additional data: [size, payload]. Subtract to avoid overflow when
++  // num_args is large.
++  if (tokens.size() - 1 - num_args >= 2) {
 +    size_t additional_data_size;
-+    base::StringToSizeT(tokens[1 + num_args], &additional_data_size);
++    if (!base::StringToSizeT(tokens[1 + num_args], &additional_data_size)) {
++      LOG(ERROR) << "Invalid additional_data_size in socket message";
++      CleanupAndDeleteSelf();
++      return;
++    }
 +    std::string remaining_args = base::JoinString(
 +        base::span(tokens).subspan(2 + num_args),
 +        std::string(1, kTokenDelimiter));
-+    const auto adspan = base::as_byte_span(remaining_args).first(additional_data_size);
++    if (additional_data_size > remaining_args.size()) {
++      LOG(ERROR) << "additional_data_size exceeds payload length";
++      CleanupAndDeleteSelf();
++      return;
++    }
++    const auto adspan =
++        base::as_byte_span(remaining_args).first(additional_data_size);
 +    additional_data.assign(adspan.begin(), adspan.end());
 +  }
 +
@@ -134,7 +313,7 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -777,8 +799,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -779,8 +871,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -145,7 +324,7 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
        current_pid_(base::GetCurrentProcId()) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
    lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
-@@ -899,7 +923,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -901,7 +995,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -155,7 +334,7 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -909,11 +934,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -911,13 +1006,23 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -175,13 +354,24 @@ index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0a
 +  }
 +
    // Send the message
-   if (!WriteToSocket(socket.fd(), to_send)) {
+-  if (!WriteToSocket(socket.fd(), to_send)) {
++  if (!WriteToSocket(socket.fd(), to_send, timeout)) {
      // Try to kill the other process, because it might have been dead.
+     if (!kill_unresponsive || !KillProcessByLockPath(true))
+       return PROFILE_IN_USE;
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f947e6bfc 100644
+index 53fdcaf36552091e0b03297ee0d524b729cf8324..59dd345b19c7c812919c211b76aceec1bf067f8e 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -9,6 +9,7 @@
+ #include <shellapi.h>
+ #include <stddef.h>
+ 
++#include "base/base64.h"
+ #include "base/base_paths.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -83,10 +84,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -196,7 +386,7 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -134,6 +136,23 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -136,6 +139,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -209,18 +399,20 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f
 +      return true;
 +    }
 +
-+    // Get the actual additional data.
-+    const std::wstring additional_data =
-+        msg.substr(third_null + 1, fourth_null - third_null);
-+    base::span<const uint8_t> additional_data_bytes =
-+        base::as_byte_span(additional_data);
-+    *parsed_additional_data = std::vector<uint8_t>(
-+        additional_data_bytes.begin(), additional_data_bytes.end());
++    // Get the actual additional data. It is base64-encoded so it can
++    // safely traverse the null-delimited wchar_t buffer.
++    const std::wstring encoded_w =
++        msg.substr(third_null + 1, fourth_null - third_null - 1);
++    std::string encoded = base::WideToASCII(encoded_w);
++    std::optional<std::vector<uint8_t>> decoded = base::Base64Decode(encoded);
++    if (decoded) {
++      *parsed_additional_data = std::move(*decoded);
++    }
 +
      return true;
    }
    return false;
-@@ -155,13 +174,14 @@ bool ProcessLaunchNotification(
+@@ -157,13 +179,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -238,7 +430,7 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f
    return true;
  }
  
-@@ -265,9 +285,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -342,9 +365,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -250,7 +442,7 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -294,7 +316,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -368,7 +393,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -260,10 +452,18 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f
        return PROCESS_NOTIFIED;
      case NotifyChromeResult::kFailed:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 594f3bc08a4385c177fb488123cef79448e94850..5a1dde19a4bc2bf728eba4c738f831c3e5b73942 100644
+index 594f3bc08a4385c177fb488123cef79448e94850..28e5a18a19718b2e748ada6882341413a1ab0705 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -11,6 +11,7 @@
+ #include <string>
+ #include <string_view>
+ 
++#include "base/base64.h"
+ #include "base/check.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -39,7 +40,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -274,7 +474,7 @@ index 594f3bc08a4385c177fb488123cef79448e94850..5a1dde19a4bc2bf728eba4c738f831c3
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -70,12 +72,24 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -70,12 +73,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitch(switches::kSourceAppId);
    }
    // Send the command line to the remote chrome window.
@@ -286,14 +486,12 @@ index 594f3bc08a4385c177fb488123cef79448e94850..5a1dde19a4bc2bf728eba4c738f831c3
         std::wstring_view{L"\0", 1}, new_command_line.GetCommandLineString(),
         std::wstring_view{L"\0", 1}});
  
-+  size_t additional_data_size = additional_data.size_bytes();
-+  if (additional_data_size) {
-+    size_t padded_size = additional_data_size / sizeof(wchar_t);
-+    if (additional_data_size % sizeof(wchar_t) != 0) {
-+      padded_size++;
-+    }
-+    to_send.append(reinterpret_cast<const wchar_t*>(additional_data.data()),
-+                   padded_size);
++  if (!additional_data.empty()) {
++    // Base64-encode so the payload survives the null-delimited wchar_t
++    // framing; raw serialized bytes can contain 0x0000 sequences which
++    // would otherwise terminate the field early.
++    std::string encoded = base::Base64Encode(additional_data);
++    to_send.append(base::ASCIIToWide(encoded));
 +    to_send.append(L"\0", 1);  // Null separator.
 +  }
 +

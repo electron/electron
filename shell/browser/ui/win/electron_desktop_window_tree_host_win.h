@@ -40,6 +40,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                     LRESULT* result) override;
   bool ShouldPaintAsActive() const override;
   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
+  bool WidgetSizeIsClientSize() const override;
   bool GetClientAreaInsets(gfx::Insets* insets,
                            int frame_thickness) const override;
   bool HandleMouseEventForCaption(UINT message) const override;
@@ -48,19 +49,15 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                         WPARAM w_param,
                         LPARAM l_param,
                         LRESULT* result) override;
-  void HandleVisibilityChanged(bool visible) override;
-  void SetAllowScreenshots(bool allow) override;
+  void Restore() override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
   bool ShouldWindowContentsBeTransparent() const override;
 
  private:
-  void UpdateAllowScreenshots();
-
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
   std::optional<bool> force_should_paint_as_active_;
-  bool allow_screenshots_ = true;
   bool widget_init_done_ = false;
 };
 

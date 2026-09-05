@@ -5,12 +5,12 @@
 By default, windows are dragged using the title bar provided by the OS chrome. Apps
 that remove the default title bar need to use the `app-region` CSS property to define
 specific areas that can be used to drag the window. Setting `app-region: drag` marks
-a rectagular area as draggable.
+a rectangular area as draggable.
 
 It is important to note that draggable areas ignore all pointer events. For example,
 a button element that overlaps a draggable region will not emit mouse clicks or mouse
 enter/exit events within that overlapping area. Setting `app-region: no-drag` reenables
-pointer events by excluding a rectagular area from a draggable region.
+pointer events by excluding a rectangular area from a draggable region.
 
 To make the whole window draggable, you can add `app-region: drag` as
 `body`'s style:

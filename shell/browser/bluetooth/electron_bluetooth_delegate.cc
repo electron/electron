@@ -191,7 +191,7 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
 
 void ElectronBluetoothDelegate::OnDevicePairPromptResponse(
     PairPromptCallback callback,
-    base::Value::Dict response) {
+    base::DictValue response) {
   BluetoothDelegate::PairPromptResult result;
   if (response.FindBool("confirmed").value_or(false)) {
     result.result_code = BluetoothDelegate::PairPromptStatus::kSuccess;

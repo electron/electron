@@ -15,7 +15,6 @@
 
 #include "chrome/browser/browser_process.h"
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
-#include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -27,9 +26,14 @@
 #endif
 
 class PrefService;
+class ValueMapPrefStore;
 
 namespace printing {
 class PrintJobManager;
+}
+
+namespace metrics {
+class MetricsServiceClient;
 }
 
 namespace electron {
@@ -73,7 +77,6 @@ class BrowserProcessImpl : public BrowserProcess {
   GlobalFeatures* GetFeatures() override;
   void CreateGlobalFeaturesForTesting() {}
   void EndSession() override {}
-  void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
   ui::UnownedUserDataHost& GetUnownedUserDataHost() override;
   const ui::UnownedUserDataHost& GetUnownedUserDataHost() const override;
@@ -121,7 +124,13 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
   HidSystemTrayIcon* hid_system_tray_icon() override;
+  void set_hid_system_tray_icon_for_test(
+      std::unique_ptr<HidSystemTrayIcon> icon) override;
   UsbSystemTrayIcon* usb_system_tray_icon() override;
+  void set_usb_system_tray_icon_for_test(
+      std::unique_ptr<UsbSystemTrayIcon> icon) override;
+  speech::SpeechRecognitionSmallExpertModelInstaller*
+  speech_recognition_small_expert_model_installer() override;
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,
@@ -145,6 +154,7 @@ class BrowserProcessImpl : public BrowserProcess {
  private:
   void CreateNetworkQualityObserver();
   void CreateOSCryptAsync();
+  void CreateMetricsServiceClient();
   network::NetworkQualityTracker* GetNetworkQualityTracker();
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -166,6 +176,7 @@ class BrowserProcessImpl : public BrowserProcess {
       network_quality_observer_;
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
+  std::unique_ptr<metrics::MetricsServiceClient> metrics_service_client_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };

@@ -6,25 +6,41 @@
 
 #include <utility>
 
+#include "base/functional/bind.h"
+#include "base/memory/self_deleting.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 
 namespace electron {
+
+namespace {
+
+void BindOnIOThread(
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver) {
+  // Deletes itself with its last receiver.
+  base::MakeSelfDeleting<AsarURLLoaderFactory>(std::move(receiver));
+}  // NOLINT(clang-analyzer-cplusplus.NewDeleteLeaks)
+
+}  // namespace
 
 // static
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
 AsarURLLoaderFactory::Create() {
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
-
-  // The AsarURLLoaderFactory will delete itself when there are no more
-  // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-  new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
-
+  // Bound on the IO thread rather than the UI thread it is created from: all
+  // it does is post loaders to the thread pool.
+  content::GetIOThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(&BindOnIOThread,
+                     pending_remote.InitWithNewPipeAndPassReceiver()));
   return pending_remote;
 }
 
 AsarURLLoaderFactory::AsarURLLoaderFactory(
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)) {}
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+    base::SelfDeletingPassKey key)
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key) {}
 AsarURLLoaderFactory::~AsarURLLoaderFactory() = default;
 
 void AsarURLLoaderFactory::CreateLoaderAndStart(

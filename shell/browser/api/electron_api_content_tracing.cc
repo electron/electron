@@ -9,10 +9,13 @@
 #include <utility>
 
 #include "base/files/file_util.h"
+#include "base/functional/callback_helpers.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -45,7 +48,7 @@ struct Converter<base::trace_event::TraceConfig> {
       }
     }
 
-    base::Value::Dict memory_dump_config;
+    base::DictValue memory_dump_config;
     if (ConvertFromV8(isolate, val, &memory_dump_config)) {
       *out = base::trace_event::TraceConfig(std::move(memory_dump_config));
       return true;
@@ -79,7 +82,7 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
           promise.Resolve(path);
         }
       },
-      std::move(promise), *file_path);
+      std::move(promise), file_path.value_or(base::FilePath()));
 
   auto* instance = TracingController::GetInstance();
   if (!instance->IsTracing()) {
@@ -87,8 +90,13 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
         .Run("Failed to stop tracing - no trace in progress"sv);
   } else if (file_path) {
     auto split_callback = base::SplitOnceCallback(std::move(resolve_or_reject));
+    // The file endpoint hands this closure to a thread pool sequence and, if
+    // it fails to write the trace file, drops it there without running it. The
+    // promise it owns must be destroyed on the thread that created it, so make
+    // sure both running and destroying the closure happen back on this thread.
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindOnce(std::move(split_callback.first), ""sv));
+        *file_path, base::BindPostTaskToCurrentDefault(
+                        base::BindOnce(std::move(split_callback.first), ""sv)));
     if (!instance->StopTracing(endpoint)) {
       std::move(split_callback.second).Run("Failed to stop tracing"sv);
     }
@@ -101,6 +109,12 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
 v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
   gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   base::FilePath path;
   if (args->GetNext(&path) && !path.empty()) {
@@ -120,6 +134,12 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   gin_helper::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
       gin_helper::Promise<const std::set<std::string>&>::ResolvePromise,
@@ -133,6 +153,12 @@ v8::Local<v8::Promise> StartTracing(
     const base::trace_event::TraceConfig& trace_config) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
@@ -151,7 +177,10 @@ void OnTraceBufferUsageAvailable(
     gin_helper::Promise<gin_helper::Dictionary> promise,
     float percent_full,
     size_t approximate_count) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
+  v8::Isolate* isolate = promise.isolate();
+  v8::HandleScope handle_scope(isolate);
+
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
@@ -161,6 +190,12 @@ void OnTraceBufferUsageAvailable(
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetTraceBufferUsage(

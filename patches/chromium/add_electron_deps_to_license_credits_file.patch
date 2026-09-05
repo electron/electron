@@ -7,38 +7,43 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index 7f22f02d2bc80abdb3be5191d55a1a6d00d1d0a7..8989fde2a7416100f238b0350fb7daf6e3944a70 100755
+index 6b2eae031956dd3c69b2daf69ac6890078c701d4..cbb8d83e53491b4e78ba3e0748d9da86a2036f6a 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
-@@ -355,6 +355,31 @@ SPECIAL_CASES = {
-         "License": "Apache 2.0",
-         "License File": ["//third_party/sample3/the_license"],
-     },
-+    os.path.join('third_party', 'electron_node'): {
-+        "Name": "Node.js",
-+        "URL": "https://github.com/nodejs/node",
-+        "License": "MIT",
-+        "License File": ["/third_party/electron_node/LICENSE"],
-+    },
-+    os.path.join('third_party', 'squirrel.mac'): {
-+        "Name": "Squirrel",
-+        "URL": "https://github.com/Squirrel/Squirrel.Mac",
-+        "License": "MIT",
-+        "License File": ["/third_party/squirrel.mac/LICENSE"],
-+    },
-+    os.path.join('third_party', 'squirrel.mac', 'vendor', 'mantle'): {
-+        "Name": "Mantle",
-+        "URL": "https://github.com/Mantle/Mantle",
-+        "License": "MIT",
-+        "License File": "/third_party/squirrel.mac/vendor/mantle/LICENSE.md",
-+    },
-+    os.path.join('third_party', 'squirrel.mac', 'vendor', 'ReactiveObjC'): {
-+        "Name": "ReactiveObjC",
-+        "URL": "https://github.com/ReactiveCocoa/ReactiveObjC",
-+        "License": "MIT",
-+        "License File":
-+        ["/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md"],
-+    },
+@@ -374,6 +374,36 @@ SPECIAL_CASES = {
+     "License": "Apache 2.0",
+     "License File": ["//third_party/sample3/the_license"],
+   },
++  os.path.join('third_party', 'electron_node'): {
++    "Name": "Node.js",
++    "URL": "https://github.com/nodejs/node",
++    "License": "MIT",
++    "License File": ["/third_party/electron_node/LICENSE"],
++  },
++  os.path.join('third_party', 'squirrel.mac'): {
++    "Name": "Squirrel",
++    "URL": "https://github.com/Squirrel/Squirrel.Mac",
++    "License": "MIT",
++    "License File": ["/third_party/squirrel.mac/LICENSE"],
++  },
++  os.path.join('third_party', 'squirrel.mac', 'vendor', 'mantle'): {
++    "Name": "Mantle",
++    "URL": "https://github.com/Mantle/Mantle",
++    "License": "MIT",
++    "License File": "/third_party/squirrel.mac/vendor/mantle/LICENSE.md",
++  },
++  os.path.join('third_party', 'squirrel.mac', 'vendor', 'ReactiveObjC'): {
++    "Name": "ReactiveObjC",
++    "URL": "https://github.com/ReactiveCocoa/ReactiveObjC",
++    "License": "MIT",
++    "License File": ["/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md"],
++  },
++  os.path.join('third_party', 'squirrel.mac', 'vendor', 'Sparkle'): {
++    "Name": "Sparkle",
++    "URL": "https://github.com/sparkle-project/Sparkle",
++    "License": "MIT",
++    "License File": ["/third_party/squirrel.mac/vendor/Sparkle/LICENSE"],
++  },
  }
  
  # These buildtools/third_party directories only contain

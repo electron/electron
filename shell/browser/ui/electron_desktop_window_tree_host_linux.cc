@@ -10,19 +10,13 @@
 
 #include <vector>
 
-#include "base/feature_list.h"
-#include "base/i18n/rtl.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/linux/x11_util.h"
-#include "shell/browser/native_window_features.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
-#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/platform_window/extensions/wayland_extension.h"
@@ -30,6 +24,8 @@
 #include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
+#include "ui/views/window/frame_view_linux.h"
+#include "ui/views/window/frame_view_utils_linux.h"
 
 namespace electron {
 
@@ -50,13 +46,21 @@ bool ElectronDesktopWindowTreeHostLinux::SupportsClientFrameShadow() const {
 
 void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   views::DesktopWindowTreeHostLinux::OnWidgetInitDone();
+
+  // SetSupportsClientFrameShadow must happen after widget init when
+  // platform_window is available.
+  if (auto* fvl = native_window_view_->GetFrameViewLinux())
+    fvl->SetSupportsClientFrameShadow(SupportsClientFrameShadow() &&
+                                      !native_window_view_->IsTranslucent());
+
   UpdateFrameHints();
 }
 
-bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame() const {
-  return !native_window_view_->IsFullscreen() &&
-         !native_window_view_->IsMaximized() &&
-         !native_window_view_->IsMinimized();
+bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame(
+    ui::PlatformWindowState window_state) const {
+  return window_state != ui::PlatformWindowState::kFullScreen &&
+         window_state != ui::PlatformWindowState::kMaximized &&
+         window_state != ui::PlatformWindowState::kMinimized;
 }
 
 void ElectronDesktopWindowTreeHostLinux::SetWindowIcons(
@@ -77,21 +81,49 @@ void ElectronDesktopWindowTreeHostLinux::Show(
     DesktopWindowTreeHostLinux::SetWindowIcons(saved_window_icon_, {});
 }
 
+gfx::Insets ElectronDesktopWindowTreeHostLinux::GetRestoredFrameBorderInsets()
+    const {
+  if (auto* fvl = native_window_view_->GetFrameViewLinux())
+    return fvl->GetRestoredFrameBorderInsets();
+
+  return gfx::Insets();
+}
+
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     ui::PlatformWindowState window_state) const {
   // If we are not showing frame, the insets should be zero.
-  if (!IsShowingFrame()) {
+  if (!IsShowingFrame(window_state))
     return gfx::Insets();
+
+  return GetRestoredFrameBorderInsets();
+}
+
+// Electron treats min/max constraints as the logical window size, but Chromium
+// expects widget bounds including CSD insets (WaylandToplevelWindow::
+// SetSizeConstraints). So we inflate constraints by insets to avoid double
+// subtraction. This is still OK for SSD frames or X11 where the insets are 0.
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMinimumSizeForWindow() const {
+  auto min_size = views::DesktopWindowTreeHostLinux::GetMinimumSizeForWindow();
+  if (min_size.has_value()) {
+    gfx::Insets insets = GetRestoredFrameBorderInsets();
+    min_size->Enlarge(insets.width(), insets.height());
   }
+  return min_size;
+}
 
-  auto* const view = native_window_view_->GetClientFrameViewLinux();
-  if (!view)
-    return {};
-
-  gfx::Insets insets = view->RestoredMirroredFrameBorderInsets();
-  if (base::i18n::IsRTL())
-    insets.set_left_right(insets.right(), insets.left());
-  return insets;
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMaximumSizeForWindow() const {
+  auto max_size = views::DesktopWindowTreeHostLinux::GetMaximumSizeForWindow();
+  if (max_size.has_value()) {
+    gfx::Insets insets = GetRestoredFrameBorderInsets();
+    // 0 means no constraint, so don't inflate.
+    if (max_size->width() > 0)
+      max_size->set_width(max_size->width() + insets.width());
+    if (max_size->height() > 0)
+      max_size->set_height(max_size->height() + insets.height());
+  }
+  return max_size;
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
@@ -118,15 +150,15 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     ui::WindowTiledEdges new_tiled_edges) {
-  if (auto* const view = native_window_view_->GetClientFrameViewLinux()) {
-    // GNOME on Ubuntu reports all edges as tiled
-    // even if the window is only half-tiled so do not trust individual edge
-    // values.
-    bool maximized = native_window_view_->IsMaximized();
-    bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
-                 new_tiled_edges.bottom || new_tiled_edges.right;
-    view->set_tiled(tiled && !maximized);
-  }
+  // GNOME on Ubuntu reports all edges as tiled even if the window is only
+  // half-tiled, so do not trust individual edge values.
+  bool maximized = native_window_view_->IsMaximized();
+  bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
+               new_tiled_edges.bottom || new_tiled_edges.right;
+  bool is_tiled = tiled && !maximized;
+
+  if (auto* fvl = native_window_view_->GetFrameViewLinux())
+    fvl->SetTiled(is_tiled);
   UpdateFrameHints();
   ScheduleRelayout();
   if (GetWidget()->non_client_view()) {
@@ -179,94 +211,37 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::SetOpacity(float opacity) {
+  views::DesktopWindowTreeHostLinux::SetOpacity(opacity);
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
-  if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
-    auto* const view = native_window_view_->GetClientFrameViewLinux();
-    if (!view)
-      return;
+  const bool is_non_opaque = native_window_view_->IsTranslucent() ||
+                             native_window_view_->GetOpacity() < 1.0;
 
-    ui::PlatformWindow* window = platform_window();
-    auto window_state = window->GetPlatformWindowState();
-    float scale = device_scale_factor();
-    const gfx::Size widget_size =
-        view->GetWidget()->GetWindowBoundsInScreen().size();
-
-    if (SupportsClientFrameShadow()) {
-      auto insets = CalculateInsetsInDIP(window_state);
-      if (insets.IsEmpty()) {
-        window->SetInputRegion(std::nullopt);
-      } else {
-        gfx::Rect input_bounds(widget_size);
-        input_bounds.Inset(insets - view->GetInputInsets());
-        input_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
-        window->SetInputRegion(
-            std::optional<std::vector<gfx::Rect>>({input_bounds}));
-      }
-    }
-
+  auto* fvl = native_window_view_->GetFrameViewLinux();
+  if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
+    platform_window()->SetInputRegion(std::nullopt);
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
-      // Set the opaque region.
-      std::vector<gfx::Rect> opaque_region;
-      if (IsShowingFrame()) {
-        // The opaque region is a list of rectangles that contain only fully
-        // opaque pixels of the window.  We need to convert the clipping
-        // rounded-rect into this format.
-        SkRRect rrect = view->GetRoundedWindowContentBounds();
-        gfx::RectF rectf(view->GetWindowContentBounds());
-        rectf.Scale(scale);
-        // It is acceptable to omit some pixels that are opaque, but the region
-        // must not include any translucent pixels.  Therefore, we must
-        // conservatively scale to the enclosed rectangle.
-        gfx::Rect rect = gfx::ToEnclosedRect(rectf);
-
-        // Create the initial region from the clipping rectangle without rounded
-        // corners.
-        SkRegion region(gfx::RectToSkIRect(rect));
-
-        // Now subtract out the small rectangles that cover the corners.
-        struct {
-          SkRRect::Corner corner;
-          bool left;
-          bool upper;
-        } kCorners[] = {
-            {SkRRect::kUpperLeft_Corner, true, true},
-            {SkRRect::kUpperRight_Corner, false, true},
-            {SkRRect::kLowerLeft_Corner, true, false},
-            {SkRRect::kLowerRight_Corner, false, false},
-        };
-        for (const auto& corner : kCorners) {
-          auto radii = rrect.radii(corner.corner);
-          auto rx = std::ceil(scale * radii.x());
-          auto ry = std::ceil(scale * radii.y());
-          auto corner_rect = SkIRect::MakeXYWH(
-              corner.left ? rect.x() : rect.right() - rx,
-              corner.upper ? rect.y() : rect.bottom() - ry, rx, ry);
-          region.op(corner_rect, SkRegion::kDifference_Op);
-        }
-
-        auto translucent_top_area_rect = SkIRect::MakeXYWH(
-            rect.x(), rect.y(), rect.width(),
-            std::ceil(view->GetTranslucentTopAreaHeight() * scale - rect.y()));
-        region.op(translucent_top_area_rect, SkRegion::kDifference_Op);
-
-        // Convert the region to a list of rectangles.
-        for (SkRegion::Iterator i(region); !i.done(); i.next()) {
-          opaque_region.push_back(gfx::SkIRectToRect(i.rect()));
-        }
+      if (is_non_opaque) {
+        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
       } else {
-        // The entire window except for the translucent top is opaque.
-        gfx::Rect opaque_region_dip(widget_size);
-        gfx::Insets insets;
-        insets.set_top(view->GetTranslucentTopAreaHeight());
-        opaque_region_dip.Inset(insets);
-        opaque_region.push_back(
-            gfx::ScaleToEnclosingRect(opaque_region_dip, scale));
+        gfx::Size size = GetWidget()->GetWindowBoundsInScreen().size();
+        float scale = device_scale_factor();
+        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{
+            gfx::ScaleToEnclosingRect(gfx::Rect(size), scale)});
       }
-      window->SetOpaqueRegion(opaque_region);
     }
-
     SizeConstraintsChanged();
+    return;
   }
+
+  views::DesktopWindowTreeHostLinux::UpdateFrameHints();
+  if (is_non_opaque && views::Widget::IsWindowCompositingSupported()) {
+    platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
+  }
+  SizeConstraintsChanged();
 }
 
 void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {

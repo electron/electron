@@ -1,5 +1,14 @@
 # Electron Development Guide
 
+## Running node_modules binaries
+
+**Never use `npx`.** It is considered dangerous because it can silently fetch and execute arbitrary packages from the registry. Always run binaries through one of these safer mechanisms instead:
+
+1. **Preferred** — spawn the executable directly from `node_modules/.bin/<tool>` (or the platform equivalent on Windows). This is what `script/lint.js` does for `oxlint`.
+2. **Acceptable** — invoke via `yarn <tool>` or `yarn run <tool>`, which resolves to the locally installed version without the registry fallback that `npx` performs.
+
+This rule applies to shell commands you run yourself and to any scripts you author or modify in this repo.
+
 ## Project Overview
 
 Electron is a framework for building cross-platform desktop applications using web technologies. It embeds Chromium for rendering and Node.js for backend functionality.
@@ -127,6 +136,24 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 2. Create a git commit
 3. Run `e patches <target>` to export
 
+**Fixing patch conflicts on an existing PR:**
+
+If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches.patch` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
+
+```bash
+# Find the failed Apply Patches run for the PR, then fetch its artifact. The
+# artifact is uploaded unarchived (name `update-patches.patch`), so
+# `gh run download` rejects it as "not a valid zip"; the artifact zip endpoint
+# returns the raw patch instead.
+gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
+gh api repos/electron/electron/actions/runs/<run-id>/artifacts --jq '.artifacts[] | select(.name == "update-patches.patch") | .id'
+gh api repos/electron/electron/actions/artifacts/<artifact-id>/zip > update-patches.patch
+git am update-patches.patch
+git push
+```
+
+If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync --3` and resolve manually.
+
 ## Testing
 
 **Test location:** `spec/` directory
@@ -137,7 +164,7 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 e test                    # Run full test suite
 ```
 
-**Test frameworks:** Mocha, Chai, Sinon
+**Test frameworks:** Mocha, Chai
 
 ## Build Configuration
 
@@ -155,16 +182,84 @@ e test                    # Run full test suite
 
 When working on the `roller/chromium/main` branch to upgrade Chromium activate the "Electron Chromium Upgrade" skill.
 
+## Node.js Upgrade Workflow
+
+When working on the `roller/node/main` branch to upgrade Node.js activate the "Electron Node.js Upgrade" skill.
+
+## Pull Requests
+
+PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
+
+### PR Labeling (write-access only)
+
+When the user has write access to `electron/electron`, add these labels when creating PRs:
+
+**Semver label** — one of:
+
+- `semver/none` — build changes, refactors, CI, or anything with no end-user impact
+- `semver/patch` — backwards-compatible bug fixes
+- `semver/minor` — backwards-compatible new functionality
+- `semver/major` — incompatible API changes
+
+**Backport target labels** — add `target/{N}-x-y` for each supported release branch the change should land on. Default policy:
+
+- **Bug fixes** — backport to all active release lines _except the oldest_
+- **Security fixes** — backport to all active release lines _including the oldest_
+- **Features (semver/minor) and breaking changes (semver/major)** — no backport labels; main-only by default
+
+To find which release branches are active, check label colors — active `target/*` labels use color `#ad244f`, older/EOL ones use `#ededed`:
+
+```bash
+gh label list --repo electron/electron --search target/ --json name,color --jq '.[] | select(.color == "ad244f") | .name'
+```
+
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format
-**TypeScript/JavaScript:** ESLint configuration in `.eslintrc.json`
+**TypeScript/JavaScript:** [oxlint](https://oxc.rs/docs/guide/usage/linter) configuration in `.oxlintrc.json`
+
+### cppgc / Oilpan
+
+- Treat prefinalizers as an absolute last resort. They add GC cost to every
+  collection involving the object; first redesign ownership or make teardown
+  release only non GC resources in the destructor. Use
+  `CPPGC_USING_PRE_FINALIZER` only when teardown unavoidably needs to inspect
+  another GC managed object.
+- Destructors must not access other GC managed objects: sweeping has no object
+  destruction order or timing guarantee.
+- Never store a bare pointer or `raw_ptr` to a GC managed object in a heap
+  field. Use `cppgc::Member`/`WeakMember` for on heap edges and
+  `cppgc::Persistent`/`WeakPersistent` for off heap edges. A bare pointer is
+  safe only as a native stack local.
+- Allocate GC-managed objects only with `cppgc::MakeGarbageCollected`; never
+  use `new`, `delete`, `std::unique_ptr`, or `scoped_refptr`.
+- Trace every `Member`, `WeakMember`, `v8::TracedReference`, and traceable
+  helper such as `gin::WeakCellFactory`; call the GC managed base class's
+  `Trace()` first. Missing an edge can cause use-after-free.
+- Use `v8::TracedReference` for V8 values that participate in unified heap
+  tracing. Use `v8::Global` only for an intentionally independent V8 root.
+- Keep handle construction, access, and destruction on the owning isolate's
+  thread. Use a cross thread handle only when a cross thread reference is
+  unavoidable.
+- Use `gin_helper::SelfKeepAlive` only when native asynchronous work must keep
+  the object alive after all JavaScript references are gone. Clear it on every
+  terminal path.
+- For callbacks that may outlive or escape the object, use `WeakCellFactory`.
+  Use `base::Unretained(this)` only when the callback is registered on a member
+  owned by the object and destroying that member guarantees cancellation.
+- `GetHumanReadableName()` must return stable storage (normally a string
+  literal) and must not allocate GC objects or mutate the heap.
+- Annotate intentionally untraced owned members that the Blink GC plugin cannot
+  understand, such as Mojo remotes and receivers, with `GC_PLUGIN_IGNORE` and a
+  specific justification.
 
 **Linting:**
 
 ```bash
 npm run lint              # Run all linters
+npm run lint:js           # Run oxlint over all JS/TS/MJS sources
 npm run lint:clang-format # C++ formatting
+npm run lint:api-history  # Validate API history YAML blocks in docs
 ```
 
 ## Key Files
@@ -206,6 +301,15 @@ GitHub Actions workflows in `.github/workflows/`:
 - `build.yml` - Main build workflow
 - `pipeline-electron-lint.yml` - Linting
 - `pipeline-segment-electron-test.yml` - Testing
+
+### Reading audit findings
+
+These workflows upload their findings as a build artifact named `audit-results.md` because GitHub Actions step summaries cannot be read via the API:
+
+- `.github/workflows/audit-branch-ci.yml` - Table of release-branch CI runs that errored
+- `.github/workflows/archaeologist-dig.yml` - The `electron.d.ts` diff report ("Changes Detected" patch, or a no-changes note)
+
+The artifact is uploaded unarchived (`archive: false`), so it downloads as raw markdown — no unzipping needed. Agents should list the run's artifacts (`GET /repos/electron/electron/actions/runs/{run_id}/artifacts`), find the one named `audit-results.md`, and fetch its `archive_download_url` to read the findings directly.
 
 ## Common Issues
 

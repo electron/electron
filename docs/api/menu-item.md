@@ -31,6 +31,7 @@ See [`Menu`](menu.md) for examples.
     * `header` - Only available on macOS 14 and up.
     * `palette` - Only available on macOS 14 and up.
   * `label` string (optional)
+  * `accessibilityLabel` string (optional) _macOS_
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` string (optional) - An [Accelerator](../tutorial/keyboard-shortcuts.md#accelerators) string.
@@ -44,8 +45,8 @@ See [`Menu`](menu.md) for examples.
     menu items.
   * `registerAccelerator` boolean (optional) _Linux_ _Windows_ - If false, the accelerator won't be registered
     with the system, but it will still be displayed. Defaults to true.
-  * `sharingItem` SharingItem (optional) _macOS_ - The item to share when the `role` is `shareMenu`.
-  * `submenu` (MenuItemConstructorOptions[] | [Menu](menu.md)) (optional) - Should be specified
+  * `sharingItem` [SharingItem](structures/sharing-item.md) (optional) _macOS_ - The item to share when the `role` is `shareMenu`.
+  * `submenu` ([MenuItemConstructorOptions](#new-menuitemoptions)[] | [Menu](menu.md)) (optional) - Should be specified
     for `submenu` type menu items. If `submenu` is specified, the `type: 'submenu'` can be omitted.
     If the value is not a [`Menu`](menu.md) then it will be automatically converted to one using
     `Menu.buildFromTemplate`.
@@ -63,6 +64,9 @@ See [`Menu`](menu.md) for examples.
   * `afterGroupContaining` string[] (optional) - Provides a means for a single context menu to declare
     the placement of their containing group after the containing group of the item
     with the specified id.
+  * `badge` [MenuItemBadge](structures/menu-item-badge.md) (optional) _macOS_ - A badge shown alongside
+    the label, either a system-styled count (`alerts`, `updates`, `new-items`) or a custom string.
+    Only available on macOS 14 and up. Not displayed in [Dock menus](dock.md#docksetmenumenu-macos).
 
 > [!NOTE]
 > `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
@@ -73,12 +77,21 @@ The following properties are available on instances of `MenuItem`:
 
 #### `menuItem.id`
 
-A `string` indicating the item's unique id. This property can be
-dynamically changed.
+A `string` indicating the item's unique id.
+
+This property can be dynamically changed.
 
 #### `menuItem.label`
 
 A `string` indicating the item's visible label.
+
+This property can be dynamically changed.
+
+#### `menuItem.accessibilityLabel` _macOS_
+
+A `string` indicating the item's accessibility label (used by assistive technology), if set.
+
+This property can be dynamically changed.
 
 #### `menuItem.click`
 
@@ -86,7 +99,7 @@ A `Function` that is fired when the MenuItem receives a click event.
 It can be called with `menuItem.click(event, focusedWindow, focusedWebContents)`.
 
 * `event` [KeyboardEvent](structures/keyboard-event.md)
-* `focusedWindow` [BaseWindow](browser-window.md)
+* `focusedWindow` [BaseWindow](base-window.md)
 * `focusedWebContents` [WebContents](web-contents.md)
 
 #### `menuItem.submenu`
@@ -107,23 +120,26 @@ A `string` (optional) indicating the item's role, if set. Can be `undo`, `redo`,
 
 #### `menuItem.accelerator`
 
-An `Accelerator | null` indicating the item's accelerator, if set.
+An [`Accelerator | null`](../tutorial/keyboard-shortcuts.md#accelerators) indicating the item's accelerator, if set.
 
 #### `menuItem.userAccelerator` _Readonly_ _macOS_
 
-An `Accelerator | null` indicating the item's [user-assigned accelerator](https://developer.apple.com/documentation/appkit/nsmenuitem/1514850-userkeyequivalent?language=objc) for the menu item.
+An [`Accelerator | null`](../tutorial/keyboard-shortcuts.md#accelerators) indicating the item's [user-assigned accelerator](https://developer.apple.com/documentation/appkit/nsmenuitem/1514850-userkeyequivalent?language=objc) for the menu item.
 
 > [!NOTE]
 > This property is only initialized after the `MenuItem` has been added to a `Menu`. Either via `Menu.buildFromTemplate` or via `Menu.append()/insert()`.  Accessing before initialization will just return `null`.
 
 #### `menuItem.icon`
 
-A `NativeImage | string` (optional) indicating the
-item's icon, if set.
+A `NativeImage | string` (optional) indicating the item's icon, if set.
+
+This property can be dynamically changed.
 
 #### `menuItem.sublabel`
 
 A `string` indicating the item's sublabel.
+
+This property can be dynamically changed.
 
 #### `menuItem.toolTip` _macOS_
 
@@ -131,18 +147,21 @@ A `string` indicating the item's hover text.
 
 #### `menuItem.enabled`
 
-A `boolean` indicating whether the item is enabled. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is enabled.
+
+This property can be dynamically changed.
 
 #### `menuItem.visible`
 
-A `boolean` indicating whether the item is visible. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is visible.
+
+This property can be dynamically changed.
 
 #### `menuItem.checked`
 
-A `boolean` indicating whether the item is checked. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is checked.
+
+This property can be dynamically changed.
 
 A `checkbox` menu item will toggle the `checked` property on and off when
 selected.
@@ -152,7 +171,7 @@ will turn off that property for all adjacent items in the same menu.
 
 You can add a `click` function for additional behavior.
 
-#### `menuItem.registerAccelerator`
+#### `menuItem.registerAccelerator` _Linux_ _Windows_
 
 A `boolean` indicating if the accelerator should be registered with the
 system or just displayed.
@@ -161,7 +180,7 @@ This property can be dynamically changed.
 
 #### `menuItem.sharingItem` _macOS_
 
-A `SharingItem` indicating the item to share when the `role` is `shareMenu`.
+A [`SharingItem`](structures/sharing-item.md) indicating the item to share when the `role` is `shareMenu`.
 
 This property can be dynamically changed.
 
@@ -172,3 +191,13 @@ A `number` indicating an item's sequential unique id.
 #### `menuItem.menu`
 
 A [`Menu`](menu.md) that the item is a part of.
+
+#### `menuItem.badge` _macOS_
+
+A [`MenuItemBadge`](structures/menu-item-badge.md) (optional) indicating the badge for the menu item.
+
+This property can be dynamically changed; setting it to `undefined` removes the badge. Only available on
+macOS 14 and up.
+
+Badges are not displayed in [Dock menus](dock.md#docksetmenumenu-macos), though the same item
+shows its badge in an application menu.

@@ -35,6 +35,41 @@ int ScopedDisableResize::disable_resize_ = 0;
 
 typedef void (*MouseDownImpl)(id, SEL, NSEvent*);
 
+// Work around an Apple bug where the visual tab picker's
+// grid animation creates NSLayoutConstraints against nil layout anchors,
+// crashing in NSVisualTabPickerShadowTileView. This happens when a new tabbed
+// window is created while the tab picker is open — the "+" tile (and possibly
+// others) have broken internal state. Rather than patching individual tile
+// animation methods, short-circuit the entire grid animation by swizzling
+// NSVisualTabPickerGridView's -startGridAnimation:completionHandler: to
+// immediately invoke the completion handler without running the animation.
+typedef void (*StartGridAnimationIMP)(id, SEL, id, id);
+static StartGridAnimationIMP g_orig_startGridAnimation = nullptr;
+
+static void Patched_startGridAnimation(id self,
+                                       SEL _cmd,
+                                       id animation,
+                                       void (^completionHandler)()) {
+  if (completionHandler)
+    completionHandler();
+}
+
+static void SwizzleTabPickerGridAnimation() {
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    Class cls = NSClassFromString(@"NSVisualTabPickerGridView");
+    if (!cls)
+      return;
+    SEL sel = @selector(startGridAnimation:completionHandler:);
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method)
+      return;
+    g_orig_startGridAnimation =
+        (StartGridAnimationIMP)method_getImplementation(method);
+    method_setImplementation(method, (IMP)Patched_startGridAnimation);
+  });
+}
+
 namespace {
 MouseDownImpl g_nsthemeframe_mousedown;
 MouseDownImpl g_nsnextstepframe_mousedown;
@@ -48,29 +83,26 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 @implementation SwizzledMethodsClass
 - (void)swiz_nsthemeframe_mouseDown:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell && !shell->has_frame())
       [self cr_mouseDownOnFrameView:event];
-    g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsnextstepframe_mouseDown:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell && !shell->has_frame()) {
       [self cr_mouseDownOnFrameView:event];
     }
-    g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsview_swipeWithEvent:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell) {
       if (event.deltaY == 1.0) {
         shell->NotifyWindowSwipe("up");
@@ -108,6 +140,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       class_getInstanceMethod([view class], @selector(swipeWithEvent:));
   Method new_swipe_with_event =
       class_getInstanceMethod([SwizzledMethodsClass class], swiz_selector);
+  CHECK(original_swipe_with_event);
+  CHECK(new_swipe_with_event);
   method_setImplementation(original_swipe_with_event,
                            method_getImplementation(new_swipe_with_event));
 }
@@ -125,6 +159,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
+  SwizzleTabPickerGridAnimation();
   if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
                                styleMask:styleMask
                                  backing:NSBackingStoreBuffered
@@ -320,7 +355,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)disableHeadlessMode {
-  if (shell_) {
+  if (shell_ && self.isHeadless) {
     // We initialize the window in headless mode to allow painting before it is
     // shown, but we don't want the headless behavior of allowing the window to
     // be placed unconstrained.

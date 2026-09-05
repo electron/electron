@@ -16,6 +16,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -29,14 +30,19 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
+#if BUILDFLAG(IS_LINUX)
+namespace views {
+class FrameViewLinux;
+}  // namespace views
+#endif
+
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
-class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -156,6 +162,12 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
+  // Translates between logical/opaque window bounds exposed to callers
+  // and the absolute bounds of the underlying widget, which can be larger to
+  // fit CSD, e.g. transparent outer regions for shadows and resize targets.
+  gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+
   void IncrementChildModals();
   void DecrementChildModals();
 
@@ -186,24 +198,31 @@ class NativeWindowViews : public NativeWindow,
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
+  bool has_thick_frame() const { return thick_frame_; }
 #endif
 
-  SkColor overlay_button_color() const { return overlay_button_color_; }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+  std::optional<SkColor> overlay_button_color() const {
+    return overlay_button_color_;
+  }
+  std::optional<SkColor> overlay_symbol_color() const {
+    return overlay_symbol_color_;
+  }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our FrameView type,
-  // nullptr otherwise.
-  ClientFrameViewLinux* GetClientFrameViewLinux();
+  views::FrameViewLinux* GetFrameViewLinux() const;
 #endif
 
+  [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
+
  private:
-  void set_overlay_button_color(SkColor color) {
+  void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
   }
-  void set_overlay_symbol_color(SkColor color) {
+  void set_overlay_symbol_color(std::optional<SkColor> color) {
     overlay_symbol_color_ = color;
   }
+
+  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
@@ -224,6 +243,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
+
 #if BUILDFLAG(IS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
@@ -273,14 +293,22 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
 
   // The color to use as the theme and symbol colors respectively for WCO.
-  SkColor overlay_button_color_ = SkColor();
-  SkColor overlay_symbol_color_ = SkColor();
+  std::optional<SkColor> overlay_button_color_;
+  std::optional<SkColor> overlay_symbol_color_;
+
+  // The last background color set via SetBackgroundColor(). Tracked because the
+  // root view does not always reflect it (e.g. it is transparent for CSD
+  // windows on Linux).
+  SkColor background_color_ = SK_ColorTRANSPARENT;
+
+  // This value is determined when the window is created.
+  bool rounded_corner_ = true;
 
 #if BUILDFLAG(IS_WIN)
 
@@ -297,6 +325,8 @@ class NativeWindowViews : public NativeWindow,
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_ = true;
 
+  bool content_protected_ = false;
+
   // The bounds of window before maximize/fullscreen.
   gfx::Rect restore_bounds_;
 
@@ -311,9 +341,6 @@ class NativeWindowViews : public NativeWindow,
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
-
-  // This value is determined when the window is created.
-  bool rounded_corner_ = true;
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;
@@ -359,6 +386,7 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
+  bool has_shadow_ = true;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

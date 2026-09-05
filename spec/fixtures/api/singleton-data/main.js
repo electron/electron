@@ -21,15 +21,16 @@ if (app.commandLine.hasSwitch('data-content')) {
     obj = undefined;
   }
 }
+if (app.commandLine.hasSwitch('data-size')) {
+  obj = 'x'.repeat(parseInt(app.commandLine.getSwitchValue('data-size')));
+}
 
-const gotTheLock = sendAdditionalData
-  ? app.requestSingleInstanceLock(obj)
-  : app.requestSingleInstanceLock();
+const gotTheLock = sendAdditionalData ? app.requestSingleInstanceLock(obj) : app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args, workingDirectory, data) => {
   setImmediate(() => {
-    console.log([JSON.stringify(args), JSON.stringify(data)].join('||'));
-    app.exit(0);
+    const line = [JSON.stringify(args), JSON.stringify(data)].join('||');
+    process.stdout.write(line + '\n', () => app.exit(0));
   });
 });
 

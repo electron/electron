@@ -6,15 +6,22 @@
 
 #include <vector>
 
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
+#import "shell/browser/mac/electron_application.h"
+#include "shell/common/gc_plugin.h"
+
 #import <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
 
 @interface MacLockMonitor : NSObject {
  @private
+  GC_PLUGIN_IGNORE("ObjC class cannot participate in cppgc tracing")
   std::vector<electron::api::PowerMonitor*> emitters;
 }
 
 - (void)addEmitter:(electron::api::PowerMonitor*)monitor_;
+- (void)removeEmitter:(electron::api::PowerMonitor*)monitor_;
 
 @end
 
@@ -62,6 +69,10 @@
   self->emitters.push_back(monitor_);
 }
 
+- (void)removeEmitter:(electron::api::PowerMonitor*)monitor_ {
+  std::erase(self->emitters, monitor_);
+}
+
 - (void)onScreenLocked:(NSNotification*)notification {
   for (auto* emitter : self->emitters) {
     emitter->Emit("lock-screen");
@@ -96,6 +107,22 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   if (!g_lock_monitor)
     g_lock_monitor = [[MacLockMonitor alloc] init];
   [g_lock_monitor addEmitter:this];
+
+  [[AtomApplication sharedApplication]
+      setShutdownHandler:base::BindRepeating(&PowerMonitor::ShouldShutdown,
+                                             base::Unretained(this))];
+}
+
+void PowerMonitor::DestroyPlatformSpecificMonitors() {
+  if (g_lock_monitor)
+    [g_lock_monitor removeEmitter:this];
+
+  // The NSApplication singleton outlives this object, so the handler must be
+  // cleared or it would retain a dangling pointer to us. Note this runs during
+  // cppgc heap teardown, so it must not depend on anything torn down earlier in
+  // ElectronBrowserMainParts::PostMainMessageLoopRun (such as the Browser).
+  [[AtomApplication sharedApplication]
+      setShutdownHandler:base::RepeatingCallback<bool()>()];
 }
 
 }  // namespace electron::api

@@ -75,6 +75,9 @@ class UsbChooserController final : private UsbChooserContext::DeviceObserver,
 
   base::WeakPtr<ElectronUsbDelegate> usb_delegate_;
 
+  // Filtered list of devices that passed DisplayDevice()
+  std::vector<device::mojom::UsbDeviceInfoPtr> devices_;
+
   content::GlobalRenderFrameHostId render_frame_host_id_;
 
   base::WeakPtrFactory<UsbChooserController> weak_factory_{this};

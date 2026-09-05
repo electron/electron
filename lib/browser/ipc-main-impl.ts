@@ -5,7 +5,7 @@ import { EventEmitter } from 'events';
 export class IpcMainImpl extends EventEmitter implements Electron.IpcMain {
   private _invokeHandlers: Map<string, (e: IpcMainInvokeEvent, ...args: any[]) => void> = new Map();
 
-  constructor () {
+  constructor() {
     super();
 
     // Do not throw exception when channel name is "error".
@@ -29,7 +29,7 @@ export class IpcMainImpl extends EventEmitter implements Electron.IpcMain {
     });
   };
 
-  removeHandler (method: string) {
+  removeHandler(method: string) {
     this._invokeHandlers.delete(method);
   }
 }

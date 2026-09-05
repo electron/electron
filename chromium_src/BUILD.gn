@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
@@ -21,6 +22,8 @@ static_library("chrome") {
     "//chrome/browser/browser_features.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
+    "//chrome/browser/device_notifications/device_connection_tracker.h",
+    "//chrome/browser/device_notifications/device_system_tray_icon.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
     "//chrome/browser/devtools/devtools_dispatch_http_request_params.cc",
@@ -38,6 +41,7 @@ static_library("chrome") {
     "//chrome/browser/devtools/visual_logging.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
+    "//chrome/browser/hid/hid_system_tray_icon.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
@@ -76,6 +80,7 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.h",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.cc",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.h",
+    "//chrome/browser/picture_in_picture/video_overlay_window.h",
     "//chrome/browser/platform_util.cc",
     "//chrome/browser/platform_util.h",
     "//chrome/browser/predictors/predictors_features.cc",
@@ -144,6 +149,8 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
+    "//chrome/browser/ui/views/overlay/toggle_mute_button.cc",
+    "//chrome/browser/ui/views/overlay/toggle_mute_button.h",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_bounds_change_animation.cc",
@@ -154,6 +161,7 @@ static_library("chrome") {
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
     "//chrome/browser/usb/usb_blocklist.cc",
     "//chrome/browser/usb/usb_blocklist.h",
+    "//chrome/browser/usb/usb_system_tray_icon.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
     "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
@@ -203,7 +211,7 @@ static_library("chrome") {
 
   deps = [
     "//chrome/app/vector_icons",
-    "//chrome/browser:resource_prefetch_predictor_proto",
+    "//chrome/browser/predictors:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
     "//chrome/browser/task_manager/common:impl",
     "//chrome/browser/ui/webui/tab_search:mojo_bindings",
@@ -241,11 +249,22 @@ static_library("chrome") {
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h",
     ]
-    sources += [
-      "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
-      "//chrome/browser/ui/views/dark_mode_manager_linux.h",
+    public_deps += [
+      "//components/dbus",
+      "//ui/linux:dark_mode_manager",
     ]
-    public_deps += [ "//components/dbus" ]
+    if (use_aura && use_dbus) {
+      sources += [
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.cc",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.h",
+      ]
+      deps += [
+        "//build/config/linux/dbus:buildflags",
+        "//dbus",
+        "//ui/aura",
+        "//ui/linux:linux_ui",
+      ]
+    }
   }
 
   if (is_win) {
@@ -302,8 +321,6 @@ static_library("chrome") {
       "//chrome/browser/bad_message.h",
       "//chrome/browser/printing/prefs_util.cc",
       "//chrome/browser/printing/prefs_util.h",
-      "//chrome/browser/printing/print_compositor_util.cc",
-      "//chrome/browser/printing/print_compositor_util.h",
       "//chrome/browser/printing/print_job.cc",
       "//chrome/browser/printing/print_job.h",
       "//chrome/browser/printing/print_job_manager.cc",
@@ -356,10 +373,6 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/printing/pdf_to_emf_converter.cc",
         "//chrome/browser/printing/pdf_to_emf_converter.h",
-        "//chrome/browser/printing/printer_xml_parser_impl.cc",
-        "//chrome/browser/printing/printer_xml_parser_impl.h",
-        "//chrome/browser/printing/xps_features.cc",
-        "//chrome/browser/printing/xps_features.h",
       ]
       deps += [ "//printing:printing_base" ]
     }
@@ -383,16 +396,18 @@ static_library("chrome") {
         "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
+        "//chrome/browser/pdf/pdf_handler_stream_delegate.cc",
+        "//chrome/browser/pdf/pdf_handler_stream_delegate.h",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.cc",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.h",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.cc",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.h",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
       deps += [
+        "//chrome/browser/resources/pdf:resources",
         "//components/pdf/browser",
         "//components/pdf/renderer",
+        "//components/zoom",
         "//ui/base/interaction",
         "//ui/webui/resources/cr_components/help_bubble:mojo_bindings",
       ]
@@ -440,8 +455,8 @@ static_library("chrome") {
 }
 
 # This source set is just so we don't have to depend on all of //chrome/browser
-# You may have to add new files here during the upgrade if //chrome/browser/spellchecker
-# gets more files
+# You may have to add new files here during the upgrade if
+# //chrome/browser/spellchecker gets more files
 source_set("chrome_spellchecker") {
   sources = []
   deps = []

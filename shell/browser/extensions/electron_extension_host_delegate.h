@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_HOST_DELEGATE_H_
 
 #include <memory>
-#include <string>
 
 #include "extensions/browser/extension_host_delegate.h"
 
@@ -26,7 +25,8 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
   // ExtensionHostDelegate implementation.
   void OnExtensionHostCreated(content::WebContents* web_contents) override;
   void CreateTab(std::unique_ptr<content::WebContents> web_contents,
-                 const std::string& extension_id,
+                 const GURL& target_url,
+                 const ExtensionId& extension_id,
                  WindowOpenDisposition disposition,
                  const blink::mojom::WindowFeatures& window_features,
                  bool user_gesture) override;

@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window_views.h"
@@ -22,6 +23,11 @@ namespace electron::api {
 MenuViews::MenuViews(gin::Arguments* args) : Menu(args) {}
 
 MenuViews::~MenuViews() = default;
+
+void MenuViews::Trace(cppgc::Visitor* visitor) const {
+  Menu::Trace(visitor);
+  visitor->Trace(weak_cell_factory_);
+}
 
 void MenuViews::PopupAt(BaseWindow* window,
                         std::optional<WebFrameMain*> frame,
@@ -55,8 +61,11 @@ void MenuViews::PopupAt(BaseWindow* window,
   // callback, it is fine passing OnceCallback to it because we reset the
   // menu runner immediately when the menu is closed.
   int32_t window_id = window->weak_map_id();
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   auto close_callback = electron::AdaptCallbackForRepeating(
-      base::BindOnce(&MenuViews::OnClosed, weak_factory_.GetWeakPtr(),
+      base::BindOnce(&MenuViews::OnClosed,
+                     gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
                      window_id, std::move(callback_with_ref)));
   auto& runner = menu_runners_[window_id] =
       std::make_unique<MenuRunner>(model(), flags, std::move(close_callback));

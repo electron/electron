@@ -16,12 +16,14 @@
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
+#include "net/log/file_net_log_observer.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -81,8 +83,8 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                         gin::kElectronNetLog};
+gin::WrapperInfo NetLog::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronNetLog);
 
 NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
@@ -133,7 +135,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
   auto channel_string = std::string("Electron " ELECTRON_VERSION);
-  base::Value::Dict custom_constants = net_log::GetPlatformConstantsForNetLog(
+  base::DictValue custom_constants = net_log::GetPlatformConstantsForNetLog(
       command_line_string, channel_string);
 
   auto* network_context =
@@ -147,15 +149,16 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   file_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(OpenFileForWriting, log_path),
       base::BindOnce(&NetLog::StartNetLogAfterCreateFile,
-                     weak_ptr_factory_.GetWeakPtr(), capture_mode,
-                     max_file_size, std::move(custom_constants)));
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         args->isolate()->GetCppHeap()->GetAllocationHandle())),
+                     capture_mode, max_file_size, std::move(custom_constants)));
 
   return handle;
 }
 
 void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                         uint64_t max_file_size,
-                                        base::Value::Dict custom_constants,
+                                        base::DictValue custom_constants,
                                         base::File output_file) {
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
@@ -174,7 +177,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
   }
   net_log_exporter_->Start(
       std::move(output_file), std::move(custom_constants), capture_mode,
-      max_file_size,
+      net::NetLogFileFormat::kJson, max_file_size,
       base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
 }
 
@@ -206,7 +209,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
     // pointer lives long enough to resolve the promise. Moving it into the
     // callback will cause the instance variable to become empty.
     net_log_exporter_->Stop(
-        base::Value::Dict(),
+        base::DictValue(),
         base::BindOnce(
             [](mojo::Remote<network::mojom::NetLogExporter>,
                gin_helper::Promise<void> promise, int32_t error) {
@@ -234,6 +237,11 @@ const gin::WrapperInfo* NetLog::wrapper_info() const {
 
 const char* NetLog::GetHumanReadableName() const {
   return "Electron / NetLog";
+}
+
+void NetLog::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<NetLog>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 // static

@@ -11,6 +11,41 @@ npm install electron --save-dev
 See the [Electron versioning doc][versioning] for info on how to
 manage Electron versions in your apps.
 
+## Binary download step
+
+Under the hood, Electron's JavaScript API binds to a binary that contains its
+implementations. This binary is crucial to the function of any Electron app, and
+is downloaded by default the first time you run Electron in development mode
+(i.e. `electron .`).
+
+If you want to install the binary on demand instead, you can run the `install-electron` bin script
+included in the `electron` package:
+
+```sh
+npx install-electron --no
+```
+
+## Installing prereleases
+
+Electron [distributes experimental releases of future major versions](./electron-timelines.md)
+via npm as well.
+
+Nightly builds contain the latest changes from the `main` branch:
+
+```sh
+npm install electron-nightly --save-dev
+```
+
+Alpha and beta builds contain changes slated for the next major version:
+
+```sh
+npm install electron@alpha --save-dev
+npm install electron@beta --save-dev
+```
+
+> [!TIP]
+> For more information on available Electron releases, see the [Release Status dashboard](https://releases.electronjs.org).
+
 ## Running Electron ad-hoc
 
 If you're in a pinch and would prefer to not use `npm install` in your local
@@ -27,19 +62,37 @@ any dependencies in your app will not be installed.
 ## Customization
 
 If you want to change the architecture that is downloaded (e.g., `x64` on an
-`arm64` machine), you can use the `--arch` flag with npm install or set the
-`npm_config_arch` environment variable:
+`arm64` machine), you can set the `ELECTRON_INSTALL_ARCH` environment variable:
 
-```shell
-npm install --arch=x64 electron
+```sh
+# Inside an npm script or with npx
+ELECTRON_INSTALL_ARCH=x64 electron .
 ```
+
+Supported architectures are a subset of Node.js [`process.arch`](https://nodejs.org/api/process.html#processarch)
+values, and include:
+
+* `x64` (Intel Mac and 64-bit Windows)
+* `arm64` (Apple silicon, Windows on ARM, ARM64 Linux)
 
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:
 
-```shell
-npm install --platform=win32 electron
+```sh
+# Inside an npm script or with npx
+ELECTRON_INSTALL_PLATFORM=mas electron .
 ```
+
+Supported platforms are Node-like [platform strings](https://nodejs.org/api/process.html#processplatform):
+
+* `darwin`
+* `mas` ([Mac App Store](./mac-app-store-submission-guide.md))
+* `win32`
+* `linux`
+
+> [!TIP]
+> To see all available platform/architecture combinations for a particular release, see the artifacts
+> on [Electron's GitHub Releases](https://github.com/electron/electron/releases).
 
 ## Proxies
 
@@ -49,7 +102,7 @@ value, plus additional environment variables depending on your host system's Nod
 * [Node 10 and above][proxy-env-10]
 * [Before Node 10][proxy-env]
 
-## Custom Mirrors and Caches
+## Custom mirrors and caches
 
 During installation, the `electron` module will call out to
 [`@electron/get`][electron-get] to download prebuilt binaries of
@@ -118,23 +171,6 @@ The cache contains the version's official zip file as well as a checksum, and is
 ```sh
 ├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
 │   └── electron-v15.3.1-darwin-x64.zip
-```
-
-## Postinstall script
-
-Under the hood, Electron's JavaScript API binds to a binary that contains its
-implementations. Because this binary is crucial to the function of any Electron app,
-it is downloaded by default in the `postinstall` step every time you install `electron`
-from the npm registry.
-
-However, if you want to install your project's dependencies but don't need to use
-Electron functionality, you can set the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment
-variable to prevent the binary from being downloaded. For instance, this feature can
-be useful in continuous integration environments when running unit tests that mock
-out the `electron` module.
-
-```sh npm2yarn
-ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
 ```
 
 ## Troubleshooting

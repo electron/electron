@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include "base/logging.h"
 #include "components/update_client/update_query_params.h"
 #include "extensions/common/api/runtime.h"
 #include "shell/browser/extensions/electron_extension_system.h"

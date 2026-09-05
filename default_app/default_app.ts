@@ -1,5 +1,5 @@
 import { shell } from 'electron/common';
-import { app, dialog, BrowserWindow, ipcMain } from 'electron/main';
+import { app, dialog, BrowserWindow, ipcMain, Menu } from 'electron/main';
 
 import * as path from 'node:path';
 import * as url from 'node:url';
@@ -11,23 +11,62 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 
-function decorateURL (url: string) {
-  // safely add `?utm_source=default_app
-  const parsedUrl = new URL(url);
-  parsedUrl.searchParams.append('utm_source', 'default_app');
-  return parsedUrl.toString();
-}
+const isMac = process.platform === 'darwin';
+
+app.whenReady().then(() => {
+  const helpMenu: Electron.MenuItemConstructorOptions = {
+    role: 'help',
+    submenu: [
+      {
+        label: 'Learn More',
+        click: async () => {
+          await shell.openExternal('https://electronjs.org');
+        }
+      },
+      {
+        label: 'Documentation',
+        click: async () => {
+          const version = process.versions.electron;
+          await shell.openExternal(`https://github.com/electron/electron/tree/v${version}/docs#readme`);
+        }
+      },
+      {
+        label: 'Community Discussions',
+        click: async () => {
+          await shell.openExternal('https://discord.gg/electronjs');
+        }
+      },
+      {
+        label: 'Search Issues',
+        click: async () => {
+          await shell.openExternal('https://github.com/electron/electron/issues');
+        }
+      }
+    ]
+  };
+
+  const macAppMenu: Electron.MenuItemConstructorOptions = { role: 'appMenu' };
+  const template: Electron.MenuItemConstructorOptions[] = [
+    ...(isMac ? [macAppMenu] : []),
+    { role: 'fileMenu' },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    helpMenu
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+});
 
 // Find the shortest path to the electron binary
 const absoluteElectronPath = process.execPath;
 const relativeElectronPath = path.relative(process.cwd(), absoluteElectronPath);
-const electronPath = absoluteElectronPath.length < relativeElectronPath.length
-  ? absoluteElectronPath
-  : relativeElectronPath;
+const electronPath =
+  absoluteElectronPath.length < relativeElectronPath.length ? absoluteElectronPath : relativeElectronPath;
 
 const indexPath = path.resolve(app.getAppPath(), 'index.html');
 
-function isTrustedSender (webContents: Electron.WebContents) {
+function isTrustedSender(webContents: Electron.WebContents) {
   if (webContents !== (mainWindow && mainWindow.webContents)) {
     return false;
   }
@@ -43,7 +82,7 @@ ipcMain.handle('bootstrap', (event) => {
   return isTrustedSender(event.sender) ? electronPath : null;
 });
 
-async function createWindow (backgroundColor?: string) {
+async function createWindow(backgroundColor?: string) {
   await app.whenReady();
 
   const options: Electron.BrowserWindowConstructorOptions = {
@@ -68,8 +107,8 @@ async function createWindow (backgroundColor?: string) {
   mainWindow = new BrowserWindow(options);
   mainWindow.on('ready-to-show', () => mainWindow!.show());
 
-  mainWindow.webContents.setWindowOpenHandler(details => {
-    shell.openExternal(decorateURL(details.url));
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url);
     return { action: 'deny' };
   });
 

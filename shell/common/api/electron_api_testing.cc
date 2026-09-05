@@ -2,16 +2,114 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <optional>
+
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
+#include "chrome/browser/browser_process.h"
+#include "components/prefs/pref_service.h"
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "shell/common/callback_util.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
 
 #if DCHECK_IS_ON()
 namespace {
+
+class CallbackTestingHelper final {
+ public:
+  void HoldRepeatingCallback(const base::RepeatingClosure& callback) {
+    repeating_callback_ = callback;
+  }
+
+  bool CopyHeldRepeatingCallback() {
+    if (!repeating_callback_)
+      return false;
+
+    repeating_callback_copy_ = *repeating_callback_;
+    return true;
+  }
+
+  bool InvokeHeldRepeatingCallback(v8::Isolate* isolate) {
+    if (!repeating_callback_)
+      return false;
+
+    return InvokeRepeatingCallback(isolate, *repeating_callback_);
+  }
+
+  bool InvokeCopiedRepeatingCallback(v8::Isolate* isolate) {
+    if (!repeating_callback_copy_)
+      return false;
+
+    return InvokeRepeatingCallback(isolate, *repeating_callback_copy_);
+  }
+
+  void HoldOnceCallback(base::OnceClosure callback) {
+    once_callback_ = std::move(callback);
+  }
+
+  bool InvokeHeldOnceCallback(v8::Isolate* isolate) {
+    if (!once_callback_)
+      return false;
+
+    base::OnceClosure callback = std::move(*once_callback_);
+    once_callback_.reset();
+    return InvokeOnceCallback(isolate, std::move(callback));
+  }
+
+  void ClearPrimaryHeldRepeatingCallback() { repeating_callback_.reset(); }
+
+  int GetHeldRepeatingCallbackCount() const {
+    return (repeating_callback_ ? 1 : 0) + (repeating_callback_copy_ ? 1 : 0);
+  }
+
+  void ClearAllHeldCallbacks() {
+    repeating_callback_.reset();
+    repeating_callback_copy_.reset();
+    once_callback_.reset();
+  }
+
+ private:
+  bool InvokeRepeatingCallback(v8::Isolate* isolate,
+                               const base::RepeatingClosure& callback) {
+    v8::TryCatch try_catch(isolate);
+    callback.Run();
+    if (try_catch.HasCaught()) {
+      try_catch.Reset();
+      return false;
+    }
+
+    return true;
+  }
+
+  bool InvokeOnceCallback(v8::Isolate* isolate, base::OnceClosure callback) {
+    v8::TryCatch try_catch(isolate);
+    std::move(callback).Run();
+    if (try_catch.HasCaught()) {
+      try_catch.Reset();
+      return false;
+    }
+
+    return true;
+  }
+
+  std::optional<base::RepeatingClosure> repeating_callback_;
+  std::optional<base::RepeatingClosure> repeating_callback_copy_;
+  std::optional<base::OnceClosure> once_callback_;
+};
+
+CallbackTestingHelper& GetCallbackTestingHelper() {
+  static base::NoDestructor<CallbackTestingHelper> helper;
+  return *helper;
+}
 
 void Log(int severity, std::string text) {
   switch (severity) {
@@ -41,6 +139,96 @@ std::string GetLoggingDestination() {
   return command_line->GetSwitchValueASCII(switches::kEnableLogging);
 }
 
+bool IsPlatformCaretBrowsingEnabled() {
+  return ui::AXPlatform::GetInstance().IsCaretBrowsingEnabled();
+}
+
+v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  auto subscription = content::RegisterNetworkServiceProcessGoneHandler(
+      electron::AdaptCallbackForRepeating(
+          base::BindOnce([](gin_helper::Promise<void> promise,
+                            bool crashed) { promise.Resolve(); },
+                         std::move(promise))));
+  content::RestartNetworkService();
+  return handle;
+}
+
+void HoldRepeatingCallbackForTesting(const base::RepeatingClosure& callback) {
+  GetCallbackTestingHelper().HoldRepeatingCallback(callback);
+}
+
+bool CopyHeldRepeatingCallbackForTesting() {
+  return GetCallbackTestingHelper().CopyHeldRepeatingCallback();
+}
+
+bool InvokeHeldRepeatingCallbackForTesting(gin::Arguments* args) {
+  return GetCallbackTestingHelper().InvokeHeldRepeatingCallback(
+      args->isolate());
+}
+
+bool InvokeCopiedRepeatingCallbackForTesting(gin::Arguments* args) {
+  return GetCallbackTestingHelper().InvokeCopiedRepeatingCallback(
+      args->isolate());
+}
+
+void HoldOnceCallbackForTesting(base::OnceClosure callback) {
+  GetCallbackTestingHelper().HoldOnceCallback(std::move(callback));
+}
+
+bool InvokeHeldOnceCallbackForTesting(gin::Arguments* args) {
+  return GetCallbackTestingHelper().InvokeHeldOnceCallback(args->isolate());
+}
+
+void ClearPrimaryHeldRepeatingCallbackForTesting() {
+  GetCallbackTestingHelper().ClearPrimaryHeldRepeatingCallback();
+}
+
+int GetHeldRepeatingCallbackCountForTesting() {
+  return GetCallbackTestingHelper().GetHeldRepeatingCallbackCount();
+}
+
+void ClearHeldCallbacksForTesting() {
+  GetCallbackTestingHelper().ClearAllHeldCallbacks();
+}
+
+// Intentionally allows exit-time destructor so that PromiseBase's destructor
+// runs after CppHeap teardown.
+std::optional<gin_helper::Promise<void>>& GetHeldPromise() {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+  static std::optional<gin_helper::Promise<void>> held_promise;
+#pragma clang diagnostic pop
+  return held_promise;
+}
+
+// Writes any pending local state (window state persistence, per-host zoom
+// levels, ...) to disk now. PrefService otherwise batches writes on a 10s
+// timer, which is what a test polling the prefs file would wait on.
+v8::Local<v8::Promise> CommitPendingLocalStateWrites(v8::Isolate* isolate) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  PrefService* local_state =
+      g_browser_process ? g_browser_process->local_state() : nullptr;
+  if (!local_state) {
+    promise.RejectWithErrorMessage("No local state in this process");
+    return handle;
+  }
+  local_state->CommitPendingWrite(base::BindOnce(
+      [](gin_helper::Promise<void> promise) { promise.Resolve(); },
+      std::move(promise)));
+  return handle;
+}
+
+void HoldPromiseForTesting(gin::Arguments* args) {
+  GetHeldPromise().emplace(args->isolate());
+}
+
+void ClearHeldPromiseForTesting() {
+  GetHeldPromise().reset();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -49,6 +237,29 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("log", &Log);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
+  dict.SetMethod("isPlatformCaretBrowsingEnabled",
+                 &IsPlatformCaretBrowsingEnabled);
+  dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("holdRepeatingCallbackForTesting",
+                 &HoldRepeatingCallbackForTesting);
+  dict.SetMethod("copyHeldRepeatingCallbackForTesting",
+                 &CopyHeldRepeatingCallbackForTesting);
+  dict.SetMethod("invokeHeldRepeatingCallbackForTesting",
+                 &InvokeHeldRepeatingCallbackForTesting);
+  dict.SetMethod("invokeCopiedRepeatingCallbackForTesting",
+                 &InvokeCopiedRepeatingCallbackForTesting);
+  dict.SetMethod("clearPrimaryHeldRepeatingCallbackForTesting",
+                 &ClearPrimaryHeldRepeatingCallbackForTesting);
+  dict.SetMethod("getHeldRepeatingCallbackCountForTesting",
+                 &GetHeldRepeatingCallbackCountForTesting);
+  dict.SetMethod("holdOnceCallbackForTesting", &HoldOnceCallbackForTesting);
+  dict.SetMethod("invokeHeldOnceCallbackForTesting",
+                 &InvokeHeldOnceCallbackForTesting);
+  dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
+  dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
+  dict.SetMethod("commitPendingLocalStateWrites",
+                 &CommitPendingLocalStateWrites);
+  dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
 }
 
 }  // namespace

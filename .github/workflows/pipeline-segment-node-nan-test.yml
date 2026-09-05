@@ -9,7 +9,7 @@ on:
         required: true
       target-arch:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Arch to build for, can be x64 or arm64'
         required: true
       test-runs-on:
         type: string
@@ -25,6 +25,11 @@ on:
         required: true
         type: string
         default: testing
+    secrets:
+      CHROMIUM_GIT_COOKIE:
+        required: false
+      ELECTRON_RBE_JWT:
+        required: false
 
 permissions: {}
 
@@ -36,6 +41,8 @@ env:
   CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  # @sentry/cli is only needed by release upload-symbols.py; skip the ~17MB CDN download on test jobs
+  SENTRYCLI_SKIP_DOWNLOAD: 1
 
 jobs:
   node-tests:
@@ -47,30 +54,33 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE" --import "$GN_BUILD_TYPE" --target-cpu "$TARGET_ARCH"
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
@@ -103,30 +113,33 @@ jobs:
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
-    container: ${{ fromJSON(inputs.test-container) }}
+    container: ${{ fromJSON(inputs.test-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
+      env:
+        GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
+        e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE"
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}

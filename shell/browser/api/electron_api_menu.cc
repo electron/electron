@@ -20,14 +20,17 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
+#include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(IS_MAC)
 
 namespace gin {
 
 using SharingItem = electron::ElectronMenuModel::SharingItem;
+using Badge = electron::ElectronMenuModel::Badge;
 
 template <>
 struct Converter<SharingItem> {
@@ -44,14 +47,30 @@ struct Converter<SharingItem> {
   }
 };
 
+template <>
+struct Converter<Badge> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     Badge* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    out->type = "none";
+    dict.Get("type", &(out->type));
+    dict.GetOptional("count", &(out->count));
+    dict.GetOptional("content", &(out->content));
+    return true;
+  }
+};
+
 }  // namespace gin
 
 #endif
 
 namespace electron::api {
 
-const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                             gin::kElectronMenu};
+const gin::WrapperInfo Menu::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronMenu);
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -69,6 +88,11 @@ Menu::Menu(gin::Arguments* args)
 
 Menu::~Menu() {
   RemoveModelObserver();
+}
+
+void Menu::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Menu>::Trace(visitor);
+  visitor->Trace(parent_);
 }
 
 void Menu::RemoveModelObserver() {
@@ -101,6 +125,52 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
   return InvokeBoolMethod(this, "_isCommandIdEnabled", command_id);
+}
+
+std::u16string Menu::GetLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetAccessibilityLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getAccessibilityLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetSecondaryLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getSecondaryLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+ui::ImageModel Menu::GetIconForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getIconForCommandId", command_id);
+  gfx::Image icon;
+  if (!gin::ConvertFromV8(isolate, val, &icon))
+    icon = gfx::Image();
+  return ui::ImageModel::FromImage(icon);
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
@@ -155,20 +225,11 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 }
 
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
-  // return ((callback, ref) => { callback() }).bind(null, callback, this)
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self)) {
-    v8::Global<v8::Value> ref(isolate, self);
-    return base::BindOnce(
-        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
-          std::move(callback).Run();
-        },
-        std::move(callback), std::move(ref));
-  } else {
-    return base::DoNothing();
-  }
+  return base::BindOnce(
+      [](base::OnceClosure callback, cppgc::Persistent<Menu> prevent_gc) {
+        std::move(callback).Run();
+      },
+      std::move(callback), cppgc::Persistent<Menu>(this));
 }
 
 void Menu::InsertItemAt(int index,
@@ -206,10 +267,6 @@ void Menu::SetIcon(int index, const gfx::Image& image) {
   model_->SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
-void Menu::SetSublabel(int index, const std::u16string& sublabel) {
-  model_->SetSecondaryLabel(index, sublabel);
-}
-
 void Menu::SetToolTip(int index, const std::u16string& toolTip) {
   model_->SetToolTip(index, toolTip);
 }
@@ -221,6 +278,12 @@ void Menu::SetRole(int index, const std::u16string& role) {
 void Menu::SetCustomType(int index, const std::u16string& customType) {
   model_->SetCustomType(index, customType);
 }
+
+#if BUILDFLAG(IS_MAC)
+void Menu::SetBadge(int index, std::optional<ElectronMenuModel::Badge> badge) {
+  model_->SetBadge(index, std::move(badge));
+}
+#endif
 
 void Menu::Clear() {
   model_->Clear();
@@ -234,50 +297,19 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
-}
-
-std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
-}
-
-std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
-}
-
-std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
 
-bool Menu::IsItemCheckedAt(int index) const {
-  return model_->IsItemCheckedAt(index);
-}
-
-bool Menu::IsEnabledAt(int index) const {
-  return model_->IsEnabledAt(index);
-}
-
-bool Menu::IsVisibleAt(int index) const {
-  return model_->IsVisibleAt(index);
-}
-
-bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
-}
-
 void Menu::OnMenuWillClose() {
-  keep_alive_.Clear();
   Emit("menu-will-close");
+  keep_alive_.Clear();
 }
 
 void Menu::OnMenuWillShow() {
+  keep_alive_ = this;
   Emit("menu-will-show");
 }
 
@@ -291,26 +323,22 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
-      .SetMethod("setSublabel", &Menu::SetSublabel)
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
+#if BUILDFLAG(IS_MAC)
+      .SetMethod("setBadge", &Menu::SetBadge)
+#endif
       .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
-      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
-      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
+      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
 #if BUILDFLAG(IS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
+      .SetMethod("_simulateSubmenuCloseSequenceForTesting",
+                 &Menu::SimulateSubmenuCloseSequenceForTesting)
 #endif
       .Build();
 }

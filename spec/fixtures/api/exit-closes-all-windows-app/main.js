@@ -2,7 +2,7 @@ const { app, BrowserWindow } = require('electron');
 
 const windows = [];
 
-function createWindow (id) {
+function createWindow(id) {
   const window = new BrowserWindow({ show: false });
   window.loadURL(`data:,window${id}`);
   windows.push(window);

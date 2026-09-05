@@ -7,7 +7,8 @@
 
 namespace x11_util {
 
-bool IsX11();
+[[nodiscard]] bool IsX11();
+[[nodiscard]] bool IsWayland();
 
 }  // namespace x11_util
 

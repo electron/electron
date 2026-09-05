@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_COMMON_V8_VALUE_SERIALIZER_H_
 
 #include "base/containers/span.h"
-#include "ui/gfx/image/image_skia_rep.h"
 
 namespace v8 {
 class ArrayBufferView;
@@ -22,13 +21,24 @@ struct CloneableMessage;
 
 namespace electron {
 
+class SerializedValue;
+
+// The CloneableMessage forms are for values that stay in this process or ride
+// inside a blink message; SerializedValue is what Electron's own IPC sends.
 bool SerializeV8Value(v8::Isolate* isolate,
                       v8::Local<v8::Value> value,
                       blink::CloneableMessage* out);
+bool SerializeV8Value(v8::Isolate* isolate,
+                      v8::Local<v8::Value> value,
+                      SerializedValue* out);
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         const blink::CloneableMessage& in);
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
+                                        const SerializedValue& in);
+v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         base::span<const uint8_t> data);
+
+void SetUpWebAssemblyTrapHandler();
 
 namespace util {
 

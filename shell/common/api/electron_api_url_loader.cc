@@ -6,51 +6,62 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include "base/byte_size.h"
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/notreached.h"
 #include "base/sequence_checker.h"
 #include "content/public/browser/global_request_id.h"
+#include "content/public/common/url_utils.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
 #include "net/base/load_flags.h"
+#include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_util.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
-#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/client_certificate_responder_delegate.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "shell/services/node/node_service.h"
 #include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-traced-handle.h"
 
 namespace gin {
 
@@ -164,35 +175,64 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
   std::vector<char> buffer_;
 };
 
+}  // namespace
+
 class JSChunkedDataPipeGetter final
-    : public gin_helper::DeprecatedWrappable<JSChunkedDataPipeGetter>,
+    : public gin::Wrappable<JSChunkedDataPipeGetter>,
       public network::mojom::ChunkedDataPipeGetter {
  public:
-  static gin_helper::Handle<JSChunkedDataPipeGetter> Create(
+  static JSChunkedDataPipeGetter* Create(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter) {
-    return gin_helper::CreateHandle(
-        isolate, new JSChunkedDataPipeGetter(
-                     isolate, body_func, std::move(chunked_data_pipe_getter)));
+    return cppgc::MakeGarbageCollected<JSChunkedDataPipeGetter>(
+        isolate->GetCppHeap()->GetAllocationHandle(), isolate, body_func,
+        std::move(chunked_data_pipe_getter));
   }
 
-  // gin_helper::Wrappable
+  // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin_helper::DeprecatedWrappable<
-               JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(isolate)
+    return gin::Wrappable<JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(
+               isolate)
         .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);
   }
 
-  const char* GetTypeName() override { return "JSChunkedDataPipeGetter"; }
+  const gin::WrapperInfo* wrapper_info() const override {
+    return &kWrapperInfo;
+  }
+  const char* GetHumanReadableName() const override {
+    return "Electron / JSChunkedDataPipeGetter";
+  }
+  void Trace(cppgc::Visitor* visitor) const override {
+    gin::Wrappable<JSChunkedDataPipeGetter>::Trace(visitor);
+    visitor->Trace(body_func_);
+  }
 
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
- private:
+  // Called when the request this getter feeds is over. Dropping the receiver
+  // disconnects whoever is still reading the upload body (the network service
+  // or a protocol handler holding the stream), and both treat that as the
+  // body ending with an error instead of waiting forever for a size that will
+  // never be reported. The size reply is deliberately not answered with an
+  // error here: the network service DCHECKs that it only arrives while the
+  // stream is still healthy.
+  void Abort() {
+    // A write still in flight would otherwise never settle: its completion
+    // callback dies with |data_producer_| below.
+    if (pending_write_) {
+      is_writing_ = false;
+      std::move(*pending_write_)
+          .RejectWithErrorMessage(net::ErrorToString(net::ERR_ABORTED));
+      pending_write_.reset();
+    }
+    Finished();
+  }
+
   JSChunkedDataPipeGetter(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
@@ -203,6 +243,7 @@ class JSChunkedDataPipeGetter final
     receiver_.Bind(std::move(chunked_data_pipe_getter));
   }
 
+ private:
   // network::mojom::ChunkedDataPipeGetter:
   void GetSize(GetSizeCallback callback) override {
     size_callback_ = std::move(callback);
@@ -249,19 +290,21 @@ class JSChunkedDataPipeGetter final
     auto buffer = buffer_val.As<v8::ArrayBufferView>();
     is_writing_ = true;
     bytes_written_ += buffer->ByteLength();
+    pending_write_ = std::move(promise);
     data_producer_->Write(
         std::make_unique<BufferDataSource>(buffer),
         base::BindOnce(&JSChunkedDataPipeGetter::OnWriteChunkComplete,
                        // We're OK to use Unretained here because we own
                        // |data_producer_|.
-                       base::Unretained(this), std::move(promise)));
+                       base::Unretained(this)));
     return handle;
   }
 
-  void OnWriteChunkComplete(gin_helper::Promise<void> promise,
-                            MojoResult result) {
+  void OnWriteChunkComplete(MojoResult result) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     is_writing_ = false;
+    gin_helper::Promise<void> promise = std::move(*pending_write_);
+    pending_write_.reset();
     if (result == MOJO_RESULT_OK) {
       promise.Resolve();
     } else {
@@ -289,17 +332,22 @@ class JSChunkedDataPipeGetter final
 
   SEQUENCE_CHECKER(sequence_checker_);
   GetSizeCallback size_callback_;
+  std::optional<gin_helper::Promise<void>> pending_write_;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of receiver is not needed in the browser process.")
   mojo::Receiver<network::mojom::ChunkedDataPipeGetter> receiver_{this};
   std::unique_ptr<mojo::DataPipeProducer> data_producer_;
   bool is_writing_ = false;
   uint64_t bytes_written_ = 0;
 
   raw_ptr<v8::Isolate> isolate_;
-  v8::Global<v8::Function> body_func_;
+  v8::TracedReference<v8::Function> body_func_;
 };
 
-gin::DeprecatedWrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronJSChunkedDataPipeGetter);
+
+namespace {
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
     net::DefineNetworkTrafficAnnotation("electron_net_module", R"(
@@ -320,16 +368,139 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronSimpleURLLoaderWrapper);
+
+class SimpleURLLoaderClient final
+    : public network::SimpleURLLoaderStreamConsumer,
+      public network::mojom::URLLoaderNetworkServiceObserver {
+ public:
+  explicit SimpleURLLoaderClient(
+      cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>> owner)
+      : owner_(std::move(owner)) {}
+
+  mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver> Bind() {
+    mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver> remote;
+    receivers_.Add(this, remote.InitWithNewPipeAndPassReceiver());
+    return remote;
+  }
+
+ private:
+  SimpleURLLoaderWrapper* owner() const {
+    auto* cell = owner_.Get();
+    return cell ? cell->Get() : nullptr;
+  }
+
+  // network::SimpleURLLoaderStreamConsumer:
+  void OnDataReceived(std::string_view chunk,
+                      base::OnceClosure resume) override {
+    if (auto* wrapper = owner())
+      wrapper->body_->OnDataReceived(chunk, std::move(resume));
+    else
+      std::move(resume).Run();
+  }
+
+  void OnComplete(bool success) override {
+    if (auto* wrapper = owner())
+      wrapper->body_->OnComplete(success);
+  }
+
+  void OnRetry(base::OnceClosure start_retry) override {}
+
+  // network::mojom::URLLoaderNetworkServiceObserver:
+  void OnAuthRequired(
+      const std::optional<base::UnguessableToken>& window_id,
+      int32_t request_id,
+      const GURL& url,
+      bool first_auth_attempt,
+      const net::AuthChallengeInfo& auth_info,
+      const scoped_refptr<net::HttpResponseHeaders>& head_headers,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder) override {
+    if (auto* wrapper = owner()) {
+      wrapper->OnAuthRequired(window_id, request_id, url, first_auth_attempt,
+                              auth_info, head_headers,
+                              std::move(auth_challenge_responder));
+    }
+  }
+
+  void OnSSLCertificateError(const GURL& url,
+                             int net_error,
+                             const net::SSLInfo& ssl_info,
+                             bool fatal,
+                             OnSSLCertificateErrorCallback response) override {
+    std::move(response).Run(net_error);
+  }
+
+  void OnCertificateRequested(
+      const std::optional<base::UnguessableToken>& window_id,
+      const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+      mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+          client_cert_responder) override {
+    if (auto* wrapper = owner()) {
+      wrapper->OnCertificateRequested(window_id, cert_info,
+                                      std::move(client_cert_responder));
+    }
+  }
+
+  void OnLocalNetworkAccessPermissionRequired(
+      network::mojom::TransportType transport_type,
+      network::mojom::IPAddressSpace ip_address_space,
+      OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
+
+  void OnPlatformLocalNetworkPermissionRequired(
+      OnPlatformLocalNetworkPermissionRequiredCallback callback) override {
+    std::move(callback).Run(false);
+  }
+
+  void OnClearSiteData(
+      const GURL& url,
+      const std::string& header_value,
+      int32_t load_flags,
+      const std::optional<net::CookiePartitionKey>& cookie_partition_key,
+      bool partitioned_state_allowed_only,
+      OnClearSiteDataCallback callback) override {
+    std::move(callback).Run();
+  }
+
+  void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
+                            OnLoadingStateUpdateCallback callback) override {
+    std::move(callback).Run();
+  }
+
+  void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
+                       base::ByteSize recv_bytes,
+                       base::ByteSize sent_bytes) override {}
+
+  void OnWebSocketConnectedToLocalNetwork(
+      const GURL& request_url,
+      network::mojom::IPAddressSpace ip_address_space) override {}
+
+  void Clone(
+      mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
+          observer) override {
+    receivers_.Add(this, std::move(observer));
+  }
+
+  void OnUrlLoaderConnectedToLocalNetwork(
+      const GURL& request_url,
+      network::mojom::IPAddressSpace response_address_space,
+      network::mojom::IPAddressSpace client_address_space,
+      network::mojom::IPAddressSpace target_address_space) override {}
+
+  cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>> owner_;
+  mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver> receivers_;
+};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
-    int options)
+    int options,
+    JSChunkedDataPipeGetter* chunk_pipe_getter)
     : browser_context_(browser_context),
       request_options_(options),
-      request_(std::move(request)) {
+      request_(std::move(request)),
+      chunk_pipe_getter_(chunk_pipe_getter) {
   DETACH_FROM_SEQUENCE(sequence_checker_);
   if (!request_->trusted_params)
     request_->trusted_params = network::ResourceRequest::TrustedParams();
@@ -339,14 +510,13 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
         !URLLoaderBundle::GetInstance()
              ->ShouldUseNetworkObserverfromURLLoaderFactory();
   }
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  client_ = std::make_unique<SimpleURLLoaderClient>(
+      cppgc::WeakPersistent<gin::WeakCell<SimpleURLLoaderWrapper>>(
+          weak_factory_.GetWeakCell(
+              isolate->GetCppHeap()->GetAllocationHandle())));
   if (create_network_observer) {
-    mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
-        url_loader_network_observer_remote;
-    url_loader_network_observer_receivers_.Add(
-        this,
-        url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
-    request_->trusted_params->url_loader_network_observer =
-        std::move(url_loader_network_observer_remote);
+    request_->trusted_params->url_loader_network_observer = client_->Bind();
   }
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
@@ -383,30 +553,21 @@ void SimpleURLLoaderWrapper::Start() {
     loader_->SetRequestID(
         content::GlobalRequestID::MakeBrowserInitiated().request_id);
   }
-  loader_->SetOnResponseStartedCallback(base::BindOnce(
-      &SimpleURLLoaderWrapper::OnResponseStarted, weak_factory_.GetWeakPtr()));
-  loader_->SetOnRedirectCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnRedirect, weak_factory_.GetWeakPtr()));
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  auto weak_cell = gin::WrapPersistent(
+      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
+  loader_->SetOnResponseStartedCallback(
+      base::BindOnce(&SimpleURLLoaderWrapper::OnResponseStarted, weak_cell));
+  loader_->SetOnRedirectCallback(
+      base::BindRepeating(&SimpleURLLoaderWrapper::OnRedirect, weak_cell));
   loader_->SetOnUploadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnUploadProgress, weak_factory_.GetWeakPtr()));
+      &SimpleURLLoaderWrapper::OnUploadProgress, weak_cell));
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnDownloadProgress, weak_factory_.GetWeakPtr()));
+      &SimpleURLLoaderWrapper::OnDownloadProgress, weak_cell));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
-  loader_->DownloadAsStream(url_loader_factory_.get(), this);
-}
-
-void SimpleURLLoaderWrapper::Pin() {
-  // Prevent ourselves from being GC'd until the request is complete.  Must be
-  // called after gin_helper::CreateHandle, otherwise the wrapper isn't
-  // initialized.
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
-}
-
-void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
-  pinned_chunk_pipe_getter_.Reset(JavascriptEnvironment::GetIsolate(),
-                                  body_getter);
+  body_ = std::make_unique<ResponseBody>(this);
+  loader_->DownloadAsStream(url_loader_factory_.get(), client_.get());
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
@@ -423,11 +584,14 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder(
       std::move(auth_challenge_responder));
-  // WeakPtr because if we're Cancel()ed while waiting for auth, and the
+  // WeakCell because if we're Cancel()ed while waiting for auth, and the
   // network service also decides to cancel at the same time and kill this
   // pipe, we might end up trying to call Cancel again on dead memory.
-  auth_responder.set_disconnect_handler(base::BindOnce(
-      &SimpleURLLoaderWrapper::Cancel, weak_factory_.GetWeakPtr()));
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  auth_responder.set_disconnect_handler(
+      base::BindOnce(&SimpleURLLoaderWrapper::Cancel,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))));
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          gin::Arguments* args) {
@@ -443,49 +607,31 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   Emit("login", auth_info, std::move(cb));
 }
 
-void SimpleURLLoaderWrapper::OnSSLCertificateError(
-    const GURL& url,
-    int net_error,
-    const net::SSLInfo& ssl_info,
-    bool fatal,
-    OnSSLCertificateErrorCallback response) {
-  std::move(response).Run(net_error);
-}
-
-void SimpleURLLoaderWrapper::OnClearSiteData(
-    const GURL& url,
-    const std::string& header_value,
-    int32_t load_flags,
-    const std::optional<net::CookiePartitionKey>& cookie_partition_key,
-    bool partitioned_state_allowed_only,
-    OnClearSiteDataCallback callback) {
-  std::move(callback).Run();
-}
-void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
-    network::mojom::LoadInfoPtr info,
-    OnLoadingStateUpdateCallback callback) {
-  std::move(callback).Run();
-}
-
-void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
-    const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
-        methods,
-    const std::optional<std::string>& with_lock,
-    OnSharedStorageHeaderReceivedCallback callback) {
-  std::move(callback).Run();
-}
-
-void SimpleURLLoaderWrapper::Clone(
-    mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
-        observer) {
-  url_loader_network_observer_receivers_.Add(this, std::move(observer));
+void SimpleURLLoaderWrapper::OnCertificateRequested(
+    const std::optional<base::UnguessableToken>& window_id,
+    const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+    mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+        client_cert_responder) {
+  // In the utility process this observer is only bound when the host did not
+  // provide one; routing to the app event requires the browser process.
+  if (!electron::IsBrowserProcess()) {
+    mojo::Remote<network::mojom::ClientCertificateResponder> responder(
+        std::move(client_cert_responder));
+    responder->ContinueWithoutCertificate();
+    return;
+  }
+  SelectClientCertificateForResponder(browser_context_, cert_info,
+                                      std::move(client_cert_responder));
 }
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
-  pinned_wrapper_.Reset();
-  pinned_chunk_pipe_getter_.Reset();
+  url_loader_factory_.reset();
+  if (body_)
+    body_->Abort();
+  if (chunk_pipe_getter_)
+    chunk_pipe_getter_->Abort();
+  keep_alive_.Clear();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
 }
@@ -495,9 +641,6 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
 
   CHECK(browser_context_);
-  // Explicitly handle intercepted protocols here, even though
-  // ProxyingURLLoaderFactory would handle them later on, so that we can
-  // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
     const std::string_view scheme = url.scheme();
@@ -505,34 +648,28 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
     if (const auto* const protocol_handler =
-            protocol_registry->FindIntercepted(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
-    }
-
-    if (const auto* const protocol_handler =
             protocol_registry->FindRegistered(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
+      return browser_context_->InterceptURLLoaderFactory(
+          network::SharedURLLoaderFactory::Create(
+              std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                  ElectronURLLoaderFactory::Create(
+                      protocol_handler->first, protocol_handler->second,
+                      browser_context_->GetWeakPtr()))));
     }
   }
 
   if (url.SchemeIsFile()) {
-    return network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            AsarURLLoaderFactory::Create()));
+    return browser_context_->InterceptURLLoaderFactory(
+        network::SharedURLLoaderFactory::Create(
+            std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                AsarURLLoaderFactory::Create())));
   }
 
   return browser_context_->GetURLLoaderFactory();
 }
 
 // static
-gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
-    gin::Arguments* args) {
+SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected a dictionary");
@@ -583,6 +720,7 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"document", Val::kDocument},
             {"embed", Val::kEmbed},
             {"empty", Val::kEmpty},
+            {"fencedframe", Val::kFencedframe},
             {"font", Val::kFont},
             {"frame", Val::kFrame},
             {"iframe", Val::kIframe},
@@ -601,6 +739,20 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
         });
     if (auto iter = Lookup.find(destination); iter != Lookup.end())
       request->destination = iter->second;
+  }
+
+  if (base::FeatureList::IsEnabled(
+          network::features::kRestrictFrameDestinationsToNavigate) &&
+      (request->destination == network::mojom::RequestDestination::kDocument ||
+       request->destination == network::mojom::RequestDestination::kFrame ||
+       request->destination == network::mojom::RequestDestination::kIframe ||
+       request->destination ==
+           network::mojom::RequestDestination::kFencedframe) &&
+      request->mode != network::mojom::RequestMode::kNavigate) {
+    args->ThrowTypeError(
+        "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' "
+        "requires sec-fetch-mode 'navigate'");
+    return {};
   }
 
   bool credentials_specified =
@@ -679,7 +831,7 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
-  v8::Local<v8::Value> chunk_pipe_getter;
+  JSChunkedDataPipeGetter* chunk_pipe_getter = nullptr;
   if (opts.Get("body", &body)) {
     if (body->IsArrayBufferView()) {
       auto request_body = base::MakeRefCounted<network::ResourceRequestBody>();
@@ -691,9 +843,8 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
           data_pipe_getter;
       chunk_pipe_getter = JSChunkedDataPipeGetter::Create(
-                              args->isolate(), body_func,
-                              data_pipe_getter.InitWithNewPipeAndPassReceiver())
-                              .ToV8();
+          args->isolate(), body_func,
+          data_pipe_getter.InitWithNewPipeAndPassReceiver());
       request->request_body =
           base::MakeRefCounted<network::ResourceRequestBody>();
       request->request_body->SetAllowHTTP1ForStreamingUpload(true);
@@ -713,46 +864,183 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       else  // default session
         session = Session::FromPartition(args->isolate(), "");
     }
-    if (session)
+    if (session) {
       browser_context = session->browser_context();
+      DCHECK(browser_context != nullptr);
+    }
   }
 
-  auto ret = gin_helper::CreateHandle(
-      args->isolate(),
-      new SimpleURLLoaderWrapper(browser_context, std::move(request), options));
-  ret->Pin();
-  if (!chunk_pipe_getter.IsEmpty()) {
-    ret->PinBodyGetter(chunk_pipe_getter);
-  }
-  return ret;
+  return cppgc::MakeGarbageCollected<SimpleURLLoaderWrapper>(
+      args->isolate()->GetCppHeap()->GetAllocationHandle(), browser_context,
+      std::move(request), options, chunk_pipe_getter);
 }
 
-void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
-                                            base::OnceClosure resume) {
+ResponseBody::ResponseBody(Delegate* delegate) : delegate_(delegate) {}
+
+ResponseBody::~ResponseBody() = default;
+
+void ResponseBody::Hold() {
+  held_ = true;
+}
+
+void ResponseBody::RelayTo(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    mojo::ScopedDataPipeProducerHandle producer,
+    std::string prefix) {
+  DCHECK(held_);
+  client_.Bind(std::move(client));
+  client_.set_disconnect_handler(base::BindOnce(
+      &ResponseBody::Finish, weak_factory_.GetWeakPtr(), net::ERR_ABORTED));
+  if (loader)
+    receiver_.Bind(std::move(loader));
+  producer_ = std::move(producer);
+  pending_.insert(0, prefix);
+  watcher_ = std::make_unique<mojo::SimpleWatcher>(
+      FROM_HERE, mojo::SimpleWatcher::ArmingPolicy::MANUAL,
+      base::SequencedTaskRunner::GetCurrentDefault());
+  watcher_->Watch(producer_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+                  base::BindRepeating(&ResponseBody::OnWritable,
+                                      weak_factory_.GetWeakPtr()));
+  Pump();
+}
+
+void ResponseBody::Abort() {
+  if (!result_)
+    result_ = net::ERR_ABORTED;
+  watcher_.reset();
+  producer_.reset();
+  client_.reset();
+  receiver_.reset();
+}
+
+void ResponseBody::OnDataReceived(std::string_view chunk,
+                                  base::OnceClosure resume) {
+  if (!held_) {
+    delegate_->OnBodyData(chunk, std::move(resume));
+    return;
+  }
+  // Not resuming until the pipe has taken the chunk is the backpressure, both
+  // while waiting for RelayTo() and while the relay client is slow.
+  resume_ = std::move(resume);
+  if (producer_.is_valid() && pending_.empty())
+    chunk.remove_prefix(WriteSome(chunk));
+  pending_.append(chunk);
+  if (producer_.is_valid())
+    Pump();
+}
+
+void ResponseBody::OnComplete(bool success) {
+  result_ = delegate_->OnBodyComplete(success);
+  if (held_ && producer_.is_valid() && pending_.empty())
+    Finish(*result_);
+}
+
+// Writes as much of |bytes| as the pipe takes right now; returns how much.
+size_t ResponseBody::WriteSome(std::string_view bytes) {
+  size_t written = 0;
+  while (written < bytes.size()) {
+    base::span<uint8_t> buffer;
+    MojoResult result = producer_->BeginWriteData(
+        bytes.size() - written, MOJO_BEGIN_WRITE_DATA_FLAG_NONE, buffer);
+    if (result == MOJO_RESULT_SHOULD_WAIT) {
+      watcher_->ArmOrNotify();
+      break;
+    }
+    if (result != MOJO_RESULT_OK) {
+      Finish(net::ERR_ABORTED);
+      break;
+    }
+    size_t n = std::min(buffer.size(), bytes.size() - written);
+    buffer.first(n).copy_from(base::as_byte_span(bytes).subspan(written, n));
+    producer_->EndWriteData(n);
+    written += n;
+  }
+  written_ += written;
+  return written;
+}
+
+void ResponseBody::Pump() {
+  pending_.erase(0, WriteSome(pending_));
+  if (!pending_.empty() || !producer_.is_valid())
+    return;
+  if (resume_) {
+    std::move(resume_).Run();
+  } else if (result_) {
+    Finish(*result_);
+  }
+}
+
+void ResponseBody::OnWritable(MojoResult result) {
+  if (result != MOJO_RESULT_OK) {
+    Finish(net::ERR_ABORTED);
+    return;
+  }
+  Pump();
+}
+
+void ResponseBody::Finish(int net_error) {
+  watcher_.reset();
+  producer_.reset();
+  if (client_.is_bound() && client_.is_connected()) {
+    network::URLLoaderCompletionStatus status(net_error);
+    status.completion_time = base::TimeTicks::Now();
+    status.encoded_data_length = base::ByteSize(written_);
+    status.encoded_body_length = base::ByteSize(written_);
+    status.decoded_body_length = base::ByteSize(written_);
+    client_->OnComplete(status);
+  }
+  client_.reset();
+  receiver_.reset();
+  delegate_->OnRelayDone();
+}
+
+void SimpleURLLoaderWrapper::Hold() {
+  if (body_)
+    body_->Hold();
+}
+
+void SimpleURLLoaderWrapper::RelayTo(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    mojo::ScopedDataPipeProducerHandle producer,
+    std::string prefix) {
+  keep_alive_ = this;
+  body_->RelayTo(std::move(client), std::move(loader), std::move(producer),
+                 std::move(prefix));
+}
+
+void SimpleURLLoaderWrapper::OnRelayDone() {
+  Cancel();
+}
+
+void SimpleURLLoaderWrapper::OnBodyData(std::string_view chunk,
+                                        base::OnceClosure resume) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
+  auto array_buffer = v8::ArrayBuffer::New(isolate, chunk.size());
   // TODO SAFETY: migrate this to shell/common/v8_util.h
   UNSAFE_BUFFERS(
-      std::ranges::copy(string_view, static_cast<char*>(array_buffer->Data())));
+      std::ranges::copy(chunk, static_cast<char*>(array_buffer->Data())));
   Emit("data", array_buffer, std::move(resume));
 }
 
-void SimpleURLLoaderWrapper::OnComplete(bool success) {
-  auto self = weak_factory_.GetWeakPtr();
-  if (success) {
-    Emit("complete");
-  } else {
-    Emit("error", net::ErrorToString(loader_->NetError()));
+int SimpleURLLoaderWrapper::OnBodyComplete(bool success) {
+  const int net_error = success ? net::OK : loader_->NetError();
+  if (!body_->held()) {
+    if (success) {
+      Emit("complete");
+    } else {
+      Emit("error", net::ErrorToString(net_error));
+    }
+    keep_alive_.Clear();
   }
-  // If users initiate process shutdown when the event is emitted, then
-  // we would perform cleanup of the wrapper and we should bail out below.
-  if (self) {
-    loader_.reset();
-    pinned_wrapper_.Reset();
-    pinned_chunk_pipe_getter_.Reset();
-  }
+  loader_.reset();
+  url_loader_factory_.reset();
+  if (chunk_pipe_getter_)
+    chunk_pipe_getter_->Abort();
+  return net_error;
 }
 
 void SimpleURLLoaderWrapper::OnResponseStarted(
@@ -767,6 +1055,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("headers", response_head.headers.get());
   dict.Set("rawHeaders", response_head.raw_response_headers);
   dict.Set("mimeType", response_head.mime_type);
+  content_length_ = response_head.content_length;
   Emit("response-started", final_url, dict);
 }
 
@@ -780,6 +1069,13 @@ void SimpleURLLoaderWrapper::OnRedirect(
   if (!loader_)
     // The redirect was aborted by JS.
     return;
+
+  if (!content::IsSafeRedirectTarget(url_before_redirect,
+                                     redirect_info.new_url)) {
+    Emit("error", net::ErrorToString(net::ERR_UNSAFE_REDIRECT));
+    Cancel();
+    return;
+  }
 
   // Optimization: if both the old and new URLs are handled by the network
   // service, just FollowRedirect.
@@ -831,15 +1127,22 @@ gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
              SimpleURLLoaderWrapper>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("cancel", &SimpleURLLoaderWrapper::Cancel);
+      .SetMethod("cancel", &SimpleURLLoaderWrapper::Cancel)
+      .SetMethod("hold", &SimpleURLLoaderWrapper::Hold);
 }
 
-const char* SimpleURLLoaderWrapper::GetTypeName() {
-  return "SimpleURLLoaderWrapper";
+const gin::WrapperInfo* SimpleURLLoaderWrapper::wrapper_info() const {
+  return &kWrapperInfo;
 }
 
-void SimpleURLLoaderWrapper::WillBeDestroyed() {
-  ClearWeak();
+const char* SimpleURLLoaderWrapper::GetHumanReadableName() const {
+  return "Electron / SimpleURLLoaderWrapper";
+}
+
+void SimpleURLLoaderWrapper::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<SimpleURLLoaderWrapper>::Trace(visitor);
+  visitor->Trace(chunk_pipe_getter_);
+  visitor->Trace(weak_factory_);
 }
 
 }  // namespace electron::api

@@ -56,6 +56,15 @@ app.whenReady().then(() => {
 })
 ```
 
+## Protocol names
+
+[RFC 3986](https://www.rfc-editor.org/rfc/rfc3986#section-3.1) defines what a valid
+protocol name is:
+
+> Scheme names consist of a sequence of characters beginning with a letter and followed
+> by any combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+> Although schemes are case-insensitive, the canonical form is lowercase […].
+
 ## Methods
 
 The `protocol` module has the following methods:

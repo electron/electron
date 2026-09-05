@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/containers/extend.h"
 #include "base/files/file_util.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/strings/string_split.h"
 #include "content/public/common/buildflags.h"
 #include "electron/buildflags/buildflags.h"
@@ -32,6 +33,7 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/common/constants.h"  // nogncheck
+#include "components/pdf/common/pdf_util.h"   // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -117,8 +119,8 @@ gfx::Image& ElectronContentClient::GetNativeImageNamed(int resource_id) {
       resource_id);
 }
 
-base::RefCountedMemory* ElectronContentClient::GetDataResourceBytes(
-    int resource_id) {
+scoped_refptr<base::RefCountedMemory>
+ElectronContentClient::GetDataResourceBytes(int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
       resource_id);
 }
@@ -215,6 +217,15 @@ void ElectronContentClient::AddContentDecryptionModules(
     }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
   }
+}
+
+bool ElectronContentClient::IsFilePickerAllowedForCrossOriginSubframe(
+    const url::Origin& origin) {
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  return IsPdfExtensionOrigin(origin);
+#else
+  return false;
+#endif
 }
 
 }  // namespace electron

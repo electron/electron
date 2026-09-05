@@ -16,18 +16,17 @@ namespace electron {
 
 namespace {
 
-const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace
 
-FramelessView::FramelessView() = default;
+FramelessView::FramelessView(NativeWindowViews* window, views::Widget* frame)
+    : window_{window}, frame_{frame} {}
 
 FramelessView::~FramelessView() = default;
 
-void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
+gfx::Insets FramelessView::RestoredFrameBorderInsets() const {
+  return gfx::Insets();
 }
 
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
@@ -108,14 +107,15 @@ gfx::Size FramelessView::CalculatePreferredSize(
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
-  return window_->GetContentMinimumSize();
+  if (!window_)
+    return gfx::Size();
+  return window_->GetMinimumSize();
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  gfx::Size size = window_->GetContentMaximumSize();
-  // Electron public APIs returns (0, 0) when maximum size is not set, but it
-  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
-  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+  if (!window_)
+    return gfx::Size();
+  return window_->GetMaximumSize();
 }
 
 BEGIN_METADATA(FramelessView)

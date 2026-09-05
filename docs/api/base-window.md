@@ -208,6 +208,10 @@ Emitted when the window exits from a maximized state.
 
 Emitted when the window is minimized.
 
+> [!NOTE]
+> On Wayland, “minimized” is not currently a supported state. The minimize event will only fire when triggered by client-side decoration (e.g. clicking the minimize
+> button on a frameless window’s Window Control Overlay)
+
 #### Event: 'restore'
 
 Emitted when the window is restored from a minimized state.
@@ -351,7 +355,11 @@ Emitted when the window has closed a sheet.
 
 #### Event: 'new-window-for-tab' _macOS_
 
-Emitted when the native new tab button is clicked.
+Emitted when the user clicks the native macOS new tab button. The new
+tab button is only visible if the current `BrowserWindow` has a
+`tabbingIdentifier`.
+
+You must create a window in this handler in order for macOS tabbing to work as expected.
 
 #### Event: 'system-context-menu' _Windows_ _Linux_
 
@@ -368,6 +376,15 @@ as `-webkit-app-region: drag` in a frameless window.
 Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
+
+#### Event: 'persisted-state-restored'
+
+Emitted after the persisted window state has been restored.
+
+Window state includes the window bounds (x, y, height, width) and display mode (maximized, fullscreen, kiosk).
+
+> [!NOTE]
+> This event is only emitted when [windowStatePersistence](structures/window-state-persistence.md) is enabled in [BaseWindowConstructorOptions](structures/base-window-options.md) or in [BrowserWindowConstructorOptions](structures/browser-window-options.md).
 
 ### Static Methods
 
@@ -386,6 +403,14 @@ Returns `BaseWindow | null` - The window that is focused in this application, ot
 * `id` Integer
 
 Returns `BaseWindow | null` - The window with the given `id`.
+
+#### `BaseWindow.clearPersistedState(name)`
+
+* `name` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
+
+Clears the saved state for a window with the given name. This removes all persisted window bounds, display mode, and work area information that was previously saved when `windowStatePersistence` was enabled.
+
+If the window `name` is empty or the window state doesn't exist, the method will log a warning.
 
 ### Instance Properties
 
@@ -940,9 +965,13 @@ Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
 
+Not supported on Wayland (Linux).
+
 #### `win.isAlwaysOnTop()`
 
 Returns `boolean` - Whether the window is always on top of other windows.
+
+Not supported on Wayland (Linux).
 
 #### `win.moveAbove(mediaSourceId)`
 
@@ -1049,7 +1078,7 @@ under this mode apps can choose to optimize their UI for tablets, such as
 enlarging the titlebar and hiding titlebar buttons.
 
 This API returns whether the window is in tablet mode, and the `resize` event
-can be be used to listen to changes to tablet mode.
+can be used to listen to changes to tablet mode.
 
 #### `win.getMediaSourceId()`
 
@@ -1136,13 +1165,14 @@ Sets progress value in progress bar. Valid range is \[0, 1.0].
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `{app.name}.desktop`.
-
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
 mode set (but with a value within the valid range), `normal` will be assumed.
+
+On Linux, the progress bar shows on docks and taskbars that support the
+LauncherEntry D-Bus API. It is associated with the app's `.desktop` file, so
+[`app.setDesktopName`](app.md#appsetdesktopnamename-linux) must match the name
+of the app's actual `.desktop` file. Indeterminate mode is not supported.
 
 #### `win.setOverlayIcon(overlay, description)` _Windows_
 

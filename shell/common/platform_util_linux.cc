@@ -6,7 +6,6 @@
 
 #include <fcntl.h>
 
-#include <stdio.h>
 #include <memory>
 #include <optional>
 #include <queue>
@@ -15,7 +14,6 @@
 
 #include <gdk/gdk.h>
 
-#include "base/cancelable_callback.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -27,8 +25,6 @@
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/run_loop.h"
-#include "base/strings/escape.h"
-#include "base/strings/string_util.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/types/expected.h"
@@ -40,7 +36,9 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
 
+#include "electron/electron_gtk_stubs.h"
 #include "shell/common/platform_util_internal.h"
 #include "url/gurl.h"
 
@@ -446,6 +444,16 @@ bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
 }  // namespace internal
 
 void Beep() {
+  // `gdk_display_beep` is actually stubbed out, and the function pointer the
+  // stub uses may be nullptr. We need to initialize the stub here to ensure
+  // that is not the case so that we can avoid a crash.
+  // TODO: move this elsewhere if / when we start using stubs for more
+  // GDK functions than just `gdk_display_beep`.
+  if (!electron::IsElectron_gdkInitialized()) {
+    electron::InitializeElectron_gdk(gtk::GetLibGdk());
+    CHECK(electron::IsElectron_gdkInitialized())
+        << "Failed to initialize libgdk";
+  }
   auto* display = gdk_display_get_default();
   if (!display)
     return;

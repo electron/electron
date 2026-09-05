@@ -163,7 +163,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_sync_main(^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    base::Value::Dict user_info =
+    base::DictValue user_info =
         electron::NSDictionaryToValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
@@ -192,7 +192,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_async(dispatch_get_main_queue(), ^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    base::Value::Dict user_info =
+    base::DictValue user_info =
         electron::NSDictionaryToValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
@@ -208,7 +208,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
 
-  handoffLock_ = [NSCondition new];
+  handoffLock_ = [[NSCondition alloc] init];
 }
 
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
@@ -351,10 +351,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   // reader support, but we'll delay that action until there are no more state
   // change requests within a two-second window. Cancel any pending
   // performSelector:..., and schedule a new one to restart the countdown.
-  [NSObject cancelPreviousPerformRequestsWithTarget:self
-                                           selector:@selector
-                                           (enableScreenReaderCompleteMode)
-                                             object:nil];
+  [NSObject
+      cancelPreviousPerformRequestsWithTarget:self
+                                     selector:
+                                         @selector(
+                                             enableScreenReaderCompleteMode)
+                                       object:nil];
 
   if (_AXEnhancedUserInterfaceRequests > 0) {
     const float kTwoSecondDelay = 2.0;

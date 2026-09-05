@@ -7,10 +7,8 @@
 
 #include <string>
 
-#include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/ui/drag_util.h"
 
 namespace gin_helper {
 class ErrorThrower;
@@ -48,7 +46,8 @@ class BrowserWindow : public BaseWindow,
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
-                          bool explicit_set) override;
+                          bool explicit_set,
+                          bool from_same_document_history_navigation) override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -73,13 +72,13 @@ class BrowserWindow : public BaseWindow,
   // BrowserWindow APIs.
   void FocusOnWebView();
   void BlurWebView();
-  bool IsWebViewFocused();
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
   // Helpers.
 
   v8::Global<v8::Value> web_contents_;
+  bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 

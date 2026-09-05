@@ -7,10 +7,13 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#include "base/debug/alias.h"
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/win/windows_handle_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "components/crash/core/common/crash_key.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -19,6 +22,18 @@ namespace electron {
 namespace {
 
 const wchar_t kPowerMonitorWindowClass[] = L"Electron_PowerMonitorHostWindow";
+
+std::string DescribeMemoryState(void* address) {
+  MEMORY_BASIC_INFORMATION mbi = {};
+  if (!VirtualQuery(address, &mbi, sizeof(mbi))) {
+    return "VirtualQuery failed err=" + base::NumberToString(::GetLastError());
+  }
+  // Refs
+  // https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-memory_basic_information
+  return "state=" + base::NumberToString(mbi.State) +
+         " protect=" + base::NumberToString(mbi.Protect) +
+         " type=" + base::NumberToString(mbi.Type);
+}
 
 }  // namespace
 
@@ -35,8 +50,8 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // Create an offscreen window for receiving broadcast messages for the
   // session lock and unlock events.
-  window_ = CreateWindow(MAKEINTATOM(atom_), 0, 0, 0, 0, 0, 0, HWND_MESSAGE, 0,
-                         instance_, 0);
+  window_ = CreateWindow(MAKEINTATOM(atom_), nullptr, 0, 0, 0, 0, 0,
+                         HWND_MESSAGE, nullptr, instance_, nullptr);
   gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 
@@ -45,8 +60,50 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // For Windows 8 and later, a new "connected standby" mode has been added and
   // we must explicitly register for its notifications.
-  RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
-                                    DEVICE_NOTIFY_WINDOW_HANDLE);
+  power_notify_handle_ = RegisterSuspendResumeNotification(
+      static_cast<HANDLE>(window_), DEVICE_NOTIFY_WINDOW_HANDLE);
+  PLOG_IF(ERROR, !power_notify_handle_)
+      << "RegisterSuspendResumeNotification failed";
+
+  // On ARM64 Windows, UnregisterSuspendResumeNotification may
+  // crash in powrprof!PowerUnregisterSuspendResumeNotification by dereferencing
+  // the HPOWERNOTIFY handle. VirtualQuery on the handle address reveals
+  // whether it was ever a valid pointer.
+  // Use static crash keys (not SCOPED_) so they persist until the crash.
+  if (power_notify_handle_) {
+    static crash_reporter::CrashKeyString<16> reg_handle_key("pm-reg-handle");
+    static crash_reporter::CrashKeyString<64> reg_memstate_key(
+        "pm-reg-memstate");
+    reg_handle_key.Set(
+        base::NumberToString(base::win::HandleToUint32(power_notify_handle_)));
+    reg_memstate_key.Set(DescribeMemoryState(power_notify_handle_));
+  }
+}
+
+void PowerMonitor::DestroyPlatformSpecificMonitors() {
+  if (window_) {
+    WTSUnRegisterSessionNotification(window_);
+    if (power_notify_handle_) {
+      // Capture handle value and memory state at unregistration time.
+      // debug::Alias forces the raw value onto the stack.
+      auto handle_value = base::win::HandleToUint32(power_notify_handle_);
+      base::debug::Alias(&handle_value);
+
+      static crash_reporter::CrashKeyString<64> unreg_memstate_key(
+          "pm-unreg-memstate");
+      unreg_memstate_key.Set(DescribeMemoryState(power_notify_handle_));
+
+      UnregisterSuspendResumeNotification(power_notify_handle_);
+      power_notify_handle_ = nullptr;
+    }
+    gfx::SetWindowUserData(window_, nullptr);
+    DestroyWindow(window_);
+    window_ = nullptr;
+  }
+  if (atom_) {
+    UnregisterClass(MAKEINTATOM(atom_), instance_);
+    atom_ = 0;
+  }
 }
 
 LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,
@@ -76,7 +133,8 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
-        // Unretained is OK because this object is eternally pinned.
+        // JS module reference prevents GC of this object, so Unretained is
+        // safe.
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },

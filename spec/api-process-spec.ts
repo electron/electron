@@ -3,14 +3,18 @@ import { app } from 'electron/main';
 
 import { expect } from 'chai';
 
+import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process module', () => {
-  function generateSpecs (invoke: <T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>) => Promise<ReturnType<T>>) {
+  function generateSpecs(
+    invoke: <T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>) => Promise<ReturnType<T>>
+  ) {
     describe('process.getCreationTime()', () => {
       it('returns a creation time', async () => {
         const creationTime = await invoke(() => process.getCreationTime());
@@ -53,6 +57,9 @@ describe('process module', () => {
         const systemMemoryInfo = await invoke(() => process.getSystemMemoryInfo());
         expect(systemMemoryInfo.free).to.be.a('number');
         expect(systemMemoryInfo.total).to.be.a('number');
+        if (process.platform === 'linux') {
+          expect(systemMemoryInfo.available).to.be.a('number').greaterThan(0);
+        }
       });
     });
 
@@ -113,7 +120,7 @@ describe('process module', () => {
     after(closeAllWindows);
 
     generateSpecs((fn, ...args) => {
-      const jsonArgs = args.map(value => JSON.stringify(value)).join(',');
+      const jsonArgs = args.map((value) => JSON.stringify(value)).join(',');
       return w.webContents.executeJavaScript(`(${fn.toString()})(${jsonArgs})`);
     });
 
@@ -127,5 +134,18 @@ describe('process module', () => {
 
   describe('main process', () => {
     generateSpecs((fn, ...args) => fn(...args));
+  });
+
+  ifdescribe(process.platform === 'linux')('process.env', () => {
+    it('can add variables while another thread reads the environment', async () => {
+      const fixture = path.join(__dirname, 'fixtures', 'api', 'environ-write-race.js');
+      const child = cp.spawn(process.execPath, [fixture], { stdio: ['ignore', 'pipe', 'inherit'] });
+      let stdout = '';
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      const [code, signal] = await once(child, 'close');
+      expect({ code, signal, stdout: stdout.trim() }).to.deep.equal({ code: 0, signal: null, stdout: 'done' });
+    });
   });
 });

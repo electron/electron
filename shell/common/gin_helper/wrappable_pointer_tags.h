@@ -1,0 +1,90 @@
+// Copyright (c) 2026 Microsoft Corporation.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_POINTER_TAGS_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_POINTER_TAGS_H_
+
+#include "gin/public/wrappable_pointer_tags.h"
+#include "gin/public/wrapper_info.h"
+
+namespace electron {
+
+// Electron-specific WrappablePointerTag values that extend gin's tag range.
+enum ElectronWrappablePointerTag : uint16_t {
+  kElectronApp = gin::kLastPointerTag + 1,  // electron::api::App
+  kElectronAutoUpdater,                     // electron::api::AutoUpdater
+  kElectronChunkedDataPipeReadableStream,   // ChunkedDataPipeReadableStream
+  kElectronClipboardItem,                   // electron::api::ClipboardItem
+  kElectronCookies,                         // electron::api::Cookies
+  kElectronDataPipeHolder,                  // electron::api::DataPipeHolder
+  kElectronDesktopCapturer,                 // electron::api::DesktopCapturer
+  kElectronDebugger,                        // electron::api::Debugger
+  kElectronDownloadItem,                    // electron::api::DownloadItem
+  kElectronEvent,                           // gin_helper::internal::Event
+  kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
+  kElectronExtensions,                      // electron::api::Extensions
+  kElectronInAppPurchase,                   // electron::api::InAppPurchase
+  kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
+  kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
+  kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
+  kElectronMenu,                            // electron::api::Menu
+  kElectronMessagePort,                     // electron::MessagePort
+  kElectronNativeImage,                     // electron::api::NativeImage
+  kElectronNativeTheme,                     // electron::api::NativeTheme
+  kElectronNetLog,                          // electron::api::NetLog
+  kElectronNotification,                    // electron::api::Notification
+  kElectronParentPort,                      // electron::ParentPort
+  kElectronPowerMonitor,                    // electron::api::PowerMonitor
+  kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
+  kElectronProtocol,                        // electron::api::Protocol
+  kElectronPushNotifications,               // electron::api::PushNotifications
+  kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
+  kElectronSafeStorage,             // electron::api::SafeStorage
+  kElectronScreen,                  // electron::api::Screen
+  kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
+  kElectronServiceWorkerMain,       // electron::api::ServiceWorkerMain
+  kElectronSession,                 // electron::api::Session
+  kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
+  kElectronSystemPreferences,       // electron::api::SystemPreferences
+  kElectronTray,                    // electron::api::Tray
+  kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
+  kElectronWebFrameMain,            // electron::api::WebFrameMain
+  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
+  kElectronWebRequest,              // electron::api::WebRequest
+  kElectronWebSocket,               // electron::api::WebSocketWrapper
+  kLastElectronPointerTag = kElectronWebSocket,
+};
+
+// Constructs a gin::WrapperInfo from an ElectronWrappablePointerTag,
+constexpr gin::WrapperInfo MakeWrapperInfo(ElectronWrappablePointerTag tag) {
+  return {{gin::kEmbedderNativeGin},
+          static_cast<gin::WrappablePointerTag>(tag)};
+}
+
+static_assert(static_cast<uint16_t>(kElectronApp) >
+                  static_cast<uint16_t>(gin::kLastPointerTag),
+              "Electron tags must start after gin's last tag.");
+
+// Ensure the full range (gin + Electron) fits within v8's allowed tag space.
+static_assert(
+    kLastElectronPointerTag <
+        static_cast<uint16_t>(v8::CppHeapPointerTag::kZappedEntryTag),
+    "The defined Electron type tags exceed the range of allowed tags. "
+    "Reduce the number of tags or adjust gin::kFirstPointerTag so that "
+    "all values fit.");
+
+// Electron's tags extend gin's range (they start at gin::kLastPointerTag + 1),
+// so the combined gin + Electron tag range must stay below the tag Node.js
+// uses for its cppgc wrappables. That value is provided by the
+// EMBEDDER_CPPHEAP_POINTER_TAG define on the libnode GN target (see
+// third_party/electron_node/unofficial.gni and src/cppgc_helpers.h). If this
+// fires, the gin + Electron tag range has grown into Node's tag.
+static_assert(static_cast<uint16_t>(kLastElectronPointerTag) <
+                  EMBEDDER_CPPHEAP_POINTER_TAG,
+              "gin + Electron tags must stay below the CppHeapPointerTag "
+              "used by Node.js for cppgc wrappables.");
+
+}  // namespace electron
+
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_POINTER_TAGS_H_

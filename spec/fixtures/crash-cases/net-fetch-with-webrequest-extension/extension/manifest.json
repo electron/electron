@@ -1,0 +1,7 @@
+{
+  "name": "webrequest-permission",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": ["webRequest"],
+  "host_permissions": ["<all_urls>"]
+}

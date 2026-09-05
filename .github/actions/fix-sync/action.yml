@@ -13,20 +13,87 @@ description: 'Ensures proper binaries are in place'
 # 9. Install windows toolchain on Windows
 # 10. Fix node binary on Windows
 # 11. Fix rc binary on Windows
+# 12. Fix clang-format binary on Windows
+# 13. Install the host typescript-go (tsc v7) binary on macOS
+# 14. Fixing the hermetic host Python binary
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
 runs:
   using: "composite"
   steps:
-    - name: Fix llvm toolchain
+    # These four fix-ups are independent downloads into different directories,
+    # so run them concurrently. Each one logs to its own file, which is printed
+    # once they finish; the step fails if any of them failed.
+    - name: Fix llvm, rustc, dsymutil and angle git
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run : |
-        rm -rf src/third_party/llvm-build
-        python3 src/tools/clang/scripts/update.py
-        # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
-        python3 src/tools/clang/scripts/update.py --package objdump
+        RETRY="$PWD/src/electron/script/actions/retry.sh"
+        LOG_DIR=$(mktemp -d)
+
+        fix_llvm() {
+          rm -rf src/third_party/llvm-build
+          python3 src/tools/clang/scripts/update.py
+          # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
+          python3 src/tools/clang/scripts/update.py --package objdump
+          python3 src/tools/clang/scripts/update.py --package clang-tidy
+        }
+
+        fix_rustc() {
+          rm -rf src/third_party/rust-toolchain
+          python3 src/tools/rust/update_rust.py
+        }
+
+        fix_dsymutil() {
+          if [ "$TARGET_PLATFORM" != "macos" ]; then
+            return 0
+          fi
+          if [ "$TARGET_ARCH" == "arm64" ]; then
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+          else
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
+          fi
+          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
+        }
+
+        fix_angle_git() {
+          cd src/third_party/angle
+          rm -f .git/objects/info/alternates
+          git remote set-url origin https://github.com/google/angle.git
+          cp .git/config .git/config.backup
+          git remote remove origin
+          mv .git/config.backup .git/config
+          # A large fetch from github.com sometimes times out mid-transfer
+          # ("curl 56", "invalid index-pack output"); retry it.
+          bash "$RETRY" git fetch
+        }
+
+        TASKS="fix_llvm fix_rustc fix_dsymutil fix_angle_git"
+        PIDS=""
+        for task in $TASKS; do
+          ( set -eo pipefail; $task ) > "$LOG_DIR/$task.log" 2>&1 &
+          PIDS="$PIDS $!"
+        done
+
+        FAILED=""
+        set -- $PIDS
+        for task in $TASKS; do
+          if ! wait "$1"; then
+            FAILED="$FAILED $task"
+          fi
+          shift
+          echo "::group::$task"
+          cat "$LOG_DIR/$task.log"
+          echo "::endgroup::"
+        done
+
+        if [ -n "$FAILED" ]; then
+          echo "::error::Failed:$FAILED"
+          exit 1
+        fi
     - name: Fix esbuild
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -37,6 +104,28 @@ runs:
         installation-dir: third_party/esbuild
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
+    - name: Fix hermetic Python
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: cpython3-host
+        deps-file: src/DEPS
+        installation-dir: src/third_party/cpython3/host
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/cpython3/${platform}
+    # ts_library() runs the host tsgo binary (//third_party/typescript/tsgo.gni),
+    # which DEPS only fetches when host_os == "mac". The DEPS key and package
+    # are literal per-arch names (no CIPD ${platform} templating), so pick the
+    # directory from the runner arch.
+    # Refs https://chromium-review.googlesource.com/c/chromium/src/+/8104602
+    - name: Fix typescript-go (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: typescript-go
+        deps-file: src/DEPS
+        installation-dir: src/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}/src
+        target-platform: ${{ inputs.target-platform }}
+        package: chromium/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}
     - name: Fix rollup
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -53,12 +142,6 @@ runs:
       run : |
         cd src/third_party/devtools-frontend/src
         python3 scripts/deps/sync_rollup_libs.py
-    - name: Fix rustc
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        rm -rf src/third_party/rust-toolchain
-        python3 src/tools/rust/update_rust.py
     - name: Fix gn (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -91,19 +174,6 @@ runs:
       shell: bash
       run : |
         python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
-    - name: Fix dsymutil (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      shell: bash
-      run : |
-        # Fix dsymutil
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
-          if  [ "${{ env.TARGET_ARCH }}" == "arm64" ]; then
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
-          else
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
-          fi
-          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
-        fi
     - name: Fix ninja
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -116,7 +186,7 @@ runs:
     - name: Set ninja in path
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
-      run : |
+      run : | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, value is build config
         echo "$(pwd)/src/third_party/ninja" >> $GITHUB_PATH
     - name: Fix siso
       uses: ./src/electron/.github/actions/cipd-install
@@ -126,17 +196,6 @@ runs:
         installation-dir: src/third_party/siso/cipd
         target-platform: ${{ inputs.target-platform }}
         package: build/siso/${platform}
-    - name: Fixup angle git
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        cd src/third_party/angle
-        rm -f .git/objects/info/alternates
-        git remote set-url origin https://chromium.googlesource.com/angle/angle.git
-        cp .git/config .git/config.backup
-        git remote remove origin
-        mv .git/config.backup .git/config
-        git fetch
     - name: Get Windows toolchain
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
@@ -147,6 +206,13 @@ runs:
       run: |
         $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
         python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
+    - name: Download clang-format
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        $clangformatdeps = e d gclient getdep --deps-file=src/DEPS -r src/buildtools/win-format | ConvertFrom-JSON
+        New-Item -ItemType Directory -Force -Path src\buildtools\win-format | Out-Null
+        python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -o src\buildtools\win-format\clang-format.exe $clangformatdeps.object_name
     - name: Install rc
       if: ${{ inputs.target-platform == 'win' }}
       shell: bash

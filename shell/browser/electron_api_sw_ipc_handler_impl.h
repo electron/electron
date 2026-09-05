@@ -8,8 +8,8 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/common/gin_helper/event.h"
@@ -39,7 +39,7 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
       mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
 
   static void BindReceiver(
-      int render_process_id,
+      content::ChildProcessId render_process_id,
       int64_t version_id,
       mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
 
@@ -52,19 +52,19 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
   // mojom::ElectronApiIPC:
   void Message(bool internal,
                const std::string& channel,
-               blink::CloneableMessage arguments) override;
+               electron::SerializedValue arguments) override;
   void Invoke(bool internal,
               const std::string& channel,
-              blink::CloneableMessage arguments,
+              electron::SerializedValue arguments,
               InvokeCallback callback) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   blink::CloneableMessage arguments,
+                   electron::SerializedValue arguments,
                    MessageSyncCallback callback) override;
   void MessageHost(const std::string& channel,
-                   blink::CloneableMessage arguments) override;
+                   electron::SerializedValue arguments) override;
 
   base::WeakPtr<ElectronApiSWIPCHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

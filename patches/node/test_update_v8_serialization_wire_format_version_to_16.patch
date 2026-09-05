@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@makenotion.com>
+Date: Tue, 21 Apr 2026 19:36:27 -0700
+Subject: test: update V8 serialization wire format version to 16
+
+V8 14.9 (Chromium 149) bumped the serialization wire format from
+version 15 to 16. Update the hardcoded expected bytes in the test.
+
+Upstream Node will catch up on its next V8 roll; this patch can be
+removed then.
+
+diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
+index 223c0fd550cd2a51692ed64164a5ea12df75750c..2c7a20b24f96e7bb6b93a5965ba49e32e97ce231 100644
+--- a/test/parallel/test-v8-serdes.js
++++ b/test/parallel/test-v8-serdes.js
+@@ -184,7 +184,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
+     Consider opening an issue as a heads up at https://github.com/nodejs/node/issues/new
+   `;
+ 
+-  const desStr = 'ff0f6f2203666f6f5e007b01';
++  const desStr = 'ff106f2203666f6f5e007b01';
+ 
+   const desBuf = Buffer.from(desStr, 'hex');
+   const des = new v8.DefaultDeserializer(desBuf);

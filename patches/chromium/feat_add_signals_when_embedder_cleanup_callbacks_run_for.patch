@@ -16,10 +16,10 @@ remove this patch once gin::Wrappable can be managed by V8 Oilpan
 via https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 64edf6fe78d2478cb9e12e8767a09e2b6c7c6ad2..7c640559dc7a09730f0053be8798d10bc8ac1a1c 100644
+index 738ac76c69435dcf7bd26fc0e170ecb3d5f7c678..9f49bb0b6873eb2a6218f4fad1429d25a7c54f91 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+@@ -36,6 +36,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
  const intptr_t* g_reference_table = nullptr;
  v8::FatalErrorCallback g_fatal_error_callback = nullptr;
  v8::OOMErrorCallback g_oom_error_callback = nullptr;
@@ -28,7 +28,7 @@ index 64edf6fe78d2478cb9e12e8767a09e2b6c7c6ad2..7c640559dc7a09730f0053be8798d10b
  
  std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
      std::unique_ptr<v8::Isolate::CreateParams> params,
-@@ -204,10 +206,26 @@ IsolateHolder::getDefaultIsolateParams() {
+@@ -205,10 +207,26 @@ IsolateHolder::getDefaultIsolateParams() {
    return params;
  }
  

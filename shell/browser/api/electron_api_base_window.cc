@@ -10,15 +10,18 @@
 #include <vector>
 
 #include "base/task/single_thread_task_runner.h"
-#include "content/public/common/color_parser.h"
-#include "electron/buildflags/buildflags.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/browser_process_impl.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -44,7 +47,7 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/opaque_frame_view.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "ui/gfx/image/image_skia.h"
 #endif
 
@@ -97,6 +100,11 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
+  // make sure we don't override title on back/forward navigation
+  // if the title is provided
+  if (std::string title; options.Get(options::kTitle, &title))
+    title_set_from_api_ = true;
+
   // The parent window.
   gin_helper::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
@@ -148,15 +156,6 @@ BaseWindow::~BaseWindow() {
 void BaseWindow::InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   gin_helper::TrackableObject<BaseWindow>::InitWith(isolate, wrapper);
 
-  // We can only append this window to parent window's child windows after this
-  // window's JS wrapper gets initialized.
-  if (!parent_window_.IsEmpty()) {
-    gin_helper::Handle<BaseWindow> parent;
-    gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
-    DCHECK(!parent.IsEmpty());
-    parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
-  }
-
   // Reference this object in case it got garbage collected.
   self_ref_.Reset(isolate, wrapper);
 }
@@ -179,10 +178,10 @@ void BaseWindow::OnWindowClosed() {
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
-
+  window_->FlushWindowState();
   Emit("closed");
 
-  RemoveFromParentChildWindows();
+  parent_window_.Reset();
 
   // Destroy the native class when window is closed.
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
@@ -241,10 +240,14 @@ void BaseWindow::OnWindowHide() {
 }
 
 void BaseWindow::OnWindowMaximize() {
+  // Persist the display mode; bounds events fired during the transition
+  // are skipped by SaveWindowState, so nothing else would.
+  window_->DebouncedSaveWindowState();
   Emit("maximize");
 }
 
 void BaseWindow::OnWindowUnmaximize() {
+  window_->DebouncedSaveWindowState();
   Emit("unmaximize");
 }
 
@@ -270,6 +273,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowResize() {
+  window_->DebouncedSaveWindowState();
   Emit("resize");
 }
 
@@ -285,6 +289,7 @@ void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowMove() {
+  window_->DebouncedSaveWindowState();
   Emit("move");
 }
 
@@ -293,10 +298,12 @@ void BaseWindow::OnWindowMoved() {
 }
 
 void BaseWindow::OnWindowEnterFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("enter-full-screen");
 }
 
 void BaseWindow::OnWindowLeaveFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("leave-full-screen");
 }
 
@@ -316,6 +323,12 @@ void BaseWindow::OnWindowSheetEnd() {
   Emit("sheet-end");
 }
 
+void BaseWindow::OnWindowIsKeyChanged(bool is_key) {
+#if BUILDFLAG(IS_MAC)
+  window()->SetActive(is_key);
+#endif
+}
+
 void BaseWindow::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
@@ -324,8 +337,8 @@ void BaseWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
-void BaseWindow::OnWindowAlwaysOnTopChanged() {
-  Emit("always-on-top-changed", IsAlwaysOnTop());
+void BaseWindow::OnWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  Emit("always-on-top-changed", is_always_on_top);
 }
 
 void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
@@ -333,7 +346,7 @@ void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
 }
 
 void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
-                                      const base::Value::Dict& details) {
+                                      const base::DictValue& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 
@@ -345,6 +358,10 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
   if (Emit("system-context-menu", gfx::Point(x, y))) {
     *prevent_default = true;
   }
+}
+
+void BaseWindow::OnWindowStateRestored() {
+  EmitEventSoon("persisted-state-restored");
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -610,7 +627,22 @@ void BaseWindow::MoveTop() {
 }
 
 void BaseWindow::SetTitle(const std::string& title) {
+  title_set_from_api_ = true;
   window_->SetTitle(title);
+}
+
+void BaseWindow::SetTitleFromPage(const std::string& title) {
+  title_set_from_api_ = false;
+  window_->SetTitle(title);
+}
+
+bool BaseWindow::SetTitleFromPageIfNotSetFromApi(const std::string& title) {
+  if (title_set_from_api_) {
+    return false;
+  } else {
+    SetTitleFromPage(title);
+    return true;
+  }
 }
 
 std::string BaseWindow::GetTitle() const {
@@ -735,10 +767,10 @@ bool BaseWindow::IsFocusable() const {
 
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
-      gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
+      gin::ConvertFromV8(isolate, value, &menu) && menu) {
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -747,7 +779,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       window_->SetMenu(menu->model());
     }
 
-    menu_.Reset(isolate, menu.ToV8());
+    menu_ = menu;
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -757,7 +789,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 void BaseWindow::RemoveMenu() {
-  menu_.Reset();
+  menu_.Clear();
   window_->SetMenu(nullptr);
 }
 
@@ -770,14 +802,11 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
 
   gin_helper::Handle<BaseWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
-    RemoveFromParentChildWindows();
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
   } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
-    RemoveFromParentChildWindows();
-    parent_window_.Reset(isolate(), value);
-    window_->SetParentWindow(parent->window_.get());
-    parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
+    parent_window_.Reset(isolate(), parent.ToV8());
+    window_->SetParentWindow(parent->window());
   } else {
     args->ThrowTypeError("Must pass BaseWindow instance or null");
   }
@@ -989,15 +1018,28 @@ v8::Local<v8::Value> BaseWindow::GetContentView() const {
     return v8::Local<v8::Value>::New(isolate(), content_view_);
 }
 
-v8::Local<v8::Value> BaseWindow::GetParentWindow() const {
+BaseWindow* BaseWindow::GetParentWindow() const {
   if (parent_window_.IsEmpty())
-    return v8::Null(isolate());
-  else
-    return v8::Local<v8::Value>::New(isolate(), parent_window_);
+    return nullptr;
+
+  v8::HandleScope scope{isolate()};
+  auto local = v8::Local<v8::Value>::New(isolate(), parent_window_);
+  BaseWindow* parent = nullptr;
+  gin::ConvertFromV8(isolate(), local, &parent);
+  return parent;
 }
 
-std::vector<v8::Local<v8::Object>> BaseWindow::GetChildWindows() const {
-  return child_windows_.Values(isolate());
+std::vector<BaseWindow*> BaseWindow::GetChildWindows() const {
+  std::vector<BaseWindow*> children;
+  auto* const isolate = this->isolate();
+  v8::HandleScope scope{isolate};
+  for (auto wrapper : BaseWindow::GetAll(isolate)) {
+    BaseWindow* win = nullptr;
+    gin::ConvertFromV8(isolate, wrapper, &win);
+    if (win && win->GetParentWindow() == this)
+      children.emplace_back(win);
+  }
+  return children;
 }
 
 bool BaseWindow::IsModal() const {
@@ -1145,19 +1187,25 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
 }
 #endif
 
-void BaseWindow::RemoveFromParentChildWindows() {
-  if (parent_window_.IsEmpty())
-    return;
-
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  gin_helper::Handle<BaseWindow> parent;
-  if (!gin::ConvertFromV8(isolate, GetParentWindow(), &parent) ||
-      parent.IsEmpty()) {
+// static
+void BaseWindow::ClearPersistedState(const std::string& window_name) {
+  if (window_name.empty()) {
+    LOG(WARNING) << "Cannot clear persisted window state: window name is empty";
     return;
   }
 
-  parent->child_windows_.Remove(weak_map_id());
+  if (auto* browser_process =
+          electron::ElectronBrowserMainParts::Get()->browser_process()) {
+    DCHECK(browser_process);
+    if (auto* prefs = browser_process->local_state()) {
+      ScopedDictPrefUpdate update(prefs, electron::kWindowStates);
+
+      if (!update->Remove(window_name)) {
+        LOG(WARNING) << "Window state '" << window_name
+                     << "' not found, nothing to clear";
+      }
+    }
+  }
 }
 
 // static
@@ -1165,7 +1213,36 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
+  std::string error_message;
+  if (!IsWindowNameValid(options, &error_message)) {
+    // Window name is already in use throw an error and do not create the window
+    args->ThrowTypeError(error_message);
+    return nullptr;
+  }
+
   return new BaseWindow(args, options);
+}
+
+// static
+bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
+                                   std::string* error_message) {
+  std::string window_name;
+  if (options.Get(options::kName, &window_name) && !window_name.empty()) {
+    // Check if window name is already in use by another window
+    // Window names must be unique for state persistence to work correctly
+    const auto& windows = electron::WindowList::GetWindows();
+    bool name_in_use = std::any_of(windows.begin(), windows.end(),
+                                   [&window_name](const auto* const window) {
+                                     return window->GetName() == window_name;
+                                   });
+
+    if (name_in_use) {
+      *error_message = "Window name '" + window_name +
+                       "' is already in use. Window names must be unique.";
+      return false;
+    }
+  }
+  return true;
 }
 
 // static
@@ -1359,6 +1436,8 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
+  constructor.SetMethod("clearPersistedState",
+                        &BaseWindow::ClearPersistedState);
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BaseWindow", constructor);

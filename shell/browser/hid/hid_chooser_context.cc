@@ -15,6 +15,7 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -92,9 +93,8 @@ std::string UnitSystemToString(uint8_t unit) {
 }
 
 // Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
-base::Value::Dict HidReportItemToValue(
-    const device::mojom::HidReportItem& item) {
-  base::Value::Dict dict;
+base::DictValue HidReportItemToValue(const device::mojom::HidReportItem& item) {
+  base::DictValue dict;
 
   dict.Set("hasNull", item.has_null_position);
   dict.Set("hasPreferredState", !item.no_preferred_state);
@@ -131,7 +131,7 @@ base::Value::Dict HidReportItemToValue(
     dict.Set("usageMinimum", ConvertHidUsageAndPageToInt(*item.usage_minimum));
     dict.Set("usageMaximum", ConvertHidUsageAndPageToInt(*item.usage_maximum));
   } else {
-    base::Value::List usages_list;
+    base::ListValue usages_list;
     for (const auto& usage : item.usages) {
       usages_list.Append(ConvertHidUsageAndPageToInt(*usage));
     }
@@ -144,12 +144,12 @@ base::Value::Dict HidReportItemToValue(
 }
 
 // Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
-base::Value::Dict HidReportDescriptionToValue(
+base::DictValue HidReportDescriptionToValue(
     const device::mojom::HidReportDescription& report) {
-  base::Value::Dict dict;
+  base::DictValue dict;
   dict.Set("reportId", static_cast<int>(report.report_id));
 
-  base::Value::List items_list;
+  base::ListValue items_list;
   for (const auto& item : report.items) {
     items_list.Append(base::Value(HidReportItemToValue(*item)));
   }
@@ -159,9 +159,9 @@ base::Value::Dict HidReportDescriptionToValue(
 }
 
 // Adapted from third_party/blink/renderer/modules/hid/hid_device.cc.
-base::Value::Dict HidCollectionInfoToValue(
+base::DictValue HidCollectionInfoToValue(
     const device::mojom::HidCollectionInfo& collection) {
-  base::Value::Dict dict;
+  base::DictValue dict;
 
   // Usage information
   dict.Set("usage", collection.usage->usage);
@@ -171,7 +171,7 @@ base::Value::Dict HidCollectionInfoToValue(
   dict.Set("collectionType", static_cast<int>(collection.collection_type));
 
   // Input reports
-  base::Value::List input_reports_list;
+  base::ListValue input_reports_list;
   for (const auto& report : collection.input_reports) {
     input_reports_list.Append(
         base::Value(HidReportDescriptionToValue(*report)));
@@ -179,7 +179,7 @@ base::Value::Dict HidCollectionInfoToValue(
   dict.Set("inputReports", std::move(input_reports_list));
 
   // Output reports
-  base::Value::List output_reports_list;
+  base::ListValue output_reports_list;
   for (const auto& report : collection.output_reports) {
     output_reports_list.Append(
         base::Value(HidReportDescriptionToValue(*report)));
@@ -187,7 +187,7 @@ base::Value::Dict HidCollectionInfoToValue(
   dict.Set("outputReports", std::move(output_reports_list));
 
   // Feature reports
-  base::Value::List feature_reports_list;
+  base::ListValue feature_reports_list;
   for (const auto& report : collection.feature_reports) {
     feature_reports_list.Append(
         base::Value(HidReportDescriptionToValue(*report)));
@@ -195,7 +195,7 @@ base::Value::Dict HidCollectionInfoToValue(
   dict.Set("featureReports", std::move(feature_reports_list));
 
   // Child collections (recursive)
-  base::Value::List children_list;
+  base::ListValue children_list;
   for (const auto& child : collection.children) {
     children_list.Append(base::Value(HidCollectionInfoToValue(*child)));
   }
@@ -240,7 +240,7 @@ bool HidChooserContext::CanStorePersistentEntry(
 // static
 base::Value HidChooserContext::DeviceInfoToValue(
     const device::mojom::HidDeviceInfo& device) {
-  base::Value::Dict value;
+  base::DictValue value;
   value.Set(
       kHidDeviceNameKey,
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
@@ -259,7 +259,7 @@ base::Value HidChooserContext::DeviceInfoToValue(
   }
 
   // Convert collections array
-  base::Value::List collections_list;
+  base::ListValue collections_list;
   for (const auto& collection : device.collections) {
     collections_list.Append(base::Value(HidCollectionInfoToValue(*collection)));
   }

@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_DRAG_UTIL_H_
 #define ELECTRON_SHELL_BROWSER_UI_DRAG_UTIL_H_
 
-#include <memory>
 #include <vector>
 
 #include "third_party/blink/public/mojom/page/draggable_region.mojom-forward.h"
@@ -28,7 +27,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
                    gfx::NativeView view);
 
 // Convert draggable regions in raw format to SkRegion format.
-std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
+[[nodiscard]] SkRegion DraggableRegionsToSkRegion(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions);
 
 }  // namespace electron

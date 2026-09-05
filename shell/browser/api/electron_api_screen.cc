@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -32,14 +33,10 @@
 #include "shell/browser/linux/x11_util.h"
 #endif
 
-#if defined(USE_OZONE)
-#include "ui/ozone/public/ozone_platform.h"
-#endif
-
 namespace electron::api {
 
-const gin::WrapperInfo Screen::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                               gin::kElectronScreen};
+const gin::WrapperInfo Screen::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronScreen);
 
 namespace {
 
@@ -94,16 +91,9 @@ Screen::~Screen() {
 }
 
 gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
-#if defined(USE_OZONE)
-  // Wayland will crash unless a window is created prior to calling
-  // GetCursorScreenPoint.
-  if (!ui::OzonePlatform::IsInitialized()) {
-    gin_helper::ErrorThrower thrower(isolate);
-    thrower.ThrowError(
-        "screen.getCursorScreenPoint() cannot be called before a window has "
-        "been created.");
+#if BUILDFLAG(IS_LINUX)
+  if (x11_util::IsWayland())
     return {};
-  }
 #endif
   auto* screen = GetDisplayScreen();
   return screen ? screen->GetCursorScreenPoint() : gfx::Point{};

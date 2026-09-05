@@ -17,15 +17,16 @@
 #include "gin/converter.h"
 
 #include "base/strings/string_util.h"
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util_win.h"
-#endif
 
 namespace gin {
 
 // Make it possible to convert move-only types.
 template <typename T>
-v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+std::conditional_t<
+    internal::ToV8ReturnsMaybe<typename std::remove_reference<T>::type>,
+    v8::MaybeLocal<v8::Value>,
+    v8::Local<v8::Value>>
+ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
       isolate, std::forward<T>(input));
 }
@@ -34,7 +35,7 @@ template <typename T>
 struct Converter<std::span<T>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const std::span<const T>& span) {
-    int idx = 0;
+    uint32_t idx = 0;
     auto context = isolate->GetCurrentContext();
     auto result = v8::Array::New(isolate, static_cast<int>(span.size()));
     for (const auto& val : span) {
@@ -42,7 +43,7 @@ struct Converter<std::span<T>> {
       v8::Local<v8::Value> element;
       if (!maybe.ToLocal(&element))
         return {};
-      if (!result->Set(context, idx++, element).FromMaybe(false))
+      if (!result->CreateDataProperty(context, idx++, element).FromMaybe(false))
         NOTREACHED() << "CreateDataProperty should always succeed here.";
     }
     return result;
@@ -129,10 +130,12 @@ struct Converter<std::set<T>> {
     v8::Local<v8::Array> result(
         v8::Array::New(isolate, static_cast<int>(val.size())));
     auto context = isolate->GetCurrentContext();
-    typename std::set<T>::const_iterator it;
-    int i;
-    for (i = 0, it = val.begin(); it != val.end(); ++it, ++i)
-      result->Set(context, i, Converter<T>::ToV8(isolate, *it)).Check();
+    uint32_t i = 0;
+    for (const T& item : val) {
+      result
+          ->CreateDataProperty(context, i++, Converter<T>::ToV8(isolate, item))
+          .Check();
+    }
     return result;
   }
   static bool FromV8(v8::Isolate* isolate,
@@ -146,11 +149,13 @@ struct Converter<std::set<T>> {
     v8::Local<v8::Array> array = val.As<v8::Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
-      T item;
-      if (!Converter<T>::FromV8(isolate,
-                                array->Get(context, i).ToLocalChecked(), &item))
+      v8::Local<v8::Value> v8_item;
+      if (!array->Get(context, i).ToLocal(&v8_item))
         return false;
-      result.insert(item);
+      T item;
+      if (!Converter<T>::FromV8(isolate, v8_item, &item))
+        return false;
+      result.insert(std::move(item));
     }
 
     out->swap(result);
@@ -158,18 +163,21 @@ struct Converter<std::set<T>> {
   }
 };
 
-template <typename K, typename V>
-struct Converter<std::map<K, V>> {
+template <typename K, typename V, typename Compare>
+struct Converter<std::map<K, V, Compare>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> value,
-                     std::map<K, V>* out) {
+                     std::map<K, V, Compare>* out) {
     if (!value->IsObject())
       return false;
     out->clear();
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> obj = value.As<v8::Object>();
-    v8::Local<v8::Array> keys = obj->GetPropertyNames(context).ToLocalChecked();
-    for (uint32_t i = 0; i < keys->Length(); ++i) {
+    v8::Local<v8::Array> keys;
+    if (!obj->GetPropertyNames(context).ToLocal(&keys))
+      return false;
+    const uint32_t length = keys->Length();
+    for (uint32_t i = 0; i < length; ++i) {
       v8::MaybeLocal<v8::Value> maybe_v8key = keys->Get(context, i);
       if (maybe_v8key.IsEmpty())
         return false;
@@ -182,13 +190,13 @@ struct Converter<std::map<K, V>> {
       if (!ConvertFromV8(isolate, v8key, &key) ||
           !ConvertFromV8(isolate, maybe_v8value.ToLocalChecked(), &out_value))
         return false;
-      (*out)[key] = std::move(out_value);
+      (*out)[std::move(key)] = std::move(out_value);
     }
     return true;
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const std::map<K, V>& dict) {
+                                   const std::map<K, V, Compare>& dict) {
     v8::Local<v8::Object> obj = v8::Object::New(isolate);
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     for (const auto& it : dict) {

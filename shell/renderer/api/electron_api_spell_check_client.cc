@@ -7,7 +7,6 @@
 #include <iterator>
 #include <memory>
 #include <set>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -31,7 +30,7 @@ namespace {
 bool HasWordCharacters(const std::u16string& text, size_t index) {
   base_icu::UChar32 code;
   while (index < text.size() &&
-         base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+         base::ReadUnicodeCharacter(text, &index, &code)) {
     ++index;
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
@@ -91,8 +90,7 @@ SpellCheckClient::~SpellCheckClient() {
 
 void SpellCheckClient::RequestCheckingOfText(
     const blink::WebString& text_to_check,
-    const std::vector<
-        WebTextCheckClient::WebSpellingMarker>& /* spelling_markers */,
+    const std::vector<blink::WebSpellingMarker>& /* spelling_markers */,
     ShouldForceRefreshTextCheckService /* should_force_refresh */,
     std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback) {
   std::u16string text(text_to_check.Utf16());

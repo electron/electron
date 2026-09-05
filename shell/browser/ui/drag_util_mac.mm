@@ -10,7 +10,6 @@
 
 #include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
-#include "third_party/skia/include/core/SkImageInfo.h"
 #include "ui/gfx/image/image.h"
 
 // Contents largely copied from
@@ -79,6 +78,8 @@ void DragFileItems(const std::vector<base::FilePath>& files,
                       eventNumber:0
                        clickCount:1
                          pressure:1.0];
+  if (!dragEvent)
+    return;
 
   // Run the drag operation.
   [native_view beginDraggingSessionWithItems:file_items

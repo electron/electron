@@ -51,15 +51,16 @@ NSString* ContainingDiskImageDevice(NSString* bundlePath) {
       stringWithFileSystemRepresentation:fs.f_mntfromname
                                   length:strlen(fs.f_mntfromname)];
 
+  NSPipe* stdoutPipe = [NSPipe pipe];
+
   NSTask* hdiutil = [[NSTask alloc] init];
   [hdiutil setLaunchPath:@"/usr/bin/hdiutil"];
   [hdiutil setArguments:[NSArray arrayWithObjects:@"info", @"-plist", nil]];
-  [hdiutil setStandardOutput:[NSPipe pipe]];
+  [hdiutil setStandardOutput:stdoutPipe];
   [hdiutil launch];
   [hdiutil waitUntilExit];
 
-  NSData* data =
-      [[[hdiutil standardOutput] fileHandleForReading] readDataToEndOfFile];
+  NSData* data = [[stdoutPipe fileHandleForReading] readDataToEndOfFile];
 
   NSDictionary* info =
       [NSPropertyListSerialization propertyListWithData:data
@@ -155,10 +156,9 @@ bool AuthorizedInstall(NSString* srcPath, NSString* dstPath, bool* canceled) {
 
   AuthorizationItem myItems = {kAuthorizationRightExecute, 0, nullptr, 0};
   AuthorizationRights myRights = {1, &myItems};
-  AuthorizationFlags myFlags =
-      (AuthorizationFlags)(kAuthorizationFlagInteractionAllowed |
-                           kAuthorizationFlagExtendRights |
-                           kAuthorizationFlagPreAuthorize);
+  AuthorizationFlags myFlags = kAuthorizationFlagInteractionAllowed |
+                               kAuthorizationFlagExtendRights |
+                               kAuthorizationFlagPreAuthorize;
 
   err = AuthorizationCopyRights(myAuthorizationRef, &myRights, nullptr, myFlags,
                                 nullptr);
@@ -270,34 +270,10 @@ void Relaunch(NSString* destinationPath) {
 }
 
 bool Trash(NSString* path) {
-  bool result = false;
-
-  if (floor(NSAppKitVersionNumber) >= NSAppKitVersionNumber10_8) {
-    result = [[NSFileManager defaultManager]
-          trashItemAtURL:[NSURL fileURLWithPath:path]
-        resultingItemURL:nil
-                   error:nil];
-  }
-
-  // As a last resort try trashing with AppleScript.
-  // This allows us to trash the app in macOS Sierra even when the app is
-  // running inside an app translocation image.
-  if (!result) {
-    auto* code = R"str(
-set theFile to POSIX file "%@"
-tell application "Finder"
-move theFile to trash
-end tell
-)str";
-    NSAppleScript* appleScript = [[NSAppleScript alloc]
-        initWithSource:[NSString stringWithFormat:@(code), path]];
-    NSDictionary* errorDict = nil;
-    NSAppleEventDescriptor* scriptResult =
-        [appleScript executeAndReturnError:&errorDict];
-    result = (scriptResult != nil);
-  }
-
-  return result;
+  return [[NSFileManager defaultManager]
+        trashItemAtURL:[NSURL fileURLWithPath:path]
+      resultingItemURL:nil
+                 error:nil];
 }
 
 bool DeleteOrTrash(NSString* path) {

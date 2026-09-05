@@ -10,11 +10,15 @@ however those files were cherry-picked from main branch and do not
 really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
+src/inspector/unofficial.gni - The node_protocol_generated_sources action
+was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
+regeneration when PDL domain files changed. Should be upstreamed.
+
 diff --git a/configure.py b/configure.py
-index 750ddc8ace6cad894e738f6e1d983b5906acc10f..e063f9131d4d547d231811dafea03c8c52b611e6 100755
+index 7fd64a9620e3365c9bb8cb2aae19b7b376bf0d52..979f50cd92898500108daa343cbefa00c590c776 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1736,7 +1736,7 @@ def configure_v8(o, configs):
+@@ -1987,7 +1987,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
@@ -24,7 +28,7 @@ index 750ddc8ace6cad894e738f6e1d983b5906acc10f..e063f9131d4d547d231811dafea03c8c
    # pointer compression is enabled so that we don't accidentally enable shared
    # cage mode when pointer compression is on.
 diff --git a/node.gni b/node.gni
-index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea469db7a91b 100644
+index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a99dbfbd5f 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -40,7 +44,7 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea46
  
    # The location of OpenSSL - use the one from node's deps by default.
    node_openssl_path = "$node_path/deps/openssl"
-@@ -50,7 +50,7 @@ declare_args() {
+@@ -48,7 +48,7 @@ declare_args() {
    node_openssl_system_ca_path = ""
  
    # Initialize v8 platform during node.js startup.
@@ -49,7 +53,7 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea46
  
    # Custom build tag.
    node_tag = ""
-@@ -70,10 +70,16 @@ declare_args() {
+@@ -68,10 +68,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
@@ -68,11 +72,51 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea46
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 581b9886ded52f294b7cc6b080b2269b7617c85e..e43e2559aaf48add88aad342b1c96fd34f26c87f 100644
+index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f1022a678 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -774,6 +774,7 @@ void BuiltinLoader::RegisterExternalReferences(
-   registry->Register(GetNatives);
+@@ -460,6 +460,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+   return value.As<Function>();
+ }
+ 
++MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
++    Local<Context> context,
++    const char* id,
++    LocalVector<String>* parameters,
++    Realm* optional_realm) {
++  Isolate* isolate = Isolate::GetCurrent();
++  const BuiltinSource* builtin_source = LoadBuiltinSource(isolate, id);
++  if (builtin_source == nullptr) {
++    THROW_ERR_MODULE_NOT_FOUND(isolate, "Cannot find module %s", id);
++    return MaybeLocal<Function>();
++  }
++  std::string filename_s = std::string("node:") + builtin_source->id;
++  Local<String> filename = OneByteString(isolate, filename_s);
++  Local<String> source = builtin_source->source.ToStringChecked(isolate);
++  ScriptOrigin origin(filename, 0, 0, true);
++  ScriptCompiler::Source script_source(source, origin);
++  return ScriptCompiler::CompileFunction(context,
++                                         &script_source,
++                                         parameters->size(),
++                                         parameters->data(),
++                                         0,
++                                         nullptr);
++}
++
+ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+                                                 const char* id,
+                                                 Realm* realm) {
+@@ -746,7 +770,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
+   // Pre-fetch all dependencies.
+   if (requests->Length() > 0) {
+     for (int i = 0; i < requests->Length(); i++) {
+-      Local<ModuleRequest> req = requests->Get(context, i).As<ModuleRequest>();
++      Local<ModuleRequest> req = requests->Get(i).As<ModuleRequest>();
+       std::string specifier =
+           Utf8Value(isolate, req->GetSpecifier()).ToString();
+       std::string resolved_id = ResolveRequestForBuiltin(specifier);
+@@ -905,6 +929,7 @@ void BuiltinLoader::RegisterExternalReferences(
+   registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
 +  EmbedderRegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -80,10 +124,10 @@ index 581b9886ded52f294b7cc6b080b2269b7617c85e..e43e2559aaf48add88aad342b1c96fd3
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 7a7b84337feb67960819472e43192dbdc151e299..bcdd50f635757f41287c87df1db9cd3b55c4b6b9 100644
+index b51b85ff6f2389d431890da3a39a406aeb8552e3..8cf93ffc86d5f186bf630aa95a304d5e457d9e97 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
-@@ -75,6 +75,8 @@ using BuiltinCodeCacheMap =
+@@ -82,6 +82,8 @@ using BuiltinCodeCacheMap =
  // Generated by tools/js2c.cc as node_javascript.cc
  void RegisterExternalReferencesForInternalizedBuiltinCode(
      ExternalReferenceRegistry* registry);
@@ -92,13 +136,27 @@ index 7a7b84337feb67960819472e43192dbdc151e299..bcdd50f635757f41287c87df1db9cd3b
  
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
+@@ -104,6 +106,13 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+   v8::MaybeLocal<v8::Function> LookupAndCompileFunction(
+       v8::Local<v8::Context> context, const char* id, Realm* optional_realm);
+ 
++  // Overload that accepts custom parameters for embedder scripts.
++  v8::MaybeLocal<v8::Function> LookupAndCompileFunction(
++      v8::Local<v8::Context> context,
++      const char* id,
++      v8::LocalVector<v8::String>* parameters,
++      Realm* optional_realm);
++
+   v8::MaybeLocal<v8::Value> CompileAndCallWith(v8::Local<v8::Context> context,
+                                                const char* id,
+                                                int argc,
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2e9dfb0f0
+index 2cb09f8e1d7ba6ba389f70cdfc6300458f469caa..1a7b6ec6e6c51cf947694fac5dfd860b345d478f
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
-@@ -28,6 +28,7 @@ namespace js2c {
+@@ -29,6 +29,7 @@ namespace js2c {
  int Main(int argc, char* argv[]);
  
  static bool is_verbose = false;
@@ -106,7 +164,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
  
  void Debug(const char* format, ...) {
    va_list arguments;
-@@ -175,6 +176,7 @@ const char* kTemplate = R"(
+@@ -176,6 +177,7 @@ const char* kTemplate = R"(
  #include "node_builtins.h"
  #include "node_external_reference.h"
  #include "node_internals.h"
@@ -114,7 +172,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
  
  namespace node {
  
-@@ -190,7 +192,11 @@ const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
+@@ -191,7 +193,11 @@ const ThreadsafeCopyOnWrite<BuiltinSourceMap> global_source_map {
  }  // anonymous namespace
  
  void BuiltinLoader::LoadJavaScriptSource() {
@@ -127,7 +185,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
  }
  
  void RegisterExternalReferencesForInternalizedBuiltinCode(
-@@ -207,6 +213,45 @@ UnionBytes BuiltinLoader::GetConfig() {
+@@ -208,6 +214,45 @@ UnionBytes BuiltinLoader::GetConfig() {
  }  // namespace node
  )";
  
@@ -173,7 +231,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
  Fragment Format(const Fragments& definitions,
                  const Fragments& initializers,
                  const Fragments& registrations) {
-@@ -216,13 +261,12 @@ Fragment Format(const Fragments& definitions,
+@@ -217,13 +262,12 @@ Fragment Format(const Fragments& definitions,
    size_t init_size = init_buf.size();
    std::vector<char> reg_buf = Join(registrations, "\n");
    size_t reg_size = reg_buf.size();
@@ -190,7 +248,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -846,12 +890,15 @@ int JS2C(const FileList& js_files,
+@@ -848,12 +892,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -206,7 +264,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -877,6 +924,8 @@ int Main(int argc, char* argv[]) {
+@@ -879,6 +926,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -215,7 +273,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -925,6 +974,14 @@ int Main(int argc, char* argv[]) {
+@@ -927,6 +976,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -230,7 +288,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -951,6 +1008,7 @@ int Main(int argc, char* argv[]) {
+@@ -953,6 +1010,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
@@ -251,10 +309,19 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d6d25cb03 100644
+index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..7265e09bf7601afe76463f528ffb385db796e093 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -147,31 +147,41 @@ template("node_gn_build") {
+@@ -94,7 +94,7 @@ template("node_gn_build") {
+       "-Wno-unused-function",
+     ]
+ 
+-    if (current_cpu == "x86") {
++    if (target_cpu == "x86") {
+       node_arch = "ia32"
+     } else {
+       node_arch = target_cpu
+@@ -147,32 +147,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
@@ -273,6 +340,7 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
        "deps/cares",
        "deps/histogram",
        "deps/llhttp",
+       "deps/merve",
        "deps/nbytes",
        "deps/nghttp2",
 -      "deps/ngtcp2",
@@ -299,7 +367,7 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -194,7 +204,7 @@ template("node_gn_build") {
+@@ -195,7 +205,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -308,7 +376,7 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
        sources += gypi_values.node_crypto_sources
      }
      if (node_use_sqlite) {
-@@ -223,6 +233,10 @@ template("node_gn_build") {
+@@ -224,6 +234,10 @@ template("node_gn_build") {
      }
    }
  
@@ -319,7 +387,7 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
    executable(target_name) {
      forward_variables_from(invoker, "*")
  
-@@ -314,6 +328,7 @@ template("node_gn_build") {
+@@ -315,6 +329,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -327,9 +395,9 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -324,26 +339,75 @@ template("node_gn_build") {
-       "src/embedded_data.cc",
-       "src/embedded_data.h",
+@@ -327,26 +342,75 @@ template("node_gn_build") {
+       "src/builtin_info.cc",
+       "src/builtin_info.h",
      ]
 -    include_dirs = [ "src" ]
 +    include_dirs = [ "src", "tools" ]
@@ -413,7 +481,7 @@ index c742b62c484e9dd205eff63dcffad78c76828375..20d2483bb16e297ab5b12aab6f56948d
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -357,11 +421,11 @@ template("node_gn_build") {
+@@ -360,11 +424,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

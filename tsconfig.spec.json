@@ -1,5 +1,11 @@
 {
   "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "module": "nodenext",
+    "moduleResolution": "node16",
+    "noEmit": true
+  },
   "include": [
     "spec",
     "typings"

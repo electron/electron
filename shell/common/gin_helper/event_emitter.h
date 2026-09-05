@@ -10,12 +10,7 @@
 
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
-
-namespace content {
-class RenderFrameHost;
-}
 
 namespace gin_helper {
 

@@ -3,15 +3,22 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Tue, 22 Mar 2022 16:24:44 -0500
 Subject: build: make libcxx_abi_unstable false for electron
 
-https://nornagon.medium.com/a-libc-odyssey-973e51649063
+The libc++ C++ standard library uses ABI versioning to control binary
+compatibility. ABI version 2 (Chromium's default) enables various
+optimizations that break compatibility with system libc++, while ABI
+version 1 maintains compatibility needed for native Node.js modules.
 
-See also https://github.com/electron/electron/issues/45810#issuecomment-2691417213.
+References:
+* https://nornagon.medium.com/a-libc-odyssey-973e51649063
+* https://github.com/electron/electron/issues/45810#issuecomment-2691417213.
+* https://libcxx.llvm.org/ABIGuarantees.html
+* third_party/libc++/src/include/__configuration/abi.h
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index 3cd0af88fd13613216464d31d04e26dbb8f61343..6335536338e1eba8b56055eee31910ecba6a65c4 100644
+index a9ab1614b67e2df7b379c1d8a4147265a15747db..f1c60c7d0a320e5a1e9a9e454ef0e084c594258c 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
-@@ -18,7 +18,9 @@
+@@ -18,7 +18,11 @@
  //    _LIBCPP_ABI_NAMESPACE to a shorter value.
  #define _LIBCPP_ABI_NAMESPACE __Cr
  
@@ -19,6 +26,48 @@ index 3cd0af88fd13613216464d31d04e26dbb8f61343..6335536338e1eba8b56055eee31910ec
 +#define _LIBCPP_ABI_VERSION 1
 +#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_ARRAY
 +#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW
++#define _LIBCPP_ABI_TRIVIALLY_COPYABLE_BIT_ITERATOR
++#define _LIBCPP_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
  
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
  #define _LIBCPP_ABI_FORCE_MICROSOFT 0
+diff --git a/components/password_manager/core/browser/password_form_manager.cc b/components/password_manager/core/browser/password_form_manager.cc
+index 3602205e9ced2f5229ed71e28c03b757c17d2468..4d2837dc32068e6d6ce93c173a2dd563c37341ab 100644
+--- a/components/password_manager/core/browser/password_form_manager.cc
++++ b/components/password_manager/core/browser/password_form_manager.cc
+@@ -41,6 +41,7 @@
+ #include "components/password_manager/core/browser/form_fetcher_impl.h"
+ #include "components/password_manager/core/browser/form_parsing/form_data_parser.h"
+ #include "components/password_manager/core/browser/form_parsing/password_field_prediction.h"
++#include "components/password_manager/core/browser/passkey_credential.h"
+ #include "components/password_manager/core/browser/password_feature_manager.h"
+ #include "components/password_manager/core/browser/password_form.h"
+ #include "components/password_manager/core/browser/password_form_cache.h"
+diff --git a/extensions/common/value_counter.cc b/extensions/common/value_counter.cc
+index 35a36ab127f061a291cec18064d2d5ffa5e503e6..d7ddea678252ce48ff57647e7977f92d38cac32e 100644
+--- a/extensions/common/value_counter.cc
++++ b/extensions/common/value_counter.cc
+@@ -31,6 +31,10 @@ ValueCounter::ValueCounter() {
+ ValueCounter::~ValueCounter() {
+ }
+ 
++bool ValueCounter::is_empty() const {
++  return entries_.empty();
++}
++
+ bool ValueCounter::Add(const base::Value& value) {
+   for (auto& entry : entries_) {
+     if (entry.value == value) {
+diff --git a/extensions/common/value_counter.h b/extensions/common/value_counter.h
+index f98ae27dcca669c668ed5b67e8a9962cf605f7dc..2b3708caf39c2c4b2b018f23446e377b9a2cd094 100644
+--- a/extensions/common/value_counter.h
++++ b/extensions/common/value_counter.h
+@@ -39,7 +39,7 @@ class ValueCounter {
+   bool Remove(const base::Value& value);
+ 
+   // Returns true if there are no values of any type being counted.
+-  bool is_empty() const { return entries_.empty(); }
++  bool is_empty() const;
+ 
+  private:
+   struct Entry;

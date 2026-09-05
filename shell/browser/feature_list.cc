@@ -4,14 +4,15 @@
 
 #include "electron/shell/browser/feature_list.h"
 
+#include <algorithm>
 #include <string>
+#include <string_view>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
-#include "content/common/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -32,10 +33,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "printing/printing_features.h"
-#endif
-
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/views_features.h"
+#include "ui/base/ui_base_features.h"
 #endif
 
 namespace electron {
@@ -46,12 +44,22 @@ void InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
-  // Disable creation of spare renderer process with site-per-process mode,
-  // it interferes with our process preference tracking for non sandboxed mode.
-  // Can be reenabled when our site instance policy is aligned with chromium
-  // when node integration is enabled.
+  // A renderer's command line depends on the WebContents it is created for,
+  // so Electron warms one spare itself (for the first sandboxed window) rather
+  // than letting content keep one alive at all times; apps that open many
+  // windows can opt back into that with --enable-features.
+  if (!std::ranges::any_of(
+          base::FeatureList::SplitFeatureListString(enable_features),
+          [](std::string_view entry) {
+            std::string name, study, group, params;
+            return base::FeatureList::ParseEnableFeatureString(
+                       entry, &name, &study, &group, &params) &&
+                   name == features::kSpareRendererForSitePerProcess.name;
+          })) {
+    disable_features +=
+        std::string(",") + features::kSpareRendererForSitePerProcess.name;
+  }
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name +
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6487926
       // this breaks PDFs locally as we don't have GLIC infra enabled.
       std::string(",") + ax::mojom::features::kScreenAIOCREnabled.name +
@@ -71,13 +79,6 @@ void InitializeFeatureList() {
       blink::features::kDropInputEventsWhilePaintHolding.name;
 
 #if BUILDFLAG(IS_WIN)
-  // Refs https://issues.chromium.org/issues/401996981
-  // TODO(deepak1556): Remove this once test added in
-  // https://github.com/electron/electron/pull/12904
-  // can work without this feature.
-  enable_features += std::string(",") +
-                     views::features::kEnableTransparentHwndEnlargement.name;
-
   // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
   // This feature causes the following sandbox failure on Windows:
   // sandbox\policy\win\sandbox_win.cc:777 Sandbox cannot access executable
@@ -87,18 +88,21 @@ void InitializeFeatureList() {
       std::string(",") + sandbox::policy::features::kNetworkServiceSandbox.name;
 #endif
 
-#if BUILDFLAG(IS_MAC)
-  disable_features +=
-      // MacWebContentsOcclusion is causing some odd visibility
-      // issues with multiple web contents
-      std::string(",") + features::kMacWebContentsOcclusion.name;
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enable window.showSaveFilePicker api for saving pdf files.
   // Refs https://issues.chromium.org/issues/373852607
   enable_features +=
       std::string(",") + chrome_pdf::features::kPdfUseShowSaveFilePicker.name;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  // Without this, globalShortcut is a silent no-op on GNOME Wayland (the
+  // ozone factory returns no listener there). Chromium keeps it off due to
+  // https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome/-/issues/185,
+  // but current GNOME persists bound shortcuts across sessions, so re-binds
+  // are silent. A user-passed --disable-features for this still wins.
+  enable_features +=
+      std::string(",") + features::kGlobalShortcutsPortalPreferredTrigger.name;
 #endif
 
   std::string platform_specific_enable_features =

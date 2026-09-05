@@ -13,6 +13,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_service_worker_main.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
@@ -20,9 +21,10 @@
 #include "shell/common/gin_converters/service_worker_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
+#include "v8/include/cppgc/allocation.h"
 
 using ServiceWorkerStatus =
     content::ServiceWorkerRunningInfo::ServiceWorkerVersionStatus;
@@ -69,33 +71,36 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
   return gin::DataObjectBuilder(isolate)
       .Set("scriptUrl", info.script_url.spec())
       .Set("scope", info.scope.spec())
-      .Set("renderProcessId", info.render_process_id)
+      .Set("renderProcessId", info.render_process_id.GetUnsafeValue())
       .Build();
 }
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo ServiceWorkerContext::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo ServiceWorkerContext::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronServiceWorkerContext);
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  storage_partition_ = browser_context->GetDefaultStoragePartition();
-  service_worker_context_ = storage_partition_->GetServiceWorkerContext();
+    ElectronBrowserContext* browser_context)
+    : service_worker_context_{browser_context->GetDefaultStoragePartition()
+                                  ->GetServiceWorkerContext()},
+      browser_context_id_{browser_context->UniqueId()},
+      storage_partition_config_{
+          browser_context->GetDefaultStoragePartition()->GetConfig()} {
   service_worker_context_->AddObserver(this);
 }
 
 ServiceWorkerContext::~ServiceWorkerContext() {
-  service_worker_context_->RemoveObserver(this);
+  if (service_worker_context_)
+    service_worker_context_->RemoveObserver(this);
 }
 
 void ServiceWorkerContext::OnRunningStatusChanged(
     int64_t version_id,
     blink::EmbeddedWorkerStatus running_status) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (worker)
+  if (auto* worker = ServiceWorkerMain::FromVersionID(
+          browser_context_id_, storage_partition_config_, version_id))
     worker->OnRunningStatusChanged(running_status);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -133,9 +138,8 @@ void ServiceWorkerContext::OnRegistrationCompleted(const GURL& scope) {
 
 void ServiceWorkerContext::OnVersionRedundant(int64_t version_id,
                                               const GURL& scope) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (worker)
+  if (auto* worker = ServiceWorkerMain::FromVersionID(
+          browser_context_id_, storage_partition_config_, version_id))
     worker->OnVersionRedundant();
 }
 
@@ -159,7 +163,8 @@ void ServiceWorkerContext::OnVersionStoppedRunning(int64_t version_id) {
 
 void ServiceWorkerContext::OnDestruct(content::ServiceWorkerContext* context) {
   if (context == service_worker_context_) {
-    delete this;
+    service_worker_context_->RemoveObserver(this);
+    service_worker_context_ = nullptr;
   }
 }
 
@@ -205,19 +210,24 @@ v8::Local<v8::Value> ServiceWorkerContext::GetFromVersionID(
 v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionID(
     v8::Isolate* isolate,
     int64_t version_id) {
-  return ServiceWorkerMain::From(isolate, service_worker_context_,
-                                 storage_partition_, version_id)
-      .ToV8();
+  ServiceWorkerMain* worker = ServiceWorkerMain::From(
+      isolate, service_worker_context_, browser_context_id_,
+      storage_partition_config_, version_id);
+  v8::Local<v8::Value> wrapper;
+  if (worker && gin::TryConvertToV8(isolate, worker, &wrapper))
+    return wrapper;
+  return {};
 }
 
-gin_helper::Handle<ServiceWorkerMain>
-ServiceWorkerContext::GetWorkerFromVersionIDIfExists(v8::Isolate* isolate,
-                                                     int64_t version_id) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (!worker)
-    return gin_helper::Handle<ServiceWorkerMain>();
-  return gin_helper::CreateHandle(isolate, worker);
+v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionIDIfExists(
+    v8::Isolate* isolate,
+    int64_t version_id) {
+  ServiceWorkerMain* worker = ServiceWorkerMain::FromVersionID(
+      browser_context_id_, storage_partition_config_, version_id);
+  v8::Local<v8::Value> wrapper;
+  if (worker && gin::TryConvertToV8(isolate, worker, &wrapper))
+    return wrapper;
+  return {};
 }
 
 v8::Local<v8::Promise> ServiceWorkerContext::StartWorkerForScope(
@@ -232,9 +242,13 @@ v8::Local<v8::Promise> ServiceWorkerContext::StartWorkerForScope(
   service_worker_context_->StartWorkerForScope(
       scope, storage_key,
       base::BindOnce(&ServiceWorkerContext::DidStartWorkerForScope,
-                     weak_ptr_factory_.GetWeakPtr(), shared_promise),
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     shared_promise),
       base::BindOnce(&ServiceWorkerContext::DidFailToStartWorkerForScope,
-                     weak_ptr_factory_.GetWeakPtr(), shared_promise));
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     shared_promise));
 
   return handle;
 }
@@ -242,8 +256,9 @@ v8::Local<v8::Promise> ServiceWorkerContext::StartWorkerForScope(
 void ServiceWorkerContext::DidStartWorkerForScope(
     std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
     int64_t version_id,
-    int process_id,
-    int thread_id) {
+    content::ChildProcessId process_id,
+    int thread_id,
+    const blink::ServiceWorkerToken& token) {
   v8::Isolate* isolate = shared_promise->isolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> service_worker_main =
@@ -272,14 +287,13 @@ v8::Local<v8::Promise> ServiceWorkerContext::StopAllWorkers(
 }
 
 // static
-gin_helper::Handle<ServiceWorkerContext> ServiceWorkerContext::Create(
+ServiceWorkerContext* ServiceWorkerContext::Create(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
-  return gin_helper::CreateHandle(
-      isolate, new ServiceWorkerContext(isolate, browser_context));
+  return cppgc::MakeGarbageCollected<ServiceWorkerContext>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, browser_context);
 }
 
-// static
 gin::ObjectTemplateBuilder ServiceWorkerContext::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
@@ -298,8 +312,17 @@ gin::ObjectTemplateBuilder ServiceWorkerContext::GetObjectTemplateBuilder(
       .SetMethod("_stopAllWorkers", &ServiceWorkerContext::StopAllWorkers);
 }
 
-const char* ServiceWorkerContext::GetTypeName() {
-  return "ServiceWorkerContext";
+void ServiceWorkerContext::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<ServiceWorkerContext>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
+const gin::WrapperInfo* ServiceWorkerContext::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ServiceWorkerContext::GetHumanReadableName() const {
+  return "Electron / ServiceWorkerContext";
 }
 
 }  // namespace electron::api

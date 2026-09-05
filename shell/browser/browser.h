@@ -15,7 +15,6 @@
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
@@ -34,8 +33,17 @@ class Arguments;
 }
 
 namespace gin_helper {
-class Arguments;
-}
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
+namespace v8 {
+template <typename T>
+class Local;
+class Isolate;
+class Promise;
+class Value;
+}  // namespace v8
 
 namespace electron {
 
@@ -58,10 +66,7 @@ struct LaunchItem {
 
 struct LoginItemSettings {
   bool open_at_login = false;
-  bool open_as_hidden = false;
-  bool restore_state = false;
   bool opened_at_login = false;
-  bool opened_as_hidden = false;
   std::u16string path;
   std::vector<std::u16string> args;
 
@@ -75,9 +80,12 @@ struct LoginItemSettings {
   std::wstring name;
 
   // used in browser::getLoginItemSettings
-  bool executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
 #endif
+
+  // used in browser::getLoginItemSettings; only meaningful on Windows but
+  // always emitted so consumers don't observe `undefined`.
+  bool executable_will_launch_at_login = false;
 
   LoginItemSettings();
   ~LoginItemSettings();
@@ -101,6 +109,9 @@ class Browser : private WindowListObserver {
 
   // Exit the application immediately and set exit code.
   void Exit(gin::Arguments* args);
+
+  // Same as Exit() but callable from native code (no gin arguments).
+  void ExitWithCode(int code);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
@@ -134,6 +145,10 @@ class Browser : private WindowListObserver {
   void SetAppUserModelID(const std::wstring& name);
 #endif
 
+  // Validate that a protocol scheme conforms to RFC 3986:
+  // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  static bool IsValidProtocolScheme(const std::string& scheme);
+
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
                                      gin::Arguments* args);
@@ -148,11 +163,9 @@ class Browser : private WindowListObserver {
 
   std::u16string GetApplicationNameForProtocol(const GURL& url);
 
-#if !BUILDFLAG(IS_LINUX)
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
                                                        const GURL& url);
-#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(std::optional<int> count);
@@ -162,8 +175,8 @@ class Browser : private WindowListObserver {
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
-  // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
+  // Returns whether the application is active.
+  bool IsActive();
 
   // Hide the application.
   void Hide();
@@ -174,7 +187,7 @@ class Browser : private WindowListObserver {
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       base::Value::Dict user_info,
+                       base::DictValue user_info,
                        gin::Arguments* args);
 
   // Returns the type name of the current user activity.
@@ -189,7 +202,7 @@ class Browser : private WindowListObserver {
 
   // Updates the current user activity
   void UpdateCurrentActivity(const std::string& type,
-                             base::Value::Dict user_info);
+                             base::DictValue user_info);
 
   // Indicates that an user activity is about to be resumed.
   bool WillContinueUserActivity(const std::string& type);
@@ -200,16 +213,16 @@ class Browser : private WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::Value::Dict user_info,
-                            base::Value::Dict details);
+                            base::DictValue user_info,
+                            base::DictValue details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
-                                base::Value::Dict user_info);
+                                base::DictValue user_info);
 
   // Gives an opportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
-                               base::Value::Dict user_info);
+                               base::DictValue user_info);
 
   void ApplyForcedRTL();
 
@@ -246,7 +259,7 @@ class Browser : private WindowListObserver {
 #endif  // BUILDFLAG(IS_MAC)
 
   void ShowAboutPanel();
-  void SetAboutPanelOptions(base::Value::Dict options);
+  void SetAboutPanelOptions(base::DictValue options);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void ShowEmojiPanel();
@@ -276,11 +289,6 @@ class Browser : private WindowListObserver {
   PCWSTR GetAppUserModelID();
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_LINUX)
-  // Whether Unity launcher is running.
-  bool IsUnityRunning();
-#endif  // BUILDFLAG(IS_LINUX)
-
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 
@@ -306,7 +314,7 @@ class Browser : private WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching(base::Value::Dict launch_info);
+  void DidFinishLaunching(base::DictValue launch_info);
 
   void OnAccessibilitySupportChanged();
 
@@ -352,7 +360,10 @@ class Browser : private WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  base::ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;
@@ -379,7 +390,7 @@ class Browser : private WindowListObserver {
   bool was_launched_at_login_;
 #endif
 
-  base::Value::Dict about_panel_options_;
+  base::DictValue about_panel_options_;
 
 #if BUILDFLAG(IS_WIN)
   void UpdateBadgeContents(HWND hwnd,

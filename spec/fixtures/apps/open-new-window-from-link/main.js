@@ -2,7 +2,7 @@ const { app, BrowserWindow } = require('electron');
 
 const path = require('node:path');
 
-async function createWindow () {
+async function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -17,11 +17,13 @@ async function createWindow () {
 
   await mainWindow.loadFile('index.html');
 
-  const rect = await mainWindow.webContents.executeJavaScript('JSON.parse(JSON.stringify(document.querySelector("a").getBoundingClientRect()))');
+  const rect = await mainWindow.webContents.executeJavaScript(
+    'JSON.parse(JSON.stringify(document.querySelector("a").getBoundingClientRect()))'
+  );
   const x = rect.x + rect.width / 2;
   const y = rect.y + rect.height / 2;
 
-  function click (x, y, options) {
+  function click(x, y, options) {
     x = Math.floor(x);
     y = Math.floor(y);
     mainWindow.webContents.sendInputEvent({

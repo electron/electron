@@ -11,6 +11,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/cpp/data_element.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
+#include "shell/common/gc_plugin.h"
 
 namespace electron::api {
 
@@ -45,6 +46,8 @@ class DataPipeHolder final : public gin::Wrappable<DataPipeHolder> {
 
  private:
   std::string id_;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
 };
 

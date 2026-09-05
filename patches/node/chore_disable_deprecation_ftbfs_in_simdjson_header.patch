@@ -14,10 +14,10 @@ and
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index 35ff2626f26735495e308381782e5f1d9b8a629e..b4aa4bce33d62c579beee745712d24d9ebd5e0c2 100644
+index 89175e6d6f70c35658566349eefaa79554ffa6c7..97280334abbff01495ac7dc95df3683abc6b9caf 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
-@@ -4179,12 +4179,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
+@@ -4408,12 +4408,17 @@ private:
  
  } // namespace simdjson
  
@@ -35,7 +35,7 @@ index 35ff2626f26735495e308381782e5f1d9b8a629e..b4aa4bce33d62c579beee745712d24d9
  namespace simdjson {
  namespace internal {
  
-@@ -4636,6 +4641,9 @@ inline simdjson_result<padded_string> padded_string::load(std::string_view filen
+@@ -5115,6 +5120,9 @@ simdjson_inline bool padded_memory_map::is_valid() const noexcept {
  
  } // namespace simdjson
  
@@ -45,16 +45,16 @@ index 35ff2626f26735495e308381782e5f1d9b8a629e..b4aa4bce33d62c579beee745712d24d9
  inline simdjson::padded_string operator ""_padded(const char *str, size_t len) {
    return simdjson::padded_string(str, len);
  }
-@@ -4644,6 +4652,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
-   return simdjson::padded_string(reinterpret_cast<const char8_t *>(str), len);
+@@ -5123,6 +5131,8 @@ inline simdjson::padded_string operator ""_padded(const char8_t *str, size_t len
+   return simdjson::padded_string(reinterpret_cast<const char *>(str), len);
  }
  #endif
 +#pragma clang diagnostic pop
 +
+ 
  #endif // SIMDJSON_PADDED_STRING_INL_H
  /* end file simdjson/padded_string-inl.h */
- /* skipped duplicate #include "simdjson/padded_string_view.h" */
-@@ -43674,12 +43684,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -72764,12 +72774,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  
@@ -71,7 +71,7 @@ index 35ff2626f26735495e308381782e5f1d9b8a629e..b4aa4bce33d62c579beee745712d24d9
  
  } // namespace ondemand
  } // namespace arm64
-@@ -57923,12 +57937,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -86146,12 +86160,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  

@@ -18,8 +18,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "components/remote_cocoa/browser/scoped_cg_window_id.h"
-#include "content/public/browser/browser_accessibility_state.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/browser.h"
@@ -42,9 +40,11 @@
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
-#include "ui/gl/gpu_switching_manager.h"
+#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
+#include "ui/views/view_targeter.h"
+#include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
@@ -112,42 +112,50 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 
 }  // namespace gin
 
-namespace electron {
+namespace {
 
-class NativeAppWindowFrameViewMacClient
-    : public views::NativeFrameViewMacClient {
+// A ViewTargeterDelegate installed on content_view_ that makes it
+// hit-test-transparent except where one of its descendants covers the
+// target rect.
+//
+// In BrowserWindow, the WebContentsView is added as a sibling of
+// content_view_ at a lower z-order so that user-added child views paint
+// above web content. content_view_ itself covers the full window, so the
+// default DoesIntersectRect (a bounds check) would always return true and
+// the parent targeter would stop there, never reaching the WebContentsView
+// behind it. By only intersecting where a child actually does, the parent's
+// default TargetForRect loop skips content_view_ and falls through to the
+// sibling, ultimately resolving to the WebContentsView's NativeViewHost so
+// BridgedContentView::hitTest: routes the event to RenderWidgetHostViewCocoa.
+//
+// This must never affect TargetForRect's contract — it only narrows
+// HitTestRect, which the default loop already handles by skipping the child.
+// Returning nullptr from TargetForRect (the previous approach) violated the
+// contract and crashed RootView::UpdateCursor (see #51576).
+class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
  public:
-  NativeAppWindowFrameViewMacClient(views::Widget* frame,
-                                    NativeWindowMac* window)
-      : frame_(frame), native_app_window_(window) {}
-
-  NativeAppWindowFrameViewMacClient(const NativeAppWindowFrameViewMacClient&) =
-      delete;
-  NativeAppWindowFrameViewMacClient& operator=(
-      const NativeAppWindowFrameViewMacClient&) = delete;
-
-  ~NativeAppWindowFrameViewMacClient() override = default;
-
-  std::optional<int> NonClientHitTest(const gfx::Point& point) override {
-    if (frame_->IsFullscreen()) {
-      return HTCLIENT;
+  bool DoesIntersectRect(const views::View* target,
+                         const gfx::Rect& rect) const override {
+    if (!views::ViewTargeterDelegate::DoesIntersectRect(target, rect)) {
+      return false;
     }
-
-    // Check for possible draggable region in the client area for the frameless
-    // window.
-    int contents_hit_test = native_app_window_->NonClientHitTest(point);
-    if (contents_hit_test != HTNOWHERE)
-      return contents_hit_test;
-
-    return HTCLIENT;
+    for (const views::View* child : target->children()) {
+      if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree()) {
+        continue;
+      }
+      gfx::RectF rect_in_child(rect);
+      views::View::ConvertRectToTarget(target, child, &rect_in_child);
+      if (child->HitTestRect(gfx::ToEnclosingRect(rect_in_child))) {
+        return true;
+      }
+    }
+    return false;
   }
-
- private:
-  const raw_ptr<views::Widget> frame_;
-  // Weak. Owned by extensions::AppWindow (which manages our Widget via its
-  // WebContents).
-  const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
 };
+
+}  // namespace
+
+namespace electron {
 
 NativeWindowMac::~NativeWindowMac() = default;
 
@@ -350,7 +358,7 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
   // by calls to other APIs.
   SetMaximizable(maximizable);
 
-  // Default content view.
+  // Default content view (replaced by BaseWindow::SetContentView).
   SetContentView(new views::View());
   AddContentViewLayers();
 
@@ -360,13 +368,24 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
-  if (content_view())
-    root_view->RemoveChildView(content_view());
+  if (views::View* old_view = content_view()) {
+    set_content_view(nullptr);
+    if (old_view->owned_by_client())
+      root_view->RemoveChildView(old_view);
+    else
+      root_view->RemoveChildViewT(old_view);
+  }
 
   set_content_view(view);
+
+  // Make content_view_ hit-test-transparent where it has no covering child
+  // so events fall through to the sibling WebContentsView in BrowserWindow.
+  view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
+      std::make_unique<ContentViewTargeterDelegate>()));
+
   root_view->AddChildViewRaw(content_view());
 
-  root_view->DeprecatedLayoutImmediately();
+  FlushPendingRootLayout(root_view);
 }
 
 void NativeWindowMac::Close() {
@@ -393,8 +412,8 @@ void NativeWindowMac::Close() {
   // even after the user has ended the sheet.
   // Ensure it's closed before calling [window_ performClose:nil].
   // If multiple sheets are open, they must all be closed.
-  while ([window_ attachedSheet]) {
-    [window_ endSheet:[window_ attachedSheet]];
+  while (NSWindow* sheet = [window_ attachedSheet]) {
+    [window_ endSheet:sheet];
   }
   DCHECK_EQ([[window_ sheets] count], 0UL);
 
@@ -453,6 +472,8 @@ void NativeWindowMac::Show() {
     return;
   }
 
+  FlushPendingDisplayMode();
+
   set_wants_to_be_visible(true);
 
   // Reattach the window to the parent to actually show it.
@@ -467,6 +488,8 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  FlushPendingDisplayMode();
+
   set_wants_to_be_visible(true);
 
   // Reattach the window to the parent to actually show it.
@@ -486,8 +509,8 @@ void NativeWindowMac::Hide() {
   // If a sheet is attached to the window when we call [window_ orderOut:nil],
   // the sheet won't be able to show again on the same window.
   // Ensure it's closed before calling [window_ orderOut:nil].
-  if ([window_ attachedSheet])
-    [window_ endSheet:[window_ attachedSheet]];
+  if (NSWindow* sheet = [window_ attachedSheet])
+    [window_ endSheet:sheet];
 
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
@@ -533,8 +556,8 @@ void NativeWindowMac::SetEnabled(bool enable) {
           NSLog(@"main window disabled");
           return;
         }];
-  } else if ([window_ attachedSheet]) {
-    [window_ endSheet:[window_ attachedSheet]];
+  } else if (NSWindow* sheet = [window_ attachedSheet]) {
+    [window_ endSheet:sheet];
   }
 }
 
@@ -959,10 +982,9 @@ void NativeWindowMac::SetWindowLevel(int unbounded_level) {
   // a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable_);
 
-  // This must be notified at the very end or IsAlwaysOnTop
-  // will not yet have been updated to reflect the new status
   if (did_z_order_level_change)
-    NativeWindow::NotifyWindowAlwaysOnTopChanged();
+    NativeWindow::NotifyWindowAlwaysOnTopChanged(z_order_level !=
+                                                 ui::ZOrderLevel::kNormal);
 }
 
 ui::ZOrderLevel NativeWindowMac::GetZOrderLevel() const {
@@ -1162,8 +1184,7 @@ void NativeWindowMac::InvalidateShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
-  [window_ setAlphaValue:boundedOpacity];
+  [window_ setAlphaValue:ClampOpacity(opacity)];
 }
 
 double NativeWindowMac::GetOpacity() const {
@@ -1535,6 +1556,18 @@ void NativeWindowMac::RedrawTrafficLights() {
     [buttons_proxy_ redraw];
 }
 
+void NativeWindowMac::HideTrafficLights() {
+  if (buttons_proxy_)
+    [buttons_proxy_ setVisible:NO];
+}
+
+void NativeWindowMac::RestoreTrafficLights() {
+  if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
+    [buttons_proxy_ redraw];
+    [buttons_proxy_ setVisible:YES];
+  }
+}
+
 // In simpleFullScreen mode, update the frame for new bounds.
 void NativeWindowMac::UpdateFrame() {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
@@ -1722,11 +1755,24 @@ void NativeWindowMac::Cleanup() {
 
 std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
     views::Widget* widget) {
-  CHECK(!frame_view_client_);
-  frame_view_client_ =
-      std::make_unique<NativeAppWindowFrameViewMacClient>(widget, this);
-  return std::make_unique<views::NativeFrameViewMac>(widget,
-                                                     frame_view_client_.get());
+  auto frame_view = std::make_unique<views::NativeFrameViewMac>(widget);
+  frame_view->set_non_client_hit_test_callback(base::BindRepeating(
+      &NativeWindowMac::FrameViewNonClientHitTest, base::Unretained(this)));
+  return frame_view;
+}
+
+int NativeWindowMac::FrameViewNonClientHitTest(const gfx::Point& point) {
+  if (widget()->IsFullscreen()) {
+    return HTCLIENT;
+  }
+
+  // Check for possible draggable region in the client area for the frameless
+  // window.
+  int contents_hit_test = NonClientHitTest(point);
+  if (contents_hit_test != HTNOWHERE)
+    return contents_hit_test;
+
+  return HTCLIENT;
 }
 
 bool NativeWindowMac::HasStyleMask(NSUInteger flag) const {

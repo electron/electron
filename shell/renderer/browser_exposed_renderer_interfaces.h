@@ -13,8 +13,6 @@ namespace electron {
 class RendererClientBase;
 }
 
-class ChromeContentRendererClient;
-
 void ExposeElectronRendererInterfacesToBrowser(
     electron::RendererClientBase* client,
     mojo::BinderMap* binders);

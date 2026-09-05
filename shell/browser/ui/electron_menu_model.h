@@ -33,6 +33,19 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     std::optional<std::vector<GURL>> urls;
     std::optional<std::vector<base::FilePath>> file_paths;
   };
+
+  struct Badge {
+    Badge();
+    Badge(Badge&&);
+    Badge(const Badge&);
+    Badge& operator=(const Badge&);
+    Badge& operator=(Badge&&);
+    ~Badge();
+
+    std::string type;  // "alerts", "updates", "new-items" or "none"
+    std::optional<int> count;
+    std::optional<std::string> content;
+  };
 #endif
 
   class Delegate : public ui::SimpleMenuModel::Delegate {
@@ -48,6 +61,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
         int command_id) const = 0;
 
     virtual bool ShouldCommandIdWorkWhenHidden(int command_id) const = 0;
+
+    virtual std::u16string GetAccessibilityLabelForCommandId(
+        int command_id) const = 0;
 
 #if BUILDFLAG(IS_MAC)
     virtual bool GetSharingItemForCommandId(int command_id,
@@ -86,10 +102,12 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetToolTipAt(size_t index);
   void SetCustomType(size_t index, const std::u16string& customType);
   std::u16string GetCustomTypeAt(size_t index);
+  std::u16string GetAccessibilityLabelAt(size_t index) const;
   void SetRole(size_t index, const std::u16string& role);
   std::u16string GetRoleAt(size_t index);
-  void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
+  std::u16string GetLabelAt(size_t index) const override;
   std::u16string GetSecondaryLabelAt(size_t index) const override;
+  ui::ImageModel GetIconAt(size_t index) const override;
   bool GetAcceleratorAtWithParams(size_t index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -104,6 +122,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     return sharing_item_;
   }
 
+  // Set/Get the badge of a menu item; std::nullopt removes it.
+  void SetBadge(size_t index, std::optional<Badge> badge);
+  bool GetBadgeAt(size_t index, Badge* badge) const;
 #endif
 
   // ui::SimpleMenuModel:
@@ -122,11 +143,11 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
 #if BUILDFLAG(IS_MAC)
   std::optional<SharingItem> sharing_item_;
+  base::flat_map<int, Badge> badges_;  // command id -> badge
 #endif
 
-  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
-  base::flat_map<int, std::u16string> roles_;      // command id -> role
-  base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string> toolTips_;  // command id -> tooltip
+  base::flat_map<int, std::u16string> roles_;     // command id -> role
   base::flat_map<int, std::u16string>
       customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;

@@ -1,8 +1,6 @@
 const { app, webContents, protocol, session } = require('electron');
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'test', privileges: { standard: true, secure: true } }
-]);
+protocol.registerSchemesAsPrivileged([{ scheme: 'test', privileges: { standard: true, secure: true } }]);
 
 app.whenReady().then(function () {
   const ses = session.fromPartition('persist:test-standard-shutdown');

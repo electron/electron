@@ -21,13 +21,13 @@ v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
 
   [[AtomApplication sharedApplication] registerForRemoteNotifications];
 
-  PushNotifications::apns_promise_set_.emplace_back(std::move(promise));
+  apns_promise_set_.emplace_back(std::move(promise));
   return handle;
 }
 
 void PushNotifications::ResolveAPNSPromiseSetWithToken(
     const std::string& token_string) {
-  auto promises = std::move(PushNotifications::apns_promise_set_);
+  auto promises = std::move(apns_promise_set_);
   for (auto& promise : promises) {
     promise.Resolve(token_string);
   }
@@ -35,7 +35,7 @@ void PushNotifications::ResolveAPNSPromiseSetWithToken(
 
 void PushNotifications::RejectAPNSPromiseSetWithError(
     const std::string& error_message) {
-  auto promises = std::move(PushNotifications::apns_promise_set_);
+  auto promises = std::move(apns_promise_set_);
   for (auto& promise : promises) {
     promise.RejectWithErrorMessage(error_message);
   }
@@ -46,7 +46,7 @@ void PushNotifications::UnregisterForAPNSNotifications() {
 }
 
 void PushNotifications::OnDidReceiveAPNSNotification(
-    const base::Value::Dict& user_info) {
+    const base::DictValue& user_info) {
   Emit("received-apns-notification", user_info);
 }
 

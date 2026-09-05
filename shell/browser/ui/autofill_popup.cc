@@ -6,11 +6,8 @@
 #include <memory>
 #include <vector>
 
-#include "base/feature_list.h"
 #include "base/i18n/rtl.h"
-#include "components/autofill/core/common/autofill_features.h"
 #include "content/public/browser/render_frame_host.h"
-#include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_view_proxy.h"
@@ -18,8 +15,6 @@
 #include "shell/browser/ui/views/autofill_popup_view.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-#include "ui/color/color_id.h"
-#include "ui/color/color_provider.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -172,20 +167,30 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
                                bool offscreen,
                                views::View* parent,
                                const gfx::RectF& r) {
+  DCHECK(parent);
+
   Hide();
+
+  // A Widget can outlive its NativeWidget during teardown.
+  // Do not create a child popup once the parent native view is gone.
+  views::Widget* parent_widget = parent->GetWidget();
+  if (!parent_widget || parent_widget->IsClosed() ||
+      !parent_widget->GetNativeView()) {
+    return;
+  }
 
   frame_host_ = frame_host;
   element_bounds_ = gfx::ToEnclosedRect(r);
 
-  gfx::Vector2d height_offset(0, element_bounds_.height());
-  gfx::Point menu_position(element_bounds_.origin() + height_offset);
+  gfx::Vector2d height_offset{0, element_bounds_.height()};
+  gfx::Point menu_position{element_bounds_.origin() + height_offset};
   views::View::ConvertPointToScreen(parent, &menu_position);
-  popup_bounds_ = gfx::Rect(menu_position, element_bounds_.size());
+  popup_bounds_ = gfx::Rect{menu_position, element_bounds_.size()};
 
   parent_ = parent;
   parent_->AddObserver(this);
 
-  view_ = new AutofillPopupView(this, parent->GetWidget());
+  view_ = new AutofillPopupView{this, parent_widget};
 
   if (offscreen) {
     auto* rwhv = embedder_frame_host ? embedder_frame_host->GetView()
@@ -212,13 +217,19 @@ void AutofillPopup::Hide() {
 
 void AutofillPopup::SetItems(const std::vector<std::u16string>& values,
                              const std::vector<std::u16string>& labels) {
-  DCHECK(view_);
   values_ = values;
   labels_ = labels;
+
+  if (!view_)
+    return;
+
   UpdatePopupBounds();
   view_->OnSuggestionsChanged();
-  if (view_)  // could be hidden after the change
-    view_->DoUpdateBoundsAndRedrawPopup();
+
+  if (!view_)
+    return;
+
+  view_->DoUpdateBoundsAndRedrawPopup();
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
@@ -290,12 +301,6 @@ const gfx::FontList& AutofillPopup::GetValueFontListForRow(int index) const {
 
 const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
   return smaller_font_list_;
-}
-
-ui::ColorId AutofillPopup::GetBackgroundColorIDForRow(int index) const {
-  return (view_ && index == view_->GetSelectedLine())
-             ? ui::kColorResultsTableHoveredBackground
-             : ui::kColorResultsTableNormalBackground;
 }
 
 int AutofillPopup::LineFromY(int y) const {

@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
-#include "shell/browser/serial/serial_chooser_context.h"
 
 namespace base {
 template <typename T>

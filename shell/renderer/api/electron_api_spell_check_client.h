@@ -21,7 +21,6 @@
 #include "v8/include/v8-local-handle.h"
 
 namespace blink {
-struct WebTextCheckingResult;
 class WebTextCheckingCompletion;
 }  // namespace blink
 
@@ -44,8 +43,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // blink::WebTextCheckClient:
   void RequestCheckingOfText(
       const blink::WebString& text_to_check,
-      const std::vector<WebTextCheckClient::WebSpellingMarker>&
-          spelling_markers,
+      const std::vector<blink::WebSpellingMarker>& spelling_markers,
       ShouldForceRefreshTextCheckService should_force_refresh,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback)
       override;

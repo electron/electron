@@ -5,6 +5,7 @@
   * `rgba` - 32bpp RGBA (byte-order), 1 plane.
   * `rgbaf16` - Half float RGBA, 1 plane.
   * `nv12` - 12bpp with Y plane followed by a 2x2 interleaved UV plane.
+  * `nv16` - 16bpp with Y plane followed by a 2x1 interleaved UV plane.
   * `p010le` - 4:2:0 10-bit YUV (little-endian), Y plane followed by a 2x2 interleaved UV plane.
 * `colorSpace` [ColorSpace](color-space.md) (optional) - The color space of the texture.
 * `codedSize` [Size](size.md) - The full dimensions of the shared texture.

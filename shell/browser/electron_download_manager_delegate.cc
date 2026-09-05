@@ -30,7 +30,6 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -268,7 +267,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
         &ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone,
-        base::Unretained(this), download_guid, std::move(callback));
+        weak_ptr_factory_.GetWeakPtr(), download_guid, std::move(callback));
 
     std::ignore = dialog_promise.Then(std::move(dialog_callback));
     file_dialog::ShowSaveDialog(settings, std::move(dialog_promise));

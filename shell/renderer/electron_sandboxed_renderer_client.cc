@@ -5,27 +5,24 @@
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
 #include <iterator>
-#include <vector>
 
-#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/js2c_bundle_ids.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
-#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
-#include "third_party/blink/public/web/blink.h"
-#include "third_party/blink/public/web/web_document.h"
-#include "third_party/electron_node/src/node_binding.h"
+#include "third_party/blink/public/web/web_local_frame.h"
+#include "v8/include/v8-function.h"
 
 namespace electron {
 
@@ -74,7 +71,15 @@ void ElectronSandboxedRendererClient::InitializeBindings(
     content::RenderFrame* render_frame) {
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", preload_utils::GetBinding);
-  b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
+  // Bind the RenderFrame so createPreloadScript can look up the preload
+  // contents and V8 code cache from the per-frame mojo-cached startup data —
+  // they never become V8 strings until the single copy for the compile, and
+  // a freshly produced cache is shipped back over the per-frame
+  // ElectronWebContentsUtility channel without crossing into JS.
+  b.SetMethod("createPreloadScript",
+              base::BindRepeating(&preload_utils::CreatePreloadScript,
+                                  base::Unretained(render_frame),
+                                  /*service_worker_data=*/nullptr));
 
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
@@ -87,6 +92,21 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
+
+  // The browser pushed the preload script set + process info via
+  // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered
+  // this DidCreateScriptContext. The push always lands first (associated mojo
+  // ordering); the only documents that reach here without it are ones that
+  // ShouldLoadPreload() filters out (initial empty doc, webview frames), so
+  // the bundle never observes a null startupData in practice.
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  v8::Local<v8::Value> startup_data;
+  if (!api_service ||
+      !preload_utils::BuildStartupData(isolate, api_service->startup_data())
+           .ToLocal(&startup_data)) {
+    startup_data = v8::Null(isolate);
+  }
+  b.Set("startupData", startup_data);
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
@@ -111,6 +131,8 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(isolate, context, render_frame);
+
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
@@ -124,14 +146,14 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, isolate, context, render_frame);
 
-  v8::LocalVector<v8::String> sandbox_preload_bundle_params(
-      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
+  v8::LocalVector<v8::String> sandbox_preload_bundle_params =
+      js2c::MakeBundleParams(isolate, js2c::kSandboxBundleParams);
 
   v8::LocalVector<v8::Value> sandbox_preload_bundle_args(isolate, {binding});
 
-  util::CompileAndCall(
-      isolate, isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
-      &sandbox_preload_bundle_params, &sandbox_preload_bundle_args);
+  util::CompileAndCall(isolate, isolate->GetCurrentContext(),
+                       js2c::kSandboxBundleId, &sandbox_preload_bundle_params,
+                       &sandbox_preload_bundle_args);
 
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};
@@ -182,8 +204,9 @@ void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
       context_proxy, v8_isolate, v8_context, service_worker_version_id,
       service_worker_scope, script_url, service_worker_token);
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+  // The browser attaches preload data only when the session has service
+  // worker preload scripts registered (GetServiceWorkerStartupData).
+  if (context_proxy->ElectronPreloadData().has_value()) {
     if (!service_worker_data) {
       service_worker_data = new ServiceWorkerData{
           context_proxy, service_worker_version_id, v8_isolate, v8_context};
@@ -199,7 +222,8 @@ void ElectronSandboxedRendererClient::
         v8::Local<v8::Context> context,
         int64_t service_worker_version_id,
         const GURL& service_worker_scope,
-        const GURL& script_url) {
+        const GURL& script_url,
+        const blink::ServiceWorkerToken& service_worker_token) {
   if (service_worker_data) {
     DCHECK_EQ(service_worker_version_id,
               service_worker_data->service_worker_version_id());
@@ -208,7 +232,8 @@ void ElectronSandboxedRendererClient::
   }
 
   RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
-      context, service_worker_version_id, service_worker_scope, script_url);
+      context, service_worker_version_id, service_worker_scope, script_url,
+      service_worker_token);
 }
 
 }  // namespace electron

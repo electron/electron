@@ -11,7 +11,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/core_winrt_util.h"
 #include "base/win/i18n.h"
-#include "base/win/win_util.h"
 
 namespace electron {
 

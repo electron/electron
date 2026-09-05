@@ -5,13 +5,18 @@ Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
 
 Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.md
+
+Using a coding agent / AI? Read the policy: https://github.com/electron/governance/blob/main/policy/ai.md
+
+NOTE: PRs submitted that do not follow this template will be automatically closed.
 -->
 
 #### Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
 
-- [ ] PR description included
-- [ ] I have built and tested this PR
+- [ ] I have built and tested this change
+- [ ] I have filled out the PR description
+- [ ] [I have reviewed and verified the changes](https://github.com/electron/governance/blob/main/policy/ai.md)
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
 - [ ] relevant API documentation, tutorials, and examples are updated and follow the [documentation style guide](https://github.com/electron/electron/blob/main/docs/development/style-guide.md)

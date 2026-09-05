@@ -12,6 +12,10 @@ To create a frameless window, set the [`BaseWindowContructorOptions`][] `frame`
 
 ```
 
+On Wayland (Linux), frameless windows have GTK drop shadows and extended
+resize boundaries by default. To create a fully frameless window with no
+decorations, set `hasShadow: false` in the window constructor options.
+
 ## Transparent windows
 
 ![Transparent Window](../images/transparent-window.png)

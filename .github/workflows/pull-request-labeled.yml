@@ -1,9 +1,13 @@
 name: Pull Request Labeled
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] deliberate; only base-branch code runs, the PR head is never checked out (see SECURITY note)
     types: [labeled]
 
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
 permissions: {}
 
 jobs:
@@ -14,7 +18,7 @@ jobs:
     permissions: {}
     steps:
       - name: Trigger Slack workflow
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           webhook: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }} 
           webhook-type: webhook-trigger
@@ -32,13 +36,13 @@ jobs:
     permissions: {}
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/edit-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 94
@@ -46,33 +50,29 @@ jobs:
           field-value: ✅ Reviewed
   pull-request-labeled-ai-pr:
     name: ai-pr label added
-    if: github.event.label.name == 'ai-pr'
+    if: github.event.label.name == 'ai-pr' && github.event.pull_request.state != 'closed'
     runs-on: ubuntu-latest
     permissions: {}
     steps:
     - name: Generate GitHub App token
-      uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+      uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
       id: generate-token
       with:
         creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-    - name: Create comment
-      uses: actions-cool/issues-helper@e2ff99831a4f13625d35064e2b3dfe65c07a0396 # v3.7.5
-      with:
-        actions: 'create-comment'
-        token: ${{ steps.generate-token.outputs.token }}
-        issue-number: ${{ github.event.pull_request.number }}
-        body: |
-          <!-- ai-pr -->
-
-          *AI PR Detected*
-
-          Hello @${{ github.event.pull_request.user.login }}. Due to the high amount of AI spam PRs we receive, if a PR is detected to be majority AI-generated without disclosure and untested, we will automatically close the PR.
-
-          We welcome the use of AI tools, as long as the PR meets our quality standards and has clearly been built and tested. If you believe your PR was closed in error, we welcome you to resubmit. However, please read our [CONTRIBUTING.md](http://contributing.md/) carefully before reopening. Thanks for your contribution.
-    - name: Close the pull request
+    - name: Comment and close the pull request
       env:
         GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         GH_REPO: electron/electron
         PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_AUTHOR: ${{ github.event.pull_request.user.login }}
       run: |
+        gh pr comment "$PR_NUMBER" --body-file - <<EOF
+        <!-- ai-pr -->
+
+        *AI PR Detected*
+
+        Hello @${PR_AUTHOR}. Due to the high amount of AI spam PRs we receive, if a PR is detected to be majority AI-generated without disclosure and untested, we will automatically close the PR.
+
+        We welcome the use of AI tools, as long as the PR meets our quality standards and has clearly been built and tested. If you believe your PR was closed in error, we welcome you to resubmit. However, please read our [CONTRIBUTING.md](https://github.com/electron/electron/blob/main/CONTRIBUTING.md) and [AI Tool Policy](https://github.com/electron/governance/blob/main/policy/ai.md) carefully before reopening. Thanks for your contribution.
+        EOF
         gh pr close "$PR_NUMBER"

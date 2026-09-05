@@ -1,5 +1,5 @@
 class Hello {
-  say () {
+  say() {
     return 'hi';
   }
 }

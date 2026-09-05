@@ -104,7 +104,7 @@ void GPUInfoEnumerator::EndOverlayInfo() {
   value_stack_.pop();
 }
 
-base::Value::Dict GPUInfoEnumerator::GetDictionary() {
+base::DictValue GPUInfoEnumerator::GetDictionary() {
   return std::move(current_);
 }
 

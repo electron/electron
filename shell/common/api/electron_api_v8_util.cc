@@ -5,11 +5,10 @@
 #include <iterator>
 #include <utility>
 
+#include "base/dcheck_is_on.h"
+#include "base/process/process.h"
 #include "base/run_loop.h"
-#include "electron/buildflags/buildflags.h"
-#include "shell/common/gin_converters/content_converter.h"
-#include "shell/common/gin_converters/gurl_converter.h"
-#include "shell/common/gin_converters/std_converter.h"
+#include "gin/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
@@ -66,10 +65,6 @@ void SetHiddenValue(v8::Isolate* isolate,
   object->SetPrivate(context, privateKey, value);
 }
 
-int32_t GetObjectHash(v8::Local<v8::Object> object) {
-  return object->GetIdentityHash();
-}
-
 void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
@@ -95,6 +90,29 @@ void RunUntilIdle() {
   base::RunLoop().RunUntilIdle();
 }
 
+// Ends the process now with the given exit code, running no atexit handlers
+// or static destructors. The asar fs wrapper calls this on an integrity
+// violation: libc exit() would tear down statics while Chromium's threads are
+// still live, which intermittently faults (0xC0000005 on Windows).
+void ExitImmediately(gin::Arguments* args) {
+  int code = 1;
+  args->GetNext(&code);
+  base::Process::TerminateCurrentProcessImmediately(code);
+}
+
+#if DCHECK_IS_ON()
+// Test-only (DCHECK builds): per-process map of builtin id (electron/js2c/*
+// bundles and Node's own lib/ builtins compiled so far in this process) ->
+// whether its build-time/snapshot code cache was consumed. Backs the
+// code-cache spec.
+v8::Local<v8::Value> GetJs2cCodeCacheStatus(v8::Isolate* isolate) {
+  gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  for (const auto& [id, accepted] : node::builtins::ElectronJs2cCacheStatus())
+    dict.Set(id, accepted);
+  return dict.GetHandle();
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -103,12 +121,15 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
-  dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
+  dict.SetMethod("exitImmediately", &ExitImmediately);
+#if DCHECK_IS_ON()
+  dict.SetMethod("getJs2cCodeCacheStatus", &GetJs2cCodeCacheStatus);
+#endif
 }
 
 }  // namespace

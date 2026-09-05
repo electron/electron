@@ -25,7 +25,8 @@ namespace electron::gtkui {
 using MenuActivatedCallback = base::RepeatingCallback<void(GtkWidget*)>;
 
 // Builds GtkImageMenuItems.
-GtkWidget* BuildMenuItemWithImage(const std::string& label, GtkWidget* image);
+GtkWidget* BuildMenuItemWithImage(const std::string& label,
+                                  const gfx::Image& icon);
 GtkWidget* BuildMenuItemWithLabel(const std::string& label);
 
 ui::MenuModel* ModelForMenuItem(GtkMenuItem* menu_item);

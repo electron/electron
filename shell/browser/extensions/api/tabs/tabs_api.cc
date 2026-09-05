@@ -13,7 +13,7 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
-#include "base/types/expected_macros.h"
+#include "base/types/expected.h"
 #include "chrome/common/url_constants.h"
 #include "components/url_formatter/url_fixer.h"
 #include "content/public/browser/navigation_entry.h"
@@ -27,6 +27,7 @@
 #include "extensions/common/permissions/permissions_data.h"
 #include "extensions/common/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/window_list.h"
@@ -87,6 +88,17 @@ api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   return info;
 }
 
+// "title" and "url" properties are considered privileged data and can only
+// be exposed if the extension has the "tabs" permission or it has access to
+// the WebContents's origin.
+bool CanAccessPrivilegedTabFields(const Extension* extension,
+                                  int tab_id,
+                                  const GURL& url) {
+  return extension->permissions_data()->HasAPIPermissionForTab(
+             tab_id, mojom::APIPermissionID::kTab) ||
+         extension->permissions_data()->HasHostPermission(url);
+}
+
 }  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
@@ -138,7 +150,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
   // If |tab_id| is specified, look for the tab. Otherwise default to selected
   // tab in the current window.
   CHECK_GE(execute_tab_id_, 0);
-  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
+  auto* contents = GetElectronTabById(execute_tab_id_, browser_context());
   if (!contents) {
     return false;
   }
@@ -191,7 +203,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
 
 ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
     std::string* error) {
-  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
+  auto* contents = GetElectronTabById(execute_tab_id_, browser_context());
   if (!contents)
     return nullptr;
   return contents->script_executor();
@@ -228,7 +240,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
   }
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -266,7 +278,7 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   std::optional<bool> audible = params->query_info.audible;
   std::optional<bool> muted = params->query_info.muted;
 
-  base::Value::List result;
+  base::ListValue result;
 
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();
@@ -293,16 +305,14 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     if (!MatchesBool(params->query_info.active, contents->IsFocused()))
       continue;
 
+    const GURL& committed_url = wc->GetLastCommittedURL();
+    const bool has_privileged_access = CanAccessPrivilegedTabFields(
+        extension(), contents->ID(), committed_url);
+
     if (!title.empty() || !url_patterns.is_empty()) {
-      // "title" and "url" properties are considered privileged data and can
-      // only be checked if the extension has the "tabs" permission or it has
-      // access to the WebContents's origin. Otherwise, this tab is considered
-      // not matched.
-      if (!extension()->permissions_data()->HasAPIPermissionForTab(
-              contents->ID(), mojom::APIPermissionID::kTab) &&
-          !extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+      // Without privileged access, this tab is considered not matched.
+      if (!has_privileged_access)
         continue;
-      }
 
       // Match webContents title.
       if (!title.empty() &&
@@ -310,14 +320,16 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
         continue;
 
       // Match webContents url.
-      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(wc->GetURL()))
+      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(committed_url))
         continue;
     }
 
     tabs::Tab tab;
     tab.id = contents->ID();
-    tab.title = base::UTF16ToUTF8(wc->GetTitle());
-    tab.url = wc->GetLastCommittedURL().spec();
+    if (has_privileged_access) {
+      tab.title = base::UTF16ToUTF8(wc->GetTitle());
+      tab.url = committed_url.spec();
+    }
     tab.active = contents->IsFocused();
     tab.audible = contents->IsCurrentlyAudible();
     tab.muted_info = CreateMutedInfo(wc);
@@ -335,20 +347,16 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
   int tab_id = params->tab_id;
 
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
   tabs::Tab tab;
   tab.id = tab_id;
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
   auto* wc = contents->web_contents();
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+  if (CanAccessPrivilegedTabFields(extension(), contents->ID(),
+                                   wc->GetLastCommittedURL())) {
     tab.url = wc->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(wc->GetTitle());
   }
@@ -367,7 +375,7 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -394,13 +402,11 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  double zoom_level = contents->GetZoomController()->GetZoomLevel();
-  double zoom_factor = blink::ZoomLevelToZoomFactor(zoom_level);
-
+  const double zoom_factor = contents->GetZoomFactor();
   return RespondNow(ArgumentList(tabs::GetZoom::Results::Create(zoom_factor)));
 }
 
@@ -410,13 +416,13 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  auto* zoom_controller = contents->GetZoomController();
-  WebContentsZoomController::ZoomMode zoom_mode =
-      contents->GetZoomController()->zoom_mode();
+  const auto* zoom_controller = contents->GetZoomController();
+  const WebContentsZoomController::ZoomMode zoom_mode =
+      zoom_controller->zoom_mode();
   tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
   zoom_settings.default_zoom_factor =
@@ -434,7 +440,7 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -610,7 +616,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -685,13 +691,9 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
   tab.id = (api_web_contents ? api_web_contents->ID() : -1);
 
-  // "title" and "url" properties are considered privileged data and can
-  // only be checked if the extension has the "tabs" permission or it has
-  // access to the WebContents's origin.
-  if (extension()->permissions_data()->HasAPIPermissionForTab(
-          api_web_contents->ID(), mojom::APIPermissionID::kTab) ||
-      extension()->permissions_data()->HasHostPermission(
-          web_contents_->GetURL())) {
+  if (CanAccessPrivilegedTabFields(
+          extension(), api_web_contents ? api_web_contents->ID() : -1,
+          web_contents_->GetLastCommittedURL())) {
     tab.url = web_contents_->GetLastCommittedURL().spec();
     tab.title = base::UTF16ToUTF8(web_contents_->GetTitle());
   }

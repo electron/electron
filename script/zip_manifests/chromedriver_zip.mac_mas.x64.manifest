@@ -1,6 +1,9 @@
 chromedriver
 icudtl.dat
 libffmpeg.dylib
+libvk_swiftshader.dylib
+libvulkan.dylib
+vk_swiftshader_icd.json
 gen/electron/buildflags/buildflags.h
 LICENSE
 LICENSES.chromium.html

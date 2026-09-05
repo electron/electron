@@ -1,6 +1,8 @@
+import LanguageModelUtility from '@electron/internal/utility/api/language-model-utility';
 import { ParentPort } from '@electron/internal/utility/parent-port';
 
 import { EventEmitter } from 'events';
+import { ReadableStream } from 'stream/web';
 import { pathToFileURL } from 'url';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -9,6 +11,15 @@ const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScrip
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
 process.argv.splice(1, 1, entryScript);
+
+// These are used by C++ to more easily identify these objects.
+v8Util.setHiddenValue(global, 'isReadableStream', (val: unknown) => val instanceof ReadableStream);
+v8Util.setHiddenValue(global, 'isLanguageModel', (val: unknown) => val instanceof LanguageModelUtility);
+v8Util.setHiddenValue(
+  global,
+  'isLanguageModelClass',
+  (val: any) => Object.is(val, LanguageModelUtility) || val?.prototype instanceof LanguageModelUtility || false
+);
 
 // Import common settings.
 require('@electron/internal/common/init');
@@ -36,7 +47,9 @@ parentPort.on('removeListener', (name: string) => {
 });
 
 // Finally load entry script.
-const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+const { runEntryPointWithESMLoader } = __non_webpack_require__(
+  'internal/modules/run_main'
+) as typeof import('@node/lib/internal/modules/run_main');
 const mainEntry = pathToFileURL(entryScript);
 
 runEntryPointWithESMLoader(async (cascadedLoader: any) => {

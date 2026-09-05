@@ -12,14 +12,15 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-context.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-microtask-queue.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.
 
 namespace gin_helper {
 
-template <typename T>
-class RefCountedGlobal;
+class SafeV8FunctionHandle;
 
 // Manages the V8 function with RAII.
 class SafeV8Function {
@@ -32,7 +33,7 @@ class SafeV8Function {
   v8::Local<v8::Function> NewHandle(v8::Isolate* isolate) const;
 
  private:
-  scoped_refptr<RefCountedGlobal<v8::Function>> v8_function_;
+  cppgc::Persistent<SafeV8FunctionHandle> v8_function_;
 };
 
 // Helper to invoke a V8 function with C++ parameters.
@@ -118,11 +119,6 @@ using Translator = base::RepeatingCallback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
                                                   const Translator& translator,
                                                   bool one_time);
-v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
-                                      v8::Local<v8::Context> context,
-                                      v8::Local<v8::Function> func,
-                                      v8::Local<v8::Value> arg1,
-                                      v8::Local<v8::Value> arg2);
 
 // Calls callback with Arguments.
 template <typename Sig>

@@ -7,6 +7,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
+#include "v8/include/cppgc/type-traits.h"
 
 namespace gin_helper {
 
@@ -16,8 +17,15 @@ namespace gin_helper {
 // C++ to V8 can cause memory leaks. Copied from
 // https://chromium-review.googlesource.com/c/chromium/src/+/6734440 Should be
 // removed once https://github.com/electron/electron/issues/47922 is complete.
+//
+// This class must NOT be used with cppgc-managed types (gin::Wrappable).
+// For cppgc types, use T* directly and gin::Converter<T*> for V8 conversion.
 template <typename T>
 class Handle {
+  static_assert(!cppgc::IsGarbageCollectedTypeV<T>,
+                "gin_helper::Handle must not be used with cppgc "
+                "garbage-collected types. Use T* directly instead.");
+
  public:
   Handle() : object_(nullptr) {}
 
@@ -28,7 +36,7 @@ class Handle {
 
   void Clear() {
     wrapper_.Clear();
-    object_ = NULL;
+    object_ = nullptr;
   }
 
   T* operator->() const { return object_; }
@@ -63,7 +71,7 @@ struct Converter<gin_helper::Handle<T>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      gin_helper::Handle<T>* out) {
-    T* object = NULL;
+    T* object = nullptr;
     if (!Converter<T*>::FromV8(isolate, val, &object)) {
       return false;
     }

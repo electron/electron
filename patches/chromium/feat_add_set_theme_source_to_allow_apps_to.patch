@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 8e2849fc1e17fc55ad146134b7031538337c1f5c..dc50640eb88e65adb7ecbec36c9d887efb805bbf 100644
+index e131113a7d5eeea02929ff037d898f1c2f281a43..1c5bc9402b148916353216d76dfbd68b9acb5c5d 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -503,6 +503,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -505,6 +505,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    }
  
    PreferredColorScheme preferred_color_scheme() const {
@@ -25,9 +25,9 @@ index 8e2849fc1e17fc55ad146134b7031538337c1f5c..dc50640eb88e65adb7ecbec36c9d887e
      return preferred_color_scheme_;
    }
    void set_preferred_color_scheme(PreferredColorScheme preferred_color_scheme) {
-@@ -534,6 +536,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
-     caret_blink_interval_ = caret_blink_interval;
-   }
+@@ -539,6 +541,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   size_t system_color_version() const { return system_color_version_; }
+   void IncrementSystemColorVersion() { ++system_color_version_; }
  
 +  enum ThemeSource {
 +    kSystem,
@@ -50,10 +50,10 @@ index 8e2849fc1e17fc55ad146134b7031538337c1f5c..dc50640eb88e65adb7ecbec36c9d887e
   protected:
    explicit NativeTheme(SystemTheme system_theme = SystemTheme::kDefault);
    virtual ~NativeTheme();
-@@ -607,6 +627,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
-   ColorProviderKey::UserColorSource preferred_color_source_ =
+@@ -619,6 +639,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
        ColorProviderKey::UserColorSource::kAccent;
    base::TimeDelta caret_blink_interval_;
+   size_t system_color_version_ = 0;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
    raw_ptr<NativeTheme> associated_web_instance_ = nullptr;

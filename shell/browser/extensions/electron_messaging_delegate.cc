@@ -22,6 +22,7 @@
 #include "extensions/common/api/messaging/port_id.h"
 #include "extensions/common/extension.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "ui/gfx/native_ui_types.h"
 #include "url/gurl.h"
 
@@ -39,7 +40,7 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+std::optional<base::DictValue> ElectronMessagingDelegate::MaybeGetTabInfo(
     content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
@@ -58,7 +59,7 @@ std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(
     content::BrowserContext* browser_context,
     int tab_id) {
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context);
   if (!contents) {
     return nullptr;
   }
@@ -74,6 +75,7 @@ ElectronMessagingDelegate::CreateReceiverForNativeApp(
     const PortId& receiver_port_id,
     const std::string& native_app_name,
     bool allow_user_level,
+    const SigningCertificates& android_certificates,
     std::string* error_out) {
   return nullptr;
 }

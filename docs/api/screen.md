@@ -110,6 +110,8 @@ Returns [`Point`](structures/point.md)
 
 The current absolute position of the mouse pointer.
 
+Not supported on Wayland (Linux).
+
 > [!NOTE]
 > The return value is a DIP point, not a screen physical point.
 

@@ -8,6 +8,12 @@ Process: [Main](../glossary.md#main-process)
 > If you want to show notifications from a renderer process you should use the
 > [web Notifications API](../tutorial/notifications.md)
 
+> [!NOTE]
+> On MacOS, notifications use the UNNotification API as their underlying framework.
+> This API requires an application to be code-signed in order for notifications
+> to appear. Unsigned binaries will emit a `failed` event when notifications
+> are called.
+
 ## Class: Notification
 
 > Create OS desktop notifications
@@ -30,22 +36,147 @@ The `Notification` class has the following static methods:
 
 Returns `boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.handleActivation(callback)` _Windows_
+
+* `callback` Function
+  * `details` [ActivationArguments](structures/activation-arguments.md) - Details about the notification activation.
+
+Registers a callback to handle all notification activations. The callback is invoked whenever a
+notification is clicked, replied to, or has an action button pressed - regardless of whether
+the original `Notification` object is still in memory.
+
+This method handles timing automatically:
+
+* If an activation already occurred before calling this method, the callback is invoked immediately
+  with those details.
+* For all subsequent activations, the callback is invoked when they occur.
+
+The callback remains registered until replaced by another call to `handleActivation`.
+
+This provides a centralized way to handle notification interactions that works in all scenarios:
+
+* Cold start (app launched from notification click)
+* Notifications persisted in AC that have no in-memory representation after app re-start
+* Notification object was garbage collected
+* Notification object is still in memory (callback is invoked in addition to instance events)
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  // Register handler for all notification activations
+  Notification.handleActivation((details) => {
+    console.log('Notification activated:', details.type)
+    if (details.type === 'reply') {
+      console.log('User reply:', details.reply)
+    } else if (details.type === 'action') {
+      console.log('Action index:', details.actionIndex)
+    }
+  })
+})
+```
+
+#### `Notification.getHistory()` _macOS_
+
+Returns `Promise<Notification[]>` - Resolves with an array of `Notification` objects representing all delivered notifications still present in Notification Center.
+
+Each returned `Notification` is a live object connected to the corresponding delivered notification. Interaction events (`click`, `reply`, `action`, `close`) will fire on these objects when the user interacts with the notification in Notification Center. This is useful after an app restart to re-attach event handlers to notifications from a previous session.
+
+The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and `body` properties populated from information available in the Notification Center. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
+
+> [!NOTE]
+> Like all macOS notification APIs, this method requires the application to be
+> code-signed. In unsigned development builds, notifications are not delivered
+> to Notification Center and this method will resolve with an empty array.
+
+> [!NOTE]
+> Unlike notifications created with `new Notification()`, notifications returned
+> by `getHistory()` will remain visible in Notification Center when the object
+> is garbage collected. Calling `show()` on a restored notification will remove
+> the original from Notification Center and post a new one with the same
+> properties.
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(async () => {
+  // Restore notifications from a previous session
+  const notifications = await Notification.getHistory()
+  for (const n of notifications) {
+    console.log(`Found delivered notification: ${n.id} - ${n.title}`)
+    n.on('click', () => {
+      console.log(`User clicked: ${n.id}`)
+    })
+    n.on('reply', (event) => {
+      console.log(`User replied to ${n.id}: ${event.reply}`)
+    })
+  }
+  // Keep references so events continue to fire
+})
+```
+
+#### `Notification.remove(id)` _macOS_
+
+* `id` (string | string[]) - The notification identifier(s) to remove. These correspond to the `id` values set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes one or more delivered notifications from Notification Center by their identifier(s).
+
+```js
+const { Notification } = require('electron')
+
+// Remove a single notification
+Notification.remove('my-notification-id')
+
+// Remove multiple notifications
+Notification.remove(['msg-1', 'msg-2', 'msg-3'])
+```
+
+#### `Notification.removeAll()` _macOS_
+
+Removes all of the app's delivered notifications from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+Notification.removeAll()
+```
+
+#### `Notification.removeGroup(groupId)` _macOS_
+
+* `groupId` string - The group identifier of the notifications to remove. This corresponds to the `groupId` value set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes all delivered notifications with the given `groupId` from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+// Remove all notifications in the 'chat-thread-1' group
+Notification.removeGroup('chat-thread-1')
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
+  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's [`Tag`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag) property. Defaults to a random UUID if not provided or if an empty string is passed. Use this identifier with [`Notification.remove()`](#notificationremoveid-macos) to remove specific delivered notifications, or with [`Notification.getHistory()`](#notificationgethistory-macos) to identify them.
+  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's [`Group`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.group) property. Use this identifier with [`Notification.removeGroup()`](#notificationremovegroupgroupid-macos) to remove all notifications in a group.
+  * `groupTitle` string (optional) _Windows_ - A title for the notification group header. When both `groupId` and `groupTitle` are specified, Windows will display a header above the notification that groups related notifications together. Maps to the toast notification's [`header`](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/toast-headers) element.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.
   * `silent` boolean (optional) - Whether or not to suppress the OS notification noise when showing the notification.
   * `icon` (string | [NativeImage](native-image.md)) (optional) - An icon to use in the notification. If a string is passed, it must be a valid path to a local icon file.
-  * `hasReply` boolean (optional) _macOS_ - Whether or not to add an inline reply option to the notification.
+  * `hasReply` boolean (optional) _macOS_ _Windows_ - Whether or not to add an inline reply option to the notification.
   * `timeoutType` string (optional) _Linux_ _Windows_ - The timeout duration of the notification. Can be 'default' or 'never'.
-  * `replyPlaceholder` string (optional) _macOS_ - The placeholder to write in the inline reply input field.
+  * `replyPlaceholder` string (optional) _macOS_ _Windows_ - The placeholder to write in the inline reply input field.
   * `sound` string (optional) _macOS_ - The name of the sound file to play when the notification is shown.
-  * `urgency` string (optional) _Linux_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
-  * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
+  * `urgency` string (optional) _Linux_ _Windows_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
+  * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ _Windows_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
   * `closeButtonText` string (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
   * `toastXml` string (optional) _Windows_ - A custom description of the Notification on Windows superseding all properties above. Provides full customization of design and behavior of the notification.
+
+> [!NOTE]
+> On Windows, `urgency` type 'critical' sorts the notification higher in Action Center (above default priority notifications), but does not prevent auto-dismissal. To prevent auto-dismissal, you should also set
+> `timeoutType` to 'never'.
 
 ### Instance Events
 
@@ -67,6 +198,22 @@ Emitted when the notification is shown to the user. Note that this event can be 
 multiple times as a notification can be shown multiple times through the
 `show()` method.
 
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Title!',
+    subtitle: 'Subtitle!',
+    body: 'Body!'
+  })
+
+  n.on('show', () => console.log('Notification shown!'))
+
+  n.show()
+})
+```
+
 #### Event: 'click'
 
 Returns:
@@ -75,11 +222,28 @@ Returns:
 
 Emitted when the notification is clicked by the user.
 
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Title!',
+    subtitle: 'Subtitle!',
+    body: 'Body!'
+  })
+
+  n.on('click', () => console.log('Notification clicked!'))
+
+  n.show()
+})
+```
+
 #### Event: 'close'
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `reason` _Windows_ string (optional) - The reason the notification was closed. This can be 'userCanceled', 'applicationHidden', or 'timedOut'.
 
 Emitted when the notification is closed by manual intervention from the user.
 
@@ -88,23 +252,87 @@ is closed.
 
 On Windows, the `close` event can be emitted in one of three ways: programmatic dismissal with `notification.close()`, by the user closing the notification, or via system timeout. If a notification is in the Action Center after the initial `close` event is emitted, a call to `notification.close()` will remove the notification from the action center but the `close` event will not be emitted again.
 
-#### Event: 'reply' _macOS_
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Title!',
+    subtitle: 'Subtitle!',
+    body: 'Body!'
+  })
+
+  n.on('close', () => console.log('Notification closed!'))
+
+  n.show()
+})
+```
+
+#### Event: 'reply' _macOS_ _Windows_
 
 Returns:
 
-* `event` Event
-* `reply` string - The string the user entered into the inline reply field.
+* `details` Event\<\>
+  * `reply` string - The string the user entered into the inline reply field.
+* `reply` string _Deprecated_
 
 Emitted when the user clicks the "Reply" button on a notification with `hasReply: true`.
 
-#### Event: 'action' _macOS_
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Send a Message',
+    body: 'Body Text',
+    hasReply: true,
+    replyPlaceholder: 'Message text...'
+  })
+
+  n.on('reply', (e, reply) => console.log(`User replied: ${reply}`))
+  n.on('click', () => console.log('Notification clicked'))
+
+  n.show()
+})
+```
+
+#### Event: 'action' _macOS_ _Windows_
 
 Returns:
 
-* `event` Event
-* `index` number - The index of the action that was activated.
+* `details` Event\<\>
+  * `actionIndex` number - The index of the action that was activated.
+  * `selectionIndex` number _Windows_ - The index of the selected item, if one was chosen. -1 if none was chosen.
+* `actionIndex` number _Deprecated_
+* `selectionIndex` number _Windows_ _Deprecated_
 
-#### Event: 'failed' _Windows_
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const items = ['One', 'Two', 'Three']
+  const n = new Notification({
+    title: 'Choose an Action!',
+    actions: [
+      { type: 'button', text: 'Action 1' },
+      { type: 'button', text: 'Action 2' },
+      { type: 'selection', text: 'Apply', items }
+    ]
+  })
+
+  n.on('click', () => console.log('Notification clicked'))
+  n.on('action', (e) => {
+    console.log(`User triggered action at index: ${e.actionIndex}`)
+    if (e.selectionIndex > -1) {
+      console.log(`User chose selection item '${items[e.selectionIndex]}'`)
+    }
+  })
+
+  n.show()
+})
+```
+
+#### Event: 'failed' _macOS_ _Windows_
 
 Returns:
 
@@ -112,6 +340,22 @@ Returns:
 * `error` string - The error encountered during execution of the `show()` method.
 
 Emitted when an error is encountered while creating and showing the native notification.
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Bad Action'
+  })
+
+  n.on('failed', (e, err) => {
+    console.log('Notification failed: ', err)
+  })
+
+  n.show()
+})
+```
 
 ### Instance Methods
 
@@ -126,13 +370,59 @@ call this method before the OS will display it.
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
 
+On macOS, calling `show()` on a notification returned by `Notification.getHistory()` will
+remove the original notification from Notification Center and post a new one with the same
+properties.
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Title!',
+    subtitle: 'Subtitle!',
+    body: 'Body!'
+  })
+
+  n.show()
+})
+```
+
 #### `notification.close()`
 
 Dismisses the notification.
 
 On Windows, calling `notification.close()` while the notification is visible on screen will dismiss the notification and remove it from the Action Center. If `notification.close()` is called after the notification is no longer visible on screen, calling `notification.close()` will try remove it from the Action Center.
 
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  const n = new Notification({
+    title: 'Title!',
+    subtitle: 'Subtitle!',
+    body: 'Body!'
+  })
+
+  n.show()
+
+  setTimeout(() => n.close(), 5000)
+})
+```
+
 ### Instance Properties
+
+#### `notification.id` _macOS_ _Windows_ _Readonly_
+
+A `string` property representing the unique identifier of the notification. This is set at construction time — either from the `id` option or as a generated UUID if none was provided.
+
+#### `notification.groupId` _macOS_ _Windows_ _Readonly_
+
+A `string` property representing the group identifier of the notification. Notifications with the same `groupId` will be visually grouped together in Notification Center (macOS) or Action Center (Windows).
+
+#### `notification.groupTitle` _Windows_ _Readonly_
+
+A `string` property representing the title of the notification group header.
 
 #### `notification.title`
 

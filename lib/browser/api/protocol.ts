@@ -7,17 +7,18 @@ import { ReadableStream } from 'stream/web';
 import type { ReadableStreamDefaultReader } from 'stream/web';
 
 // Global protocol APIs.
-const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._linkedBinding('electron_browser_protocol');
+const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } =
+  process._linkedBinding('electron_browser_protocol');
 
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
 
 const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
-function makeStreamFromPipe (pipe: any): ReadableStream<Uint8Array> {
+function makeStreamFromPipe(pipe: any): ReadableStream<Uint8Array> {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
   return new ReadableStream({
-    async pull (controller) {
+    async pull(controller) {
       try {
         const rv = await pipe.read(buf);
         if (rv > 0) {
@@ -32,7 +33,7 @@ function makeStreamFromPipe (pipe: any): ReadableStream<Uint8Array> {
   });
 }
 
-function makeStreamFromFileInfo ({
+function makeStreamFromFileInfo({
   filePath,
   offset = 0,
   length = -1
@@ -42,13 +43,15 @@ function makeStreamFromFileInfo ({
   length?: number;
 }): ReadableStream<Uint8Array> {
   // Node's Readable.toWeb produces a WHATWG ReadableStream whose chunks are Uint8Array.
-  return Readable.toWeb(createReadStream(filePath, {
-    start: offset,
-    end: length >= 0 ? offset + length : undefined
-  })) as ReadableStream<Uint8Array>;
+  return Readable.toWeb(
+    createReadStream(filePath, {
+      start: offset,
+      end: length >= 0 ? offset + length : undefined
+    })
+  ) as ReadableStream<Uint8Array>;
 }
 
-function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): RequestInit['body'] {
+function convertToRequestBody(uploadData: ProtocolRequest['uploadData']): RequestInit['body'] {
   if (!uploadData) return null;
   // Optimization: skip creating a stream if the request is just a single buffer.
   if (uploadData.length === 1 && (uploadData[0] as any).type === 'rawData') {
@@ -60,7 +63,7 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   // Generic <Uint8Array> ensures reader.read() returns value?: Uint8Array consistent with enqueue.
   let current: ReadableStreamDefaultReader<Uint8Array> | null = null;
   return new ReadableStream<Uint8Array>({
-    async pull (controller) {
+    async pull(controller) {
       if (current) {
         const { done, value } = await current.read();
         // (done => value === undefined) as per WHATWG spec
@@ -71,7 +74,9 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
           controller.enqueue(value);
         }
       } else {
-        if (!chunks.length) { return controller.close(); }
+        if (!chunks.length) {
+          return controller.close();
+        }
         const chunk = chunks.shift()!;
         if (chunk.type === 'rawData') {
           controller.enqueue(chunk.bytes as Uint8Array);
@@ -96,7 +101,7 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
   }) as RequestInit['body'];
 }
 
-function validateResponse (res: Response) {
+function validateResponse(res: Response) {
   if (!res || typeof res !== 'object') return false;
 
   if (res.type === 'error') return true;
@@ -115,7 +120,36 @@ function validateResponse (res: Response) {
   return true;
 }
 
-Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
+const notYet = Symbol('notYet');
+const later = () => new Promise<typeof notYet>((resolve) => setImmediate(resolve, notYet));
+
+// A Response that is still exactly what net.fetch produced (its body stream not
+// read, locked, cloned or replaced) is relayed natively: the fetch stops
+// handing chunks to JS, whatever JS had already pulled is collected as a
+// prefix, and the loader writes prefix + remainder straight to the client.
+async function relayUntouchedFetch(res: Response): Promise<{ loader?: unknown; data: Buffer } | null> {
+  const fetched = (res as any).__fetch;
+  if (!fetched || res.body !== fetched.body || res.bodyUsed || res.body!.locked) return null;
+  const urlLoader = fetched.request._urlLoader;
+  if (!urlLoader) return null;
+  urlLoader.hold();
+  const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+  const prefix: Uint8Array[] = [];
+  for (;;) {
+    const next = await Promise.race([reader.read(), later()]);
+    if (next === notYet) break;
+    // The fetch finished before hold(); JS already has the whole body.
+    if (next.done) return { data: Buffer.concat(prefix) };
+    prefix.push(next.value);
+  }
+  return { loader: urlLoader, data: Buffer.concat(prefix) };
+}
+
+Protocol.prototype.handle = function (
+  this: Electron.Protocol,
+  scheme: string,
+  handler: (req: Request) => Response | Promise<Response>
+) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
     try {
@@ -137,13 +171,18 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
-        cb({
-          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+        const head = {
           headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
-        });
+        };
+        const relay = await relayUntouchedFetch(res);
+        if (relay) {
+          cb({ ...relay, ...head });
+        } else {
+          cb({ data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null, ...head });
+        }
       }
     } catch (e) {
       console.error(e);
@@ -155,7 +194,9 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
 
 Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string) {
   const unregister = isBuiltInScheme(scheme) ? this.uninterceptProtocol : this.unregisterProtocol;
-  if (!unregister.call(this, scheme)) { throw new Error(`Failed to unhandle protocol: ${scheme}`); }
+  if (!unregister.call(this, scheme)) {
+    throw new Error(`Failed to unhandle protocol: ${scheme}`);
+  }
 };
 
 Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {

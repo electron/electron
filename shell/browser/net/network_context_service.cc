@@ -8,12 +8,12 @@
 
 #include "chrome/browser/browser_features.h"
 #include "chrome/common/chrome_constants.h"
-#include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "electron/fuses.h"
 #include "net/http/http_util.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/cookie_encryption_provider_impl.h"
 #include "services/network/public/cpp/cors/origin_access_list.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -113,6 +113,18 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
     network_context_params->enable_encrypted_cookies =
         electron::fuses::IsCookieEncryptionEnabled();
+
+    // If cookie encryption is enabled, we need to provide a cookie encryption
+    // provider for the network service to use.
+    if (network_context_params->enable_encrypted_cookies) {
+      if (!cookie_encryption_provider_) {
+        cookie_encryption_provider_ =
+            std::make_unique<CookieEncryptionProviderImpl>(
+                g_browser_process->os_crypt_async());
+      }
+      network_context_params->cookie_encryption_provider =
+          cookie_encryption_provider_->BindNewRemote();
+    }
 
     network_context_params->file_paths->transport_security_persister_file_name =
         base::FilePath(chrome::kTransportSecurityPersisterFilename);

@@ -16,22 +16,24 @@ jobs:
     steps:
       - name: Check for any blocked labels
         id: check-for-blocked-labels
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.issue.labels.*.name) }}
         run: |
           set -eo pipefail
-          BLOCKED_LABEL_COUNT=$(echo '${{ toJSON(github.event.issue.labels.*.name) }}' | jq '[ .[] | select(startswith("blocked/")) ] | length')
+          BLOCKED_LABEL_COUNT=$(echo "$LABELS_JSON" | jq '[ .[] | select(startswith("blocked/")) ] | length')
           if [[ $BLOCKED_LABEL_COUNT -eq 0 ]]; then
             echo "NOT_BLOCKED=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Generate GitHub App token
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
-        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/edit-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90

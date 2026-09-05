@@ -7,18 +7,17 @@
 #include <string>
 #include <utility>
 
+#include "base/functional/bind.h"
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/task/sequenced_task_runner.h"
-#include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"  // nogncheck
-#include "content/browser/renderer_host/render_widget_host_view_mac.h"  // nogncheck
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/render_widget_host_view.h"
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/keyboard_util.h"
-#include "shell/common/node_includes.h"
 #include "ui/base/cocoa/menu_utils.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -57,6 +56,11 @@ MenuMac::~MenuMac() {
   RemoveModelObserver();
 }
 
+void MenuMac::Trace(cppgc::Visitor* visitor) const {
+  Menu::Trace(visitor);
+  visitor->Trace(weak_cell_factory_);
+}
+
 void MenuMac::PopupAt(BaseWindow* window,
                       std::optional<WebFrameMain*> frame,
                       int x,
@@ -68,19 +72,22 @@ void MenuMac::PopupAt(BaseWindow* window,
   if (!native_window)
     return;
 
-  base::WeakPtr<WebFrameMain> weak_frame;
+  cppgc::WeakPersistent<WebFrameMain> weak_frame;
   if (frame && frame.value()) {
-    weak_frame = frame.value()->GetWeakPtr();
+    weak_frame = frame.value();
   }
 
   // Make sure the Menu object would not be garbage-collected until the callback
   // has run.
   base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
 
-  auto popup = base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                              native_window->GetWeakPtr(), weak_frame,
-                              window->weak_map_id(), x, y, positioning_item,
-                              std::move(callback_with_ref));
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto popup = base::BindOnce(
+      &MenuMac::PopupOnUI,
+      gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+          isolate->GetCppHeap()->GetAllocationHandle())),
+      native_window->GetWeakPtr(), std::move(weak_frame), window->weak_map_id(),
+      x, y, positioning_item, std::move(callback_with_ref));
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
                                                            std::move(popup));
 }
@@ -111,7 +118,7 @@ v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                        const base::WeakPtr<WebFrameMain>& frame,
+                        cppgc::WeakPersistent<WebFrameMain> frame,
                         int32_t window_id,
                         int x,
                         int y,
@@ -121,9 +128,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   base::OnceClosure close_callback =
-      base::BindOnce(&MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id,
-                     std::move(callback));
+      base::BindOnce(&MenuMac::OnClosed,
+                     gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     window_id, std::move(callback));
   popup_controllers_[window_id] =
       [[ElectronMenuController alloc] initWithModel:model()
                               useDefaultAccelerator:NO];
@@ -164,14 +174,13 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   [popup_controllers_[window_id]
       setPopupCloseCallback:std::move(close_callback)];
 
-  if (frame && frame->render_frame_host()) {
-    auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
-    if (rfh && rfh->IsRenderFrameLive()) {
-      auto* rwhvm =
-          static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
-      RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
-      view = cocoa_view;
-
+  if (WebFrameMain* frame_ptr = frame.Get();
+      frame_ptr && frame_ptr->render_frame_host()) {
+    auto* rfh =
+        frame_ptr->render_frame_host()->GetOutermostMainFrameOrEmbedder();
+    auto* rwhv = rfh && rfh->IsRenderFrameLive() ? rfh->GetView() : nullptr;
+    NSView* frame_view = rwhv ? rwhv->GetNativeView().GetNativeNSView() : nil;
+    if (frame_view) {
       // TODO: ui::ShowContextMenu does not dispatch the event correctly
       // if no frame is found. Fix this to remove if/else condition.
       NSEvent* dummy_event =
@@ -184,7 +193,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                           eventNumber:0
                            clickCount:1
                              pressure:0];
-      ui::ShowContextMenu(menu, dummy_event, view, true);
+      ui::ShowContextMenu(menu, dummy_event, frame_view, true);
       return;
     }
   }
@@ -204,8 +213,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
-  auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
-                                    weak_factory_.GetWeakPtr(), window_id);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto close_popup =
+      base::BindOnce(&MenuMac::ClosePopupOnUI,
+                     gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     window_id);
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, std::move(close_popup));
 }
@@ -244,6 +257,20 @@ std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
   else
     text += key;
   return text;
+}
+
+void Menu::SimulateSubmenuCloseSequenceForTesting() {
+  ElectronMenuController* controller =
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO];
+  NSMenu* menu = [controller menu];
+  NSMenu* submenu = menu.itemArray[0].submenu;
+
+  [controller setPopupCloseCallback:base::BindOnce([] {})];
+  [controller menuWillOpen:menu];
+  [controller menuWillOpen:submenu];
+  [controller menuDidClose:submenu];
+  [controller menuDidClose:menu];
 }
 
 void MenuMac::ClosePopupOnUI(int32_t window_id) {

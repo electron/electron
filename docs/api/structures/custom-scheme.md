@@ -11,3 +11,5 @@
   * `stream` boolean (optional) - Default false.
   * `codeCache` boolean (optional) - Enable V8 code cache for the scheme, only
     works when `standard` is also set to true. Default false.
+  * `allowExtensions` boolean (optional) - Allow Chrome extensions to be used
+    on pages served over this protocol. Default false.

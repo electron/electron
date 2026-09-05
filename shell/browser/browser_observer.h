@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/memory/scoped_refptr.h"
 #include "base/observer_list_types.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -43,7 +42,7 @@ class BrowserObserver : public base::CheckedObserver {
 
   // The browser has finished loading.
   virtual void OnWillFinishLaunching() {}
-  virtual void OnFinishLaunching(base::Value::Dict launch_info) {}
+  virtual void OnFinishLaunching(base::DictValue launch_info) {}
 
   // The browser's accessibility support has changed.
   virtual void OnAccessibilitySupportChanged() {}
@@ -66,15 +65,15 @@ class BrowserObserver : public base::CheckedObserver {
   // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(bool* prevent_default,
                                       const std::string& type,
-                                      base::Value::Dict user_info,
-                                      base::Value::Dict details) {}
+                                      base::DictValue user_info,
+                                      base::DictValue details) {}
   // The browser wants to notify that an user activity was resumed. (macOS only)
   virtual void OnUserActivityWasContinued(const std::string& type,
-                                          base::Value::Dict user_info) {}
+                                          base::DictValue user_info) {}
   // The browser wants to update an user activity payload. (macOS only)
   virtual void OnUpdateUserActivityState(bool* prevent_default,
                                          const std::string& type,
-                                         base::Value::Dict user_info) {}
+                                         base::DictValue user_info) {}
   // User clicked the native macOS new tab button. (macOS only)
   virtual void OnNewWindowForTab() {}
 

@@ -41,7 +41,7 @@ h4 {
   transform-origin: 50% 50%;
 }
 
-hero-icon.loop-3 {
+.hero-icon.loop-3 {
   transform: translate(79px, 21px);
   opacity: 1;
 }

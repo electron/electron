@@ -25,7 +25,11 @@ app.once('ready', async () => {
 
   protocol.handle('atom', (request) => {
     let { pathname } = new URL(request.url);
-    if (pathname === '/mocha.js') { pathname = path.resolve(__dirname, '../../../node_modules/mocha/mocha.js'); } else { pathname = path.join(__dirname, pathname); }
+    if (pathname === '/mocha.js') {
+      pathname = path.resolve(__dirname, '../../../node_modules/mocha/mocha.js');
+    } else {
+      pathname = path.join(__dirname, pathname);
+    }
     return net.fetch(pathToFileURL(pathname).toString());
   });
 

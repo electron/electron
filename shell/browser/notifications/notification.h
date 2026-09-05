@@ -23,6 +23,14 @@ class NotificationPresenter;
 struct NotificationAction {
   std::u16string type;
   std::u16string text;
+  std::vector<std::u16string> items;
+
+  NotificationAction();
+  ~NotificationAction();
+  NotificationAction(const NotificationAction&);
+  NotificationAction& operator=(const NotificationAction&);
+  NotificationAction(NotificationAction&&) noexcept;
+  NotificationAction& operator=(NotificationAction&&) noexcept;
 };
 
 struct NotificationOptions {
@@ -37,10 +45,12 @@ struct NotificationOptions {
   std::u16string timeout_type;
   std::u16string reply_placeholder;
   std::u16string sound;
-  std::u16string urgency;  // Linux
+  std::u16string urgency;  // Linux/Windows
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
+  std::string group_id;
+  std::u16string group_title;
 
   NotificationOptions();
   NotificationOptions(const NotificationOptions&);
@@ -48,6 +58,21 @@ struct NotificationOptions {
   NotificationOptions(NotificationOptions&&);
   NotificationOptions& operator=(NotificationOptions&&);
   ~NotificationOptions();
+};
+
+struct NotificationInfo {
+  std::string id;
+  std::string title;
+  std::string subtitle;
+  std::string body;
+  std::string group_id;
+
+  NotificationInfo();
+  ~NotificationInfo();
+  NotificationInfo(const NotificationInfo&);
+  NotificationInfo& operator=(const NotificationInfo&);
+  NotificationInfo(NotificationInfo&&) noexcept;
+  NotificationInfo& operator=(NotificationInfo&&) noexcept;
 };
 
 class Notification {
@@ -66,9 +91,15 @@ class Notification {
   // as can happen on some platforms including Windows.
   virtual void Remove() {}
 
+  // Restores a previously delivered notification for event handling without
+  // re-showing it. Sets up platform state so interaction events (click, reply,
+  // etc.) route to this object.
+  virtual void Restore() {}
+
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool should_destroy = true);
+  void NotificationDismissed(bool should_destroy = true,
+                             const std::string& close_reason = "");
   void NotificationFailed(const std::string& error = "");
 
   // delete this.

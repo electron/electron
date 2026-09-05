@@ -39,14 +39,14 @@ indicate which letter should get a generated accelerator. For example, using
 opens the associated menu. The indicated character in the button label then gets an
 underline, and the `&` character is not displayed on the button label.
 
-In order to escape the `&` character in an item name, add a proceeding `&`. For example, `&&File` would result in `&File` displayed on the button label.
+In order to escape the `&` character in an item name, add a preceding `&`. For example, `&&File` would result in `&File` displayed on the button label.
 
 Passing `null` will suppress the default menu. On Windows and Linux,
 this has the additional effect of removing the menu bar from the window.
 
 > [!NOTE]
 > The default menu will be created automatically if the app does not set one.
-> It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
+> It contains standard items such as `File`, `Edit`, `View`, and `Window`.
 
 #### `Menu.getApplicationMenu()`
 
@@ -70,7 +70,7 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-- `template` (MenuItemConstructorOptions | [MenuItem](menu-item.md))[]
+- `template` ([MenuItemConstructorOptions](menu-item.md#new-menuitemoptions) | [MenuItem](menu-item.md))[]
 
 Returns [`Menu`](menu.md)
 
@@ -123,7 +123,7 @@ Appends the `menuItem` to the menu.
 
 - `id` string
 
-Returns `MenuItem | null` the item with the specified `id`
+Returns [`MenuItem | null`](menu-item.md) - the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 
@@ -162,7 +162,7 @@ Emitted when a popup is closed either manually or with `menu.closePopup()`.
 
 #### `menu.items`
 
-A `MenuItem[]` array containing the menu's items.
+A [`MenuItem[]`](menu-item.md) array containing the menu's items.
 
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md) instances and each `MenuItem`
 can nest a `Menu` into its `submenu` property.

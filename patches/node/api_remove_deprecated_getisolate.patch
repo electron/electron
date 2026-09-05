@@ -6,10 +6,10 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe663f3ca61 100644
+index 4dea08fafee4379066a7d8af66fb07c7e7a3490c..ea8ba25085c12f6180c879f19e543a8151e3792d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -668,7 +668,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+@@ -792,7 +792,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context,
                                          IsolateData* isolate_data) {
@@ -18,7 +18,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    EscapableHandleScope handle_scope(isolate);
  
    Local<Object> global = context->Global();
-@@ -714,7 +714,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+@@ -838,7 +838,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
  // This runs at runtime, regardless of whether the context
  // is created from a snapshot.
  Maybe<void> InitializeContextRuntime(Local<Context> context) {
@@ -27,7 +27,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    HandleScope handle_scope(isolate);
  
    // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
-@@ -793,7 +793,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+@@ -917,7 +917,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
  }
  
  Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
@@ -36,7 +36,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    HandleScope handle_scope(isolate);
  
    // Delete `Intl.v8BreakIterator`
-@@ -818,7 +818,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+@@ -942,7 +942,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
  }
  
  Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
@@ -45,7 +45,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    HandleScope handle_scope(isolate);
  
    // Initialize the default values.
-@@ -836,7 +836,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+@@ -960,7 +960,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
  MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
                                              IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -54,7 +54,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -860,7 +860,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -984,7 +984,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
                                                 IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -63,7 +63,7 @@ index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe6
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -886,7 +886,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -1010,7 +1010,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
  Maybe<void> InitializePrimordials(Local<Context> context,
                                    IsolateData* isolate_data) {
    // Run per-context JS files.
@@ -85,10 +85,10 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index f3631d538a38dc3a93a47707ea8dab0462fa2140..12ad6e6ddbda2cc679e733f7a9c6b9e4cf9623dd 100644
+index e04a769b67505ee082d98cee8ccbf694e85507a8..b531f3649d44c700af92f454302c11d2d8660f2c 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1022,7 +1022,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+@@ -1173,7 +1173,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
                             Local<Array> cert_array,
                             std::vector<X509*>* certs) {
    ClearErrorOnReturn clear_error_on_return;
@@ -98,21 +98,21 @@ index f3631d538a38dc3a93a47707ea8dab0462fa2140..12ad6e6ddbda2cc679e733f7a9c6b9e4
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 4c5427596d1c90d3a413cdd9ff4f1151e657073d..70135a6be65e41fcb3564ddf6d1e8083a59ef8bb 100644
+index 82da68d8eef06c57aae76f2b54eeb09db5b41ecf..9d3fddd63d1e333674633752b2b5243c8d9954c7 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -107,7 +107,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
+@@ -109,7 +109,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
+   if (!mem) [[unlikely]]
      return {};
-   BUF_MEM* mem = bio;
    Local<Value> ret;
 -  if (!String::NewFromUtf8(context->GetIsolate(),
 +  if (!String::NewFromUtf8(Isolate::GetCurrent(),
                             mem->data,
                             NewStringType::kNormal,
                             mem->length)
-@@ -121,7 +121,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+@@ -125,7 +125,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+   if (!mem) [[unlikely]]
      return {};
-   BUF_MEM* mem = bio;
    Local<Value> ret;
 -  if (!String::NewFromUtf8(context->GetIsolate(),
 +  if (!String::NewFromUtf8(Isolate::GetCurrent(),
@@ -120,7 +120,7 @@ index 4c5427596d1c90d3a413cdd9ff4f1151e657073d..70135a6be65e41fcb3564ddf6d1e8083
                             NewStringType::kNormal,
                             mem->length)
 diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
-index 266f640fb1c6503a424e77cc41fc15bc658bb6a5..877ae8a18f6b8f2c7e3474dfba060d99db88e6b9 100644
+index 31277621e92b4d3583a67140f4ab8a74a9c6df3b..caa109871b71926f3355491767b8064b50cb7e19 100644
 --- a/src/encoding_binding.cc
 +++ b/src/encoding_binding.cc
 @@ -76,7 +76,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -133,10 +133,10 @@ index 266f640fb1c6503a424e77cc41fc15bc658bb6a5..877ae8a18f6b8f2c7e3474dfba060d99
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index b5cf58cc953590493beb52abf249e33e486ffc46..347ec5c42e098186ff489dff199ac5989961f6e3 100644
+index 52b971ecd8d5fed8a4348aebbec2b0138e906355..bfa419e0d57a610381cf9de4017e6f173b77c6d7 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1765,10 +1765,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1763,10 +1763,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index b5cf58cc953590493beb52abf249e33e486ffc46..347ec5c42e098186ff489dff199ac598
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1808,7 +1808,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1806,7 +1806,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -159,94 +159,21 @@ index b5cf58cc953590493beb52abf249e33e486ffc46..347ec5c42e098186ff489dff199ac598
    } else {
      info.js_execution_async_resources = 0;
 diff --git a/src/inspector/network_agent.cc b/src/inspector/network_agent.cc
-index aacd4e8cb83c88649537ab5d9e1ce752ea5b87a8..a47ea86adb9da081a125b6590bcd96f43053d44b 100644
+index a19c9ec16375ced6569ed5973b9cd72ff5d14171..036c21f0eb50d0da3027e2c7bb2fd00c55ab67df 100644
 --- a/src/inspector/network_agent.cc
 +++ b/src/inspector/network_agent.cc
-@@ -31,31 +31,31 @@ constexpr size_t kDefaultMaxTotalBufferSize = 100 * 1024 * 1024;  // 100MB
- Maybe<protocol::String> ObjectGetProtocolString(v8::Local<v8::Context> context,
-                                                 Local<Object> object,
-                                                 Local<v8::String> property) {
+@@ -33,8 +33,8 @@ static void ThrowEventError(v8::Isolate* isolate, const std::string& message) {
+ std::unique_ptr<protocol::Network::Headers>
+ NetworkAgent::createHeadersFromObject(v8::Local<v8::Context> context,
+                                       Local<Object> headers_obj) {
 -  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
-   Local<Value> value;
-   if (!object->Get(context, property).ToLocal(&value) || !value->IsString()) {
-     return Nothing<protocol::String>();
-   }
-   Local<v8::String> str = value.As<v8::String>();
--  return Just(ToProtocolString(context->GetIsolate(), str));
-+  return Just(ToProtocolString(v8::Isolate::GetCurrent(), str));
- }
- 
- // Get a protocol string property from the object.
- Maybe<protocol::String> ObjectGetProtocolString(v8::Local<v8::Context> context,
-                                                 Local<Object> object,
-                                                 const char* property) {
--  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
-   return ObjectGetProtocolString(
--      context, object, OneByteString(context->GetIsolate(), property));
-+      context, object, OneByteString(v8::Isolate::GetCurrent(), property));
- }
- 
- // Get a protocol double property from the object.
- Maybe<double> ObjectGetDouble(v8::Local<v8::Context> context,
-                               Local<Object> object,
-                               const char* property) {
--  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
-   Local<Value> value;
--  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
-+  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
-            .ToLocal(&value) ||
-       !value->IsNumber()) {
-     return Nothing<double>();
-@@ -67,9 +67,9 @@ Maybe<double> ObjectGetDouble(v8::Local<v8::Context> context,
- Maybe<int> ObjectGetInt(v8::Local<v8::Context> context,
-                         Local<Object> object,
-                         const char* property) {
--  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
-   Local<Value> value;
--  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
-+  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
-            .ToLocal(&value) ||
-       !value->IsInt32()) {
-     return Nothing<int>();
-@@ -81,9 +81,9 @@ Maybe<int> ObjectGetInt(v8::Local<v8::Context> context,
- Maybe<bool> ObjectGetBool(v8::Local<v8::Context> context,
-                           Local<Object> object,
-                           const char* property) {
--  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
-   Local<Value> value;
--  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
-+  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
-            .ToLocal(&value) ||
-       !value->IsBoolean()) {
-     return Nothing<bool>();
-@@ -95,9 +95,9 @@ Maybe<bool> ObjectGetBool(v8::Local<v8::Context> context,
- MaybeLocal<v8::Object> ObjectGetObject(v8::Local<v8::Context> context,
-                                        Local<Object> object,
-                                        const char* property) {
--  EscapableHandleScope handle_scope(context->GetIsolate());
-+  EscapableHandleScope handle_scope(v8::Isolate::GetCurrent());
-   Local<Value> value;
--  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
-+  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
-            .ToLocal(&value) ||
-       !value->IsObject()) {
-     return {};
-@@ -108,7 +108,7 @@ MaybeLocal<v8::Object> ObjectGetObject(v8::Local<v8::Context> context,
- // Create a protocol::Network::Headers from the v8 object.
- std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
-     v8::Local<v8::Context> context, Local<Object> headers_obj) {
--  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Isolate* isolate = env_->isolate();
++  HandleScope handle_scope(isolate);
  
    std::unique_ptr<protocol::DictionaryValue> dict =
        protocol::DictionaryValue::create();
-@@ -129,7 +129,7 @@ std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
-              .To(&property_value)) {
+@@ -58,7 +58,7 @@ NetworkAgent::createHeadersFromObject(v8::Local<v8::Context> context,
+       ThrowEventError(isolate, "Invalid header value in event");
        return {};
      }
 -    dict->setString(ToProtocolString(context->GetIsolate(), property_name),
@@ -254,33 +181,36 @@ index aacd4e8cb83c88649537ab5d9e1ce752ea5b87a8..a47ea86adb9da081a125b6590bcd96f4
                      property_value);
    }
  
-@@ -139,7 +139,7 @@ std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
- // Create a protocol::Network::Request from the v8 object.
- std::unique_ptr<protocol::Network::Request> createRequestFromObject(
-     v8::Local<v8::Context> context, Local<Object> request) {
+@@ -69,8 +69,8 @@ NetworkAgent::createHeadersFromObject(v8::Local<v8::Context> context,
+ std::unique_ptr<protocol::Network::Request>
+ NetworkAgent::createRequestFromObject(v8::Local<v8::Context> context,
+                                       Local<Object> request) {
 -  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Isolate* isolate = env_->isolate();
++  HandleScope handle_scope(isolate);
    protocol::String url;
    if (!ObjectGetProtocolString(context, request, "url").To(&url)) {
-     return {};
-@@ -171,7 +171,7 @@ std::unique_ptr<protocol::Network::Request> createRequestFromObject(
- // Create a protocol::Network::Response from the v8 object.
- std::unique_ptr<protocol::Network::Response> createResponseFromObject(
-     v8::Local<v8::Context> context, Local<Object> response) {
+     ThrowEventError(isolate, "Missing request.url in event");
+@@ -106,8 +106,8 @@ NetworkAgent::createRequestFromObject(v8::Local<v8::Context> context,
+ std::unique_ptr<protocol::Network::Response>
+ NetworkAgent::createResponseFromObject(v8::Local<v8::Context> context,
+                                        Local<Object> response) {
 -  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Isolate* isolate = env_->isolate();
++  HandleScope handle_scope(isolate);
    protocol::String url;
    if (!ObjectGetProtocolString(context, response, "url").To(&url)) {
-     return {};
-@@ -212,7 +212,7 @@ std::unique_ptr<protocol::Network::Response> createResponseFromObject(
- 
- std::unique_ptr<protocol::Network::WebSocketResponse> createWebSocketResponse(
-     v8::Local<v8::Context> context, Local<Object> response) {
+     ThrowEventError(isolate, "Missing response.url in event");
+@@ -153,8 +153,8 @@ NetworkAgent::createResponseFromObject(v8::Local<v8::Context> context,
+ std::unique_ptr<protocol::Network::WebSocketResponse>
+ NetworkAgent::createWebSocketResponse(v8::Local<v8::Context> context,
+                                       Local<Object> response) {
 -  HandleScope handle_scope(context->GetIsolate());
-+  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Isolate* isolate = env_->isolate();
++  HandleScope handle_scope(isolate);
    int status;
    if (!ObjectGetInt(context, response, "status").To(&status)) {
-     return {};
+     ThrowEventError(isolate, "Missing response.status in event");
 diff --git a/src/js_native_api_v8.h b/src/js_native_api_v8.h
 index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24eda615410 100644
 --- a/src/js_native_api_v8.h
@@ -295,7 +225,7 @@ index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24e
          module_api_version(module_api_version) {
      napi_clear_last_error(this);
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a4461eacfca2 100644
+index fbcf8f0f99ccaac583040e1ecebcbf65bd03cfa6..6934e3ca3751091e6ebc7802dabf8b50fd9f6355 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -99,7 +99,7 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
@@ -307,7 +237,7 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    std::size_t h1 = specifier->GetIdentityHash();
    size_t num_attributes = import_attributes->Length() / elements_per_attribute;
    ImportAttributeVector attributes;
-@@ -1022,7 +1022,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -1008,7 +1008,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
      return {};
    }
    DCHECK_NOT_NULL(resolved_module);
@@ -316,7 +246,7 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
  }
  
  // static
-@@ -1043,7 +1043,7 @@ MaybeLocal<Object> ModuleWrap::ResolveSourceCallback(
+@@ -1029,7 +1029,7 @@ MaybeLocal<Object> ModuleWrap::ResolveSourceCallback(
            ->GetInternalField(ModuleWrap::kModuleSourceObjectSlot)
            .As<Value>();
    if (module_source_object->IsUndefined()) {
@@ -325,7 +255,7 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
                                         resolved_module->url_);
      return {};
    }
-@@ -1057,7 +1057,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+@@ -1043,7 +1043,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
      Local<String> specifier,
      Local<FixedArray> import_attributes,
      Local<Module> referrer) {
@@ -334,7 +264,7 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    Environment* env = Environment::GetCurrent(context);
    if (env == nullptr) {
      THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
-@@ -1106,7 +1106,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
+@@ -1092,7 +1092,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
      Local<String> specifier,
      ModuleImportPhase phase,
      Local<FixedArray> import_attributes) {
@@ -343,7 +273,7 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    Environment* env = Environment::GetCurrent(context);
    if (env == nullptr) {
      THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
-@@ -1348,7 +1348,7 @@ MaybeLocal<Module> LinkRequireFacadeWithOriginal(
+@@ -1334,7 +1334,7 @@ MaybeLocal<Module> LinkRequireFacadeWithOriginal(
      Local<FixedArray> import_attributes,
      Local<Module> referrer) {
    Environment* env = Environment::GetCurrent(context);
@@ -353,10 +283,10 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 5a6004ca4dfd15a813f3fcc7687958432e4fd5a0..ee4eb270eeb5a76415e74ac6322e0cb347fe60ce 100644
+index 9d42692040941f7ed2813a9fb329722f70939638..9ad4985f284255cf2d1fbab411dd5e0e11a78d7c 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1064,7 +1064,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1150,7 +1150,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_CONSTANT(target, constant)                                 \
    do {                                                                         \
@@ -365,7 +295,7 @@ index 5a6004ca4dfd15a813f3fcc7687958432e4fd5a0..ee4eb270eeb5a76415e74ac6322e0cb3
      v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
-@@ -1080,7 +1080,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1166,7 +1166,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
    do {                                                                         \
@@ -375,10 +305,10 @@ index 5a6004ca4dfd15a813f3fcc7687958432e4fd5a0..ee4eb270eeb5a76415e74ac6322e0cb3
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
 diff --git a/src/node_blob.cc b/src/node_blob.cc
-index d278a32c9934c15bc721da164efccca7bc7e7111..ab862bf93a411e6ae6da7c9f9706cee279a0ad70 100644
+index d05a693120f2643dc01395493d51db3d3f95f9b7..57d35358fbfd71bc0ef01f8c83f5f00f0b02b8cf 100644
 --- a/src/node_blob.cc
 +++ b/src/node_blob.cc
-@@ -554,7 +554,7 @@ void BlobBindingData::Deserialize(Local<Context> context,
+@@ -580,7 +580,7 @@ void BlobBindingData::Deserialize(Local<Context> context,
                                    int index,
                                    InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -388,37 +318,37 @@ index d278a32c9934c15bc721da164efccca7bc7e7111..ab862bf93a411e6ae6da7c9f9706cee2
    BlobBindingData* binding = realm->AddBindingData<BlobBindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310cedc8093c5f 100644
+index ab9f14174e7a16b2da17a9d5a00aa82318aac9b6..a4c62510ad9f8c2c77986ead1e17afd319adc496 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -274,7 +274,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(
-     const char* id,
-     LocalVector<String>* parameters,
+@@ -279,7 +279,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
+     Local<Context> context,
+     const BuiltinSource* builtin_source,
      Realm* optional_realm) {
 -  Isolate* isolate = context->GetIsolate();
 +  Isolate* isolate = Isolate::GetCurrent();
    EscapableHandleScope scope(isolate);
  
-   Local<String> source;
-@@ -396,7 +396,7 @@ void BuiltinLoader::SaveCodeCache(const char* id, Local<Function> fun) {
- MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
-                                                      const char* id,
-                                                      Realm* optional_realm) {
+   BuiltinCodeCacheData cached_data{};
+@@ -447,7 +447,7 @@ void BuiltinLoader::SaveCodeCache(const std::string& id, Local<Data> data) {
+ 
+ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+     Local<Context> context, const char* id, Realm* optional_realm) {
 -  Isolate* isolate = context->GetIsolate();
 +  Isolate* isolate = Isolate::GetCurrent();
    LocalVector<String> parameters(isolate);
-   // Detects parameters of the scripts based on module ids.
-   // internal/bootstrap/realm: process, getLinkedBinding,
-@@ -450,7 +450,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
+ 
+   Local<Data> data;
+@@ -488,7 +488,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
 -  Isolate* isolate = context->GetIsolate();
 +  Isolate* isolate = Isolate::GetCurrent();
-   // Detects parameters of the scripts based on module ids.
-   // internal/bootstrap/realm: process, getLinkedBinding,
-   //                           getInternalBinding, primordials
-@@ -506,7 +506,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+   const BuiltinSource* builtin_source = LoadBuiltinSource(isolate, id);
+   if (builtin_source == nullptr) {
+     THROW_ERR_MODULE_NOT_FOUND(isolate, "Cannot find module %s", id);
+@@ -560,7 +560,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCallWith(Local<Context> context,
    if (!maybe_fn.ToLocal(&fn)) {
      return MaybeLocal<Value>();
    }
@@ -427,17 +357,17 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
    return fn->Call(context, undefined, argc, argv);
  }
  
-@@ -544,14 +544,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -584,14 +584,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
        to_eager_compile_.emplace(id);
      }
  
 -    TryCatch bootstrapCatch(context->GetIsolate());
 +    TryCatch bootstrapCatch(Isolate::GetCurrent());
-     auto fn = LookupAndCompile(context, id.data(), nullptr);
+     auto data = LookupAndCompile(context, id.data(), nullptr);
      if (bootstrapCatch.HasCaught()) {
        per_process::Debug(DebugCategory::CODE_CACHE,
                           "Failed to compile code cache for %s\n",
-                          id.data());
+                          id);
        all_succeeded = false;
 -      PrintCaughtException(context->GetIsolate(), context, bootstrapCatch);
 +      PrintCaughtException(Isolate::GetCurrent(), context, bootstrapCatch);
@@ -445,10 +375,10 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
        // This is used by the snapshot builder, so save the code cache
        // unconditionally.
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c93309664270 100644
+index 6a1100194314f5d1ae91fcd79984e662ec74efcd..85c8d7f1d9cdc6c02b9338edf079a4632ee024fa 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1265,7 +1265,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1331,7 +1331,7 @@ void CreatePerContextProperties(Local<Object> target,
                                  Local<Value> unused,
                                  Local<Context> context,
                                  void* priv) {
@@ -458,20 +388,20 @@ index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c933
  
    CHECK(
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d864fe88d12 100644
+index 211bc074161b5fd4ac6f2d9a23b201d79ae362ef..469c85642e995024b354abaa67dd865933867fc7 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -113,7 +113,7 @@ namespace {
+@@ -109,6 +109,8 @@ using v8::Value;
+ // For every `set` of a global property, the interceptor callback defines or
+ // changes the property both on the sandbox and the global proxy.
  
- // Convert an int to a V8 Name (String or Symbol).
- MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
--  return Uint32::New(context->GetIsolate(), index)->ToString(context);
-+  return Uint32::New(Isolate::GetCurrent(), index)->ToString(context);
- }
- 
- }  // anonymous namespace
-@@ -677,7 +677,7 @@ Intercepted ContextifyContext::PropertyDefinerCallback(
-   }
++
++
+ ContextifyContext* ContextifyContext::New(Environment* env,
+                                           Local<Object> sandbox_obj,
+                                           ContextOptions* options) {
+@@ -686,7 +688,7 @@ Intercepted ContextifyContext::PropertyDefinerCallback(
+       DebugCategory::CONTEXTIFY, "PropertyDefiner(name: %s)\n", property);
  
    Local<Context> context = ctx->context();
 -  Isolate* isolate = context->GetIsolate();
@@ -479,7 +409,7 @@ index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d86
  
    PropertyAttribute attributes = PropertyAttribute::None;
    bool is_declared =
-@@ -1666,7 +1666,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
+@@ -1668,7 +1670,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
      bool* cache_rejected,
      bool is_cjs_scope,
      ScriptCompiler::CachedData* cached_data) {
@@ -489,7 +419,7 @@ index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d86
  
    Local<Symbol> symbol = env->vm_dynamic_import_default_internal();
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index 6aad252eb5681bb9ab9890812602b43c418e7a7f..5f7ef8cc58f589ba30a44abaaaaaf1514458c3f0 100644
+index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..b38c2f75a92f2d6c1b9c6e7b7aca924653f7494d 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
 @@ -311,7 +311,7 @@ std::shared_ptr<KVStore> KVStore::CreateMapKVStore() {
@@ -502,10 +432,10 @@ index 6aad252eb5681bb9ab9890812602b43c418e7a7f..5f7ef8cc58f589ba30a44abaaaaaf151
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee75870ab8de07 100644
+index 34fa4758bfa595caf81fa7f6bb223923843203c7..447b28c85fa5ff3dc518845abe85b9bd1e0449f9 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -631,7 +631,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+@@ -627,7 +627,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
      v8::Local<v8::Context> context,
      v8::Local<v8::Value> source,
      bool is_code_like) {
@@ -514,7 +444,7 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
  
    if (context->GetNumberOfEmbedderDataFields() <=
        ContextEmbedderIndex::kAllowCodeGenerationFromStrings) {
-@@ -1037,7 +1037,7 @@ const char* errno_string(int errorno) {
+@@ -1049,7 +1049,7 @@ const char* errno_string(int errorno) {
  }
  
  void PerIsolateMessageListener(Local<Message> message, Local<Value> error) {
@@ -523,7 +453,7 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
    switch (message->ErrorLevel()) {
      case Isolate::MessageErrorLevel::kMessageWarning: {
        Environment* env = Environment::GetCurrent(isolate);
-@@ -1197,7 +1197,7 @@ void Initialize(Local<Object> target,
+@@ -1214,7 +1214,7 @@ void Initialize(Local<Object> target,
    SetMethod(
        context, target, "getErrorSourcePositions", GetErrorSourcePositions);
  
@@ -533,10 +463,10 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 7dfb7a486040e0188eb53ee7a65f91a99e713a3a..c364f2a4f6dd6ec066b00f364108383154be12ec 100644
+index 5be1b553e29dbcc78c4bee1b778587ede6bc60f8..dec05abe58a969334ee4f13b4ed7b7dc0fd0b6ad 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3834,7 +3834,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -4128,7 +4128,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -546,7 +476,7 @@ index 7dfb7a486040e0188eb53ee7a65f91a99e713a3a..c364f2a4f6dd6ec066b00f3641083831
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
    BindingData* binding =
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af87810877dd31a49 100644
+index be7bbc85add91e730e3edc3cf19b73b27715b4c7..ea379c5200ed4c8c6358efd184682a8fab523977 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
 @@ -254,7 +254,7 @@ namespace {
@@ -576,7 +506,7 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    Local<Value> argv[] = {message,
                           FIXED_ONE_BYTE_STRING(isolate, "DataCloneError")};
    Local<Value> exception;
-@@ -1477,7 +1477,7 @@ BaseObjectPtr<BaseObject> JSTransferable::Data::Deserialize(
+@@ -1482,7 +1482,7 @@ BaseObjectPtr<BaseObject> JSTransferable::Data::Deserialize(
  
  Maybe<bool> JSTransferable::Data::FinalizeTransferWrite(
      Local<Context> context, ValueSerializer* serializer) {
@@ -586,7 +516,7 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a599e548c5 100644
+index 5b3f55c8111b96d310b7cf3fb25cbaa5eba14500..5a90a937bf0893d35b95797a8e50f43b9fc58845 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
@@ -598,7 +528,7 @@ index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a5
    Realm* realm = Realm::GetCurrent(context);
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
-@@ -709,7 +709,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -758,7 +758,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
    Realm* realm = Realm::GetCurrent(context);
    realm->AddBindingData<BindingData>(target);
  
@@ -608,10 +538,10 @@ index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a5
  
  #define V(status)                                                              \
 diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
-index e453bacc3e5247493a3582c24174bfe6e590825d..fe4aad63bc877be105830a80aa6be10ce3f8fda4 100644
+index 4a258e5f140994536386492059d64c9cf94ea0a6..67278974199db46fed85b443e7cdd30accd7687f 100644
 --- a/src/node_process_methods.cc
 +++ b/src/node_process_methods.cc
-@@ -737,7 +737,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -745,7 +745,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -621,7 +551,7 @@ index e453bacc3e5247493a3582c24174bfe6e590825d..fe4aad63bc877be105830a80aa6be10c
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_realm.cc b/src/node_realm.cc
-index 2a5fe9fe501d1fd9356eeb7d044a872fa5a55f38..39f6f142044c42904d234da20a266315346c135a 100644
+index 6d2e4eb641a8ffaacf4aebd3522008a285387a30..47bd7d9f19077ac7a558c73db5f51bdf8da291e7 100644
 --- a/src/node_realm.cc
 +++ b/src/node_realm.cc
 @@ -22,7 +22,7 @@ using v8::String;
@@ -634,7 +564,7 @@ index 2a5fe9fe501d1fd9356eeb7d044a872fa5a55f38..39f6f142044c42904d234da20a266315
    env->AssignToContext(context, this, ContextInfo(""));
    // The environment can also purge empty wrappers in the check callback,
 diff --git a/src/node_report.cc b/src/node_report.cc
-index ba2dd7e676bfdfe7da66a4a79db3c791a505c9a8..28e6cfac682e301b605c00c4ef2eaf01431f04e4 100644
+index 04c5d415c3c67ef9eba962bc15e738f0df6a005a..b8bb41e88888e426689298a611fc87cb3d8e0caf 100644
 --- a/src/node_report.cc
 +++ b/src/node_report.cc
 @@ -400,7 +400,7 @@ static void PrintJavaScriptErrorProperties(JSONWriter* writer,
@@ -647,10 +577,10 @@ index ba2dd7e676bfdfe7da66a4a79db3c791a505c9a8..28e6cfac682e301b605c00c4ef2eaf01
      if (!error_obj->GetOwnPropertyNames(context).ToLocal(&keys)) {
        return writer->json_objectend();  // the end of 'errorProperties'
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index c2e24b4645e7903e08c80aead1c18c7bcff1bd89..e34d24d51d5c090b560d06f727043f20924e6f46 100644
+index 41b0773f4c37a016cfa55aff6bb03baf50905b32..c3e995adf437413fe956e45c2ccc704d8737de59 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
-@@ -1614,7 +1614,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -1675,7 +1675,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -660,10 +590,10 @@ index c2e24b4645e7903e08c80aead1c18c7bcff1bd89..e34d24d51d5c090b560d06f727043f20
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 955b76cbc71d0cd3a1cc01c3c0dea0536a792dc0..0b111ce1fb1d59cad019ba13bbfc513f157d3f06 100644
+index cf9db75a84f9d58f10d2b35e8ac6c8bb9bf1e5ba..784621a14fae6d20bd6c8b1584df8577180888a2 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2061,7 +2061,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
+@@ -2639,7 +2639,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
  
    if (args[0]->IsObject() && !args[0]->IsArrayBufferView()) {
      Local<Object> obj = args[0].As<Object>();
@@ -686,7 +616,7 @@ index d33ee3c26c111e53edf27e6368ca8f64ff30a349..f1c53c44f201b295888e7932c5e3e2b1
  
    Environment* env = Environment::GetCurrent(isolate);
 diff --git a/src/node_url.cc b/src/node_url.cc
-index 9d1e8ec05161570db11f7b662395509774668d78..9b91f83d879ea02fd3d61913c8dfd35b3bf1ac31 100644
+index 5f5241f6c6741218024452202c4a17c7d0239e6b..75aaf468f508f2888daea2f77e98c7286f980f6e 100644
 --- a/src/node_url.cc
 +++ b/src/node_url.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -699,10 +629,10 @@ index 9d1e8ec05161570db11f7b662395509774668d78..9b91f83d879ea02fd3d61913c8dfd35b
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_v8.cc b/src/node_v8.cc
-index 8dd32dad262679444c10878299eb6bb8fb04e120..935ea2cf5157c3a2fbdf142fc7024ec6b6d5de26 100644
+index 06164d7792f8a7450bf3283d57aa344937546ece..7e7fd72645e8f534623d3dd0cb832b933dce2b45 100644
 --- a/src/node_v8.cc
 +++ b/src/node_v8.cc
-@@ -163,7 +163,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -165,7 +165,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -736,10 +666,10 @@ index 370221d3cddc201180260ecb3a222bc831c91093..f5aff2f65fe6b9f48cf970ab3e7c57cf
      THROW_ERR_WASI_NOT_STARTED(isolate);
      return EinvalError<R>();
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f3c36200b 100644
+index 9bebd4fb1b86b97df59aa2a04106c1916ca658bc..afd17511610cc0977874190aeca9e5e63e1db4e7 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -57,7 +57,7 @@ using v8::Value;
+@@ -60,7 +60,7 @@ using v8::Value;
    } while (0)
  
  static void ThrowQuotaExceededException(Local<Context> context) {
@@ -748,17 +678,17 @@ index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f
    auto dom_exception_str = FIXED_ONE_BYTE_STRING(isolate, "DOMException");
    auto err_name = FIXED_ONE_BYTE_STRING(isolate, "QuotaExceededError");
    auto err_message =
-@@ -433,7 +433,7 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
+@@ -468,6 +468,8 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
+   return JustVoid();
  }
  
- static MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
--  return Uint32::New(context->GetIsolate(), index)->ToString(context);
-+  return Uint32::New(Isolate::GetCurrent(), index)->ToString(context);
- }
- 
++
++
  static void Clear(const FunctionCallbackInfo<Value>& info) {
+   Storage* storage;
+   ASSIGN_OR_RETURN_UNWRAP(&storage, info.This());
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 62c53368d1173edb7eb42e3337049c46fd7cdda9..7d08d8af7f6d99f7bd41cb7eb91063c630b3f87b 100644
+index ed3aa30caac3f47691c4a7262e671589c3bace7b..3d6e0bdaaec133e89e947971b37cf0d8bdc08e38 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -1466,8 +1466,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
@@ -784,10 +714,10 @@ index da4206187f7c7d2becb8a101c1ff5346a10e13f4..03f0910926f3d403121e227cee32a546
    // Recreate the buffer in the constructor.
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
 diff --git a/src/util-inl.h b/src/util-inl.h
-index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d572a3f68bb 100644
+index f42c7b1250d1eb2e4d9f8e10c5ea9a9ca310924b..d59e30a635b08b97d255ed2e5540a66db54b068f 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
-@@ -336,14 +336,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
+@@ -337,14 +337,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
                              std::vector<v8::Global<v8::Value>>* out) {
    uint32_t count = js_array->Length();
    out->reserve(count);
@@ -804,7 +734,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    if (str.size() >= static_cast<size_t>(v8::String::kMaxLength)) [[unlikely]] {
      // V8 only has a TODO comment about adding an exception when the maximum
      // string size is exceeded.
-@@ -359,7 +359,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+@@ -360,7 +360,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      std::u16string_view str,
                                      v8::Isolate* isolate) {
@@ -813,7 +743,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    if (str.length() >= static_cast<size_t>(v8::String::kMaxLength))
        [[unlikely]] {
      // V8 only has a TODO comment about adding an exception when the maximum
-@@ -379,7 +379,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+@@ -380,7 +380,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      v8_inspector::StringView str,
                                      v8::Isolate* isolate) {
@@ -822,7 +752,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    if (str.length() >= static_cast<size_t>(v8::String::kMaxLength))
        [[unlikely]] {
      // V8 only has a TODO comment about adding an exception when the maximum
-@@ -406,7 +406,7 @@ template <typename T>
+@@ -407,7 +407,7 @@ template <typename T>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const std::vector<T>& vec,
                                      v8::Isolate* isolate) {
@@ -831,7 +761,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    v8::EscapableHandleScope handle_scope(isolate);
  
    MaybeStackBuffer<v8::Local<v8::Value>, 128> arr(vec.size());
-@@ -423,7 +423,7 @@ template <typename T>
+@@ -424,7 +424,7 @@ template <typename T>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const std::set<T>& set,
                                      v8::Isolate* isolate) {
@@ -840,7 +770,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    v8::Local<v8::Set> set_js = v8::Set::New(isolate);
    v8::HandleScope handle_scope(isolate);
  
-@@ -442,7 +442,7 @@ template <typename T, std::size_t U>
+@@ -443,7 +443,7 @@ template <typename T, std::size_t U>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const std::ranges::elements_view<T, U>& vec,
                                      v8::Isolate* isolate) {
@@ -849,7 +779,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    v8::EscapableHandleScope handle_scope(isolate);
  
    MaybeStackBuffer<v8::Local<v8::Value>, 128> arr(vec.size());
-@@ -461,7 +461,7 @@ template <typename T, typename U>
+@@ -462,7 +462,7 @@ template <typename T, typename U>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const std::unordered_map<T, U>& map,
                                      v8::Isolate* isolate) {
@@ -858,7 +788,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    v8::EscapableHandleScope handle_scope(isolate);
  
    v8::Local<v8::Map> ret = v8::Map::New(isolate);
-@@ -504,7 +504,7 @@ template <typename T, typename>
+@@ -505,7 +505,7 @@ template <typename T, typename>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const T& number,
                                      v8::Isolate* isolate) {
@@ -867,7 +797,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    return ConvertNumberToV8Value(isolate, number);
  }
  
-@@ -517,7 +517,7 @@ v8::Local<v8::Array> ToV8ValuePrimitiveArray(v8::Local<v8::Context> context,
+@@ -518,7 +518,7 @@ v8::Local<v8::Array> ToV8ValuePrimitiveArray(v8::Local<v8::Context> context,
            std::is_floating_point_v<T>,
        "Only primitive types (bool, integral, floating-point) are supported.");
  
@@ -876,7 +806,7 @@ index aae5956742f195279ab6af04029d76dee6af2e84..6898e8ea794675e903e13e2b45524d57
    v8::EscapableHandleScope handle_scope(isolate);
  
    v8::LocalVector<v8::Value> elements(isolate);
-@@ -803,7 +803,7 @@ inline v8::MaybeLocal<v8::Object> NewDictionaryInstanceNullProto(
+@@ -811,7 +811,7 @@ inline v8::MaybeLocal<v8::Object> NewDictionaryInstanceNullProto(
      if (value.IsEmpty()) return v8::MaybeLocal<v8::Object>();
    }
    v8::Local<v8::Object> obj = tmpl->NewInstance(context, property_values);
@@ -935,10 +865,10 @@ index 660cfff6b8a0c583be843e555e7a06cd09e0d279..c4b39450c5b7f91c46f7027db367c30d
        context, that, OneByteString(isolate, name), tmpl, flag);
  }
 diff --git a/src/util.h b/src/util.h
-index 81d08c27fb7037d16e12843dc03c3d8f9caee723..52e6a149d6760640d93c56ce91a759ae9207a8c7 100644
+index c9d787f68dfd90b9ea6cc58b9709c2d95a9bfc08..dc81d8f06e5deb5283285f9cfc446f7f40a2215d 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -753,7 +753,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
+@@ -765,7 +765,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
  // Variation on NODE_DEFINE_CONSTANT that sets a String value.
  #define NODE_DEFINE_STRING_CONSTANT(target, name, constant)                    \
    do {                                                                         \

@@ -14,6 +14,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/browser/mac_helpers.h"
 #include "content/public/common/content_paths.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/application_info.h"
 #include "shell/common/mac/main_application_bundle.h"
@@ -38,8 +39,8 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
     helper_name += content::kMacHelperSuffix_renderer;
   } else if (val.ends_with(content::kMacHelperSuffix_gpu)) {
     helper_name += content::kMacHelperSuffix_gpu;
-  } else if (val.ends_with(content::kMacHelperSuffix_plugin)) {
-    helper_name += content::kMacHelperSuffix_plugin;
+  } else if (val.ends_with(kElectronMacHelperSuffixPlugin)) {
+    helper_name += kElectronMacHelperSuffixPlugin;
   }
 
   return frameworks_path.Append(name + " " + helper_name + ".app")

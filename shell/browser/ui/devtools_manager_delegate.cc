@@ -12,14 +12,12 @@
 #include "base/functional/bind.h"
 #include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/devtools_frontend_host.h"
+#include "content/public/browser/devtools_agent_host_client_channel.h"
 #include "content/public/browser/devtools_socket_factory.h"
-#include "content/public/browser/favicon_status.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/url_constants.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
@@ -82,6 +80,10 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
 }
 
 const char kBrowserCloseMethod[] = "Browser.close";
+const char kSetDeviceMetricsOverrideMethod[] =
+    "Emulation.setDeviceMetricsOverride";
+const char kClearDeviceMetricsOverrideMethod[] =
+    "Emulation.clearDeviceMetricsOverride";
 
 }  // namespace
 
@@ -105,8 +107,17 @@ void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHostClientChannel* channel,
     base::span<const uint8_t> message,
     NotHandledCallback callback) {
-  crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message));
+  crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message), std::string_view(),
+                                   crdtp::FallthroughCallback());
   DCHECK(dispatchable.ok());
+  if (crdtp::SpanEquals(crdtp::SpanFrom(kSetDeviceMetricsOverrideMethod),
+                        dispatchable.Method())) {
+    channels_with_device_overrides_.insert(channel);
+  } else if (crdtp::SpanEquals(
+                 crdtp::SpanFrom(kClearDeviceMetricsOverrideMethod),
+                 dispatchable.Method())) {
+    channels_with_device_overrides_.erase(channel);
+  }
   if (crdtp::SpanEquals(crdtp::SpanFrom(kBrowserCloseMethod),
                         dispatchable.Method())) {
     // In theory, we should respond over the protocol saying that the
@@ -122,6 +133,40 @@ void DevToolsManagerDelegate::HandleCommand(
   std::move(callback).Run(message);
 }
 
+void DevToolsManagerDelegate::ClientAttached(
+    content::DevToolsAgentHostClientChannel* channel) {
+  // Drop stale bookkeeping in case the channel's address was reused.
+  channels_with_device_overrides_.erase(channel);
+}
+
+void DevToolsManagerDelegate::ClientDetached(
+    content::DevToolsAgentHostClientChannel* channel) {
+  if (channels_with_device_overrides_.erase(channel) == 0)
+    return;
+
+  // Session teardown (EmulationHandler::Disable()) does not undo the view
+  // resize done by Emulation.setDeviceMetricsOverride, so a client that
+  // detaches without clearing its overrides leaves the view pinned at the
+  // emulated size forever. Restore it here until that is fixed upstream.
+  // This applies to every kind of client (remote debugging, the bundled
+  // frontend, webContents.debugger) since they all detach the same way.
+  content::WebContents* web_contents =
+      channel->GetAgentHost()->GetWebContents();
+  if (!web_contents || web_contents->IsBeingDestroyed())
+    return;
+
+  // Leave the size alone if another client still holds an override on the
+  // same WebContents; it is cleared when that client clears it or detaches.
+  for (content::DevToolsAgentHostClientChannel* other :
+       channels_with_device_overrides_) {
+    if (other->GetAgentHost()->GetWebContents() == web_contents)
+      return;
+  }
+
+  static_cast<content::WebContentsImpl*>(web_contents)
+      ->ClearDeviceEmulationSize();
+}
+
 scoped_refptr<content::DevToolsAgentHost>
 DevToolsManagerDelegate::CreateNewTarget(const GURL& url,
                                          TargetType target_type,
@@ -135,6 +180,10 @@ std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
 }
 
 bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+  return true;
+}
+
+bool DevToolsManagerDelegate::ShouldUseBundledFrontendResources() {
   return true;
 }
 

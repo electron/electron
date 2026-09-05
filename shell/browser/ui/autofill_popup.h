@@ -20,10 +20,6 @@ namespace gfx {
 class RectF;
 }  // namespace gfx
 
-namespace ui {
-using ColorId = int;
-}  // namespace ui
-
 namespace electron {
 
 class AutofillPopupView;
@@ -64,7 +60,6 @@ class AutofillPopup : private views::ViewObserver {
   gfx::Rect GetRowBounds(int i);
   const gfx::FontList& GetValueFontListForRow(int index) const;
   const gfx::FontList& GetLabelFontListForRow(int index) const;
-  ui::ColorId GetBackgroundColorIDForRow(int index) const;
 
   int line_count() const { return values_.size(); }
   const std::u16string& value_at(int i) const { return values_.at(i); }
@@ -74,8 +69,6 @@ class AutofillPopup : private views::ViewObserver {
   static constexpr int kNamePadding = 15;
   static constexpr int kRowHeight = 24;
   static constexpr int kSmallerFontSizeDelta = -1;
-
-  int selected_index_;
 
   // Popup location
   gfx::Rect popup_bounds_;

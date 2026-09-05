@@ -2,45 +2,42 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "base/functional/bind.h"
-#include "shell/browser/browser.h"
+#include <windows.h>
 
-// must come before other includes. fixes bad #defines from <shlwapi.h>.
-#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
-
-#include <windows.h>  // NOLINT(build/include_order)
-
-#include <atlbase.h>   // NOLINT(build/include_order)
-#include <shlobj.h>    // NOLINT(build/include_order)
-#include <shobjidl.h>  // NOLINT(build/include_order)
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/file_version_info.h"
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
+#include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/strcat_win.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/atl.h"
 #include "base/win/registry.h"
-#include "base/win/win_util.h"
+#include "base/win/shlwapi.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
 #include "shell/browser/badging/badge_manager.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/command_line_util_win.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "skia/ext/font_utils.h"
@@ -79,13 +76,22 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
-    std::wstring joined_args = base::JoinString(launch_args, L"\" \"");
-    *exe = base::StrCat({L"\"", *exe, L"\" \"", joined_args, L"\" \"%1\""});
+    std::wstring result = electron::AddQuoteForArg(*exe);
+    for (const auto& arg : launch_args) {
+      result += L' ';
+      result += electron::AddQuoteForArg(arg);
+    }
+    *exe = base::StrCat({result, L" \"%1\""});
   } else {
-    *exe = base::StrCat({L"\"", *exe, L"\" \"%1\""});
+    *exe = base::StrCat({electron::AddQuoteForArg(*exe), L" \"%1\""});
   }
 
   return true;
@@ -153,9 +159,18 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
+  *exe = electron::AddQuoteForArg(*exe);
+
   if (!launch_args.empty()) {
-    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StrCat({*exe, L" ", base::AsWStringView(joined_launch_args)});
+    for (const auto& arg : launch_args) {
+      *exe += L' ';
+      *exe += electron::AddQuoteForArg(std::wstring(base::AsWStringView(arg)));
+    }
   }
 
   return true;
@@ -210,12 +225,12 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
         LONG res = RegOpenKeyEx(scope_key, StartupApprovedRun.c_str(), 0,
                                 KEY_QUERY_VALUE, &hkey);
         if (res == ERROR_SUCCESS) {
-          DWORD type, size;
+          DWORD type;
           wchar_t startup_binary[12];
+          DWORD size = sizeof(startup_binary);
           LONG result =
               RegQueryValueEx(hkey, it->Name(), nullptr, &type,
-                              reinterpret_cast<BYTE*>(&startup_binary),
-                              &(size = sizeof(startup_binary)));
+                              reinterpret_cast<BYTE*>(&startup_binary), &size);
           if (result == ERROR_SUCCESS) {
             if (type == REG_BINARY) {
               // any other binary other than this indicates that the program is
@@ -410,7 +425,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
                                             gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   // Main Registry Key
@@ -489,7 +504,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   // Software\Classes", which is inherited by "HKEY_CLASSES_ROOT"
   // anyway, and can be written by unprivileged users.
 
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
@@ -519,7 +534,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
@@ -587,7 +602,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   std::string badge_alt_string;
   if (count.has_value()) {
     badge_count_ = count.value();
-    badge_alt_string = (uint64_t)badge_count_ <= badging::kMaxBadgeContent
+    badge_alt_string = badge_count_ <= badging::kMaxBadgeContent
                            // Case 1.
                            ? l10n_util::GetPluralStringFUTF8(
                                  IDS_BADGE_UNREAD_NOTIFICATIONS, badge_count_)
@@ -780,7 +795,7 @@ void Browser::ShowEmojiPanel() {
 }
 
 void Browser::ShowAboutPanel() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   std::string aboutMessage = "";
   gfx::ImageSkia image;
 
@@ -815,7 +830,7 @@ void Browser::ShowAboutPanel() {
                            base::BindOnce([](int, bool) { /* do nothing. */ }));
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

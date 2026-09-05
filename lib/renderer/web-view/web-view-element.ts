@@ -17,7 +17,7 @@ const internals = new WeakMap<HTMLElement, WebViewImpl>();
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (hooks: WebViewImplHooks) => {
   return class WebViewElement extends HTMLElement {
-    static get observedAttributes () {
+    static get observedAttributes() {
       return [
         WEB_VIEW_ATTRIBUTES.PARTITION,
         WEB_VIEW_ATTRIBUTES.SRC,
@@ -35,12 +35,12 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       ];
     }
 
-    constructor () {
+    constructor() {
       super();
       internals.set(this, new WebViewImpl(this, hooks));
     }
 
-    getWebContentsId () {
+    getWebContentsId() {
       const internal = internals.get(this);
       if (!internal || !internal.guestInstanceId) {
         throw new Error(WEB_VIEW_ERROR_MESSAGES.NOT_ATTACHED);
@@ -48,7 +48,7 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       return internal.guestInstanceId;
     }
 
-    connectedCallback () {
+    connectedCallback() {
       const internal = internals.get(this);
       if (!internal) {
         return;
@@ -62,14 +62,14 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       }
     }
 
-    attributeChangedCallback (name: string, oldValue: any, newValue: any) {
+    attributeChangedCallback(name: string, oldValue: any, newValue: any) {
       const internal = internals.get(this);
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue);
       }
     }
 
-    disconnectedCallback () {
+    disconnectedCallback() {
       const internal = internals.get(this);
       if (!internal) {
         return;

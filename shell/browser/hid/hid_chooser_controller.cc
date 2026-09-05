@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "base/functional/bind.h"
+#include "content/browser/hid/hid_service.h"  // nogncheck
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
@@ -87,13 +88,9 @@ HidChooserController::HidChooserController(
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       initiator_document_(render_frame_host->GetWeakDocumentPtr()),
-      origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetPrimaryMainFrame()
-                  ->GetLastCommittedOrigin()),
+      origin_(render_frame_host->GetLastCommittedOrigin()),
       hid_delegate_(hid_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
-  // The use above of GetMainFrame is safe as content::HidService instances are
-  // not created for fenced frames.
   DCHECK(!render_frame_host->IsNestedWithinFencedFrame());
 
   chooser_context_ = HidChooserContextFactory::GetForBrowserContext(
@@ -164,7 +161,11 @@ void HidChooserController::OnDeviceRemoved(
                                         .Set("device", device.Clone())
                                         .Set("frame", rfh)
                                         .Build();
+    // The handler may destroy the requesting frame, which deletes |this|.
+    base::WeakPtr<HidChooserController> weak_this = weak_factory_.GetWeakPtr();
     session->Get()->Emit("hid-device-removed", details);
+    if (!weak_this)
+      return;
   }
   RemoveDeviceInfo(device);
 }
@@ -247,10 +248,14 @@ void HidChooserController::OnGotDevices(
                                         .Set("deviceList", devicesToDisplay)
                                         .Set("frame", rfh)
                                         .Build();
+    // The handler may destroy the requesting frame, which deletes |this|.
+    base::WeakPtr<HidChooserController> weak_this = weak_factory_.GetWeakPtr();
     prevent_default = session->Get()->Emit(
         "select-hid-device", details,
         base::BindRepeating(&HidChooserController::OnDeviceChosen,
                             weak_factory_.GetWeakPtr()));
+    if (!weak_this)
+      return;
   }
   if (!prevent_default) {
     RunCallback({});
@@ -292,6 +297,29 @@ bool HidChooserController::DisplayDevice(
                         "productId=%d, name='%s', serial='%s'",
                         device.vendor_id, device.product_id,
                         device.product_name, device.serial_number));
+    return false;
+  }
+
+  // Mirror the report filtering that HidService::FinishRequestDevice applies
+  // after a device is selected. With Chromium's recursive nested-collection
+  // filtering (features::kWebHidRecursiveFiltering), a device whose reports all
+  // live in protected collections is stripped down to having no collections and
+  // is then dropped from the granted result, making requestDevice() resolve
+  // empty. Exclude such devices from the chooser so the `select-hid-device`
+  // device list stays consistent with the devices that can actually be granted.
+  auto filtered_device = device.Clone();
+  content::HidService::RemoveProtectedReports(
+      *filtered_device, /*is_known_security_key=*/false,
+      chooser_context_ && chooser_context_->IsFidoAllowedForOrigin(origin_));
+  if (filtered_device->collections.empty()) {
+    AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kInfo,
+        absl::StrFormat(
+            "Chooser dialog is not displaying a device whose reports "
+            "are all protected: vendorId=%d, "
+            "productId=%d, name='%s', serial='%s'",
+            device.vendor_id, device.product_id, device.product_name,
+            device.serial_number));
     return false;
   }
 

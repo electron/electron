@@ -6,27 +6,27 @@ const { createParentPort } = process._linkedBinding('electron_utility_parent_por
 
 export class ParentPort extends EventEmitter implements Electron.ParentPort {
   #port: ParentPort;
-  constructor () {
+  constructor() {
     super();
     this.#port = createParentPort();
     this.#port.emit = (channel: string | symbol, event: { ports: any[] }) => {
       if (channel === 'message') {
-        event = { ...event, ports: event.ports.map(p => new MessagePortMain(p)) };
+        event = { ...event, ports: event.ports.map((p) => new MessagePortMain(p)) };
       }
       this.emit(channel, event);
       return false;
     };
   }
 
-  start () : void {
+  start(): void {
     this.#port.start();
   }
 
-  pause () : void {
+  pause(): void {
     this.#port.pause();
   }
 
-  postMessage (message: any) : void {
+  postMessage(message: any): void {
     this.#port.postMessage(message);
   }
 }

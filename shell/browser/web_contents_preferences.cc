@@ -17,6 +17,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -82,6 +83,93 @@ std::vector<WebContentsPreferences*>& Instances() {
 }
 }  // namespace
 
+// static
+RendererProcessPreferences RendererProcessPreferences::From(
+    const gin_helper::Dictionary& web_preferences) {
+  RendererProcessPreferences prefs;
+  bool sandbox;
+  if (web_preferences.Get(options::kSandbox, &sandbox)) {
+    prefs.sandboxed = sandbox;
+  } else {
+    bool node_integration = false, node_integration_in_worker = false;
+    web_preferences.Get(options::kNodeIntegration, &node_integration);
+    web_preferences.Get(options::kNodeIntegrationInWorker,
+                        &node_integration_in_worker);
+    prefs.sandboxed = !(node_integration || node_integration_in_worker);
+  }
+  v8::Local<v8::Value> offscreen;
+  if (web_preferences.Get(options::kOffscreen, &offscreen))
+    prefs.offscreen = offscreen->IsObject() || offscreen->IsTrue();
+  web_preferences.Get(options::kExperimentalFeatures,
+                      &prefs.experimental_features);
+  web_preferences.Get(options::kNodeIntegrationInSubFrames,
+                      &prefs.node_integration_in_sub_frames);
+  web_preferences.Get(options::kCustomArgs, &prefs.custom_args);
+  std::string blink_features;
+  if (web_preferences.Get(options::kEnableBlinkFeatures, &blink_features))
+    prefs.enable_blink_features = blink_features;
+  if (web_preferences.Get(options::kDisableBlinkFeatures, &blink_features))
+    prefs.disable_blink_features = blink_features;
+#if BUILDFLAG(IS_MAC)
+  web_preferences.Get(options::kScrollBounce, &prefs.scroll_bounce);
+#endif
+  return prefs;
+}
+
+RendererProcessPreferences::RendererProcessPreferences() = default;
+RendererProcessPreferences::RendererProcessPreferences(
+    const RendererProcessPreferences&) = default;
+RendererProcessPreferences& RendererProcessPreferences::operator=(
+    const RendererProcessPreferences&) = default;
+RendererProcessPreferences::~RendererProcessPreferences() = default;
+
+void RendererProcessPreferences::AppendCommandLineSwitches(
+    base::CommandLine* command_line,
+    bool is_subframe) const {
+  if (experimental_features)
+    command_line->AppendSwitch(
+        ::switches::kEnableExperimentalWebPlatformFeatures);
+
+  // Sandbox can be enabled for renderer processes hosting cross-origin frames
+  // unless nodeIntegrationInSubFrames is enabled
+  bool can_sandbox_frame = is_subframe && !node_integration_in_sub_frames;
+
+  if (sandboxed || can_sandbox_frame) {
+    command_line->AppendSwitch(switches::kEnableSandbox);
+  } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
+    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
+    command_line->AppendSwitch(::switches::kNoZygote);
+  }
+
+#if BUILDFLAG(IS_MAC)
+  if (scroll_bounce)
+    command_line->AppendSwitch(switches::kScrollBounce);
+#endif
+
+  for (const auto& arg : custom_args)
+    if (!arg.empty())
+      command_line->AppendArg(arg);
+
+  if (enable_blink_features)
+    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                    *enable_blink_features);
+  if (disable_blink_features)
+    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
+                                    *disable_blink_features);
+}
+
+bool RendererProcessPreferences::CanUseSpareRenderer() const {
+  const bool sandbox_forced = base::CommandLine::ForCurrentProcess()->HasSwitch(
+      switches::kEnableSandbox);
+  return (sandboxed || sandbox_forced) && !offscreen &&
+         !experimental_features &&
+#if BUILDFLAG(IS_MAC)
+         !scroll_bounce &&
+#endif
+         custom_args.empty() && !enable_blink_features &&
+         !disable_blink_features;
+}
+
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
     const gin_helper::Dictionary& web_preferences)
@@ -98,7 +186,7 @@ WebContentsPreferences::WebContentsPreferences(
       auto* embedder_preferences =
           WebContentsPreferences::From(embedder->web_contents());
       if (embedder_preferences && embedder_preferences->IsOffscreen()) {
-        offscreen_ = true;
+        renderer_.offscreen = true;
       }
     }
   }
@@ -110,13 +198,11 @@ WebContentsPreferences::~WebContentsPreferences() {
 
 void WebContentsPreferences::Clear() {
   plugins_ = false;
-  experimental_features_ = false;
+  renderer_ = RendererProcessPreferences();
   node_integration_ = false;
-  node_integration_in_sub_frames_ = false;
   node_integration_in_worker_ = false;
   disable_html_fullscreen_window_resize_ = false;
   webview_tag_ = false;
-  sandbox_ = std::nullopt;
   context_isolation_ = true;
   javascript_ = true;
   images_ = true;
@@ -125,7 +211,6 @@ void WebContentsPreferences::Clear() {
   enable_preferred_size_mode_ = false;
   web_security_ = true;
   allow_running_insecure_content_ = false;
-  offscreen_ = false;
   navigate_on_drag_drop_ = false;
   autoplay_policy_ = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
   default_font_family_.clear();
@@ -134,10 +219,6 @@ void WebContentsPreferences::Clear() {
   minimum_font_size_ = std::nullopt;
   default_encoding_ = std::nullopt;
   is_webview_ = false;
-  custom_args_.clear();
-  custom_switches_.clear();
-  enable_blink_features_ = std::nullopt;
-  disable_blink_features_ = std::nullopt;
   disable_popups_ = false;
   disable_dialogs_ = false;
   safe_dialogs_ = false;
@@ -150,10 +231,8 @@ void WebContentsPreferences::Clear() {
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
   deprecated_paste_enabled_ = false;
   focus_on_navigation_ = true;
+  disable_wake_locks_ = false;
 
-#if BUILDFLAG(IS_MAC)
-  scroll_bounce_ = false;
-#endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   spellcheck_ = true;
 #endif
@@ -163,19 +242,14 @@ void WebContentsPreferences::SetFromDictionary(
     const gin_helper::Dictionary& web_preferences) {
   Clear();
 
+  renderer_ = RendererProcessPreferences::From(web_preferences);
   web_preferences.Get(options::kPlugins, &plugins_);
-  web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
   web_preferences.Get(options::kNodeIntegration, &node_integration_);
-  web_preferences.Get(options::kNodeIntegrationInSubFrames,
-                      &node_integration_in_sub_frames_);
   web_preferences.Get(options::kNodeIntegrationInWorker,
                       &node_integration_in_worker_);
   web_preferences.Get(options::kDisableHtmlFullscreenWindowResize,
                       &disable_html_fullscreen_window_resize_);
   web_preferences.Get(options::kWebviewTag, &webview_tag_);
-  bool sandbox;
-  if (web_preferences.Get(options::kSandbox, &sandbox))
-    sandbox_ = sandbox;
   web_preferences.Get(options::kContextIsolation, &context_isolation_);
   web_preferences.Get(options::kJavaScript, &javascript_);
   web_preferences.Get(options::kImages, &images_);
@@ -189,7 +263,6 @@ void WebContentsPreferences::SetFromDictionary(
                            &allow_running_insecure_content_) &&
       !web_security_)
     allow_running_insecure_content_ = true;
-  web_preferences.Get(options::kOffscreen, &offscreen_);
   web_preferences.Get(options::kNavigateOnDragDrop, &navigate_on_drag_drop_);
   web_preferences.Get("autoplayPolicy", &autoplay_policy_);
   web_preferences.Get("defaultFontFamily", &default_font_family_);
@@ -203,8 +276,6 @@ void WebContentsPreferences::SetFromDictionary(
   std::string encoding;
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
-  web_preferences.Get(options::kCustomArgs, &custom_args_);
-  web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
@@ -221,14 +292,6 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
     safe_dialogs_message_ = safe_dialogs_message;
   web_preferences.Get("ignoreMenuShortcuts", &ignore_menu_shortcuts_);
-  std::string enable_blink_features;
-  if (web_preferences.Get(options::kEnableBlinkFeatures,
-                          &enable_blink_features))
-    enable_blink_features_ = enable_blink_features;
-  std::string disable_blink_features;
-  if (web_preferences.Get(options::kDisableBlinkFeatures,
-                          &disable_blink_features))
-    disable_blink_features_ = disable_blink_features;
 
   base::FilePath::StringType preload_path;
   if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
@@ -252,9 +315,7 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get(options::kFocusOnNavigation, &focus_on_navigation_);
 
-#if BUILDFLAG(IS_MAC)
-  web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
-#endif
+  web_preferences.Get(options::kDisableWakeLocks, &disable_wake_locks_);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   web_preferences.Get(options::kSpellcheck, &spellcheck_);
@@ -280,14 +341,6 @@ bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
   return false;
 }
 
-bool WebContentsPreferences::IsSandboxed() const {
-  if (sandbox_)
-    return *sandbox_;
-  bool sandbox_disabled_by_default =
-      node_integration_ || node_integration_in_worker_;
-  return !sandbox_disabled_by_default;
-}
-
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     content::ChildProcessId process_id) {
@@ -308,50 +361,31 @@ WebContentsPreferences* WebContentsPreferences::From(
   return FromWebContents(web_contents);
 }
 
+// static
+bool WebContentsPreferences::IsSandboxed(
+    const gin_helper::Dictionary& web_preferences) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  return RendererProcessPreferences::From(web_preferences).sandboxed;
+}
+
+// static
+bool WebContentsPreferences::ShouldUseSandbox(
+    content::WebContents* web_contents) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  auto* prefs = From(web_contents);
+  return !prefs || prefs->IsSandboxed();
+}
+
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {
-  // Experimental flags.
-  if (experimental_features_)
-    command_line->AppendSwitch(
-        ::switches::kEnableExperimentalWebPlatformFeatures);
-
-  // Sandbox can be enabled for renderer processes hosting cross-origin frames
-  // unless nodeIntegrationInSubFrames is enabled
-  bool can_sandbox_frame = is_subframe && !node_integration_in_sub_frames_;
-
-  if (IsSandboxed() || can_sandbox_frame) {
-    command_line->AppendSwitch(switches::kEnableSandbox);
-  } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
-    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
-    command_line->AppendSwitch(::switches::kNoZygote);
-  }
-
-#if BUILDFLAG(IS_MAC)
-  // Enable scroll bounce.
-  if (scroll_bounce_)
-    command_line->AppendSwitch(switches::kScrollBounce);
-#endif
-
-  // Custom args for renderer process
-  for (const auto& arg : custom_args_)
-    if (!arg.empty())
-      command_line->AppendArg(arg);
-
-  // Custom command line switches.
-  for (const auto& arg : custom_switches_)
-    if (!arg.empty())
-      command_line->AppendSwitch(arg);
-
-  if (enable_blink_features_)
-    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
-                                    *enable_blink_features_);
-  if (disable_blink_features_)
-    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
-                                    *disable_blink_features_);
-
-  if (node_integration_in_worker_)
-    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
+  renderer_.AppendCommandLineSwitches(command_line, is_subframe);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
@@ -361,10 +395,11 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::SaveLastPreferences() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
+  dict.Set(options::kNodeIntegrationInWorker, node_integration_in_worker_);
   dict.Set(options::kNodeIntegrationInSubFrames,
-           node_integration_in_sub_frames_);
+           renderer_.node_integration_in_sub_frames);
   dict.Set(options::kSandbox, IsSandboxed());
   dict.Set(options::kContextIsolation, context_isolation_);
   dict.Set(options::kJavaScript, javascript_);
@@ -373,11 +408,13 @@ void WebContentsPreferences::SaveLastPreferences() {
   dict.Set(options::kWebSecurity, web_security_);
   dict.Set(options::kAllowRunningInsecureContent,
            allow_running_insecure_content_);
-  dict.Set(options::kExperimentalFeatures, experimental_features_);
-  dict.Set(options::kEnableBlinkFeatures, enable_blink_features_.value_or(""));
+  dict.Set(options::kExperimentalFeatures, renderer_.experimental_features);
+  dict.Set(options::kEnableBlinkFeatures,
+           renderer_.enable_blink_features.value_or(""));
   dict.Set("disableDialogs", disable_dialogs_);
   dict.Set("safeDialogs", safe_dialogs_);
   dict.Set("safeDialogsMessage", safe_dialogs_message_.value_or(""));
+  dict.Set(options::kDisableWakeLocks, disable_wake_locks_);
 
   last_web_preferences_ = base::Value(std::move(dict));
 }
@@ -465,11 +502,12 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     }
   }
 
-  prefs->offscreen = offscreen_;
+  prefs->offscreen = renderer_.offscreen;
 
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;
-  prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;
+  prefs->node_integration_in_sub_frames =
+      renderer_.node_integration_in_sub_frames;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   prefs->enable_spellcheck = spellcheck_;

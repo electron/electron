@@ -14,7 +14,6 @@
 #include <wrl\wrappers\corewrappers.h>
 
 #include "base/containers/fixed_flat_map.h"
-#include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -23,10 +22,10 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
 #include "third_party/libxml/chromium/xml_writer.h"
@@ -35,6 +34,12 @@
 
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
 using ABI::Windows::Data::Xml::Dom::IXmlDocumentIO;
+using ABI::Windows::Foundation::IPropertyValue;
+using ABI::Windows::Foundation::Collections::IIterable;
+using ABI::Windows::Foundation::Collections::IIterator;
+using ABI::Windows::Foundation::Collections::IKeyValuePair;
+using ABI::Windows::Foundation::Collections::IMap;
+using ABI::Windows::Foundation::Collections::IPropertySet;
 using Microsoft::WRL::Wrappers::HStringReference;
 
 namespace winui = ABI::Windows::UI;
@@ -71,7 +76,7 @@ void DebugLog(std::string_view log_msg) {
 }
 
 std::wstring GetTag(const std::string_view notification_id) {
-  return base::NumberToWString(base::FastHash(notification_id));
+  return base::UTF8ToWide(notification_id);
 }
 
 // See https://www.hresult.info for HRESULT error codes.
@@ -111,42 +116,40 @@ const std::string FailureResultToString(HRESULT failure_reason) {
   return hresult_str;
 }
 
+constexpr char kPlaceholderContent[] = "placeHolderContent";
+constexpr char kContent[] = "content";
 constexpr char kToast[] = "toast";
 constexpr char kVisual[] = "visual";
 constexpr char kBinding[] = "binding";
 constexpr char kTemplate[] = "template";
-constexpr char kToastText01[] = "ToastText01";
-constexpr char kToastText02[] = "ToastText02";
-constexpr char kToastImageAndText01[] = "ToastImageAndText01";
-constexpr char kToastImageAndText02[] = "ToastImageAndText02";
+constexpr char kToastTemplate[] = "ToastGeneric";
 constexpr char kText[] = "text";
 constexpr char kImage[] = "image";
 constexpr char kPlacement[] = "placement";
 constexpr char kAppLogoOverride[] = "appLogoOverride";
 constexpr char kHintCrop[] = "hint-crop";
+constexpr char kHintInputId[] = "hint-inputId";
 constexpr char kHintCropNone[] = "none";
 constexpr char kSrc[] = "src";
 constexpr char kAudio[] = "audio";
 constexpr char kSilent[] = "silent";
+constexpr char kReply[] = "reply";
 constexpr char kTrue[] = "true";
 constexpr char kID[] = "id";
+constexpr char kInput[] = "input";
+constexpr char kType[] = "type";
+constexpr char kSelection[] = "selection";
 constexpr char kScenario[] = "scenario";
 constexpr char kReminder[] = "reminder";
 constexpr char kActions[] = "actions";
 constexpr char kAction[] = "action";
 constexpr char kActivationType[] = "activationType";
-constexpr char kSystem[] = "system";
+constexpr char kActivationTypeForeground[] = "foreground";
+constexpr char kActivationTypeSystem[] = "system";
 constexpr char kArguments[] = "arguments";
 constexpr char kDismiss[] = "dismiss";
 // The XML version header that has to be stripped from the output.
 constexpr char kXmlVersionHeader[] = "<?xml version=\"1.0\"?>\n";
-
-const char* GetTemplateType(bool two_lines, bool has_icon) {
-  if (has_icon) {
-    return two_lines ? kToastImageAndText02 : kToastImageAndText01;
-  }
-  return two_lines ? kToastText02 : kToastText01;
-}
 
 }  // namespace
 
@@ -171,8 +174,9 @@ WindowsToastNotification::GetToastTaskRunner() {
 }
 
 bool WindowsToastNotification::Initialize() {
-  // Just initialize, don't care if it fails or already initialized.
-  Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
+  HRESULT hr = Windows::Foundation::Initialize(RO_INIT_SINGLETHREADED);
+  if (FAILED(hr))
+    Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
   ScopedHString toast_manager_str(
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
@@ -273,16 +277,17 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   DebugLog("CreateToastXmlOnBackgroundThread called");
   ComPtr<IXmlDocument> toast_xml;
 
-  if (!CreateToastXmlDocument(options, presenter, weak_notification,
-                              ui_task_runner, &toast_xml)) {
+  if (!CreateToastXmlDocument(options, presenter, notification_id,
+                              weak_notification, ui_task_runner, &toast_xml)) {
     return;  // Error already posted to UI thread
   }
 
   // Continue to create the toast notification
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification;
-  if (!CreateToastNotification(toast_xml, notification_id, weak_notification,
-                               ui_task_runner, &toast_notification)) {
+  if (!CreateToastNotification(toast_xml, options, notification_id,
+                               weak_notification, ui_task_runner,
+                               &toast_notification)) {
     return;  // Error already posted to UI thread
   }
 
@@ -292,7 +297,7 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   ui_runner->PostTask(
       FROM_HERE,
       base::BindOnce(&WindowsToastNotification::SetupAndShowOnUIThread,
-                     weak_notification, toast_notification));
+                     weak_notification, toast_notification, options.group_id));
 }
 
 // Creates the toast XML document on the background thread. Returns true on
@@ -300,13 +305,14 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
 bool WindowsToastNotification::CreateToastXmlDocument(
     const NotificationOptions& options,
     NotificationPresenter* presenter,
+    const std::string& notification_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
     ComPtr<IXmlDocument>* toast_xml) {
   // The custom xml takes priority over the preset template.
   if (!options.toast_xml.empty()) {
-    DebugLog(base::StrCat({"Processing custom toast_xml, length: ",
-                           base::NumberToString(options.toast_xml.length())}));
+    DebugLog("Toast XML (custom) id=" + notification_id + ": " +
+             base::UTF16ToUTF8(options.toast_xml));
     HRESULT hr = XmlDocumentFromString(base::as_wcstr(options.toast_xml),
                                        toast_xml->GetAddressOf());
     DebugLog(base::StrCat({"XmlDocumentFromString returned HRESULT: ",
@@ -316,7 +322,6 @@ bool WindowsToastNotification::CreateToastXmlDocument(
           base::StrCat({"XML: Invalid XML, ERROR ", FailureResultToString(hr)});
       DebugLog(base::StrCat({"XML parsing failed, posting error: ", err}));
       PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
-      DebugLog("PostNotificationFailedToUIThread called");
       return false;
     }
     DebugLog("XML parsing succeeded");
@@ -325,8 +330,14 @@ bool WindowsToastNotification::CreateToastXmlDocument(
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
     std::u16string toast_xml_str =
-        GetToastXml(options.title, options.msg, icon_path, options.timeout_type,
-                    options.silent);
+        GetToastXml(notification_id, options.title, options.msg, icon_path,
+                    options.timeout_type, options.silent, options.actions,
+                    options.has_reply, options.reply_placeholder,
+                    options.group_id, options.group_title);
+
+    DebugLog("Toast XML (generated) id=" + notification_id + ": " +
+             base::UTF16ToUTF8(toast_xml_str));
+
     HRESULT hr = XmlDocumentFromString(base::as_wcstr(toast_xml_str),
                                        toast_xml->GetAddressOf());
     if (FAILED(hr)) {
@@ -345,6 +356,7 @@ bool WindowsToastNotification::CreateToastXmlDocument(
 // returns the created notification via out parameter.
 bool WindowsToastNotification::CreateToastNotification(
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+    const NotificationOptions& options,
     const std::string& notification_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
@@ -392,7 +404,13 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString group(kGroup);
+  // Use provided group_id if non-empty, otherwise fall back to default
+  std::wstring group_str =
+      options.group_id.empty() ? kGroup : base::UTF8ToWide(options.group_id);
+  ScopedHString group(group_str);
+  DebugLog(
+      base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
+                    options.group_id.empty() ? " (default)" : " (custom)"}));
   hr = toast2->put_Group(group);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -402,7 +420,10 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString tag(GetTag(notification_id));
+  std::wstring tag_str = GetTag(notification_id);
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Setting tag: ", base::WideToUTF8(tag_str),
+                         " (from id: ", notification_id, ")"}));
   hr = toast2->put_Tag(tag);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -410,6 +431,27 @@ bool WindowsToastNotification::CreateToastNotification(
     DebugLog(err);
     PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
     return false;
+  }
+
+  ComPtr<winui::Notifications::IToastNotification4> toast4;
+  hr = (*toast_notification)->QueryInterface(IID_PPV_ARGS(&toast4));
+  if (SUCCEEDED(hr)) {
+    winui::Notifications::ToastNotificationPriority priority =
+        winui::Notifications::ToastNotificationPriority::
+            ToastNotificationPriority_Default;
+    if (options.urgency == u"critical") {
+      priority = winui::Notifications::ToastNotificationPriority::
+          ToastNotificationPriority_High;
+    }
+
+    hr = toast4->put_Priority(priority);
+    if (FAILED(hr)) {
+      std::string err = base::StrCat({"WinAPI: Setting priority failed, ERROR ",
+                                      FailureResultToString(hr)});
+      DebugLog(err);
+      PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+      return false;
+    }
   }
 
   return true;
@@ -420,7 +462,8 @@ bool WindowsToastNotification::CreateToastNotification(
 // does not allow calls from background threads.
 void WindowsToastNotification::SetupAndShowOnUIThread(
     base::WeakPtr<Notification> weak_notification,
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification) {
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification,
+    const std::string& group_id) {
   auto* notif = static_cast<WindowsToastNotification*>(weak_notification.get());
   if (!notif)
     return;
@@ -436,6 +479,7 @@ void WindowsToastNotification::SetupAndShowOnUIThread(
   }
 
   notif->toast_notification_ = notification;
+  notif->group_id_ = group_id;
 
   // Show notification on UI thread (must be called on UI thread)
   hr = (*toast_notifier_)->Show(notification.Get());
@@ -511,8 +555,14 @@ void WindowsToastNotification::Remove() {
   if (!GetAppUserModelID(&app_id))
     return;
 
-  ScopedHString group(kGroup);
-  ScopedHString tag(GetTag(notification_id()));
+  // Use stored group_id if set, otherwise fall back to default
+  std::wstring group_str =
+      group_id_.empty() ? kGroup : base::UTF8ToWide(group_id_);
+  ScopedHString group(group_str);
+  std::wstring tag_str = GetTag(notification_id());
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Removing with group: ", base::WideToUTF8(group_str),
+                         ", tag: ", base::WideToUTF8(tag_str)}));
   notification_history->RemoveGroupedTagWithId(tag, group, app_id);
 }
 
@@ -523,11 +573,17 @@ void WindowsToastNotification::Dismiss() {
 }
 
 std::u16string WindowsToastNotification::GetToastXml(
+    const std::string& notification_id,
     const std::u16string& title,
     const std::u16string& msg,
     const std::wstring& icon_path,
     const std::u16string& timeout_type,
-    bool silent) {
+    bool silent,
+    const std::vector<NotificationAction>& actions,
+    bool has_reply,
+    const std::u16string& reply_placeholder,
+    const std::string& group_id,
+    const std::u16string& group_title) {
   XmlWriter xml_writer;
   xml_writer.StartWriting();
 
@@ -539,40 +595,46 @@ std::u16string WindowsToastNotification::GetToastXml(
     xml_writer.AddAttribute(kScenario, kReminder);
   }
 
+  // Add header element if both groupId and groupTitle are present
+  if (!group_id.empty() && !group_title.empty()) {
+    xml_writer.StartElement("header");
+    xml_writer.AddAttribute("id", group_id);
+    xml_writer.AddAttribute("title", base::UTF16ToUTF8(group_title));
+    xml_writer.AddAttribute("arguments", "");
+    xml_writer.EndElement();  // </header>
+  }
+
   // <visual>
   xml_writer.StartElement(kVisual);
   // <binding template="<template>">
   xml_writer.StartElement(kBinding);
-  const bool two_lines = (!title.empty() && !msg.empty());
-  xml_writer.AddAttribute(kTemplate,
-                          GetTemplateType(two_lines, !icon_path.empty()));
+  xml_writer.AddAttribute(kTemplate, kToastTemplate);
 
-  // Add text nodes.
   std::u16string line1;
   std::u16string line2;
   if (title.empty() || msg.empty()) {
     line1 = title.empty() ? msg : title;
     if (line1.empty())
       line1 = u"[no message]";
+    // <text>
     xml_writer.StartElement(kText);
-    xml_writer.AddAttribute(kID, "1");
     xml_writer.AppendElementContent(base::UTF16ToUTF8(line1));
     xml_writer.EndElement();  // </text>
   } else {
     line1 = title;
     line2 = msg;
+    // <text>
     xml_writer.StartElement(kText);
-    xml_writer.AddAttribute(kID, "1");
     xml_writer.AppendElementContent(base::UTF16ToUTF8(line1));
-    xml_writer.EndElement();
+    xml_writer.EndElement();  // </text>
+    // <text>
     xml_writer.StartElement(kText);
-    xml_writer.AddAttribute(kID, "2");
     xml_writer.AppendElementContent(base::UTF16ToUTF8(line2));
-    xml_writer.EndElement();
+    xml_writer.EndElement();  // </text>
   }
 
-  // Optional icon as app logo override (small icon).
   if (!icon_path.empty()) {
+    // <image>
     xml_writer.StartElement(kImage);
     xml_writer.AddAttribute(kID, "1");
     xml_writer.AddAttribute(kPlacement, kAppLogoOverride);
@@ -584,15 +646,83 @@ std::u16string WindowsToastNotification::GetToastXml(
   xml_writer.EndElement();  // </binding>
   xml_writer.EndElement();  // </visual>
 
-  // <actions> (only to ensure reminder has a dismiss button).
-  if (is_reminder) {
+  if (is_reminder || has_reply || !actions.empty()) {
+    // <actions>
     xml_writer.StartElement(kActions);
-    xml_writer.StartElement(kAction);
-    xml_writer.AddAttribute(kActivationType, kSystem);
-    xml_writer.AddAttribute(kArguments, kDismiss);
-    xml_writer.AddAttribute(
-        "content", base::WideToUTF8(l10n_util::GetWideString(IDS_APP_CLOSE)));
-    xml_writer.EndElement();  // </action>
+    if (is_reminder) {
+      xml_writer.StartElement(kAction);
+      xml_writer.AddAttribute(kActivationType, kActivationTypeSystem);
+      xml_writer.AddAttribute(kArguments, kDismiss);
+      xml_writer.AddAttribute(
+          kContent, base::WideToUTF8(l10n_util::GetWideString(IDS_APP_CLOSE)));
+      xml_writer.EndElement();  // </action>
+    }
+
+    if (has_reply) {
+      // <input>
+      xml_writer.StartElement(kInput);
+      xml_writer.AddAttribute(kID, kReply);
+      xml_writer.AddAttribute(kType, kText);
+      if (!reply_placeholder.empty()) {
+        xml_writer.AddAttribute(kPlaceholderContent,
+                                base::UTF16ToUTF8(reply_placeholder));
+      }
+      xml_writer.EndElement();  // </input>
+    }
+
+    for (size_t i = 0; i < actions.size(); ++i) {
+      const auto& act = actions[i];
+      if (act.type == u"button" || act.type.empty()) {
+        // <action>
+        xml_writer.StartElement(kAction);
+        xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
+        xml_writer.AddAttribute(kArguments, args.c_str());
+        xml_writer.AddAttribute(kContent, base::UTF16ToUTF8(act.text));
+        xml_writer.EndElement();  // <action>
+      } else if (act.type == u"selection") {
+        std::string input_id =
+            base::StrCat({kSelection, base::NumberToString(i)});
+        xml_writer.StartElement(kInput);  // <input>
+        xml_writer.AddAttribute(kID, input_id.c_str());
+        xml_writer.AddAttribute(kType, kSelection);
+        for (size_t opt_i = 0; opt_i < act.items.size(); ++opt_i) {
+          xml_writer.StartElement(kSelection);  // <selection>
+          xml_writer.AddAttribute(kID, base::NumberToString(opt_i).c_str());
+          xml_writer.AddAttribute(kContent,
+                                  base::UTF16ToUTF8(act.items[opt_i]));
+          xml_writer.EndElement();  // </selection>
+        }
+        xml_writer.EndElement();  // </input>
+
+        // The button that submits the selection.
+        xml_writer.StartElement(kAction);
+        xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
+        xml_writer.AddAttribute(kArguments, args.c_str());
+        xml_writer.AddAttribute(
+            kContent,
+            base::UTF16ToUTF8(act.text.empty() ? u"Select" : act.text));
+        xml_writer.AddAttribute(kHintInputId, input_id.c_str());
+        xml_writer.EndElement();  // </action>
+      }
+    }
+
+    if (has_reply) {
+      // <action>
+      xml_writer.StartElement(kAction);
+      xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
+      std::string args = base::StrCat({"type=reply&tag=", notification_id});
+      xml_writer.AddAttribute(kArguments, args.c_str());
+      // TODO(codebytere): we should localize this.
+      xml_writer.AddAttribute(kContent, "Reply");
+      xml_writer.AddAttribute(kHintInputId, kReply);
+      xml_writer.EndElement();  // <action>
+    }
     xml_writer.EndElement();  // </actions>
   }
 
@@ -660,9 +790,113 @@ ToastEventHandler::ToastEventHandler(Notification* notification)
 
 ToastEventHandler::~ToastEventHandler() = default;
 
+namespace {
+
+// Extracts string user-input values from an IToastActivatedEventArgs2.
+// Windows only fires the WinRT Activated event (not the COM activator) for
+// `activationType="foreground"` actions while the app is already running, so
+// reply text and selection values must be pulled from UserInput here rather
+// than from the COM callback's NOTIFICATION_USER_INPUT_DATA.
+std::vector<ActivationUserInput> ExtractUserInputs(IInspectable* args) {
+  std::vector<ActivationUserInput> inputs;
+  if (!args)
+    return inputs;
+
+  ComPtr<winui::Notifications::IToastActivatedEventArgs2> args2;
+  if (FAILED(args->QueryInterface(IID_PPV_ARGS(&args2))) || !args2)
+    return inputs;
+
+  ComPtr<IPropertySet> user_input;
+  if (FAILED(args2->get_UserInput(&user_input)) || !user_input)
+    return inputs;
+
+  ComPtr<IMap<HSTRING, IInspectable*>> map;
+  if (FAILED(user_input.As(&map)) || !map)
+    return inputs;
+
+  ComPtr<IIterable<IKeyValuePair<HSTRING, IInspectable*>*>> iterable;
+  if (FAILED(map.As(&iterable)) || !iterable)
+    return inputs;
+
+  ComPtr<IIterator<IKeyValuePair<HSTRING, IInspectable*>*>> iter;
+  if (FAILED(iterable->First(&iter)) || !iter)
+    return inputs;
+
+  boolean has_current = false;
+  if (FAILED(iter->get_HasCurrent(&has_current)))
+    return inputs;
+
+  while (has_current) {
+    ComPtr<IKeyValuePair<HSTRING, IInspectable*>> kvp;
+    if (FAILED(iter->get_Current(&kvp)) || !kvp)
+      break;
+    ScopedHString key_hs;
+    ComPtr<IInspectable> value;
+    if (SUCCEEDED(kvp->get_Key(key_hs.Receive())) &&
+        SUCCEEDED(kvp->get_Value(&value)) && key_hs.success() && value) {
+      ComPtr<IPropertyValue> prop;
+      ScopedHString value_hs;
+      if (SUCCEEDED(value.As(&prop)) && prop &&
+          SUCCEEDED(prop->GetString(value_hs.Receive())) &&
+          value_hs.success()) {
+        UINT32 key_len = 0;
+        UINT32 val_len = 0;
+        const wchar_t* key_raw = WindowsGetStringRawBuffer(key_hs, &key_len);
+        const wchar_t* val_raw = WindowsGetStringRawBuffer(value_hs, &val_len);
+        ActivationUserInput ui;
+        if (key_raw && key_len)
+          ui.key.assign(key_raw, key_len);
+        if (val_raw && val_len)
+          ui.value.assign(val_raw, val_len);
+        inputs.push_back(std::move(ui));
+      }
+    }
+    if (FAILED(iter->MoveNext(&has_current)))
+      break;
+  }
+  return inputs;
+}
+
+}  // namespace
+
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     IInspectable* args) {
+  std::wstring arguments_w;
+
+  if (args) {
+    ComPtr<winui::Notifications::IToastActivatedEventArgs> activated_args;
+    if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&activated_args)))) {
+      ScopedHString args_hs;
+      if (SUCCEEDED(activated_args->get_Arguments(args_hs.Receive())) &&
+          args_hs.success()) {
+        UINT32 len = 0;
+        const wchar_t* raw = WindowsGetStringRawBuffer(args_hs, &len);
+        if (raw && len)
+          arguments_w.assign(raw, len);
+      }
+    }
+  }
+
+  // For structured action/reply args, dispatch through the same handler the
+  // COM activator uses. Previously this path early-returned, assuming the COM
+  // INotificationActivationCallback would fire — but for non-MSIX apps with
+  // activationType="foreground" (and for MSIX apps while already running)
+  // Windows only raises the in-process WinRT Activated event, so those
+  // action/reply events were being silently dropped. See electron/electron
+  // issue #51147.
+  const bool structured =
+      arguments_w.find(L"type=action") != std::wstring::npos ||
+      arguments_w.find(L"type=reply") != std::wstring::npos;
+  if (structured) {
+    std::vector<ActivationUserInput> inputs = ExtractUserInputs(args);
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&HandleToastActivation, arguments_w, std::move(inputs)));
+    DebugLog("Notification activated (structured)");
+    return S_OK;
+  }
+
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&Notification::NotificationClicked, notification_));
@@ -674,9 +908,24 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     winui::Notifications::IToastDismissedEventArgs* e) {
+  winui::Notifications::ToastDismissalReason reason;
+  std::string reason_string;
+  if (SUCCEEDED(e->get_Reason(&reason))) {
+    switch (reason) {
+      case winui::Notifications::ToastDismissalReason_UserCanceled:
+        reason_string = "userCanceled";
+        break;
+      case winui::Notifications::ToastDismissalReason_ApplicationHidden:
+        reason_string = "applicationHidden";
+        break;
+      case winui::Notifications::ToastDismissalReason_TimedOut:
+        reason_string = "timedOut";
+        break;
+    }
+  }
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
-                                notification_, false));
+                                notification_, false, reason_string));
   DebugLog("Notification dismissed");
   return S_OK;
 }

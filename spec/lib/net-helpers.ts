@@ -12,7 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 export const kOneKiloByte = 1024;
 export const kOneMegaByte = kOneKiloByte * kOneKiloByte;
 
-export function randomBuffer (size: number, start: number = 0, end: number = 255) {
+export function randomBuffer(size: number, start: number = 0, end: number = 255) {
   const range = 1 + end - start;
   const buffer = Buffer.allocUnsafe(size);
   for (let i = 0; i < size; ++i) {
@@ -21,12 +21,25 @@ export function randomBuffer (size: number, start: number = 0, end: number = 255
   return buffer;
 }
 
-export function randomString (length: number) {
+export function randomString(length: number) {
   const buffer = randomBuffer(length, '0'.charCodeAt(0), 'z'.charCodeAt(0));
   return buffer.toString();
 }
 
-export async function getResponse (urlRequest: Electron.ClientRequest) {
+/**
+ * Parses the credentials out of an HTTP Basic `Authorization` header, or
+ * returns null if the request does not carry one.
+ */
+export function parseBasicAuth(request: http.IncomingMessage): { name: string; pass: string } | null {
+  const match = /^Basic (.+)$/i.exec(request.headers.authorization ?? '');
+  if (!match) return null;
+  const decoded = Buffer.from(match[1], 'base64').toString();
+  const separator = decoded.indexOf(':');
+  if (separator === -1) return null;
+  return { name: decoded.slice(0, separator), pass: decoded.slice(separator + 1) };
+}
+
+export async function getResponse(urlRequest: Electron.ClientRequest) {
   return new Promise<Electron.IncomingMessage>((resolve, reject) => {
     urlRequest.on('error', reject);
     urlRequest.on('abort', reject);
@@ -35,11 +48,11 @@ export async function getResponse (urlRequest: Electron.ClientRequest) {
   });
 }
 
-export async function collectStreamBody (response: Electron.IncomingMessage | http.IncomingMessage) {
+export async function collectStreamBody(response: Electron.IncomingMessage | http.IncomingMessage) {
   return (await collectStreamBodyBuffer(response)).toString();
 }
 
-export function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.IncomingMessage) {
+export function collectStreamBodyBuffer(response: Electron.IncomingMessage | http.IncomingMessage) {
   return new Promise<Buffer>((resolve, reject) => {
     response.on('error', reject);
     (response as NodeJS.EventEmitter).on('aborted', reject);
@@ -52,7 +65,7 @@ export function collectStreamBodyBuffer (response: Electron.IncomingMessage | ht
   });
 }
 
-export async function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
+export async function respondNTimes(fn: http.RequestListener, n: number): Promise<string> {
   const server = http.createServer((request, response) => {
     fn(request, response);
     // don't close if a redirect was returned
@@ -62,7 +75,7 @@ export async function respondNTimes (fn: http.RequestListener, n: number): Promi
     }
   });
   const sockets: Socket[] = [];
-  server.on('connection', s => sockets.push(s));
+  server.on('connection', (s) => sockets.push(s));
   defer(() => {
     server.close();
     for (const socket of sockets) {
@@ -72,7 +85,7 @@ export async function respondNTimes (fn: http.RequestListener, n: number): Promi
   return (await listen(server)).url;
 }
 
-export function respondOnce (fn: http.RequestListener) {
+export function respondOnce(fn: http.RequestListener) {
   return respondNTimes(fn, 1);
 }
 
@@ -105,6 +118,6 @@ respondOnce.toURL = (url: string, fn: http.RequestListener) => respondNTimes.toU
 
 respondNTimes.toSingleURL = (fn: http.RequestListener, n: number) => {
   const requestUrl = '/requestUrl';
-  return respondNTimes.toURL(requestUrl, fn, n).then(url => `${url}${requestUrl}`);
+  return respondNTimes.toURL(requestUrl, fn, n).then((url) => `${url}${requestUrl}`);
 };
 respondOnce.toSingleURL = (fn: http.RequestListener) => respondNTimes.toSingleURL(fn, 1);

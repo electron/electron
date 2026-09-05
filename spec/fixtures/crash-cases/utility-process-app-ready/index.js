@@ -2,7 +2,7 @@ const { app, BrowserWindow, utilityProcess } = require('electron');
 
 const path = require('node:path');
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow();
   mainWindow.loadFile('about:blank');
 }

@@ -12,10 +12,9 @@
 
 #include "base/apple/bridging.h"
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/i18n/rtl.h"
-#include "base/mac/mac_util.h"
-#include "base/mac/mac_util.mm"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
 #include "electron/mas.h"
@@ -73,33 +72,6 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
   return base::SysNSStringToUTF16(app_display_name);
 }
 
-#if !IS_MAS_BUILD()
-bool CheckLoginItemStatus(bool* is_hidden) {
-  base::mac::LoginItemsFileList login_items;
-  if (!login_items.Initialize())
-    return false;
-
-  base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForMainApp());
-  if (!item.get())
-    return false;
-
-  if (is_hidden)
-    *is_hidden = base::mac::IsHiddenLoginItem(item.get());
-
-  return true;
-}
-
-LoginItemSettings GetLoginItemSettingsDeprecated() {
-  LoginItemSettings settings;
-  settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
-  settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
-  settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
-  settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
-  return settings;
-}
-#endif
-
 }  // namespace
 
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
@@ -129,10 +101,6 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-void Browser::SetShutdownHandler(base::RepeatingCallback<bool()> handler) {
-  [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
-}
-
 void Browser::Focus(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
@@ -144,6 +112,10 @@ void Browser::Focus(gin::Arguments* args) {
   }
 
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
+}
+
+bool Browser::IsActive() {
+  return [[AtomApplication sharedApplication] isActive];
 }
 
 void Browser::Hide() {
@@ -180,7 +152,7 @@ std::vector<std::string> Browser::GetRecentDocuments() {
   std::vector<std::string> documents;
   documents.reserve([recentURLs count]);
   for (NSURL* url in recentURLs)
-    documents.push_back(std::string([url.path UTF8String]));
+    documents.emplace_back([url.path UTF8String]);
   return documents;
 }
 
@@ -233,7 +205,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -249,7 +221,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -304,7 +276,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::Value::Dict user_info,
+                              base::DictValue user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
@@ -330,7 +302,7 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::Value::Dict user_info) {
+                                    base::DictValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(
@@ -351,8 +323,8 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::Value::Dict user_info,
-                                   base::Value::Dict details) {
+                                   base::DictValue user_info,
+                                   base::DictValue details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
@@ -361,13 +333,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::Value::Dict user_info) {
+                                       base::DictValue user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::Value::Dict user_info) {
+                                      base::DictValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type,
@@ -403,7 +375,6 @@ void Browser::ApplyForcedRTL() {
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
-  LoginItemSettings settings;
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   if (options.type != "mainAppService" && options.service_name.empty()) {
@@ -412,31 +383,14 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
     return v8::Local<v8::Value>();
   }
 
-#if IS_MAS_BUILD()
   const std::string status =
       platform_util::GetLoginItemEnabled(options.type, options.service_name);
-  settings.open_at_login =
-      status == "enabled" || status == "enabled-deprecated";
+
+  LoginItemSettings settings;
+  settings.open_at_login = status == "enabled";
   settings.opened_at_login = was_launched_at_login_;
-  if (@available(macOS 13, *))
-    settings.status = status;
-#else
-  // If the app was previously set as a LoginItem with the deprecated API,
-  // we should report its LoginItemSettings via the old API.
-  if (@available(macOS 13, *)) {
-    const std::string status =
-        platform_util::GetLoginItemEnabled(options.type, options.service_name);
-    if (status == "enabled-deprecated") {
-      settings = GetLoginItemSettingsDeprecated();
-    } else {
-      settings.open_at_login = status == "enabled";
-      settings.opened_at_login = was_launched_at_login_;
-      settings.status = status;
-    }
-  } else {
-    settings = GetLoginItemSettingsDeprecated();
-  }
-#endif
+  settings.status = status;
+
   return gin::ConvertToV8(isolate, settings);
 }
 
@@ -446,34 +400,9 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
         .ThrowTypeError("'name' is required when type is not mainAppService");
     return;
   }
-#if IS_MAS_BUILD()
+
   platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                      settings.open_at_login);
-#else
-  const base::FilePath bundle_path = base::apple::MainBundlePath();
-  if (@available(macOS 13, *)) {
-    // If the app was previously set as a LoginItem with the old API, remove it
-    // as a LoginItem via the old API before re-enabling with the new API.
-    const std::string status =
-        platform_util::GetLoginItemEnabled("mainAppService", "");
-    if (status == "enabled-deprecated") {
-      base::mac::RemoveFromLoginItems(bundle_path);
-      if (settings.open_at_login) {
-        platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
-                                           settings.open_at_login);
-      }
-    } else {
-      platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
-                                         settings.open_at_login);
-    }
-  } else {
-    if (settings.open_at_login) {
-      base::mac::AddToLoginItems(bundle_path, settings.open_as_hidden);
-    } else {
-      base::mac::RemoveFromLoginItems(bundle_path);
-    }
-  }
-#endif
 }
 
 std::string Browser::GetExecutableFileVersion() const {
@@ -621,7 +550,7 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_.clear();
 
   for (const auto pair : options) {

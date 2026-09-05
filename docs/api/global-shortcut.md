@@ -12,16 +12,11 @@ shortcuts.
 > The shortcut is global; it will work even if the app does
 > not have the keyboard focus. This module cannot be used before the `ready`
 > event of the app module is emitted.
-> Please also note that it is also possible to use Chromium's
-> `GlobalShortcutsPortal` implementation, which allows apps to bind global
-> shortcuts when running within a Wayland session.
+> On Linux Wayland sessions, shortcuts are bound through the desktop portal —
+> see [Usage on Linux](#usage-on-linux) below.
 
 ```js
 const { app, globalShortcut } = require('electron')
-
-// Enable usage of Portal's globalShortcuts. This is essential for cases when
-// the app runs in a Wayland session.
-app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortal')
 
 app.whenReady().then(() => {
   // Register a 'CommandOrControl+X' shortcut listener.
@@ -49,11 +44,39 @@ app.on('will-quit', () => {
 > [!TIP]
 > See also: [A detailed guide on Keyboard Shortcuts](../tutorial/keyboard-shortcuts.md).
 
+## Usage on Linux
+
+On X11, shortcuts are grabbed directly from the X server and work like on other platforms.
+
+On Wayland, compositors do not let apps grab keys directly. Electron instead uses the
+[`org.freedesktop.portal.GlobalShortcuts`](https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html)
+portal, which changes the module's behavior in several ways:
+
+* **Your app must have a valid portal identity.** Set `desktopName` in `package.json` (or call
+  [`app.setDesktopName()`](app.md#appsetdesktopnamename-linux)) to a reverse-DNS ID matching your installed
+  `.desktop` file, e.g. `com.example.MyApp.desktop`. With an invalid or unresolvable ID, GNOME 50.0/50.1
+  denies every bind — silently, from the app's perspective.
+* **GNOME shows a consent dialog** the first time an app binds shortcuts, pre-filled with the accelerators
+  the app requested. KDE Plasma binds silently without a dialog (shortcuts are visible and editable in
+  System Settings).
+* **Bindings persist across relaunches**, keyed by the app's portal identity: after the user accepts once,
+  registering the same shortcuts on later launches re-binds them silently.
+* **The portal path is enabled by default.** The `GlobalShortcutsPortal` and
+  `GlobalShortcutsPortalPreferredTrigger` features are on by default, so no feature flags are needed —
+  including on GNOME (see [#52221](https://github.com/electron/electron/pull/52221)).
+
 ## Methods
 
 The `globalShortcut` module has the following methods:
 
 ### `globalShortcut.register(accelerator, callback)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
 
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 * `callback` Function
@@ -77,6 +100,13 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.registerAll(accelerators, callback)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/15542
+```
+-->
+
 * `accelerators` string[] - An array of [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcuts.
 * `callback` Function
 
@@ -96,6 +126,13 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.isRegistered(accelerator)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Returns `boolean` - Whether this application has registered `accelerator`.
@@ -106,10 +143,55 @@ don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.unregister(accelerator)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Unregisters the global shortcut of `accelerator`.
 
 ### `globalShortcut.unregisterAll()`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 Unregisters all of the global shortcuts.
+
+### `globalShortcut.setSuspended(suspended)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+* `suspended` boolean - Whether global shortcut handling should be suspended.
+
+Suspends or resumes global shortcut handling. When suspended, all registered
+global shortcuts will stop listening for key presses. When resumed, all
+previously registered shortcuts will begin listening again. New shortcut
+registrations will fail while handling is suspended.
+
+This can be useful when you want to temporarily allow the user to press key
+combinations without your application intercepting them, for example while
+displaying a UI to rebind shortcuts.
+
+### `globalShortcut.isSuspended()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+Returns `boolean` - Whether global shortcut handling is currently suspended.

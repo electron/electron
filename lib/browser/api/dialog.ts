@@ -1,5 +1,13 @@
 import { app, BaseWindow } from 'electron/main';
-import type { OpenDialogOptions, OpenDialogReturnValue, MessageBoxOptions, SaveDialogOptions, SaveDialogReturnValue, MessageBoxReturnValue, CertificateTrustDialogOptions } from 'electron/main';
+import type {
+  OpenDialogOptions,
+  OpenDialogReturnValue,
+  MessageBoxOptions,
+  SaveDialogOptions,
+  SaveDialogReturnValue,
+  MessageBoxReturnValue,
+  CertificateTrustDialogOptions
+} from 'electron/main';
 
 const dialogBinding = process._linkedBinding('electron_browser_dialog');
 
@@ -60,7 +68,9 @@ const checkAppInitialized = function () {
 const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.hasOwn(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
+    if (Object.hasOwn(OpenFileDialogProperties, property)) {
+      dialogProperties |= OpenFileDialogProperties[property];
+    }
   }
   return dialogProperties;
 };
@@ -68,7 +78,9 @@ const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogPrope
 const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.hasOwn(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
+    if (Object.hasOwn(SaveFileDialogProperties, property)) {
+      dialogProperties |= SaveFileDialogProperties[property];
+    }
   }
   return dialogProperties;
 };
@@ -150,7 +162,7 @@ const openDialog = (sync: boolean, window: BaseWindow | null, options?: OpenDial
     properties: setupOpenDialogProperties(properties)
   };
 
-  return (sync) ? dialogBinding.showOpenDialogSync(settings) : dialogBinding.showOpenDialog(settings);
+  return sync ? dialogBinding.showOpenDialogSync(settings) : dialogBinding.showOpenDialog(settings);
 };
 
 const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageBoxOptions) => {
@@ -194,7 +206,7 @@ const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageB
   // Choose a default button to get selected when dialog is cancelled.
   if (cancelId == null) {
     // If the defaultId is set to 0, ensure the cancel button is a different index (1)
-    cancelId = (defaultId === 0 && buttons.length > 1) ? 1 : 0;
+    cancelId = defaultId === 0 && buttons.length > 1 ? 1 : 0;
     for (const [i, button] of buttons.entries()) {
       const text = button.toLowerCase();
       if (text === 'cancel' || text === 'no') {
@@ -210,7 +222,9 @@ const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageB
     // Generate an ID used for closing the message box.
     id = getNextId();
     // Close the message box when signal is aborted.
-    if (signal.aborted) { return Promise.resolve({ cancelId, checkboxChecked }); }
+    if (signal.aborted) {
+      return Promise.resolve({ cancelId, checkboxChecked });
+    }
     signal.addEventListener('abort', () => dialogBinding._closeMessageBox(id));
   }
 
@@ -240,59 +254,80 @@ const messageBox = (sync: boolean, window: BaseWindow | null, options?: MessageB
 
 export function showOpenDialog(window: BaseWindow, options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialog(options: OpenDialogOptions): OpenDialogReturnValue;
-export function showOpenDialog (windowOrOptions: BaseWindow | OpenDialogOptions, maybeOptions?: OpenDialogOptions): OpenDialogReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showOpenDialog(
+  windowOrOptions: BaseWindow | OpenDialogOptions,
+  maybeOptions?: OpenDialogOptions
+): OpenDialogReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return openDialog(false, window, options);
 }
 
 export function showOpenDialogSync(window: BaseWindow, options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialogSync(options: OpenDialogOptions): OpenDialogReturnValue;
-export function showOpenDialogSync (windowOrOptions: BaseWindow | OpenDialogOptions, maybeOptions?: OpenDialogOptions): OpenDialogReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showOpenDialogSync(
+  windowOrOptions: BaseWindow | OpenDialogOptions,
+  maybeOptions?: OpenDialogOptions
+): OpenDialogReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return openDialog(true, window, options);
 }
 
 export function showSaveDialog(window: BaseWindow, options: SaveDialogOptions): SaveDialogReturnValue;
 export function showSaveDialog(options: SaveDialogOptions): SaveDialogReturnValue;
-export function showSaveDialog (windowOrOptions: BaseWindow | SaveDialogOptions, maybeOptions?: SaveDialogOptions): SaveDialogReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showSaveDialog(
+  windowOrOptions: BaseWindow | SaveDialogOptions,
+  maybeOptions?: SaveDialogOptions
+): SaveDialogReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return saveDialog(false, window, options);
 }
 
 export function showSaveDialogSync(window: BaseWindow, options: SaveDialogOptions): SaveDialogReturnValue;
 export function showSaveDialogSync(options: SaveDialogOptions): SaveDialogReturnValue;
-export function showSaveDialogSync (windowOrOptions: BaseWindow | SaveDialogOptions, maybeOptions?: SaveDialogOptions): SaveDialogReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showSaveDialogSync(
+  windowOrOptions: BaseWindow | SaveDialogOptions,
+  maybeOptions?: SaveDialogOptions
+): SaveDialogReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return saveDialog(true, window, options);
 }
 
 export function showMessageBox(window: BaseWindow, options: MessageBoxOptions): MessageBoxReturnValue;
 export function showMessageBox(options: MessageBoxOptions): MessageBoxReturnValue;
-export function showMessageBox (windowOrOptions: BaseWindow | MessageBoxOptions, maybeOptions?: MessageBoxOptions): MessageBoxReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showMessageBox(
+  windowOrOptions: BaseWindow | MessageBoxOptions,
+  maybeOptions?: MessageBoxOptions
+): MessageBoxReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return messageBox(false, window, options);
 }
 
 export function showMessageBoxSync(window: BaseWindow, options: MessageBoxOptions): MessageBoxReturnValue;
 export function showMessageBoxSync(options: MessageBoxOptions): MessageBoxReturnValue;
-export function showMessageBoxSync (windowOrOptions: BaseWindow | MessageBoxOptions, maybeOptions?: MessageBoxOptions): MessageBoxReturnValue {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showMessageBoxSync(
+  windowOrOptions: BaseWindow | MessageBoxOptions,
+  maybeOptions?: MessageBoxOptions
+): MessageBoxReturnValue {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
   return messageBox(true, window, options);
 }
 
-export function showErrorBox (...args: any[]) {
+export function showErrorBox(...args: any[]) {
   return dialogBinding.showErrorBox(...args);
 }
 
-export function showCertificateTrustDialog (windowOrOptions: BaseWindow | CertificateTrustDialogOptions, maybeOptions?: CertificateTrustDialogOptions) {
-  const window = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions);
-  const options = (windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions);
+export function showCertificateTrustDialog(
+  windowOrOptions: BaseWindow | CertificateTrustDialogOptions,
+  maybeOptions?: CertificateTrustDialogOptions
+) {
+  const window = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? null : windowOrOptions;
+  const options = windowOrOptions && !(windowOrOptions instanceof BaseWindow) ? windowOrOptions : maybeOptions;
 
   if (options == null || typeof options !== 'object') {
     throw new TypeError('options must be an object');

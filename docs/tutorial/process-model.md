@@ -113,7 +113,7 @@ For a full list of Electron's main process modules, check out our API documentat
 
 Each Electron app spawns a separate renderer process for each open `BrowserWindow`
 (and each web embed). As its name implies, a renderer is responsible for
-_rendering_ web content. For all intents and purposes, code ran in renderer processes
+_rendering_ web content. For all intents and purposes, code run in renderer processes
 should behave according to web standards (insofar as Chromium does, at least).
 
 Therefore, all user interfaces and app functionality within a single browser

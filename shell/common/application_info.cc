@@ -6,6 +6,7 @@
 
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
+#include "base/strings/string_util.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "components/embedder_support/user_agent_utils.h"
@@ -52,7 +53,7 @@ std::string GetApplicationUserAgent() {
 bool IsAppRTL() {
   const std::string& locale = g_browser_process->GetApplicationLocale();
   base::i18n::TextDirection text_direction =
-      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
+      base::i18n::GetTextDirectionForLocale(locale.c_str());
   return text_direction == base::i18n::RIGHT_TO_LEFT;
 }
 

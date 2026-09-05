@@ -12,6 +12,7 @@
 #include "base/no_destructor.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "gin/converter.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -19,13 +20,14 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "url/url_util.h"
+#include "v8/include/cppgc/allocation.h"
 
 namespace {
 
@@ -38,6 +40,7 @@ struct SchemeOptions {
   bool corsEnabled = false;
   bool stream = false;
   bool codeCache = false;
+  bool allowExtensions = false;
 };
 
 struct CustomScheme {
@@ -70,6 +73,7 @@ struct Converter<CustomScheme> {
       opt.Get("corsEnabled", &(out->options.corsEnabled));
       opt.Get("stream", &(out->options.stream));
       opt.Get("codeCache", &(out->options.codeCache));
+      opt.Get("allowExtensions", &(out->options.allowExtensions));
     }
     return true;
   }
@@ -79,7 +83,8 @@ struct Converter<CustomScheme> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Protocol::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronProtocol);
 
 std::vector<std::string>& GetStandardSchemes() {
   static base::NoDestructor<std::vector<std::string>> g_standard_schemes;
@@ -124,7 +129,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   }
 
   std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
-      service_worker_schemes, cors_schemes;
+      service_worker_schemes, cors_schemes, extension_schemes;
   for (const auto& custom_scheme : custom_schemes) {
     // Register scheme to privileged list (https, wss, data, chrome-extension)
     if (custom_scheme.options.standard) {
@@ -160,6 +165,10 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       GetCodeCacheSchemes().push_back(custom_scheme.scheme);
       url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
     }
+    if (custom_scheme.options.allowExtensions) {
+      extension_schemes.push_back(custom_scheme.scheme);
+      url::AddExtensionScheme(custom_scheme.scheme.c_str());
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const std::string_view switch_name,
@@ -179,6 +188,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   AppendSchemesToCmdLine(electron::switches::kFetchSchemes, fetch_schemes);
   AppendSchemesToCmdLine(electron::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
+  AppendSchemesToCmdLine(electron::switches::kExtensionSchemes,
+                         extension_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          GetStandardSchemes());
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
@@ -288,23 +299,22 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
 }
 
 // static
-gin_helper::Handle<Protocol> Protocol::Create(
-    v8::Isolate* isolate,
-    ProtocolRegistry* protocol_registry) {
-  return gin_helper::CreateHandle(isolate, new Protocol{protocol_registry});
+Protocol* Protocol::Create(v8::Isolate* isolate,
+                           ProtocolRegistry* protocol_registry) {
+  return cppgc::MakeGarbageCollected<Protocol>(
+      isolate->GetCppHeap()->GetAllocationHandle(), protocol_registry);
 }
 
 // static
-gin_helper::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
+Protocol* Protocol::New(gin_helper::ErrorThrower thrower) {
   thrower.ThrowError("Protocol cannot be created from JS");
   return {};
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Protocol::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> tmpl) {
-  return gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl)
+void Protocol::FillObjectTemplate(v8::Isolate* isolate,
+                                  v8::Local<v8::ObjectTemplate> tmpl) {
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
@@ -337,8 +347,12 @@ v8::Local<v8::ObjectTemplate> Protocol::FillObjectTemplate(
       .Build();
 }
 
-const char* Protocol::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* Protocol::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Protocol::GetHumanReadableName() const {
+  return "Electron / Protocol";
 }
 
 }  // namespace electron::api
@@ -364,7 +378,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Protocol",
-           electron::api::Protocol::GetConstructor(isolate, context));
+           electron::api::Protocol::GetConstructor(
+               isolate, context, &electron::api::Protocol::kWrapperInfo));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }

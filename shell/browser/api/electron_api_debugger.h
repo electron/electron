@@ -7,7 +7,6 @@
 
 #include <map>
 
-#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -24,8 +23,6 @@ class Arguments;
 }  // namespace gin
 
 namespace gin_helper {
-template <typename T>
-class Handle;
 template <typename T>
 class Promise;
 }  // namespace gin_helper
@@ -68,8 +65,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap =
-      std::map<int, gin_helper::Promise<base::Value::Dict>>;
+  using PendingRequestMap = std::map<int, gin_helper::Promise<base::DictValue>>;
 
   void Attach(gin::Arguments* args);
   bool IsAttached();
@@ -77,7 +73,6 @@ class Debugger final : public gin::Wrappable<Debugger>,
   v8::Local<v8::Promise> SendCommand(gin::Arguments* args);
   void ClearPendingRequests();
 
-  raw_ptr<content::WebContents> web_contents_;  // Weak Reference.
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
 
   PendingRequestMap pending_requests_;

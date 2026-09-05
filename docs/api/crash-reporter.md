@@ -50,6 +50,22 @@ The `crashReporter` module has the following methods:
 
 ### `crashReporter.start(options)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/23062
+    description: "Added `rateLimit` and `compress` options."
+  - pr-url: https://github.com/electron/electron/pull/23265
+    description: "Deprecated calling this method in the renderer process."
+    breaking-changes-header: deprecated-crashreporter-methods-in-the-renderer-process
+  - pr-url: https://github.com/electron/electron/pull/25288
+    description: "Default value of `compress` option changed from `false` to `true`."
+    breaking-changes-header: default-changed-crashreporterstart-compress-true-
+  - pr-url: https://github.com/electron/electron/pull/28105
+    description: "The `submitURL` parameter is now optional when `uploadToServer` is `false`."
+```
+-->
+
 * `options` Object
   * `submitURL` string (optional) - URL that crash reports will be sent to as
     POST. Required unless `uploadToServer` is `false`.
@@ -111,6 +127,15 @@ by the crash reporter.
 
 ### `crashReporter.getLastCrashReport()`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/23265
+    description: "Deprecated calling this method in the renderer process."
+    breaking-changes-header: deprecated-crashreporter-methods-in-the-renderer-process
+```
+-->
+
 Returns [`CrashReport | null`](structures/crash-report.md) - The date and ID of the
 last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
@@ -120,6 +145,15 @@ uploaded. In the case that there are no uploaded reports, `null` is returned.
 > This method is only available in the main process.
 
 ### `crashReporter.getUploadedReports()`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/23265
+    description: "Deprecated calling this method in the renderer process."
+    breaking-changes-header: deprecated-crashreporter-methods-in-the-renderer-process
+```
+-->
 
 Returns [`CrashReport[]`](structures/crash-report.md):
 
@@ -131,6 +165,15 @@ ID.
 
 ### `crashReporter.getUploadToServer()`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/23265
+    description: "Deprecated calling this method in the renderer process."
+    breaking-changes-header: deprecated-crashreporter-methods-in-the-renderer-process
+```
+-->
+
 Returns `boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
@@ -138,6 +181,15 @@ the `start` method or `setUploadToServer`.
 > This method is only available in the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/23265
+    description: "Deprecated calling this method in the renderer process."
+    breaking-changes-header: deprecated-crashreporter-methods-in-the-renderer-process
+```
+-->
 
 * `uploadToServer` boolean - Whether reports should be submitted to the server.
 

@@ -39,7 +39,9 @@ describe('systemPreferences module', () => {
       ] as const;
 
       const defaultsDict: Record<string, any> = {};
-      for (const row of defaultsMap) { defaultsDict[row.key] = row.value; }
+      for (const row of defaultsMap) {
+        defaultsDict[row.key] = row.value;
+      }
 
       systemPreferences.registerDefaults(defaultsDict);
 
@@ -51,11 +53,7 @@ describe('systemPreferences module', () => {
     });
 
     it('throws when bad defaults are passed', () => {
-      const badDefaults = [
-        1,
-        null,
-        { one: null }
-      ];
+      const badDefaults = [1, null, { one: null }];
 
       for (const badDefault of badDefaults) {
         expect(() => {
@@ -81,7 +79,9 @@ describe('systemPreferences module', () => {
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).to.equal(0);
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).to.equal('');
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined('user default');
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined(
+        'user default'
+      );
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).to.deep.equal([]);
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).to.deep.equal({});
     });
@@ -111,7 +111,7 @@ describe('systemPreferences module', () => {
     it('throws when type and value conflict', () => {
       for (const [type, value] of TEST_CASES) {
         expect(() => {
-          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : 'foo' as any);
+          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : ('foo' as any));
         }).to.throw(`Unable to convert value to: ${type}`);
       }
     });
@@ -261,6 +261,18 @@ describe('systemPreferences module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.promptTouchID(reason)', () => {
+    it('rejects an empty reason', async () => {
+      await expect(systemPreferences.promptTouchID('')).to.eventually.be.rejectedWith('reason must be non-empty');
+    });
+
+    it('rejects a reason that is not valid UTF-8', async () => {
+      await expect(systemPreferences.promptTouchID('\uD800')).to.eventually.be.rejectedWith(
+        'reason must be valid UTF-8'
+      );
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.isTrustedAccessibilityClient(prompt)', () => {
     it('returns a boolean', () => {
       const trusted = systemPreferences.isTrustedAccessibilityClient(false);
@@ -268,24 +280,27 @@ describe('systemPreferences module', () => {
     });
   });
 
-  ifdescribe(['win32', 'darwin'].includes(process.platform))('systemPreferences.getMediaAccessStatus(mediaType)', () => {
-    const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown'];
+  ifdescribe(['win32', 'darwin'].includes(process.platform))(
+    'systemPreferences.getMediaAccessStatus(mediaType)',
+    () => {
+      const statuses = ['not-determined', 'granted', 'denied', 'restricted', 'unknown'];
 
-    it('returns an access status for a camera access request', () => {
-      const cameraStatus = systemPreferences.getMediaAccessStatus('camera');
-      expect(statuses).to.include(cameraStatus);
-    });
+      it('returns an access status for a camera access request', () => {
+        const cameraStatus = systemPreferences.getMediaAccessStatus('camera');
+        expect(statuses).to.include(cameraStatus);
+      });
 
-    it('returns an access status for a microphone access request', () => {
-      const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone');
-      expect(statuses).to.include(microphoneStatus);
-    });
+      it('returns an access status for a microphone access request', () => {
+        const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone');
+        expect(statuses).to.include(microphoneStatus);
+      });
 
-    it('returns an access status for a screen access request', () => {
-      const screenStatus = systemPreferences.getMediaAccessStatus('screen');
-      expect(statuses).to.include(screenStatus);
-    });
-  });
+      it('returns an access status for a screen access request', () => {
+        const screenStatus = systemPreferences.getMediaAccessStatus('screen');
+        expect(statuses).to.include(screenStatus);
+      });
+    }
+  );
 
   describe('systemPreferences.getAnimationSettings()', () => {
     it('returns an object with all properties', () => {

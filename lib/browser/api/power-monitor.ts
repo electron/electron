@@ -1,20 +1,21 @@
 import { EventEmitter } from 'events';
 
-const {
-  createPowerMonitor,
-  getSystemIdleState,
-  getSystemIdleTime,
-  getCurrentThermalState,
-  isOnBatteryPower
-} = process._linkedBinding('electron_browser_power_monitor');
+const { createPowerMonitor, getSystemIdleState, getSystemIdleTime, getCurrentThermalState, isOnBatteryPower } =
+  process._linkedBinding('electron_browser_power_monitor');
+
+// Hold the native PowerMonitor at module level so it is never garbage-collected
+// while this module is alive. The C++ side registers OS-level callbacks (HWND
+// user-data on Windows, shutdown handler on macOS, notification observers) that
+// prevent safe collection of the C++ wrapper while those registrations exist.
+let pm: any;
 
 class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {
-  constructor () {
+  constructor() {
     super();
     // Don't start the event source until both a) the app is ready and b)
     // there's a listener registered for a powerMonitor event.
     this.once('newListener', () => {
-      const pm = createPowerMonitor();
+      pm = createPowerMonitor();
       pm.emit = this.emit.bind(this);
 
       if (process.platform === 'linux') {
@@ -37,23 +38,23 @@ class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {
     });
   }
 
-  getSystemIdleState (idleThreshold: number) {
+  getSystemIdleState(idleThreshold: number) {
     return getSystemIdleState(idleThreshold);
   }
 
-  getCurrentThermalState () {
+  getCurrentThermalState() {
     return getCurrentThermalState();
   }
 
-  getSystemIdleTime () {
+  getSystemIdleTime() {
     return getSystemIdleTime();
   }
 
-  isOnBatteryPower () {
+  isOnBatteryPower() {
     return isOnBatteryPower();
   }
 
-  get onBatteryPower () {
+  get onBatteryPower() {
     return this.isOnBatteryPower();
   }
 }

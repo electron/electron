@@ -60,7 +60,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
         ->DispatchNonPersistentClickEvent(notification_id_, base::DoNothing());
   }
 
-  void NotificationClosed() override {
+  void NotificationClosed(const std::string& reason) override {
     content::NotificationEventDispatcher::GetInstance()
         ->DispatchNonPersistentCloseEvent(notification_id_, base::DoNothing());
   }

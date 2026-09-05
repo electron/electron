@@ -24,10 +24,10 @@ export default contextBridge;
 export const internalContextBridge = {
   contextIsolationEnabled: process.contextIsolated,
   overrideGlobalValueFromIsolatedWorld: (keys: string[], value: any) => {
-    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, false);
+    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, false, false);
   },
   overrideGlobalValueWithDynamicPropsFromIsolatedWorld: (keys: string[], value: any) => {
-    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, true);
+    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, true, false);
   },
   overrideGlobalPropertyFromIsolatedWorld: (keys: string[], getter: Function, setter?: Function) => {
     return binding._overrideGlobalPropertyFromIsolatedWorld(keys, getter, setter || null);

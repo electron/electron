@@ -79,7 +79,7 @@ $ ../../electron/script/git-import-patches ../../electron/patches/node
 $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 ```
 
-Note that `git-import-patches` will mark the commit that was `HEAD` when it was run as `refs/patches/upstream-head`. This lets you keep track of which commits are from Electron patches (those that come after `refs/patches/upstream-head`) and which commits are in upstream (those before `refs/patches/upstream-head`).
+Note that `git-import-patches` will mark the commit that was `HEAD` when it was run as `refs/patches/upstream-head` (and a checkout-specific `refs/patches/upstream-head-<hash>` so that gclient worktrees sharing a `.git/refs` directory don't clobber each other). This lets you keep track of which commits are from Electron patches (those that come after `refs/patches/upstream-head`) and which commits are in upstream (those before `refs/patches/upstream-head`).
 
 #### Resolving conflicts
 

@@ -17,6 +17,7 @@
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/compositor/layer.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/accessibility/view_accessibility.h"
@@ -87,7 +88,7 @@ WinCaptionButtonContainer::WinCaptionButtonContainer(WinFrameView* frame_view)
   UpdateButtonToolTipsForWindowControlsOverlay();
 }
 
-WinCaptionButtonContainer::~WinCaptionButtonContainer() {}
+WinCaptionButtonContainer::~WinCaptionButtonContainer() = default;
 
 int WinCaptionButtonContainer::NonClientHitTest(const gfx::Point& point) const {
   DCHECK(HitTestPoint(point))
@@ -137,7 +138,8 @@ void WinCaptionButtonContainer::OnWidgetBoundsChanged(
 }
 
 void WinCaptionButtonContainer::UpdateBackground() {
-  const SkColor bg_color = frame_view_->window()->overlay_button_color();
+  const SkColor bg_color =
+      frame_view_->window()->overlay_button_color().value_or(SkColor());
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
   SetBackground(views::CreateSolidBackground(bg_color));
   SetPaintToLayer();

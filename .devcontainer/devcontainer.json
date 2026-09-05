@@ -35,7 +35,7 @@
 				"ms-vscode.cpptools",
 				"mutantdino.resourcemonitor",
 				"dsanders11.vscode-electron-build-tools",
-				"dbaeumer.vscode-eslint",
+				"oxc.oxc-vscode",
 				"shakram02.bash-beautify",
 				"marshallofsound.gnls-electron"
 			],

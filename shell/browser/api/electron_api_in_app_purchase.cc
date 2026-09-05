@@ -8,11 +8,16 @@
 #include <utility>
 #include <vector>
 
+#include "gin/persistent.h"
+#include "shell/browser/mac/in_app_purchase.h"
+#include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -130,13 +135,20 @@ struct Converter<in_app_purchase::Product> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo InAppPurchase::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo InAppPurchase::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronInAppPurchase);
 
 #if BUILDFLAG(IS_MAC)
 // static
-gin_helper::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new InAppPurchase());
+InAppPurchase* InAppPurchase::Create(v8::Isolate* isolate) {
+  auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
+  auto* in_app_purchase =
+      cppgc::MakeGarbageCollected<InAppPurchase>(allocation_handle);
+  in_app_purchase->StartObserving(base::BindRepeating(
+      &InAppPurchase::OnTransactionsUpdated,
+      gin::WrapPersistent(
+          in_app_purchase->weak_factory_.GetWeakCell(allocation_handle))));
+  return in_app_purchase;
 }
 
 gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
@@ -155,8 +167,17 @@ gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
       .SetMethod("getProducts", &InAppPurchase::GetProducts);
 }
 
-const char* InAppPurchase::GetTypeName() {
-  return "InAppPurchase";
+const gin::WrapperInfo* InAppPurchase::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* InAppPurchase::GetHumanReadableName() const {
+  return "Electron / InAppPurchase";
+}
+
+void InAppPurchase::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<InAppPurchase>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 InAppPurchase::InAppPurchase() = default;

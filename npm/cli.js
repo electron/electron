@@ -16,7 +16,7 @@ child.on('close', function (code, signal) {
 });
 
 const handleTerminationSignal = function (signal) {
-  process.on(signal, function signalHandler () {
+  process.on(signal, function signalHandler() {
     if (!childClosed) {
       child.kill(signal);
     }

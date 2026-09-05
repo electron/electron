@@ -59,6 +59,13 @@ for more info.
 
 ### `ipcRenderer.off(channel, listener)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/39816
+```
+-->
+
 * `channel` string
 * `listener` Function
   * `event` [IpcRendererEvent][ipc-renderer-event]
@@ -78,6 +85,13 @@ Adds a one time `listener` function for the event. This `listener` is invoked
 only the next time a message is sent to `channel`, after which it is removed.
 
 ### `ipcRenderer.addListener(channel, listener)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/39816
+```
+-->
 
 * `channel` string
 * `listener` Function
@@ -128,6 +142,13 @@ If you need to transfer a [`MessagePort`][] to the main process, use [`ipcRender
 If you want to receive a single response from the main process, like the result of a method call, consider using [`ipcRenderer.invoke`](#ipcrendererinvokechannel-args).
 
 ### `ipcRenderer.invoke(channel, ...args)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/18449
+```
+-->
 
 * `channel` string
 * `...args` any[]
@@ -208,6 +229,13 @@ and replies by setting `event.returnValue`.
 > [`invoke()`](./ipc-renderer.md#ipcrendererinvokechannel-args).
 
 ### `ipcRenderer.postMessage(channel, message, [transfer])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/22404
+```
+-->
 
 * `channel` string
 * `message` any

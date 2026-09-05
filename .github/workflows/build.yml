@@ -6,8 +6,8 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb'
-        required: true
+        default: ''
+        required: false
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
@@ -48,42 +48,88 @@ permissions: {}
 jobs:
   setup:
     if: github.repository == 'electron/electron'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       pull-requests: read
     outputs:
-        docs: ${{ steps.filter.outputs.docs }}
-        src: ${{ steps.filter.outputs.src }}
-        build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+        docs: ${{ fromJSON(steps.filter.outputs.results).docs }}
+        src: ${{ fromJSON(steps.filter.outputs.results).src }}
+        native: ${{ fromJSON(steps.filter.outputs.results).native }}
+        build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
+        pgo-only: ${{ steps.set-output.outputs.pgo-only }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        persist-credentials: false
+    # The filters are evaluated per-pattern and OR'd together, so the src
+    # exclusions must live inside a single negated brace pattern - a second
+    # negated pattern would match (and re-include) every file the first one
+    # excluded.
+    - uses: ./.github/actions/paths-filter
       id: filter
       with:
         filters: |
+          # Only files that cannot possibly affect build output may join the
+          # docs-only set (this list AND the matching src exclusion below).
+          # Never add .github/workflows/** or .github/actions/** here - CI
+          # changes can affect builds (e.g. the checkout action feeds the
+          # DEPS hash).
           docs:
             - 'docs/**'
+            - '.claude/**'
+            - '.github/CODEOWNERS'
+            - '.github/ISSUE_TEMPLATE/**'
+            - '.github/PULL_REQUEST_TEMPLATE.md'
+            - '.github/config.yml'
+            - '.github/copilot-instructions.md'
+            - '.github/dependabot.yml'
+            - '.github/faraday.yml'
             - README.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
+          pgo:
+            - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!docs/**'
-    - name: Set Outputs for Build Image SHA & Docs Only
+            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+          # Changes that can affect compiled native code (C/C++/Objective-C,
+          # GN build config, patches, and the Chromium checkout inputs).
+          # Currently gates clang-tidy; designed to be reused by future
+          # native-only gates (e.g. gn-check, node/nan tests).
+          native:
+            - '**/*.c'
+            - '**/*.cc'
+            - '**/*.cpp'
+            - '**/*.h'
+            - '**/*.hpp'
+            - '**/*.mm'
+            - '**/*.gn'
+            - '**/*.gni'
+            - '.clang-tidy'
+            - 'patches/**'
+            - 'chromium_src/**'
+            - 'build/**'
+            - DEPS
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+    - name: Set Docs Only
       id: set-output
       run: |
-        if [ -z "${{ inputs.build-image-sha }}" ]; then
-          echo "build-image-sha=a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb" >> "$GITHUB_OUTPUT"
-        else
-          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
-        fi
-        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "docs-only=${{ fromJSON(steps.filter.outputs.results).docs == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "pgo-only=${{ fromJSON(steps.filter.outputs.results).pgo == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' && fromJSON(steps.filter.outputs.results).docs == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
+  # pgo-only changes skip the actual lint work: the state files are
+  # machine-written single-line text files no linter covers. The skip is
+  # passed into the reusable workflow (rather than gating this caller) so the
+  # reusable workflow still runs and the required "lint / Lint" check is still
+  # reported as skipped, which branch protection treats as satisfied.
   lint:
     needs: setup
     if: ${{ !inputs.skip-lint }}
@@ -92,7 +138,9 @@ jobs:
       contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
-    secrets: inherit
+      skip: ${{ needs.setup.outputs.pgo-only == 'true' }}
+    secrets:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
 
   # Docs Only Jobs
   docs-only:
@@ -103,7 +151,6 @@ jobs:
       contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-    secrets: inherit
 
   # Checkout Jobs
   checkout-macos:
@@ -125,20 +172,24 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: macos
 
+  # No plain src gate here: the docs-only compile needs this checkout even
+  # when src is false. pgo-only changes have no consumer for it, so they
+  # skip it via the docs-only output instead.
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: ${{ (needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux }}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -151,17 +202,18 @@ jobs:
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
       PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -189,16 +241,49 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: win
+
+  # Build the patched siso binary for each CI build host (windows-amd64,
+  # linux-amd64, darwin-arm64) in parallel with the checkout jobs. Each host is
+  # a separate job so a cache miss or re-run for one host only blocks that
+  # host's build jobs. The build jobs download the host-matching artifact and
+  # use it via SISO_PATH.
+  build-siso-macos:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: darwin-arm64
+
+  build-siso-linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: linux-amd64
+
+  build-siso-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: windows-amd64
 
   # GN Check Jobs
   macos-gn-check:
@@ -210,8 +295,8 @@ jobs:
       target-platform: macos
       target-archs: x64 arm64
       check-runs-on: macos-15
-      gn-build-type: testing
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   linux-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -221,11 +306,11 @@ jobs:
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       target-platform: linux
-      target-archs: x64 arm arm64
+      target-archs: x64 arm64
       check-runs-on: electron-arc-centralus-linux-amd64-8core
       check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      gn-build-type: testing
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   windows-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -234,11 +319,11 @@ jobs:
     needs: checkout-windows
     with:
       target-platform: win
-      target-archs: x64 x86 arm64
+      target-archs: x64 arm64
       check-runs-on: electron-arc-centralus-linux-amd64-8core
       check-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
-      gn-build-type: testing
-    secrets: inherit
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
@@ -247,7 +332,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
       test-runs-on: macos-15-large
@@ -258,17 +343,34 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   
+  # macos-arm64, linux-x64, and windows-x64 carry the clang-tidy legs. When a
+  # change touches no native code (per setup's native filter), run-clang-tidy
+  # skips the clang-tidy job inside the reusable workflow - like the lint
+  # skip above, the check is still reported as skipped, which branch
+  # protection treats as satisfied.
   macos-arm64:
     permissions:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-macos
+    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
+    needs: [setup, checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
+      clang-tidy-runs-on: macos-15-xlarge
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: macos-15
       target-platform: macos
       target-arch: arm64
@@ -277,7 +379,17 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux-x64:
     permissions:
@@ -285,11 +397,12 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
-    needs: checkout-linux
+    needs: [setup, checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: electron-arc-centralus-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -300,7 +413,17 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   linux-x64-asan:
     permissions:
@@ -308,7 +431,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -322,28 +445,49 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       is-asan: true
-    secrets: inherit
-  
-  linux-arm:
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
+
+  linux-x64-ubsan:
     permissions:
       contents: read
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
-      test-runs-on: electron-arc-centralus-linux-arm64-4core
+      test-runs-on: electron-arc-centralus-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --memory=12g","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
+      test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
-      target-arch: arm
+      target-arch: x64
       is-release: false
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+      is-ubsan: true
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   
   linux-arm64:
     permissions:
@@ -351,7 +495,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -364,45 +508,60 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
+    
+  test-linux-arm64-64k:
+    uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    needs: [checkout-linux, linux-arm64]
+    with:
+      test-runs-on: ubuntu-22.04-arm
+      test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
 
   windows-x64:
     permissions:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
+    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
+    needs: [setup, checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
+      clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: windows-latest
+      clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x64
       is-release: false
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
-
-  windows-x86:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
-    with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
-      test-runs-on: windows-latest
-      target-platform: win
-      target-arch: x86
-      is-release: false
-      gn-build-type: testing
-      generate-symbols: false
-      upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   windows-arm64:
     permissions:
@@ -410,10 +569,10 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       test-runs-on: windows-11-arm
       target-platform: win
       target-arch: arm64
@@ -421,16 +580,29 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   gha-done:
     name: GitHub Actions Completed
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
-    if: always() && github.repository == 'electron/electron' && !contains(needs.*.result, 'failure')
-    steps: 
+    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-x64-ubsan, linux-arm64, build-siso-macos, build-siso-linux, build-siso-windows, windows-x64, windows-arm64]
+    if: always() && github.repository == 'electron/electron'
+    steps:
+    - name: Fail if any needed job failed or was cancelled
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
     - name: GitHub Actions Jobs Done
       run: |
         echo "All GitHub Actions Jobs are done"

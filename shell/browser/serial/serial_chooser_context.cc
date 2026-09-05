@@ -5,7 +5,6 @@
 #include "shell/browser/serial/serial_chooser_context.h"
 
 #include <string>
-#include <string_view>
 #include <utility>
 
 #include "base/base64.h"
@@ -33,7 +32,7 @@ std::string EncodeToken(const base::UnguessableToken& token) {
 }
 
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
-  base::Value::Dict value;
+  base::DictValue value;
   if (port.display_name && !port.display_name->empty()) {
     value.Set(kPortNameKey, *port.display_name);
   } else {
@@ -132,20 +131,21 @@ void SerialChooserContext::RevokePortPermissionWebInitiated(
     const url::Origin& origin,
     const base::UnguessableToken& token,
     content::RenderFrameHost* render_frame_host) {
-  auto it = port_info_.find(token);
-  if (it != port_info_.end()) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
-    permission_manager->RevokeDevicePermission(
-        blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
-        browser_context_);
-  }
-
   auto ephemeral = ephemeral_ports_.find(origin);
   if (ephemeral != ephemeral_ports_.end()) {
     std::set<base::UnguessableToken>& ports = ephemeral->second;
     ports.erase(token);
   }
+
+  auto it = port_info_.find(token);
+  if (it == port_info_.end())
+    return;
+
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  permission_manager->RevokeDevicePermission(
+      blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
+      browser_context_);
 
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
@@ -264,7 +264,12 @@ void SerialChooserContext::SetUpPortManagerConnection(
                      base::Unretained(this)));
 
   port_manager_->SetClient(client_receiver_.BindNewPipeAndPassRemote());
-  port_manager_->GetDevices(base::BindOnce(&SerialChooserContext::OnGetDevices,
+  // Pass false for `allow_bluetooth_system_prompt` to avoid triggering the
+  // macOS Bluetooth permission prompt during background initialization. Any
+  // explicit user request to find devices (e.g. via `requestPort`) will use
+  // true for the `GetDevices` call.
+  port_manager_->GetDevices(/*allow_bluetooth_system_prompt=*/false,
+                            base::BindOnce(&SerialChooserContext::OnGetDevices,
                                            weak_factory_.GetWeakPtr()));
 }
 

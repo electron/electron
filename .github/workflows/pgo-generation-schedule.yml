@@ -1,0 +1,107 @@
+name: Schedule PGO Profile Generation
+
+# Dispatches pgo-generation.yml on main and every supported release branch
+# once a week so the profiles at https://dev-cdn.electronjs.org/pgo/ stay
+# fresh and the profile-update PRs it opens are ready for review on Monday.
+# See https://github.com/electron/electron/issues/52482.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 2:15am UTC every Sunday - the multi-hour generation runs finish the same
+    # day, so the profile-update PRs are open before Monday.
+    - cron: '15 2 * * 0'
+
+permissions: {}
+
+jobs:
+  dispatch-pgo-generation:
+    name: Dispatch PGO Generation
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for createWorkflowDispatch on pgo-generation.yml.
+      actions: write
+      contents: read
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.17.x
+      - name: Sparse checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .
+            .github
+            .yarn
+          persist-credentials: false
+      - run: yarn workspaces focus @electron/gha-workflows
+      - name: Dispatch PGO generation on main and supported branches
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { chdir } = require('node:process');
+            chdir(`${process.env.GITHUB_WORKSPACE}/.github/workflows`);
+
+            const { ElectronVersions } = require('@electron/fiddle-core');
+
+            const versions = await ElectronVersions.create({ ignoreCache: true });
+            // Prerelease majors are included since their branches release
+            // (and so consume PGO profiles) just like the stable lines.
+            const majors = [...versions.supportedMajors, ...versions.prereleaseMajors];
+            // main is included so the nightly line's profiles stay fresh too.
+            const branches = ['main', ...majors.map((major) => `${major}-x-y`)];
+
+            const dispatched = [];
+            const skipped = [];
+
+            for (const branch of branches) {
+              // Defense-in-depth: the majors come from release metadata
+              // fetched from releases.electronjs.org, so refuse to pass
+              // anything but an expected branch name to the GitHub API.
+              if (!/^\d+-x-y$|^main$/.test(branch)) {
+                core.setFailed(`Refusing to dispatch on unexpected branch name: ${JSON.stringify(branch)}`);
+                continue;
+              }
+
+              // workflow_dispatch requires the workflow file to exist on the
+              // target ref - older release branches may predate the PGO
+              // pipeline, and nightly majors have no release branch yet.
+              try {
+                await github.rest.repos.getContent({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  path: '.github/workflows/pgo-generation.yml',
+                  ref: branch,
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  core.warning(`Skipping ${branch} - it has no pgo-generation.yml`);
+                  skipped.push(branch);
+                  continue;
+                }
+                throw error;
+              }
+
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'pgo-generation.yml',
+                ref: branch,
+              });
+              core.info(`Dispatched PGO generation on ${branch}`);
+              dispatched.push(branch);
+            }
+
+            if (dispatched.length === 0) {
+              core.setFailed('PGO generation was not dispatched on any branch');
+            }
+
+            core.summary.addHeading('PGO Generation Dispatches');
+            core.summary.addList([
+              ...dispatched.map((branch) => `${branch}: dispatched`),
+              ...skipped.map((branch) => `${branch}: skipped (no pgo-generation.yml)`),
+            ]);
+            await core.summary.write();

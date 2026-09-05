@@ -7,7 +7,7 @@ runs:
     if: ${{ runner.os != 'Windows' }}
     shell: bash
     run: |
-      if [[ -z "${{ env.CHROMIUM_GIT_COOKIE }}" ]]; then
+      if [[ -z "$CHROMIUM_GIT_COOKIE" ]]; then
         echo "CHROMIUM_GIT_COOKIE is not set - cannot authenticate."
         exit 0
       fi
@@ -18,9 +18,7 @@ runs:
 
       git config --global http.cookiefile ~/.gitcookies
 
-      tr , \\t <<\__END__ >>~/.gitcookies
-      ${{ env.CHROMIUM_GIT_COOKIE }}
-      __END__
+      echo "$CHROMIUM_GIT_COOKIE" | tr , \\t >>~/.gitcookies
       eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null
 
       RESPONSE=$(curl -s -b ~/.gitcookies https://chromium-review.googlesource.com/a/accounts/self)
@@ -34,7 +32,7 @@ runs:
       fi
   - name: Set the git cookie from chromium.googlesource.com (Windows)
     if: ${{ runner.os == 'Windows' }}
-    shell: cmd
+    shell: cmd # zizmor: ignore[misfeature] cmd is deliberate: the cookie string's quoting only survives under cmd, and the step expands no untrusted input
     run: |
       if "%CHROMIUM_GIT_COOKIE_WINDOWS_STRING%"=="" (
         echo CHROMIUM_GIT_COOKIE_WINDOWS_STRING is not set - cannot authenticate.
@@ -42,7 +40,7 @@ runs:
       )
 
       git config --global http.cookiefile "%USERPROFILE%\.gitcookies"
-      powershell -noprofile -nologo -command Write-Output "${{ env.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}" >>"%USERPROFILE%\.gitcookies"
+      powershell -noprofile -nologo -command Write-Output $env:CHROMIUM_GIT_COOKIE_WINDOWS_STRING >>"%USERPROFILE%\.gitcookies"
 
       curl -s -b "%USERPROFILE%\.gitcookies" https://chromium-review.googlesource.com/a/accounts/self > response.txt
 
