@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 6a8ca3233d40714d183c67baf12bcbff16f18bdc..31d319ca34fd0f940e2bebe196794d9b01312d51 100644
+index c0ac144111219d215580fa48a47f6efd2f08ae59..4f4fa1d6d216fd6df56ead3bf66b86cd4b4b836e 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -797,6 +797,16 @@ void MenuController::Run(Widget* parent,
+@@ -800,6 +800,16 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -26,9 +26,9 @@ index 6a8ca3233d40714d183c67baf12bcbff16f18bdc..31d319ca34fd0f940e2bebe196794d9b
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2684,18 +2694,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
-     // would be left in should it be allowed to continue.
-     CHECK(weak_this);
+@@ -2776,18 +2786,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+       return;
+     }
  
 -    // Figure out if the mouse is under the menu; if so, remember the mouse
 -    // location so we can ignore the first mouse move event(s) with that

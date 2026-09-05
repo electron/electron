@@ -112,7 +112,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void PostCreateMainMessageLoop() override;
   void PostMainMessageLoopRun() override;
   void PreCreateMainMessageLoop() override;
-  void PostCreateThreads() override;
+  int PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
