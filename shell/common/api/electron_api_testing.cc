@@ -10,6 +10,8 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "chrome/browser/browser_process.h"
+#include "components/prefs/pref_service.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
@@ -204,6 +206,24 @@ std::optional<gin_helper::Promise<void>>& GetHeldPromise() {
   return held_promise;
 }
 
+// Writes any pending local state (window state persistence, per-host zoom
+// levels, ...) to disk now. PrefService otherwise batches writes on a 10s
+// timer, which is what a test polling the prefs file would wait on.
+v8::Local<v8::Promise> CommitPendingLocalStateWrites(v8::Isolate* isolate) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  PrefService* local_state =
+      g_browser_process ? g_browser_process->local_state() : nullptr;
+  if (!local_state) {
+    promise.RejectWithErrorMessage("No local state in this process");
+    return handle;
+  }
+  local_state->CommitPendingWrite(base::BindOnce(
+      [](gin_helper::Promise<void> promise) { promise.Resolve(); },
+      std::move(promise)));
+  return handle;
+}
+
 void HoldPromiseForTesting(gin::Arguments* args) {
   GetHeldPromise().emplace(args->isolate());
 }
@@ -256,6 +276,8 @@ void Initialize(v8::Local<v8::Object> exports,
                  &InvokeHeldOnceCallbackForTesting);
   dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
   dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
+  dict.SetMethod("commitPendingLocalStateWrites",
+                 &CommitPendingLocalStateWrites);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
 }
 

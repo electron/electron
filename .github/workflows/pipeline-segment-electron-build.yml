@@ -206,6 +206,11 @@ jobs:
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Wait for space cleanup to finish
       wait-all:
+    # free-space-macos deletes in a detached process, so the space comes back
+    # gradually. Wait only for what the src cache restore needs.
+    - name: Wait for free disk space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: bash src/electron/.github/actions/free-space-macos/wait-for-free-space.sh 80
     - name: Check disk space after freeing up space
       if: ${{ inputs.target-platform == 'macos' }}
       run: df -h
@@ -337,6 +342,19 @@ jobs:
         is-ubsan: '${{ inputs.is-ubsan }}'
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
         publish: '${{ inputs.publish }}'
+        # With both macOS variants in this job, the darwin artifacts upload in
+        # the background step below while the MAS variant builds.
+        upload-artifacts: ${{ inputs.target-platform != 'macos' || inputs.target-variant != 'all' }}
+    - name: Upload Build Artifacts (darwin)
+      if: ${{ !cancelled() && inputs.target-platform == 'macos' && inputs.target-variant == 'all' }}
+      background: true
+      uses: ./src/electron/.github/actions/upload-build-artifacts
+      with:
+        artifact-key: darwin_${{ inputs.target-arch }}
+        artifact-platform: darwin
+        target-arch: ${{ inputs.target-arch }}
+        upload-src-artifacts: '${{ inputs.generate-test-artifacts }}'
+        upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
       if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
@@ -357,3 +375,8 @@ jobs:
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         step-suffix: '(mas)'
         publish: '${{ inputs.publish }}'
+        # The src artifacts hold no variant-specific files, so MAS test jobs
+        # reuse the darwin ones when this job built both.
+        upload-src-artifacts: ${{ inputs.target-variant != 'all' }}
+    - name: Wait for background uploads
+      wait-all:

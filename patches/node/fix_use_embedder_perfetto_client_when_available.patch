@@ -74,7 +74,7 @@ index b3cd207b8a535575cd0ab68ed003efcbfdba0328..36a87d6bfceb505930764160bc3bff5f
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
 diff --git a/src/node.cc b/src/node.cc
-index 0a2635c11f498cc0c8351de88d7a21ffa88f147e..787f21586025d76f6959b002a2fb2d2ce94533a5 100644
+index f03a4447e57dd98b16fb1bcca7c38371fb3e15eb..7858efe2b5d970a5b79ff2473bc62a3a771cc8de 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -47,6 +47,10 @@
@@ -378,7 +378,7 @@ index 3765d931f8e17b33e2201ff3a0e4be84a3216356..17b990455e7d6a791998ab304418c256
 +
  #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/unofficial.gni b/unofficial.gni
-index 89361a6d593c68d2a60d4fd22f94379522decd46..28cf0d2dcbff729eec347a18d830ecb27d4d811e 100644
+index 8fa773b2f22099585f1de4b43febce7f7f1aa953..e847933a324de6197353e7d5b46797f117843dbd 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -52,6 +52,11 @@ template("node_gn_build") {
