@@ -31,6 +31,7 @@
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -39,6 +40,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/function_template.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
@@ -53,6 +55,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "third_party/electron_node/src/node_realm-inl.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "v8/include/v8-statistics.h"
 
@@ -139,7 +142,9 @@
 // function for each built-in bindings explicitly. This is only
 // forward declaration. The definitions are in each binding's
 // implementation when calling the NODE_LINKED_BINDING_CONTEXT_AWARE.
-#define V(modname) void _register_##modname();
+#define V(modname)            \
+  void _register_##modname(); \
+  node::node_module* get_linked_module_##modname();
 ELECTRON_BROWSER_BINDINGS(V)
 ELECTRON_COMMON_BINDINGS(V)
 ELECTRON_RENDERER_BINDINGS(V)
@@ -616,6 +621,28 @@ void NodeBindings::RegisterBuiltinBindings() {
 #undef V
 }
 
+// static
+node::node_module* NodeBindings::GetLinkedBinding(std::string_view name) {
+#define V(modname)      \
+  if (name == #modname) \
+    return get_linked_module_##modname();
+  if (IsBrowserProcess()) {
+    ELECTRON_BROWSER_BINDINGS(V)
+  }
+  ELECTRON_COMMON_BINDINGS(V)
+  if (IsRendererProcess()) {
+    ELECTRON_RENDERER_BINDINGS(V)
+  }
+  if (IsUtilityProcess()) {
+    ELECTRON_UTILITY_BINDINGS(V)
+  }
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_BINDINGS(V)
+#endif
+#undef V
+  return nullptr;
+}
+
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
 }
@@ -629,8 +656,11 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   // TODO(codebytere): We need to set the first entry in args to the
   // process name owing to src/node_options-inl.h#L286-L290 but this is
   // redundant and so should be refactored upstream.
-  args.reserve(argv.size() + 1);
+  args.reserve(argv.size() + 2);
   args.emplace_back("electron");
+  // Blink owns this V8 flag in renderers and flips it before Node runs; Node
+  // enabling it afterwards would write a frozen flag.
+  args.emplace_back("--no-js-source-phase-imports");
 
   for (const auto& arg : argv) {
 #if BUILDFLAG(IS_WIN)
@@ -1159,6 +1189,24 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
 void OnNodePreload(node::Environment* env,
                    v8::Local<v8::Value> process,
                    v8::Local<v8::Value> require) {
+  // Node also runs the embedder preload when it bootstraps a ShadowRealm; the
+  // init bundle (asar, child_process hooks) belongs in the principal realm.
+  if (node::Realm::GetCurrent(env->isolate()->GetCurrentContext()) !=
+      env->principal_realm()) {
+    return;
+  }
+  // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
+  // the callback holders created in it. Free them when the environment is torn
+  // down, which happens on the worker's thread after its JavaScript has ended.
+  if (!gin::PerIsolateData::From(env->isolate())) {
+    env->AddCleanupHook(
+        [](void* isolate) {
+          gin_helper::CallbackHolderBase::DisposeAllInIsolateWithoutGin(
+              static_cast<v8::Isolate*>(isolate));
+        },
+        env->isolate());
+  }
+
   // Set custom process properties.
   gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
   dict.SetReadOnly("resourcesPath", GetResourcesPath());

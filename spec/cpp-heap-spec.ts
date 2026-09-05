@@ -42,6 +42,183 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('nativeTheme module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { nativeTheme } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(nativeTheme.shouldUseDarkColors);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { nativeTheme } = require('electron');
+          console.log(nativeTheme.themeSource);
+        }
+        {
+          const { nativeTheme } = require('electron');
+          console.log(nativeTheme.shouldUseHighContrastColors);
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { nativeTheme } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(nativeTheme.shouldUseDarkColors);
+          return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / NativeTheme']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('pushNotifications module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { pushNotifications } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof pushNotifications.registerForAPNSNotifications);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { pushNotifications } = require('electron');
+          console.log(typeof pushNotifications.unregisterForAPNSNotifications);
+        }
+        {
+          const { pushNotifications } = require('electron');
+          console.log(pushNotifications.eventNames());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { pushNotifications } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof pushNotifications.registerForAPNSNotifications);
+          return containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / PushNotifications'
+          ]);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
+  describe('safeStorage module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { safeStorage } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof safeStorage.isEncryptionAvailable);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.encryptString);
+        }
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.decryptString);
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { safeStorage } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof safeStorage.isEncryptionAvailable);
+          return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
+  describe('systemPreferences module', () => {
+    it('does not crash on exit with a live wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, systemPreferences } = require('electron');
+        systemPreferences.getAnimationSettings();
+        if (process.platform === 'darwin') {
+          systemPreferences.subscribeLocalNotification(null, () => {});
+        }
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { systemPreferences } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof systemPreferences.getAnimationSettings);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { systemPreferences } = require('electron');
+          console.log(typeof systemPreferences.getAccentColor);
+        }
+        {
+          const { systemPreferences } = require('electron');
+          console.log(systemPreferences.eventNames());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { systemPreferences } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof systemPreferences.getAnimationSettings);
+          return containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / SystemPreferences'
+          ]);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
@@ -529,6 +706,129 @@ describe('cpp heap', () => {
         return waitForGC(() => weakRef.deref() === undefined);
       });
       expect(released).to.equal(true, 'NativeImage should be released after GC when no JS references remain');
+    });
+  });
+
+  describe('Notification module', () => {
+    it('does not crash on exit with a live wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, Notification } = require('electron');
+        (globalThis as any).notificationRef = new Notification({ title: 'cppgc' });
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { Notification } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).notificationRef = new Notification({ title: 'cppgc' });
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / Notification']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / Notification'
+          ]);
+          return present && !isPersistentRooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after GC when no JS references remain', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { Notification } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let notification: any = new Notification({ title: 'cppgc' });
+        const weakRef = new WeakRef(notification);
+        notification = null;
+
+        return waitForGC(() => weakRef.deref() === undefined);
+      });
+      expect(released).to.equal(true, 'Notification should be released after GC when no JS references remain');
+    });
+  });
+
+  describe('MessagePort module', () => {
+    it('should be rooted while a started port is entangled', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const { port1, port2 } = new MessageChannelMain();
+          port1.start();
+          const snapshot = recordState().snapshot;
+          port2.close();
+          return containsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after a started port is closed', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { MessageChannelMain } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        const weakRef = new WeakRef((port1 as any)._internalPort);
+        port1.close();
+        port1 = null as any;
+
+        const released = await waitForGC(() => weakRef.deref() === undefined);
+        port2.close();
+        return released;
+      });
+      expect(released).to.equal(true, 'MessagePort should be released after close and GC');
+    });
+
+    it('does not crash on exit with a live started port', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, MessageChannelMain } = require('electron');
+        const { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        port2.start();
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -1481,6 +1781,45 @@ describe('cpp heap', () => {
         result.after1 * 0.1,
         `C++ heap grew by ${growth} bytes between rounds — likely a leak`
       );
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('inAppPurchase module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { inAppPurchase } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(inAppPurchase.canMakePayments());
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { inAppPurchase } = require('electron');
+          console.log(inAppPurchase.canMakePayments());
+        }
+        {
+          const { inAppPurchase } = require('electron');
+          console.log(inAppPurchase.getReceiptURL());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { inAppPurchase } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(inAppPurchase.canMakePayments());
+          return containsRetainingPath(recordState().snapshot, ['Electron / InAppPurchase']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
     });
   });
 

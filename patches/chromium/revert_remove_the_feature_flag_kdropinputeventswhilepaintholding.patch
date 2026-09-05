@@ -41,10 +41,10 @@ index 461a128e6151b3f61da330c48dcf63dff0fe30e3..a75ddffded2d5d60c685c009241b2909
      // If we filter a GSB for paint holding, we'd like to receive a new one -
      // see IsWheelScrollInProgress. Note that we leave is_in_gesture_scroll_ set
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index e72858e5ac41960cc1940317b74c3f63e89c290d..ce15aebfb1e275c5225c380fb33ed5c313841bda 100644
+index e1e29374eed93f82ccec68dcf89dc8662aeebb17..46667993e6fcc42087e2591ee226d5e6020c1964 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -575,6 +575,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
+@@ -568,6 +568,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
  BASE_FEATURE(kDiscardInputEventsToRecentlyMovedFrames,
               base::FEATURE_DISABLED_BY_DEFAULT);
  

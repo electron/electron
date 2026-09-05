@@ -7,6 +7,7 @@ import type * as Crypto from 'crypto';
 import type * as os from 'os';
 
 const asar = process._linkedBinding('electron_common_asar');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -15,8 +16,10 @@ const Promise: PromiseConstructor = global.Promise;
 const envNoAsar = process.env.ELECTRON_NO_ASAR && process.type !== 'browser' && process.type !== 'renderer';
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
-const internalBinding = process.internalBinding!;
-delete process.internalBinding;
+// realm.js is a script, not a module, so its loader exports have no type.
+const { internalBinding } = __non_webpack_require__('internal/bootstrap/realm') as {
+  internalBinding: (name: string) => any;
+};
 
 const nextTick = (functionToCall: Function, args: any[] = []) => {
   process.nextTick(() => functionToCall(...args));
@@ -422,12 +425,9 @@ const integrityViolation = (actual: string, expected: string): never => {
   } catch {
     console.error(message);
   }
-  const reallyExit = (process as any).reallyExit;
-  if (typeof reallyExit === 'function') reallyExit(1);
-  process.exit(1);
-  // Neither call above returns; keep TypeScript (and any monkey-patched
-  // process.exit) honest by never continuing.
-  throw new Error('ASAR Integrity Violation');
+  // Bypass libc exit(): it runs static destructors under still-live Chromium
+  // threads, which on Windows intermittently faults with 0xC0000005.
+  return v8Util.exitImmediately(1);
 };
 
 const sha256HexSync = (buffer: Uint8Array) => getCrypto().createHash('sha256').update(buffer).digest('hex');

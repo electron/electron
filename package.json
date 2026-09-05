@@ -19,7 +19,7 @@
     "@types/node": "^24.9.0",
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
-    "@xmldom/xmldom": "^0.9.10",
+    "@xmldom/xmldom": "^0.9.12",
     "buffer": "^6.0.3",
     "events": "^3.2.0",
     "folder-hash": "^4.1.2",
@@ -29,7 +29,7 @@
     "minimist": "^1.2.8",
     "node-gyp": "^12.3.0",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "semver": "^7.6.3",
@@ -124,7 +124,9 @@
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
-      "node script/gen-libc++-filenames.js"
+      "node script/gen-libc++-filenames.js",
+      "node script/gen-siso-revision.js",
+      "git add build/siso_revision"
     ],
     ".github/workflows/pipeline-segment-electron-build.yml": [
       "node script/copy-pipeline-segment-publish.js",

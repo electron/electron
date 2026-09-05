@@ -17,8 +17,9 @@ Allowed commit patterns:
 1. `fixup! <existing-commit-title>` — fixup against another commit on the branch
 2. `chore: bump chromium in DEPS to <version>` — must be the *only* change to `DEPS`, no other files
 3. `chore: update patches` — exact title, no commit body, only non-content patch changes (index hashes, line numbers, hunk headers)
-4. A commit referencing one Chromium CL: title must be exactly `<CL_NUMBER>: <upstream CL's original title>`
-5. A commit referencing multiple Chromium CLs: title is not enforced
+4. `chore: update siso revision` — exact title, the only change is `build/siso_revision` (rewritten by the `gen_siso_revision` sync hook)
+5. A commit referencing one Chromium CL: title must be exactly `<CL_NUMBER>: <upstream CL's original title>`
+6. A commit referencing multiple Chromium CLs: title is not enforced
 
 A Chromium CL is referenced by including the full Gerrit URL anywhere in the commit message, e.g. `Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7536483`. Appending `#nolint` to the URL excludes that CL from validation (and from the single-CL title check).
 

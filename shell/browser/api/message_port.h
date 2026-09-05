@@ -8,20 +8,18 @@
 #include <memory>
 #include <vector>
 
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gc_plugin.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
+#include "v8/include/v8-local-handle.h"
 
 namespace gin {
 class Arguments;
 }  // namespace gin
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace mojo {
 class Connector;
@@ -30,12 +28,12 @@ class Connector;
 namespace electron {
 
 // A non-blink version of blink::MessagePort.
-class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
-                          public gin_helper::CleanedUpAtExit,
+class MessagePort final : public gin::Wrappable<MessagePort>,
                           private mojo::MessageReceiver {
  public:
+  MessagePort();
   ~MessagePort() override;
-  static gin_helper::Handle<MessagePort> Create(v8::Isolate* isolate);
+  static MessagePort* Create(v8::Isolate* isolate);
 
   void PostMessage(gin::Arguments* args);
   void Start();
@@ -49,35 +47,28 @@ class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
   [[nodiscard]] bool IsEntangled() const;
   [[nodiscard]] bool IsNeutered() const;
 
-  static std::vector<gin_helper::Handle<MessagePort>> EntanglePorts(
-      v8::Isolate* isolate,
-      std::vector<blink::MessagePortChannel> channels);
+  static bool EntanglePorts(v8::Isolate* isolate,
+                            std::vector<blink::MessagePortChannel> channels,
+                            v8::LocalVector<v8::Value>* wrapped_ports);
 
   static std::vector<blink::MessagePortChannel> DisentanglePorts(
       v8::Isolate* isolate,
-      const std::vector<gin_helper::Handle<MessagePort>>& ports,
-      bool* threw_exception);
+      const v8::LocalVector<v8::Value>& ports,
+      bool* threw_exception,
+      MessagePort* source_port = nullptr);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "MessagePort"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
-
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
 
  private:
-  MessagePort();
-
-  // The blink version of MessagePort uses the very nice "ActiveScriptWrapper"
-  // class, which keeps the object alive through the V8 embedder hooks into the
-  // GC lifecycle: see
-  // https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/heap/thread_state.cc;l=258;drc=b892cf58e162a8f66cd76d7472f129fe0fb6a7d1
-  // We do not have that luxury, so we brutishly use v8::Global to accomplish
-  // something similar. Critically, whenever the value of
-  // "HasPendingActivity()" changes, we must call Pin() or Unpin() as
-  // appropriate.
+  // Started, entangled ports have pending activity and must stay alive even
+  // after their JavaScript wrapper becomes unreachable.
   bool HasPendingActivity() const;
   void Pin();
   void Unpin();
@@ -85,17 +76,18 @@ class MessagePort final : public gin_helper::DeprecatedWrappable<MessagePort>,
   // mojo::MessageReceiver
   bool Accept(mojo::Message* mojo_message) override;
 
+  GC_PLUGIN_IGNORE("The connector is owned by and cannot outlive MessagePort.")
   std::unique_ptr<mojo::Connector> connector_;
   bool started_ = false;
   bool closed_ = false;
 
-  v8::Global<v8::Value> pinned_;
+  gin_helper::SelfKeepAlive<MessagePort> keep_alive_{nullptr};
 
   // The internal port owned by this class. The handle itself is moved into the
   // |connector_| while entangled.
   blink::MessagePortDescriptor port_;
 
-  base::WeakPtrFactory<MessagePort> weak_factory_{this};
+  gin::WeakCellFactory<MessagePort> weak_factory_{this};
 };
 
 }  // namespace electron

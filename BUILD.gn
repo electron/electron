@@ -797,7 +797,10 @@ source_set("electron_lib") {
     ]
   }
   if (is_win) {
-    libs += [ "dwmapi.lib" ]
+    libs += [
+      "cryptui.lib",
+      "dwmapi.lib",
+    ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/app_launch_prefetch",
@@ -1302,6 +1305,22 @@ if (is_mac) {
     }
   }
 
+  # Link against Electron Framework without mac_framework_bundle's "+link"
+  # group. Its public config lists the framework bundle in `inputs`, which GN
+  # applies to every compile step of the consuming target, so each executable's
+  # objects were rebuilt (and the whole bundle uploaded to RBE) whenever the
+  # framework relinked. GN already makes the link step depend on the bundle.
+  config("electron_framework_link_config") {
+    visibility = [ ":electron_framework_link" ]
+    framework_dirs = [ root_out_dir ]
+    frameworks = [ "$electron_framework_name.framework" ]
+  }
+
+  group("electron_framework_link") {
+    public_deps = [ ":electron_framework" ]
+    public_configs = [ ":electron_framework_link_config" ]
+  }
+
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
@@ -1372,7 +1391,7 @@ if (is_mac) {
 
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
-        ":electron_framework+link",
+        ":electron_framework_link",
         "//electron/build/config:generate_mas_config",
       ]
       if (!is_mas_build) {
@@ -1415,6 +1434,7 @@ if (is_mac) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
+
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
     }
@@ -1458,7 +1478,7 @@ if (is_mac) {
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
     public_deps = [
-      ":electron_framework+link",
+      ":electron_framework_link",
       ":stripped_mantle_framework",
       ":stripped_reactiveobjc_framework",
       ":stripped_squirrel_framework",
@@ -1505,6 +1525,7 @@ if (is_mac) {
       public_deps = [ ":electron_app_lproj_dirs" ]
     }
   }
+
   group("electron_app_strings_bundle_data") {
     public_deps = []
     foreach(locale, locales_as_apple_outputs) {
@@ -1572,6 +1593,7 @@ if (is_mac) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
+
       extract_symbols("electron_helper_syms_${_helper_target}") {
         binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
         symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1670,6 +1692,7 @@ if (is_mac) {
     } else if (is_linux) {
       sources = [
         "shell/app/electron_main_linux.cc",
+        "shell/app/environ_linux.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
       ]
@@ -1837,6 +1860,7 @@ copy("electron_license") {
   sources = [ "LICENSE" ]
   outputs = [ "$root_build_dir/{{source_file_part}}" ]
 }
+
 copy("chromium_licenses") {
   deps = [ "//components/resources:about_credits" ]
   sources = [ "$root_gen_dir/components/resources/about_credits.html" ]
