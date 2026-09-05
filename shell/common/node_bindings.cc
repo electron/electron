@@ -142,7 +142,9 @@
 // function for each built-in bindings explicitly. This is only
 // forward declaration. The definitions are in each binding's
 // implementation when calling the NODE_LINKED_BINDING_CONTEXT_AWARE.
-#define V(modname) void _register_##modname();
+#define V(modname)            \
+  void _register_##modname(); \
+  node::node_module* get_linked_module_##modname();
 ELECTRON_BROWSER_BINDINGS(V)
 ELECTRON_COMMON_BINDINGS(V)
 ELECTRON_RENDERER_BINDINGS(V)
@@ -617,6 +619,28 @@ void NodeBindings::RegisterBuiltinBindings() {
   ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
+}
+
+// static
+node::node_module* NodeBindings::GetLinkedBinding(std::string_view name) {
+#define V(modname)      \
+  if (name == #modname) \
+    return get_linked_module_##modname();
+  if (IsBrowserProcess()) {
+    ELECTRON_BROWSER_BINDINGS(V)
+  }
+  ELECTRON_COMMON_BINDINGS(V)
+  if (IsRendererProcess()) {
+    ELECTRON_RENDERER_BINDINGS(V)
+  }
+  if (IsUtilityProcess()) {
+    ELECTRON_UTILITY_BINDINGS(V)
+  }
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_BINDINGS(V)
+#endif
+#undef V
+  return nullptr;
 }
 
 bool NodeBindings::IsInitialized() {
