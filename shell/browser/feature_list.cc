@@ -12,9 +12,12 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
+#include "base/strings/string_util.h"
 #include "components/spellcheck/common/spellcheck_features.h"
+#include "components/unexportable_keys/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "printing/buildflags/buildflags.h"
@@ -44,6 +47,40 @@ void InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
+
+  if (electron::fuses::IsDeviceBoundSessionsEnabled()) {
+    // A production app that fused DBSC on must not be downgradable to mock
+    // software keys by a command-line flag, so drop any request for them and
+    // force the feature off.
+    //
+    // Only the local feature strings are touched. InitializeFeatureList() runs
+    // twice in the browser process (ElectronMainDelegate::PreBrowserMain and
+    // ElectronBrowserMainParts::PostEarlyInitialization), so rewriting the
+    // process command line here would read back its own output and append the
+    // disable entry a second time, leaking duplicates into app.commandLine and
+    // into second-instance argv. It is also unnecessary: disable overrides win
+    // in FeatureList, and child processes get their feature switches from the
+    // FeatureList instance rather than from the browser's argv.
+    std::vector<std::string_view> filtered_features;
+    for (const auto& entry :
+         base::FeatureList::SplitFeatureListString(enable_features)) {
+      std::string name, study, group, params;
+      if (base::FeatureList::ParseEnableFeatureString(entry, &name, &study,
+                                                      &group, &params) &&
+          name == unexportable_keys::
+                      kEnableBoundSessionCredentialsSoftwareKeysForManualTesting
+                          .name) {
+        continue;
+      }
+      filtered_features.emplace_back(entry);
+    }
+    enable_features = base::JoinString(filtered_features, ",");
+    disable_features +=
+        std::string(",") +
+        unexportable_keys::
+            kEnableBoundSessionCredentialsSoftwareKeysForManualTesting.name;
+  }
+
   // A renderer's command line depends on the WebContents it is created for,
   // so Electron warms one spare itself (for the first sandboxed window) rather
   // than letting content keep one alive at all times; apps that open many

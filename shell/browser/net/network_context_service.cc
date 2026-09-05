@@ -6,8 +6,11 @@
 
 #include <utility>
 
+#include "base/feature_list.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_features.h"
 #include "chrome/common/chrome_constants.h"
+#include "components/unexportable_keys/features.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "electron/fuses.h"
 #include "net/http/http_util.h"
@@ -33,6 +36,26 @@ bool ShouldTriggerNetworkDataMigration() {
   if (base::FeatureList::IsEnabled(features::kTriggerNetworkDataMigration))
     return true;
   return false;
+}
+
+bool ShouldEnableDeviceBoundSessions() {
+  // DBSC is only supported on Windows for now. There, unexportable keys come
+  // from the TPM via CNG and the network service's own key provider works as
+  // is. macOS needs a browser-process key service configured with an
+  // app-derived keychain access group -- the network service's provider
+  // hardcodes Chromium's -- and Linux has no hardware provider upstream at all.
+#if BUILDFLAG(IS_WIN)
+  if (electron::fuses::IsDeviceBoundSessionsEnabled())
+    return true;
+#endif
+  // Mock software keys are platform-agnostic, and this branch is only
+  // reachable with the fuse off: InitializeFeatureList() force-disables the
+  // feature when the fuse is on, so a production app can never take it. This
+  // is the supported way to exercise DBSC in development, including on
+  // platforms where hardware-backed keys are unavailable.
+  return base::FeatureList::IsEnabled(
+      unexportable_keys::
+          kEnableBoundSessionCredentialsSoftwareKeysForManualTesting);
 }
 
 }  // namespace
@@ -75,6 +98,9 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->http_cache_enabled =
       browser_context_->can_use_http_cache();
 
+  network_context_params->device_bound_sessions_enabled =
+      ShouldEnableDeviceBoundSessions();
+
   network_context_params->cookie_manager_params =
       network::mojom::CookieManagerParams::New();
 
@@ -107,6 +133,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
     network_context_params->file_paths->trust_token_database_name =
         base::FilePath(chrome::kTrustTokenFilename);
+
+    if (network_context_params->device_bound_sessions_enabled) {
+      network_context_params->file_paths->device_bound_sessions_database_name =
+          base::FilePath(chrome::kDeviceBoundSessionsFilename);
+    }
 
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
