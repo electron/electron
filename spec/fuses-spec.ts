@@ -137,8 +137,16 @@ describe('fuses', () => {
       // directory, since on Windows the files stay locked until it does. The
       // later kill is then a no-op on an already-dead process.
       defer(async () => {
-        rc.process.kill('SIGINT');
-        await once(rc.process, 'exit').catch(() => {});
+        // Only kill a child that is still running: for one that already died
+        // (a crash, or a failure earlier in the test) 'exit' has fired and
+        // once() would never settle, hanging until the mocha timeout and
+        // masking the real failure. A ChildProcess keeps its .pid after
+        // exiting, unlike UtilityProcess, so check the exit state instead.
+        if (rc.process.exitCode === null && rc.process.signalCode === null) {
+          const exit = once(rc.process, 'exit');
+          rc.process.kill('SIGINT');
+          await exit.catch(() => {});
+        }
         fs.rmSync(userDataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
       });
       // The DBSC store lives directly under userData unless the sandboxed-data
