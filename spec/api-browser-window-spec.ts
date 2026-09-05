@@ -8065,11 +8065,15 @@ describe('BrowserWindow module', () => {
       }
     };
 
-    // Window state reaches the prefs file through PrefService, which batches
-    // writes on a 10s timer. Testing builds can force the write; otherwise
-    // poll for it.
+    // Window state reaches the prefs file in two hops: NativeWindow debounces
+    // the save by 200ms before it reaches PrefService, which then batches
+    // writes on a 10s timer. Testing builds can force both; otherwise poll.
     const flushPrefs = isTestingBindingAvailable()
-      ? () => process._linkedBinding('electron_common_testing').commitPendingLocalStateWrites()
+      ? async () => {
+          const testing = process._linkedBinding('electron_common_testing');
+          testing.flushPendingWindowStateSaves();
+          await testing.commitPendingLocalStateWrites();
+        }
       : null;
 
     const waitForPrefsUpdate = async (
@@ -8080,11 +8084,7 @@ describe('BrowserWindow module', () => {
       const startTime = Date.now();
       const timeoutMs = 20000;
       while (true) {
-        // The save itself is debounced by 200ms before it reaches PrefService.
-        if (flushPrefs) {
-          await setTimeout(250);
-          await flushPrefs();
-        }
+        if (flushPrefs) await flushPrefs();
         const currentModTime = getPrefsModTime(preferencesPath);
 
         if (currentModTime > initialModTime && isExpectedState()) {
@@ -8100,10 +8100,7 @@ describe('BrowserWindow module', () => {
 
     const waitForPrefsFileCreation = async (preferencesPath: string) => {
       while (!fs.existsSync(preferencesPath)) {
-        if (flushPrefs) {
-          await setTimeout(250);
-          await flushPrefs();
-        }
+        if (flushPrefs) await flushPrefs();
         await setTimeout(flushPrefs ? 50 : 1000);
       }
     };
@@ -8322,7 +8319,14 @@ describe('BrowserWindow module', () => {
         const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
         beforeEach(async () => {
-          await setTimeout(2000);
+          // Start with nothing pending in PrefService: the previous test's
+          // window saved on close, and that write must not land while this
+          // test is watching the prefs file's modification time.
+          if (flushPrefs) {
+            await flushPrefs();
+          } else {
+            await setTimeout(2000);
+          }
           BrowserWindow.clearPersistedState(windowName);
           w = new BrowserWindow({
             show: false,
@@ -8382,27 +8386,23 @@ describe('BrowserWindow module', () => {
 
           const initialModTime = getPrefsModTime(preferencesPath);
 
+          // Resize back to back so the debounced saves overlap and only the
+          // final bounds reach disk.
           const resize1 = once(w, 'resize');
           w.setSize(500, 400);
           await resize1;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterFirstResize = getPrefsModTime(preferencesPath);
 
           const resize2 = once(w, 'resize');
           w.setSize(600, 500);
           await resize2;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterSecondResize = getPrefsModTime(preferencesPath);
 
           const resize3 = once(w, 'resize');
           w.setSize(700, 600);
           await resize3;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterThirdResize = getPrefsModTime(preferencesPath);
 
@@ -8411,6 +8411,7 @@ describe('BrowserWindow module', () => {
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
 
+          // No resize wrote to disk on its own; only the flushed final state did.
           [afterFirstResize, afterSecondResize, afterThirdResize].forEach((time) => {
             expect(time.getTime()).to.equal(initialModTime.getTime());
           });
