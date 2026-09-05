@@ -20,15 +20,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
     writable: false
   });
 
-  const nativeSetBounds = this.setBounds;
-  this.setBounds = (bounds, ...opts) => {
-    bounds = {
-      ...this.getBounds(),
-      ...bounds
-    };
-    nativeSetBounds.call(this, bounds, ...opts);
-  };
-
   // Redirect focus/blur event to app instance too.
   this.on('blur', (event: Electron.Event) => {
     app.emit('browser-window-blur', event, this);
