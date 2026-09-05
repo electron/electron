@@ -89,15 +89,13 @@ static void SetDefaultFolder(IFileDialog* dialog,
     dialog->SetFolder(folder_item);
 }
 
-static HRESULT ShowFileDialog(IFileDialog* dialog,
-                              const DialogSettings& settings) {
-  HWND parent_window =
-      settings.parent_window
-          ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
-                ->GetAcceleratedWidget()
-          : nullptr;
-
-  return dialog->Show(parent_window);
+// settings.parent_window is a NativeWindow that lives on the UI thread, so
+// resolve its HWND there; the dialog itself may run on dialog_thread.
+static HWND GetParentWindowHandle(const DialogSettings& settings) {
+  return settings.parent_window
+             ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
+                   ->GetAcceleratedWidget()
+             : nullptr;
 }
 
 static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
@@ -153,8 +151,9 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
 
 }  // namespace
 
-bool ShowOpenDialogSync(const DialogSettings& settings,
-                        std::vector<base::FilePath>* paths) {
+static bool ShowOpenDialogSyncWithParent(const DialogSettings& settings,
+                                         HWND parent_window,
+                                         std::vector<base::FilePath>* paths) {
   ATL::CComPtr<IFileOpenDialog> file_open_dialog;
   HRESULT hr = file_open_dialog.CoCreateInstance(CLSID_FileOpenDialog);
 
@@ -175,7 +174,7 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   file_open_dialog->SetOptions(options);
 
   ApplySettings(file_open_dialog, settings);
-  hr = ShowFileDialog(file_open_dialog, settings);
+  hr = file_open_dialog->Show(parent_window);
   if (FAILED(hr))
     return false;
 
@@ -206,6 +205,12 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
   return true;
 }
 
+bool ShowOpenDialogSync(const DialogSettings& settings,
+                        std::vector<base::FilePath>* paths) {
+  return ShowOpenDialogSyncWithParent(settings, GetParentWindowHandle(settings),
+                                      paths);
+}
+
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -216,12 +221,14 @@ void ShowOpenDialog(const DialogSettings& settings,
     dict.Set("filePaths", result);
     promise.Resolve(dict);
   };
-  dialog_thread::Run(base::BindOnce(ShowOpenDialogSync, settings),
+  dialog_thread::Run(base::BindOnce(ShowOpenDialogSyncWithParent, settings,
+                                    GetParentWindowHandle(settings)),
                      base::BindOnce(done, std::move(promise)));
 }
 
-std::optional<base::FilePath> ShowSaveDialogSync(
-    const DialogSettings& settings) {
+static std::optional<base::FilePath> ShowSaveDialogSyncWithParent(
+    const DialogSettings& settings,
+    HWND parent_window) {
   ATL::CComPtr<IFileSaveDialog> file_save_dialog;
   HRESULT hr = file_save_dialog.CoCreateInstance(CLSID_FileSaveDialog);
   if (FAILED(hr))
@@ -235,7 +242,7 @@ std::optional<base::FilePath> ShowSaveDialogSync(
 
   file_save_dialog->SetOptions(options);
   ApplySettings(file_save_dialog, settings);
-  hr = ShowFileDialog(file_save_dialog, settings);
+  hr = file_save_dialog->Show(parent_window);
 
   if (FAILED(hr))
     return {};
@@ -255,6 +262,12 @@ std::optional<base::FilePath> ShowSaveDialogSync(
   return path;
 }
 
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
+  return ShowSaveDialogSyncWithParent(settings,
+                                      GetParentWindowHandle(settings));
+}
+
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -265,7 +278,8 @@ void ShowSaveDialog(const DialogSettings& settings,
     dict.Set("filePath", result.value_or(base::FilePath{}));
     promise.Resolve(dict);
   };
-  dialog_thread::Run(base::BindOnce(ShowSaveDialogSync, settings),
+  dialog_thread::Run(base::BindOnce(ShowSaveDialogSyncWithParent, settings,
+                                    GetParentWindowHandle(settings)),
                      base::BindOnce(done, std::move(promise)));
 }
 
