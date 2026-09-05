@@ -37,7 +37,7 @@ import * as nodeUrl from 'node:url';
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil, isWayland } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isTestingBindingAvailable } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -8066,27 +8066,46 @@ describe('BrowserWindow module', () => {
       }
     };
 
-    const waitForPrefsUpdate = async (initialModTime: Date, preferencesPath: string): Promise<void> => {
+    // Window state reaches the prefs file through PrefService, which batches
+    // writes on a 10s timer. Testing builds can force the write; otherwise
+    // poll for it.
+    const flushPrefs = isTestingBindingAvailable()
+      ? () => process._linkedBinding('electron_common_testing').commitPendingLocalStateWrites()
+      : null;
+
+    const waitForPrefsUpdate = async (
+      initialModTime: Date,
+      preferencesPath: string,
+      isExpectedState: () => boolean = () => true
+    ): Promise<void> => {
       const startTime = Date.now();
       const timeoutMs = 20000;
       while (true) {
+        // The save itself is debounced by 200ms before it reaches PrefService.
+        if (flushPrefs) {
+          await setTimeout(250);
+          await flushPrefs();
+        }
         const currentModTime = getPrefsModTime(preferencesPath);
 
-        if (currentModTime > initialModTime) {
+        if (currentModTime > initialModTime && isExpectedState()) {
           return;
         }
 
         if (Date.now() - startTime > timeoutMs) {
           throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
         }
-        // Wait for 1 second before checking again
-        await setTimeout(1000);
+        await setTimeout(flushPrefs ? 50 : 1000);
       }
     };
 
     const waitForPrefsFileCreation = async (preferencesPath: string) => {
       while (!fs.existsSync(preferencesPath)) {
-        await setTimeout(1000);
+        if (flushPrefs) {
+          await setTimeout(250);
+          await flushPrefs();
+        }
+        await setTimeout(flushPrefs ? 50 : 1000);
       }
     };
 
@@ -8103,13 +8122,25 @@ describe('BrowserWindow module', () => {
         show: false,
         ...options
       });
+      // A fullscreen or kiosk window saves again once its transition ends.
+      // Forcing the write can land the pre-transition save first, so wait
+      // for the state the caller asked for, not just for a change.
+      const saved = (): boolean => {
+        if (!options?.fullscreen && !options?.kiosk) return true;
+        const state = getWindowStateFromDisk(windowName, preferencesPath);
+        return (
+          !!state &&
+          (options.fullscreen ? state.fullscreen === true : true) &&
+          (options.kiosk ? state.kiosk === true : true)
+        );
+      };
       if (!fs.existsSync(preferencesPath)) {
         // File doesn't exist, wait for creation
         await waitForPrefsFileCreation(preferencesPath);
       } else {
         // File exists, wait for update
         const initialModTime = getPrefsModTime(preferencesPath);
-        await waitForPrefsUpdate(initialModTime, preferencesPath);
+        await waitForPrefsUpdate(initialModTime, preferencesPath, saved);
       }
       // Ensure window is destroyed because we can't create another window with the same name otherwise
       w.destroy();
