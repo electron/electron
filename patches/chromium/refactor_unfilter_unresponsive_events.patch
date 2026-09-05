@@ -22,8 +22,9 @@ then emitted nothing. WasHidden() now uses a PauseInputEventAckTimeout()
 that only stops the timer; WasShown() re-arms it and a real input ack
 still goes through RendererIsResponsive(). Chrome relies on the old
 behavior only to dismiss its hung-page dialog on tab backgrounding, which
-Electron does not build. Upstreamable alongside making the hang monitor
-observe base::PowerMonitor.
+Electron does not build. This part is proposed upstream at
+https://chromium-review.googlesource.com/c/chromium/src/+/8360632 and
+can be dropped from this patch once it rolls in.
 
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
 index 461a128e6151b3f61da330c48dcf63dff0fe30e3..2ba1163cfff96afae075d061c7e758bf37af2fc4 100644
