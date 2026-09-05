@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
+#include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom-forward.h"
 #include "services/network/public/mojom/network_context.mojom-forward.h"
 
@@ -22,6 +23,11 @@ class FilePath;
 namespace content {
 class BrowserContext;
 }  // namespace content
+
+namespace unexportable_keys {
+class UnexportableKeyService;
+class UnexportableKeyServiceProxyImpl;
+}  // namespace unexportable_keys
 
 namespace electron {
 
@@ -51,6 +57,15 @@ class NetworkContextService : public KeyedService {
   raw_ptr<ElectronBrowserContext> browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
   std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
+#if BUILDFLAG(ENABLE_DEVICE_BOUND_SESSIONS)
+  // This context's DBSC signing keys. Declared before the proxy, which holds a
+  // bare pointer to it, so that the proxy is destroyed first.
+  std::unique_ptr<unexportable_keys::UnexportableKeyService>
+      unexportable_key_service_;
+  // Serves the network service's calls into `unexportable_key_service_`.
+  std::unique_ptr<unexportable_keys::UnexportableKeyServiceProxyImpl>
+      unexportable_key_service_proxy_;
+#endif
 };
 
 }  // namespace electron

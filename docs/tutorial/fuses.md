@@ -177,6 +177,53 @@ than they ideally should be.
 * This extra code, particularly the compare and branch before every memory reference,
 incurs a significant runtime cost.
 
+### `deviceBoundSessions`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.EnableDeviceBoundSessions`
+
+The `deviceBoundSessions` fuse toggles whether generic net-layer Device Bound Session Credentials (DBSC)
+are enabled in the network service. DBSC binds session cookies to hardware-backed cryptographic keys
+(e.g., TPM 2.0 on Windows, Secure Enclave on macOS) to protect user sessions against cookie theft and session hijacking.
+
+When this fuse is enabled, Electron configures the network service to support DBSC session registration
+and persists session state across restarts on-disk. DevTools inspection is available under
+_Application > Background Services > Device Bound Sessions_.
+
+On Windows and macOS, signing keys are created and used in the browser process rather than in the
+sandboxed network process. On Linux, upstream Chromium still creates them in the network process
+(`network::features::kUseUnexportableKeyServiceInBrowserProcess` is disabled by default there).
+
+> [!IMPORTANT]
+>
+> * **macOS:** Similar to [`safeStorage`](../api/safe-storage.md) and [`cookieEncryption`](#cookieencryption),
+>   DBSC on macOS uses the Secure Enclave via Keychain, which requires the app to be
+>   [code signed](./code-signing.md#macos-apis-that-require-code-signing) with a team identifier and
+>   provisioned with the `keychain-access-groups` entitlement containing
+>   `<TeamID>.<BundleID>.unexportable-keys`. Electron derives that access group from the app's own code
+>   signature and bundle identifier at runtime. An app that is unsigned, ad-hoc signed, or missing the
+>   entitlement gets no key provider, and DBSC is a no-op.
+> * **Windows:** Requires a device with TPM 2.0. Keys are managed automatically via Windows CNG (`NCrypt`).
+> * **Linux:** Upstream Chromium does not yet have desktop hardware TPM key provider support.
+> * **Software Key Flag Rejection:** When this fuse is enabled, Electron rejects and strips the
+>   `EnableBoundSessionCredentialsSoftwareKeysForManualTesting` flag so that production apps cannot have
+>   their hardware-backed protection downgraded to mock software keys.
+
+#### Testing DBSC in development
+
+Hardware-backed keys are unavailable in most development setups: macOS builds are usually unsigned,
+Linux has no key provider, and not every Windows machine has a TPM 2.0. To exercise DBSC there, leave
+the fuse disabled and run with mock software keys:
+
+```sh
+electron . --enable-features=EnableBoundSessionCredentialsSoftwareKeysForManualTesting
+```
+
+With the fuse off, that flag also turns DBSC on in the network service. Software keys offer no hardware
+protection and exist only for local testing — a packaged app with the fuse enabled rejects the flag,
+so this cannot be used to weaken a production app.
+
 ## How do I flip fuses?
 
 ### The easy way
