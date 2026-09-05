@@ -1,0 +1,318 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 3 Sep 2026 12:00:00 -0400
+Subject: feat: add protobuf output and perfetto config modifier to
+ TracingController
+
+Extends content::TracingController::StartTracing with a StartTracingOptions
+struct that lets embedders request raw protobuf trace output and add data
+sources (such as Chromium's trace-scoped native heap profiler) to the
+perfetto config used by the shared tracing session.
+
+This allows heap samples to be collected alongside the other tracing
+categories in a single session rather than requiring a separate
+perfetto::TracingSession on the embedder side.
+
+For protobuf output the tracing session waits for the
+OnTracingDisabled callback before reading buffers, since the heap profiler
+completes its final sample asynchronously while the data source is being
+disabled.
+
+The file endpoint is also switched to binary mode so protobuf traces are
+not corrupted on Windows.
+
+This should be upstreamed.
+
+diff --git a/content/browser/tracing/tracing_controller_impl.cc b/content/browser/tracing/tracing_controller_impl.cc
+index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d1c88cd06 100644
+--- a/content/browser/tracing/tracing_controller_impl.cc
++++ b/content/browser/tracing/tracing_controller_impl.cc
+@@ -234,11 +234,15 @@ bool TracingControllerImpl::GetTrackEventDescriptor(
+ bool TracingControllerImpl::StartTracingImpl(
+     const base::trace_event::TraceConfig& trace_config,
+     StartTracingDoneCallback callback,
+-    bool privacy_filtering_enabled) {
++    StartTracingOptions options) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   // TODO(chiniforooshan): The actual value should be received by callback and
+   // this function should return void.
+   if (IsTracing()) {
++    if (options.output_format != TraceDataFormat::kLegacyJson ||
++        options.perfetto_config_modifier) {
++      return false;
++    }
+     // Do not allow updating trace config when process filter is not used.
+     if (trace_config.process_filter_config().empty() ||
+         trace_config_->process_filter_config().empty()) {
+@@ -262,9 +266,21 @@ bool TracingControllerImpl::StartTracingImpl(
+   ConnectToServiceIfNeeded();
+ 
+   perfetto::TraceConfig perfetto_config =
+-      tracing::GetDefaultPerfettoConfig(trace_config, privacy_filtering_enabled,
+-                                        /*convert_to_legacy_json=*/true);
++      tracing::GetDefaultPerfettoConfig(
++          trace_config, options.privacy_filtering_enabled,
++          options.output_format == TraceDataFormat::kLegacyJson);
++  if (options.perfetto_config_modifier) {
++    std::move(options.perfetto_config_modifier).Run(&perfetto_config);
++  }
++  for (auto& data_source : *perfetto_config.mutable_data_sources()) {
++    auto* chrome_config = data_source.mutable_config()->mutable_chrome_config();
++    chrome_config->set_privacy_filtering_enabled(
++        options.privacy_filtering_enabled);
++    chrome_config->set_convert_to_legacy_json(
++        options.output_format == TraceDataFormat::kLegacyJson);
++  }
+ 
++  output_format_ = options.output_format;
+   consumer_host_->EnableTracing(
+       tracing_session_host_.BindNewPipeAndPassReceiver(),
+       receiver_.BindNewPipeAndPassRemote(), std::move(perfetto_config),
+@@ -289,30 +305,40 @@ bool TracingControllerImpl::StopTracing(
+ bool TracingControllerImpl::StopTracing(
+     const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint,
+     const std::string& agent_label) {
+-  if (!IsTracing() || drainer_ || !tracing_session_host_)
++  if (!IsTracing() || stop_requested_ || drainer_ || !tracing_session_host_ ||
++      (output_format_ == TraceDataFormat::kProtobuf && !agent_label.empty())) {
+     return false;
++  }
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
++  stop_requested_ = true;
+   trace_data_endpoint_ = std::move(trace_data_endpoint);
+   is_data_complete_ = false;
+   read_buffers_complete_ = false;
+ 
+-  mojo::ScopedDataPipeProducerHandle producer_handle;
+-  mojo::ScopedDataPipeConsumerHandle consumer_handle;
+-  MojoResult result =
+-      mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
+-  if (result != MOJO_RESULT_OK) {
+-    CompleteFlush();
+-    return true;
+-  }
+-
+-  drainer_ =
+-      std::make_unique<mojo::DataPipeDrainer>(this, std::move(consumer_handle));
++  if (output_format_ == TraceDataFormat::kProtobuf) {
++    if (tracing_disabled_) {
++      StartProtobufRead();
++    } else {
++      tracing_session_host_->DisableTracing();
++    }
++  } else {
++    mojo::ScopedDataPipeProducerHandle producer_handle;
++    mojo::ScopedDataPipeConsumerHandle consumer_handle;
++    MojoResult result =
++        mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
++    if (result != MOJO_RESULT_OK) {
++      CompleteFlush();
++      return true;
++    }
+ 
+-  tracing_session_host_->DisableTracingAndEmitJson(
+-      agent_label, std::move(producer_handle),
+-      base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
+-                     base::Unretained(this)));
++    drainer_ = std::make_unique<mojo::DataPipeDrainer>(
++        this, std::move(consumer_handle));
++    tracing_session_host_->DisableTracingAndEmitJson(
++        agent_label, std::move(producer_handle),
++        base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
++                       base::Unretained(this)));
++  }
+ 
+   // TODO(chiniforooshan): Is the return value used anywhere?
+   return true;
+@@ -345,7 +371,21 @@ void TracingControllerImpl::OnTracingEnabled() {
+     std::move(start_tracing_callback_).Run();
+ }
+ 
+-void TracingControllerImpl::OnTracingDisabled(bool) {}
++void TracingControllerImpl::OnTracingDisabled(bool tracing_succeeded) {
++  if (output_format_ != TraceDataFormat::kProtobuf) {
++    return;
++  }
++
++  if (!tracing_succeeded) {
++    VLOG(1) << "Tracing stopped with an error; draining available trace data";
++  }
++  tracing_disabled_ = true;
++  if (stop_requested_) {
++    // Heap profiling completes its final sample asynchronously while disabling
++    // the data source, so raw buffers must not be read before this callback.
++    StartProtobufRead();
++  }
++}
+ 
+ void TracingControllerImpl::OnTracingFailed() {
+   CompleteFlush();
+@@ -360,6 +400,9 @@ void TracingControllerImpl::OnDataAvailable(base::span<const uint8_t> data) {
+ }
+ 
+ void TracingControllerImpl::CompleteFlush() {
++  output_format_ = TraceDataFormat::kLegacyJson;
++  stop_requested_ = false;
++  tracing_disabled_ = false;
+   if (trace_data_endpoint_)
+     trace_data_endpoint_->ReceivedTraceFinalContents();
+ 
+@@ -368,6 +411,31 @@ void TracingControllerImpl::CompleteFlush() {
+   drainer_ = nullptr;
+   tracing_session_host_.reset();
+   receiver_.reset();
++  is_data_complete_ = false;
++  read_buffers_complete_ = false;
++}
++
++void TracingControllerImpl::StartProtobufRead() {
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  DCHECK(stop_requested_);
++  DCHECK(tracing_disabled_);
++  DCHECK(tracing_session_host_);
++
++  mojo::ScopedDataPipeProducerHandle producer_handle;
++  mojo::ScopedDataPipeConsumerHandle consumer_handle;
++  MojoResult result =
++      mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
++  if (result != MOJO_RESULT_OK) {
++    CompleteFlush();
++    return;
++  }
++
++  drainer_ =
++      std::make_unique<mojo::DataPipeDrainer>(this, std::move(consumer_handle));
++  tracing_session_host_->ReadBuffers(
++      std::move(producer_handle),
++      base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
++                     base::Unretained(this)));
+ }
+ 
+ void TracingControllerImpl::OnDataComplete() {
+diff --git a/content/browser/tracing/tracing_controller_impl.h b/content/browser/tracing/tracing_controller_impl.h
+index d84fbfe4e302055ceec221d2301314ace9749c21..674e720aca9766f91f422d81118d280eaccddd38 100644
+--- a/content/browser/tracing/tracing_controller_impl.h
++++ b/content/browser/tracing/tracing_controller_impl.h
+@@ -65,7 +65,7 @@ class TracingControllerImpl : public TracingController,
+       GetTrackEventDescriptorDoneCallback callback) override;
+   bool StartTracingImpl(const base::trace_event::TraceConfig& trace_config,
+                         StartTracingDoneCallback callback,
+-                        bool privacy_filtering_enabled) override;
++                        StartTracingOptions options) override;
+   bool StopTracing(const scoped_refptr<TraceDataEndpoint>& endpoint) override;
+   bool StopTracing(const scoped_refptr<TraceDataEndpoint>& endpoint,
+                    const std::string& agent_label) override;
+@@ -95,6 +95,7 @@ class TracingControllerImpl : public TracingController,
+   void OnDataComplete() override;
+ 
+   void OnReadBuffersComplete();
++  void StartProtobufRead();
+ 
+   void CompleteFlush();
+ 
+@@ -109,6 +110,9 @@ class TracingControllerImpl : public TracingController,
+   mojo::Receiver<tracing::mojom::TracingSessionClient> receiver_{this};
+   StartTracingDoneCallback start_tracing_callback_;
+ 
++  TraceDataFormat output_format_ = TraceDataFormat::kLegacyJson;
++  bool stop_requested_ = false;
++  bool tracing_disabled_ = false;
+   std::unique_ptr<base::trace_event::TraceConfig> trace_config_;
+   std::unique_ptr<mojo::DataPipeDrainer> drainer_;
+   scoped_refptr<TraceDataEndpoint> trace_data_endpoint_;
+diff --git a/content/browser/tracing/tracing_controller_impl_data_endpoint.cc b/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
+index d9e6d854c024239a12cafc1171280255ffd80d36..ea30f2d7a51ec159153914f1a1eaa116e73a4273 100644
+--- a/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
++++ b/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
+@@ -108,13 +108,13 @@ class FileTraceDataEndpoint : public TracingController::TraceDataEndpoint {
+       // it's still owned by base::File. So we have to close it first and then
+       // reopen as FILE*.
+       temp_file.Close();
+-      file_.reset(base::OpenFile(pending_file_path_, "w"));
++      file_.reset(base::OpenFile(pending_file_path_, "wb"));
+     } else {
+       LOG(WARNING) << "Unable to use temporary file " << pending_file_path_
+                    << ": "
+                    << base::File::ErrorToString(temp_file.error_details());
+       pending_file_path_.clear();
+-      file_.reset(base::OpenFile(file_path_, "w"));
++      file_.reset(base::OpenFile(file_path_, "wb"));
+       LOG_IF(ERROR, file_ == nullptr)
+           << "Failed to open " << file_path_.value();
+     }
+diff --git a/content/public/browser/tracing_controller.h b/content/public/browser/tracing_controller.h
+index c25f0fc7b76265f93be3c652d510019ca43754de..1a7d33b5b8177cc4243f4d9e5347368d6ecf96b3 100644
+--- a/content/public/browser/tracing_controller.h
++++ b/content/public/browser/tracing_controller.h
+@@ -17,6 +17,10 @@
+ #include "content/common/content_export.h"
+ #include "content/public/browser/tracing_delegate.h"
+ 
++namespace perfetto {
++class TraceConfig;
++}
++
+ namespace base {
+ namespace trace_event {
+ class TraceConfig;
+@@ -34,6 +38,20 @@ class TracingController;
+ // the UI thread.
+ class TracingController {
+  public:
++  enum class TraceDataFormat {
++    kLegacyJson,
++    kProtobuf,
++  };
++
++  using PerfettoConfigModifier =
++      base::OnceCallback<void(perfetto::TraceConfig*)>;
++
++  struct StartTracingOptions {
++    bool privacy_filtering_enabled = false;
++    TraceDataFormat output_format = TraceDataFormat::kLegacyJson;
++    PerfettoConfigModifier perfetto_config_modifier;
++  };
++
+   CONTENT_EXPORT static TracingController* GetInstance();
+ 
+   // An interface for trace data consumer. An implementation of this interface
+@@ -106,8 +124,17 @@ class TracingController {
+   bool StartTracing(const base::trace_event::TraceConfig& trace_config,
+                     StartTracingDoneCallback callback,
+                     bool privacy_filtering_enabled = false) {
++    StartTracingOptions options;
++    options.privacy_filtering_enabled = privacy_filtering_enabled;
++    return StartTracingImpl(trace_config, std::move(callback),
++                           std::move(options));
++  }
++
++  bool StartTracing(const base::trace_event::TraceConfig& trace_config,
++                    StartTracingDoneCallback callback,
++                    StartTracingOptions options) {
+     return StartTracingImpl(trace_config, std::move(callback),
+-                            privacy_filtering_enabled);
++                           std::move(options));
+   }
+ 
+   // Stop tracing (recording traces) on all processes.
+@@ -123,8 +150,8 @@ class TracingController {
+   // the traced data.
+   //
+   // If |trace_data_endpoint| is not null, it will receive chunks of trace data
+-  // as JSON-stringified events, followed by a notification that the trace
+-  // collection is finished.
++  // in the format selected when tracing was started, followed by a notification
++  // that the trace collection is finished.
+   //
+   virtual bool StopTracing(
+       const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint) = 0;
+@@ -147,7 +174,7 @@ class TracingController {
+   virtual bool StartTracingImpl(
+       const base::trace_event::TraceConfig& trace_config,
+       StartTracingDoneCallback callback,
+-      bool privacy_filtering_enabled) = 0;
++      StartTracingOptions options) = 0;
+ };
+ 
+ }  // namespace content

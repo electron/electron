@@ -1,6 +1,7 @@
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 
 import { expect } from 'chai';
+import * as protobuf from 'protobufjs';
 
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -8,6 +9,22 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe } from './lib/spec-helpers';
+
+// Test jobs do not include Chromium's source tree, so define the subset of the
+// Perfetto schema needed to identify native heap stack samples.
+const perfettoTraceType = protobuf
+  .parse(`
+  syntax = "proto2";
+  package perfetto.protos;
+  message StackSample {}
+  message TracePacket {
+    optional StackSample stack_sample = 135;
+  }
+  message Trace {
+    repeated TracePacket packet = 1;
+  }
+`)
+  .root.lookupType('perfetto.protos.Trace');
 
 // FIXME: The tests are skipped on linux arm64
 ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
@@ -74,6 +91,48 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       // like `node,node.environment` will be included in the output.
       const content = fs.readFileSync(outputFilePath).toString();
       expect(content.includes('"cat":"node,node.environment"')).to.be.false();
+    });
+
+    it('rejects invalid heap profiler options', () => {
+      expect(() =>
+        contentTracing.startRecording({
+          heap_profiler_options: {
+            sampling_interval_bytes: 0
+          }
+        })
+      ).to.throw();
+      expect(() =>
+        contentTracing.startRecording({
+          heap_profiler_options: {
+            sampling_interval_bytes: -1
+          }
+        })
+      ).to.throw();
+      expect(() =>
+        contentTracing.startRecording({
+          heap_profiler_options: {
+            sampling_interval_ms: 1.5
+          }
+        })
+      ).to.throw();
+      expect(() => contentTracing.startRecording({ heap_profiler_options: 'invalid' } as any)).to.throw();
+      expect(() =>
+        contentTracing.startRecording({
+          heap_profiler_options: {
+            sampling_interval_bytes: 2 ** 32
+          }
+        })
+      ).to.throw();
+    });
+
+    it('rejects a second stop while heap tracing is stopping', async () => {
+      await contentTracing.startRecording({ heap_profiler_options: {} });
+
+      const firstStop = contentTracing.stopRecording(outputFilePath);
+      await expect(contentTracing.stopRecording(`${outputFilePath}.second`)).to.eventually.be.rejectedWith(
+        'Failed to stop tracing'
+      );
+      await firstStop;
     });
 
     it('accepts "categoryFilter" and "traceOptions" as a config', async () => {
@@ -172,9 +231,45 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(result).to.have.property('percentage').that.is.a('number');
       expect(result.percentage).to.equal(0);
     });
+
+    it('settles concurrent requests during heap profiling', async () => {
+      await app.whenReady();
+      await contentTracing.startRecording({ heap_profiler_options: {} });
+
+      const results = await Promise.all([contentTracing.getTraceBufferUsage(), contentTracing.getTraceBufferUsage()]);
+      for (const result of results) {
+        expect(result).to.have.property('percentage').that.is.a('number');
+        expect(result).to.have.property('value').that.is.a('number');
+      }
+
+      await contentTracing.stopRecording();
+    });
   });
 
   describe('captured events', () => {
+    it('include native heap profiler stack samples', async function () {
+      this.timeout(60000);
+      await app.whenReady();
+      await contentTracing.startRecording({
+        heap_profiler_options: {
+          sampling_interval_bytes: 1024,
+          sampling_interval_ms: 10
+        }
+      });
+
+      const allocations: Buffer[] = [];
+      for (let index = 0; index < 1000; index++) {
+        allocations.push(Buffer.alloc(4096));
+      }
+      await setTimeout(100);
+
+      await contentTracing.stopRecording(outputFilePath);
+      const trace = perfettoTraceType.toObject(perfettoTraceType.decode(fs.readFileSync(outputFilePath))) as {
+        packet?: Array<{ stackSample?: unknown }>;
+      };
+      expect(trace.packet?.some((packet) => packet.stackSample !== undefined)).to.be.true();
+    });
+
     it('include V8 samples from the main process', async function () {
       this.timeout(60000);
       await contentTracing.startRecording({

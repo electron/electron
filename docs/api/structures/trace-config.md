@@ -23,6 +23,10 @@
   `disabled-by-default-memory-infra` category is enabled, this contains
   optional additional configuration for data collection. See the
   [Chromium memory-infra docs][memory-infra docs] for more information.
+* `heap_profiler_options` ([HeapProfilerOptions](heap-profiler-options.md)) (optional) -
+  enables native heap profiling for the duration of the trace. Recordings with
+  this option use the [Perfetto protobuf format][perfetto trace format] instead
+  of the legacy JSON format.
 
 An example TraceConfig that roughly matches what Chrome DevTools records:
 
@@ -51,3 +55,4 @@ An example TraceConfig that roughly matches what Chrome DevTools records:
 [memory-infra docs]: https://chromium.googlesource.com/chromium/src/+/main/docs/memory-infra/memory_infra_startup_tracing.md#the-advanced-way
 [trace_event_args_allowlist.cc]: https://chromium.googlesource.com/chromium/src/+/main/services/tracing/public/cpp/trace_event_args_allowlist.cc
 [histogram]: https://chromium.googlesource.com/chromium/src.git/+/HEAD/tools/metrics/histograms/README.md
+[perfetto trace format]: https://perfetto.dev/docs/reference/trace-packet-proto
