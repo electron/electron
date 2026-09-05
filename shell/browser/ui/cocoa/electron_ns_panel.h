@@ -10,6 +10,8 @@
 @interface ElectronNSPanel : ElectronNSWindow
 @property NSWindowStyleMask styleMask;
 @property NSWindowStyleMask originalStyleMask;
+// Whether this panel can become the main window.
+@property BOOL canActivate;
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
 @end

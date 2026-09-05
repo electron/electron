@@ -1648,6 +1648,43 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'darwin')('"activable" option', () => {
+      afterEach(closeAllWindows);
+
+      it('defaults to true and emits focus when shown', async () => {
+        const w = new BrowserWindow({ show: false, type: 'panel' });
+        const focused = once(w, 'focus');
+        w.show();
+        await focused;
+      });
+
+      it('does not emit focus in the main process when false', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          type: 'panel',
+          activable: false,
+          webPreferences: { nodeIntegration: true, contextIsolation: false }
+        });
+        await w.loadURL('about:blank');
+
+        let mainProcessFocusEmitted = false;
+        w.once('focus', () => {
+          mainProcessFocusEmitted = true;
+        });
+
+        const domFocused = once(ipcMain, 'activable-test-dom-focus');
+        await w.webContents.executeJavaScript(
+          "window.addEventListener('focus', () => require('electron').ipcRenderer.send('activable-test-dom-focus'))"
+        );
+
+        w.show();
+        w.webContents.focus();
+        await domFocused;
+
+        expect(mainProcessFocusEmitted).to.equal(false);
+      });
+    });
+
     // TODO(RaisinTen): Make this work on Windows too.
     // Refs: https://github.com/electron/electron/issues/20464.
     ifdescribe(process.platform !== 'win32')('BrowserWindow.blur()', () => {
