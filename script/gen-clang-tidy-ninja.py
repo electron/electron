@@ -54,7 +54,10 @@ def parse_compile_command(command, source):
     if arg == '-o':
       obj = next(args)
     elif arg.startswith('/Fo'):
-      obj = arg[len('/Fo'):]
+      # GN writes "/Fo{{output}}" to compile_commands.json as "/Fo obj/x.obj"
+      # (a space before every substituted path), and "/Fo$output" as
+      # "/Foobj/x.obj"; Chromium's Windows toolchain used the former up to 154.
+      obj = arg[len('/Fo'):] or next(args)
     elif arg == '-MF':
       next(args)
     elif arg in ('-c', '/c', '-MMD', source) or arg.startswith(('/Fd', '/showIncludes')):
@@ -78,6 +81,8 @@ def tidy_steps(out_dir):
     if os.path.relpath(path, ELECTRON_DIR) in SKIPPED_SOURCES:
       continue
     compiler, obj, flags = parse_compile_command(entry['command'], entry['file'])
+    if not obj:
+      sys.exit(f'No object file (-o or /Fo) in the compile command for {entry["file"]}')
     steps.append(Step(
         source=os.path.relpath(path, out_dir),
         output=f'{obj}.tidy',
