@@ -24,6 +24,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
+#include "base/power_monitor/power_monitor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -38,6 +39,7 @@
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
+#include "components/input/input_constants.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -1826,6 +1828,18 @@ void WebContents::RendererUnresponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host,
     base::RepeatingClosure hang_monitor_restarter) {
+  // The hang monitor's timer keeps counting through system sleep on Windows,
+  // so a timeout that lands while suspended or right after waking says nothing
+  // about the renderer; give it a full delay from the wake instead.
+  const base::TimeTicks last_resume =
+      base::PowerMonitor::GetInstance()->GetLastSystemResumeTime();
+  if (last_resume.is_max() ||
+      (!last_resume.is_null() &&
+       base::TimeTicks::Now() - last_resume < input::kHungRendererDelay)) {
+    hang_monitor_restarter.Run();
+    return;
+  }
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::internal::Event* event =
