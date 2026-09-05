@@ -24,8 +24,8 @@ on:
 permissions: {}
 
 concurrency:
-  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
