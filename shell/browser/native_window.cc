@@ -895,6 +895,12 @@ void NativeWindow::DebouncedSaveWindowState() {
       base::BindOnce(&NativeWindow::SaveWindowState, base::Unretained(this)));
 }
 
+void NativeWindow::FlushPendingWindowStateSaveForTesting() {
+  if (save_window_state_timer_.IsRunning()) {
+    save_window_state_timer_.FireNow();
+  }
+}
+
 void NativeWindow::SaveWindowState() {
   if (!window_state_persistence_enabled_ || is_being_restored_ ||
       is_transitioning_fullscreen())
