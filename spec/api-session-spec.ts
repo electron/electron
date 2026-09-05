@@ -2143,6 +2143,46 @@ describe('session module', () => {
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
     });
+
+    it('sets the User-Agent header for web requests made from renderers (options)', async () => {
+      const userAgent = 'test-agent';
+      const ses = session.fromPartition('' + Math.random());
+      ses.setUserAgent({ userAgent }, 'en-US,fr,de');
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      let headers: http.IncomingHttpHeaders | null = null;
+      const server = http.createServer((req, res) => {
+        headers = req.headers;
+        res.end();
+        server.close();
+      });
+      const { url } = await listen(server);
+      await w.loadURL(url);
+      expect(headers!['user-agent']).to.equal(userAgent);
+      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+    });
+  });
+
+  describe('ses.setUserAgentMetadata()', () => {
+    it('preserves every metadata field', () => {
+      const userAgentMetadata = {
+        brands: [{ brand: 'Electron', version: '46' }],
+        fullVersionList: [{ brand: 'Electron', version: '46.0.0' }],
+        fullVersion: '46.0.0',
+        platform: 'test-platform',
+        platformVersion: '1.0.0',
+        model: 'test-model',
+        mobile: false,
+        architecture: 'test-architecture',
+        bitness: '64',
+        wow64: false,
+        formFactors: ['Desktop']
+      };
+      const ses = session.fromPartition(`${Math.random()}`);
+
+      ses.setUserAgentMetadata(userAgentMetadata);
+
+      expect(ses.getUserAgentMetadata()).to.deep.equal(userAgentMetadata);
+    });
   });
 
   describe('session-created event', () => {
