@@ -20,6 +20,9 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+    secrets:
+      ELECTRON_RBE_JWT:
+        required: false
 
 permissions: {}
 
@@ -41,6 +44,7 @@ jobs:
       contents: read
     container: ${{ fromJSON(inputs.clang-tidy-container) }}
     env:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       TARGET_PLATFORM: ${{ inputs.target-platform }}
@@ -140,41 +144,69 @@ jobs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
-    - name: Run Clang-Tidy
-      env:
-        # macOS runners have fewer CPU cores, so use fewer jobs for better results
-        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
+    # The RBE workers are Linux; on macOS stage the Linux clang and clang-tidy
+    # they will run (clang_remote_wrapper + Release+Asserts_linux, the same
+    # arrangement fix-sync sets up for the build jobs' compiles).
+    # The src cache is produced on Linux, so host tools fetched from CIPD are
+    # Linux binaries; swap in the macOS ones this job runs (as fix-sync does
+    # for the build job).
+    - name: Install siso (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: siso
+        deps-file: src/DEPS
+        installation-dir: src/third_party/siso/cipd
+        target-platform: ${{ inputs.target-platform }}
+        package: build/siso/${platform}
+    - name: Install reclient (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: reclient
+        deps-file: src/DEPS
+        installation-dir: src/buildtools/reclient
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/rbe/client/${platform}
+    - name: Stage Linux clang-tidy for RBE (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
       run: |
-        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
-
-        # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
-        export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
+        python3 src/tools/clang/scripts/update.py --package clang-tidy --host-os linux --output-dir src/third_party/llvm-build/Release+Asserts_linux
+    # clang-tidy runs as siso build steps (script/gen-clang-tidy-ninja.py): one
+    # remotely executed, remotely cached action per translation unit.
+    - name: Run Clang-Tidy
+      run: |
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build siso
+        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
-
         e build --gen=only
 
-        # Copy macOS framework headers so clang-tidy can find them via -F.
-        # This must happen after e build since e init -f may
-        # recreate the output directory.
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        # Squirrel and friends are included via -F framework paths that only
+        # exist in the out dir after a build; recreate their Headers dirs.
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           OUT=src/out/${ELECTRON_OUT_DIR}
           SQRL=src/third_party/squirrel.mac
-
           mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
-
-          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${OUT}/ReactiveObjC.framework/Headers/
-          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
-
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
           cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
-
-          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${OUT}/Mantle.framework/Headers/
-          cp ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
         fi
 
+        e d python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
+        e build --gen=off --target electron_clang_tidy -f clang_tidy.ninja -batch -k 0
+    - name: Upload siso metrics
+      if: always() && !cancelled()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: clang_tidy_siso_${{ env.ARTIFACT_KEY }}
+        path: |
+          src/out/Default/siso_metrics.json
+          src/out/Default/siso_output
+        if-no-files-found: ignore
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
