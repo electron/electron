@@ -668,7 +668,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       };
 
       const startedAt = Date.now();
-      const watchdog = AU_TIMING ? setInterval(() => dumpSlot(slot, startedAt), 60000) : undefined;
+      const watchdog = AU_TIMING ? setInterval(() => dumpSlot(slot, startedAt), 30000) : undefined;
       try {
         await body(ctx);
       } finally {
@@ -695,7 +695,18 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       }
       const ps = cp.spawnSync('/bin/ps', ['-axo', 'pid,ppid,etime,%cpu,command']).stdout?.toString() ?? '';
       for (const line of ps.split('\n')) {
-        if (/electron-update-spec|ShipIt|syspolicyd|XprotectService/.test(line)) aulog(`  ps| ${line.slice(0, 240)}`);
+        if (/electron-update-spec|ShipIt|ditto|syspolicyd|XprotectService/.test(line)) {
+          aulog(`  ps| ${line.slice(0, 240)}`);
+        }
+      }
+      // ShipIt's install-attempt counter lives in the ShipIt label's own
+      // defaults domain, not the app's; after 3 it aborts every install.
+      const attempts = cp.spawnSync('defaults', ['read', slot.shipItLabel]).stdout?.toString().trim() ?? '';
+      aulog(`  defaults ${slot.shipItLabel}| ${attempts.replace(/\s+/g, ' ').slice(0, 200) || '(none)'}`);
+      try {
+        for (const entry of fs.readdirSync(slot.cacheDir)) aulog(`  cache${slot.index}| ${entry}`);
+      } catch {
+        aulog(`  cache${slot.index}| (no cache dir)`);
       }
     };
 

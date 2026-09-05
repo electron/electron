@@ -26,7 +26,7 @@ env:
   # Build workflow run on main whose artifacts are tested. Its commit is this
   # branch's base, so the specs match the binary.
   SOURCE_RUN_ID: '33843471218'
-  ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
+  ITERATIONS: ${{ github.event.inputs.iterations || '4' }}
   ELECTRON_OUT_DIR: Default
   SENTRYCLI_SKIP_DOWNLOAD: 1
 
@@ -44,22 +44,19 @@ jobs:
         # The spec now defaults to concurrency 2 on x64. A CI test shard always
         # runs on a fresh runner, and only a job's first iteration is cold, so
         # several jobs sample that case better than more iterations.
+        # Reproduce the abort-test cascade seen on release-branch CI: run the
+        # full suite (lookahead tasks occupy the other slot) but --grep only
+        # the abort test's result, several times, with the watchdog on.
         include:
-          - name: x64-a
+          - name: x64-abort-a
             runs-on: macos-15-large
             arch: x64
-          - name: x64-b
+          - name: x64-abort-b
             runs-on: macos-15-large
             arch: x64
-          - name: x64-c
+          - name: x64-abort-c
             runs-on: macos-15-large
             arch: x64
-          - name: x64-d
-            runs-on: macos-15-large
-            arch: x64
-          - name: arm64
-            runs-on: macos-15
-            arch: arm64
     defaults:
       run:
         shell: bash
@@ -153,7 +150,7 @@ jobs:
           echo "::group::Iteration $i"
           start=$(date +%s)
           # Same flags as the CI test job.
-          if node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --files spec/api-autoupdater-darwin-spec.ts 2>&1 | tee "$RUNNER_TEMP/au/logs/iteration-$i.log"; then
+          if node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --files spec/api-autoupdater-darwin-spec.ts -g "abort the update if the application is still running" 2>&1 | tee "$RUNNER_TEMP/au/logs/iteration-$i.log"; then
             result=pass
           else
             result=FAIL
