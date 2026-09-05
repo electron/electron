@@ -91,6 +91,11 @@ void RootView::SetMenuBarVisibility(bool visible) {
   }
 
   InvalidateLayout();
+
+  // The menu bar is part of the content area, so showing or hiding it changes
+  // the window/content difference an aspect ratio may depend on. This covers
+  // the auto-hide path too, which does not go through NativeWindow.
+  window_->UpdateAspectRatio();
 }
 
 void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {

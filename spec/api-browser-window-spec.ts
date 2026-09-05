@@ -6,6 +6,7 @@ import {
   BrowserView,
   dialog,
   ipcMain,
+  Menu,
   OnBeforeSendHeadersListenerDetails,
   net,
   protocol,
@@ -2050,7 +2051,86 @@ describe('BrowserWindow module', () => {
         // There would be also DCHECK in resize_utils.cc on
         // debug build.
         w.setAspectRatio(1.0);
-        expectBoundsEqual(w.getSize(), [400, 400]);
+        if (process.platform === 'win32') {
+          // Windows applies the ratio to the content area, so a framed window
+          // narrows to keep the content square. It must still stay within the
+          // maximum size, which is what this test guards.
+          const [width, height] = w.getSize();
+          expect(width).to.be.at.most(400);
+          expect(height).to.be.at.most(400);
+          const [contentWidth, contentHeight] = w.getContentSize();
+          expect(contentWidth - contentHeight).to.be.closeTo(0, 1);
+        } else {
+          expectBoundsEqual(w.getSize(), [400, 400]);
+        }
+      });
+
+      // Windows applies the aspect ratio to the window as soon as it is set,
+      // so the effect of |extraSize| is observable without an interactive
+      // resize. macOS only consults it from windowWillResize:, which a test
+      // cannot drive.
+      describe('extraSize', () => {
+        let aspectWindow: BrowserWindow;
+
+        afterEach(async () => {
+          await closeWindow(aspectWindow, { assertNotWindows: false });
+          aspectWindow = null as unknown as BrowserWindow;
+        });
+
+        // Asserted on the content size rather than the window size: the window
+        // rect includes the invisible resize border, whose width varies with
+        // the scale factor, while the content invariant does not.
+        ifit(process.platform === 'win32')('is not excluded when omitted', () => {
+          aspectWindow = new BrowserWindow({ show: false, frame: false, width: 600, height: 400 });
+          aspectWindow.setAspectRatio(1.0);
+          const [contentWidth, contentHeight] = aspectWindow.getContentSize();
+          expect(contentWidth - contentHeight).to.be.closeTo(0, 1);
+        });
+
+        ifit(process.platform === 'win32')('is excluded from the aspect ratio calculation', () => {
+          // 200px of the content is excluded, so the remainder is square and
+          // the content ends up exactly |extraSize| wider than it is tall.
+          aspectWindow = new BrowserWindow({ show: false, frame: false, width: 600, height: 400 });
+          aspectWindow.setAspectRatio(1.0, { width: 200, height: 0 });
+          const [contentWidth, contentHeight] = aspectWindow.getContentSize();
+          expect(contentWidth - contentHeight).to.be.closeTo(200, 1);
+        });
+
+        ifit(process.platform === 'win32')('survives size constraints changing afterwards', () => {
+          // The excluded margin is clamped to the maximum size, so it is
+          // recomputed whenever the constraints change. Setting them after the
+          // ratio must neither crash nor disturb the ratio already in effect.
+          aspectWindow = new BrowserWindow({ show: false, frame: false, width: 400, height: 300 });
+          aspectWindow.setAspectRatio(1.0, { width: 100, height: 0 });
+
+          const [beforeWidth, beforeHeight] = aspectWindow.getContentSize();
+          expect(beforeWidth - beforeHeight).to.be.closeTo(100, 1);
+
+          aspectWindow.setMaximumSize(800, 800);
+          aspectWindow.setMinimumSize(100, 100);
+
+          const [afterWidth, afterHeight] = aspectWindow.getContentSize();
+          expect(afterWidth - afterHeight).to.be.closeTo(100, 1);
+
+          const [width, height] = aspectWindow.getSize();
+          expect(width).to.be.at.most(800);
+          expect(height).to.be.at.most(800);
+        });
+
+        ifit(process.platform === 'win32')('survives the menu bar being hidden', () => {
+          // The margin excluded on Windows covers the menu bar too, so hiding
+          // it has to recompute the margin rather than leave a stale one.
+          aspectWindow = new BrowserWindow({ show: false, width: 600, height: 400 });
+          aspectWindow.setMenu(Menu.buildFromTemplate([{ label: 'File', submenu: [{ role: 'quit' }] }]));
+          aspectWindow.setAspectRatio(1.0, { width: 200, height: 0 });
+
+          const [beforeWidth, beforeHeight] = aspectWindow.getContentSize();
+          expect(beforeWidth - beforeHeight).to.be.closeTo(200, 2);
+
+          aspectWindow.setMenuBarVisibility(false);
+          const [afterWidth, afterHeight] = aspectWindow.getContentSize();
+          expect(afterWidth - afterHeight).to.be.closeTo(200, 2);
+        });
       });
     });
 
