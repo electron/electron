@@ -26,7 +26,7 @@ env:
   # Build workflow run on main whose artifacts are tested. Its commit is this
   # branch's base, so the specs match the binary.
   SOURCE_RUN_ID: '33843471218'
-  ITERATIONS: ${{ github.event.inputs.iterations || '4' }}
+  ITERATIONS: ${{ github.event.inputs.iterations || '2' }}
   ELECTRON_OUT_DIR: Default
   SENTRYCLI_SKIP_DOWNLOAD: 1
 
@@ -150,7 +150,7 @@ jobs:
           echo "::group::Iteration $i"
           start=$(date +%s)
           # Same flags as the CI test job.
-          if node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --files spec/api-autoupdater-darwin-spec.ts -g "abort the update if the application is still running" 2>&1 | tee "$RUNNER_TEMP/au/logs/iteration-$i.log"; then
+          if node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --files spec/api-autoupdater-darwin-spec.ts 2>&1 | tee "$RUNNER_TEMP/au/logs/iteration-$i.log"; then
             result=pass
           else
             result=FAIL

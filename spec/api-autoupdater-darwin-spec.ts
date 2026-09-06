@@ -43,14 +43,12 @@ const RUN_BUDGET_MULTIPLIER = 2;
 const RUN_BUDGET_OVERRIDE_MS = parseInt(process.env.ELECTRON_SPEC_UPDATER_RUN_BUDGET_MS || '', 10);
 // How long a stopped run gets to unwind before its slot is retired.
 const ABORT_GRACE_MS = 20000;
-
-// Stress-run diagnostics, on with AU_TIMING=1: per-phase timings, slot
-// queueing, and a watchdog that dumps ShipIt state for tasks that run long.
-const AU_TIMING = !!process.env.AU_TIMING;
-const AU_T0 = Date.now();
-const aulog = (msg: string) => {
-  if (AU_TIMING) console.log(`[AU +${((Date.now() - AU_T0) / 1000).toFixed(1)}s] ${msg}`);
-};
+// How long stopRun waits for a killed process group to be gone, and then for
+// the slot's update directories to become removable, before giving up on the
+// slot. A SIGKILL'd app can hold files in its update directory open for a
+// moment, and ShipIt (a launchd job, not our child) exits on its own schedule.
+const KILL_WAIT_MS = 5000;
+const CLEANUP_WAIT_MS = 5000;
 
 // Squirrel derives its ShipIt launchd job, XPC name and cache dir from
 // CFBundleIdentifier, so concurrent apps each need their own.
@@ -63,16 +61,6 @@ type Slot = {
   nameSuffix: string;
   // Update zips carry the slot's bundle id, so they are cached per slot.
   zips: Record<string, string>;
-  // Diagnostics only.
-  title: string;
-  phase: string;
-  phaseAt: number;
-};
-
-const setPhase = (slot: Slot, phase: string) => {
-  slot.phase = phase;
-  slot.phaseAt = Date.now();
-  aulog(`slot${slot.index} phase=${phase} "${slot.title}"`);
 };
 
 const makeSlot = (index: number): Slot => {
@@ -83,10 +71,7 @@ const makeSlot = (index: number): Slot => {
     shipItLabel: `${bundleId}.ShipIt`,
     cacheDir: path.join(os.homedir(), 'Library', 'Caches', `${bundleId}.ShipIt`),
     nameSuffix: `-spec${index}`,
-    zips: {},
-    title: '',
-    phase: 'idle',
-    phaseAt: Date.now()
+    zips: {}
   };
 };
 
@@ -184,9 +169,16 @@ type Task = {
 type RunState = {
   signal: AbortSignal;
   children: Set<cp.ChildProcess>;
+  // Every app is spawned as its own process group leader, so it and anything
+  // it starts (helpers, ditto) can be killed together. ShipIt and the app it
+  // relaunches are not in here: launchd spawns ShipIt, so they are found by
+  // path instead (they all run from under an appPath).
+  groups: Set<number>;
   // Fixture apps the run launched. The app, its ShipIt and the relaunched app
   // all run from these paths.
   appPaths: Set<string>;
+  // What the run is doing, for the message when it overruns.
+  phase: string;
 };
 
 // We can only test the auto updater on darwin non-component builds
@@ -234,7 +226,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   };
 
   const spawnAppWithHandle = (appPath: string, args: string[] = []) => {
-    return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+    return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args, { detached: true });
   };
 
   const logOnError = (what: any, fn: () => void) => {
@@ -267,17 +259,14 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   };
 
   const prepareApp = async (slot: Slot, dir: string, fixture: string, version: string, preSign?: Mutation) => {
-    const t0 = Date.now();
     const appPath = await copyMacOSFixtureApp(dir, fixture, {
       sourceApp: templateApp,
       bundleId: slot.bundleId,
       appNameSuffix: slot.nameSuffix
     });
-    const t1 = Date.now();
     await setBundleVersion(appPath, version);
     await preSign?.mutate(appPath);
     await shallowSign(appPath);
-    aulog(`slot${slot.index} prepared ${fixture}@${version}: copy=${t1 - t0}ms sign=${Date.now() - t1}ms`);
     return appPath;
   };
 
@@ -289,9 +278,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const appPath = await prepareApp(slot, dir, fixture, version, pre);
       await post?.mutate(appPath);
       const zipPath = path.resolve(dir, 'update.zip');
-      const tz = Date.now();
       await spawn('zip', ['-0', '-r', '--symlinks', zipPath, './'], { cwd: dir });
-      aulog(`slot${slot.index} zipped ${key} in ${Date.now() - tz}ms`);
       slot.zips[key] = zipPath;
     }
     return slot.zips[key];
@@ -311,6 +298,22 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   const cleanSquirrelCache = async (slot: Slot) => {
     for (const dir of await getUpdateDirectoriesInCache(slot)) {
       await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  // A directory a just-killed process still has files open in can briefly
+  // refuse removal (ENOTEMPTY); keep trying for a while. Returns false rather
+  // than throwing, so a cleanup failure never replaces a run's own error.
+  const removeWithRetries = async (remove: () => Promise<void>, timeoutMs: number) => {
+    const deadline = Date.now() + timeoutMs;
+    while (true) {
+      try {
+        await remove();
+        return true;
+      } catch {
+        if (Date.now() > deadline) return false;
+        await delay(250);
+      }
     }
   };
 
@@ -404,59 +407,118 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
     // start in declaration order, so keep nested describes last (mocha runs
     // them after this suite's own tests).
     const pool = new SlotPool(Array.from({ length: CONCURRENCY }, (_, i) => makeSlot(i)));
-    aulog(`concurrency=${CONCURRENCY} arch=${process.arch} parallelism=${os.availableParallelism()}`);
     const tasks: Task[] = [];
     const inflight = new Set<Promise<void>>();
     let scheduled = false;
     let draining = false;
 
-    // Kills what a run left behind and clears its slot's ShipIt job and
-    // downloaded updates, so the next run on the slot starts clean.
-    const stopRun = async (slot: Slot, run: RunState) => {
-      for (const child of run.children) child.kill('SIGKILL');
-      const prefixes = [...run.appPaths].flatMap((appPath) => [appPath, `/private${appPath}`]);
-      for (const p of await psList()) {
-        if (p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix))) {
+    const killGroup = (pgid: number) => {
+      try {
+        process.kill(-pgid, 'SIGKILL');
+      } catch {
+        // Already gone.
+      }
+    };
+
+    const groupIsGone = (pgid: number) => {
+      try {
+        process.kill(-pgid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    };
+
+    // Kills every process running from under one of the prefixes, and the
+    // given process groups, until nothing is left or the time is up. It loops
+    // because a kill can be followed by a spawn: launchd starts ShipIt for a
+    // job the app submitted just before it died, and a relaunched app submits
+    // a job of its own. Returns false if something outlived the wait.
+    const killEverything = async (groups: Iterable<number>, prefixes: string[], timeoutMs: number) => {
+      const deadline = Date.now() + timeoutMs;
+      while (true) {
+        for (const pgid of groups) killGroup(pgid);
+        const strays = (await psList()).filter((p) => p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix)));
+        for (const p of strays) {
           try {
             process.kill(p.pid, 'SIGKILL');
           } catch {
             // Already gone.
           }
         }
+        if (!strays.length && [...groups].every(groupIsGone)) return true;
+        if (Date.now() > deadline) return false;
+        await delay(100);
       }
+    };
+
+    const pathPrefixes = (paths: Iterable<string>) => [...paths].flatMap((p) => [p, `/private${p}`]);
+
+    // Kills what a run left behind and clears its slot's ShipIt job and
+    // downloaded updates, so the next run on the slot starts clean. Returns
+    // false if the slot could not be cleaned, in which case the caller retires
+    // it. Never throws: a cleanup error must not replace the run's own error.
+    const stopRun = async (slot: Slot, run: RunState): Promise<boolean> => {
+      for (const child of run.children) child.kill('SIGKILL');
+      // ShipIt is a launchd job, and the app it relaunches is launchd's child
+      // too, so neither is in a group of ours. Both run from under an appPath
+      // (ShipIt from the bundle's Squirrel.framework), so kill by path as well;
+      // removing the job alone does not reliably stop a ShipIt mid-install.
       cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
-      await cleanSquirrelCache(slot);
+      // A killed ShipIt leaves its install-attempt count behind, and after
+      // three it refuses to install at all on that label.
+      cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
+      if (!(await killEverything(run.groups, pathPrefixes(run.appPaths), KILL_WAIT_MS))) return false;
+
+      // The kill is delivered, but the files the app had open in its update
+      // directory can take a moment to close, and ShipIt's exit is not ours to
+      // observe, so removing the directories can briefly fail.
+      return removeWithRetries(() => cleanSquirrelCache(slot), CLEANUP_WAIT_MS);
     };
 
     const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
-      const queuedAt = Date.now();
-      const slot = await pool.acquire({ jumpQueue });
+      const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
+      // A run's budget only starts once it has a slot. A retry, though, is the
+      // test mocha is waiting on right now; if every slot is held by a lookahead
+      // run that is itself stuck, waiting for one is unbounded and silent. Give
+      // it the budget to get a slot, then make one.
+      let slot: Slot;
+      if (jumpQueue) {
+        const acquired = pool.acquire({ jumpQueue });
+        const timeout = delay(budget).then(() => null);
+        const first = await Promise.race([acquired, timeout]);
+        if (first) {
+          slot = first;
+        } else {
+          pool.retire();
+          slot = await acquired;
+        }
+      } else {
+        slot = await pool.acquire({ jumpQueue });
+      }
       if (draining || generation !== task.generation) {
-        aulog(`slot${slot.index} skipped superseded run gen=${generation} of "${task.title}"`);
         pool.release(slot);
         return;
       }
 
-      const startedAt = Date.now();
-      const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
       const controller = new AbortController();
       task.controller = controller;
       task.started = true;
-      slot.title = task.title;
-      aulog(
-        `slot${slot.index} start "${task.title}" gen=${generation} after waiting ${startedAt - queuedAt}ms for a slot`
-      );
 
-      const run: RunState = { signal: controller.signal, children: new Set(), appPaths: new Set() };
+      const run: RunState = {
+        signal: controller.signal,
+        children: new Set(),
+        groups: new Set(),
+        appPaths: new Set(),
+        phase: 'setup'
+      };
       const stopped = new Promise<never>((resolve, reject) => {
         controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
       });
       stopped.catch(() => {});
       const timer = setTimeout(() => {
         controller.abort(
-          new Error(
-            `"${task.title}" ran out of its ${budget / 1000}s budget in slot ${slot.index} (phase: ${slot.phase})`
-          )
+          new Error(`"${task.title}" ran out of its ${budget / 1000}s budget in slot ${slot.index} (${run.phase})`)
         );
       }, budget);
 
@@ -468,24 +530,22 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       let retire = false;
       try {
         await Promise.race([body, stopped]);
-        aulog(`slot${slot.index} done "${task.title}" gen=${generation} in ${Date.now() - startedAt}ms`);
       } catch (err) {
-        aulog(`slot${slot.index} FAILED "${task.title}" gen=${generation} after ${Date.now() - startedAt}ms: ${err}`);
         if (controller.signal.aborted) {
           // Killing the run's processes rejects whatever the body is waiting on.
           await stopRun(slot, run);
           retire = !(await Promise.race([settled, delay(ABORT_GRACE_MS).then(() => false)]));
         }
         // After any failure, clean up what the run left. After an abort this
-        // also catches anything the body started while unwinding.
-        await stopRun(slot, run);
+        // also catches anything the body started while unwinding. If the slot
+        // cannot be cleaned, retire it rather than hand a dirty one to the
+        // next run.
+        if (!(await stopRun(slot, run))) retire = true;
         throw err;
       } finally {
         clearTimeout(timer);
         if (task.controller === controller) task.controller = undefined;
-        setPhase(slot, 'idle');
         if (retire) {
-          aulog(`slot${slot.index} retired: its run did not unwind within ${ABORT_GRACE_MS / 1000}s`);
           pool.retire();
         } else {
           pool.release(slot);
@@ -515,7 +575,6 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       const task: Task = { title, timeout, body, generation: 0, started: false, awaited: false };
       const index = tasks.push(task) - 1;
       it(title, async function () {
-        aulog(`it start "${title}" run=${task.run ? 'yes' : 'no'} started=${task.started} awaited=${task.awaited}`);
         // Each run enforces its own budget from when it gets a slot, so this is
         // only a backstop in case the pool stops making progress.
         this.timeout(30 * 60 * 1000);
@@ -535,19 +594,28 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       this.timeout(10 * 60 * 1000);
       for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
       await Promise.allSettled([...inflight]);
+      // A stop that gave up on a slot (and retired it) may have left something
+      // running; every fixture app of this suite lives under this prefix.
+      for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
+      await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
       for (const slot of pool.slots) {
-        cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
         cp.spawnSync('defaults', ['delete', slot.bundleId]);
-        await fs.promises.rm(slot.cacheDir, { recursive: true, force: true });
+        cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
+        // Runs aborted just above may still be releasing their files.
+        await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
       }
     });
 
     // Like spawn() from codesign-helpers, but records the child so an
     // overrunning run can kill it.
     const spawnForRun = (run: RunState, cmd: string, args: string[]) => {
+      // A body unwinding from an abort must not start anything the stop
+      // already ran past.
+      if (run.signal.aborted) throw run.signal.reason;
       let out = '';
-      const child = cp.spawn(cmd, args);
+      const child = cp.spawn(cmd, args, { detached: true });
       run.children.add(child);
+      if (child.pid) run.groups.add(child.pid);
       child.stdout.on('data', (chunk: Buffer) => {
         out += chunk.toString();
       });
@@ -579,13 +647,11 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       });
       const port = (httpServer.address() as AddressInfo).port;
 
-      const timedLaunch = async (appPath: string, args: string[] = []) => {
-        setPhase(slot, 'launch');
-        const t0 = Date.now();
+      const launchForRun = async (appPath: string, args: string[] = []) => {
         run.appPaths.add(appPath);
+        run.phase = 'waiting for the app to exit';
         const result = await spawnForRun(run, path.resolve(appPath, 'Contents/MacOS/Electron'), args);
-        aulog(`slot${slot.index} app exited code=${result.code} after ${Date.now() - t0}ms`);
-        setPhase(slot, 'after-launch');
+        run.phase = 'after the app exited, such as waiting for a relaunch';
         return result;
       };
 
@@ -595,9 +661,10 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         server,
         port,
         requests,
-        launchApp: timedLaunch,
+        launchApp: launchForRun,
         launchAppSandboxed: (appPath, profilePath, args = []) => {
           run.appPaths.add(appPath);
+          run.phase = 'waiting for the sandboxed app to exit';
           return spawnForRun(run, '/usr/bin/sandbox-exec', [
             '-f',
             profilePath,
@@ -607,13 +674,16 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
           ]);
         },
         spawnAppWithHandle: (appPath, args = []) => {
+          if (run.signal.aborted) throw run.signal.reason;
           run.appPaths.add(appPath);
           const child = spawnAppWithHandle(appPath, args);
           run.children.add(child);
+          if (child.pid) run.groups.add(child.pid);
           child.on('exit', () => run.children.delete(child));
           return child;
         },
         copySignedApp: async (dir, fixture) => {
+          run.phase = 'preparing the app';
           const appPath = await prepareApp(slot, dir, fixture, '1.0.0');
           run.appPaths.add(appPath);
           return appPath;
@@ -621,6 +691,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         getUpdateZip: (version, fixture, pre, post) => getUpdateZip(slot, version, fixture, pre, post),
         withUpdatableApp: async (opts, fn) => {
           await withTempDirectory(async (dir) => {
+            run.phase = 'preparing the app and its update';
             const appPath = await prepareApp(slot, dir, opts.startFixture, '1.0.0', opts.mutateAppPreSign);
             run.appPaths.add(appPath);
             const zipPath = await getUpdateZip(
@@ -648,9 +719,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         },
         relaunched: () => {
           const relaunch = new Promise<void>((resolve, reject) => {
-            const t0 = Date.now();
             server.get('/update-check/updated/:version', (req, res) => {
-              aulog(`slot${slot.index} relaunched app phoned home (${req.url}) ${Date.now() - t0}ms after listening`);
               res.status(204).send();
               resolve();
             });
@@ -667,46 +736,13 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         setUserDefault: (key, value) => setUserDefault(slot, key, value)
       };
 
-      const startedAt = Date.now();
-      const watchdog = AU_TIMING ? setInterval(() => dumpSlot(slot, startedAt), 30000) : undefined;
       try {
         await body(ctx);
       } finally {
-        if (watchdog) clearInterval(watchdog);
         // A killed app can leave a keep-alive connection open, and close()
         // waits for those.
         if (run.signal.aborted) httpServer.closeAllConnections();
         await new Promise<void>((resolve) => httpServer.close(() => resolve()));
-      }
-    };
-
-    // Prints what a long-running task is doing: its phase, the tail of its
-    // ShipIt log, and the fixture, ShipIt and Gatekeeper processes.
-    const dumpSlot = (slot: Slot, startedAt: number) => {
-      const secs = (t: number) => Math.round((Date.now() - t) / 1000);
-      aulog(
-        `WATCHDOG slot${slot.index} "${slot.title}" running ${secs(startedAt)}s, phase=${slot.phase} for ${secs(slot.phaseAt)}s`
-      );
-      try {
-        const lines = fs.readFileSync(path.join(slot.cacheDir, 'ShipIt_stderr.log'), 'utf8').trim().split('\n');
-        for (const line of lines.slice(-12)) aulog(`  shipit${slot.index}| ${line.slice(0, 240)}`);
-      } catch {
-        aulog(`  shipit${slot.index}| (no ShipIt_stderr.log yet)`);
-      }
-      const ps = cp.spawnSync('/bin/ps', ['-axo', 'pid,ppid,etime,%cpu,command']).stdout?.toString() ?? '';
-      for (const line of ps.split('\n')) {
-        if (/electron-update-spec|ShipIt|ditto|syspolicyd|XprotectService/.test(line)) {
-          aulog(`  ps| ${line.slice(0, 240)}`);
-        }
-      }
-      // ShipIt's install-attempt counter lives in the ShipIt label's own
-      // defaults domain, not the app's; after 3 it aborts every install.
-      const attempts = cp.spawnSync('defaults', ['read', slot.shipItLabel]).stdout?.toString().trim() ?? '';
-      aulog(`  defaults ${slot.shipItLabel}| ${attempts.replace(/\s+/g, ' ').slice(0, 200) || '(none)'}`);
-      try {
-        for (const entry of fs.readdirSync(slot.cacheDir)) aulog(`  cache${slot.index}| ${entry}`);
-      } catch {
-        aulog(`  cache${slot.index}| (no cache dir)`);
       }
     };
 
