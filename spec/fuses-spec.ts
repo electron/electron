@@ -170,7 +170,10 @@ describe('fuses', () => {
       });
       await bw.loadFile(fixture);
       const argv: string[] = await bw.webContents.executeJavaScript('process.argv');
-      bw.destroy();
+      // Deliberately left open. The remote-control fixture has no
+      // 'window-all-closed' handler, so destroying the last window quits the
+      // app and any later remotely() call fails with "socket hang up".
+      // startApp()'s defer() kills the app anyway.
       const valueOf = (name: string) => {
         const arg = argv.find((a: string) => a.startsWith(`--${name}=`));
         return arg ? arg.slice(name.length + 3) : '';
