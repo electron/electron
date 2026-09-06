@@ -101,6 +101,7 @@ class DevToolsEyeDropper;
 namespace electron {
 
 class DevToolsContextMenu;
+class DraggableRegionDebugger;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
@@ -467,6 +468,11 @@ class WebContents final : public ExclusiveAccessContext,
   void PDFReadyToPrint();
 
   SkRegion* draggable_region();
+
+  // Null unless ELECTRON_DEBUG_DRAGGABLE_REGIONS is in effect.
+  DraggableRegionDebugger* draggable_region_debugger() const {
+    return draggable_region_debugger_.get();
+  }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -929,6 +935,11 @@ class WebContents final : public ExclusiveAccessContext,
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::optional<SkRegion> draggable_region_;
+
+  // Only set when ELECTRON_DEBUG_DRAGGABLE_REGIONS is in effect, see
+  // DraggableRegionDebugger::IsEnabled(). Declared after
+  // |inspectable_web_contents_| because it observes views owned by it.
+  std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

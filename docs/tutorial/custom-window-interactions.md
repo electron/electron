@@ -47,6 +47,11 @@ To prevent this, you need to disable text selection within a draggable area like
 }
 ```
 
+> [!TIP]
+> When developing, set the [`ELECTRON_DEBUG_DRAGGABLE_REGIONS`](../api/environment-variables.md#electron_debug_draggable_regions)
+> environment variable to paint the draggable regions Electron is using on top
+> of the window, and to log how often they change and what they cost.
+
 ### Tip: disable context menus
 
 On some platforms, the draggable area will be treated as a non-client frame, so
