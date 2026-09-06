@@ -90,9 +90,22 @@ class SlotPool {
    * later run shares its bundle id, ShipIt job or cache dir.
    */
   retire() {
+    this.release(this.mint());
+  }
+
+  /**
+   * A slot right now: a free one, or a fresh one. For a retry, which is the
+   * test mocha is blocked on; queueing it behind lookahead runs for tests
+   * that come later only adds their time to the failure.
+   */
+  acquireNow(): Slot {
+    return this.free.shift() ?? this.mint();
+  }
+
+  private mint() {
     const fresh = makeSlot(this.nextIndex++);
     this.slots.push(fresh);
-    this.release(fresh);
+    return fresh;
   }
 
   acquire({ jumpQueue = false } = {}): Promise<Slot> {
@@ -454,6 +467,35 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
 
     const pathPrefixes = (paths: Iterable<string>) => [...paths].flatMap((p) => [p, `/private${p}`]);
 
+    // What was going on when a run overran: the busiest processes, everything
+    // running from the run's apps, and ShipIt's log for the slot. Printed once
+    // per overrun so a slow runner can be told from a stuck one.
+    const describeOverrun = async (slot: Slot, run: RunState) => {
+      const lines: string[] = [];
+      try {
+        const prefixes = pathPrefixes(run.appPaths);
+        const procs = await psList();
+        const ours = procs.filter((p) => p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix)));
+        const busiest = [...procs].sort((a, b) => (b.cpu ?? 0) - (a.cpu ?? 0)).slice(0, 8);
+        const show = (p: (typeof procs)[number]) =>
+          `    pid=${p.pid} cpu=${p.cpu ?? '?'}% mem=${p.memory ?? '?'}% ${(p.cmd ?? p.name).slice(0, 160)}`;
+        lines.push('  busiest processes:', ...busiest.map(show));
+        lines.push(`  processes from this run's apps (${ours.length}):`, ...ours.map(show));
+      } catch (err) {
+        lines.push(`  (could not list processes: ${err})`);
+      }
+      for (const name of ['ShipIt_stderr.log', 'ShipIt_stdout.log']) {
+        try {
+          const text = await fs.promises.readFile(path.join(slot.cacheDir, name), 'utf8');
+          const tail = text.trimEnd().split('\n').slice(-25);
+          lines.push(`  ${name} (last ${tail.length} lines):`, ...tail.map((l) => `    ${l.slice(0, 200)}`));
+        } catch {
+          lines.push(`  ${name}: none`);
+        }
+      }
+      return lines.join('\n');
+    };
+
     // Kills what a run left behind and clears its slot's ShipIt job and
     // downloaded updates, so the next run on the slot starts clean. Returns
     // false if the slot could not be cleaned, in which case the caller retires
@@ -478,24 +520,10 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
 
     const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
       const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
-      // A run's budget only starts once it has a slot. A retry, though, is the
-      // test mocha is waiting on right now; if every slot is held by a lookahead
-      // run that is itself stuck, waiting for one is unbounded and silent. Give
-      // it the budget to get a slot, then make one.
-      let slot: Slot;
-      if (jumpQueue) {
-        const acquired = pool.acquire({ jumpQueue });
-        const timeout = delay(budget).then(() => null);
-        const first = await Promise.race([acquired, timeout]);
-        if (first) {
-          slot = first;
-        } else {
-          pool.retire();
-          slot = await acquired;
-        }
-      } else {
-        slot = await pool.acquire({ jumpQueue });
-      }
+      // A run's budget only starts once it has a slot. A retry is the test
+      // mocha is waiting on right now, so it gets one immediately rather than
+      // queueing behind lookahead runs for tests that come later.
+      const slot = jumpQueue ? pool.acquireNow() : await pool.acquire();
       if (draining || generation !== task.generation) {
         pool.release(slot);
         return;
@@ -532,6 +560,11 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
         await Promise.race([body, stopped]);
       } catch (err) {
         if (controller.signal.aborted) {
+          if (!draining) {
+            console.log(
+              `Overrun of "${task.title}" in slot ${slot.index} (${run.phase}):\n${await describeOverrun(slot, run)}`
+            );
+          }
           // Killing the run's processes rejects whatever the body is waiting on.
           await stopRun(slot, run);
           retire = !(await Promise.race([settled, delay(ABORT_GRACE_MS).then(() => false)]));
