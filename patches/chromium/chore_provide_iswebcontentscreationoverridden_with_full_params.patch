@@ -80,7 +80,7 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-index 9e27bdcb53a5030b4226560272138debce274d56..cb547369872c759aaaa60fd8977b8345222790da 100644
+index de5bcc499b437555c33ff788ec7681c679d9e643..74beda4a876debb4efa23723910ea8939faec22d 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 @@ -994,8 +994,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
@@ -103,7 +103,7 @@ index 9e27bdcb53a5030b4226560272138debce274d56..cb547369872c759aaaa60fd8977b8345
  
  content::WebContents* BrowserWebContentsDelegate::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
-index 05a9d7f7f21841412e0b2435e8d95a9c7598d8eb..81f085c6cc16787af7f4425be46e199d522ccc86 100644
+index 3a11bface21f170408b103228cb139f9b3844f90..e444e5681d8723d2c80929d809f24bb976384712 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
 @@ -164,8 +164,7 @@ class BrowserWebContentsDelegate : public content::WebContentsDelegate {
@@ -145,10 +145,10 @@ index 5e440426ed56c423d77a60e18ee592f506f2ae88..4c6804eb7c56fdfda7afc2804f300870
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index fcff4d9474d180d54d7332fd619ada26dc81ef2b..421354ec0821ef806dae5fb2ee00e8a4bed91ded 100644
+index 06bfa1f5a618d4463297699198cd35409bf50fde..784b4a752df2c2695eb59cdf1693a5723f1ad3cc 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -107,8 +107,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -109,8 +109,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -159,10 +159,10 @@ index fcff4d9474d180d54d7332fd619ada26dc81ef2b..421354ec0821ef806dae5fb2ee00e8a4
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-index f58d00744a5efefdd8b84e034f27ac2f486bc261..5d769a43308eb3a02d22f712a47c0be93566fc2b 100644
+index 62068d7e3cab1ceb198e1f847d64cba3e47cb76a..2d06883016b5d9e367d2aa3a273b6a737018f8ee 100644
 --- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
 +++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-@@ -432,8 +432,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
+@@ -434,8 +434,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -251,7 +251,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ef5291544a95a491ff26b4ba4383d58ba799e0c4..3f6adff654507ff6fbc20e5f238268d57ad7f0a3 100644
+index 24e5978cb9f63fdff0b9f043af0d693ecbdf9d0c..29ac9d245ff8718ffe701412e5cb926da53aae2b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5641,8 +5641,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -265,7 +265,7 @@ index ef5291544a95a491ff26b4ba4383d58ba799e0c4..3f6adff654507ff6fbc20e5f238268d5
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index b36926296ac1b406362ac567957cfff9cb18bd41..9f8261ed70d50d332e58d63ba899dec049f32013 100644
+index 4bb126511a074e1d4dd30ace4fa32ef30519b970..acce91a2d3e2d1223c4720ad53325a0bcacb8414 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -162,8 +162,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -279,7 +279,7 @@ index b36926296ac1b406362ac567957cfff9cb18bd41..9f8261ed70d50d332e58d63ba899dec0
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7ad0f8004e2f454b71d866d533f69ae88c301f86..9714133e32feee58ce0dd012960bd21b6fd0e718 100644
+index 268683ba23141a68cd146a62a4fe8269482d0044..dfdb2df0240f9238eca04e667abf619271fd75f0 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -384,8 +384,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -413,10 +413,10 @@ index 43b46dac8989818606009abfaab7523b6beddfc0..a058b5a8a15fae1aca52883ad27cddd3
                            const content::GlobalRenderFrameHostId& opener_id,
                            const std::string& frame_name,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 6074ce3d7ee3a085e1e630f6b2a9ea719accc0ca..f2a2d9a92a2c8be58c6bee40dbe407ff53ad7771 100644
+index 8d722d60b9f3d4a09e1c52fd7ea7aaa5914967b4..aeaef8f2464dcb3afa2871383389e1da6508ca15 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -241,8 +241,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -245,8 +245,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

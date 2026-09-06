@@ -91,10 +91,10 @@ index d9983abcd27cb91c62c1a45689813bd01328b245..8bd8885d7d9c59d4059a3c33b6d3d6df
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 72f103053983f59fff9ba0d8580a3401a972bff2..7ffed261bf14f4d3105b42496373eaee43386135 100644
+index 36a3f7f365daa1071e764ebd8e61c4c66af1b982..9514cd28a574fbec18c4444fbe7be3e261c5db45 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12776,5 +12776,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12774,5 +12774,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -269,18 +269,18 @@ index 17c97038dc0fdb97021ee4b1aa3c8a4ca459fb2b..71d697d738f6aee8cbbb700f1e6ad9ac
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9c463cf7d 100644
+index 3602b0cc807dde1b6934ab0b1937f1d8debd4614..f2ab915c96f6a53f6d032f4c01fd6f0582a7d04c 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
-@@ -4,6 +4,7 @@
- 
- #include "third_party/blink/renderer/platform/geometry/path_builder.h"
+@@ -9,6 +9,7 @@
+ #include <optional>
+ #include <utility>
  
 +#include "electron/shell/renderer/electron_smooth_round_rect.h"
  #include "third_party/blink/renderer/platform/geometry/contoured_rect.h"
- #include "third_party/blink/renderer/platform/geometry/infinite_int_rect.h"
  #include "third_party/blink/renderer/platform/geometry/path.h"
-@@ -250,6 +251,32 @@ PathBuilder& PathBuilder::AddContouredRect(
+ #include "third_party/blink/renderer/platform/geometry/path_types.h"
+@@ -374,6 +375,32 @@ PathBuilder& PathBuilder::AddContouredRect(
      AddRoundedRect(target_rect);
      return *this;
    }
@@ -312,9 +312,9 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
 +
    const FloatRoundedRect& origin_rect = contoured_rect.GetOriginRect();
  
-   auto DrawAsSinglePath = [&]() {
+   auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 43be24f50a97eea7d086819a49c20d0d139da0fa..52b223b26ce4692f12725aaf75a048acdee1b961 100644
+index 715e1731421828f1e39d1dea7f4e34a63fe3c7f9..c943b99b7d98dbfaec676e2ff492ce32965bcc0a 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@
