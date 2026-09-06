@@ -852,22 +852,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     std::vector<std::string> args,
     std::vector<std::string> exec_args,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-  // Feed node the path to initialization script.
-  std::string process_type;
-  switch (browser_env_) {
-    case BrowserEnvironment::kBrowser:
-      process_type = "browser";
-      break;
-    case BrowserEnvironment::kRenderer:
-      process_type = "renderer";
-      break;
-    case BrowserEnvironment::kWorker:
-      process_type = "worker";
-      break;
-    case BrowserEnvironment::kUtility:
-      process_type = "utility";
-      break;
-  }
+  const std::string process_type(ProcessType());
 
   // Electron: when consuming the embedded Node startup snapshot, the caller
   // passed an empty context -- the main context is materialized by
@@ -908,10 +893,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       gin_context_holder->SetContext(ctx);
     }
   };
-
-  std::string init_script = "electron/js2c/" + process_type + "_init";
-
-  args.insert(args.begin() + 1, init_script);
 
   // The Node startup snapshot's per-isolate data (templates, primordials)
   // is fed to CreateIsolateData so the bootstrap is deserialized.
@@ -1035,8 +1016,44 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   // node-internal entries are kept. A no-op merge when bootstrapped from
   // scratch.
   electron::util::FeedEnvironmentCodeCache(env);
-  node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
+
+  // Node pauses for --inspect-brk before an embedder entry point runs; mask it
+  // so the pause stays on the app's own entry rather than the first line of
+  // the init bundle. lib/common/init.ts re-reads the options once restored.
+  node::DebugOptions* const debug_options = env->options()->get_debug_options();
+  const bool break_first_line = debug_options->break_first_line;
+  debug_options->break_first_line = false;
+  const std::string bundle_id =
+      "electron/js2c/" + std::string(ProcessType()) + "_init";
+  node::LoadEnvironment(
+      env,
+      [&](const node::StartExecutionCallbackInfo& info) {
+        debug_options->break_first_line = break_first_line;
+        v8::Isolate* const isolate = env->isolate();
+        v8::LocalVector<v8::String> params =
+            js2c::MakeBundleParams(isolate, js2c::kInitBundleParams);
+        v8::LocalVector<v8::Value> args(
+            isolate, {info.process_object,
+                      env->principal_realm()->builtin_module_require()});
+        return electron::util::CompileAndCall(
+            isolate, env->context(), bundle_id.c_str(), &params, &args);
+      },
+      &OnNodePreload);
+  debug_options->break_first_line = break_first_line;
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
+}
+
+std::string_view NodeBindings::ProcessType() const {
+  switch (browser_env_) {
+    case BrowserEnvironment::kBrowser:
+      return "browser";
+    case BrowserEnvironment::kRenderer:
+      return "renderer";
+    case BrowserEnvironment::kWorker:
+      return "worker";
+    case BrowserEnvironment::kUtility:
+      return "utility";
+  }
 }
 
 void NodeBindings::PrepareEmbedThread() {
@@ -1225,7 +1242,7 @@ void OnNodePreload(node::Environment* env,
 
   // Execute lib/node/init.ts.
   v8::LocalVector<v8::String> bundle_params =
-      js2c::MakeBundleParams(env->isolate(), js2c::kNodeInitParams);
+      js2c::MakeBundleParams(env->isolate(), js2c::kInitBundleParams);
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
   electron::util::CompileAndCall(env->isolate(), env->context(),
                                  js2c::kNodeInitId, &bundle_params,

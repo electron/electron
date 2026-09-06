@@ -2,10 +2,6 @@ import * as path from 'path';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
-// We modified the original process.argv to let node.js load the
-// init.js, we need to restore it here.
-process.argv.splice(1, 1);
-
 // Import common settings.
 require('@electron/internal/common/init');
 
