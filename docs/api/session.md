@@ -1192,8 +1192,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
          while recording). Default is `false`.
-* `opts` Object (optional) _macOS_ _Experimental_
-  * `useSystemPicker` Boolean - true if the available native system picker should be used. Default is `false`. _macOS_ _Experimental_
+* `opts` Object (optional) _macOS_ _Linux_ _Experimental_
+  * `useSystemPicker` Boolean - true if the available native system picker should be used. Default is `false`. _macOS_ _Linux_ _Experimental_
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
@@ -1201,8 +1201,8 @@ via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 access to.
 
 `useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
-This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
-is set to `true`, the handler will not be invoked.
+This option is experimental, and currently available on macOS 15+ and Linux with Wayland (requires PipeWire). If the system picker
+is available and `useSystemPicker` is set to `true`, the handler will not be invoked.
 
 ```js
 const { session, desktopCapturer } = require('electron')
