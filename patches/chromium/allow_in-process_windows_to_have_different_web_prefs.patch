@@ -8,10 +8,10 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..a1090f2319a790ed6fd7d7a3f8c4eac6b31876ec 100644
+index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..4c144a300c966dbedffa0665335fa359e2a56c2d 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -149,6 +149,18 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
    out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
@@ -19,7 +19,6 @@ index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..a1090f2319a790ed6fd7d7a3f8c4eac6
 +  out->context_isolation = data.context_isolation();
 +  out->is_webview = data.is_webview();
 +  out->hidden_page = data.hidden_page();
-+  out->offscreen = data.offscreen();
 +  out->node_integration = data.node_integration();
 +  out->node_integration_in_worker = data.node_integration_in_worker();
 +  out->node_integration_in_sub_frames = data.node_integration_in_sub_frames();
@@ -32,7 +31,7 @@ index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..a1090f2319a790ed6fd7d7a3f8c4eac6
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c26cf5f271 100644
+index b042d68a4d06b59942775e04ef81a32b347e58a3..aa43d9c542e64e2e2004f2b5654dfd1c97c6b9bb 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -43,7 +42,7 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -481,6 +482,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -481,6 +482,18 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // Consumed only in chrome/renderer/ (not by Blink).
    bool is_indigo_onboarding = false;
  
@@ -51,7 +50,6 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
 +  bool context_isolation = false;
 +  bool is_webview = false;
 +  bool hidden_page = false;
-+  bool offscreen = false;
 +  bool node_integration = false;
 +  bool node_integration_in_worker = false;
 +  bool node_integration_in_sub_frames = false;
@@ -64,7 +62,7 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 91593851bc33781ca0a986f0100a5f334847fec0..c8959182b8657ce7842918b6e9eb58311cebd8cb 100644
+index 91593851bc33781ca0a986f0100a5f334847fec0..5683627c04040c0358499a36c8a96e52f474a497 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -8,6 +8,7 @@
@@ -75,7 +73,7 @@ index 91593851bc33781ca0a986f0100a5f334847fec0..c8959182b8657ce7842918b6e9eb5831
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -447,6 +448,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -447,6 +448,48 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.stylus_handwriting_enabled;
    }
  
@@ -90,10 +88,6 @@ index 91593851bc33781ca0a986f0100a5f334847fec0..c8959182b8657ce7842918b6e9eb5831
 +
 +  static bool hidden_page(const blink::web_pref::WebPreferences& r) {
 +    return r.hidden_page;
-+  }
-+
-+  static bool offscreen(const blink::web_pref::WebPreferences& r) {
-+    return r.offscreen;
 +  }
 +
 +  static bool node_integration(const blink::web_pref::WebPreferences& r) {
@@ -129,7 +123,7 @@ index 91593851bc33781ca0a986f0100a5f334847fec0..c8959182b8657ce7842918b6e9eb5831
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..a4a1271ee61d0dd21679cd802b6cb72b12fac225 100644
+index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..d43f94fc2690d657f4352b984e2344fe1e2e0db4 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -4,6 +4,7 @@
@@ -140,7 +134,7 @@ index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..a4a1271ee61d0dd21679cd802b6cb72b
  import "mojo/public/mojom/base/string16.mojom";
  import "mojo/public/mojom/base/time.mojom";
  import "skia/public/mojom/skcolor.mojom";
-@@ -224,6 +225,19 @@ struct WebPreferences {
+@@ -224,6 +225,18 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
@@ -148,7 +142,6 @@ index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..a4a1271ee61d0dd21679cd802b6cb72b
 +  bool context_isolation;
 +  bool is_webview;
 +  bool hidden_page;
-+  bool offscreen;
 +  bool node_integration;
 +  bool node_integration_in_worker;
 +  bool node_integration_in_sub_frames;
