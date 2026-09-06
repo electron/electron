@@ -1612,21 +1612,48 @@ describe('BrowserWindow module', () => {
       });
 
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
-        // Show to focus app, then remove existing window
-        w.show();
-        w.destroy();
-
-        // The test needs the app inactive and Finder frontmost. The app may
-        // already be inactive (an earlier spec can leave it unable to
-        // reactivate itself), in which case there is no activation to resign.
+        // TEMPORARY INSTRUMENTATION: this test hangs on the arm64 MAS shard
+        // when api-app-spec runs first. Every wait is labelled and bounded so
+        // the CI log says which step never completes and what state the app
+        // is in at each one.
         const getActiveAppOsa =
           'tell application "System Events" to get the name of the first process whose frontmost is true';
-        const activeApp = () => childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
-        const isInactive = app.isActive() ? once(app, 'did-resign-active') : Promise.resolve();
+        const activeApp = () => {
+          try {
+            return childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+          } catch (err) {
+            return `(osascript failed: ${err})`;
+          }
+        };
+        const state = (label: string) =>
+          console.log(
+            `[panel-test] ${label}: app.isActive=${app.isActive()} app.isHidden=${app.isHidden()} dock.isVisible=${app.dock?.isVisible()} frontmost=${activeApp()} windows=${BrowserWindow.getAllWindows().length}`
+          );
+        const bounded = async <T>(label: string, p: Promise<T>, ms = 10000): Promise<T | 'timeout'> => {
+          const t = new Promise<'timeout'>((resolve) => syncSetTimeout(() => resolve('timeout'), ms));
+          const r = await Promise.race([p, t]);
+          console.log(`[panel-test] await ${label}: ${r === 'timeout' ? 'TIMED OUT' : 'ok'}`);
+          return r;
+        };
+
+        state('start');
+        // Show to focus app, then remove existing window
+        const shownFirst = once(w, 'show');
+        w.show();
+        await bounded('first window show', shownFirst, 5000);
+        state('after first show');
+        w.destroy();
+
+        const isInactive: Promise<unknown> = app.isActive() ? once(app, 'did-resign-active') : Promise.resolve();
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
         defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
-        await isInactive;
-        await waitUntil(() => activeApp() === 'Finder');
+        await bounded('did-resign-active', isInactive);
+        state('after Finder activate');
+        await bounded(
+          'Finder frontmost',
+          waitUntil(() => activeApp() === 'Finder')
+        );
+        state('after Finder frontmost');
 
         // Create new window
         w = new BrowserWindow({
@@ -1643,8 +1670,25 @@ describe('BrowserWindow module', () => {
         w.show();
         w.focus();
 
-        await isShow;
-        await isFocus;
+        await bounded('panel show', isShow);
+        const focused = await bounded('panel focus', isFocus);
+        state('after panel show+focus');
+
+        if (focused === 'timeout') {
+          // Probe the activation-policy hypothesis: does re-showing the dock
+          // let the panel take focus?
+          await app.dock?.show();
+          state('after dock.show()');
+          const refocus = once(w, 'focus');
+          w.focus();
+          await bounded('panel focus after dock.show()', refocus, 5000);
+          state('after refocus');
+          // And can the app activate itself at all now?
+          app.focus({ steal: true });
+          await bounded('did-become-active after steal', once(app, 'did-become-active'), 5000);
+          state('after app.focus steal');
+          throw new Error('panel never received focus (see [panel-test] lines above)');
+        }
 
         expect(activeApp()).to.equal('Finder');
       });
