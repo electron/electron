@@ -50,6 +50,7 @@
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"
@@ -72,6 +73,7 @@
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
 #include "content/public/common/page_visibility_state.h"
@@ -1826,7 +1828,26 @@ void WebContents::RendererUnresponsive(
     content::WebContents* source,
     content::RenderWidgetHost* render_widget_host,
     base::RepeatingClosure hang_monitor_restarter) {
-  Emit("unresponsive");
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  gin::Dictionary dict(isolate, event_object);
+
+  auto* web_contents_impl = static_cast<content::WebContentsImpl*>(source);
+  bool should_ignore = web_contents_impl->ShouldIgnoreUnresponsiveRenderer();
+  dict.Set("shouldIgnore", should_ignore);
+
+  bool visible = source->GetVisibility() == content::Visibility::VISIBLE;
+  dict.Set("visible", visible);
+
+  auto* rwh_impl =
+      static_cast<content::RenderWidgetHostImpl*>(render_widget_host);
+  dict.Set("rendererInitialized", rwh_impl->renderer_initialized());
+
+  EmitWithoutEvent("-unresponsive", event_object);
 }
 
 bool WebContents::SaveFrame(const GURL& url,
