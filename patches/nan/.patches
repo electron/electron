@@ -1,2 +1,3 @@
 8236212_api_remove_deprecated_methods_pt_2.patch
 fix_support_v8_15_3_and_later.patch
+chore_add_yarnrc_yml_and_yarn_lock_file_to_use_yarn_v4.patch

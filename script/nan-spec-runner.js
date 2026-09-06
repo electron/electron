@@ -92,11 +92,6 @@ async function main() {
     env.LDFLAGS = ldflags;
   }
 
-  // nan ships no lockfile; give yarn one so it treats nan as its own project and
-  // hardened installs on CI have something to check against.
-  fs.copyFileSync(path.join(__dirname, 'nan', 'yarn.lock'), path.join(NAN_DIR, 'yarn.lock'));
-  env.YARN_NODE_LINKER = 'node-modules';
-
   const { status: installStatus, signal: installSignal } = cp.spawnSync(
     process.execPath,
     [YARN_SCRIPT_PATH, 'install'],
