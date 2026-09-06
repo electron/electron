@@ -43,6 +43,12 @@ const RUN_BUDGET_MULTIPLIER = 2;
 const RUN_BUDGET_OVERRIDE_MS = parseInt(process.env.ELECTRON_SPEC_UPDATER_RUN_BUDGET_MS || '', 10);
 // How long a stopped run gets to unwind before its slot is retired.
 const ABORT_GRACE_MS = 20000;
+// How long stopRun waits for a killed process group to be gone, and then for
+// the slot's update directories to become removable, before giving up on the
+// slot. A SIGKILL'd app can hold files in its update directory open for a
+// moment, and ShipIt (a launchd job, not our child) exits on its own schedule.
+const KILL_WAIT_MS = 5000;
+const CLEANUP_WAIT_MS = 5000;
 
 // Squirrel derives its ShipIt launchd job, XPC name and cache dir from
 // CFBundleIdentifier, so concurrent apps each need their own.
@@ -163,6 +169,10 @@ type Task = {
 type RunState = {
   signal: AbortSignal;
   children: Set<cp.ChildProcess>;
+  // Every app is spawned as its own process group leader, so it and anything
+  // it starts (helpers, ditto) can be killed together. ShipIt is not in here:
+  // launchd spawns it, so it is stopped by removing its job.
+  groups: Set<number>;
   // Fixture apps the run launched. The app, its ShipIt and the relaunched app
   // all run from these paths.
   appPaths: Set<string>;
@@ -215,7 +225,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   };
 
   const spawnAppWithHandle = (appPath: string, args: string[] = []) => {
-    return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+    return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args, { detached: true });
   };
 
   const logOnError = (what: any, fn: () => void) => {
@@ -287,6 +297,22 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
   const cleanSquirrelCache = async (slot: Slot) => {
     for (const dir of await getUpdateDirectoriesInCache(slot)) {
       await fs.promises.rm(dir, { recursive: true, force: true });
+    }
+  };
+
+  // A directory a just-killed process still has files open in can briefly
+  // refuse removal (ENOTEMPTY); keep trying for a while. Returns false rather
+  // than throwing, so a cleanup failure never replaces a run's own error.
+  const removeWithRetries = async (remove: () => Promise<void>, timeoutMs: number) => {
+    const deadline = Date.now() + timeoutMs;
+    while (true) {
+      try {
+        await remove();
+        return true;
+      } catch {
+        if (Date.now() > deadline) return false;
+        await delay(250);
+      }
     }
   };
 
@@ -385,37 +411,87 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
     let scheduled = false;
     let draining = false;
 
-    // Kills what a run left behind and clears its slot's ShipIt job and
-    // downloaded updates, so the next run on the slot starts clean.
-    const stopRun = async (slot: Slot, run: RunState) => {
-      for (const child of run.children) child.kill('SIGKILL');
-      const prefixes = [...run.appPaths].flatMap((appPath) => [appPath, `/private${appPath}`]);
-      for (const p of await psList()) {
-        if (p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix))) {
-          try {
-            process.kill(p.pid, 'SIGKILL');
-          } catch {
-            // Already gone.
-          }
-        }
+    const killGroup = (pgid: number) => {
+      try {
+        process.kill(-pgid, 'SIGKILL');
+      } catch {
+        // Already gone.
       }
+    };
+
+    const groupIsGone = (pgid: number) => {
+      try {
+        process.kill(-pgid, 0);
+        return false;
+      } catch {
+        return true;
+      }
+    };
+
+    const waitUntil = async (condition: () => boolean, timeoutMs: number) => {
+      const deadline = Date.now() + timeoutMs;
+      while (!condition()) {
+        if (Date.now() > deadline) return false;
+        await delay(100);
+      }
+      return true;
+    };
+
+    // Kills what a run left behind and clears its slot's ShipIt job and
+    // downloaded updates, so the next run on the slot starts clean. Returns
+    // false if the slot could not be cleaned, in which case the caller retires
+    // it. Never throws: a cleanup error must not replace the run's own error.
+    const stopRun = async (slot: Slot, run: RunState): Promise<boolean> => {
+      for (const pgid of run.groups) killGroup(pgid);
+      for (const child of run.children) child.kill('SIGKILL');
+      // ShipIt is a launchd job; removing it stops it and its re-exec.
       cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
-      await cleanSquirrelCache(slot);
+
+      const gone = await waitUntil(() => [...run.groups].every(groupIsGone), KILL_WAIT_MS);
+      if (!gone) return false;
+
+      // The kill is delivered, but the files the app had open in its update
+      // directory can take a moment to close, and ShipIt's exit is not ours to
+      // observe, so removing the directories can briefly fail.
+      return removeWithRetries(() => cleanSquirrelCache(slot), CLEANUP_WAIT_MS);
     };
 
     const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
-      const slot = await pool.acquire({ jumpQueue });
+      const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
+      // A run's budget only starts once it has a slot. A retry, though, is the
+      // test mocha is waiting on right now; if every slot is held by a lookahead
+      // run that is itself stuck, waiting for one is unbounded and silent. Give
+      // it the budget to get a slot, then make one.
+      let slot: Slot;
+      if (jumpQueue) {
+        const acquired = pool.acquire({ jumpQueue });
+        const timeout = delay(budget).then(() => null);
+        const first = await Promise.race([acquired, timeout]);
+        if (first) {
+          slot = first;
+        } else {
+          pool.retire();
+          slot = await acquired;
+        }
+      } else {
+        slot = await pool.acquire({ jumpQueue });
+      }
       if (draining || generation !== task.generation) {
         pool.release(slot);
         return;
       }
 
-      const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
       const controller = new AbortController();
       task.controller = controller;
       task.started = true;
 
-      const run: RunState = { signal: controller.signal, children: new Set(), appPaths: new Set(), phase: 'setup' };
+      const run: RunState = {
+        signal: controller.signal,
+        children: new Set(),
+        groups: new Set(),
+        appPaths: new Set(),
+        phase: 'setup'
+      };
       const stopped = new Promise<never>((resolve, reject) => {
         controller.signal.addEventListener('abort', () => reject(controller.signal.reason), { once: true });
       });
@@ -441,8 +517,10 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
           retire = !(await Promise.race([settled, delay(ABORT_GRACE_MS).then(() => false)]));
         }
         // After any failure, clean up what the run left. After an abort this
-        // also catches anything the body started while unwinding.
-        await stopRun(slot, run);
+        // also catches anything the body started while unwinding. If the slot
+        // cannot be cleaned, retire it rather than hand a dirty one to the
+        // next run.
+        if (!(await stopRun(slot, run))) retire = true;
         throw err;
       } finally {
         clearTimeout(timer);
@@ -499,7 +577,8 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
       for (const slot of pool.slots) {
         cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
         cp.spawnSync('defaults', ['delete', slot.bundleId]);
-        await fs.promises.rm(slot.cacheDir, { recursive: true, force: true });
+        // Runs aborted just above may still be releasing their files.
+        await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
       }
     });
 
@@ -507,8 +586,9 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
     // overrunning run can kill it.
     const spawnForRun = (run: RunState, cmd: string, args: string[]) => {
       let out = '';
-      const child = cp.spawn(cmd, args);
+      const child = cp.spawn(cmd, args, { detached: true });
       run.children.add(child);
+      if (child.pid) run.groups.add(child.pid);
       child.stdout.on('data', (chunk: Buffer) => {
         out += chunk.toString();
       });
@@ -570,6 +650,7 @@ ifdescribe(shouldRunCodesignTests && !process.env.IS_UBSAN)('autoUpdater behavio
           run.appPaths.add(appPath);
           const child = spawnAppWithHandle(appPath, args);
           run.children.add(child);
+          if (child.pid) run.groups.add(child.pid);
           child.on('exit', () => run.children.delete(child));
           return child;
         },
