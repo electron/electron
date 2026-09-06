@@ -38,7 +38,7 @@ updates:
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
-    target-branch: 33-x-y
+    target-branch: 45-x-y
   - package-ecosystem: npm
     directories:
       - /
@@ -51,7 +51,7 @@ updates:
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
-    target-branch: 32-x-y
+    target-branch: 44-x-y
   - package-ecosystem: npm
     directories:
       - /
@@ -64,7 +64,7 @@ updates:
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
-    target-branch: 31-x-y
+    target-branch: 43-x-y
   - package-ecosystem: npm
     directories:
       - /
@@ -77,4 +77,4 @@ updates:
     labels:
       - "backport-check-skip"
     open-pull-requests-limit: 0
-    target-branch: 30-x-y
+    target-branch: 42-x-y
