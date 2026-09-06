@@ -33,6 +33,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
+#include "shell/browser/net/header_rules.h"
 #include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
@@ -44,34 +45,13 @@
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 
-static constexpr auto ResourceTypes =
-    base::MakeFixedFlatMap<std::string_view,
-                           extensions::WebRequestResourceType>({
-        {"cspReport", extensions::WebRequestResourceType::CSP_REPORT},
-        {"font", extensions::WebRequestResourceType::FONT},
-        {"image", extensions::WebRequestResourceType::IMAGE},
-        {"mainFrame", extensions::WebRequestResourceType::MAIN_FRAME},
-        {"media", extensions::WebRequestResourceType::MEDIA},
-        {"object", extensions::WebRequestResourceType::OBJECT},
-        {"ping", extensions::WebRequestResourceType::PING},
-        {"script", extensions::WebRequestResourceType::SCRIPT},
-        {"stylesheet", extensions::WebRequestResourceType::STYLESHEET},
-        {"subFrame", extensions::WebRequestResourceType::SUB_FRAME},
-        {"webSocket", extensions::WebRequestResourceType::WEB_SOCKET},
-        {"xhr", extensions::WebRequestResourceType::XHR},
-    });
-
 namespace gin {
 
 template <>
 struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    extensions::WebRequestResourceType type) {
-    for (const auto& [name, val] : ResourceTypes)
-      if (type == val)
-        return StringToV8(isolate, name);
-
-    return StringToV8(isolate, "other");
+    return StringToV8(isolate, electron::ResourceTypeName(type));
   }
 };
 
@@ -80,13 +60,6 @@ struct Converter<extensions::WebRequestResourceType> {
 namespace electron::api {
 
 namespace {
-
-extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
-  if (auto iter = ResourceTypes.find(value); iter != ResourceTypes.end())
-    return iter->second;
-
-  return extensions::WebRequestResourceType::OTHER;
-}
 
 // Convert HttpResponseHeaders to V8.
 //
@@ -364,7 +337,36 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
       .SetMethod("onErrorOccurred",
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnErrorOccurred>)
       .SetMethod("onCompleted",
-                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>)
+      .SetMethod("setHeaderRules", &WebRequest::SetHeaderRules)
+      .SetMethod("getHeaderRules", &WebRequest::GetHeaderRules);
+}
+
+void WebRequest::SetHeaderRules(gin::Arguments* args) {
+  v8::Local<v8::Value> arg;
+  base::ListValue list;
+  if (!args->GetNext(&arg) ||
+      !(arg->IsNull() || gin::ConvertFromV8(args->isolate(), arg, &list))) {
+    args->ThrowTypeError("setHeaderRules() takes an array of rules or null");
+    return;
+  }
+  scoped_refptr<const HeaderRules> rules;
+  if (!list.empty()) {
+    std::string error;
+    rules = HeaderRules::Compile(list, &error);
+    if (!rules) {
+      args->ThrowTypeError(error);
+      return;
+    }
+  }
+  header_rules_ = std::move(rules);
+  header_rules_value_ = std::move(list);
+  if (browser_context_)
+    browser_context_->intercept_state()->SetHeaderRules(header_rules_);
+}
+
+v8::Local<v8::Value> WebRequest::GetHeaderRules(v8::Isolate* isolate) const {
+  return gin::ConvertToV8(isolate, base::ValueView(header_rules_value_));
 }
 
 const gin::WrapperInfo* WebRequest::wrapper_info() const {
@@ -748,7 +750,7 @@ void WebRequest::SetListener(Event event,
   filter.AddUrlPatterns(filter_exclude_patterns, &filter, args, false);
 
   for (const std::string& filter_type : filter_types) {
-    auto type = ParseResourceType(filter_type);
+    auto type = ParseResourceTypeName(filter_type);
     if (type != extensions::WebRequestResourceType::OTHER) {
       filter.AddType(type);
     } else {
