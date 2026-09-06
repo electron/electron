@@ -29,6 +29,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/timer/elapsed_timer.h"
 #include "base/unguessable_token.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
@@ -121,6 +122,7 @@
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/draggable_region_debugger.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -2296,11 +2298,30 @@ void WebContents::OnFirstNonEmptyLayout(
 void WebContents::DraggableRegionsChanged(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions,
     content::WebContents* contents) {
+  if (!draggable_region_debugger_ && DraggableRegionDebugger::IsEnabled()) {
+    views::View* contents_view = nullptr;
+    if (inspectable_web_contents_ && !is_guest() && !IsOffScreen())
+      contents_view = inspectable_web_contents_->GetView()->GetContentsView();
+    draggable_region_debugger_ =
+        std::make_unique<DraggableRegionDebugger>(ID(), contents_view);
+  }
+
   if (owner_window() && owner_window()->has_frame()) {
+    if (draggable_region_debugger_) {
+      draggable_region_debugger_->OnRegionsChanged(regions, nullptr,
+                                                   base::TimeDelta());
+    }
     return;
   }
 
+  std::optional<base::ElapsedTimer> timer;
+  if (draggable_region_debugger_)
+    timer.emplace();
   draggable_region_ = DraggableRegionsToSkRegion(regions);
+  if (draggable_region_debugger_) {
+    draggable_region_debugger_->OnRegionsChanged(
+        regions, draggable_region_.get(), timer->Elapsed());
+  }
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
