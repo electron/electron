@@ -1090,6 +1090,7 @@ Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<i
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` string (optional) - A user agent originating the request.
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
   * `extraHeaders` string (optional) - Extra headers separated by "\n".
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
   * `baseURLForDataURL` string (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
@@ -1372,15 +1373,35 @@ win.webContents.on('unresponsive', async () => {
 })
 ```
 
-#### `contents.setUserAgent(userAgent)`
+#### `contents.setUserAgent(options)`
 
-* `userAgent` string
+* `options` (Object | string) - If `options` is a string, it is interpreted as
+the user agent string.
+  * `userAgent` string - The user agent string.
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
 
-Overrides the user agent for this web page.
+Overrides the user agent and metadata for this web page. Passing a bare string
+sets the user agent alone and leaves the metadata resolving through the session
+and then `app.userAgentMetadataFallback`.
+
+The override applies to this `WebContents`' frames and their dedicated workers,
+and is not carried into windows it opens — a child window resolves its own
+metadata from the session and app level. Shared workers, service workers and
+cross-process iframes read the process-wide value, so
+`app.userAgentMetadataFallback` is the only level that reaches them.
+
+This changes `navigator.userAgentData` and the client hints Blink attaches to
+subresource requests. It does not change the `Sec-CH-UA*` headers on navigation
+requests.
 
 #### `contents.getUserAgent()`
 
 Returns `string` - The user agent for this web page.
+
+#### `contents.getUserAgentMetadata()`
+
+Returns [`UserAgentMetadata`](structures/user-agent-metadata.md) - The user
+agent metadata for this web page.
 
 #### `contents.insertCSS(css[, options])`
 
