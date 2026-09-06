@@ -170,8 +170,9 @@ type RunState = {
   signal: AbortSignal;
   children: Set<cp.ChildProcess>;
   // Every app is spawned as its own process group leader, so it and anything
-  // it starts (helpers, ditto) can be killed together. ShipIt is not in here:
-  // launchd spawns it, so it is stopped by removing its job.
+  // it starts (helpers, ditto) can be killed together. ShipIt and the app it
+  // relaunches are not in here: launchd spawns ShipIt, so they are found by
+  // path instead (they all run from under an appPath).
   groups: Set<number>;
   // Fixture apps the run launched. The app, its ShipIt and the relaunched app
   // all run from these paths.
@@ -428,27 +429,46 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       }
     };
 
-    const waitUntil = async (condition: () => boolean, timeoutMs: number) => {
+    // Kills every process running from under one of the prefixes, and the
+    // given process groups, until nothing is left or the time is up. It loops
+    // because a kill can be followed by a spawn: launchd starts ShipIt for a
+    // job the app submitted just before it died, and a relaunched app submits
+    // a job of its own. Returns false if something outlived the wait.
+    const killEverything = async (groups: Iterable<number>, prefixes: string[], timeoutMs: number) => {
       const deadline = Date.now() + timeoutMs;
-      while (!condition()) {
+      while (true) {
+        for (const pgid of groups) killGroup(pgid);
+        const strays = (await psList()).filter((p) => p.cmd && prefixes.some((prefix) => p.cmd!.startsWith(prefix)));
+        for (const p of strays) {
+          try {
+            process.kill(p.pid, 'SIGKILL');
+          } catch {
+            // Already gone.
+          }
+        }
+        if (!strays.length && [...groups].every(groupIsGone)) return true;
         if (Date.now() > deadline) return false;
         await delay(100);
       }
-      return true;
     };
+
+    const pathPrefixes = (paths: Iterable<string>) => [...paths].flatMap((p) => [p, `/private${p}`]);
 
     // Kills what a run left behind and clears its slot's ShipIt job and
     // downloaded updates, so the next run on the slot starts clean. Returns
     // false if the slot could not be cleaned, in which case the caller retires
     // it. Never throws: a cleanup error must not replace the run's own error.
     const stopRun = async (slot: Slot, run: RunState): Promise<boolean> => {
-      for (const pgid of run.groups) killGroup(pgid);
       for (const child of run.children) child.kill('SIGKILL');
-      // ShipIt is a launchd job; removing it stops it and its re-exec.
+      // ShipIt is a launchd job, and the app it relaunches is launchd's child
+      // too, so neither is in a group of ours. Both run from under an appPath
+      // (ShipIt from the bundle's Squirrel.framework), so kill by path as well;
+      // removing the job alone does not reliably stop a ShipIt mid-install.
       cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
-
-      const gone = await waitUntil(() => [...run.groups].every(groupIsGone), KILL_WAIT_MS);
-      if (!gone) return false;
+      // A killed ShipIt leaves its install-attempt count behind, and after
+      // three it refuses to install at all on that label.
+      cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
+      if (!(await killEverything(run.groups, pathPrefixes(run.appPaths), KILL_WAIT_MS))) return false;
 
       // The kill is delivered, but the files the app had open in its update
       // directory can take a moment to close, and ShipIt's exit is not ours to
@@ -574,9 +594,13 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       this.timeout(10 * 60 * 1000);
       for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
       await Promise.allSettled([...inflight]);
+      // A stop that gave up on a slot (and retired it) may have left something
+      // running; every fixture app of this suite lives under this prefix.
+      for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
+      await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
       for (const slot of pool.slots) {
-        cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
         cp.spawnSync('defaults', ['delete', slot.bundleId]);
+        cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
         // Runs aborted just above may still be releasing their files.
         await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
       }
@@ -585,6 +609,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     // Like spawn() from codesign-helpers, but records the child so an
     // overrunning run can kill it.
     const spawnForRun = (run: RunState, cmd: string, args: string[]) => {
+      // A body unwinding from an abort must not start anything the stop
+      // already ran past.
+      if (run.signal.aborted) throw run.signal.reason;
       let out = '';
       const child = cp.spawn(cmd, args, { detached: true });
       run.children.add(child);
@@ -647,6 +674,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           ]);
         },
         spawnAppWithHandle: (appPath, args = []) => {
+          if (run.signal.aborted) throw run.signal.reason;
           run.appPaths.add(appPath);
           const child = spawnAppWithHandle(appPath, args);
           run.children.add(child);
