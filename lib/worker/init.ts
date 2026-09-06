@@ -12,7 +12,7 @@ const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_co
 const { makeRequireFunction } = __non_webpack_require__(
   'internal/modules/helpers'
 ) as typeof import('@node/lib/internal/modules/helpers');
-global.module = new Module('electron/js2c/worker_init');
+global.module = new Module('internal/electron/js2c/worker_init');
 global.require = makeRequireFunction(global.module) as NodeRequire;
 
 // Set the __filename to the path of html file if it is file: protocol.

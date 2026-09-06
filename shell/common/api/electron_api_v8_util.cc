@@ -101,10 +101,10 @@ void ExitImmediately(gin::Arguments* args) {
 }
 
 #if DCHECK_IS_ON()
-// Test-only (DCHECK builds): per-process map of builtin id (electron/js2c/*
-// bundles and Node's own lib/ builtins compiled so far in this process) ->
-// whether its build-time/snapshot code cache was consumed. Backs the
-// code-cache spec.
+// Test-only (DCHECK builds): per-process map of builtin id
+// (internal/electron/js2c/* bundles and Node's own lib/ builtins compiled so
+// far in this process) -> whether its build-time/snapshot code cache was
+// consumed. Backs the code-cache spec.
 v8::Local<v8::Value> GetJs2cCodeCacheStatus(v8::Isolate* isolate) {
   gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
   for (const auto& [id, accepted] : node::builtins::ElectronJs2cCacheStatus())
