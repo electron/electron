@@ -1635,6 +1635,26 @@ describe('protocol module', () => {
       }
     });
 
+    it('accepts headers with non-ASCII characters', async () => {
+      let receivedHeader: string | null = null;
+      protocol.handle('test-scheme', (req) => {
+        receivedHeader = req.headers.get('x-non-ascii');
+        return new Response('ok');
+      });
+      defer(() => {
+        protocol.unhandle('test-scheme');
+      });
+      const resp = await net.fetch('test-scheme://foo/', {
+        headers: {
+          'x-non-ascii': Buffer.from('zażółć', 'utf-8').toString('latin1')
+        }
+      });
+      expect(resp.status).to.equal(200);
+      expect(receivedHeader).to.be.a('string');
+      const decoded = Buffer.from(receivedHeader!, 'latin1').toString('utf-8');
+      expect(decoded).to.equal('zażółć');
+    });
+
     it('normalizes urls in standard schemes', async () => {
       // NB. 'app' is registered as a standard scheme in test setup.
       protocol.handle('app', (req) => new Response(req.url));
