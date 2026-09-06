@@ -249,6 +249,7 @@ class NativeWindow : public views::WidgetDelegate {
   virtual std::optional<gfx::Point> GetWindowButtonPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
+  virtual void SetSwipeGestureEnabled(bool enabled) {}
 #endif
 
 // whether windows should be ignored by mission control
@@ -332,6 +333,9 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
   void NotifyWindowSwipe(const std::string& direction);
+  void NotifyWindowSwipeGesture(const std::string& direction,
+                                const std::string& phase,
+                                double progress);
   void NotifyWindowRotateGesture(float rotation);
   void NotifyWindowSheetBegin();
   void NotifyWindowSheetEnd();
