@@ -90,6 +90,63 @@ describe('BrowserWindow module', () => {
     expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
   });
 
+  describe('BaseWindow.setBounds(bounds[, animate])', () => {
+    it('sets the window bounds with partial bounds', () => {
+      const baseWindow = new BaseWindow({ show: false });
+      try {
+        const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
+        const nativeGetBounds = baseWindow.getBounds.bind(baseWindow);
+        let getBoundsCalled = false;
+        baseWindow.getBounds = () => {
+          getBoundsCalled = true;
+          return nativeGetBounds();
+        };
+
+        baseWindow.setBounds(fullBounds);
+        expect(getBoundsCalled).to.be.false();
+
+        const boundsUpdate = { width: 200 };
+        baseWindow.setBounds(boundsUpdate as any);
+
+        expect(getBoundsCalled).to.be.true();
+        expectBoundsEqual(nativeGetBounds(), { ...fullBounds, ...boundsUpdate });
+      } finally {
+        baseWindow.destroy();
+      }
+    });
+
+    it('treats undefined and null bounds properties as missing', () => {
+      const baseWindow = new BaseWindow({ show: false });
+      try {
+        const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
+        baseWindow.setBounds(fullBounds);
+
+        baseWindow.setBounds({ x: fullBounds.x, y: fullBounds.y, width: 200, height: undefined } as any);
+
+        expectBoundsEqual(baseWindow.getBounds(), { ...fullBounds, width: 200 });
+
+        baseWindow.setBounds({ x: null, y: fullBounds.y, width: 300, height: fullBounds.height } as any);
+
+        expectBoundsEqual(baseWindow.getBounds(), { ...fullBounds, width: 300 });
+      } finally {
+        baseWindow.destroy();
+      }
+    });
+
+    it('allows undefined bounds', () => {
+      const baseWindow = new BaseWindow({ show: false });
+      try {
+        const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
+        baseWindow.setBounds(fullBounds);
+
+        expect(() => baseWindow.setBounds(undefined as any)).not.to.throw();
+        expectBoundsEqual(baseWindow.getBounds(), fullBounds);
+      } finally {
+        baseWindow.destroy();
+      }
+    });
+  });
+
   describe('BrowserWindow constructor', () => {
     afterEach(closeAllWindows);
 
