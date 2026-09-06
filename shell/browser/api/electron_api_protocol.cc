@@ -16,9 +16,11 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/net/protocol_source.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -243,7 +245,39 @@ bool Protocol::UnregisterProtocol(const std::string& scheme,
 }
 
 bool Protocol::IsProtocolRegistered(const std::string& scheme) {
-  return protocol_registry_->FindRegistered(scheme) != nullptr;
+  return protocol_registry_->FindRegistered(scheme) != nullptr ||
+         protocol_registry_->FindSource(scheme) != nullptr;
+}
+
+void Protocol::RegisterSource(gin_helper::ErrorThrower thrower,
+                              const std::string& scheme,
+                              const base::DictValue& options) {
+  if (ProtocolRegistry::IsBuiltinScheme(scheme)) {
+    thrower.ThrowError("Cannot register a source for built-in scheme " +
+                       scheme);
+    return;
+  }
+  std::string error;
+  scoped_refptr<const ProtocolSource> source =
+      ProtocolSource::Create(options, &error);
+  if (!source) {
+    thrower.ThrowTypeError(error);
+    return;
+  }
+  if (!protocol_registry_->RegisterSource(scheme, std::move(source)))
+    thrower.ThrowError("Scheme " + scheme + " is already handled");
+}
+
+bool Protocol::UnregisterSource(const std::string& scheme) {
+  return protocol_registry_->UnregisterSource(scheme);
+}
+
+v8::Local<v8::Value> Protocol::GetSource(v8::Isolate* isolate,
+                                         const std::string& scheme) {
+  const ProtocolSource* source = protocol_registry_->FindSource(scheme);
+  if (!source)
+    return v8::Null(isolate);
+  return gin::ConvertToV8(isolate, base::ValueView(source->spec()));
 }
 
 Protocol::Error Protocol::InterceptProtocol(ProtocolType type,
@@ -330,6 +364,9 @@ void Protocol::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
       .SetMethod("isProtocolRegistered", &Protocol::IsProtocolRegistered)
       .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
+      .SetMethod("registerSource", &Protocol::RegisterSource)
+      .SetMethod("unregisterSource", &Protocol::UnregisterSource)
+      .SetMethod("getSource", &Protocol::GetSource)
       .SetMethod("interceptStringProtocol",
                  &Protocol::InterceptProtocolFor<ProtocolType::kString>)
       .SetMethod("interceptBufferProtocol",

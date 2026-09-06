@@ -18,7 +18,7 @@ import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, ifit } from './lib/spec-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
@@ -959,6 +959,223 @@ describe('protocol module', () => {
       expect(code).to.equal(0);
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+    });
+  });
+
+  describe('protocol.registerSource', () => {
+    // Uses the 'http-like' scheme registered as standard in spec/index.js.
+    let root: string;
+    before(() => {
+      root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-'));
+      fs.mkdirSync(path.join(root, 'dist', 'sub'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'assets'));
+      fs.writeFileSync(
+        path.join(root, 'dist', 'index.html'),
+        '<!doctype html><link rel="stylesheet" href="/assets/a.css"><script src="/app.js"></script><p id="p">dist index</p>'
+      );
+      fs.writeFileSync(path.join(root, 'dist', 'app.js'), 'window.loadedAt = performance.now()');
+      fs.writeFileSync(path.join(root, 'dist', 'sub', 'index.html'), '<p>sub index</p>');
+      fs.writeFileSync(path.join(root, 'dist', 'data.json'), '{"ok":true}');
+      fs.writeFileSync(path.join(root, 'assets', 'a.css'), 'p { color: red }');
+      fs.writeFileSync(path.join(root, 'secret.txt'), 'outside every root');
+    });
+    after(() => fs.rmSync(root, { recursive: true, force: true }));
+    afterEach(async () => {
+      if (protocol.isProtocolHandled('http-like')) protocol.unhandle('http-like');
+      await closeAllWindows();
+    });
+    const register = (extra: any = {}) =>
+      protocol.registerSource('http-like', {
+        routes: [
+          {
+            match: { host: 'bundle', path: '/assets/' },
+            source: { type: 'directory', root: path.join(root, 'assets'), ...extra }
+          },
+          { match: { host: 'bundle' }, source: { type: 'directory', root: path.join(root, 'dist'), ...extra } }
+        ]
+      });
+    const get = async (url: string) => {
+      const r = await net.fetch(url).catch((e) => e as Error);
+      return r instanceof Error
+        ? r.message
+        : { status: r.status, type: r.headers.get('content-type'), body: await r.text() };
+    };
+
+    it('serves files from the most specific matching route with a content type from the extension', async () => {
+      register();
+      expect(await get('http-like://bundle/data.json')).to.deep.equal({
+        status: 200,
+        type: 'application/json',
+        body: '{"ok":true}'
+      });
+      expect(await get('http-like://bundle/assets/a.css')).to.deep.equal({
+        status: 200,
+        type: 'text/css',
+        body: 'p { color: red }'
+      });
+      expect(await get('http-like://bundle/app.js')).to.deep.include({ status: 200, type: 'text/javascript' });
+    });
+
+    it('serves the index file for directory URLs', async () => {
+      register();
+      expect(await get('http-like://bundle/')).to.deep.include({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle')).to.deep.include({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle/sub/')).to.deep.equal({
+        status: 200,
+        type: 'text/html',
+        body: '<p>sub index</p>'
+      });
+      protocol.unhandle('http-like');
+      register({ index: '' });
+      expect(await get('http-like://bundle/')).to.match(/ERR_FILE_NOT_FOUND/);
+    });
+
+    it('does not serve paths outside the root, unknown hosts or missing files', async () => {
+      register();
+      for (const url of [
+        'http-like://bundle/../secret.txt',
+        'http-like://bundle/%2e%2e/secret.txt',
+        'http-like://bundle/sub/..%2f..%2fsecret.txt',
+        'http-like://bundle/assets/../secret.txt',
+        'http-like://bundle/assets/%2e%2e%2fsecret.txt',
+        'http-like://elsewhere/data.json',
+        'http-like://bundle/missing.js'
+      ]) {
+        expect(await get(url), url).to.match(/ERR_FILE_NOT_FOUND/);
+      }
+    });
+
+    it('answers GET, and HEAD without a body', async () => {
+      register();
+      const head = await net.fetch('http-like://bundle/data.json', { method: 'HEAD' });
+      expect(head.status).to.equal(200);
+      expect(head.headers.get('content-type')).to.equal('application/json');
+      expect(head.headers.get('content-length')).to.equal('11');
+      expect(await head.text()).to.equal('');
+      await expect(
+        net.fetch('http-like://bundle/data.json', { method: 'POST', body: 'x' })
+      ).to.eventually.be.rejectedWith(/ERR_FILE_NOT_FOUND/);
+    });
+
+    it('serves byte ranges as 206 with Content-Range, and 416 when unsatisfiable', async () => {
+      register();
+      const part = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=2-5' } });
+      expect(part.status).to.equal(206);
+      expect(part.headers.get('content-range')).to.equal('bytes 2-5/11');
+      expect(part.headers.get('content-length')).to.equal('4');
+      expect(await part.text()).to.equal('ok":');
+      const whole = await net.fetch('http-like://bundle/data.json');
+      expect(whole.status).to.equal(200);
+      expect(whole.headers.get('content-range')).to.equal(null);
+      const bad = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=50-60' } });
+      expect(bad.status).to.equal(416);
+      expect(bad.headers.get('content-range')).to.equal('bytes */11');
+      expect(await bad.text()).to.equal('');
+    });
+
+    ifit(process.platform !== 'win32')('does not follow a symlink out of the root', async () => {
+      fs.symlinkSync(path.join(root, 'secret.txt'), path.join(root, 'dist', 'link.txt'));
+      fs.symlinkSync(root, path.join(root, 'dist', 'up'));
+      try {
+        register();
+        expect(await get('http-like://bundle/link.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/secret.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/dist/data.json')).to.deep.include({ status: 200 });
+      } finally {
+        fs.unlinkSync(path.join(root, 'dist', 'link.txt'));
+        fs.unlinkSync(path.join(root, 'dist', 'up'));
+      }
+    });
+
+    ifit(process.platform !== 'win32')('serves files larger than 4 GiB', async () => {
+      const big = path.join(root, 'dist', 'big.bin');
+      const size = 4 * 1024 * 1024 * 1024 + 4096;
+      const fd = fs.openSync(big, 'w');
+      fs.ftruncateSync(fd, size);
+      fs.writeSync(fd, Buffer.from('tail'), 0, 4, size - 4);
+      fs.closeSync(fd);
+      try {
+        register();
+        const head = await net.fetch('http-like://bundle/big.bin', { method: 'HEAD' });
+        expect(head.headers.get('content-length')).to.equal(String(size));
+        const tail = await net.fetch('http-like://bundle/big.bin', {
+          headers: { Range: `bytes=${size - 4}-${size - 1}` }
+        });
+        expect(tail.status).to.equal(206);
+        expect(await tail.text()).to.equal('tail');
+      } finally {
+        fs.unlinkSync(big);
+      }
+    });
+
+    it('adds the route headers to every response', async () => {
+      register({ headers: { 'X-From': 'source', 'Cross-Origin-Opener-Policy': 'same-origin' } });
+      const r = await net.fetch('http-like://bundle/data.json');
+      expect(r.headers.get('x-from')).to.equal('source');
+      expect(r.headers.get('cross-origin-opener-policy')).to.equal('same-origin');
+    });
+
+    it('serves files inside asar archives', async () => {
+      protocol.registerSource('http-like', {
+        routes: [{ source: { type: 'directory', root: path.join(fixturesPath, 'test.asar', 'a.asar') } }]
+      });
+      expect(await get('http-like://x/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+      expect(await get('http-like://x/dir1/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+    });
+
+    it('serves a page, and its fetches while the main process is busy', async () => {
+      register();
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('http-like://bundle/');
+      expect(await w.webContents.executeJavaScript('getComputedStyle(document.getElementById("p")).color')).to.equal(
+        'rgb(255, 0, 0)'
+      );
+      await w.webContents.executeJavaScript(
+        "window.timing = new Promise(r => setTimeout(() => { const s = performance.now(); fetch('/data.json').then(x => x.text()).then(t => r([t, performance.now() - s])); }, 50)); true"
+      );
+      const end = Date.now() + 600;
+      while (Date.now() < end) {
+        /* main process busy */
+      }
+      const [text, elapsed] = await w.webContents.executeJavaScript('window.timing');
+      expect(text).to.equal('{"ok":true}');
+      expect(elapsed).to.be.lessThan(300);
+    });
+
+    it('is reported by isProtocolHandled and getSource, removed by unhandle, and exclusive with handle', () => {
+      register();
+      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
+      expect(protocol.getSource('http-like')).to.have.property('routes').with.lengthOf(2);
+      expect(() => protocol.handle('http-like', () => new Response('x'))).to.throw();
+      expect(() => register()).to.throw(/already handled/);
+      protocol.unhandle('http-like');
+      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
+      expect(protocol.getSource('http-like')).to.equal(null);
+      protocol.handle('http-like', () => new Response('x'));
+      expect(() => register()).to.throw(/already handled/);
+    });
+
+    it('validates its arguments', () => {
+      const bad = (source: any, message: RegExp) =>
+        expect(() => protocol.registerSource('http-like', source), JSON.stringify(source)).to.throw(message);
+      bad({}, /routes/);
+      bad({ routes: [] }, /routes/);
+      bad({ routes: [{ match: { host: 'x' } }] }, /source/);
+      bad({ routes: [{ source: { type: 'url', root } }] }, /directory/);
+      bad({ routes: [{ source: { type: 'directory', root: 'relative/dir' } }] }, /absolute/);
+      bad({ routes: [{ match: { path: 'nope' }, source: { type: 'directory', root } }] }, /start with/);
+      bad({ routes: [{ source: { type: 'directory', root, index: '../x' } }] }, /file name/);
+      bad({ routes: [{ source: { type: 'directory', root, headers: { 'Bad\nName': 'x' } } }] }, /header/);
+      expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
+        /built-in/
+      );
+      for (const scheme of ['https', 'file', 'blob', 'javascript', 'wss', 'devtools', 'chrome-extension']) {
+        expect(
+          () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
+          scheme
+        ).to.throw(/built-in/);
+      }
+      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
     });
   });
 
