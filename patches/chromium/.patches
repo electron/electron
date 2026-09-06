@@ -21,7 +21,6 @@ proxy_config_monitor.patch
 gritsettings_resource_ids.patch
 isolate_holder.patch
 notification_provenance.patch
-dump_syms.patch
 command-ismediakey.patch
 printing.patch
 support_mixed_sandbox_with_zygote.patch
