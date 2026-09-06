@@ -7699,6 +7699,75 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
     });
 
+    it('retargets a wheel gesture after an unconsumed direction change', async () => {
+      await w.loadURL(
+        `data:text/html;charset=utf-8,${encodeURIComponent(`
+        <style>
+          html, body { margin: 0; min-height: 600px; }
+          #nested { width: 80px; height: 70px; overflow: auto; }
+          #nested-content { height: 600px; }
+        </style>
+        <div id="nested"><div id="nested-content"></div></div>
+        <script>
+          window.wheelEvents = [];
+          window.addEventListener('wheel', (event) => {
+            window.wheelEvents.push({
+              deltaY: event.deltaY,
+              target: event.target.id || event.target.tagName
+            });
+          }, { capture: true });
+          window.readWheelState = () => ({
+            events: window.wheelEvents,
+            nestedScrollTop: document.getElementById('nested').scrollTop,
+            rootScrollY: window.scrollY
+          });
+        </script>
+      `)}`
+      );
+
+      const firstPaint = once(w.webContents, 'paint');
+      w.webContents.invalidate();
+      await firstPaint;
+
+      const event = {
+        type: 'mouseWheel' as const,
+        x: 40,
+        y: 35,
+        deltaX: 0,
+        deltaY: 120,
+        wheelTicksX: 0,
+        wheelTicksY: 1
+      };
+
+      // Start at both scroll boundaries, then reverse before the synthesized
+      // wheel-end. The second packet must begin a new sequence at the point
+      // under the pointer instead of remaining latched to the root scroller.
+      w.webContents.sendInputEvent(event);
+      await waitUntil(async () => {
+        const eventCount = await w.webContents.executeJavaScript('window.wheelEvents.length');
+        return eventCount === 1;
+      });
+      // The DOM event is recorded before its gesture ack reaches the browser.
+      // Advance the renderer without consuming the latching window with a fixed delay.
+      await w.webContents.executeJavaScript(
+        'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+      );
+      w.webContents.sendInputEvent({ ...event, deltaY: -120, wheelTicksY: -1 });
+
+      await waitUntil(async () => {
+        const state = await w.webContents.executeJavaScript('window.readWheelState()');
+        return state.nestedScrollTop > 0 || state.rootScrollY > 0;
+      });
+
+      const state = await w.webContents.executeJavaScript('window.readWheelState()');
+      expect(state.events.at(-1)).to.deep.equal({
+        deltaY: 120,
+        target: 'nested-content'
+      });
+      expect(state.nestedScrollTop).to.be.greaterThan(0);
+      expect(state.rootScrollY).to.equal(0);
+    });
+
     describe('window.webContents.isOffscreen()', () => {
       it('is true for offscreen type', () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
