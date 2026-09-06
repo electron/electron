@@ -557,6 +557,8 @@ filenames = {
     "shell/browser/ui/devtools_ui_theme_data_source.h",
     "shell/browser/ui/drag_util.cc",
     "shell/browser/ui/drag_util.h",
+    "shell/browser/ui/draggable_region_debugger.cc",
+    "shell/browser/ui/draggable_region_debugger.h",
     "shell/browser/ui/electron_menu_model.cc",
     "shell/browser/ui/electron_menu_model.h",
     "shell/browser/ui/file_dialog.h",
