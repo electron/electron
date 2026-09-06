@@ -7829,6 +7829,32 @@ describe('BrowserWindow module', () => {
         sw.destroy();
       });
     });
+
+    it('paints <select> popups into the frame', async () => {
+      const ow = new BrowserWindow({
+        width: 300,
+        height: 300,
+        show: false,
+        webPreferences: { backgroundThrottling: false, offscreen: true }
+      });
+      await ow.loadURL(
+        'data:text/html,<select id="s" style="position:absolute;left:10px;top:10px;width:120px;height:24px">' +
+          '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
+      );
+      ow.webContents.focus();
+      const paintedBelowSelect = new Promise<void>((resolve) => {
+        ow.webContents.on('paint', (_e, dirty) => {
+          if (dirty.y + dirty.height > 40) resolve();
+        });
+      });
+      await ow.webContents.executeJavaScript('document.getElementById("s").showPicker()', true);
+      await expect(
+        Promise.race([
+          paintedBelowSelect,
+          setTimeout(5000).then(() => Promise.reject(new Error('popup was not painted')))
+        ])
+      ).to.eventually.be.fulfilled();
+    });
   });
 
   describe('offscreen rendering with device scale factor', () => {
