@@ -4160,6 +4160,29 @@ describe('chromium features', () => {
   });
 });
 
+ifdescribe(process.platform === 'darwin' && !process.mas)('kill ring', () => {
+  afterEach(closeAllWindows);
+
+  it('yanks back text killed with Ctrl+K', async () => {
+    const w = new BrowserWindow({ show: true });
+    await w.loadURL('data:text/html,<textarea id="t">kill me</textarea>');
+    w.webContents.focus();
+    await w.webContents.executeJavaScript(
+      'const t = document.getElementById("t"); t.focus(); t.setSelectionRange(0, 0); null'
+    );
+    w.webContents.debugger.attach();
+    const press = async (key: string, code: string, keyCode: number, commands: string[]) => {
+      const base = { key, code, windowsVirtualKeyCode: keyCode, modifiers: 2 };
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown', commands });
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    };
+    await press('k', 'KeyK', 75, ['deleteToEndOfParagraph']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('');
+    await press('y', 'KeyY', 89, ['yank']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('kill me');
+  });
+});
+
 describe('font fallback', () => {
   async function getRenderedFonts(html: string) {
     const w = new BrowserWindow({ show: false });
