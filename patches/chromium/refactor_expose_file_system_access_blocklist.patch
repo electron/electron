@@ -7,30 +7,6 @@ This CL exposes the file system access blocklist publicly so that we can leverag
 it in Electron and prevent drift from Chrome's blocklist. We should look for a way
 to upstream this change to Chrome.
 
-diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index c9a965ac0d4daeb6730286a1c1de49ea05e9ae06..46cc28571e190ef036e8ade4dab3b8786534230d 100644
---- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-+++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-@@ -279,6 +279,8 @@ bool ContainsInvalidDNSCharacter(base::FilePath::StringType hostname) {
-   return false;
- }
- 
-+// Returns true if the path is a Universal Naming Convention (UNC) path pointing
-+// to a local system path, device namespace, or WSL loopback redirector.
- bool MaybeIsLocalUNCPath(const base::FilePath& path) {
-   if (!path.IsNetwork()) {
-     return false;
-@@ -293,6 +295,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
-   if (components.size() >= 2 &&
-       (base::FilePath::CompareEqualIgnoreCase(components[1],
-                                               FILE_PATH_LITERAL("localhost")) ||
-+       base::FilePath::CompareEqualIgnoreCase(
-+           components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
-+       base::FilePath::CompareEqualIgnoreCase(
-+           components[1], FILE_PATH_LITERAL("wsl.localhost.")) ||
-        components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
-        components[1] == FILE_PATH_LITERAL(".") ||
-        components[1] == FILE_PATH_LITERAL("?") ||
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c34fd1436 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
