@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1006,6 +1007,29 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       ElectronCommandLine::AsUtf8(), {}, on_app_code_ready);
 }
 
+namespace {
+
+// Node's internal/options caches the CLI option values on first use; drop that
+// cache through `require` (Node's internal require) so later reads are fresh.
+void RefreshCachedNodeOptions(v8::Local<v8::Context> context,
+                              v8::Local<v8::Function> require) {
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> id = gin::StringToV8(isolate, "internal/options");
+  v8::Local<v8::Value> options;
+  v8::Local<v8::Value> refresh;
+  if (require->Call(context, v8::Null(isolate), 1, &id).ToLocal(&options) &&
+      options->IsObject() &&
+      options.As<v8::Object>()
+          ->Get(context, gin::StringToV8(isolate, "refreshOptions"))
+          .ToLocal(&refresh) &&
+      refresh->IsFunction()) {
+    std::ignore =
+        refresh.As<v8::Function>()->Call(context, options, 0, nullptr);
+  }
+}
+
+}  // namespace
+
 void NodeBindings::LoadEnvironment(node::Environment* env) {
   // Re-assert Electron's build-time cache for the electron/js2c/* framework
   // bundles (browser_init etc.). Every BuiltinLoader already starts from it
@@ -1023,7 +1047,7 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   //
   // Node pauses for --inspect-brk before an embedder entry point runs; mask it
   // so the pause stays on the app's own entry rather than the first line of
-  // the init bundle. lib/common/init.ts re-reads the options once restored.
+  // the init bundle, and refresh the options JS cached meanwhile.
   node::DebugOptions* const debug_options = env->options()->get_debug_options();
   const bool break_first_line = debug_options->break_first_line;
   debug_options->break_first_line = false;
@@ -1032,21 +1056,23 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   node::LoadEnvironment(
       env,
       [&](const node::StartExecutionCallbackInfo& info) {
-        debug_options->break_first_line = break_first_line;
         v8::Isolate* const isolate = env->isolate();
+        v8::Local<v8::Context> context = env->context();
+        v8::Local<v8::Function> require =
+            env->principal_realm()->builtin_module_require();
+        if (break_first_line) {
+          debug_options->break_first_line = true;
+          RefreshCachedNodeOptions(context, require);
+        }
         v8::LocalVector<v8::String> params =
             js2c::MakeBundleParams(isolate, js2c::kInitBundleParams);
-        v8::Local<v8::Value> args[] = {
-            info.process_object,
-            env->principal_realm()->builtin_module_require()};
+        v8::Local<v8::Value> args[] = {info.process_object, require};
         v8::Local<v8::Function> bundle;
-        if (!electron::util::CompileBundle(env->context(), bundle_id.c_str(),
-                                           &params)
+        if (!electron::util::CompileBundle(context, bundle_id.c_str(), &params)
                  .ToLocal(&bundle)) {
           return v8::MaybeLocal<v8::Value>();
         }
-        return bundle->Call(env->context(), v8::Null(isolate), std::size(args),
-                            args);
+        return bundle->Call(context, v8::Null(isolate), std::size(args), args);
       },
       &OnNodePreload);
   debug_options->break_first_line = break_first_line;
