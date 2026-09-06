@@ -794,7 +794,10 @@ source_set("electron_lib") {
     ]
   }
   if (is_win) {
-    libs += [ "dwmapi.lib" ]
+    libs += [
+      "cryptui.lib",
+      "dwmapi.lib",
+    ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/app_launch_prefetch",
