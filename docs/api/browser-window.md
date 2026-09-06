@@ -1612,6 +1612,16 @@ All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
 events.
 
+> [!NOTE]
+> On Windows, `forward: true` stops working temporarily when the active window is running at a
+> higher integrity level (e.g., elevated/Administrator) than your Electron app. Since Electron
+> typically runs at standard user privilege, this occurs when an elevated window—such as Task
+> Manager or an installer—takes focus. This is due to UIPI.
+>
+> To work around it, your app must be run with Administrator privileges or configured with UIAccess
+> privileges (see the Background section under
+> [the Reference section of this page](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-r2-and-2012/jj852244(v=ws.11)#reference)).
+
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
 * `enable` boolean
