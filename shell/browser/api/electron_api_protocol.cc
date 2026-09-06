@@ -120,6 +120,16 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   }
 
   for (const auto& custom_scheme : custom_schemes) {
+    // Schemes are comma-separated for --*-schemes. Sanitize names so
+    // extra commas don't trick child processes into splitting one
+    // scheme into many.
+    if (!Browser::IsValidProtocolScheme(custom_scheme.scheme)) {
+      thrower.ThrowError(
+          "Invalid scheme name '" + custom_scheme.scheme +
+          "'. Scheme names must start with an ASCII letter and contain only "
+          "ASCII letters, digits, '+', '-', or '.'.");
+      return;
+    }
     if (custom_scheme.options.codeCache && !custom_scheme.options.standard) {
       thrower.ThrowError(
           "Code cache can only be enabled when the custom scheme is registered "
