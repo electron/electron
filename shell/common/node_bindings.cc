@@ -983,6 +983,10 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
   // scratch.
   electron::util::FeedEnvironmentCodeCache(env);
 
+  // The init bundle is this process's entry script: like Node's own runMain it
+  // runs without a v8::TryCatch, so an exception thrown while it loads the app
+  // reaches process.on('uncaughtException') through V8's message listener.
+  //
   // Node pauses for --inspect-brk before an embedder entry point runs; mask it
   // so the pause stays on the app's own entry rather than the first line of
   // the init bundle. lib/common/init.ts re-reads the options once restored.
@@ -998,11 +1002,17 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
         v8::Isolate* const isolate = env->isolate();
         v8::LocalVector<v8::String> params =
             js2c::MakeBundleParams(isolate, js2c::kInitBundleParams);
-        v8::LocalVector<v8::Value> args(
-            isolate, {info.process_object,
-                      env->principal_realm()->builtin_module_require()});
-        return electron::util::CompileAndCall(
-            isolate, env->context(), bundle_id.c_str(), &params, &args);
+        v8::Local<v8::Value> args[] = {
+            info.process_object,
+            env->principal_realm()->builtin_module_require()};
+        v8::Local<v8::Function> bundle;
+        if (!electron::util::CompileBundle(env->context(), bundle_id.c_str(),
+                                           &params)
+                 .ToLocal(&bundle)) {
+          return v8::MaybeLocal<v8::Value>();
+        }
+        return bundle->Call(env->context(), v8::Null(isolate), std::size(args),
+                            args);
       },
       &OnNodePreload);
   debug_options->break_first_line = break_first_line;
