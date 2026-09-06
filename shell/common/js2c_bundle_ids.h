@@ -32,16 +32,17 @@ inline constexpr char kUtilityInitId[] = "electron/js2c/utility_init";
 inline constexpr char kWorkerInitId[] = "electron/js2c/worker_init";
 
 // Wrapper function parameter names for the bundles compiled via
-// util::CompileAndCall. The *_init bundles run by node::LoadEnvironment use
-// the BuiltinLoader's parameter map, not these.
+// util::CompileAndCall.
 inline constexpr std::array<std::string_view, 1> kSandboxBundleParams = {
     "binding"};
 inline constexpr std::array<std::string_view, 1> kIsolatedBundleParams = {
     "isolatedApi"};
 inline constexpr std::array<std::string_view, 1> kPreloadRealmBundleParams = {
     "binding"};
-inline constexpr std::array<std::string_view, 2> kNodeInitParams = {"process",
-                                                                    "require"};
+// node_init and the <process type>_init bundles: Node's process object and
+// its internal require.
+inline constexpr std::array<std::string_view, 2> kInitBundleParams = {
+    "process", "require"};
 
 // Builds the `parameters` arg for util::CompileAndCall from one of the
 // constexpr param arrays above.
