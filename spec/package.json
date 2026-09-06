@@ -13,6 +13,7 @@
     "@electron-ci/is-valid-window": "*",
     "@electron-ci/object-wrap": "*",
     "@electron-ci/osr-gpu": "*",
+    "@electron-ci/print-handler": "*",
     "@electron-ci/uv-dlopen": "*",
     "@electron-ci/virtual-display": "*",
     "@electron/fuses": "^2.1.2",
