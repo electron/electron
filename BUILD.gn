@@ -534,6 +534,7 @@ source_set("electron_lib") {
     "//components/prefs",
     "//components/security_state/content",
     "//components/tracing:tracing_metrics",
+    "//components/unexportable_keys",
     "//components/upload_list",
     "//components/user_prefs",
     "//components/viz/host",
