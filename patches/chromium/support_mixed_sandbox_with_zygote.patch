@@ -37,7 +37,7 @@ index 7b772b9006ffcd5e453839808b55de1f3ebd6a4a..82da14aec1f153e720b198aafd189a64
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ff88a16e09de3721973e2aa11fbf57534702d570 100644
+index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ae1ca8e2cbb7757b8fc3eef9f966044b9a27af08 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {
@@ -50,16 +50,6 @@ index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ff88a16e09de3721973e2aa11fbf5753
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -71,6 +74,9 @@ RendererSandboxedProcessLauncherDelegateWin::
-                                  ->ShouldRestrictCoreSharingOnRenderer()) {
-   // PDF renderers must be jitless.
-   CHECK(!is_pdf_renderer || is_jit_disabled);
-+#if BUILDFLAG(USE_ZYGOTE)
-+  use_zygote_ = !cmd_line->HasSwitch(switches::kNoZygote);
-+#endif
-   if (is_jit_disabled) {
-     dynamic_code_can_be_disabled_ = true;
-     return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 index e058db451bef755a8c5bf3dc9bc9c5e9eb83b7f4..abe037f3a374e6fe9888186aa873fa17879ec418 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
