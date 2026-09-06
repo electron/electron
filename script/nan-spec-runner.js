@@ -92,6 +92,11 @@ async function main() {
     env.LDFLAGS = ldflags;
   }
 
+  // nan ships no lockfile; give yarn one so it treats nan as its own project and
+  // hardened installs on CI have something to check against.
+  fs.copyFileSync(path.join(__dirname, 'nan', 'yarn.lock'), path.join(NAN_DIR, 'yarn.lock'));
+  env.YARN_NODE_LINKER = 'node-modules';
+
   const { status: installStatus, signal: installSignal } = cp.spawnSync(
     process.execPath,
     [YARN_SCRIPT_PATH, 'install'],
@@ -122,7 +127,8 @@ async function main() {
 
   const onlyTests = args.only?.split(',');
 
-  const DISABLED_TESTS = new Set(['nannew-test.js', 'buffer-test.js']);
+  // buffer-test allocates an external backing store outside the V8 sandbox.
+  const DISABLED_TESTS = new Set(['buffer-test.js']);
   const testsToRun = fs
     .readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter((test) => !DISABLED_TESTS.has(test))

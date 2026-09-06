@@ -6,12 +6,12 @@ Subject: 8236212: [api] Remove deprecated methods, pt.2
 Ref: https://chromium-review.googlesource.com/c/v8/v8/+/8236212
 
 diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9ed9626e5 100644
+index 8ec91f84d7ca957ca7b366619e3e7a2ed68709f3..7c0b08298c565486d5669b288271caf8573657bd 100644
 --- a/nan_callbacks_12_inl.h
 +++ b/nan_callbacks_12_inl.h
-@@ -9,6 +9,10 @@
- #ifndef NAN_CALLBACKS_12_INL_H_
- #define NAN_CALLBACKS_12_INL_H_
+@@ -16,6 +16,10 @@
+ # define NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2 1
+ #endif
  
 +#if defined(V8_MAJOR_VERSION) && V8_MAJOR_VERSION >= 15
 +# define NAN_HAS_PROPERTY_CALLBACK_INFO_BOOLEAN_SETTER 1
@@ -20,7 +20,7 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
  template<typename T>
  class ReturnValue {
    v8::ReturnValue<T> value_;
-@@ -245,10 +249,22 @@ static
+@@ -253,10 +257,22 @@ static
  void SetterCallbackWrapper(
      v8::Local<v8::Name> property
    , v8::Local<v8::Value> value
@@ -43,8 +43,8 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
 +          obj->GetInternalField(kDataIndex).As<v8::Value>());
    SetterCallback callback = reinterpret_cast<SetterCallback>(
        reinterpret_cast<intptr_t>(
-           obj->GetInternalField(kSetterIndex)
-@@ -259,7 +275,11 @@ void SetterCallbackWrapper(
+           Nan::GetExternalValue(obj->GetInternalField(kSetterIndex)
+@@ -267,7 +283,11 @@ void SetterCallbackWrapper(
  typedef void (*NativeSetter)(
      v8::Local<v8::Name>
    , v8::Local<v8::Value>
@@ -56,7 +56,7 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
  #else
  static
  void GetterCallbackWrapper(
-@@ -324,10 +344,22 @@ static
+@@ -332,10 +352,22 @@ static
  v8::Intercepted PropertySetterCallbackWrapper(
      v8::Local<v8::Name> property
    , v8::Local<v8::Value> value
@@ -79,8 +79,8 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
 +          obj->GetInternalField(kDataIndex).As<v8::Value>());
    PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
        reinterpret_cast<intptr_t>(
-           obj->GetInternalField(kPropertySetterIndex)
-@@ -338,7 +370,11 @@ v8::Intercepted PropertySetterCallbackWrapper(
+           Nan::GetExternalValue(obj->GetInternalField(kPropertySetterIndex)
+@@ -346,7 +378,11 @@ v8::Intercepted PropertySetterCallbackWrapper(
  typedef v8::Intercepted (*NativePropertySetter)(
      v8::Local<v8::Name>
    , v8::Local<v8::Value>
@@ -92,7 +92,7 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
  
  #else
  static
-@@ -577,10 +613,22 @@ static
+@@ -585,10 +621,22 @@ static
  v8::Intercepted IndexSetterCallbackWrapper(
      uint32_t index
    , v8::Local<v8::Value> value
@@ -115,8 +115,8 @@ index f341221fbd55708a496c07a7fd4c7d97fa9694fb..393a07af22adb98ad40817e084b149f9
 +          obj->GetInternalField(kDataIndex).As<v8::Value>());
    IndexSetterCallback callback = reinterpret_cast<IndexSetterCallback>(
        reinterpret_cast<intptr_t>(
-           obj->GetInternalField(kIndexPropertySetterIndex)
-@@ -591,7 +639,11 @@ v8::Intercepted IndexSetterCallbackWrapper(
+           Nan::GetExternalValue(obj->GetInternalField(kIndexPropertySetterIndex)
+@@ -599,7 +647,11 @@ v8::Intercepted IndexSetterCallbackWrapper(
  typedef v8::Intercepted (*NativeIndexSetter)(
      uint32_t
    , v8::Local<v8::Value>

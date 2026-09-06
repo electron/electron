@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 6 Sep 2026 18:58:26 +0000
+Subject: fix: support V8 15.3 and later
+
+PropertyCallbackInfo::HolderV2() and Object::SetPrototypeV2() were removed in
+V8 15.3 (https://chromium-review.googlesource.com/c/v8/v8/+/8234700) after
+Holder() and SetPrototype() took over their semantics, so use those again from
+15.3 on.
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index 7c0b08298c565486d5669b288271caf8573657bd..bec19b12244f023da183747ddb11064fcc3c8309 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -16,6 +16,13 @@
+ # define NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2 1
+ #endif
+ 
++#if defined(V8_MAJOR_VERSION) &&                                               \
++    (V8_MAJOR_VERSION > 15 ||                                                  \
++     (V8_MAJOR_VERSION == 15 &&                                                \
++      defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
++# define NAN_PROPERTY_CALLBACK_INFO_HOLDER_V2_REMOVED 1
++#endif
++
+ #if defined(V8_MAJOR_VERSION) && V8_MAJOR_VERSION >= 15
+ # define NAN_HAS_PROPERTY_CALLBACK_INFO_BOOLEAN_SETTER 1
+ #endif
+@@ -177,14 +184,17 @@ class PropertyCallbackInfo {
+   inline v8::Isolate* GetIsolate() const { return info_.GetIsolate(); }
+   inline v8::Local<v8::Value> Data() const { return data_; }
+   inline v8::Local<v8::Object> This() const {
+-#if defined(NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2)
++#if defined(NAN_PROPERTY_CALLBACK_INFO_HOLDER_V2_REMOVED)
++    return info_.Holder();
++#elif defined(NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2)
+     return info_.HolderV2();
+ #else
+     return info_.This();
+ #endif
+   }
+   inline v8::Local<v8::Object> Holder() const {
+-#if defined(NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2)
++#if defined(NAN_HAS_PROPERTY_CALLBACK_INFO_HOLDER_V2) && \
++    !defined(NAN_PROPERTY_CALLBACK_INFO_HOLDER_V2_REMOVED)
+     return info_.HolderV2();
+ #else
+     return info_.Holder();
+diff --git a/nan_maybe_43_inl.h b/nan_maybe_43_inl.h
+index 48b62e9d038db3d6e10255de748485c5c0eee1f0..2662de952c5f19385349abadd631c1aaa6b76407 100644
+--- a/nan_maybe_43_inl.h
++++ b/nan_maybe_43_inl.h
+@@ -207,7 +207,10 @@ inline Maybe<bool> SetPrototype(
+   , v8::Local<v8::Value> prototype) {
+   v8::Isolate *isolate = v8::Isolate::GetCurrent();
+   v8::HandleScope scope(isolate);
+-#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION >= 14)
++#if defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION > 15 ||                   \
++  (V8_MAJOR_VERSION == 15 && defined(V8_MINOR_VERSION) && V8_MINOR_VERSION >= 3))
++    return obj->SetPrototype(isolate->GetCurrentContext(), prototype);
++#elif defined(V8_MAJOR_VERSION) && (V8_MAJOR_VERSION >= 14)
+     return obj->SetPrototypeV2(isolate->GetCurrentContext(), prototype);
+ #else
+     return obj->SetPrototype(isolate->GetCurrentContext(), prototype);
