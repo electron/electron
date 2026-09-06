@@ -17,10 +17,9 @@ gfx::Size NativeFrameView::GetMinimumSize() const {
 }
 
 gfx::Size NativeFrameView::GetMaximumSize() const {
-  gfx::Size size = window_->GetMaximumSize();
-  // Electron public APIs returns (0, 0) when maximum size is not set, but it
-  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
-  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+  // Returning an empty size when maximum size is not set lets the window
+  // manager treat it as "no explicit max". On Linux the WM decides the ceiling.
+  return window_->GetMaximumSize();
 }
 
 BEGIN_METADATA(NativeFrameView)
