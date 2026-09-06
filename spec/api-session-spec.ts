@@ -2091,6 +2091,58 @@ describe('session module', () => {
         ses.setPermissionCheckHandler(null);
       }
     });
+
+    for (const [permission, api] of [
+      ['hid', 'navigator.hid.requestDevice({ filters: [] })'],
+      ['usb', 'navigator.usb.requestDevice({ filters: [] })']
+    ] as const) {
+      it(`provides iframe origin as requestingOrigin for ${permission} check from cross-origin subFrame`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            partition: `very-temp-permission-handler-${permission}`
+          }
+        });
+        const ses = w.webContents.session;
+        const iframeUrl = 'https://myfakesite/';
+        let captured: { origin: string; webContents: Electron.WebContents | null; details: any } | undefined;
+
+        ses.protocol.interceptStringProtocol('https', (req, cb) => {
+          cb('<html><body>iframe</body></html>');
+        });
+
+        ses.setPermissionCheckHandler((wc, perm, requestingOrigin, details) => {
+          if (perm === permission) {
+            captured = { origin: requestingOrigin, webContents: wc, details };
+          }
+          return false;
+        });
+
+        try {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`
+            var iframe = document.createElement('iframe');
+            iframe.src = '${iframeUrl}';
+            iframe.allow = '${permission}';
+            document.body.appendChild(iframe);
+            null;
+          `);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+          await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
+
+          expect(captured).to.not.be.undefined();
+          expect(captured!.origin).to.equal(iframeUrl);
+          expect(captured!.webContents).to.equal(w.webContents);
+          expect(captured!.details.isMainFrame).to.be.false();
+          expect(captured!.details.requestingUrl).to.equal(iframeUrl);
+          expect(captured!.details.securityOrigin).to.equal(iframeUrl);
+        } finally {
+          ses.protocol.uninterceptProtocol('https');
+          ses.setPermissionCheckHandler(null);
+        }
+      });
+    }
   });
 
   describe('ses.isPersistent()', () => {

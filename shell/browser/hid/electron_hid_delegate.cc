@@ -9,6 +9,7 @@
 
 #include "base/scoped_observation.h"
 #include "chrome/common/chrome_features.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
@@ -33,6 +34,14 @@ electron::HidChooserContext* GetChooserContext(
     return nullptr;
   return electron::HidChooserContextFactory::GetForBrowserContext(
       browser_context);
+}
+
+// Content hands these delegates the top-level document's origin; Electron
+// scopes device permissions to the requesting frame, like the choosers do.
+const url::Origin& RequestingOrigin(content::RenderFrameHost* render_frame_host,
+                                    const url::Origin& main_frame_origin) {
+  return render_frame_host ? render_frame_host->GetLastCommittedOrigin()
+                           : main_frame_origin;
 }
 
 }  // namespace
@@ -135,16 +144,20 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 
 bool ElectronHidDelegate::CanRequestDevicePermission(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* render_frame_host,
     const url::Origin& origin) {
   if (!browser_context)
     return false;
 
+  const url::Origin& requesting_origin =
+      RequestingOrigin(render_frame_host, origin);
   base::DictValue details;
-  details.Set("securityOrigin", origin.GetURL().spec());
+  details.Set("securityOrigin", requesting_origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
-      blink::PermissionType::HID, nullptr, origin.GetURL(), std::move(details));
+      blink::PermissionType::HID, render_frame_host, requesting_origin.GetURL(),
+      std::move(details));
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
@@ -152,8 +165,10 @@ bool ElectronHidDelegate::HasDevicePermission(
     content::RenderFrameHost* render_frame_host,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return browser_context && GetChooserContext(browser_context)
-                                ->HasDevicePermission(origin, device);
+  return browser_context &&
+         GetChooserContext(browser_context)
+             ->HasDevicePermission(RequestingOrigin(render_frame_host, origin),
+                                   device);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(
@@ -162,7 +177,9 @@ void ElectronHidDelegate::RevokeDevicePermission(
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   if (browser_context) {
-    GetChooserContext(browser_context)->RevokeDevicePermission(origin, device);
+    GetChooserContext(browser_context)
+        ->RevokeDevicePermission(RequestingOrigin(render_frame_host, origin),
+                                 device);
   }
 }
 
