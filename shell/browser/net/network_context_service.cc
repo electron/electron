@@ -44,15 +44,15 @@ bool ShouldEnableDeviceBoundSessions() {
   // is. macOS needs a browser-process key service configured with an
   // app-derived keychain access group -- the network service's provider
   // hardcodes Chromium's -- and Linux has no hardware provider upstream at all.
-#if BUILDFLAG(IS_WIN)
   if (electron::fuses::IsDeviceBoundSessionsEnabled())
-    return true;
-#endif
-  // Mock software keys are platform-agnostic, and this branch is only
-  // reachable with the fuse off: InitializeFeatureList() force-disables the
-  // feature when the fuse is on, so a production app can never take it. This
-  // is the supported way to exercise DBSC in development, including on
-  // platforms where hardware-backed keys are unavailable.
+    return BUILDFLAG(IS_WIN);
+
+  // Mock software keys are platform-agnostic. Reaching here means the fuse is
+  // off, so a packaged app that fused DBSC on can never take this path -- and
+  // independently of that, InitializeFeatureList() force-disables the feature
+  // whenever the fuse is on. This is the supported way to exercise DBSC in
+  // development, including on platforms where hardware-backed keys are
+  // unavailable.
   return base::FeatureList::IsEnabled(
       unexportable_keys::
           kEnableBoundSessionCredentialsSoftwareKeysForManualTesting);

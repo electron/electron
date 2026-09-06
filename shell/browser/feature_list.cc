@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
