@@ -10,17 +10,15 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index af4a0c943c0ed04c915b88b13bb139ca17a2a258..c5a9d342ff583821276cec395c09f5af747a87ea 100644
+index af4a0c943c0ed04c915b88b13bb139ca17a2a258..1b4a8c22ca565c0e9eb408bf12bb839541f6bb8f 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -76,6 +76,19 @@ namespace ash {
+@@ -76,6 +76,17 @@ namespace ash {
  class ArcNotificationContentView;
  }  // namespace ash
  
 +namespace electron {
 +class DevToolsWindowDelegate;
-+class InspectableWebContentsView;
-+class MenuBar;
 +class RootView;
 +class RootViewMac;
 +}
@@ -33,14 +31,12 @@ index af4a0c943c0ed04c915b88b13bb139ca17a2a258..c5a9d342ff583821276cec395c09f5af
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -306,6 +319,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -306,6 +317,12 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
   public:
    class OwnedByClientPassKey {
     private:
 +    // TODO(ckerr) can this list be shortened?
 +    friend class electron::DevToolsWindowDelegate;
-+    friend class electron::InspectableWebContentsView;
-+    friend class electron::MenuBar;
 +    friend class electron::RootView;
 +    friend class electron::RootViewMac;
 +    friend class electron::api::ImageView;
