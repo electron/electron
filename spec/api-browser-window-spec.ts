@@ -5,6 +5,7 @@ import {
   BrowserWindowConstructorOptions,
   BrowserView,
   dialog,
+  desktopCapturer,
   ipcMain,
   OnBeforeSendHeadersListenerDetails,
   net,
@@ -1537,6 +1538,68 @@ describe('BrowserWindow module', () => {
         expect(c.isVisible()).to.be.true('child is visible');
 
         await closeWindow(c);
+      });
+
+      ifdescribe(process.platform === 'darwin')('order', () => {
+        let w1: BrowserWindow;
+        let w2: BrowserWindow;
+
+        // DesktopCapturer.getSources() is guaranteed to return in the correct
+        // z-order from foreground to background.
+        const getOrder = async () => {
+          const ids = {
+            [w1.getMediaSourceId()]: 'w1',
+            [w2.getMediaSourceId()]: 'w2'
+          };
+          const sources = await desktopCapturer.getSources({
+            types: ['window'],
+            thumbnailSize: { width: 0, height: 0 }
+          });
+          return sources.map((s) => ids[s.id]).filter(Boolean);
+        };
+
+        // The 'show' event is only emitted if a window is in front.
+        // We instead wait for the the results of getOrder.
+        const waitForOrder = async (expected: string[]) => {
+          await waitUntil(
+            async () => {
+              return JSON.stringify(await getOrder()) === JSON.stringify(expected);
+            },
+            { rate: 10, timeout: 5000 }
+          );
+        };
+
+        beforeEach(async () => {
+          w1 = w;
+          w2 = new BrowserWindow({ show: false });
+          w1.showInactive();
+          await waitForOrder(['w1']);
+        });
+
+        afterEach(async () => {
+          await closeAllWindows();
+        });
+
+        it('brings a hidden window to the front by default', async () => {
+          w2.showInactive();
+          await waitForOrder(['w2', 'w1']);
+        });
+
+        it('shows a hidden window to the front when requested', async () => {
+          w2.showInactive({ order: 'front' });
+          await waitForOrder(['w2', 'w1']);
+        });
+
+        it('does not bring a hidden window to the front with automatic ordering', async () => {
+          w2.showInactive({ order: 'automatic' });
+          await waitForOrder(['w1', 'w2']);
+        });
+
+        it('rejects an invalid order', async () => {
+          expect(() => w2.showInactive({ order: 'invalid' as unknown as 'front' })).to.throw(
+            "'order' must be 'front' or 'automatic'"
+          );
+        });
       });
     });
 

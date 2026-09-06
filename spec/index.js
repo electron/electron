@@ -205,6 +205,8 @@ app
     const argv = require('yargs')
       .boolean('ci')
       .array('files')
+      .string('m')
+      .alias('m', 'match')
       .string('g')
       .alias('g', 'grep')
       .boolean('i')
@@ -285,9 +287,8 @@ app
       }
 
       // This allows you to run specific modules only:
-      // npm run test -match=menu
-      const moduleMatch = process.env.npm_config_match ? new RegExp(process.env.npm_config_match, 'g') : null;
-      if (moduleMatch && !moduleMatch.test(file)) {
+      // npm run test -- --match=menu
+      if (argv.match && !new RegExp(argv.match, 'g').test(file)) {
         return false;
       }
 
