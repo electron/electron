@@ -82,6 +82,7 @@ enable_pdf_save_to_drive = false
 # ever costs a cold-cache page load. Build the stub producer (as Android
 # does) instead.
 produce_v8_compile_hints = false
+
 # Track which grit resource IDs the linked binary actually references and
 # repack the locale .pak files with only those strings. Enabled for both
 # testing and release builds so that a reference to an unshipped resource
