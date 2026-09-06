@@ -226,6 +226,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);
+  void SetActivable(bool activable);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);

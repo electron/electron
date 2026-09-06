@@ -251,10 +251,13 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void UpdateFrame() = 0;
 #endif
 
-// whether windows should be ignored by mission control
 #if BUILDFLAG(IS_MAC)
+  // whether windows should be ignored by mission control
   virtual bool IsHiddenInMissionControl() const = 0;
   virtual void SetHiddenInMissionControl(bool hidden) = 0;
+
+  // Whether a panel window can become the main window.
+  virtual void SetActivable(bool activable) = 0;
 #endif
 
   // Touchbar API
