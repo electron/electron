@@ -659,7 +659,7 @@ jobs:
         name: pgo-v8-builtins-profiles
         path: profiles
     - name: Azure Login
-      uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca
+      uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c
       with:
         client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
