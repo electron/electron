@@ -44,11 +44,18 @@ void EmitDeprecationWarning(v8::Isolate* isolate,
 void EmitDeprecationWarning(std::string_view warning_msg,
                             std::string_view deprecation_code = "");
 
+// Compiles one of the electron/js2c/* bundles (with the build-time code cache)
+// into a function taking `parameters`; logs and returns empty on failure.
+v8::MaybeLocal<v8::Function> CompileBundle(
+    v8::Local<v8::Context> context,
+    const char* id,
+    v8::LocalVector<v8::String>* parameters);
+
 // Run a script with JS source bundled inside the binary as if it's wrapped
 // in a function called with a null receiver and arguments specified in C++.
-// The returned value is empty if an exception is encountered.
-// JS code run with this method can assume that their top-level
-// declarations won't affect the global scope.
+// The returned value is empty if an exception is encountered; the exception
+// is caught and logged. JS code run with this method can assume that their
+// top-level declarations won't affect the global scope.
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Isolate* isolate,
     v8::Local<v8::Context> context,

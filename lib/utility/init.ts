@@ -6,9 +6,7 @@ import { pathToFileURL } from 'url';
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScript');
-// We modified the original process.argv to let node.js load the init.js,
-// we need to restore it here.
-process.argv.splice(1, 1, entryScript);
+process.argv.splice(1, 0, entryScript);
 
 // Import common settings.
 require('@electron/internal/common/init');
@@ -45,8 +43,9 @@ runEntryPointWithESMLoader(async (cascadedLoader: any) => {
   try {
     await cascadedLoader.import(mainEntry.toString(), undefined, Object.create(null));
   } catch (err) {
-    // @ts-ignore internalBinding is a secret internal global that we shouldn't
-    // really be using, so we ignore the type error instead of declaring it in types
+    const { internalBinding } = __non_webpack_require__('internal/bootstrap/realm') as {
+      internalBinding: (name: string) => any;
+    };
     internalBinding('errors').triggerUncaughtException(err);
   }
 });

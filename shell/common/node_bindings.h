@@ -207,6 +207,10 @@ class NodeBindings {
   void UvRunOnce();
 
   // Which environment we are running.
+  // "browser" / "renderer" / "worker" / "utility"; names process.type and
+  // the electron/js2c/<type>_init bundle.
+  std::string_view ProcessType() const;
+
   const BrowserEnvironment browser_env_;
 
   // Engaged when this instance created its loop instead of integrating one.

@@ -35,12 +35,10 @@ namespace {
 
 namespace js2c = electron::js2c;
 
-// `four_arg` = compiled via util::CompileAndCall (4-arg
-// LookupAndCompileFunction with explicit `params`); else via
-// LoadEnvironment's 3-arg path (BuiltinInfo::parameter_map).
+// Each bundle is compiled the way util::CompileAndCall compiles it at runtime:
+// LookupAndCompileFunction with explicit `params`.
 struct Bundle {
   const char* id;
-  bool four_arg;
   std::span<const std::string_view> params;
 };
 
@@ -50,17 +48,15 @@ struct Bundle {
 // the node service's utility process.
 std::vector<Bundle> BundlesForFlavor(std::string_view flavor,
                                      bool from_node_snapshot) {
-  const Bundle kSandbox{js2c::kSandboxBundleId, true,
-                        js2c::kSandboxBundleParams};
-  const Bundle kIsolated{js2c::kIsolatedBundleId, true,
-                         js2c::kIsolatedBundleParams};
-  const Bundle kPreloadRealm{js2c::kPreloadRealmBundleId, true,
+  const Bundle kSandbox{js2c::kSandboxBundleId, js2c::kSandboxBundleParams};
+  const Bundle kIsolated{js2c::kIsolatedBundleId, js2c::kIsolatedBundleParams};
+  const Bundle kPreloadRealm{js2c::kPreloadRealmBundleId,
                              js2c::kPreloadRealmBundleParams};
-  const Bundle kNodeInit{js2c::kNodeInitId, true, js2c::kNodeInitParams};
-  const Bundle kBrowserInit{js2c::kBrowserInitId, false, {}};
-  const Bundle kRendererInit{js2c::kRendererInitId, false, {}};
-  const Bundle kUtilityInit{js2c::kUtilityInitId, false, {}};
-  const Bundle kWorkerInit{js2c::kWorkerInitId, false, {}};
+  const Bundle kNodeInit{js2c::kNodeInitId, js2c::kInitBundleParams};
+  const Bundle kBrowserInit{js2c::kBrowserInitId, js2c::kInitBundleParams};
+  const Bundle kRendererInit{js2c::kRendererInitId, js2c::kInitBundleParams};
+  const Bundle kUtilityInit{js2c::kUtilityInitId, js2c::kInitBundleParams};
+  const Bundle kWorkerInit{js2c::kWorkerInitId, js2c::kInitBundleParams};
 
   if (flavor == "sandbox")
     return {kSandbox, kIsolated, kPreloadRealm};
@@ -203,30 +199,20 @@ int main(int argc, char* argv[]) {
     loader.SetEagerCompile();
     for (const auto& b : BundlesForFlavor(flavor, from_node_snapshot)) {
       v8::Local<v8::Function> fn;
-      if (b.four_arg) {
-        v8::LocalVector<v8::String> params(isolate);
-        params.reserve(b.params.size());
-        for (std::string_view p : b.params) {
-          params.push_back(v8::String::NewFromUtf8(isolate, p.data(),
-                                                   v8::NewStringType::kNormal,
-                                                   static_cast<int>(p.size()))
-                               .ToLocalChecked());
-        }
-        if (!loader
-                 .LookupAndCompileFunction(context, b.id, &params,
-                                           /*optional_realm=*/nullptr)
-                 .ToLocal(&fn)) {
-          std::cerr << "4-arg compile failed: " << b.id << "\n";
-          return 1;
-        }
-      } else {
-        if (!loader
-                 .LookupAndCompileFunction(context, b.id,
-                                           /*optional_realm=*/nullptr)
-                 .ToLocal(&fn)) {
-          std::cerr << "3-arg compile failed: " << b.id << "\n";
-          return 1;
-        }
+      v8::LocalVector<v8::String> params(isolate);
+      params.reserve(b.params.size());
+      for (std::string_view p : b.params) {
+        params.push_back(v8::String::NewFromUtf8(isolate, p.data(),
+                                                 v8::NewStringType::kNormal,
+                                                 static_cast<int>(p.size()))
+                             .ToLocalChecked());
+      }
+      if (!loader
+               .LookupAndCompileFunction(context, b.id, &params,
+                                         /*optional_realm=*/nullptr)
+               .ToLocal(&fn)) {
+        std::cerr << "compile failed: " << b.id << "\n";
+        return 1;
       }
       std::unique_ptr<v8::ScriptCompiler::CachedData> cd(
           v8::ScriptCompiler::CreateCodeCacheForFunction(fn));
