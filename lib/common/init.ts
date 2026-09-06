@@ -3,6 +3,11 @@ import * as util from 'util';
 
 import type * as stream from 'stream';
 
+// Node cached its CLI options while --inspect-brk was masked for the embedder
+// entry point (see NodeBindings::LoadEnvironment); re-read them so the app's
+// own entry still pauses.
+(__non_webpack_require__('internal/options') as typeof import('@node/lib/internal/options')).refreshOptions();
+
 type AnyFn = (...args: any[]) => any;
 
 // setImmediate and process.nextTick makes use of uv_check and uv_prepare to
