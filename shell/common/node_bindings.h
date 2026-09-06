@@ -213,7 +213,7 @@ class NodeBindings {
 
   // Which environment we are running.
   // "browser" / "renderer" / "worker" / "utility"; names process.type and
-  // the electron/js2c/<type>_init bundle.
+  // the internal/electron/js2c/<type>_init bundle.
   std::string_view ProcessType() const;
 
   const BrowserEnvironment browser_env_;

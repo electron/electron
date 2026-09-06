@@ -34,8 +34,8 @@ import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
 declare_args() {
-  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
-  # false an empty stub is compiled and bundles compile from source.
+  # Emit a build-time V8 code cache for the internal/electron/js2c/* bundles.
+  # When false an empty stub is compiled and bundles compile from source.
   #
   # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
   # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
@@ -213,7 +213,7 @@ webpack_build("electron_browser_bundle") {
   inputs = auto_filenames.browser_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.browser.js"
-  out_file = "$target_gen_dir/js2c/browser_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
 webpack_build("electron_renderer_bundle") {
@@ -222,7 +222,7 @@ webpack_build("electron_renderer_bundle") {
   inputs = auto_filenames.renderer_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.renderer.js"
-  out_file = "$target_gen_dir/js2c/renderer_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
 webpack_build("electron_worker_bundle") {
@@ -231,7 +231,7 @@ webpack_build("electron_worker_bundle") {
   inputs = auto_filenames.worker_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.worker.js"
-  out_file = "$target_gen_dir/js2c/worker_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
 webpack_build("electron_sandboxed_renderer_bundle") {
@@ -240,7 +240,7 @@ webpack_build("electron_sandboxed_renderer_bundle") {
   inputs = auto_filenames.sandbox_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
 }
 
 webpack_build("electron_isolated_renderer_bundle") {
@@ -249,7 +249,7 @@ webpack_build("electron_isolated_renderer_bundle") {
   inputs = auto_filenames.isolated_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
-  out_file = "$target_gen_dir/js2c/isolated_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
 webpack_build("electron_node_bundle") {
@@ -258,7 +258,7 @@ webpack_build("electron_node_bundle") {
   inputs = auto_filenames.node_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.node.js"
-  out_file = "$target_gen_dir/js2c/node_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
 webpack_build("electron_utility_bundle") {
@@ -267,7 +267,7 @@ webpack_build("electron_utility_bundle") {
   inputs = auto_filenames.utility_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.utility.js"
-  out_file = "$target_gen_dir/js2c/utility_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
 webpack_build("electron_preload_realm_bundle") {
@@ -276,7 +276,7 @@ webpack_build("electron_preload_realm_bundle") {
   inputs = auto_filenames.preload_realm_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
 }
 
 action("electron_js2c") {
@@ -293,14 +293,14 @@ action("electron_js2c") {
   ]
 
   sources = [
-    "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/isolated_bundle.js",
-    "$target_gen_dir/js2c/node_init.js",
-    "$target_gen_dir/js2c/preload_realm_bundle.js",
-    "$target_gen_dir/js2c/renderer_init.js",
-    "$target_gen_dir/js2c/sandbox_bundle.js",
-    "$target_gen_dir/js2c/utility_init.js",
-    "$target_gen_dir/js2c/worker_init.js",
+    "$root_gen_dir/internal/electron/js2c/browser_init.js",
+    "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/node_init.js",
+    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/renderer_init.js",
+    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
   inputs = sources
@@ -925,11 +925,11 @@ if (current_toolchain == default_toolchain) {
   }
 }
 
-# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
-# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
-# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
-# the cache it emits is keyed to the target's read-only checksum and flag hash.
-# Cross-OS stays off; see electron_generate_js2c_code_cache.
+# Build-time host tool emitting V8 code caches for the internal/electron/js2c/*
+# framework bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it
+# links V8 with V8_TARGET_ARCH set to the target and reads the target's snapshot
+# blob -- the cache it emits is keyed to the target's read-only checksum and
+# flag hash. Cross-OS stays off; see electron_generate_js2c_code_cache.
 if (electron_generate_js2c_code_cache) {
   if (current_toolchain == v8_snapshot_toolchain) {
     executable("electron_natives_codecache") {
