@@ -486,7 +486,6 @@ class WebContents final : public ExclusiveAccessContext,
 
   SkRegion* draggable_region();
 
-  // Null unless ELECTRON_DEBUG_DRAGGABLE_REGIONS is in effect.
   DraggableRegionDebugger* draggable_region_debugger() const {
     return draggable_region_debugger_.get();
   }
@@ -936,9 +935,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   std::optional<SkRegion> draggable_region_;
 
-  // Only set when ELECTRON_DEBUG_DRAGGABLE_REGIONS is in effect, see
-  // DraggableRegionDebugger::IsEnabled(). Declared after
-  // |inspectable_web_contents_| because it observes views owned by it.
+  // Declared after |inspectable_web_contents_| because it observes its views.
   std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};

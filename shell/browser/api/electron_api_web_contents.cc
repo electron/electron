@@ -2386,7 +2386,6 @@ void WebContents::DraggableRegionsChanged(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions,
     content::WebContents* contents) {
   if (!draggable_region_debugger_ && DraggableRegionDebugger::IsEnabled()) {
-    // Guests and offscreen contents have no view of their own to draw over.
     views::View* contents_view = nullptr;
     if (inspectable_web_contents_ && !is_guest() && !IsOffScreen())
       contents_view = inspectable_web_contents_->GetView()->GetContentsView();

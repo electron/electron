@@ -29,17 +29,12 @@ namespace {
 
 constexpr char kEnvVar[] = "ELECTRON_DEBUG_DRAGGABLE_REGIONS";
 
-// Every log line from this file carries this prefix so it can be grepped out
-// of the rest of the Chromium log.
 constexpr char kLogPrefix[] = "[draggable-regions]";
 
-// Hit test summaries are emitted at most this often.
 constexpr base::TimeDelta kHitTestLogInterval = base::Seconds(2);
 
 constexpr SkColor kRegionFillColor = SkColorSetARGB(0x50, 0xE5, 0x39, 0x35);
 constexpr SkColor kRegionStrokeColor = SkColorSetARGB(0xC8, 0xE5, 0x39, 0x35);
-// Parts of the region that differ from the previous update are tinted so a
-// change is visible even when the rectangles barely move.
 constexpr SkColor kChangedFillColor = SkColorSetARGB(0x70, 0xFF, 0xC1, 0x07);
 constexpr SkColor kStampBackground = SkColorSetARGB(0xB0, 0x00, 0x00, 0x00);
 constexpr SkColor kStampText = SK_ColorWHITE;
@@ -54,9 +49,6 @@ std::string FormatMicros(base::TimeDelta delta) {
 
 }  // namespace
 
-// Paints the rectangles that make up the draggable region. Lives in the
-// overlay widget, whose bounds match the contents view, so the region's
-// coordinates can be used as-is.
 class DraggableRegionDebugger::OverlayView : public views::View {
  public:
   OverlayView() = default;
@@ -84,9 +76,6 @@ class DraggableRegionDebugger::OverlayView : public views::View {
     for (SkRegion::Iterator it(changed_); !it.done(); it.next())
       canvas->FillRect(gfx::SkIRectToRect(it.rect()), kChangedFillColor);
 
-    // Stamp the overlay with which update it shows and how old that update
-    // was when this paint ran, so a stale overlay can be told apart from
-    // stale region data.
     const std::string stamp = base::StringPrintf(
         "draggable regions: update #%" PRIu64 ", painted %s after it arrived",
         update_number_,
@@ -151,9 +140,6 @@ void DraggableRegionDebugger::OnRegionsChanged(
     timing +=
         ", " + FormatMillis(now - last_update_time_) + " since previous update";
   }
-  // How long the browser hit tested against the previous region after the
-  // contents view last changed size. During a resize this is the window in
-  // which clicks land on stale rectangles.
   if (!last_bounds_change_time_.is_null()) {
     timing += ", " + FormatMillis(now - last_bounds_change_time_) +
               " after last bounds change to " + last_bounds_.size().ToString();
@@ -225,7 +211,6 @@ void DraggableRegionDebugger::EnsureOverlay() {
   params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
   params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
   params.activatable = views::Widget::InitParams::Activatable::kNo;
-  // The overlay must never get in the way of the regions it visualizes.
   params.accept_events = false;
   overlay_widget_->Init(std::move(params));
   overlay_widget_->SetVisibilityChangedAnimationsEnabled(false);
@@ -314,7 +299,6 @@ void DraggableRegionDebugger::OnViewRemovedFromWidget(
     views::View* observed_view) {
   if (observed_view != contents_view_)
     return;
-  // The overlay is parented to the widget the view just left.
   DestroyOverlay();
   ObserveViewAncestry();
 }
