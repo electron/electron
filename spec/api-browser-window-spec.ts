@@ -1616,11 +1616,17 @@ describe('BrowserWindow module', () => {
         w.show();
         w.destroy();
 
-        // We first need to resign app focus for this test to work
-        const isInactive = once(app, 'did-resign-active');
+        // The test needs the app inactive and Finder frontmost. The app may
+        // already be inactive (an earlier spec can leave it unable to
+        // reactivate itself), in which case there is no activation to resign.
+        const getActiveAppOsa =
+          'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = () => childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+        const isInactive = app.isActive() ? once(app, 'did-resign-active') : Promise.resolve();
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
         defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
         await isInactive;
+        await waitUntil(() => activeApp() === 'Finder');
 
         // Create new window
         w = new BrowserWindow({
@@ -1640,11 +1646,7 @@ describe('BrowserWindow module', () => {
         await isShow;
         await isFocus;
 
-        const getActiveAppOsa =
-          'tell application "System Events" to get the name of the first process whose frontmost is true';
-        const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
-
-        expect(activeApp).to.equal('Finder');
+        expect(activeApp()).to.equal('Finder');
       });
     });
 
