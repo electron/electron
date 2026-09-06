@@ -20,8 +20,20 @@ This document uses the following convention to categorize breaking changes:
 
 The experimental `contentTracing.enableHeapProfiling()` API has been removed.
 Chromium removed the memlog implementation that backed this API and replaced it
-with a Perfetto heap-profiling data source. Heap profiling through Electron's
-`contentTracing` API is unavailable until that data source is integrated.
+with a Perfetto heap-profiling data source. Pass `heap_profiler_options` to
+`contentTracing.startRecording()` to enable heap profiling for the duration of
+a trace. Heap-enabled recordings use the
+[Perfetto protobuf format](https://perfetto.dev/docs/reference/trace-packet-proto)
+rather than the legacy JSON trace format.
+
+```js
+await contentTracing.startRecording({
+  heap_profiler_options: {
+    sampling_interval_bytes: 128 * 1024,
+    sampling_interval_ms: 50
+  }
+})
+```
 
 ### Behavior Changed: screen capture requests are reported as `display-capture` in `setPermissionRequestHandler`
 

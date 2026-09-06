@@ -9,12 +9,16 @@
 #include <utility>
 
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback_helpers.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
+#include "services/tracing/public/cpp/perfetto/perfetto_data_source_names.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -23,11 +27,47 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/perfetto/protos/perfetto/config/chrome/sampling_heap_profiler.gen.h"
+#include "third_party/perfetto/protos/perfetto/config/trace_config.gen.h"
 
 using content::TracingController;
 using namespace std::literals;
 
+namespace {
+
+struct HeapProfilerOptions {
+  uint32_t sampling_interval_bytes = 128 * 1024;
+  uint32_t sampling_interval_ms = 50;
+};
+
+struct ContentTracingConfig {
+  base::trace_event::TraceConfig trace_config;
+  std::optional<HeapProfilerOptions> heap_profiler_options;
+};
+
+}  // namespace
+
 namespace gin {
+
+template <>
+struct Converter<HeapProfilerOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     HeapProfilerOptions* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+
+    if (options.Has("sampling_interval_bytes") &&
+        (!options.Get("sampling_interval_bytes",
+                      &out->sampling_interval_bytes) ||
+         out->sampling_interval_bytes == 0)) {
+      return false;
+    }
+    return !options.Has("sampling_interval_ms") ||
+           options.Get("sampling_interval_ms", &out->sampling_interval_ms);
+  }
+};
 
 template <>
 struct Converter<base::trace_event::TraceConfig> {
@@ -58,11 +98,56 @@ struct Converter<base::trace_event::TraceConfig> {
   }
 };
 
+template <>
+struct Converter<ContentTracingConfig> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ContentTracingConfig* out) {
+    if (!ConvertFromV8(isolate, val, &out->trace_config))
+      return false;
+
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+
+    if (!options.Has("heap_profiler_options"))
+      return true;
+
+    HeapProfilerOptions heap_profiler_options;
+    if (!options.Get("heap_profiler_options", &heap_profiler_options))
+      return false;
+    out->heap_profiler_options = heap_profiler_options;
+    return true;
+  }
+};
+
 }  // namespace gin
 
 namespace {
 
-using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
+void AddHeapProfilingDataSource(
+    const base::trace_event::TraceConfig& trace_config,
+    const HeapProfilerOptions& heap_profiler_options,
+    perfetto::TraceConfig* perfetto_config) {
+  auto* heap_data_source = perfetto_config->add_data_sources();
+  auto* data_source = heap_data_source->mutable_config();
+  data_source->set_name(tracing::kNativeHeapProfilerSourceName);
+  data_source->set_target_buffer(0);
+  for (const auto& included_pid :
+       trace_config.process_filter_config().included_process_ids()) {
+    *heap_data_source->add_producer_name_filter() = base::StrCat(
+        {tracing::kPerfettoProducerNamePrefix,
+         base::NumberToString(static_cast<uint32_t>(included_pid))});
+  }
+
+  perfetto::protos::gen::ChromiumSamplingHeapProfilerConfig heap_config;
+  heap_config.set_sampling_interval_bytes(
+      heap_profiler_options.sampling_interval_bytes);
+  heap_config.set_sampling_interval_ms(
+      heap_profiler_options.sampling_interval_ms);
+  data_source->set_chromium_sampling_heap_profiler_raw(
+      heap_config.SerializeAsString());
+}
 
 std::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
@@ -95,8 +180,8 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
     // promise it owns must be destroyed on the thread that created it, so make
     // sure both running and destroying the closure happen back on this thread.
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindPostTaskToCurrentDefault(
-                        base::BindOnce(std::move(split_callback.first), ""sv)));
+        *file_path, base::BindPostTaskToCurrentDefault(base::BindOnce(
+                        std::move(split_callback.first), ""sv)));
     if (!instance->StopTracing(endpoint)) {
       std::move(split_callback.second).Run("Failed to stop tracing"sv);
     }
@@ -148,9 +233,8 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   return handle;
 }
 
-v8::Local<v8::Promise> StartTracing(
-    v8::Isolate* isolate,
-    const base::trace_event::TraceConfig& trace_config) {
+v8::Local<v8::Promise> StartTracing(v8::Isolate* isolate,
+                                    const ContentTracingConfig& config) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -160,10 +244,24 @@ v8::Local<v8::Promise> StartTracing(
     return handle;
   }
 
-  if (!TracingController::GetInstance()->StartTracing(
-          trace_config,
+  auto* instance = TracingController::GetInstance();
+  if (instance->IsTracing()) {
+    return gin_helper::Promise<void>::ResolvedPromise(isolate);
+  }
+
+  TracingController::StartTracingOptions options;
+  if (config.heap_profiler_options) {
+    options.output_format = TracingController::TraceDataFormat::kProtobuf;
+    options.perfetto_config_modifier =
+        base::BindOnce(&AddHeapProfilingDataSource, config.trace_config,
+                       *config.heap_profiler_options);
+  }
+
+  if (!instance->StartTracing(
+          config.trace_config,
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
-                         std::move(promise)))) {
+                         std::move(promise)),
+          std::move(options))) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
