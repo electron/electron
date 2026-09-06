@@ -855,6 +855,13 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   render_widget_host_->ForwardWheelEvent(event);
 }
 
+void OffScreenRenderWidgetHostView::GestureEventAck(
+    const blink::WebGestureEvent& event,
+    blink::mojom::InputEventResultSource,
+    blink::mojom::InputEventResultState ack_result) {
+  mouse_wheel_phase_handler_.GestureEventAck(event, ack_result);
+}
+
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
