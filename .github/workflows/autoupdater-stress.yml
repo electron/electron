@@ -141,6 +141,9 @@ jobs:
       env:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         AU_TIMING: 1
+        # Measure the serial cost on Intel: at 2, run time summed to the wall
+        # clock, so the parallelism may buy nothing there.
+        ELECTRON_SPEC_UPDATER_CONCURRENCY: 1
       run: |
         cd src/electron
         echo "arch=$TARGET_ARCH concurrency=${ELECTRON_SPEC_UPDATER_CONCURRENCY:-default}" | tee "$RUNNER_TEMP/au/logs/summary.txt"
