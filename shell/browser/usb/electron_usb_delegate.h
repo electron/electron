@@ -53,6 +53,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
       blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
+                                  content::RenderFrameHost* frame,
                                   const url::Origin& origin) override;
   void RevokeDevicePermissionWebInitiated(
       content::BrowserContext* browser_context,
