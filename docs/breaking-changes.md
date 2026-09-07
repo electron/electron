@@ -14,6 +14,60 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (46.0)
+
+### Behavior Changed: `webContents.print()` ignores undocumented option names
+
+`webContents.print()` and `<webview>.print()` now read only the options listed
+in their [documentation](api/web-contents.md#contentsprintoptions-callback).
+A few other names used to work because Electron passed them straight through
+to Chromium. Those names are now ignored:
+
+| No longer read | Use instead |
+| --- | --- |
+| `duplex` | `duplexMode` |
+| `shouldPrintBackgrounds` | `printBackground` |
+| `margins.marginTop`, `marginBottom`, `marginLeft`, `marginRight` | `margins.top`, `bottom`, `left`, `right`, with `marginType: 'custom'` |
+| `mediaSize` | `pageSize` |
+
+An option with a value of the wrong type still falls back to its default.
+
+### Behavior Changed: silent prints are no longer shrunk to the printable area
+
+Previously, `webContents.print({ silent: true })` with the default margins
+scaled the page to fit the printer's printable area. Printing the same page
+through the dialog did not, so silent output could come out smaller.
+
+Silent prints now scale the same way as dialog prints. If your output now
+runs into the printer's unprintable edges, set `margins` or `scaleFactor`.
+
+### Behavior Changed: the `webContents.print()` dialog appears before the page is laid out
+
+When `silent` is `false`, Electron now shows the system print dialog first
+and lays out the page after the user confirms it. Previously the page was
+laid out first. As a result:
+
+* The dialog no longer offers to print only the current selection.
+* On Windows, the dialog's page range field is unavailable. Pass `pageRanges`
+  in `options` instead.
+
+`window.print()` called from the page is not affected. See
+[`contents.print()`](api/web-contents.md#contentsprintoptions-callback) for how
+`options` apply to the dialog on each platform.
+
+### Behavior Changed: `webContents.print()` failure reasons
+
+The `print()` callback no longer reports `"failed"` or
+`"Failed to enumerate printers"`. Its `failureReason` is now one of:
+
+* `"Invalid printer settings"`
+* `"Print job canceled"`
+* `"Print job failed"`
+* `"Invalid deviceName provided"`
+* `"No printers available on the network"`
+
+Where you can, check `success` instead of matching a specific string.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
