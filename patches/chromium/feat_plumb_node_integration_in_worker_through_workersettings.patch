@@ -12,7 +12,7 @@ would themselves get Node integration (the main frame, or any frame with
 node_integration_in_sub_frames) hand it to their workers.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..6d305498f966bfbf250b90f57163a8eb93245320 100644
+index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..939c57c79f5d97c9e5c00ead9df97af0d95443a3 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -42,7 +42,7 @@ index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..6d305498f966bfbf250b90f57163a8eb
          execution_context->GetScheduler()
              ->ToFrameScheduler()
 diff --git a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
-index 3cf2c103c9460d6a5ef64b946a57f96432501670..937c824c5eb4253733c6cd78c38209e2019a79a9 100644
+index 3cf2c103c9460d6a5ef64b946a57f96432501670..857500a888e3454c13c4af89f83d73c57ed59090 100644
 --- a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 +++ b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 @@ -13,10 +13,12 @@
