@@ -955,25 +955,17 @@ webview.addEventListener('close', () => {
 
 ### Event: 'ipc-message'
 
-<!--
-```YAML history
-changes:
-  - pr-url: https://github.com/electron/electron/pull/53684
-    description: "Added `frameOrigin` and `frameUrl`."
-```
--->
-
 Returns:
 
 * `frameId` \[number, number] - pair of `[processId, frameId]`.
-* `frameOrigin` string | null - The origin of the frame in the guest that sent the message (`'null'` for an opaque origin), or `null` if the frame had already gone away.
-* `frameUrl` string | null - The URL of that frame.
 * `channel` string
 * `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
-The guest's preload script runs in every page the guest navigates to, so check
-`frameOrigin` before acting on a message.
+`frameId` does not tell the embedder which document sent the message; when
+that matters, have the guest use `ipcRenderer.send()` and handle the guest
+`webContents`' [`ipc-message`](web-contents.md#event-ipc-message) event in the
+main process, where `event.senderFrame` identifies the sender.
 
 With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:
