@@ -46,7 +46,7 @@ The following methods are available on instances of `WebRequest`:
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -100,7 +100,7 @@ Some examples of valid `urls`:
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -138,7 +138,7 @@ The `callback` has to be called with a `response` object.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -168,7 +168,7 @@ response are visible by the time this listener is fired.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -209,7 +209,7 @@ The `callback` has to be called with a `response` object.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -243,7 +243,7 @@ and response headers are available.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -278,7 +278,7 @@ redirect is about to occur.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
@@ -311,7 +311,7 @@ completed.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added `details.initiator`."
 ```
 -->
