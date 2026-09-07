@@ -21,6 +21,7 @@
 #include "content/public/browser/child_process_termination_info.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
@@ -335,20 +336,25 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
   HandleTermination(0);
 }
 
+bool UtilityProcessWrapper::IsThisProcess(
+    const content::ChildProcessData& data) const {
+  return pid_ != base::kNullProcessId &&
+         data.process_type == content::PROCESS_TYPE_UTILITY &&
+         data.metrics_name == node::mojom::NodeService::Name_ &&
+         data.GetProcess().Pid() == pid_;
+}
+
 void UtilityProcessWrapper::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  if (pid_ != base::kNullProcessId &&
-      data.process_type == content::PROCESS_TYPE_UTILITY &&
-      data.metrics_name == node::mojom::NodeService::Name_ &&
-      data.GetProcess().Pid() == pid_)
+  if (IsThisProcess(data))
     HandleTermination(info.exit_code);
 }
 
 void UtilityProcessWrapper::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  if (pid_ != base::kNullProcessId && data.GetProcess().Pid() == pid_)
+  if (IsThisProcess(data))
     HandleTermination(info.exit_code);
 }
 

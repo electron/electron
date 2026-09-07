@@ -100,6 +100,7 @@ class UtilityProcessWrapper final
   void CloseConnectorPort();
 
   void HandleTermination(uint32_t exit_code);
+  bool IsThisProcess(const content::ChildProcessData& data) const;
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
