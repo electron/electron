@@ -23,10 +23,10 @@ This is specific to Electron's permission model and is not intended for
 upstream.
 
 diff --git a/chrome/browser/usb/chrome_usb_delegate.cc b/chrome/browser/usb/chrome_usb_delegate.cc
-index c34387a5e63299901e6e32e1b5a43e0b08b8d814..fe4e7878ce52e8d60057ba566075e8a932794df3 100644
+index f0c2b7398cbec947acb3869b5e8d05e0c921c389..8823d692d2a30a46aa8ebbc4403b4f65c956a6f1 100644
 --- a/chrome/browser/usb/chrome_usb_delegate.cc
 +++ b/chrome/browser/usb/chrome_usb_delegate.cc
-@@ -301,6 +301,7 @@ bool ChromeUsbDelegate::CanRequestDevicePermission(
+@@ -302,6 +302,7 @@ bool ChromeUsbDelegate::CanRequestDevicePermission(
  
  void ChromeUsbDelegate::RevokeDevicePermissionWebInitiated(
      content::BrowserContext* browser_context,
@@ -35,10 +35,10 @@ index c34387a5e63299901e6e32e1b5a43e0b08b8d814..fe4e7878ce52e8d60057ba566075e8a9
      const device::mojom::UsbDeviceInfo& device) {
    auto* chooser_context = GetChooserContext(browser_context);
 diff --git a/chrome/browser/usb/chrome_usb_delegate.h b/chrome/browser/usb/chrome_usb_delegate.h
-index 0f8281c843aff6b095eed4176455f4e5c1b3bc97..39cc7f70d6f191ac1012dce76de9da8462c8ab96 100644
+index 190c8ad7733aa90dede09551f4ecf18e4cd18466..d2f705be4d5b423c106f1882175d7b08d8f594a4 100644
 --- a/chrome/browser/usb/chrome_usb_delegate.h
 +++ b/chrome/browser/usb/chrome_usb_delegate.h
-@@ -42,6 +42,7 @@ class ChromeUsbDelegate : public content::UsbDelegate {
+@@ -43,6 +43,7 @@ class ChromeUsbDelegate : public content::UsbDelegate {
                                    const url::Origin& origin) override;
    void RevokeDevicePermissionWebInitiated(
        content::BrowserContext* browser_context,
@@ -60,10 +60,10 @@ index 2497764e77ff1413170aefd57729f5829f8f8d4a..7c729656f0494e077049434afacaf121
  HidService::HidService(
      base::WeakPtr<ServiceWorkerVersion> service_worker_version,
 diff --git a/content/browser/serial/serial_service.cc b/content/browser/serial/serial_service.cc
-index 0f9a52d3cd2644485fe3f48492a0e07e75214382..32b3b92e0ac44fb0146dd2a108aad1b462f4fea6 100644
+index d16b6bfb69ff2022caab712a82c463edf152f7d8..1a8441f41de716691a3030405c8a3ce45e9c5694 100644
 --- a/content/browser/serial/serial_service.cc
 +++ b/content/browser/serial/serial_service.cc
-@@ -213,7 +213,7 @@ void SerialService::OnPortManagerConnectionError() {
+@@ -216,7 +216,7 @@ void SerialService::OnPortManagerConnectionError() {
  }
  
  void SerialService::OnPermissionRevoked(const url::Origin& origin) {
@@ -88,7 +88,7 @@ index f93b6402c1366d8a34da5e5d5e5268a94d99a98c..3f401915bb4919a31f2c6ea9fae24309
                      const device::mojom::UsbDeviceInfo&));
    MOCK_METHOD2(GetDeviceInfo,
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
-index e22f5428c2e309a85d29241fc3a0a7b2bc183f4e..26399884776c4747833539f9608ca5276017188e 100644
+index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..3aa71304c896ae6c5461f2f5518cdf64c01c813a 100644
 --- a/content/browser/usb/web_usb_service_impl.cc
 +++ b/content/browser/usb/web_usb_service_impl.cc
 @@ -206,7 +206,7 @@ void WebUsbServiceImpl::Create(
@@ -100,7 +100,7 @@ index e22f5428c2e309a85d29241fc3a0a7b2bc183f4e..26399884776c4747833539f9608ca527
        render_frame_host, std::move(pending_receiver));
  }
  
-@@ -380,7 +380,8 @@ void WebUsbServiceImpl::ForgetDevice(const std::string& guid,
+@@ -385,7 +385,8 @@ void WebUsbServiceImpl::ForgetDevice(const std::string& guid,
      if (device_info &&
          delegate->HasDevicePermission(browser_context, render_frame_host_,
                                        origin_, *device_info)) {
