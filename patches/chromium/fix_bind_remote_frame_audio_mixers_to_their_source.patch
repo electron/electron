@@ -1,0 +1,181 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Friedman <friedmanj98@gmail.com>
+Date: Thu, 27 Aug 2026 08:14:27 -0400
+Subject: fix: bind remote-frame audio mixers to their source
+
+Default-device sinks use the local source frame whenever the main frame is
+remote, but the mixer key still groups those sinks by the remote main
+frame. Removing the frame which owns the shared sink can therefore leave
+sibling media attached to a closed audio output clock.
+
+Include the source frame in a default-device mixer identity whenever its
+main frame is remote. Classify the two default-device aliases before
+explicit device IDs so the aliases remain equivalent without violating
+strict weak ordering. Local-main-frame mixers and explicit devices retain
+their existing sharing behavior.
+
+The regression tests verify same-source alias sharing, separation and
+independent teardown for sibling sources under a remote main frame, and
+strict ordering around the communications device. The playback stall and
+owner-dependent sink teardown have been reproduced on Windows and macOS,
+matching the platform-independent sink ownership rule corrected here.
+
+This patch is intended to be upstreamed to Chromium and removed after the
+fix rolls into Electron.
+
+diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager.h b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager.h
+index 2894eaed100f13a885bc1d3ddeb904c1d9688d43..b010267694610c2f3ec4bb53a726da84c0614e7e 100644
+--- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager.h
++++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager.h
+@@ -141,11 +141,30 @@ class BLINK_MODULES_EXPORT AudioRendererMixerManager final
+         return a.params.effects() < b.params.effects();
+       }
+ 
+-      if (media::AudioDeviceDescription::IsDefaultDevice(a.device_id) &&
+-          media::AudioDeviceDescription::IsDefaultDevice(b.device_id)) {
+-        // Both device IDs represent the same default device => do not compare
+-        // them. We can skip the `source_frame_token` check in this case since
+-        // the default device is always authorized.
++      const bool a_device_is_default =
++          media::AudioDeviceDescription::IsDefaultDevice(a.device_id);
++      const bool b_device_is_default =
++          media::AudioDeviceDescription::IsDefaultDevice(b.device_id);
++
++      if (a_device_is_default != b_device_is_default) {
++        // Keep the aliases for the default device in one ordering class.
++        // Otherwise, "" and "default" could compare differently around an
++        // explicit device ID.
++        return a_device_is_default;
++      }
++
++      if (a_device_is_default && a.main_frame_token.Is<RemoteFrameToken>() &&
++          a.source_frame_token != b.source_frame_token) {
++        // A remote main frame cannot own the sink, so GetSink() binds it to
++        // the local source frame instead. Match the mixer's lifetime to that
++        // source frame.
++        return a.source_frame_token < b.source_frame_token;
++      }
++
++      if (a_device_is_default) {
++        // Both device IDs represent the same default device. Outside the
++        // source-bound remote-main-frame case above, preserve sharing and
++        // ignore the alias spelling.
+         return false;
+       }
+ 
+diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager_test.cc b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager_test.cc
+index 5b5deeff766ce3de132229a6ddc6077dbab88d3b..803ff72a4a1f3274707a1df42498e0984e2e0875 100644
+--- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager_test.cc
++++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_manager_test.cc
+@@ -37,6 +37,8 @@ constexpr media::ChannelLayout kAnotherChannelLayout =
+     media::CHANNEL_LAYOUT_2_1;
+ const char* const kDefaultDeviceId =
+     media::AudioDeviceDescription::kDefaultDeviceId;
++const char* const kCommunicationsDeviceId =
++    media::AudioDeviceDescription::kCommunicationsDeviceId;
+ constexpr char kAnotherDeviceId[] = "another-device-id";
+ constexpr char kMatchedDeviceId[] = "matched-device-id";
+ constexpr char kNonexistentDeviceId[] = "nonexistent-device-id";
+@@ -143,6 +145,7 @@ class AudioRendererMixerManagerTest : public testing::Test {
+       const FrameToken& main_frame_token,
+       const media::AudioSinkParameters& params) {
+     if ((params.device_id == kDefaultDeviceId) ||
++        (params.device_id == kCommunicationsDeviceId) ||
+         (params.device_id == kAnotherDeviceId)) {
+       return mock_sink_ ? std::move(mock_sink_)
+                         : CreateNormalSink(params.device_id);
+@@ -194,6 +197,55 @@ TEST_F(AudioRendererMixerManagerTest, GetSink) {
+   manager_->GetSink(kLocalFrameToken, kFrameToken, kAnotherDeviceId);
+ }
+ 
++TEST_F(AudioRendererMixerManagerTest,
++       RemoteMainFrameDefaultDeviceMixersFollowSourceFrames) {
++  media::AudioParameters params(
++      AudioParameters::AUDIO_PCM_LINEAR,
++      media::ChannelLayoutConfig::FromLayout<kChannelLayout>(), kSampleRate,
++      kBufferSize);
++  const LocalFrameToken first_source_frame_token;
++  const LocalFrameToken second_source_frame_token;
++  const FrameToken remote_main_frame_token = RemoteFrameToken();
++  media::FakeAudioRenderCallback first_callback(0, kSampleRate);
++  media::FakeAudioRenderCallback alias_callback(1, kSampleRate);
++  media::FakeAudioRenderCallback second_callback(2, kSampleRate);
++
++  mock_sink_ = CreateNormalSink();
++  EXPECT_CALL(*mock_sink_, Start()).Times(1);
++  auto first_input =
++      CreateInputHelper(first_source_frame_token, remote_main_frame_token,
++                        base::UnguessableToken(), kDefaultDeviceId,
++                        AudioLatency::Type::kPlayback, params, &first_callback);
++
++  mock_sink_ = CreateNormalSink(std::string());
++  EXPECT_CALL(*mock_sink_, Start()).Times(0);
++  auto alias_input =
++      CreateInputHelper(first_source_frame_token, remote_main_frame_token,
++                        base::UnguessableToken(), std::string(),
++                        AudioLatency::Type::kPlayback, params, &alias_callback);
++
++  mock_sink_ = CreateNormalSink();
++  EXPECT_CALL(*mock_sink_, Start()).Times(1);
++  auto second_input = CreateInputHelper(
++      second_source_frame_token, remote_main_frame_token,
++      base::UnguessableToken(), kDefaultDeviceId, AudioLatency::Type::kPlayback,
++      params, &second_callback);
++
++  first_input->Start();
++  EXPECT_EQ(1u, mixer_count());
++  alias_input->Start();
++  EXPECT_EQ(1u, mixer_count());
++  second_input->Start();
++  EXPECT_EQ(2u, mixer_count());
++
++  alias_input->Stop();
++  EXPECT_EQ(2u, mixer_count());
++  first_input->Stop();
++  EXPECT_EQ(1u, mixer_count());
++  second_input->Stop();
++  EXPECT_EQ(0u, mixer_count());
++}
++
+ // Verify GetMixer() and ReturnMixer() both work as expected; particularly with
+ // respect to the explicit ref counting done.
+ TEST_F(AudioRendererMixerManagerTest, GetReturnMixer) {
+@@ -571,6 +623,38 @@ TEST_F(AudioRendererMixerManagerTest, OneMixerDifferentDefaultDeviceIDs) {
+   EXPECT_EQ(0u, mixer_count());
+ }
+ 
++// Verify default-device aliases remain equivalent when an explicit device ID
++// sorts lexicographically between them. This protects MixerKeyCompare's strict
++// weak ordering.
++TEST_F(AudioRendererMixerManagerTest,
++       DefaultDeviceAliasesRemainEquivalentAroundCommunicationsDevice) {
++  media::AudioParameters params(
++      AudioParameters::AUDIO_PCM_LINEAR,
++      media::ChannelLayoutConfig::FromLayout<kChannelLayout>(), kSampleRate,
++      kBufferSize);
++
++  AudioRendererMixer* empty_default_mixer = GetMixer(
++      kLocalFrameToken, kFrameToken, params, AudioLatency::Type::kPlayback,
++      std::string(), SinkUseState::kNewSink);
++  AudioRendererMixer* communications_mixer = GetMixer(
++      kLocalFrameToken, kFrameToken, params, AudioLatency::Type::kPlayback,
++      kCommunicationsDeviceId, SinkUseState::kNewSink);
++  AudioRendererMixer* named_default_mixer = GetMixer(
++      kLocalFrameToken, kFrameToken, params, AudioLatency::Type::kPlayback,
++      kDefaultDeviceId, SinkUseState::kExistingSink);
++
++  EXPECT_EQ(empty_default_mixer, named_default_mixer);
++  EXPECT_NE(empty_default_mixer, communications_mixer);
++  EXPECT_EQ(2u, mixer_count());
++
++  ReturnMixer(empty_default_mixer);
++  EXPECT_EQ(2u, mixer_count());
++  ReturnMixer(named_default_mixer);
++  EXPECT_EQ(1u, mixer_count());
++  ReturnMixer(communications_mixer);
++  EXPECT_EQ(0u, mixer_count());
++}
++
+ // Verify that GetMixer() correctly returns a null mixer and an appropriate
+ // status code when a nonexistent device is requested.
+ TEST_F(AudioRendererMixerManagerTest, NonexistentDevice) {
