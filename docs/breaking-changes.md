@@ -121,6 +121,28 @@ win.webContents.setWindowOpenHandler(() => ({
 Setting `nodeIntegration: true` in the override also makes the child unsandboxed and has
 the same effect.
 
+### Deprecated: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods are deprecated and will be removed in
+Electron 46, following Chromium's removal of the synchronous OSCrypt backend
+they are built on. Use the asynchronous methods instead, which use the same
+per-platform key stores. Data encrypted with `safeStorage.encryptString()` can
+be decrypted with `safeStorage.decryptStringAsync()`.
+
+```js
+// Deprecated
+if (safeStorage.isEncryptionAvailable()) {
+  const encrypted = safeStorage.encryptString('secret')
+  const decrypted = safeStorage.decryptString(encrypted)
+}
+
+// Replace with
+if (await safeStorage.isAsyncEncryptionAvailable()) {
+  const encrypted = await safeStorage.encryptStringAsync('secret')
+  const { result: decrypted } = await safeStorage.decryptStringAsync(encrypted)
+}
+```
+
 ## Breaking API Changes (44.0)
 
 ### Behavior Changed: `webContents` may be `null` in `select-client-certificate`
