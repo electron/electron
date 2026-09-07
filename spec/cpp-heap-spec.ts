@@ -6,6 +6,242 @@ import * as path from 'node:path';
 import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('cpp heap', () => {
+  describe('native callback holders', () => {
+    ifdescribe(isTestingBindingAvailable())('worker lifetime', () => {
+      for (const mode of ['gc', 'exit', 'terminate']) {
+        it(`destroys callback holders on worker ${mode}`, async () => {
+          const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+          const result = await remotely(
+            async (fixture: string, mode: string) => {
+              const { once } = require('node:events') as typeof import('node:events');
+              const { Worker } = require('node:worker_threads');
+              const testing = process._linkedBinding('electron_common_testing');
+              const before = testing.getLiveCallbackHolderProbeCountForTesting();
+              const worker = new Worker(fixture);
+              const signal = AbortSignal.timeout(20_000);
+              // Register both listeners before the worker can send or exit.
+              const ready = once(worker, 'message', { signal });
+              const exited = once(worker, 'exit', { signal });
+              try {
+                const [state, [code]] = await Promise.all([
+                  ready.then(async ([message]) => {
+                    const during = testing.getLiveCallbackHolderProbeCountForTesting();
+                    if (mode === 'terminate') {
+                      await worker.terminate();
+                    } else {
+                      worker.postMessage(mode);
+                    }
+                    return { message, during };
+                  }),
+                  exited
+                ]);
+                return {
+                  ...state,
+                  code,
+                  before,
+                  after: testing.getLiveCallbackHolderProbeCountForTesting()
+                };
+              } finally {
+                await worker.terminate();
+              }
+            },
+            path.join(__dirname, 'fixtures', 'api', 'cppgc-callback-lifetime-worker.js'),
+            mode
+          );
+          expect(result.message).to.equal('ready');
+          expect(result.during).to.equal(result.before + 2);
+          expect(result.after).to.equal(result.before, 'worker teardown must destroy native callback state');
+          expect(result.code).to.equal(mode === 'terminate' ? 1 : 0);
+        });
+      }
+
+      it('clears cached callbacks when worker startup fails', async () => {
+        const { remotely } = await startRemoteControlApp();
+        const result = await remotely(
+          async (fixture: string) => {
+            const { once } = require('node:events');
+            const { setTimeout: delay } = require('node:timers/promises');
+            const { Worker } = require('node:worker_threads');
+            const testing = process._linkedBinding('electron_common_testing');
+            const before = testing.getLiveCallbackHolderProbeCountForTesting();
+            const worker = new Worker('throw new Error("worker body must not execute")', {
+              eval: true,
+              execArgv: ['--require', fixture],
+              workerData: 'startup-failure'
+            });
+            const timeout = new AbortController();
+            try {
+              const [[error], code] = await Promise.race([
+                Promise.all([
+                  once(worker, 'error'),
+                  // Unlike once(), this must not reject on the expected error.
+                  new Promise<number>((resolve) => worker.once('exit', resolve))
+                ]),
+                delay(20_000, undefined, { signal: timeout.signal }).then(() => {
+                  throw new Error('timeout waiting for failed worker cleanup');
+                })
+              ]);
+              return {
+                error: error.message,
+                code,
+                before,
+                after: testing.getLiveCallbackHolderProbeCountForTesting()
+              };
+            } finally {
+              timeout.abort();
+              await worker.terminate();
+            }
+          },
+          path.join(__dirname, 'fixtures', 'api', 'cppgc-callback-lifetime-worker.js')
+        );
+        expect(result.error).to.equal('callback cache worker startup failure');
+        expect(result.code).to.equal(1);
+        expect(result.after).to.equal(result.before);
+      });
+    });
+
+    it('does not retain contexts through cached templates after reload', async function () {
+      this.timeout(60_000);
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (page: string, heap: string) => {
+          const { BrowserWindow } = require('electron');
+          const { once } = require('node:events');
+          const { mkdtemp, readFile, unlink, rmdir } = require('node:fs/promises');
+          const { tmpdir } = require('node:os');
+          const { join } = require('node:path');
+          const { Readable } = require('node:stream');
+          const { createJSHeapSnapshot } = require(heap);
+          const snapshotDir = await mkdtemp(join(tmpdir(), 'electron-cache-snapshot-'));
+          const snapshotPath = join(snapshotDir, 'renderer.heapsnapshot');
+          const window = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              nodeIntegration: true,
+              contextIsolation: false,
+              sandbox: false
+            }
+          });
+          const countMarkers = async () => {
+            await window.webContents.executeJavaScript(`
+            (async () => {
+              const v8Util = process._linkedBinding('electron_common_v8_util');
+              for (let i = 0; i < 10; i++) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+                v8Util.requestGarbageCollectionForTesting();
+              }
+            })()
+          `);
+            // Collect outside renderer JS to avoid reentrant Node stream
+            // callbacks while Chromium is serializing the renderer heap.
+            await window.webContents.takeHeapSnapshot(snapshotPath);
+            try {
+              return createJSHeapSnapshot(Readable.from([await readFile(snapshotPath)])).filter(
+                (node: { type: string; name: string }) =>
+                  node.type === 'object' && node.name === 'PerContextCacheSentinel'
+              ).length;
+            } finally {
+              await unlink(snapshotPath);
+            }
+          };
+
+          try {
+            await window.loadFile(page);
+            const rendererPid = window.webContents.getOSProcessId();
+            const counts: number[] = [];
+            const rendererPids: number[] = [];
+            const initialized: boolean[] = [];
+            let liveCount = 0;
+            for (let i = 0; i < 3; i++) {
+              initialized.push(
+                await window.webContents.executeJavaScript(`
+                (() => {
+                  const { nativeImage } = require('electron');
+                  class PerContextCacheSentinel {}
+                  globalThis.cacheSentinel = new PerContextCacheSentinel();
+                  globalThis.cacheSentinel.image = nativeImage.createEmpty();
+                  return globalThis.cacheSentinel.image.isEmpty();
+                })()
+              `)
+              );
+              if (i === 0) {
+                liveCount = await countMarkers();
+              }
+
+              // Reload discards the context, but must not discard the isolate:
+              // an isolate-wide cache would keep the old global and marker alive.
+              const loaded = once(window.webContents, 'did-finish-load', {
+                signal: AbortSignal.timeout(20_000)
+              });
+              window.webContents.reload();
+              await loaded;
+              rendererPids.push(window.webContents.getOSProcessId());
+              counts.push(await countMarkers());
+            }
+            return { rendererPid, rendererPids, initialized, liveCount, counts };
+          } finally {
+            window.destroy();
+            await rmdir(snapshotDir);
+          }
+        },
+        path.join(__dirname, 'fixtures', 'pages', 'blank.html'),
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+      expect(result.initialized).to.deep.equal([true, true, true]);
+      expect(result.liveCount).to.equal(1, 'the live context must retain its marker');
+      expect(result.rendererPid).to.be.greaterThan(0);
+      expect(result.rendererPids).to.deep.equal(Array(3).fill(result.rendererPid));
+      expect(result.counts).to.deep.equal([0, 0, 0], 'discarded contexts must release their markers');
+    });
+
+    it('traces live callbacks and keeps them callable across garbage collection', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { recordState } = require(heap);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const object = {};
+          v8Util.setHiddenValue(object, 'callback-test', 42);
+          v8Util.requestGarbageCollectionForTesting();
+          const { snapshot } = recordState();
+          return {
+            hasHolder: snapshot.some(
+              (node: { name: string; type: string }) =>
+                node.name === 'Electron / CallbackHolder' && node.type !== 'string'
+            ),
+            value: v8Util.getHiddenValue(object, 'callback-test')
+          };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+      expect(result).to.deep.equal({ hasHolder: true, value: 42 });
+    });
+
+    it('manages callbacks in a Node.js worker without gin isolate data', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixture: string, heap: string) => {
+          const { once } = require('node:events');
+          const { Worker } = require('node:worker_threads');
+          const worker = new Worker(fixture, { workerData: heap });
+          try {
+            const signal = AbortSignal.timeout(20_000);
+            const [[message], [code]] = await Promise.all([
+              once(worker, 'message', { signal }),
+              once(worker, 'exit', { signal })
+            ]);
+            return { ...message, code };
+          } finally {
+            await worker.terminate();
+          }
+        },
+        path.join(__dirname, 'fixtures', 'api', 'cppgc-callback-worker.js'),
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+      expect(result).to.deep.equal({ hasHolder: true, value: 42, code: 0 });
+    });
+  });
+
   describe('app module', () => {
     it('should not allocate on every require', async () => {
       const { remotely } = await startRemoteControlApp();
