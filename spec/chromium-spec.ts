@@ -4642,7 +4642,9 @@ describe('paste execCommand', () => {
       }
       w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
       w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
-      await waitUntil(() => w.webContents.mainFrame.executeJavaScript('navigator.userActivation.isActive'));
+      await waitUntil(
+        async () => (await w.webContents.mainFrame.executeJavaScript('navigator.userActivation.isActive')) === true
+      );
     };
 
     it('lets the frame the user interacted with paste without a permission grant', async () => {
