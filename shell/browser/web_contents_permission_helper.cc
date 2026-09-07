@@ -9,9 +9,12 @@
 
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/permission_descriptor_util.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
@@ -27,6 +30,25 @@ using blink::mojom::MediaStreamRequestResult;
 using blink::mojom::MediaStreamType;
 
 namespace {
+
+// Returns the local-root frame in |web_contents|' primary frame tree that owns
+// |widget|, i.e. the document that asked for pointer or keyboard lock. Falls
+// back to the primary main frame if the widget is unknown.
+content::RenderFrameHost* FrameForLockWidget(
+    content::WebContents* web_contents,
+    content::RenderWidgetHost* widget) {
+  content::RenderFrameHost* result = nullptr;
+  if (widget) {
+    web_contents->GetPrimaryMainFrame()->ForEachRenderFrameHostWithAction(
+        [&](content::RenderFrameHost* rfh) {
+          if (rfh->GetRenderWidgetHost() != widget)
+            return content::RenderFrameHost::FrameIterationAction::kContinue;
+          result = rfh;
+          return content::RenderFrameHost::FrameIterationAction::kStop;
+        });
+  }
+  return result ? result : web_contents->GetPrimaryMainFrame();
+}
 
 constexpr std::string_view MediaStreamTypeToString(
     blink::mojom::MediaStreamType type) {
@@ -285,8 +307,15 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool last_unlocked_by_target,
     base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
         callback) {
-  RequestPermission(web_contents_->GetPrimaryMainFrame(),
-                    blink::PermissionType::POINTER_LOCK,
+  // content records the requesting widget before asking the delegate, so the
+  // request can be attributed to the frame that called requestPointerLock()
+  // rather than to the top-level document. GetPointerLockWidget() only
+  // answers once the lock is held; the pending widget is only exposed through
+  // this accessor.
+  auto* requesting_frame = FrameForLockWidget(
+      web_contents_, static_cast<content::WebContentsImpl*>(web_contents_)
+                         ->mouse_lock_widget_for_testing());
+  RequestPermission(requesting_frame, blink::PermissionType::POINTER_LOCK,
                     base::BindOnce(std::move(callback), web_contents_,
                                    user_gesture, last_unlocked_by_target),
                     user_gesture);
@@ -295,9 +324,11 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
 void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     bool esc_key_locked,
     base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+  auto* requesting_frame = FrameForLockWidget(
+      web_contents_, static_cast<content::WebContentsImpl*>(web_contents_)
+                         ->GetKeyboardLockWidget());
   RequestPermission(
-      web_contents_->GetPrimaryMainFrame(),
-      blink::PermissionType::KEYBOARD_LOCK,
+      requesting_frame, blink::PermissionType::KEYBOARD_LOCK,
       base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
 }
 
