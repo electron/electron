@@ -14,10 +14,10 @@ connection so the item goes away with the icon.
 Upstream bug: https://issues.chromium.org/issues/554905106
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index b6386ecc2eca721cc56a47a16f77c3a5c5eb506a..756f5127309519a8049afadb58db60447bd5dfe8 100644
+index 8169dfff20f281ebe9b489fb0449fbd09af7d0b8..98f72c7e778cb16304dde0d1a1f7d5e70bec1ee0 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -240,9 +240,18 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
+@@ -239,9 +239,18 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
    return base::MakeRefCounted<dbus::Bus>(std::move(options));
  }
  
@@ -37,7 +37,7 @@ index b6386ecc2eca721cc56a47a16f77c3a5c5eb506a..756f5127309519a8049afadb58db6044
      g_shared_bus_in_use = true;
      return dbus_thread_linux::GetSharedSessionBus();
    }
-@@ -354,7 +363,7 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
+@@ -353,7 +362,7 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
        g_shared_bus_in_use = false;
        bus_->UnregisterExportedObject(dbus::ObjectPath(kPathStatusNotifierItem));
        bus_->UnregisterExportedObject(dbus::ObjectPath(kPathDbusMenu));
@@ -46,7 +46,7 @@ index b6386ecc2eca721cc56a47a16f77c3a5c5eb506a..756f5127309519a8049afadb58db6044
          bus_->GetDBusTaskRunner()->PostTask(
              FROM_HERE, base::BindOnce(
                             [](scoped_refptr<dbus::Bus> bus,
-@@ -508,6 +517,11 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
+@@ -501,6 +510,11 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
        base::BindRepeating(&StatusIconLinuxDbus::OnNameOwnerChangedReceived,
                            weak_factory_.GetWeakPtr()));
  
@@ -58,7 +58,7 @@ index b6386ecc2eca721cc56a47a16f77c3a5c5eb506a..756f5127309519a8049afadb58db6044
    bus_->RequestOwnership(
        service_name_, dbus::Bus::REQUIRE_PRIMARY,
        base::BindOnce(&StatusIconLinuxDbus::OnOwnershipAcquired,
-@@ -518,10 +532,22 @@ void StatusIconLinuxDbus::OnOwnershipAcquired(const std::string& service_name,
+@@ -511,10 +525,22 @@ void StatusIconLinuxDbus::OnOwnershipAcquired(const std::string& service_name,
                                                bool success) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    if (!success) {
@@ -83,7 +83,7 @@ index b6386ecc2eca721cc56a47a16f77c3a5c5eb506a..756f5127309519a8049afadb58db6044
  }
  
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index aa5647cdf8b9431b7195c8e6c70ee32dab6e28b2..f0a7f0b029f301dd519a5082cfe2791ec34fdc2d 100644
+index 9668ee5a48e180d0ace989c6cb6d9364a162c5ce..69514ff0be9fca3b990e678c7a47714ebbdfb4af 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -73,6 +73,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
@@ -94,7 +94,7 @@ index aa5647cdf8b9431b7195c8e6c70ee32dab6e28b2..f0a7f0b029f301dd519a5082cfe2791e
    void RegisterStatusNotifierItem();
  
    // Step 5: register the StatusNotifierItem with the StatusNotifierWatcher.
-@@ -135,6 +136,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -133,6 +134,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
  
    int service_id_ = 0;
    std::string service_name_;
