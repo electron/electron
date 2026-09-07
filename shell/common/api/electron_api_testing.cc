@@ -13,7 +13,10 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/testing/fake_device_managers.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -240,6 +243,118 @@ void ClearHeldPromiseForTesting() {
   GetHeldPromise().reset();
 }
 
+// --- fake device managers -------------------------------------------------
+
+electron::FakeDeviceManagers* FakeDevicesFor(gin::Arguments* args,
+                                             v8::Local<v8::Value> session) {
+  electron::api::Session* api_session = nullptr;
+  if (!gin::ConvertFromV8(args->isolate(), session, &api_session) ||
+      !api_session) {
+    args->ThrowTypeError("session required");
+    return nullptr;
+  }
+  return electron::FakeDeviceManagers::GetOrCreate(
+      api_session->browser_context());
+}
+
+// Replaces the HID, USB and serial device managers of |session| with in-process
+// fakes so specs can add and remove devices. Idempotent.
+void UseFakeDeviceManagers(gin::Arguments* args, v8::Local<v8::Value> session) {
+  FakeDevicesFor(args, session);
+}
+
+std::string AddFakeHidDevice(gin::Arguments* args,
+                             v8::Local<v8::Value> session,
+                             const gin_helper::Dictionary& opts) {
+  auto* fakes = FakeDevicesFor(args, session);
+  if (!fakes)
+    return {};
+  int vendor_id = 0, product_id = 0;
+  std::string name = "Fake HID", serial;
+  opts.Get("vendorId", &vendor_id);
+  opts.Get("productId", &product_id);
+  opts.Get("name", &name);
+  opts.Get("serialNumber", &serial);
+  return fakes->hid().AddDevice(vendor_id, product_id, name, serial);
+}
+
+void RemoveFakeHidDevice(gin::Arguments* args,
+                         v8::Local<v8::Value> session,
+                         const std::string& guid) {
+  if (auto* fakes = FakeDevicesFor(args, session))
+    fakes->hid().RemoveDevice(guid);
+}
+
+std::string AddFakeUsbDevice(gin::Arguments* args,
+                             v8::Local<v8::Value> session,
+                             const gin_helper::Dictionary& opts) {
+  auto* fakes = FakeDevicesFor(args, session);
+  if (!fakes)
+    return {};
+  int vendor_id = 0, product_id = 0;
+  std::string name = "Fake USB", serial;
+  opts.Get("vendorId", &vendor_id);
+  opts.Get("productId", &product_id);
+  opts.Get("productName", &name);
+  opts.Get("serialNumber", &serial);
+  return fakes->usb().AddDevice(vendor_id, product_id, name, serial);
+}
+
+void RemoveFakeUsbDevice(gin::Arguments* args,
+                         v8::Local<v8::Value> session,
+                         const std::string& guid) {
+  if (auto* fakes = FakeDevicesFor(args, session))
+    fakes->usb().RemoveDevice(guid);
+}
+
+std::string AddFakeSerialPort(gin::Arguments* args,
+                              v8::Local<v8::Value> session,
+                              const gin_helper::Dictionary& opts) {
+  auto* fakes = FakeDevicesFor(args, session);
+  if (!fakes)
+    return {};
+  int vendor_id = 0, product_id = 0;
+  std::string path = "/dev/ttyFAKE0", display_name, serial;
+  opts.Get("path", &path);
+  opts.Get("displayName", &display_name);
+  opts.Get("vendorId", &vendor_id);
+  opts.Get("productId", &product_id);
+  opts.Get("serialNumber", &serial);
+  return fakes->serial().AddPort(path, display_name, vendor_id, product_id,
+                                 serial);
+}
+
+void SetFakeSerialPortConnected(gin::Arguments* args,
+                                v8::Local<v8::Value> session,
+                                const std::string& token,
+                                bool connected) {
+  if (auto* fakes = FakeDevicesFor(args, session))
+    fakes->serial().SetPortConnected(token, connected);
+}
+
+// Number of device connections currently open through the fakes.
+int FakeDeviceOpenCount(gin::Arguments* args,
+                        v8::Local<v8::Value> session,
+                        const std::string& kind) {
+  auto* fakes = FakeDevicesFor(args, session);
+  if (!fakes)
+    return 0;
+  if (kind == "hid")
+    return fakes->hid().OpenConnectionCount();
+  if (kind == "usb")
+    return fakes->usb().OpenConnectionCount();
+  if (kind == "serial")
+    return fakes->serial().OpenConnectionCount();
+  return 0;
+}
+
+void RemoveFakeSerialPort(gin::Arguments* args,
+                          v8::Local<v8::Value> session,
+                          const std::string& token) {
+  if (auto* fakes = FakeDevicesFor(args, session))
+    fakes->serial().RemovePort(token);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -247,6 +362,15 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("log", &Log);
+  dict.SetMethod("useFakeDeviceManagers", &UseFakeDeviceManagers);
+  dict.SetMethod("addFakeHidDevice", &AddFakeHidDevice);
+  dict.SetMethod("removeFakeHidDevice", &RemoveFakeHidDevice);
+  dict.SetMethod("addFakeUsbDevice", &AddFakeUsbDevice);
+  dict.SetMethod("removeFakeUsbDevice", &RemoveFakeUsbDevice);
+  dict.SetMethod("addFakeSerialPort", &AddFakeSerialPort);
+  dict.SetMethod("removeFakeSerialPort", &RemoveFakeSerialPort);
+  dict.SetMethod("setFakeSerialPortConnected", &SetFakeSerialPortConnected);
+  dict.SetMethod("fakeDeviceOpenCount", &FakeDeviceOpenCount);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);

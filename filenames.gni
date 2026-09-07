@@ -529,6 +529,8 @@ filenames = {
     "shell/browser/serial/serial_chooser_context_factory.h",
     "shell/browser/serial/serial_chooser_controller.cc",
     "shell/browser/serial/serial_chooser_controller.h",
+    "shell/browser/testing/fake_device_managers.cc",
+    "shell/browser/testing/fake_device_managers.h",
     "shell/browser/session_preferences.cc",
     "shell/browser/session_preferences.h",
     "shell/browser/special_storage_policy.cc",
