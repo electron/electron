@@ -1557,6 +1557,50 @@ describe('<webview> tag', function () {
 
       generateSpecs('without sandbox');
       generateSpecs('with sandbox', 'sandbox=yes');
+
+      describe('links opened into a new window', () => {
+        // A modifier-clicked link is a popup like window.open() and is subject
+        // to allowpopups too. The click is synthesised by the guest itself, so
+        // no user gesture is involved.
+        const linkPage = (href: string) =>
+          'data:text/html,' +
+          encodeURIComponent(`<a id="a" href="${href}" target="_blank">link</a><script>
+            onload = () => {
+              document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+                ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+              }));
+              console.log('clicked');
+            };
+          </script>`);
+
+        const countNewWindows = async (attributes: Record<string, string>) => {
+          let created = 0;
+          const onCreated = (_e: unknown, bw: BrowserWindow) => {
+            created++;
+            // Not synchronously: this fires while the window is still being
+            // constructed.
+            setImmediate(() => {
+              if (!bw.isDestroyed()) bw.destroy();
+            });
+          };
+          app.on('browser-window-created', onCreated);
+          try {
+            await loadWebViewAndWaitForMessage(w, { ...attributes, src: linkPage('about:blank#popup') });
+            await setTimeout(1000);
+          } finally {
+            app.removeListener('browser-window-created', onCreated);
+          }
+          return created;
+        };
+
+        it('does not open a new window when allowpopups is not set', async () => {
+          expect(await countNewWindows({})).to.equal(0);
+        });
+
+        it('opens a new window when allowpopups is set', async () => {
+          expect(await countNewWindows({ allowpopups: 'on' })).to.equal(1);
+        });
+      });
     });
 
     describe('webpreferences attribute', () => {

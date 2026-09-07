@@ -214,7 +214,9 @@ value will fail with a DOM exception.
 ```
 
 A `boolean`. When this attribute is present the guest page will be allowed to open new
-windows. Popups are disabled by default.
+windows, whether through `window.open()` or a link opened into a new window
+(for example a modifier-clicked or `target="_blank"` link). Popups are
+disabled by default.
 
 ### `webpreferences`
 
