@@ -3,20 +3,71 @@ From: Anonymous <anonymous@electronjs.org>
 Date: Thu, 20 Sep 2018 17:47:04 -0700
 Subject: feat: allow dragging and dropping between <webview>s.
 
-This allows dragging and dropping between <webview>s.
+WebContentsViewDragSecurityInfo::IsValidDragTarget blocks drops onto a
+widget whose SiteInstanceGroup differs from the drag source when the drag was
+initiated by the same top-level WebContentsView (the browser-side half of
+https://crbug.com/59081). Inner WebContents such as <webview> guests drag
+through their outermost view, so drags between two guests, or between a guest
+and its embedder, are blocked as if they were cross-site drags within one
+page. Allow the drop when the source and target widgets belong to different
+WebContents and keep the SiteInstanceGroup check otherwise.
 
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_drag_security_info.cc b/content/browser/web_contents/web_contents_view_drag_security_info.cc
-index bf24f4e2ccff56a2a92c4f11c9318644ea59daff..c54e6717144e618b3034e8f5a96fd6d85d207f30 100644
+index bf24f4e2ccff56a2a92c4f11c9318644ea59daff..a84810a5c8c93e834c988f92a8737d1ca8cf1f5c 100644
 --- a/content/browser/web_contents/web_contents_view_drag_security_info.cc
 +++ b/content/browser/web_contents/web_contents_view_drag_security_info.cc
-@@ -66,7 +66,7 @@ bool WebContentsViewDragSecurityInfo::IsValidDragTarget(
+@@ -18,12 +18,14 @@ void WebContentsViewDragSecurityInfo::OnDragInitiated(
+     const DropData& drop_data) {
+   did_initiate_ = true;
+   site_instance_group_id_ = source_rwh->GetSiteInstanceGroup()->GetId();
++  source_rwh_ = source_rwh->GetWeakPtr();
+   image_accessible_from_frame_ = drop_data.file_contents_image_accessible;
+ }
+ 
+ void WebContentsViewDragSecurityInfo::OnDragEnded() {
+   did_initiate_ = false;
+   site_instance_group_id_ = SiteInstanceGroupId();
++  source_rwh_ = nullptr;
+   image_accessible_from_frame_ = true;
+ }
+ 
+@@ -66,6 +68,14 @@ bool WebContentsViewDragSecurityInfo::IsValidDragTarget(
    // browser-side checks only have local tree fragment (potentially with
    // multiple origins) granularity at best, but a drag operation eventually
    // targets one single frame in that local tree fragment.
--  return target_rwh->GetSiteInstanceGroup()->GetId() == site_instance_group_id_;
-+  return true;
++  //
++  // Inner WebContents such as guests drag through their outermost view, so a
++  // drag between two of them, or between one and its embedder, arrives here
++  // with `did_initiate_` set. Treat it like a drag from another top-level
++  // WebContents rather than a cross-site drag within one page.
++  if (source_rwh_ && source_rwh_->delegate() != target_rwh->delegate()) {
++    return true;
++  }
+   return target_rwh->GetSiteInstanceGroup()->GetId() == site_instance_group_id_;
  }
  
- }  // namespace content
+diff --git a/content/browser/web_contents/web_contents_view_drag_security_info.h b/content/browser/web_contents/web_contents_view_drag_security_info.h
+index c083da05cdb709d18496b8cd37765fb3e761a553..4f61f22baeceb49b5a02cde817a933eb7723347a 100644
+--- a/content/browser/web_contents/web_contents_view_drag_security_info.h
++++ b/content/browser/web_contents/web_contents_view_drag_security_info.h
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_BROWSER_WEB_CONTENTS_WEB_CONTENTS_VIEW_DRAG_SECURITY_INFO_H_
+ #define CONTENT_BROWSER_WEB_CONTENTS_WEB_CONTENTS_VIEW_DRAG_SECURITY_INFO_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "content/browser/site_instance_group.h"
+ 
+ namespace content {
+@@ -53,6 +54,10 @@ class WebContentsViewDragSecurityInfo {
+   // The site instance of the drag origin.
+   SiteInstanceGroupId site_instance_group_id_;
+ 
++  // The widget the drag started from, used to tell whether the target is in
++  // the same WebContents.
++  base::WeakPtr<RenderWidgetHostImpl> source_rwh_;
++
+   // A boolean to hold the accessibility value retrieved from the `DropData`.
+   // See https://crbug.com/1264873.
+   bool image_accessible_from_frame_ = true;
