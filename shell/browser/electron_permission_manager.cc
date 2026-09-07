@@ -368,6 +368,14 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
   if (render_frame_host) {
     details.Set("requestingUrl",
                 render_frame_host->GetLastCommittedURL().spec());
+    // Callers that already know the embedder (permissions.query) set it;
+    // otherwise it is the requesting frame's top-level document.
+    if (!details.Find("embeddingOrigin")) {
+      details.Set("embeddingOrigin",
+                  content::PermissionUtil::GetLastCommittedOriginAsURL(
+                      render_frame_host->GetMainFrame())
+                      .spec());
+    }
   }
   details.Set("isMainFrame",
               render_frame_host && render_frame_host->GetParent() == nullptr);

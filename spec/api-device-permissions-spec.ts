@@ -183,6 +183,7 @@ describe('device permission attribution (hid / usb / serial)', () => {
             expect(c.details.requestingUrl).to.equal(expected.url);
             expect(c.details.isMainFrame).to.equal(expected.isMainFrame);
             expect(c.details.frame).to.equal(frame);
+            expect(c.details.embeddingOrigin).to.equal(`${w.webContents.mainFrame.origin}/`);
           }
           expect(selects).to.have.lengthOf(1);
           expect(selects[0].frame).to.equal(frame);
