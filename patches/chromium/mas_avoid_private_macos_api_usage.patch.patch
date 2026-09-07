@@ -959,7 +959,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e831627f964e164965386ccc9b7e5f45e1f6fe9a..5b7b98e8b4f02c201098f605e63647c06912e3bc 100644
+index a220b3a2fcc0f197cabc7018f45256b401b41131..94818f9f1223653e73f89013374acb6c06e4f36a 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -970,7 +970,7 @@ index e831627f964e164965386ccc9b7e5f45e1f6fe9a..5b7b98e8b4f02c201098f605e63647c0
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2415,15 +2416,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2409,15 +2410,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
