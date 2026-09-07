@@ -1612,48 +1612,20 @@ describe('BrowserWindow module', () => {
       });
 
       ifit(process.platform === 'darwin')('it does not activate the app if focusing an inactive panel', async () => {
-        // TEMPORARY INSTRUMENTATION: this test hangs on the arm64 MAS shard
-        // when api-app-spec runs first. Every wait is labelled and bounded so
-        // the CI log says which step never completes and what state the app
-        // is in at each one.
-        const getActiveAppOsa =
-          'tell application "System Events" to get the name of the first process whose frontmost is true';
-        const activeApp = () => {
-          try {
-            return childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
-          } catch (err) {
-            return `(osascript failed: ${err})`;
-          }
-        };
-        const state = (label: string) =>
-          console.log(
-            `[panel-test] ${label}: app.isActive=${app.isActive()} app.isHidden=${app.isHidden()} dock.isVisible=${app.dock?.isVisible()} frontmost=${activeApp()} windows=${BrowserWindow.getAllWindows().length}`
-          );
-        const bounded = async <T>(label: string, p: Promise<T>, ms = 10000): Promise<T | 'timeout'> => {
-          const t = new Promise<'timeout'>((resolve) => syncSetTimeout(() => resolve('timeout'), ms));
-          const r = await Promise.race([p, t]);
-          console.log(`[panel-test] await ${label}: ${r === 'timeout' ? 'TIMED OUT' : 'ok'}`);
-          return r;
-        };
-
-        state('start');
         // Show to focus app, then remove existing window
-        const shownFirst = once(w, 'show');
         w.show();
-        await bounded('first window show', shownFirst, 5000);
-        state('after first show');
         w.destroy();
 
+        // The test needs the app inactive and Finder frontmost. The app may
+        // already be inactive, in which case there is no activation to resign.
+        const getActiveAppOsa =
+          'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = () => childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
         const isInactive: Promise<unknown> = app.isActive() ? once(app, 'did-resign-active') : Promise.resolve();
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
         defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
-        await bounded('did-resign-active', isInactive);
-        state('after Finder activate');
-        await bounded(
-          'Finder frontmost',
-          waitUntil(() => activeApp() === 'Finder')
-        );
-        state('after Finder frontmost');
+        await isInactive;
+        await waitUntil(() => activeApp() === 'Finder');
 
         // Create new window
         w = new BrowserWindow({
@@ -1664,31 +1636,15 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        const isShow = once(w, 'show');
+        // Wait for 'focus', not 'show': on macOS 'show' is emitted when the
+        // window reports itself unoccluded, and a panel shown behind another
+        // app's windows may never do so. Becoming key is what matters here.
         const isFocus = once(w, 'focus');
 
         w.show();
         w.focus();
 
-        await bounded('panel show', isShow);
-        const focused = await bounded('panel focus', isFocus);
-        state('after panel show+focus');
-
-        if (focused === 'timeout') {
-          // Probe the activation-policy hypothesis: does re-showing the dock
-          // let the panel take focus?
-          await app.dock?.show();
-          state('after dock.show()');
-          const refocus = once(w, 'focus');
-          w.focus();
-          await bounded('panel focus after dock.show()', refocus, 5000);
-          state('after refocus');
-          // And can the app activate itself at all now?
-          app.focus({ steal: true });
-          await bounded('did-become-active after steal', once(app, 'did-become-active'), 5000);
-          state('after app.focus steal');
-          throw new Error('panel never received focus (see [panel-test] lines above)');
-        }
+        await isFocus;
 
         expect(activeApp()).to.equal('Finder');
       });
