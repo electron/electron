@@ -104,6 +104,7 @@ class DevToolsEyeDropper;
 namespace electron {
 
 class DevToolsContextMenu;
+class DraggableRegionDebugger;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
@@ -388,7 +389,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
-  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
 
   // content::WebContentsDelegate:
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
@@ -484,6 +485,10 @@ class WebContents final : public ExclusiveAccessContext,
   void PDFReadyToPrint();
 
   SkRegion* draggable_region();
+
+  DraggableRegionDebugger* draggable_region_debugger() const {
+    return draggable_region_debugger_.get();
+  }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -929,6 +934,9 @@ class WebContents final : public ExclusiveAccessContext,
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::optional<SkRegion> draggable_region_;
+
+  // Declared after |inspectable_web_contents_| because it observes its views.
+  std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

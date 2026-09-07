@@ -23,14 +23,10 @@
 
 namespace electron::util {
 
-v8::MaybeLocal<v8::Value> CompileAndCall(
-    v8::Isolate* const isolate,
+v8::MaybeLocal<v8::Function> CompileBundle(
     v8::Local<v8::Context> context,
     const char* id,
-    v8::LocalVector<v8::String>* parameters,
-    v8::LocalVector<v8::Value>* arguments) {
-  v8::TryCatch try_catch{isolate};
-
+    v8::LocalVector<v8::String>* parameters) {
   static base::NoDestructor<
       base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
       builtin_loader;
@@ -49,15 +45,22 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   v8::MaybeLocal<v8::Function> compiled =
       builtin_loader->Get()->LookupAndCompileFunction(
           context, id, parameters, node::Realm::GetCurrent(context));
+  // TODO(samuelmaddock): how can we get the compilation error message?
+  if (compiled.IsEmpty())
+    LOG(ERROR) << "Failed to compile electron script (" << id << ")";
+  return compiled;
+}
 
-  if (compiled.IsEmpty()) {
-    // TODO(samuelmaddock): how can we get the compilation error message?
-    LOG(ERROR) << "CompileAndCall failed to compile electron script (" << id
-               << ")";
+v8::MaybeLocal<v8::Value> CompileAndCall(
+    v8::Isolate* const isolate,
+    v8::Local<v8::Context> context,
+    const char* id,
+    v8::LocalVector<v8::String>* parameters,
+    v8::LocalVector<v8::Value>* arguments) {
+  v8::TryCatch try_catch{isolate};
+  v8::Local<v8::Function> fn;
+  if (!CompileBundle(context, id, parameters).ToLocal(&fn))
     return {};
-  }
-
-  v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
       context, v8::Null(isolate), arguments->size(), arguments->data());
 

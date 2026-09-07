@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 //
 // Build-time host tool that emits the V8 code cache for the embedded
-// electron/js2c/* bundles -- and, for flavors whose processes host a Node.js
-// environment that is not deserialized from the embedded Node startup
+// internal/electron/js2c/* bundles -- and, for flavors whose processes host a
+// Node.js environment that is not deserialized from the embedded Node startup
 // snapshot, Node's own lib/**/*.js builtins -- for one process flavor, as a
 // generated .cc defining electron::internal::Js2cCache<Flavor>(). Run once per
 // flavor with that flavor's V8 flag set and snapshot blob (both feed V8's
@@ -35,12 +35,10 @@ namespace {
 
 namespace js2c = electron::js2c;
 
-// `four_arg` = compiled via util::CompileAndCall (4-arg
-// LookupAndCompileFunction with explicit `params`); else via
-// LoadEnvironment's 3-arg path (BuiltinInfo::parameter_map).
+// Each bundle is compiled the way util::CompileAndCall compiles it at runtime:
+// LookupAndCompileFunction with explicit `params`.
 struct Bundle {
   const char* id;
-  bool four_arg;
   std::span<const std::string_view> params;
 };
 
@@ -50,17 +48,15 @@ struct Bundle {
 // the node service's utility process.
 std::vector<Bundle> BundlesForFlavor(std::string_view flavor,
                                      bool from_node_snapshot) {
-  const Bundle kSandbox{js2c::kSandboxBundleId, true,
-                        js2c::kSandboxBundleParams};
-  const Bundle kIsolated{js2c::kIsolatedBundleId, true,
-                         js2c::kIsolatedBundleParams};
-  const Bundle kPreloadRealm{js2c::kPreloadRealmBundleId, true,
+  const Bundle kSandbox{js2c::kSandboxBundleId, js2c::kSandboxBundleParams};
+  const Bundle kIsolated{js2c::kIsolatedBundleId, js2c::kIsolatedBundleParams};
+  const Bundle kPreloadRealm{js2c::kPreloadRealmBundleId,
                              js2c::kPreloadRealmBundleParams};
-  const Bundle kNodeInit{js2c::kNodeInitId, true, js2c::kNodeInitParams};
-  const Bundle kBrowserInit{js2c::kBrowserInitId, false, {}};
-  const Bundle kRendererInit{js2c::kRendererInitId, false, {}};
-  const Bundle kUtilityInit{js2c::kUtilityInitId, false, {}};
-  const Bundle kWorkerInit{js2c::kWorkerInitId, false, {}};
+  const Bundle kNodeInit{js2c::kNodeInitId, js2c::kInitBundleParams};
+  const Bundle kBrowserInit{js2c::kBrowserInitId, js2c::kInitBundleParams};
+  const Bundle kRendererInit{js2c::kRendererInitId, js2c::kInitBundleParams};
+  const Bundle kUtilityInit{js2c::kUtilityInitId, js2c::kInitBundleParams};
+  const Bundle kWorkerInit{js2c::kWorkerInitId, js2c::kInitBundleParams};
 
   if (flavor == "sandbox")
     return {kSandbox, kIsolated, kPreloadRealm};
@@ -97,7 +93,7 @@ const char* FlavorFn(std::string_view flavor) {
 // and would roughly double the per-flavor cache (~5.5 of ~12 MB) for no
 // startup benefit. They keep compiling from source on first use, as before.
 bool ShouldCacheNodeBuiltin(std::string_view id) {
-  constexpr std::string_view kJs2cPrefix = "electron/js2c/";
+  constexpr std::string_view kJs2cPrefix = "internal/electron/js2c/";
   constexpr std::string_view kDepsPrefix = "internal/deps/";
   return id.substr(0, kJs2cPrefix.size()) != kJs2cPrefix &&
          id.substr(0, kDepsPrefix.size()) != kDepsPrefix;
@@ -194,7 +190,7 @@ int main(int argc, char* argv[]) {
             : v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
 
-    // The ctor self-registers all builtins, incl. electron/js2c/*.
+    // The ctor self-registers all builtins, incl. internal/electron/js2c/*.
     node::builtins::BuiltinLoader loader;
     // Eagerly compile every inner function, not just the top-level wrapper,
     // so the cache covers the whole bundle and the consuming process never
@@ -203,30 +199,20 @@ int main(int argc, char* argv[]) {
     loader.SetEagerCompile();
     for (const auto& b : BundlesForFlavor(flavor, from_node_snapshot)) {
       v8::Local<v8::Function> fn;
-      if (b.four_arg) {
-        v8::LocalVector<v8::String> params(isolate);
-        params.reserve(b.params.size());
-        for (std::string_view p : b.params) {
-          params.push_back(v8::String::NewFromUtf8(isolate, p.data(),
-                                                   v8::NewStringType::kNormal,
-                                                   static_cast<int>(p.size()))
-                               .ToLocalChecked());
-        }
-        if (!loader
-                 .LookupAndCompileFunction(context, b.id, &params,
-                                           /*optional_realm=*/nullptr)
-                 .ToLocal(&fn)) {
-          std::cerr << "4-arg compile failed: " << b.id << "\n";
-          return 1;
-        }
-      } else {
-        if (!loader
-                 .LookupAndCompileFunction(context, b.id,
-                                           /*optional_realm=*/nullptr)
-                 .ToLocal(&fn)) {
-          std::cerr << "3-arg compile failed: " << b.id << "\n";
-          return 1;
-        }
+      v8::LocalVector<v8::String> params(isolate);
+      params.reserve(b.params.size());
+      for (std::string_view p : b.params) {
+        params.push_back(v8::String::NewFromUtf8(isolate, p.data(),
+                                                 v8::NewStringType::kNormal,
+                                                 static_cast<int>(p.size()))
+                             .ToLocalChecked());
+      }
+      if (!loader
+               .LookupAndCompileFunction(context, b.id, &params,
+                                         /*optional_realm=*/nullptr)
+               .ToLocal(&fn)) {
+        std::cerr << "compile failed: " << b.id << "\n";
+        return 1;
       }
       std::unique_ptr<v8::ScriptCompiler::CachedData> cd(
           v8::ScriptCompiler::CreateCodeCacheForFunction(fn));
@@ -265,8 +251,9 @@ int main(int argc, char* argv[]) {
         return 1;
       }
       for (const auto& info : node_caches) {
-        // (The electron/js2c/* ids are registered as builtins too; the ones
-        // this flavor needs were compiled above with their real parameters.)
+        // (The internal/electron/js2c/* ids are registered as builtins too; the
+        // ones this flavor needs were compiled above with their real
+        // parameters.)
         if (!ShouldCacheNodeBuiltin(info.id))
           continue;
         caches.emplace_back(

@@ -24,6 +24,7 @@
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/service_worker_data.h"
@@ -69,7 +70,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
     return exports;
   }
 
-  auto* const mod = node::binding::get_linked_module(binding_key.c_str());
+  auto* const mod = NodeBindings::GetLinkedBinding(binding_key);
   if (!mod) {
     gin_helper::ErrorThrower{isolate}.ThrowError(
         base::StrCat({"No such binding: ", binding_key}));

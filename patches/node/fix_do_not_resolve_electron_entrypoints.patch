@@ -3,7 +3,9 @@ From: Samuel Attard <marshallofsound@electronjs.org>
 Date: Wed, 26 Jul 2023 17:03:15 -0700
 Subject: fix: do not resolve electron entrypoints
 
-This wastes fs cycles and can result in strange behavior if this path actually exists on disk
+require('electron') from an ES module goes through the CJS pre-parser; skip
+reading a file named 'electron' from disk for it and expose the module's own
+keys as its named exports.
 
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index f54a8ca32a601e886b0cb09f0a9361a0c9c184ee..bf371a06e5c20c69ce37c0deb15ed999fdde145b 100644
@@ -20,43 +22,3 @@ index f54a8ca32a601e886b0cb09f0a9361a0c9c184ee..bf371a06e5c20c69ce37c0deb15ed999
    if (source === undefined) {
      ({ source } = loadSourceForCJSWithHooks(module, filename, format));
    }
-diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index 2974459755ec25139aefdab7f36811e036ac4204..593235acacd266ba7d6f1925032cd5ba455c29da 100644
---- a/lib/internal/modules/run_main.js
-+++ b/lib/internal/modules/run_main.js
-@@ -2,6 +2,7 @@
- 
- const {
-   StringPrototypeEndsWith,
-+  StringPrototypeStartsWith,
-   globalThis,
- } = primordials;
- 
-@@ -27,6 +28,13 @@ const {
-  * @returns {string|undefined}
-  */
- function resolveMainPath(main) {
-+  // For built-in modules used as the main entry point we _never_
-+  // want to waste cycles resolving them to file paths on disk
-+  // that actually might exist
-+  if (typeof main === 'string' && StringPrototypeStartsWith(main, 'electron/js2c')) {
-+    return main;
-+  }
-+
-   /** @type {string} */
-   let mainPath;
-   // Extension searching for the main entry point is supported for backward compatibility.
-@@ -50,6 +58,13 @@ function resolveMainPath(main) {
-  * @returns {boolean}
-  */
- function shouldUseESMLoader(mainPath) {
-+  // For built-in modules used as the main entry point we _never_
-+  // want to waste cycles resolving them to file paths on disk
-+  // that actually might exist
-+  if (typeof mainPath === 'string' && StringPrototypeStartsWith(mainPath, 'electron/js2c')) {
-+    return false;
-+  }
-+
-   /**
-    * @type {string[]} userLoaders A list of custom loaders registered by the user
-    * (or an empty list when none have been registered).

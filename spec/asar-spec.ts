@@ -10,7 +10,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
@@ -113,6 +113,20 @@ describe('asar package', () => {
       const src = path.join(asarDir, 'pdf.asar', 'cat.pdf');
       const savePath = path.join(importedFs.mkdtempSync(path.join(os.tmpdir(), 'asar-pdf-')), 'saved.pdf');
       const willDownload = once(w.webContents.session, 'will-download');
+      // The click loop below can start more than one download. Give the first
+      // its save path here, synchronously, and refuse the rest, so none of them
+      // ever falls through to the native Save dialog.
+      let started = false;
+      const onWillDownload = (event: Electron.Event, item: Electron.DownloadItem) => {
+        if (started) {
+          event.preventDefault();
+        } else {
+          started = true;
+          item.savePath = savePath;
+        }
+      };
+      w.webContents.session.on('will-download', onWillDownload);
+      defer(() => w.webContents.session.off('will-download', onWillDownload));
       await w.loadURL(fileUrl(src));
       // Click the viewer's download button once its plugin is up; an
       // unedited document is saved through the browser as a download.
@@ -131,7 +145,6 @@ describe('asar package', () => {
       }
       expect(downloading, 'the viewer never started a download').to.be.an('array');
       const item = downloading![1] as Electron.DownloadItem;
-      item.savePath = savePath;
       const [, state] = await once(item, 'done');
       expect(state).to.equal('completed');
       expect(item.getFilename()).to.equal('cat.pdf');

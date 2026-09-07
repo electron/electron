@@ -213,6 +213,35 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.sendToFrame(frameId, channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('only addresses frames that belong to this webContents', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-ipc-ping-pong.js');
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      await w1.loadURL('about:blank');
+      await w2.loadURL('about:blank');
+      const received: number[] = [];
+      ipcMain.on('pong', (e) => {
+        received.push(e.sender.id);
+      });
+      defer(() => ipcMain.removeAllListeners('pong'));
+      const other = w2.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([other.processId, other.routingId], 'ping')).to.equal(false);
+      const own = w1.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([own.processId, own.routingId], 'ping')).to.equal(true);
+      await waitUntil(() => received.length > 0);
+      await setTimeout(200);
+      expect(received).to.deep.equal([w1.webContents.id]);
+    });
+  });
+
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
