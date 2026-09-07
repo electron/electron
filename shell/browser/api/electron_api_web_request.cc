@@ -122,7 +122,7 @@ void ToDictionary(gin_helper::Dictionary* details,
   // is kept from the original request across redirects and, unlike
   // `referrer`, is not under the requesting document's control.
   if (info->initiator)
-    details->Set("initiator", info->initiator->Serialize());
+    details->Set("initiatorOrigin", info->initiator->Serialize());
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
     details->Set("statusLine", info->response_headers->GetStatusLine());

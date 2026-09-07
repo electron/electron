@@ -47,7 +47,7 @@ The following methods are available on instances of `WebRequest`:
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -61,7 +61,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -101,7 +101,7 @@ Some examples of valid `urls`:
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -115,7 +115,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -139,7 +139,7 @@ The `callback` has to be called with a `response` object.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -153,7 +153,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -169,7 +169,7 @@ response are visible by the time this listener is fired.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -183,7 +183,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -210,7 +210,7 @@ The `callback` has to be called with a `response` object.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -224,7 +224,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -244,7 +244,7 @@ and response headers are available.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -258,7 +258,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -279,7 +279,7 @@ redirect is about to occur.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -293,7 +293,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double
@@ -312,7 +312,7 @@ completed.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/53685
-    description: "Added `details.initiator`."
+    description: "Added `details.initiatorOrigin`."
 ```
 -->
 
@@ -326,7 +326,7 @@ changes:
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain | null (optional) - Requesting frame.
       May be `null` if accessed after the frame has either navigated or been destroyed.
-    * `initiator` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
+    * `initiatorOrigin` string (optional) - The origin that issued the request (for example `https://example.com`, or `null` for an opaque origin). Kept from the original request across redirects; absent for requests the browser started itself.
     * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
     * `referrer` string
     * `timestamp` Double

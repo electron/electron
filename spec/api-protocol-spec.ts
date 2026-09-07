@@ -1498,7 +1498,7 @@ describe('protocol module', () => {
       // http-like is registered as standard + fetch-enabled in spec/index.js.
       const initiators: Record<string, string | undefined> = {};
       protocol.handle('http-like', (req) => {
-        initiators[new URL(req.url).pathname] = (req as any).initiator;
+        initiators[new URL(req.url).pathname] = (req as any).initiatorOrigin;
         return new Response('<p>hi</p>', { headers: { 'content-type': 'text/html' } });
       });
       defer(() => {

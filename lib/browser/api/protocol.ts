@@ -167,7 +167,7 @@ Protocol.prototype.handle = function (
       } as any);
       // The origin that issued the request, if web content did; not something
       // a standard Request can carry, so it is attached as an own property.
-      if (preq.initiator !== undefined) (req as any).initiator = preq.initiator;
+      if (preq.initiatorOrigin !== undefined) (req as any).initiatorOrigin = preq.initiatorOrigin;
       const res = await handler(req);
       if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });

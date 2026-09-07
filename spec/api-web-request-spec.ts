@@ -93,7 +93,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null);
     });
 
-    it('reports the origin that issued the request as details.initiator', async () => {
+    it('reports the origin that issued the request as details.initiatorOrigin', async () => {
       const seen: Electron.OnBeforeRequestListenerDetails[] = [];
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url.startsWith(defaultURL)) seen.push(details);
@@ -105,7 +105,7 @@ describe('webRequest module', () => {
       await w.loadURL(`${defaultURL}top`);
       const nav = seen.find((d) => d.url === `${defaultURL}top`);
       expect(nav).to.exist();
-      expect(nav!.initiator).to.equal(undefined);
+      expect(nav!.initiatorOrigin).to.equal(undefined);
       // A cross-origin iframe's own subresource request is attributed to the
       // iframe's origin regardless of referrer policy.
       const crossOrigin = defaultURL.replace('127.0.0.1', 'localhost');
@@ -121,7 +121,7 @@ describe('webRequest module', () => {
       );
       const sub = seen.find((d) => d.url === `${defaultURL}fromframe`);
       expect(sub).to.exist();
-      expect(sub!.initiator).to.equal(new URL(crossOrigin).origin);
+      expect(sub!.initiatorOrigin).to.equal(new URL(crossOrigin).origin);
       expect(sub!.referrer).to.equal('');
       expect(sub!.frame).to.equal(iframe);
     });
