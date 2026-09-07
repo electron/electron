@@ -62,14 +62,14 @@ class View : public gin_helper::EventEmitter<View>,
   // Should delete the |view_| in destructor.
   void set_delete_view(bool should) { delete_view_ = should; }
 
+ private:
+  using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
+
   // views::ViewObserver
   void OnViewBoundsChanged(views::View* observed_view) override;
   void OnViewIsDeleting(views::View* observed_view) override;
   void OnChildViewRemoved(views::View* observed_view,
                           views::View* child) override;
-
- private:
-  using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
 
   ui::Layer* GetLayer();
   void ApplyBorderRadius();
