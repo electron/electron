@@ -23,6 +23,7 @@ class Dictionary;
 
 namespace v8 {
 class Object;
+class Value;
 template <typename T>
 class Local;
 }  // namespace v8
@@ -55,7 +56,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::RepeatingCallback<bool(content::WebContents*,
                                    blink::PermissionType,
                                    const GURL& requesting_origin,
-                                   const base::Value&)>;
+                                   v8::Local<v8::Value> details)>;
 
   using DeviceCheckHandler =
       base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;

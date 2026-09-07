@@ -2137,6 +2137,7 @@ describe('session module', () => {
           expect(captured!.details.isMainFrame).to.be.false();
           expect(captured!.details.requestingUrl).to.equal(iframeUrl);
           expect(captured!.details.securityOrigin).to.equal(iframeUrl);
+          expect(captured!.details.frame).to.equal(frame);
         } finally {
           ses.protocol.uninterceptProtocol('https');
           ses.setPermissionCheckHandler(null);
@@ -2148,7 +2149,7 @@ describe('session module', () => {
       ['hid', 'navigator.hid.requestDevice({ filters: [] })'],
       ['usb', 'navigator.usb.requestDevice({ filters: [] })']
     ] as const) {
-      it(`refuses ${permission} requests from an opaque-origin sandboxed subFrame without consulting the handler`, async () => {
+      it(`attributes ${permission} checks from an opaque-origin sandboxed subFrame to that frame`, async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -2156,21 +2157,22 @@ describe('session module', () => {
           }
         });
         const ses = w.webContents.session;
-        const checked: string[] = [];
+        const iframeUrl = 'https://myfakesite/';
+        let captured: { origin: string; webContents: Electron.WebContents | null; details: any } | undefined;
 
         ses.protocol.interceptStringProtocol('https', (req, cb) => {
           cb('<html><body>iframe</body></html>');
         });
-        ses.setPermissionCheckHandler((_wc, perm, requestingOrigin) => {
-          if (perm === permission) checked.push(requestingOrigin);
-          return true;
+        ses.setPermissionCheckHandler((wc, perm, requestingOrigin, details) => {
+          if (perm === permission) captured = { origin: requestingOrigin, webContents: wc, details };
+          return false;
         });
 
         try {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
           w.webContents.executeJavaScript(`
             var iframe = document.createElement('iframe');
-            iframe.src = 'https://myfakesite/';
+            iframe.src = '${iframeUrl}';
             iframe.allow = '${permission}';
             iframe.sandbox = 'allow-scripts';
             document.body.appendChild(iframe);
@@ -2179,12 +2181,17 @@ describe('session module', () => {
           const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
           const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
           expect(frame.origin).to.equal('null');
-          const result = await frame.executeJavaScript(
-            `${api}.then(d => Array.isArray(d) ? 'devices:' + d.length : 'device', e => 'error:' + e.name)`,
-            true
-          );
-          expect(result).to.be.oneOf(['devices:0', 'error:NotFoundError']);
-          expect(checked).to.deep.equal([]);
+          await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
+
+          expect(captured).to.not.be.undefined();
+          // An opaque origin has no URL form; the frame identifies the requester.
+          expect(captured!.origin).to.equal('');
+          expect(captured!.webContents).to.equal(w.webContents);
+          expect(captured!.details.isMainFrame).to.be.false();
+          expect(captured!.details.requestingUrl).to.equal(iframeUrl);
+          expect(captured!.details.frame).to.equal(frame);
+          expect(captured!.details.frame.origin).to.equal('null');
+          expect(captured!.details.frame.top).to.equal(w.webContents.mainFrame);
         } finally {
           ses.protocol.uninterceptProtocol('https');
           ses.setPermissionCheckHandler(null);

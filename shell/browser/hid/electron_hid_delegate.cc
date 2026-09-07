@@ -156,10 +156,6 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
 
   const url::Origin& requesting_origin =
       RequestingOrigin(render_frame_host, origin);
-  // A document with an opaque origin (sandboxed, data:) has no principal a
-  // grant could be attributed to or stored under.
-  if (requesting_origin.opaque())
-    return false;
   base::DictValue details;
   details.Set("securityOrigin", requesting_origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(

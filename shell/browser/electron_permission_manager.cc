@@ -381,8 +381,16 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
     default:
       break;
   }
+  // The frame is handed over as a live object rather than serialised into
+  // |details| so the handler can inspect it (parent, top, origin) directly.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> v8_details =
+      gin::ConvertToV8(isolate, base::Value(std::move(details)));
+  gin_helper::Dictionary(isolate, v8_details.As<v8::Object>())
+      .Set("frame", render_frame_host);
   return check_handler_.Run(web_contents, permission, requesting_origin,
-                            base::Value(std::move(details)));
+                            v8_details);
 }
 
 bool ElectronPermissionManager::CheckDevicePermission(

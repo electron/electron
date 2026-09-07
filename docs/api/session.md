@@ -1136,6 +1136,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame making the check. `null` when the check is not made on behalf of a document. For a document with an opaque origin (for example a sandboxed iframe without `allow-same-origin`) `requestingOrigin` is empty and `frame.origin` is `'null'`; use `frame.url`, `frame.parent` or `frame.top` to decide.
     * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `filePath` string (optional) - The path of a `fileSystem` request.
     * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
