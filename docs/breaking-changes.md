@@ -14,6 +14,24 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (46.0)
+
+### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+
+With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
+the same process as the main frame used to get Node.js integration even though
+the iframe itself had none. Workers now only get Node.js integration when the
+frame that creates them has it: the main frame, or any frame when
+`nodeIntegrationInSubFrames` is enabled.
+
+### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+
+A `chrome-extension://` document used to receive the window's preload script
+(and session preload scripts) wherever it was embedded. It now only does so
+when it is a top-level frame or is hosted inside the DevTools front-end (a
+`devtools_page` or panel); an extension frame embedded in an ordinary page is
+treated like any other subframe and follows `nodeIntegrationInSubFrames`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
