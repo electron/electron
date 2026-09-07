@@ -20,7 +20,6 @@
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
-#include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry.h"
@@ -52,6 +51,8 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
 #include "chrome/browser/browser_features.h"
 #include "components/os_crypt/async/browser/freedesktop_secret_key_provider.h"
 #include "components/os_crypt/async/browser/secret_portal_key_provider.h"
@@ -62,6 +63,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "components/os_crypt/async/browser/dpapi_key_provider.h"
+#include "components/os_crypt/async/browser/os_crypt_win.h"
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -72,6 +74,50 @@
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
 #include "components/os_crypt/async/browser/posix_key_provider.h"
 #endif
+
+#if BUILDFLAG(IS_LINUX)
+namespace {
+
+// The name safeStorage.getSelectedStorageBackend() reports for the
+// --password-store switch and desktop environment.
+const char* SelectLinuxStorageBackend(const std::string& password_store) {
+  if (password_store == "kwallet")
+    return "kwallet";
+  if (password_store == "kwallet5")
+    return "kwallet5";
+  if (password_store == "kwallet6")
+    return "kwallet6";
+  if (password_store == "gnome-libsecret")
+    return "gnome_libsecret";
+  if (password_store == "basic")
+    return "basic_text";
+
+  auto env = base::Environment::Create();
+  switch (base::nix::GetDesktopEnvironment(env.get())) {
+    case base::nix::DESKTOP_ENVIRONMENT_KDE4:
+      return "kwallet";
+    case base::nix::DESKTOP_ENVIRONMENT_KDE5:
+      return "kwallet5";
+    case base::nix::DESKTOP_ENVIRONMENT_KDE6:
+      return "kwallet6";
+    case base::nix::DESKTOP_ENVIRONMENT_CINNAMON:
+    case base::nix::DESKTOP_ENVIRONMENT_DEEPIN:
+    case base::nix::DESKTOP_ENVIRONMENT_GNOME:
+    case base::nix::DESKTOP_ENVIRONMENT_PANTHEON:
+    case base::nix::DESKTOP_ENVIRONMENT_UKUI:
+    case base::nix::DESKTOP_ENVIRONMENT_UNITY:
+    case base::nix::DESKTOP_ENVIRONMENT_XFCE:
+    case base::nix::DESKTOP_ENVIRONMENT_COSMIC:
+      return "gnome_libsecret";
+    case base::nix::DESKTOP_ENVIRONMENT_KDE3:
+    case base::nix::DESKTOP_ENVIRONMENT_LXQT:
+    case base::nix::DESKTOP_ENVIRONMENT_OTHER:
+      return "basic_text";
+  }
+}
+
+}  // namespace
+#endif  // BUILDFLAG(IS_LINUX)
 
 BrowserProcessImpl::BrowserProcessImpl() {
   g_browser_process = this;
@@ -147,7 +193,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
       pref_registry.get());
 
 #if BUILDFLAG(IS_WIN)
-  OSCrypt::RegisterLocalPrefs(pref_registry.get());
+  os_crypt_async::RegisterLocalPrefs(pref_registry.get());
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -412,31 +458,6 @@ electron::ResolveProxyHelper* BrowserProcessImpl::GetResolveProxyHelper() {
   return resolve_proxy_helper_.get();
 }
 
-#if BUILDFLAG(IS_LINUX)
-void BrowserProcessImpl::SetLinuxStorageBackend(
-    os_crypt::SelectedLinuxBackend selected_backend) {
-  switch (selected_backend) {
-    case os_crypt::SelectedLinuxBackend::BASIC_TEXT:
-      selected_linux_storage_backend_ = "basic_text";
-      break;
-    case os_crypt::SelectedLinuxBackend::GNOME_LIBSECRET:
-      selected_linux_storage_backend_ = "gnome_libsecret";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET:
-      selected_linux_storage_backend_ = "kwallet";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET5:
-      selected_linux_storage_backend_ = "kwallet5";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET6:
-      selected_linux_storage_backend_ = "kwallet6";
-      break;
-    case os_crypt::SelectedLinuxBackend::DEFER:
-      NOTREACHED();
-  }
-}
-#endif  // BUILDFLAG(IS_LINUX)
-
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
@@ -479,9 +500,8 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
       providers;
 
 #if BUILDFLAG(IS_WIN)
-  // The DPAPI key provider requires OSCrypt::Init to have already been called
-  // to initialize the key storage. This happens in
-  // BrowserMainPartsWin::PreCreateMainMessageLoop.
+  // Requires os_crypt_async::Init to have loaded the key, which happens in
+  // ElectronBrowserMainParts::PreCreateMainMessageLoop.
   providers.emplace_back(
       /*precedence=*/10u,
       std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
@@ -491,8 +511,10 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
   const auto password_store =
       cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
+  selected_linux_storage_backend_ = SelectLinuxStorageBackend(password_store);
 
-  if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
+  if (password_store != "basic" &&
+      base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
     // Use a higher priority than the FreedesktopSecretKeyProvider.
     providers.emplace_back(
         /*precedence=*/15u,

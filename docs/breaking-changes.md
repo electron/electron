@@ -16,6 +16,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods, deprecated in Electron 45, have been
+removed along with Chromium's synchronous OSCrypt backend. Use
+`safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync()`
+and `safeStorage.decryptStringAsync()` instead. They use the same per-platform
+key stores, so data encrypted with `safeStorage.encryptString()` by earlier
+versions of Electron decrypts with `safeStorage.decryptStringAsync()`.
+
 ### Behavior Changed: captured page images have the page's scale factor
 
 The [`NativeImage`](api/native-image.md) returned by `webContents.capturePage()`

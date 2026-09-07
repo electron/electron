@@ -21,10 +21,6 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/sync/key_storage_util_linux.h"
-#endif
-
 class PrefService;
 class ValueMapPrefStore;
 
@@ -66,7 +62,6 @@ class BrowserProcessImpl : public BrowserProcess {
   electron::ResolveProxyHelper* GetResolveProxyHelper();
 
 #if BUILDFLAG(IS_LINUX)
-  void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
   [[nodiscard]] const std::string& linux_storage_backend() const {
     return selected_linux_storage_backend_;
   }

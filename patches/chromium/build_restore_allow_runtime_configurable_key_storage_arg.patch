@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 7 Sep 2026 08:22:15 +0000
+Subject: build: restore allow_runtime_configurable_key_storage arg
+
+https://chromium-review.googlesource.com/c/chromium/src/+/7765593 deleted
+components/os_crypt/sync/features.gni, which declared this arg, but
+KeychainPassword in components/os_crypt/common still switches its
+service/account name types on ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE and
+nothing defines it anymore. Declare the arg next to KeychainPassword and
+export the define as a public config so the .mm and every includer of
+keychain_password_mac.h agree on KeychainNameType.
+
+Electron sets the Keychain service and account names from the app name at
+runtime. This should be upstreamed.
+
+diff --git a/components/os_crypt/common/BUILD.gn b/components/os_crypt/common/BUILD.gn
+index a5ad767ff8e1854ee6840f8eb4e83a9e6b9f16c5..894c0693bf5acd53f9221cd098470a1fe41ef52c 100644
+--- a/components/os_crypt/common/BUILD.gn
++++ b/components/os_crypt/common/BUILD.gn
+@@ -2,6 +2,20 @@
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+ 
++declare_args() {
++  # Whether to make account and service names for the crypto key storage
++  # configurable at runtime for embedders.
++  #
++  # Currently only has an effect on macOS via KeychainPassword
++  allow_runtime_configurable_key_storage = false
++}
++
++config("key_storage_config") {
++  if (allow_runtime_configurable_key_storage) {
++    defines = [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
++  }
++}
++
+ group("common") {
+   # TODO(crbug.com/547814493): Move to this file.
+   public_deps = [ "//components/os_crypt/async/common" ]
+@@ -28,6 +42,7 @@ if (is_apple) {
+       "//crypto",
+       "//electron/build/config:generate_mas_config",
+     ]
++    public_configs = [ ":key_storage_config" ]
+   }
+ }
+ 
