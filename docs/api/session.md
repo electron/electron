@@ -374,6 +374,7 @@ Returns:
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `forget()`. `null` if it has gone away or the call came from a service worker.
 
 Emitted after `HIDDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
@@ -602,6 +603,7 @@ Returns:
 * `event` Event
 * `device` [USBDevice](structures/usb-device.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this device list belongs to.
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a new device becomes available before
@@ -616,6 +618,7 @@ Returns:
 * `event` Event
 * `device` [USBDevice](structures/usb-device.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this device list belongs to.
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a device has been removed before the callback
@@ -631,6 +634,7 @@ Returns:
 * `details` Object
   * `device` [USBDevice](structures/usb-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `forget()`. `null` if it has gone away or the call came from a service worker.
 
 Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when

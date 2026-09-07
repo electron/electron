@@ -214,9 +214,9 @@ describe('device permission attribution (hid / usb / serial)', () => {
         await run(frame, 'await window.d.forget()');
         expect(await run(frame, `return (await ${kind.get}).length`)).to.equal(0);
         expect(revoked).to.have.lengthOf(1);
-        // Attributed to the iframe's origin, not the embedder's.
+        // Attributed to the iframe, not the embedder.
         expect(revoked[0].origin).to.equal(frame.origin);
-        if (kind.kind === 'serial') expect(revoked[0].frame).to.equal(frame);
+        expect(revoked[0].frame).to.equal(frame);
       });
 
       it('a device permission handler is consulted for chooser-selected devices and can veto them', async () => {
@@ -331,6 +331,37 @@ describe('device permission attribution (hid / usb / serial)', () => {
       expect(calls).to.not.be.empty();
       expect(calls[0].origin).to.equal(frame.origin);
       expect(calls[0].frame).to.equal(frame);
+    });
+  });
+
+  describe('usb chooser events', () => {
+    it('emits usb-device-added / usb-device-removed with the requesting frame while a chooser is open', async () => {
+      const kind = KINDS[1];
+      const { w, frame } = await open('cross-origin iframe');
+      const added = new Promise<any[]>((resolve) =>
+        ses.once('usb-device-added' as any, (_e: any, ...args: any[]) => resolve(args))
+      );
+      const removed = new Promise<any[]>((resolve) =>
+        ses.once('usb-device-removed' as any, (_e: any, ...args: any[]) => resolve(args))
+      );
+      let pick: ((id?: string) => void) | undefined;
+      ses.on('select-usb-device', (event, _details, callback) => {
+        event.preventDefault();
+        pick = callback;
+      });
+      const request = run(frame, `return await ${kind.request}.then(() => true, () => false)`);
+      await waitUntil(() => !!pick);
+      const guid = kind.add(ses);
+      const [device, webContents, addedFrame] = await added;
+      expect(device.deviceId).to.equal(guid);
+      expect(webContents).to.equal(w.webContents);
+      expect(addedFrame).to.equal(frame);
+      kind.remove(ses, guid);
+      const [removedDevice, , removedFrame] = await removed;
+      expect(removedDevice.deviceId).to.equal(guid);
+      expect(removedFrame).to.equal(frame);
+      pick!();
+      expect(await request).to.equal(false);
     });
   });
 

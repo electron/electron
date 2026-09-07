@@ -81,7 +81,8 @@ class UsbChooserContext : public KeyedService,
   // Revokes |origin| access to the USB device ordered by website.
   void RevokeDevicePermissionWebInitiated(
       const url::Origin& origin,
-      const device::mojom::UsbDeviceInfo& device);
+      const device::mojom::UsbDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
 
   void AddObserver(DeviceObserver* observer);
   void RemoveObserver(DeviceObserver* observer);
@@ -110,9 +111,11 @@ class UsbChooserContext : public KeyedService,
   void OnDeviceAdded(device::mojom::UsbDeviceInfoPtr device_info) override;
   void OnDeviceRemoved(device::mojom::UsbDeviceInfoPtr device_info) override;
 
-  void RevokeObjectPermissionInternal(const url::Origin& origin,
-                                      const base::Value& object,
-                                      bool revoked_by_website);
+  void RevokeObjectPermissionInternal(
+      const url::Origin& origin,
+      const base::Value& object,
+      content::RenderFrameHost* render_frame_host,
+      bool revoked_by_website);
 
   void OnDeviceManagerConnectionError();
   void EnsureConnectionWithDeviceManager();

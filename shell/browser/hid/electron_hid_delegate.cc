@@ -188,7 +188,7 @@ void ElectronHidDelegate::RevokeDevicePermission(
   if (browser_context) {
     GetChooserContext(browser_context)
         ->RevokeDevicePermission(RequestingOrigin(render_frame_host, origin),
-                                 device);
+                                 device, render_frame_host);
   }
 }
 

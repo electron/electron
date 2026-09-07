@@ -290,7 +290,8 @@ void HidChooserContext::GrantDevicePermission(
 
 void HidChooserContext::RevokeDevicePermission(
     const url::Origin& requesting_origin,
-    const device::mojom::HidDeviceInfo& device) {
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
   DCHECK(devices_.contains(device.guid));
   // |requesting_origin| may be owned by the frame or service the JS below can
   // destroy.
@@ -308,6 +309,7 @@ void HidChooserContext::RevokeDevicePermission(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("device", device.Clone());
     details.Set("origin", origin.Serialize());
+    details.SetGetter("frame", render_frame_host);
     session->Get()->Emit("hid-device-revoked", details);
   }
   // Let every HidService for this origin drop connections to devices it no

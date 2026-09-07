@@ -84,8 +84,10 @@ class HidChooserContext : public KeyedService,
   // HID-specific interface for granting and checking permissions.
   void GrantDevicePermission(const url::Origin& origin,
                              const device::mojom::HidDeviceInfo& device);
-  void RevokeDevicePermission(const url::Origin& origin,
-                              const device::mojom::HidDeviceInfo& device);
+  void RevokeDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
   bool HasDevicePermission(
       const url::Origin& origin,
       const device::mojom::HidDeviceInfo& device,

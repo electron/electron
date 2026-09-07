@@ -160,11 +160,13 @@ bool ElectronUsbDelegate::CanRequestDevicePermission(
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
   auto* chooser_context = GetChooserContext(browser_context);
   if (chooser_context) {
-    chooser_context->RevokeDevicePermissionWebInitiated(origin, device);
+    chooser_context->RevokeDevicePermissionWebInitiated(
+        RequestingOrigin(frame, origin), device, frame);
   }
 }
 

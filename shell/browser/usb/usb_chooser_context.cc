@@ -22,6 +22,7 @@
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/usb_device_info_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -253,15 +254,18 @@ UsbChooserContext::~UsbChooserContext() {
 
 void UsbChooserContext::RevokeDevicePermissionWebInitiated(
     const url::Origin& origin,
-    const device::mojom::UsbDeviceInfo& device) {
+    const device::mojom::UsbDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
   DCHECK(devices_.contains(device.guid));
   RevokeObjectPermissionInternal(origin, DeviceInfoToValue(device),
+                                 render_frame_host,
                                  /*revoked_by_website=*/true);
 }
 
 void UsbChooserContext::RevokeObjectPermissionInternal(
     const url::Origin& requesting_origin,
     const base::Value& object,
+    content::RenderFrameHost* render_frame_host,
     bool revoked_by_website = false) {
   const base::DictValue* object_dict = object.GetIfDict();
   DCHECK(object_dict != nullptr);
@@ -292,6 +296,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("device", object);
     details.Set("origin", origin.Serialize());
+    details.SetGetter("frame", render_frame_host);
     session->Get()->Emit("usb-device-revoked", details);
   }
   // Let every WebUsbService for this origin close devices it no longer has
