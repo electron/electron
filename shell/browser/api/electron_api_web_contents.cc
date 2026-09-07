@@ -112,6 +112,7 @@
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
+#include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -1188,6 +1189,7 @@ void WebContents::InitWithWebContents(
   // As the delegate we route permission checks through this helper, so every
   // adopted WebContents (including extension background pages) needs one.
   WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
+  FileSystemAccessWebContentsHelper::CreateForWebContents(web_contents.get());
 
   // A <webview> guest is created with a copy of its embedder's renderer
   // preferences, so caret browsing may already be enabled. Every path that
