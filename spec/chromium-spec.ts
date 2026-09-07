@@ -1866,7 +1866,7 @@ describe('chromium features', () => {
       w.webContents.paste();
     };
     const waitForHandle = (frame: Electron.WebFrameMain) =>
-      waitUntil(() => frame.executeJavaScript('window.gotHandle'));
+      waitUntil(async () => (await frame.executeJavaScript('window.gotHandle')) === true);
 
     it('does not let a cross-origin iframe request more access than it was granted', async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
@@ -1910,7 +1910,7 @@ describe('chromium features', () => {
 
     it("asks about a restricted path once per requester, with that requester's identity", async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
-      const events: { details: any; callback: (action: string) => void }[] = [];
+      const events: { details: any; callback: (action: 'allow' | 'deny' | 'tryAgain') => void }[] = [];
       ses.on('file-system-access-restricted', (_e, details, callback) => {
         events.push({ details, callback });
       });
