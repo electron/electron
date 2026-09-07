@@ -595,45 +595,49 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags) => {
-      const postBody = postData
-        ? {
-            data: postData,
-            ...parseContentTypeFormat(postData)
-          }
-        : undefined;
-      const details: Electron.HandlerDetails = {
-        url,
-        frameName,
-        features: rawFeatures,
-        referrer,
-        postBody,
-        disposition
-      };
-
-      let result: ReturnType<typeof this._callWindowOpenHandler>;
-      try {
-        result = this._callWindowOpenHandler(event, details);
-      } catch (err) {
-        event.preventDefault();
-        throw err;
-      }
-
-      const options = result.browserWindowConstructorOptions;
-      if (!event.defaultPrevented) {
-        openGuestWindow({
-          embedder: this,
-          disposition,
+    this.on(
+      '-new-window',
+      (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags, navigate) => {
+        const postBody = postData
+          ? {
+              data: postData,
+              ...parseContentTypeFormat(postData)
+            }
+          : undefined;
+        const details: Electron.HandlerDetails = {
+          url,
+          frameName,
+          features: rawFeatures,
           referrer,
-          postData,
-          overrideBrowserWindowOptions: options || {},
-          windowOpenArgs: details,
-          outlivesOpener: result.outlivesOpener,
-          createWindow: result.createWindow,
-          inheritedSandboxFlags: sandboxFlags
-        });
+          postBody,
+          disposition
+        };
+
+        let result: ReturnType<typeof this._callWindowOpenHandler>;
+        try {
+          result = this._callWindowOpenHandler(event, details);
+        } catch (err) {
+          event.preventDefault();
+          throw err;
+        }
+
+        const options = result.browserWindowConstructorOptions;
+        if (!event.defaultPrevented) {
+          openGuestWindow({
+            embedder: this,
+            disposition,
+            referrer,
+            postData,
+            overrideBrowserWindowOptions: options || {},
+            windowOpenArgs: details,
+            outlivesOpener: result.outlivesOpener,
+            createWindow: result.createWindow,
+            inheritedSandboxFlags: sandboxFlags,
+            navigate
+          });
+        }
       }
-    });
+    );
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
