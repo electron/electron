@@ -123,6 +123,9 @@ class SystemAudioAccessProbe : public media::AudioInputIPCDelegate {
   SystemAudioAccessProbe(const SystemAudioAccessProbe&) = delete;
   SystemAudioAccessProbe& operator=(const SystemAudioAccessProbe&) = delete;
 
+  // Public for base::DeleteHelper; use Run().
+  ~SystemAudioAccessProbe() override = default;
+
  private:
   explicit SystemAudioAccessProbe(gin_helper::Promise<bool> promise)
       : promise_(std::move(promise)) {
@@ -140,7 +143,6 @@ class SystemAudioAccessProbe : public media::AudioInputIPCDelegate {
                                960),
         /*automatic_gain_control=*/false, /*total_segments=*/1);
   }
-  ~SystemAudioAccessProbe() override = default;
 
   // media::AudioInputIPCDelegate
   void OnStreamCreated(base::UnsafeSharedMemoryRegion shared_memory_region,
