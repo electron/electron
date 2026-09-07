@@ -2244,6 +2244,10 @@ Setting the WebRTC UDP Port Range allows you to restrict the udp port range used
 Returns `string` - The identifier of a WebContents stream. This identifier can be used
 with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
 The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
+The `desktop` source only accepts screen and window identifiers from
+[`desktopCapturer.getSources`](desktop-capturer.md#desktopcapturergetsourcesoptions);
+to capture a WebContents use this identifier with the `tab` source, or
+[`ses.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts).
 
 #### `contents.getOrCreateDevToolsTargetId()`
 
