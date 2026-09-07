@@ -375,10 +375,10 @@ index ab9f14174e7a16b2da17a9d5a00aa82318aac9b6..a4c62510ad9f8c2c77986ead1e17afd3
        // This is used by the snapshot builder, so save the code cache
        // unconditionally.
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 4a54e6b3e649b2d35962bc8589eefd96dcf4f942..82999148a9ee740deb13ed4cc7968f2300299b1a 100644
+index 6a1100194314f5d1ae91fcd79984e662ec74efcd..85c8d7f1d9cdc6c02b9338edf079a4632ee024fa 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1315,7 +1315,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1331,7 +1331,7 @@ void CreatePerContextProperties(Local<Object> target,
                                  Local<Value> unused,
                                  Local<Context> context,
                                  void* priv) {
@@ -432,7 +432,7 @@ index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..b38c2f75a92f2d6c1b9c6e7b7aca9246
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc78364172 100644
+index 34fa4758bfa595caf81fa7f6bb223923843203c7..447b28c85fa5ff3dc518845abe85b9bd1e0449f9 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -627,7 +627,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
@@ -444,7 +444,7 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
  
    if (context->GetNumberOfEmbedderDataFields() <=
        ContextEmbedderIndex::kAllowCodeGenerationFromStrings) {
-@@ -1033,7 +1033,7 @@ const char* errno_string(int errorno) {
+@@ -1049,7 +1049,7 @@ const char* errno_string(int errorno) {
  }
  
  void PerIsolateMessageListener(Local<Message> message, Local<Value> error) {
@@ -453,7 +453,7 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
    switch (message->ErrorLevel()) {
      case Isolate::MessageErrorLevel::kMessageWarning: {
        Environment* env = Environment::GetCurrent(isolate);
-@@ -1198,7 +1198,7 @@ void Initialize(Local<Object> target,
+@@ -1214,7 +1214,7 @@ void Initialize(Local<Object> target,
    SetMethod(
        context, target, "getErrorSourcePositions", GetErrorSourcePositions);
  

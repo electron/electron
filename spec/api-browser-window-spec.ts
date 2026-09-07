@@ -37,7 +37,7 @@ import * as nodeUrl from 'node:url';
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil, isWayland } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isTestingBindingAvailable } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -4452,6 +4452,74 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('window.open() child that does not inherit contextIsolation: false', () => {
+      // The child gets contextIsolation: true unless the handler overrides it,
+      // but its synchronous about:blank document starts with the opener's
+      // WebPreferences, so its Node.js environment is created in the main
+      // world. The Electron API has to stay in that context.
+      const preload = path.join(fixtures, 'module', 'preload-window-open-ping.js');
+
+      afterEach(closeAllWindows);
+
+      const waitForPreload = (href: string) =>
+        new Promise<void>((resolve) => {
+          const handler = (_e: Electron.IpcMainEvent, ranIn: string) => {
+            if (ranIn !== href) return;
+            ipcMain.removeListener('window-open-ping-preload-ran', handler);
+            resolve();
+          };
+          ipcMain.on('window-open-ping-preload-ran', handler);
+        });
+
+      const openChild = async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: false, contextIsolation: false }
+        });
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { show: false, webPreferences: { sandbox: false, preload } }
+        }));
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const preloadRan = waitForPreload('about:blank');
+        const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+        await w.webContents.executeJavaScript("void window.open('', 'child')");
+        const [child] = await created;
+        await preloadRan;
+        return { w, child };
+      };
+
+      // Rejects as soon as the renderer goes away, instead of timing out.
+      const unlessGone = <T>(w: BrowserWindow, promise: Promise<T>) =>
+        Promise.race([
+          promise,
+          once(w.webContents, 'render-process-gone').then(([, details]): never => {
+            throw new Error(`renderer went away: ${details.reason}`);
+          })
+        ]);
+
+      // Resolves with the URL of the document whose preload answered.
+      const ping = async (w: BrowserWindow, child: BrowserWindow) => {
+        const pong = once(ipcMain, 'window-open-pong');
+        child.webContents.send('window-open-ping');
+        const [, href] = await unlessGone(w, pong);
+        return href;
+      };
+
+      it('receives IPC from the main process in its preload', async () => {
+        const { w, child } = await openChild();
+        expect(await ping(w, child)).to.equal('about:blank');
+      });
+
+      it('receives IPC from the main process after it navigates', async () => {
+        const { w, child } = await openChild();
+        const preloadRan = waitForPreload('about:blank?next');
+        await w.webContents.executeJavaScript("window.open('', 'child').location.href = 'about:blank?next'");
+        await unlessGone(w, preloadRan);
+        expect(await ping(w, child)).to.equal('about:blank?next');
+      });
+    });
+
     describe('preload script stack traces', () => {
       afterEach(closeAllWindows);
       // Preloads are compiled via ScriptCompiler::CompileFunction(), which
@@ -8009,27 +8077,43 @@ describe('BrowserWindow module', () => {
       }
     };
 
-    const waitForPrefsUpdate = async (initialModTime: Date, preferencesPath: string): Promise<void> => {
+    // Window state reaches the prefs file in two hops: NativeWindow debounces
+    // the save by 200ms before it reaches PrefService, which then batches
+    // writes on a 10s timer. Testing builds can force both; otherwise poll.
+    const flushPrefs = isTestingBindingAvailable()
+      ? async () => {
+          const testing = process._linkedBinding('electron_common_testing');
+          testing.flushPendingWindowStateSaves();
+          await testing.commitPendingLocalStateWrites();
+        }
+      : null;
+
+    const waitForPrefsUpdate = async (
+      initialModTime: Date,
+      preferencesPath: string,
+      isExpectedState: () => boolean = () => true
+    ): Promise<void> => {
       const startTime = Date.now();
       const timeoutMs = 20000;
       while (true) {
+        if (flushPrefs) await flushPrefs();
         const currentModTime = getPrefsModTime(preferencesPath);
 
-        if (currentModTime > initialModTime) {
+        if (currentModTime > initialModTime && isExpectedState()) {
           return;
         }
 
         if (Date.now() - startTime > timeoutMs) {
           throw new Error(`Window state was not flushed to disk within ${timeoutMs}ms`);
         }
-        // Wait for 1 second before checking again
-        await setTimeout(1000);
+        await setTimeout(flushPrefs ? 50 : 1000);
       }
     };
 
     const waitForPrefsFileCreation = async (preferencesPath: string) => {
       while (!fs.existsSync(preferencesPath)) {
-        await setTimeout(1000);
+        if (flushPrefs) await flushPrefs();
+        await setTimeout(flushPrefs ? 50 : 1000);
       }
     };
 
@@ -8046,13 +8130,25 @@ describe('BrowserWindow module', () => {
         show: false,
         ...options
       });
+      // A fullscreen or kiosk window saves again once its transition ends.
+      // Forcing the write can land the pre-transition save first, so wait
+      // for the state the caller asked for, not just for a change.
+      const saved = (): boolean => {
+        if (!options?.fullscreen && !options?.kiosk) return true;
+        const state = getWindowStateFromDisk(windowName, preferencesPath);
+        return (
+          !!state &&
+          (options.fullscreen ? state.fullscreen === true : true) &&
+          (options.kiosk ? state.kiosk === true : true)
+        );
+      };
       if (!fs.existsSync(preferencesPath)) {
         // File doesn't exist, wait for creation
         await waitForPrefsFileCreation(preferencesPath);
       } else {
         // File exists, wait for update
         const initialModTime = getPrefsModTime(preferencesPath);
-        await waitForPrefsUpdate(initialModTime, preferencesPath);
+        await waitForPrefsUpdate(initialModTime, preferencesPath, saved);
       }
       // Ensure window is destroyed because we can't create another window with the same name otherwise
       w.destroy();
@@ -8235,7 +8331,14 @@ describe('BrowserWindow module', () => {
         const preferencesPath = path.join(app.getPath('userData'), 'Local State');
 
         beforeEach(async () => {
-          await setTimeout(2000);
+          // Start with nothing pending in PrefService: the previous test's
+          // window saved on close, and that write must not land while this
+          // test is watching the prefs file's modification time.
+          if (flushPrefs) {
+            await flushPrefs();
+          } else {
+            await setTimeout(2000);
+          }
           BrowserWindow.clearPersistedState(windowName);
           w = new BrowserWindow({
             show: false,
@@ -8295,27 +8398,23 @@ describe('BrowserWindow module', () => {
 
           const initialModTime = getPrefsModTime(preferencesPath);
 
+          // Resize back to back so the debounced saves overlap and only the
+          // final bounds reach disk.
           const resize1 = once(w, 'resize');
           w.setSize(500, 400);
           await resize1;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterFirstResize = getPrefsModTime(preferencesPath);
 
           const resize2 = once(w, 'resize');
           w.setSize(600, 500);
           await resize2;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterSecondResize = getPrefsModTime(preferencesPath);
 
           const resize3 = once(w, 'resize');
           w.setSize(700, 600);
           await resize3;
-          // Wait for any potential save to occur
-          await setTimeout(1000);
 
           const afterThirdResize = getPrefsModTime(preferencesPath);
 
@@ -8324,6 +8423,7 @@ describe('BrowserWindow module', () => {
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
 
+          // No resize wrote to disk on its own; only the flushed final state did.
           [afterFirstResize, afterSecondResize, afterThirdResize].forEach((time) => {
             expect(time.getTime()).to.equal(initialModTime.getTime());
           });

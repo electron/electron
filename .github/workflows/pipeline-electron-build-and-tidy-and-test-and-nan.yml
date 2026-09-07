@@ -135,6 +135,8 @@ jobs:
       clang-tidy-container: ${{ inputs.clang-tidy-container }}
       target-platform: ${{ inputs.target-platform }}
       target-arch: ${{ inputs.target-arch }}
+    secrets:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
     permissions:
