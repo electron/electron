@@ -9,7 +9,7 @@ diff --git a/components/permissions/permission_util.cc b/components/permissions/
 index fcff902ca98c598659e4418f96b633eea2296fc8..9a63f8206823cec2a44d7477d821354110a58610 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -584,9 +584,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -584,9 +584,18 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -23,6 +23,7 @@ index fcff902ca98c598659e4418f96b633eea2296fc8..9a63f8206823cec2a44d7477d8213541
 +    case PermissionType::OPEN_EXTERNAL:
 +    case PermissionType::SERIAL:
 +    case PermissionType::USB:
++    case PermissionType::ELECTRON_BLUETOOTH:
        break;
 +
 +    case PermissionType::NUM:      break;
@@ -33,7 +34,7 @@ diff --git a/content/browser/permissions/permission_controller_impl.cc b/content
 index ebcda16a7972ce3d79342b91bd06000c269b17e9..b22c46226a543b3969f9086ca4567a322c884603 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -98,9 +98,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -98,9 +98,16 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
@@ -48,6 +49,7 @@ index ebcda16a7972ce3d79342b91bd06000c269b17e9..b22c46226a543b3969f9086ca4567a32
 +    case PermissionType::OPEN_EXTERNAL:
 +    case PermissionType::SERIAL:
 +    case PermissionType::USB:
++    case PermissionType::ELECTRON_BLUETOOTH:
 +      return std::nullopt;  }
  }
  
@@ -56,7 +58,7 @@ diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content
 index d2ea06fa66c07baaf741382af40de154068a7d6b..3397e741fbc52ce45cd62dd3fe12e73b8c010c4b 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -180,13 +180,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+@@ -180,13 +180,30 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
      case blink::PermissionType::LOOPBACK_NETWORK:
        return CreatePermissionDescriptor(
            blink::mojom::PermissionName::LOOPBACK_NETWORK);
@@ -84,6 +86,9 @@ index d2ea06fa66c07baaf741382af40de154068a7d6b..3397e741fbc52ce45cd62dd3fe12e73b
 +      return CreatePermissionDescriptor(blink::mojom::PermissionName::SERIAL);
 +    case blink::PermissionType::USB:
 +      return CreatePermissionDescriptor(blink::mojom::PermissionName::USB);
++    case blink::PermissionType::ELECTRON_BLUETOOTH:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::ELECTRON_BLUETOOTH);
 +
 +    case blink::PermissionType::NUM:      NOTREACHED();
    }
@@ -93,7 +98,7 @@ diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_pa
 index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603b0f78370 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -110,11 +110,21 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -110,11 +110,23 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
@@ -115,11 +120,13 @@ index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603
 +      return "Serial";
 +    case PermissionType::USB:
 +      return "USB";
++    case PermissionType::ELECTRON_BLUETOOTH:
++      return "ElectronBluetooth";
 +    case PermissionType::NUM:      NOTREACHED();
    }
    NOTREACHED();
  }
-@@ -194,7 +204,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -194,7 +206,16 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -132,10 +139,11 @@ index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603
 +    case PermissionType::OPEN_EXTERNAL:
 +    case PermissionType::SERIAL:
 +    case PermissionType::USB:
++    case PermissionType::ELECTRON_BLUETOOTH:
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -372,6 +390,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -372,6 +393,23 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
      case PermissionName::SMART_CARD:
        return PermissionType::SMART_CARD;
@@ -154,6 +162,8 @@ index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603
 +      return PermissionType::SERIAL;
 +    case PermissionName::USB:
 +      return PermissionType::USB;
++    case PermissionName::ELECTRON_BLUETOOTH:
++      return PermissionType::ELECTRON_BLUETOOTH;
    }
  }
  
@@ -161,7 +171,7 @@ diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/th
 index 31158388db2df745af999adc9d07fc9272a2d6f8..fed5994c8563792405838d8923d3502aedbe85a2 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
-@@ -69,8 +69,17 @@ enum class PermissionType {
+@@ -69,8 +69,18 @@ enum class PermissionType {
    LOCAL_NETWORK = 44,
    LOOPBACK_NETWORK = 45,
    GEOLOCATION_APPROXIMATE = 46,
@@ -177,7 +187,8 @@ index 31158388db2df745af999adc9d07fc9272a2d6f8..fed5994c8563792405838d8923d3502a
 +  OPEN_EXTERNAL,
 +  SERIAL,
 +  USB,
-+  ELECTRON_LAST = USB,  // Always keep this at the end.
++  ELECTRON_BLUETOOTH,
++  ELECTRON_LAST = ELECTRON_BLUETOOTH,  // Always keep this at the end.
    NUM,
    MIN_VALUE = MIDI_SYSEX,
  };
@@ -185,7 +196,7 @@ diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third
 index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905eb40ad2c4 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
-@@ -47,8 +47,16 @@ enum PermissionName {
+@@ -47,8 +47,17 @@ enum PermissionName {
    WEB_PRINTING,
    SMART_CARD,
    GEOLOCATION_APPROXIMATE,
@@ -198,7 +209,8 @@ index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905e
 +  HID,
 +  OPEN_EXTERNAL,
 +  SERIAL,
-+  USB
++  USB,
++  ELECTRON_BLUETOOTH
 +};
  struct MidiPermissionDescriptor {
    bool sysex;
@@ -207,7 +219,7 @@ diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc 
 index 490e3bdca2a092cfb98f8a7cda2666ec979d953b..8689da58e0e225e67fac695e6375468f1678aab9 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -165,8 +165,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -165,8 +165,24 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";
@@ -227,6 +239,8 @@ index 490e3bdca2a092cfb98f8a7cda2666ec979d953b..8689da58e0e225e67fac695e6375468f
 +      return "serial";
 +    case PermissionName::USB:
 +      return "usb";
++    case PermissionName::ELECTRON_BLUETOOTH:
++      return "electron-bluetooth";
    }
  }
  

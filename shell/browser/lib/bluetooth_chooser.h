@@ -8,11 +8,14 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/bluetooth_chooser.h"
-#include "shell/browser/api/electron_api_web_contents.h"
+#include "content/public/browser/global_routing_id.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+
+namespace content {
+class RenderFrameHost;
+}  // namespace content
 
 namespace electron {
 
@@ -23,8 +26,8 @@ class BluetoothChooser : public content::BluetoothChooser {
     std::u16string device_name;
   };
 
-  explicit BluetoothChooser(api::WebContents* contents,
-                            const EventHandler& handler);
+  BluetoothChooser(content::RenderFrameHost* render_frame_host,
+                   const EventHandler& handler);
   ~BluetoothChooser() override;
 
   // disable copy
@@ -45,11 +48,29 @@ class BluetoothChooser : public content::BluetoothChooser {
   std::vector<DeviceInfo> GetDeviceList();
 
  private:
+  // Emits select-bluetooth-device on the session (once, then
+  // bluetooth-device-added for later devices) and on the WebContents
+  // (deprecated, every time); returns true if a listener took responsibility
+  // for answering (event.preventDefault()). May delete |this|.
+  bool EmitSelectEvent(const DeviceInfo* added_or_updated);
+
+  // Runs |event_handler_|. Always posted: content destroys this chooser from
+  // inside the handler, and may be part-way through its own work (e.g.
+  // StartDeviceDiscovery) when a listener answers synchronously.
+  void RunEventHandler(content::BluetoothChooserEvent event,
+                       const std::string& device_id);
+
   absl::flat_hash_map<std::string, std::u16string> device_id_to_name_map_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  content::GlobalRenderFrameHostId render_frame_host_id_;
   EventHandler event_handler_;
   bool refreshing_ = false;
   bool rescan_ = false;
+  // Whether any select-bluetooth-device listener has called preventDefault()
+  // for this chooser, i.e. the app will answer through the callback.
+  bool handled_ = false;
+  // Whether the session-level select-bluetooth-device event has been emitted
+  // for this chooser.
+  bool session_select_emitted_ = false;
 
   base::WeakPtrFactory<BluetoothChooser> weak_ptr_factory_{this};
 };

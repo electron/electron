@@ -252,6 +252,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "serial");
     case blink::PermissionType::USB:
       return StringToV8(isolate, "usb");
+    case blink::PermissionType::ELECTRON_BLUETOOTH:
+      return StringToV8(isolate, "bluetooth");
 
     case blink::PermissionType::NUM:
       break;

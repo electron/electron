@@ -15,9 +15,9 @@ The APIs themselves are documented in [`session`](../api/session.md) and
 
 * With no handlers installed, permission checks and permission requests are
   allowed.
-* With no `select-hid-device` / `select-usb-device` / `select-serial-port`
-  listener, a device request returns no device (an empty list for HID, a
-  `NotFoundError` for USB and serial).
+* With no `select-hid-device` / `select-usb-device` / `select-serial-port` /
+  `select-bluetooth-device` listener, a device request returns no device (an
+  empty list for HID, a `NotFoundError` for USB, serial and Bluetooth).
 * Once you install `setPermissionCheckHandler`, `setPermissionRequestHandler`
   or `setDevicePermissionHandler`, its return value is the decision for every
   call routed to it.
@@ -32,9 +32,9 @@ describe that frame, not the top-level page that contains it.
 | --- | --- |
 | [`ses.setPermissionCheckHandler`](../api/session.md#sessetpermissioncheckhandlerhandler) | `webContents`, `requestingOrigin`, `details.requestingUrl`, `details.isMainFrame`, `details.embeddingOrigin`, `details.frame` |
 | [`ses.setPermissionRequestHandler`](../api/session.md#sessetpermissionrequesthandlerhandler) | `webContents`, `details.requestingUrl`, `details.isMainFrame` |
-| `select-hid-device`, `select-usb-device` | `details.frame` |
+| `select-hid-device`, `select-usb-device`, `select-bluetooth-device` (session), `bluetooth-device-added` | `details.frame` |
 | `select-serial-port`, `serial-port-added`, `serial-port-removed`, `usb-device-added`, `usb-device-removed` | `webContents` and a trailing `frame` argument |
-| `select-bluetooth-device` | the `webContents` the event is emitted on; no frame |
+| `select-bluetooth-device` (webContents, deprecated) | the `webContents` the event is emitted on and a trailing `frame` argument |
 | [`ses.setDevicePermissionHandler`](../api/session.md#sessetdevicepermissionhandlerhandler) | `details.origin`, `details.frame`, `details.selected` |
 | [`ses.setUSBProtectedClassesHandler`](../api/session.md#sessetusbprotectedclasseshandlerhandler) | `details.origin`, `details.frame` |
 | `hid-device-revoked`, `usb-device-revoked`, `serial-port-revoked` | `details.origin`, `details.frame` |
@@ -113,10 +113,10 @@ Because the `allow=` precondition still applies, a decision keyed on
 `frame.top.origin` matches Chrome's: the iframe only reaches the handler if the
 top-level document delegated the feature to it.
 
-## HID, USB and serial in detail
+## HID, USB, serial and Bluetooth in detail
 
-1. **Check.** `setPermissionCheckHandler` is called with `hid`, `usb` or
-   `serial` for the requesting frame before a chooser opens and before
+1. **Check.** `setPermissionCheckHandler` is called with `hid`, `usb`,
+   `serial` or `bluetooth` for the requesting frame before a chooser opens and before
    previously granted devices are returned by `getDevices()` or (HID, serial)
    opened. Returning `false` blocks all of these.
 2. **Choose.** `select-hid-device` / `select-usb-device` / `select-serial-port`
@@ -132,6 +132,12 @@ top-level document delegated the feature to it.
    origin, emits `hid-device-revoked` / `usb-device-revoked` /
    `serial-port-revoked` with that origin and frame, and closes the device in
    other documents of that origin.
+
+Web Bluetooth has steps 1 and 2 only: the `bluetooth` check runs for the
+requesting frame on every Web Bluetooth call, and `select-bluetooth-device` /
+`bluetooth-device-added` carry the requesting frame. A device picked there is
+usable by the requesting document; Electron keeps no grant record for it, so
+`setDevicePermissionHandler` and the revoke step do not apply to Bluetooth.
 
 In Chrome, steps 2–4 are keyed on the top-level site and there is no
 equivalent of `setDevicePermissionHandler`.

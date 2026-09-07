@@ -70,6 +70,8 @@ class WebContentsPermissionHelper
                                   blink::mojom::MediaStreamType type) const;
   bool CheckSerialAccessPermission(
       content::RenderFrameHost* requesting_frame) const;
+  bool CheckBluetoothAccessPermission(
+      content::RenderFrameHost* requesting_frame) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);

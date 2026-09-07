@@ -350,6 +350,19 @@ void SetFakeSerialPortConnected(gin::Arguments* args,
     fakes->serial().SetPortConnected(token, connected);
 }
 
+void EnableFakeBluetooth(const std::string& state) {
+  electron::FakeBluetooth::Enable(state);
+}
+
+void DisableFakeBluetooth() {
+  electron::FakeBluetooth::Disable();
+}
+
+bool AddFakeBluetoothPeripheral(const std::string& address,
+                                const std::string& name) {
+  return electron::FakeBluetooth::AddPeripheral(address, name);
+}
+
 // Number of device connections currently open through the fakes.
 int FakeDeviceOpenCount(gin::Arguments* args,
                         v8::Local<v8::Value> session,
@@ -389,6 +402,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("removeFakeSerialPort", &RemoveFakeSerialPort);
   dict.SetMethod("setFakeSerialPortConnected", &SetFakeSerialPortConnected);
   dict.SetMethod("fakeDeviceOpenCount", &FakeDeviceOpenCount);
+  dict.SetMethod("enableFakeBluetooth", &EnableFakeBluetooth);
+  dict.SetMethod("disableFakeBluetooth", &DisableFakeBluetooth);
+  dict.SetMethod("addFakeBluetoothPeripheral", &AddFakeBluetoothPeripheral);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);

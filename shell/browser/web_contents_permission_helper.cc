@@ -419,6 +419,16 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
                          std::move(details));
 }
 
+bool WebContentsPermissionHelper::CheckBluetoothAccessPermission(
+    content::RenderFrameHost* requesting_frame) const {
+  base::DictValue details;
+  details.Set("securityOrigin",
+              requesting_frame->GetLastCommittedOrigin().GetURL().spec());
+  return CheckPermission(requesting_frame,
+                         blink::PermissionType::ELECTRON_BLUETOOTH,
+                         std::move(details));
+}
+
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);
 
 }  // namespace electron
