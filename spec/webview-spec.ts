@@ -1627,6 +1627,71 @@ describe('<webview> tag', function () {
         expect(channel).to.equal('channel');
         expect(args).to.deep.equal(['arg1', 'arg2']);
       });
+
+      it('identifies the frame in the guest that sent the message', async () => {
+        const { frameOrigin, frameUrl } = await loadWebViewAndWaitForEvent(
+          w,
+          {
+            src: `file://${fixtures}/pages/ipc-message.html`,
+            nodeintegration: 'on',
+            webpreferences: 'contextIsolation=no'
+          },
+          'ipc-message'
+        );
+        expect(frameOrigin).to.equal('file://');
+        expect(frameUrl).to.equal(url.pathToFileURL(path.join(fixtures, 'pages', 'ipc-message.html')).href);
+      });
+    });
+
+    describe('guest-view IPCs', () => {
+      let server: http.Server;
+      let crossOriginUrl: string;
+      before(async () => {
+        server = http.createServer((_req, res) => {
+          res.setHeader('content-type', 'text/html');
+          res.end('<!doctype html><body>frame</body>');
+        });
+        crossOriginUrl = (await listen(server)).url;
+      });
+      after(() => server.close());
+
+      it('are only honoured from the frame that created the <webview>', async () => {
+        const embedder = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            webviewTag: true,
+            nodeIntegration: true,
+            nodeIntegrationInSubFrames: true,
+            contextIsolation: false,
+            // A fresh partition so the cross-origin iframe below gets its own
+            // renderer rather than one an earlier test started without
+            // subframe node integration.
+            partition: 'guest-view-ipc-spec'
+          }
+        });
+        await embedder.loadURL(`file://${fixtures}/pages/blank.html`);
+        await loadWebView(embedder.webContents, { src: `file://${fixtures}/pages/a.html` });
+        const guestId = await embedder.webContents.executeJavaScript(
+          "document.querySelector('webview').getWebContentsId()"
+        );
+        await embedder.webContents.executeJavaScript(`new Promise((resolve) => {
+          const f = document.createElement('iframe');
+          f.src = ${JSON.stringify(crossOriginUrl)};
+          f.onload = resolve;
+          document.body.appendChild(f);
+        })`);
+        const iframe = embedder.webContents.mainFrame.frames.find((f) => f.url.startsWith('http'))!;
+        // The iframe shares the embedder WebContents but did not create the
+        // <webview>; it must not be able to drive it through the internal IPC.
+        const call = (frame: Electron.WebFrameMain) =>
+          frame.executeJavaScript(`(async () => {
+            const { ipc } = { ipc: process._linkedBinding('electron_renderer_ipc').createForRenderFrame() };
+            const { error, result } = await ipc.invoke(true, 'GUEST_VIEW_MANAGER_CALL', [${guestId}, 'executeJavaScript', ['6 * 7']]);
+            return error ? 'error:' + error : result;
+          })()`);
+        expect(await call(iframe)).to.match(/^error:.*Access denied/);
+        expect(await call(embedder.webContents.mainFrame)).to.equal(42);
+      });
     });
 
     describe('page-title-updated event', () => {
