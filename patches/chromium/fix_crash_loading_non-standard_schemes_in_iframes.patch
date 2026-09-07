@@ -16,7 +16,9 @@ This patch adjusts the origin calculation for subframe non-standard schemes in
 When top level frame navigates to non-standard scheme url, the origin is calculated
 as `null` without any derivation. It is only in cases where there is a `initiator_origin`
 then the origin is derived from it, which is usually the case for renderer initiated
-navigations and iframes are no exceptions from this rule.
+navigations and iframes are no exceptions from this rule. data: URLs are also
+non-standard but are left to the upstream paths, which keep a stable nonce for
+the navigation and the initiator as precursor.
 
 The patch should be removed in favor of either:
   - Remove support for non-standard custom schemes
@@ -31,13 +33,14 @@ diff --git a/content/browser/renderer_host/navigation_request.cc b/content/brows
 index 1ee75bed451de026c9dfbe7de9ee68ba20a1848c..5b53efa359ce15d5578e70d7e656969ef83e6562 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -12312,6 +12312,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+@@ -12312,6 +12312,12 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
              target_rph_id);
    }
  
-+  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
-+    return url::Origin::Resolve(common_params().url,
-+                                url::Origin());
++  if (!common_params().url.IsStandard() &&
++      !common_params().url.IsAboutBlank() &&
++      !common_params().url.SchemeIs(url::kDataScheme)) {
++    return url::Origin::Resolve(common_params().url, url::Origin());
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the
@@ -59,8 +62,8 @@ index 279579c48769216a4dbad277eba5f82a7b1a8ada..9c622c56a722af5abce4567045db1233
      // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;
-+  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
-+             !is_standard) {
++  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) && !is_standard &&
++             !url_.ProtocolIsData()) {
 +    origin = SecurityOrigin::Create(url_);
    } else {
      // Otherwise, create an origin that propagates precursor information
