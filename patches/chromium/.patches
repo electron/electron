@@ -56,7 +56,6 @@ chore_provide_iswebcontentscreationoverridden_with_full_params.patch
 fix_export_zlib_symbols.patch
 web_contents.patch
 webview_fullscreen.patch
-extend_apply_webpreferences.patch
 build_libc_as_static_library.patch
 logging_win32_only_create_a_console_if_logging_to_stderr.patch
 fix_media_key_usage_with_globalshortcuts.patch
