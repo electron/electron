@@ -11,7 +11,7 @@ diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_trai
 index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..a1090f2319a790ed6fd7d7a3f8c4eac6b31876ec 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -149,6 +149,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -149,6 +149,18 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
    out->stylus_handwriting_enabled = data.stylus_handwriting_enabled();
@@ -19,7 +19,6 @@ index 3ecf125021caa0ab6bd0eae1cc7529e2a6d62238..a1090f2319a790ed6fd7d7a3f8c4eac6
 +  out->context_isolation = data.context_isolation();
 +  out->is_webview = data.is_webview();
 +  out->hidden_page = data.hidden_page();
-+  out->offscreen = data.offscreen();
 +  out->node_integration = data.node_integration();
 +  out->node_integration_in_worker = data.node_integration_in_worker();
 +  out->node_integration_in_sub_frames = data.node_integration_in_sub_frames();
@@ -43,7 +42,7 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -481,6 +482,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -481,6 +482,18 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // Consumed only in chrome/renderer/ (not by Blink).
    bool is_indigo_onboarding = false;
  
@@ -51,7 +50,6 @@ index b042d68a4d06b59942775e04ef81a32b347e58a3..3070fbf1e128f2d999d16bf39c9c49c2
 +  bool context_isolation = false;
 +  bool is_webview = false;
 +  bool hidden_page = false;
-+  bool offscreen = false;
 +  bool node_integration = false;
 +  bool node_integration_in_worker = false;
 +  bool node_integration_in_sub_frames = false;
@@ -75,7 +73,7 @@ index 735a8ca35575d6be95749c16e7e63d3f59f65bd2..b11b98cd54f867d0c52a54f922d8700a
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -447,6 +448,52 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -447,6 +448,48 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.stylus_handwriting_enabled;
    }
  
@@ -90,10 +88,6 @@ index 735a8ca35575d6be95749c16e7e63d3f59f65bd2..b11b98cd54f867d0c52a54f922d8700a
 +
 +  static bool hidden_page(const blink::web_pref::WebPreferences& r) {
 +    return r.hidden_page;
-+  }
-+
-+  static bool offscreen(const blink::web_pref::WebPreferences& r) {
-+    return r.offscreen;
 +  }
 +
 +  static bool node_integration(const blink::web_pref::WebPreferences& r) {
@@ -140,7 +134,7 @@ index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..a4a1271ee61d0dd21679cd802b6cb72b
  import "mojo/public/mojom/base/string16.mojom";
  import "mojo/public/mojom/base/time.mojom";
  import "skia/public/mojom/skcolor.mojom";
-@@ -224,6 +225,19 @@ struct WebPreferences {
+@@ -224,6 +225,18 @@ struct WebPreferences {
    // If true, stylus handwriting recognition to text input will be available in
    // editable input fields which are non-password type.
    bool stylus_handwriting_enabled;
@@ -148,7 +142,6 @@ index 9a04abd87af48b5baf441ebb98fdac0571ef1f30..a4a1271ee61d0dd21679cd802b6cb72b
 +  bool context_isolation;
 +  bool is_webview;
 +  bool hidden_page;
-+  bool offscreen;
 +  bool node_integration;
 +  bool node_integration_in_worker;
 +  bool node_integration_in_sub_frames;
