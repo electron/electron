@@ -152,7 +152,7 @@ initialized to support the start of the extension's background page.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53666
     description: "Added `details.frame` and `details.webContents`; emitted once per requesting document instead of once per path."
 ```
 -->
