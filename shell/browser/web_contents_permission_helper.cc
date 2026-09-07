@@ -119,9 +119,14 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
         blink::MediaStreamDevice(request.video_type, "", "");
   } else if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     // If the DesktopMediaID can't be successfully parsed, throw an
-    // Invalid state error to match upstream.
+    // Invalid state error to match upstream. The `desktop` source only names
+    // screens and windows (ids from desktopCapturer.getSources()); a
+    // WebContents is captured through the `tab` source with an id from
+    // webContents.getMediaSourceId(), which is bound to the requesting
+    // contents, or through getDisplayMedia().
     auto dm_id = GetScreenId(request.requested_video_device_ids);
-    if (dm_id.is_null()) {
+    if (dm_id.is_null() ||
+        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
       std::move(callback).Run(blink::mojom::StreamDevicesSet(),
                               MediaStreamRequestResult::INVALID_STATE, nullptr);
       return;
