@@ -318,7 +318,7 @@ passed. Call `event.preventDefault()` to take responsibility for answering, then
 call `callback` with a `deviceId` from `deviceList` or a later
 `bluetooth-device-added` event to select that device, or with an empty string
 to cancel. If no listener (here or on the deprecated
-[`webContents` event](web-contents.md#event-select-bluetooth-device-deprecated))
+[`webContents` event](web-contents.md#event-select-bluetooth-device))
 calls `event.preventDefault()`, the request is cancelled when discovery
 finishes.
 
