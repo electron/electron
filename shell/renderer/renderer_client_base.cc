@@ -4,6 +4,7 @@
 
 #include "shell/renderer/renderer_client_base.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -146,9 +147,16 @@ RendererClientBase::RendererClientBase() {
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
+  // Parse --standard-schemes-with-port-and-userinfo=scheme1,scheme2
+  std::vector<std::string> port_and_userinfo_schemes_list =
+      ParseSchemesCLISwitch(command_line,
+                            switches::kStandardSchemesWithPortAndUserinfo);
   for (const std::string& scheme : standard_schemes_list)
-    url::AddStandardScheme(scheme.c_str(),
-                           url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION);
+    url::AddStandardScheme(
+        scheme.c_str(),
+        std::ranges::contains(port_and_userinfo_schemes_list, scheme)
+            ? url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION
+            : url::SCHEME_WITH_HOST);
   // Parse --cors-schemes=scheme1,scheme2
   std::vector<std::string> cors_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCORSSchemes);
