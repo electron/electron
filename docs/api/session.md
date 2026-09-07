@@ -304,6 +304,10 @@ app.whenReady().then(() => {
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.selected) {
+      // The user (or the select-*-device handler below) picked this device for this origin in this session
+      return true
+    }
     if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'hid') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
         // Always allow this type of device (this allows skipping the call to `navigator.hid.requestDevice` first)
@@ -384,6 +388,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `callback` Function
   * `portId` string
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame requesting a port. `null` if the frame has gone away.
 
 Emitted when a serial port needs to be selected when a call to
 `navigator.serial.requestPort` is made. `callback` should be called with
@@ -452,6 +457,7 @@ Returns:
 * `event` Event
 * `port` [SerialPort](structures/serial-port.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this port list belongs to.
 
 Emitted after `navigator.serial.requestPort` has been called and
 `select-serial-port` has fired if a new serial port becomes available before
@@ -466,6 +472,7 @@ Returns:
 * `event` Event
 * `port` [SerialPort](structures/serial-port.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this port list belongs to.
 
 Emitted after `navigator.serial.requestPort` has been called and
 `select-serial-port` has fired if a serial port has been removed before the
@@ -1132,7 +1139,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
-    * `securityOrigin` string (optional) - The security origin of the `media` check.
+    * `securityOrigin` string (optional) - The origin of the requesting frame, for `media`, `hid`, `usb` and `serial` checks.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
@@ -1241,7 +1248,8 @@ Passing `null` instead of a function resets the handler to its default state.
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
     * `origin` string - The origin of the document (or service worker) the device permission check is made for.
     * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
-    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame the check is made for. `null` when the check is not made on behalf of a document, for example for a service worker, and for `serial`.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame the check is made for. `null` when the check is not made on behalf of a document, for example for a service worker.
+    * `selected` boolean - Whether this origin picked this device in a `select-hid-device` / `select-usb-device` / `select-serial-port` handler during this session. For `hid` the `device` also carries the `deviceId`, and for `serial` the `portId`, that the chooser reported.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -1249,10 +1257,9 @@ To clear the handler, call `setDevicePermissionHandler(null)`.
 This handler can be used to provide default permissioning to devices without first calling for permission
 to devices (eg via `navigator.hid.requestDevice`).  If this handler is not defined, the default device
 permissions as granted through device selection (eg via `navigator.hid.requestDevice`) will be used.
-When this handler is defined it is consulted for every `hid` and `usb` device permission check, including for
-devices selected through `select-hid-device` / `select-usb-device`; Electron does not keep its own record of
-those selections, so the handler should return `true` for devices the app granted that way.
-A document must also pass the `hid` / `usb` check in [`setPermissionCheckHandler`](#sessetpermissioncheckhandlerhandler)
+When this handler is defined it is consulted for every `hid`, `usb` and `serial` device permission check, including for
+devices the user picked in a chooser; return `details.selected` (or `true`) to honour those selections.
+A document must also pass the `hid` / `usb` / `serial` check in [`setPermissionCheckHandler`](#sessetpermissioncheckhandlerhandler)
 to see or open devices this handler allows.
 Additionally, the default behavior of Electron is to store granted device permission in memory.
 If longer term storage is needed, a developer can store granted device
@@ -1282,6 +1289,10 @@ app.whenReady().then(() => {
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.selected) {
+      // The user (or the select-*-device handler below) picked this device for this origin in this session
+      return true
+    }
     if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'hid') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
         // Always allow this type of device (this allows skipping the call to `navigator.hid.requestDevice` first)

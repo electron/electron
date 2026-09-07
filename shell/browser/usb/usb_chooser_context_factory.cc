@@ -44,4 +44,10 @@ UsbChooserContext* UsbChooserContextFactory::GetForBrowserContextIfExists(
       GetInstance()->GetServiceForBrowserContext(context, /*create=*/false));
 }
 
+content::BrowserContext* UsbChooserContextFactory::GetBrowserContextToUse(
+    content::BrowserContext* context) const {
+  // In-memory partitions are their own context; WebUSB works there too.
+  return context;
+}
+
 }  // namespace electron

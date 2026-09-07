@@ -882,6 +882,8 @@ void ElectronBrowserContext::GrantDevicePermission(
     const url::Origin& origin,
     const base::Value& device,
     blink::PermissionType permission_type) {
+  if (CheckDevicePermission(origin, device, permission_type))
+    return;
   granted_devices_[permission_type][origin].push_back(
       std::make_unique<base::Value>(device.Clone()));
 }

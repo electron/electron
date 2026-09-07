@@ -96,6 +96,9 @@ class HidChooserContext : public KeyedService,
 
   // For ScopedObserver.
   void AddDeviceObserver(DeviceObserver* observer);
+
+  void SetHidManagerForTesting(
+      mojo::PendingRemote<device::mojom::HidManager> manager);
   void RemoveDeviceObserver(DeviceObserver* observer);
 
   // Forward HidManager::GetDevices.
@@ -140,6 +143,12 @@ class HidChooserContext : public KeyedService,
       pending_get_devices_requests_;
 
   // Tracks the set of devices to which an origin has access to.
+  void NotifyPermissionRevoked(const url::Origin& origin);
+
+  // Devices (by interface guid) each origin picked in a chooser during this
+  // session. Without ses.setDevicePermissionHandler() this is the grant store
+  // for devices that cannot be stored persistently; with a handler it is only
+  // reported to the handler as details.selected.
   std::map<url::Origin, std::set<std::string>> ephemeral_devices_;
 
   // Map from device GUID to device info.

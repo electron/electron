@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Mon, 7 Sep 2026 06:09:36 +0000
-Subject: [WebHID][WebUSB] Key document services on the requesting frame's
- origin
+Subject: [WebHID][WebUSB][Serial] Key document services on the requesting
+ frame's origin
 
 HidService and WebUsbServiceImpl are constructed with the primary main
 frame's origin, which is the principal Chrome grants device permissions
@@ -13,7 +13,9 @@ frame's origin so that every delegate call content makes for a document
 (CanRequestDevicePermission, HasDevicePermission,
 RevokeDevicePermission[WebInitiated], IsFidoAllowedForOrigin,
 AdjustProtectedInterfaceClasses) and the OnPermissionRevoked comparison
-use the same origin the grant was stored under.
+use the same origin the grant was stored under. SerialService already asks
+its delegate per frame; only its OnPermissionRevoked comparison used the
+main frame's origin, so align that too.
 
 This is specific to Electron's permission model and is not intended for
 upstream.
@@ -31,6 +33,19 @@ index 2497764e77ff1413170aefd57729f5829f8f8d4a..7c729656f0494e077049434afacaf121
  
  HidService::HidService(
      base::WeakPtr<ServiceWorkerVersion> service_worker_version,
+diff --git a/content/browser/serial/serial_service.cc b/content/browser/serial/serial_service.cc
+index 0f9a52d3cd2644485fe3f48492a0e07e75214382..32b3b92e0ac44fb0146dd2a108aad1b462f4fea6 100644
+--- a/content/browser/serial/serial_service.cc
++++ b/content/browser/serial/serial_service.cc
+@@ -213,7 +213,7 @@ void SerialService::OnPortManagerConnectionError() {
+ }
+ 
+ void SerialService::OnPermissionRevoked(const url::Origin& origin) {
+-  if (origin != render_frame_host().GetMainFrame()->GetLastCommittedOrigin())
++  if (origin != render_frame_host().GetLastCommittedOrigin())
+     return;
+ 
+   SerialDelegate* delegate = GetContentClient()->browser()->GetSerialDelegate();
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
 index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..0403a237756bbdc4cdd6b6a9992a65d191782771 100644
 --- a/content/browser/usb/web_usb_service_impl.cc

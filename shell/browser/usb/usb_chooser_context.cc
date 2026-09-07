@@ -110,6 +110,7 @@ base::Value UsbChooserContext::DeviceInfoToValue(
                                 ? *configuration->configuration_name
                                 : std::u16string_view());
 
+    base::ListValue interface_list;
     for (const auto& interface : configuration->interfaces) {
       base::DictValue interface_value;
       interface_value.Set("interfaceNumber", interface->interface_number);
@@ -166,18 +167,15 @@ base::Value UsbChooserContext::DeviceInfoToValue(
       }
 
       interface_value.Set("alternates", std::move(alternate_list));
-
-      configuration_value.Set("interfaces",
-                              base::Value(std::move(interface_value)));
+      interface_list.Append(std::move(interface_value));
     }
+    configuration_value.Set("interfaces", std::move(interface_list));
 
     if (device_info.active_configuration &&
         device_info.active_configuration ==
             configuration->configuration_value) {
-      auto active_configuration_value = configuration_value.Clone();
       has_active_configuration = true;
-      configuration_value.Set("configuration",
-                              std::move(active_configuration_value));
+      device_value.Set("configuration", configuration_value.Clone());
     }
 
     configuration_list.Append(std::move(configuration_value));
@@ -211,6 +209,13 @@ void UsbChooserContext::InitDeviceList(
         .Run(std::move(device_list));
     pending_get_devices_requests_.pop();
   }
+}
+
+void UsbChooserContext::SetDeviceManagerForTesting(
+    mojo::PendingRemote<device::mojom::UsbDeviceManager> manager) {
+  OnDeviceManagerConnectionError();
+  device_manager_.Bind(std::move(manager));
+  SetUpDeviceManagerConnection();
 }
 
 void UsbChooserContext::EnsureConnectionWithDeviceManager() {
@@ -255,20 +260,22 @@ void UsbChooserContext::RevokeDevicePermissionWebInitiated(
 }
 
 void UsbChooserContext::RevokeObjectPermissionInternal(
-    const url::Origin& origin,
+    const url::Origin& requesting_origin,
     const base::Value& object,
     bool revoked_by_website = false) {
   const base::DictValue* object_dict = object.GetIfDict();
   DCHECK(object_dict != nullptr);
+  // |requesting_origin| may be owned by the frame or service the JS below can
+  // destroy.
+  const url::Origin origin = requesting_origin;
 
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr ||
-      permission_manager->HasDevicePermissionHandler()) {
+  if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr) {
     permission_manager->RevokeDevicePermission(
         blink::PermissionType::USB, origin, object, browser_context_);
-  } else {
-    const std::string* guid = object_dict->FindString(kDeviceIdKey);
+  }
+  if (const std::string* guid = object_dict->FindString(kDeviceIdKey)) {
     auto it = ephemeral_devices_.find(origin);
     if (it != ephemeral_devices_.end()) {
       it->second.erase(*guid);
@@ -288,7 +295,14 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     session->Get()->Emit("usb-device-revoked", details);
   }
   // Let every WebUsbService for this origin close devices it no longer has
-  // permission for (content re-checks HasDevicePermission()).
+  // permission for (content re-checks HasDevicePermission(), which may run app
+  // JS, so do it from a fresh task rather than under the caller).
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&UsbChooserContext::NotifyPermissionRevoked,
+                                weak_factory_.GetWeakPtr(), origin));
+}
+
+void UsbChooserContext::NotifyPermissionRevoked(const url::Origin& origin) {
   for (auto& observer : device_observer_list_)
     observer.OnPermissionRevoked(origin);
 }
@@ -298,15 +312,14 @@ void UsbChooserContext::GrantDevicePermission(
     const device::mojom::UsbDeviceInfo& device_info) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  // With ses.setDevicePermissionHandler() installed the app owns the grant
-  // store; keep nothing here so the handler is consulted on every later check.
-  if (CanStorePersistentEntry(device_info) ||
-      permission_manager->HasDevicePermissionHandler()) {
+  // Remember the selection for this session in every case; see
+  // HidChooserContext::GrantDevicePermission().
+  ephemeral_devices_[origin].insert(device_info.guid);
+  if (CanStorePersistentEntry(device_info) &&
+      !permission_manager->HasDevicePermissionHandler()) {
     permission_manager->GrantDevicePermission(
         blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
         browser_context_);
-  } else {
-    ephemeral_devices_[origin].insert(device_info.guid);
   }
 }
 
@@ -320,19 +333,15 @@ bool UsbChooserContext::HasDevicePermission(
     return false;
   }
 
+  auto it = ephemeral_devices_.find(origin);
+  const bool selected =
+      it != ephemeral_devices_.end() && it->second.contains(device_info.guid);
+
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  if (!permission_manager->HasDevicePermissionHandler()) {
-    auto it = ephemeral_devices_.find(origin);
-    if (it != ephemeral_devices_.end() &&
-        it->second.contains(device_info.guid)) {
-      return true;
-    }
-  }
-
   return permission_manager->CheckDevicePermission(
       blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
-      browser_context_, render_frame_host);
+      browser_context_, render_frame_host, selected);
 }
 
 void UsbChooserContext::GetDevices(

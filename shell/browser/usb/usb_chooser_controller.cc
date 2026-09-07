@@ -142,10 +142,14 @@ void UsbChooserController::GotUsbDeviceList(
                                         .Set("frame", rfh)
                                         .Build();
 
+    auto weak_this = weak_factory_.GetWeakPtr();
     prevent_default = session->Get()->Emit(
         "select-usb-device", details,
         base::BindRepeating(&UsbChooserController::OnDeviceChosen,
                             weak_factory_.GetWeakPtr()));
+    // The handler may destroy the requesting frame, which deletes |this|.
+    if (!weak_this)
+      return;
   }
   if (!prevent_default) {
     RunCallback(/*device_info=*/nullptr);

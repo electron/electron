@@ -88,6 +88,9 @@ class UsbChooserContext : public KeyedService,
 
   // Forward UsbDeviceManager methods.
   void GetDevices(device::mojom::UsbDeviceManager::GetDevicesCallback callback);
+
+  void SetDeviceManagerForTesting(
+      mojo::PendingRemote<device::mojom::UsbDeviceManager> manager);
   void GetDevice(
       const std::string& guid,
       base::span<const uint8_t> blocked_interface_classes,
@@ -119,6 +122,10 @@ class UsbChooserContext : public KeyedService,
   base::queue<device::mojom::UsbDeviceManager::GetDevicesCallback>
       pending_get_devices_requests_;
 
+  void NotifyPermissionRevoked(const url::Origin& origin);
+
+  // Devices (by guid) each origin picked in a chooser during this session; see
+  // HidChooserContext::ephemeral_devices_.
   std::map<url::Origin, absl::flat_hash_set<std::string>> ephemeral_devices_;
   std::map<std::string, device::mojom::UsbDeviceInfoPtr> devices_;
 

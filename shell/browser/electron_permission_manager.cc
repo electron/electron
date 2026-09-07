@@ -398,13 +398,16 @@ bool ElectronPermissionManager::CheckDevicePermission(
     const url::Origin& origin,
     const base::Value& device,
     ElectronBrowserContext* browser_context,
-    content::RenderFrameHost* render_frame_host) const {
+    content::RenderFrameHost* render_frame_host,
+    bool selected) const {
   if (permission == blink::PermissionType::GEOLOCATION &&
       IsGeolocationDisabledViaCommandLine())
     return false;
 
-  if (device_permission_handler_.is_null())
-    return browser_context->CheckDevicePermission(origin, device, permission);
+  if (device_permission_handler_.is_null()) {
+    return selected ||
+           browser_context->CheckDevicePermission(origin, device, permission);
+  }
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -413,6 +416,7 @@ bool ElectronPermissionManager::CheckDevicePermission(
                                       .Set("origin", origin.Serialize())
                                       .Set("device", device.Clone())
                                       .Set("frame", render_frame_host)
+                                      .Set("selected", selected)
                                       .Build();
   return device_permission_handler_.Run(details);
 }

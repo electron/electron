@@ -38,11 +38,11 @@ electron::UsbChooserContext* GetChooserContext(
       browser_context);
 }
 
-// Content hands these delegates the top-level document's origin; Electron
-// scopes device permissions to the requesting frame, like the choosers do.
+// The origin device permissions are scoped to: the requesting document's, or
+// for a service worker (no frame) the origin content keyed the service on.
 const url::Origin& RequestingOrigin(content::RenderFrameHost* frame,
-                                    const url::Origin& main_frame_origin) {
-  return frame ? frame->GetLastCommittedOrigin() : main_frame_origin;
+                                    const url::Origin& service_origin) {
+  return frame ? frame->GetLastCommittedOrigin() : service_origin;
 }
 
 }  // namespace

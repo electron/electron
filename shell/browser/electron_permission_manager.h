@@ -105,13 +105,16 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   }
 
   // |render_frame_host| is the document the check is made for, or null when
-  // there is none (a service worker).
+  // there is none (a service worker). |selected| says whether |origin| picked
+  // this device in a chooser during this session; without a handler that is a
+  // grant by itself, with a handler it is reported as details.selected.
   bool CheckDevicePermission(
       blink::PermissionType permission,
       const url::Origin& origin,
       const base::Value& object,
       ElectronBrowserContext* browser_context,
-      content::RenderFrameHost* render_frame_host = nullptr) const;
+      content::RenderFrameHost* render_frame_host = nullptr,
+      bool selected = false) const;
 
   void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
