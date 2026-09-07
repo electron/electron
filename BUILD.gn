@@ -53,6 +53,16 @@ if (is_mac) {
   assert(
       mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
+
+  # shell/browser/feature_list_mac.mm enables this unexported content feature
+  # by name; fail here rather than silently if a Chromium roll removes it.
+  assert(
+      filter_include(
+              read_file(
+                  "//content/browser/renderer_host/render_widget_host_view_mac.mm",
+                  "list lines"),
+              [ "BASE_FEATURE(kThrottleResizeIpc,*" ]) != [],
+      "kThrottleResizeIpc is gone from render_widget_host_view_mac.mm; update shell/browser/feature_list_mac.mm")
 }
 
 if (is_linux) {
