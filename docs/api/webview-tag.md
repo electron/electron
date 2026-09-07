@@ -962,6 +962,10 @@ Returns:
 * `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
+`frameId` does not tell the embedder which document sent the message; when
+that matters, have the guest use `ipcRenderer.send()` and handle the guest
+`webContents`' [`ipc-message`](web-contents.md#event-ipc-message) event in the
+main process, where `event.senderFrame` identifies the sender.
 
 With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:
