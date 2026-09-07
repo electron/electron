@@ -338,7 +338,10 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
 void UtilityProcessWrapper::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  if (pid_ != base::kNullProcessId && data.GetProcess().Pid() == pid_)
+  if (pid_ != base::kNullProcessId &&
+      data.process_type == content::PROCESS_TYPE_UTILITY &&
+      data.metrics_name == node::mojom::NodeService::Name_ &&
+      data.GetProcess().Pid() == pid_)
     HandleTermination(info.exit_code);
 }
 
