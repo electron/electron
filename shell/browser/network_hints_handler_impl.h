@@ -7,6 +7,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "components/network_hints/browser/simple_network_hints_handler_impl.h"
+#include "content/public/browser/global_routing_id.h"
 
 namespace content {
 class RenderFrameHost;
@@ -30,6 +31,7 @@ class NetworkHintsHandlerImpl
  private:
   explicit NetworkHintsHandlerImpl(content::RenderFrameHost*);
 
+  const content::GlobalRenderFrameHostId render_frame_host_id_;
   raw_ptr<content::BrowserContext> browser_context_ = nullptr;
 };
 

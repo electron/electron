@@ -1,4 +1,4 @@
-import { ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
+import { BrowserWindow, ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -90,6 +90,39 @@ describe('webRequest module', () => {
   describe('webRequest.onBeforeRequest', () => {
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
+    });
+
+    it('reports the origin that issued the request as details.initiatorOrigin', async () => {
+      const seen: Electron.OnBeforeRequestListenerDetails[] = [];
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        if (details.url.startsWith(defaultURL)) seen.push(details);
+        callback({});
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      defer(() => w.destroy());
+      // Top-level navigation started by the browser: no initiator.
+      await w.loadURL(`${defaultURL}top`);
+      const nav = seen.find((d) => d.url === `${defaultURL}top`);
+      expect(nav).to.exist();
+      expect(nav!.initiatorOrigin).to.equal(undefined);
+      // A cross-origin iframe's own subresource request is attributed to the
+      // iframe's origin regardless of referrer policy.
+      const crossOrigin = defaultURL.replace('127.0.0.1', 'localhost');
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(crossOrigin + 'frame')};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      await iframe.executeJavaScript(
+        `fetch(${JSON.stringify(defaultURL + 'fromframe')}, { referrerPolicy: 'no-referrer', mode: 'no-cors' }).then(() => true)`
+      );
+      const sub = seen.find((d) => d.url === `${defaultURL}fromframe`);
+      expect(sub).to.exist();
+      expect(sub!.initiatorOrigin).to.equal(new URL(crossOrigin).origin);
+      expect(sub!.referrer).to.equal('');
+      expect(sub!.frame).to.equal(iframe);
     });
 
     const cancel = (
