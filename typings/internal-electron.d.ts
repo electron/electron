@@ -274,7 +274,8 @@ declare namespace Electron {
         rawFeatures: string,
         referrer: Electron.Referrer,
         postData: LoadURLOptions['postData'],
-        inheritedSandboxFlags: number
+        inheritedSandboxFlags: number,
+        navigate: (webContents: Electron.WebContents) => void
       ) => void
     ): this;
     on(
