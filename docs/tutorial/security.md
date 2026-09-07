@@ -276,7 +276,8 @@ the website attempts to use a feature that the user has to manually approve (
 like notifications).
 
 The API is based on the [Chromium permissions API](https://developer.chrome.com/extensions/permissions)
-and implements the same types of permissions.
+and implements the same types of permissions. [Web Permissions in Electron](./permissions.md)
+describes which frame each handler is told about and how that differs from Chrome.
 
 #### Why?
 

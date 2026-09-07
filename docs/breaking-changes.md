@@ -32,6 +32,37 @@ when it is a top-level frame or is hosted inside the DevTools front-end (a
 `devtools_page` or panel); an extension frame embedded in an ordinary page is
 treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
+### Behavior Changed: `hid`, `usb` and `serial` device permissions are attributed to the requesting frame
+
+Every WebHID, WebUSB and Web Serial permission decision now identifies the
+frame that made the request and is keyed on that frame's origin, consistently
+across the check, chooser, device-permission and revocation steps. See
+[Web Permissions in Electron](tutorial/permissions.md) for the model and for
+how to key on the top-level site instead if you prefer Chrome's behaviour.
+
+Observable changes for existing apps:
+
+* Returning `false` for `hid` / `usb` / `serial` from
+  `session.setPermissionCheckHandler` now also blocks `getDevices()` and
+  `open()` for that frame, not only the chooser.
+* When `session.setDevicePermissionHandler` is installed it is consulted for
+  every device, including devices the user just picked in a
+  `select-hid-device` / `select-usb-device` / `select-serial-port` handler
+  (previously devices without a persistent identifier bypassed it). Such picks
+  are reported as `details.selected === true`; return `true` for them unless
+  you intend to veto the selection.
+* `device.forget()` now closes the device in every document of the calling
+  frame's origin, not only in the calling document.
+* The built-in auto-grant of smart-card class USB devices to two Chrome
+  extension IDs has been removed; such devices go through the normal chooser
+  and handlers.
+* `setPermissionCheckHandler`, `setDevicePermissionHandler` and
+  `setUSBProtectedClassesHandler` receive `details.frame`;
+  `select-serial-port`, `serial-port-added`, `serial-port-removed`,
+  `usb-device-added`, `usb-device-removed`, `hid-device-revoked` and
+  `usb-device-revoked` receive the requesting frame as an additional argument
+  or `details.frame`. These are additive.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
