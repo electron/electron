@@ -257,8 +257,16 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, std::move(permissions), std::move(response_callback)));
 
-  details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
-  details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  // The caller may already have attributed the request (see
+  // WebContentsPermissionHelper::RequestOpenExternalPermission); otherwise it
+  // comes from |render_frame_host|.
+  if (!details.Find("requestingUrl")) {
+    details.Set("requestingUrl",
+                render_frame_host->GetLastCommittedURL().spec());
+  }
+  if (!details.Find("isMainFrame")) {
+    details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  }
   base::Value dict_value(std::move(details));
 
   for (size_t i = 0; i < request_description.permissions.size(); ++i) {
