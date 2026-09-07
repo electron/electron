@@ -2,7 +2,8 @@
   "darwin": {
     "spec/api-app-spec.ts": 67,
     "spec/api-auto-updater-spec.ts": 0,
-    "spec/api-autoupdater-darwin-spec.ts": 490,
+    "spec/api-autoupdater-darwin-policy-spec.ts": 385,
+    "spec/api-autoupdater-darwin-spec.ts": 350,
     "spec/api-autoupdater-msix-spec.ts": 2,
     "spec/api-browser-view-spec.ts": 10,
     "spec/api-browser-window-spec.ts": 641,
@@ -87,6 +88,7 @@
   "linux": {
     "spec/api-app-spec.ts": 16,
     "spec/api-auto-updater-spec.ts": 0,
+    "spec/api-autoupdater-darwin-policy-spec.ts": 0,
     "spec/api-autoupdater-darwin-spec.ts": 0,
     "spec/api-autoupdater-msix-spec.ts": 0,
     "spec/api-browser-view-spec.ts": 2,
@@ -171,6 +173,7 @@
   "win32": {
     "spec/api-app-spec.ts": 98,
     "spec/api-auto-updater-spec.ts": 0,
+    "spec/api-autoupdater-darwin-policy-spec.ts": 0,
     "spec/api-autoupdater-darwin-spec.ts": 0,
     "spec/api-autoupdater-msix-spec.ts": 31,
     "spec/api-browser-view-spec.ts": 3,
