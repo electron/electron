@@ -5331,6 +5331,158 @@ describe('iframe sandbox external protocols', () => {
   });
 });
 
+describe('external protocol permission attribution', () => {
+  // The document that starts a navigation to an external protocol can be gone
+  // by the time the browser handles it: the navigation lives in the navigating
+  // frame (here, a popup), not in its initiator. The openExternal permission
+  // request must not be attributed to whatever the popup's WebContents happens
+  // to have committed (here, the trusted top-level origin).
+  let trusted: http.Server;
+  let untrusted: http.Server;
+  let trustedUrl: string;
+  let untrustedUrl: string;
+
+  before(async () => {
+    untrusted = http.createServer((req, res) => {
+      if (req.url!.startsWith('/slow-redirect')) {
+        // Give the initiating iframe time to navigate away first.
+        setTimeout(600).then(() => {
+          res.writeHead(302, { Location: 'magnet:attribution-test' });
+          res.end();
+        });
+        return;
+      }
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/self') {
+        res.end('<script>location.href = "/slow-redirect"</script>');
+        return;
+      }
+      // Cross-origin iframe content: open a popup on the trusted origin, send
+      // it to the slow redirect, then leave.
+      res.end(`<script>
+        (async () => {
+          const trusted = decodeURIComponent(location.hash.slice(1));
+          const w = window.open(trusted + '/blank', 'popup');
+          await new Promise(r => setTimeout(r, 400));
+          w.location = location.origin + '/slow-redirect';
+          await new Promise(r => setTimeout(r, 100));
+          location.href = 'about:blank';
+        })();
+      </script>`);
+    });
+    untrustedUrl = (await listen(untrusted)).url.replace('127.0.0.1', 'localhost');
+    trusted = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/blank') {
+        res.end('<p>trusted popup</p>');
+      } else {
+        res.end(`<iframe src="${untrustedUrl}/#${encodeURIComponent(trustedUrl)}"></iframe>`);
+      }
+    });
+    trustedUrl = (await listen(trusted)).url;
+  });
+
+  after(() => {
+    trusted.close();
+    untrusted.close();
+  });
+
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+    return closeAllWindows();
+  });
+
+  it('does not report the popup main frame as the requester when the initiator is gone', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({
+      action: 'allow',
+      overrideBrowserWindowOptions: { show: false }
+    }));
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(trustedUrl);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Before the fix this was the trusted popup's URL with isMainFrame: true.
+    expect(details.requestingUrl).to.not.contain(new URL(trustedUrl).host);
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.be.a('boolean');
+  });
+
+  it('keeps attributing a redirected navigation to the live document that started it', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    // The trusted main frame navigates itself to an untrusted URL that
+    // redirects to the external protocol; the requester is still that frame.
+    w.webContents.executeJavaScript(`location.href = ${JSON.stringify(untrustedUrl + '/slow-redirect')}; true`);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a redirected browser-initiated navigation to the redirecting origin', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    w.loadURL(`${untrustedUrl}/slow-redirect`).catch(() => {});
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Not the previously committed trusted page.
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a direct browser-initiated navigation to the navigating main frame', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve({ wc, details });
+      });
+    });
+    w.loadURL('magnet:direct-test').catch(() => {});
+    const { wc, details } = await request;
+    expect(wc).to.equal(w.webContents);
+    expect(details.externalURL).to.equal('magnet:direct-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('still attributes to the initiating frame while it is alive', async () => {
+    const w = new BrowserWindow({ show: false });
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(`data:text/html,<iframe src="${untrustedUrl}/self"></iframe>`);
+    // The iframe's own document navigates to the redirect and stays alive
+    // until it resolves, so attribution comes from that document.
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/self`);
+    expect(details.isMainFrame).to.equal(false);
+  });
+});
+
 describe('iframe sandbox popups', () => {
   let server: http.Server;
   let serverUrl: string;
