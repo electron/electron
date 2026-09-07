@@ -81,14 +81,16 @@ void ElectronWebContentsUtilityHandlerImpl::CanAccessClipboardDeprecated(
     const blink::LocalFrameToken& frame_token,
     CanAccessClipboardDeprecatedCallback callback) {
   if (render_frame_host_token_.frame_token == frame_token) {
-    // Paste requires either (1) user activation, ...
-    if (web_contents()->HasRecentInteraction()) {
+    content::RenderFrameHost* render_frame_host = GetRenderFrameHost();
+    // Paste requires either (1) transient user activation on the requesting
+    // frame (activation propagates from a frame to its ancestors, not to
+    // unrelated frames in the page), ...
+    if (render_frame_host->HasTransientUserActivation()) {
       std::move(callback).Run(blink::mojom::PermissionStatus::GRANTED);
       return;
     }
 
     // (2) granted permission, ...
-    content::RenderFrameHost* render_frame_host = GetRenderFrameHost();
     content::BrowserContext* browser_context =
         render_frame_host->GetBrowserContext();
     content::PermissionController* permission_controller =

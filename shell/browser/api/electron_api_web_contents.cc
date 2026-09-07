@@ -112,6 +112,7 @@
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
+#include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -1188,6 +1189,7 @@ void WebContents::InitWithWebContents(
   // As the delegate we route permission checks through this helper, so every
   // adopted WebContents (including extension background pages) needs one.
   WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
+  FileSystemAccessWebContentsHelper::CreateForWebContents(web_contents.get());
 
   // A <webview> guest is created with a copy of its embedder's renderer
   // preferences, so caret browsing may already be enabled. Every path that
@@ -2455,17 +2457,22 @@ void WebContents::MaybeSendRendererStartupData(
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
   // that will actually compile the sandbox bundle.
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   const GURL& url = navigation_handle->GetURL();
   bool main_frame = navigation_handle->IsInMainFrame();
   bool allow_subframes =
       web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  // DevTools itself, or an extension document hosted inside the DevTools
+  // front-end (a devtools_page / panel). An extension frame embedded in an
+  // ordinary page is treated like any other subframe.
   bool is_devtools_like =
-      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+      url.SchemeIs("devtools") ||
+      (url.SchemeIs("chrome-extension") && !main_frame &&
+       rfh->GetMainFrame()->GetLastCommittedURL().SchemeIs("devtools"));
   if (!main_frame && !allow_subframes && !is_devtools_like)
-    return;
-
-  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
-  if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
   mojom::RendererStartupDataPtr data;
