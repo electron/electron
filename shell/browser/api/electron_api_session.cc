@@ -85,6 +85,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -618,7 +619,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle_object, web_contents);
+  content::RenderFrameHost* frame =
+      content::DownloadItemUtils::GetRenderFrameHost(item);
+  bool prevent_default =
+      Emit("will-download", handle_object, web_contents, frame);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
