@@ -1920,6 +1920,59 @@ describe('chromium features', () => {
       expect(data).to.equal('object function object function');
     });
 
+    it('only gives node integration to workers created by frames that have it themselves', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const probe = `new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`;
+      // The main frame's workers get Node...
+      expect(await w.webContents.mainFrame.executeJavaScript(probe)).to.equal('object function');
+      // ...a same-origin (same-process) iframe's workers do not, because the
+      // iframe itself has no Node integration (nodeIntegrationInSubFrames is off).
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      expect(await iframe.executeJavaScript(probe)).to.equal('undefined undefined');
+    });
+
+    it('gives node integration to subframe workers when nodeIntegrationInSubFrames is on', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          nodeIntegrationInSubFrames: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const result = await iframe.executeJavaScript(`new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`);
+      expect(result).to.equal('object function');
+    });
+
     it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
       const w = new BrowserWindow({
         show: false,
