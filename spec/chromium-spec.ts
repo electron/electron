@@ -5011,8 +5011,10 @@ describe('navigator.hid', () => {
       }
       callback();
     });
-    session.defaultSession.setDevicePermissionHandler(() => {
+    let permDetails: any;
+    session.defaultSession.setDevicePermissionHandler((details) => {
       gotDevicePerms = true;
+      permDetails = details;
       return true;
     });
     await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
@@ -5021,6 +5023,9 @@ describe('navigator.hid', () => {
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
       expect(gotDevicePerms).to.be.true();
+      expect(permDetails.deviceType).to.equal('hid');
+      expect(permDetails.origin).to.equal(w.webContents.mainFrame.origin);
+      expect(permDetails.frame).to.equal(w.webContents.mainFrame);
     } else {
       expect(device).to.equal('');
     }
@@ -5261,8 +5266,10 @@ describe('navigator.usb', () => {
       }
       callback();
     });
-    session.defaultSession.setDevicePermissionHandler(() => {
+    let permDetails: any;
+    session.defaultSession.setDevicePermissionHandler((details) => {
       gotDevicePerms = true;
+      permDetails = details;
       return true;
     });
     await w.webContents.executeJavaScript('navigator.usb.getDevices();', true);
@@ -5271,6 +5278,9 @@ describe('navigator.usb', () => {
     if (haveDevices) {
       expect(device).to.contain('[object USBDevice]');
       expect(gotDevicePerms).to.be.true();
+      expect(permDetails.deviceType).to.equal('usb');
+      expect(permDetails.origin).to.equal(w.webContents.mainFrame.origin);
+      expect(permDetails.frame).to.equal(w.webContents.mainFrame);
     } else {
       expect(device).to.equal(notFoundError);
     }

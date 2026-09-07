@@ -389,7 +389,8 @@ bool ElectronPermissionManager::CheckDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
     const base::Value& device,
-    ElectronBrowserContext* browser_context) const {
+    ElectronBrowserContext* browser_context,
+    content::RenderFrameHost* render_frame_host) const {
   if (permission == blink::PermissionType::GEOLOCATION &&
       IsGeolocationDisabledViaCommandLine())
     return false;
@@ -403,6 +404,7 @@ bool ElectronPermissionManager::CheckDevicePermission(
                                       .Set("deviceType", permission)
                                       .Set("origin", origin.Serialize())
                                       .Set("device", device.Clone())
+                                      .Set("frame", render_frame_host)
                                       .Build();
   return device_permission_handler_.Run(details);
 }
@@ -427,14 +429,19 @@ void ElectronPermissionManager::RevokeDevicePermission(
 
 ElectronPermissionManager::USBProtectedClasses
 ElectronPermissionManager::CheckProtectedUSBClasses(
-    const USBProtectedClasses& classes) const {
+    const USBProtectedClasses& classes,
+    const url::Origin& origin,
+    content::RenderFrameHost* render_frame_host) const {
   if (protected_usb_handler_.is_null())
     return classes;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> details =
-      gin::DataObjectBuilder(isolate).Set("protectedClasses", classes).Build();
+  v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                      .Set("protectedClasses", classes)
+                                      .Set("origin", origin.Serialize())
+                                      .Set("frame", render_frame_host)
+                                      .Build();
   return protected_usb_handler_.Run(details);
 }
 

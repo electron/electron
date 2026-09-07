@@ -2143,6 +2143,54 @@ describe('session module', () => {
         }
       });
     }
+
+    for (const [permission, api] of [
+      ['hid', 'navigator.hid.requestDevice({ filters: [] })'],
+      ['usb', 'navigator.usb.requestDevice({ filters: [] })']
+    ] as const) {
+      it(`refuses ${permission} requests from an opaque-origin sandboxed subFrame without consulting the handler`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            partition: `very-temp-permission-handler-opaque-${permission}`
+          }
+        });
+        const ses = w.webContents.session;
+        const checked: string[] = [];
+
+        ses.protocol.interceptStringProtocol('https', (req, cb) => {
+          cb('<html><body>iframe</body></html>');
+        });
+        ses.setPermissionCheckHandler((_wc, perm, requestingOrigin) => {
+          if (perm === permission) checked.push(requestingOrigin);
+          return true;
+        });
+
+        try {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`
+            var iframe = document.createElement('iframe');
+            iframe.src = 'https://myfakesite/';
+            iframe.allow = '${permission}';
+            iframe.sandbox = 'allow-scripts';
+            document.body.appendChild(iframe);
+            null;
+          `);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+          expect(frame.origin).to.equal('null');
+          const result = await frame.executeJavaScript(
+            `${api}.then(d => Array.isArray(d) ? 'devices:' + d.length : 'device', e => 'error:' + e.name)`,
+            true
+          );
+          expect(result).to.be.oneOf(['devices:0', 'error:NotFoundError']);
+          expect(checked).to.deep.equal([]);
+        } finally {
+          ses.protocol.uninterceptProtocol('https');
+          ses.setPermissionCheckHandler(null);
+        }
+      });
+    }
   });
 
   describe('ses.isPersistent()', () => {

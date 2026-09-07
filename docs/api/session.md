@@ -1081,7 +1081,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function\<boolean> | null
-  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking, and `embeddingOrigin` for the top-level document.
   * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
     * `ar` - Access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
@@ -1135,7 +1135,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
     * `securityOrigin` string (optional) - The security origin of the `media` check.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
-    * `requestingUrl` string (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
+    * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
     * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `filePath` string (optional) - The path of a `fileSystem` request.
     * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
@@ -1238,8 +1238,9 @@ Passing `null` instead of a function resets the handler to its default state.
 * `handler` Function\<boolean> | null
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
-    * `origin` string - The origin URL of the device permission check.
+    * `origin` string - The origin of the document (or service worker) the device permission check is made for.
     * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame the check is made for. `null` when the check is not made on behalf of a document, for example for a service worker, and for `serial`.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -1247,6 +1248,11 @@ To clear the handler, call `setDevicePermissionHandler(null)`.
 This handler can be used to provide default permissioning to devices without first calling for permission
 to devices (eg via `navigator.hid.requestDevice`).  If this handler is not defined, the default device
 permissions as granted through device selection (eg via `navigator.hid.requestDevice`) will be used.
+When this handler is defined it is consulted for every `hid` and `usb` device permission check, including for
+devices selected through `select-hid-device` / `select-usb-device`; Electron does not keep its own record of
+those selections, so the handler should return `true` for devices the app granted that way.
+A document must also pass the `hid` / `usb` check in [`setPermissionCheckHandler`](#sessetpermissioncheckhandlerhandler)
+to see or open devices this handler allows.
 Additionally, the default behavior of Electron is to store granted device permission in memory.
 If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
@@ -1310,6 +1316,8 @@ app.whenReady().then(() => {
 
 * `handler` Function\<string[]> | null
   * `details` Object
+    * `origin` string - The origin of the document asking to claim an interface.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame asking to claim an interface. `null` when the request is not made on behalf of a document, for example for a service worker.
     * `protectedClasses` string[] - The current list of protected USB classes. Possible class values include:
       * `audio`
       * `audio-video`

@@ -32,6 +32,10 @@ template <typename T>
 class PendingRemote;
 }  // namespace mojo
 
+namespace content {
+class RenderFrameHost;
+}  // namespace content
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -52,6 +56,9 @@ class HidChooserContext : public KeyedService,
     virtual void OnDeviceRemoved(const device::mojom::HidDeviceInfo&) = 0;
     virtual void OnDeviceChanged(const device::mojom::HidDeviceInfo&) = 0;
     virtual void OnHidManagerConnectionError() = 0;
+    // Called after |origin| lost permission to a device, so that open
+    // connections held by documents of that origin can be re-validated.
+    virtual void OnPermissionRevoked(const url::Origin& origin) {}
 
     // Called when the HidChooserContext is shutting down. Observers must remove
     // themselves before returning.
@@ -79,8 +86,10 @@ class HidChooserContext : public KeyedService,
                              const device::mojom::HidDeviceInfo& device);
   void RevokeDevicePermission(const url::Origin& origin,
                               const device::mojom::HidDeviceInfo& device);
-  bool HasDevicePermission(const url::Origin& origin,
-                           const device::mojom::HidDeviceInfo& device);
+  bool HasDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
 
   // Returns true if `origin` is allowed to access FIDO reports.
   bool IsFidoAllowedForOrigin(const url::Origin& origin);

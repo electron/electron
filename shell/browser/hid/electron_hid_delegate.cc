@@ -86,6 +86,11 @@ class ElectronHidDelegate::ContextObservation
         &content::HidDelegate::Observer::OnHidManagerConnectionError);
   }
 
+  void OnPermissionRevoked(const url::Origin& origin) override {
+    observer_list_.Notify(&content::HidDelegate::Observer::OnPermissionRevoked,
+                          origin);
+  }
+
   void OnHidChooserContextShutdown() override {
     parent_->observations_.erase(browser_context_);
     // Return since `this` is now deleted.
@@ -151,6 +156,10 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
 
   const url::Origin& requesting_origin =
       RequestingOrigin(render_frame_host, origin);
+  // A document with an opaque origin (sandboxed, data:) has no principal a
+  // grant could be attributed to or stored under.
+  if (requesting_origin.opaque())
+    return false;
   base::DictValue details;
   details.Set("securityOrigin", requesting_origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
@@ -165,10 +174,14 @@ bool ElectronHidDelegate::HasDevicePermission(
     content::RenderFrameHost* render_frame_host,
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
-  return browser_context &&
-         GetChooserContext(browser_context)
-             ->HasDevicePermission(RequestingOrigin(render_frame_host, origin),
-                                   device);
+  // Access to an already-granted device is subject to the same "hid"
+  // permission check as opening the chooser, so that denying the check for a
+  // document cuts off getDevices()/open() as well as requestDevice().
+  if (!CanRequestDevicePermission(browser_context, render_frame_host, origin))
+    return false;
+  return GetChooserContext(browser_context)
+      ->HasDevicePermission(RequestingOrigin(render_frame_host, origin), device,
+                            render_frame_host);
 }
 
 void ElectronHidDelegate::RevokeDevicePermission(

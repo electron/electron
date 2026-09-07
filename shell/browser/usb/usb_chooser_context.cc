@@ -261,9 +261,10 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
   const base::DictValue* object_dict = object.GetIfDict();
   DCHECK(object_dict != nullptr);
 
-  if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr ||
+      permission_manager->HasDevicePermissionHandler()) {
     permission_manager->RevokeDevicePermission(
         blink::PermissionType::USB, origin, object, browser_context_);
   } else {
@@ -286,14 +287,21 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     details.Set("origin", origin.Serialize());
     session->Get()->Emit("usb-device-revoked", details);
   }
+  // Let every WebUsbService for this origin close devices it no longer has
+  // permission for (content re-checks HasDevicePermission()).
+  for (auto& observer : device_observer_list_)
+    observer.OnPermissionRevoked(origin);
 }
 
 void UsbChooserContext::GrantDevicePermission(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
-  if (CanStorePersistentEntry(device_info)) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  // With ses.setDevicePermissionHandler() installed the app owns the grant
+  // store; keep nothing here so the handler is consulted on every later check.
+  if (CanStorePersistentEntry(device_info) ||
+      permission_manager->HasDevicePermissionHandler()) {
     permission_manager->GrantDevicePermission(
         blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
         browser_context_);
@@ -304,24 +312,27 @@ void UsbChooserContext::GrantDevicePermission(
 
 bool UsbChooserContext::HasDevicePermission(
     const url::Origin& origin,
-    const device::mojom::UsbDeviceInfo& device_info) {
+    const device::mojom::UsbDeviceInfo& device_info,
+    content::RenderFrameHost* render_frame_host) {
   bool blocklist_disabled =
       base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
   if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
     return false;
   }
 
-  auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() && it->second.contains(device_info.guid)) {
-    return true;
-  }
-
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
+  if (!permission_manager->HasDevicePermissionHandler()) {
+    auto it = ephemeral_devices_.find(origin);
+    if (it != ephemeral_devices_.end() &&
+        it->second.contains(device_info.guid)) {
+      return true;
+    }
+  }
 
   return permission_manager->CheckDevicePermission(
       blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
-      browser_context_);
+      browser_context_, render_frame_host);
 }
 
 void UsbChooserContext::GetDevices(

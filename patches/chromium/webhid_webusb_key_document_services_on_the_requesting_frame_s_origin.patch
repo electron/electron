@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Mon, 7 Sep 2026 06:09:36 +0000
+Subject: [WebHID][WebUSB] Key document services on the requesting frame's
+ origin
+
+HidService and WebUsbServiceImpl are constructed with the primary main
+frame's origin, which is the principal Chrome grants device permissions
+to (delegation via permissions policy). Electron grants, checks and
+revokes device permissions per requesting document, and reports that
+document to the app. Construct both services with the requesting
+frame's origin so that every delegate call content makes for a document
+(CanRequestDevicePermission, HasDevicePermission,
+RevokeDevicePermission[WebInitiated], IsFidoAllowedForOrigin,
+AdjustProtectedInterfaceClasses) and the OnPermissionRevoked comparison
+use the same origin the grant was stored under.
+
+This is specific to Electron's permission model and is not intended for
+upstream.
+
+diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
+index 17d318fda240a2a95399458388a62fd47e69fdfc..38e6c8194ea4847d3975316974b5245814a56e2c 100644
+--- a/content/browser/hid/hid_service.cc
++++ b/content/browser/hid/hid_service.cc
+@@ -122,7 +122,7 @@ HidService::HidService(
+ HidService::HidService(RenderFrameHostImpl* render_frame_host)
+     : HidService(render_frame_host,
+                  /*service_worker_version=*/nullptr,
+-                 render_frame_host->GetMainFrame()->GetLastCommittedOrigin()) {}
++                 render_frame_host->GetLastCommittedOrigin()) {}
+ 
+ HidService::HidService(
+     base::WeakPtr<ServiceWorkerVersion> service_worker_version,
+diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
+index e22f5428c2e309a85d29241fc3a0a7b2bc183f4e..bc94f1ee57892c1ab7153e38b1924029bc875d64 100644
+--- a/content/browser/usb/web_usb_service_impl.cc
++++ b/content/browser/usb/web_usb_service_impl.cc
+@@ -206,7 +206,7 @@ void WebUsbServiceImpl::Create(
+       std::make_unique<WebUsbServiceImpl>(
+           &render_frame_host,
+           /*service_worker_version=*/nullptr,
+-          render_frame_host.GetMainFrame()->GetLastCommittedOrigin()),
++          render_frame_host.GetLastCommittedOrigin()),
+       render_frame_host, std::move(pending_receiver));
+ }
+ 

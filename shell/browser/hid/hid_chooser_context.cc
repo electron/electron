@@ -15,6 +15,7 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/render_frame_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
@@ -272,10 +273,13 @@ void HidChooserContext::GrantDevicePermission(
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   DCHECK(devices_.contains(device.guid));
-  if (CanStorePersistentEntry(device)) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
-
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  // With ses.setDevicePermissionHandler() installed the app owns the grant
+  // store (it records grants from select-hid-device); keep nothing here so the
+  // handler is consulted on every later check, whatever the device.
+  if (CanStorePersistentEntry(device) ||
+      permission_manager->HasDevicePermissionHandler()) {
     permission_manager->GrantDevicePermission(blink::PermissionType::HID,
                                               origin, DeviceInfoToValue(device),
                                               browser_context_);
@@ -303,6 +307,10 @@ void HidChooserContext::RevokeDevicePermission(
     details.Set("origin", origin.Serialize());
     session->Get()->Emit("hid-device-revoked", details);
   }
+  // Let every HidService for this origin drop connections to devices it no
+  // longer has permission for (content re-checks HasDevicePermission()).
+  for (auto& observer : device_observer_list_)
+    observer.OnPermissionRevoked(origin);
 }
 
 void HidChooserContext::RevokePersistentDevicePermission(
@@ -336,22 +344,25 @@ void HidChooserContext::RevokeEphemeralDevicePermission(
 
 bool HidChooserContext::HasDevicePermission(
     const url::Origin& origin,
-    const device::mojom::HidDeviceInfo& device) {
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist) &&
       device.is_excluded_by_blocklist)
     return false;
 
-  auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() && it->second.contains(device.guid)) {
-    return true;
-  }
-
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
+  if (!permission_manager->HasDevicePermissionHandler()) {
+    auto it = ephemeral_devices_.find(origin);
+    if (it != ephemeral_devices_.end() && it->second.contains(device.guid)) {
+      return true;
+    }
+  }
+
   return permission_manager->CheckDevicePermission(
       blink::PermissionType::HID, origin, DeviceInfoToValue(device),
-      browser_context_);
+      browser_context_, render_frame_host);
 }
 
 bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
