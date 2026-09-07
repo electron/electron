@@ -152,18 +152,17 @@ class FileSystemAccessPermissionContext
   void CheckPathAgainstBlocklist(const content::PathInfo& path,
                                  HandleType handle_type,
                                  base::OnceCallback<void(bool)> callback);
-  void DidCheckPathAgainstBlocklist(const url::Origin& origin,
+  void DidCheckPathAgainstBlocklist(int request_id,
+                                    const url::Origin& origin,
                                     const content::PathInfo& path,
                                     HandleType handle_type,
                                     UserAction user_action,
                                     content::GlobalRenderFrameHostId frame_id,
                                     bool should_block);
 
-  void RunRestrictedPathCallback(const base::FilePath& file_path,
-                                 SensitiveEntryResult result);
+  void RunRestrictedPathCallback(int request_id, SensitiveEntryResult result);
 
-  void OnRestrictedPathResult(const base::FilePath& file_path,
-                              gin::Arguments* args);
+  void OnRestrictedPathResult(int request_id, gin::Arguments* args);
 
   void MaybeEvictEntries(base::DictValue& dict);
 
@@ -192,9 +191,11 @@ class FileSystemAccessPermissionContext
 
   std::map<url::Origin, base::DictValue> id_pathinfo_map_;
 
-  std::map<base::FilePath,
-           std::vector<base::OnceCallback<void(SensitiveEntryResult)>>>
-      callback_map_;
+  // Restricted-path confirmations waiting on the app's
+  // `file-system-access-restricted` handler, one per request.
+  int next_restricted_path_request_id_ = 0;
+  std::map<int, base::OnceCallback<void(SensitiveEntryResult)>>
+      restricted_path_callbacks_;
 
   std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
       block_path_rules_;

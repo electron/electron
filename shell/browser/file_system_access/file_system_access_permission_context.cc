@@ -32,10 +32,13 @@
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "third_party/blink/public/common/features_generated.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -345,12 +348,16 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    auto origin = rfh->GetLastCommittedOrigin().GetURL();
-    if (url::Origin::Create(origin) != origin_) {
-      // Third party iframes are not allowed to request more permissions.
+    // Third party iframes are not allowed to request more permissions: the
+    // grant belongs to |origin_|, and only a top-level document of that origin
+    // may ask to widen it.
+    const url::Origin embedding_origin =
+        rfh->GetMainFrame()->GetLastCommittedOrigin();
+    if (embedding_origin != origin_) {
       std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
       return;
     }
+    auto origin = rfh->GetLastCommittedOrigin().GetURL();
 
     auto* permission_manager =
         static_cast<electron::ElectronPermissionManager*>(
@@ -698,14 +705,15 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  auto [it, inserted] = callback_map_.try_emplace(path_info.path);
-  it->second.push_back(std::move(callback));
-  if (!inserted)
-    return;
-
+  // Every request is checked and, if needed, confirmed with the app on its
+  // own, so the app sees each requesting origin/frame and one requester's
+  // answer is never applied to another's.
+  const int request_id = next_restricted_path_request_id_++;
+  restricted_path_callbacks_.emplace(request_id, std::move(callback));
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), origin, path_info, handle_type, user_action, frame_id);
+      GetWeakPtr(), request_id, origin, path_info, handle_type, user_action,
+      frame_id);
   CheckPathAgainstBlocklist(path_info, handle_type,
                             std::move(after_blocklist_check_callback));
 }
@@ -771,24 +779,23 @@ void FileSystemAccessPermissionContext::PerformAfterWriteChecks(
 }
 
 void FileSystemAccessPermissionContext::RunRestrictedPathCallback(
-    const base::FilePath& file_path,
+    int request_id,
     SensitiveEntryResult result) {
-  if (auto val = callback_map_.extract(file_path)) {
-    for (auto& callback : val.mapped()) {
-      std::move(callback).Run(result);
-    }
+  if (auto node = restricted_path_callbacks_.extract(request_id)) {
+    std::move(node.mapped()).Run(result);
   }
 }
 
 void FileSystemAccessPermissionContext::OnRestrictedPathResult(
-    const base::FilePath& file_path,
+    int request_id,
     gin::Arguments* args) {
   SensitiveEntryResult result = SensitiveEntryResult::kAbort;
   args->GetNext(&result);
-  RunRestrictedPathCallback(file_path, result);
+  RunRestrictedPathCallback(request_id, result);
 }
 
 void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
+    int request_id,
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
@@ -800,7 +807,7 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   if (user_action == UserAction::kNone) {
     auto result = should_block ? SensitiveEntryResult::kAbort
                                : SensitiveEntryResult::kAllowed;
-    RunRestrictedPathCallback(path_info.path, result);
+    RunRestrictedPathCallback(request_id, result);
     return;
   }
 
@@ -810,22 +817,30 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     if (session && session->Get()) {
       v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
       v8::HandleScope scope(isolate);
+      content::RenderFrameHost* rfh =
+          content::RenderFrameHost::FromID(frame_id);
       v8::Local<v8::Object> details =
           gin::DataObjectBuilder(isolate)
               .Set("origin", origin.GetURL().spec())
               .Set("isDirectory", handle_type == HandleType::kDirectory)
               .Set("path", path_info.path)
+              .Set("frame", rfh)
+              .Set("webContents",
+                   rfh ? content::WebContents::FromRenderFrameHost(rfh)
+                       : nullptr)
               .Build();
       session->Get()->Emit(
           "file-system-access-restricted", details,
           base::BindRepeating(
               &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-              weak_factory_.GetWeakPtr(), path_info.path));
+              weak_factory_.GetWeakPtr(), request_id));
+    } else {
+      RunRestrictedPathCallback(request_id, SensitiveEntryResult::kAbort);
     }
     return;
   }
 
-  RunRestrictedPathCallback(path_info.path, SensitiveEntryResult::kAllowed);
+  RunRestrictedPathCallback(request_id, SensitiveEntryResult::kAllowed);
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
@@ -1150,6 +1165,18 @@ void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
 void FileSystemAccessPermissionContext::CleanupPermissions(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+  // Keep the grants while any top-level document of |origin| is still open in
+  // this session.
+  for (api::WebContents* api_web_contents :
+       api::WebContents::GetWebContentsList()) {
+    content::WebContents* web_contents = api_web_contents->web_contents();
+    if (web_contents && !web_contents->IsBeingDestroyed() &&
+        web_contents->GetBrowserContext() == browser_context() &&
+        web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin() ==
+            origin) {
+      return;
+    }
+  }
   RevokeActiveGrants(origin);
 }
 
