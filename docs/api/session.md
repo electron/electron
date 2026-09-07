@@ -299,7 +299,7 @@ request.
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53661
 ```
 -->
 
@@ -349,7 +349,7 @@ app.whenReady().then(() => {
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53661
 ```
 -->
 
