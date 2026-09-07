@@ -3183,9 +3183,10 @@ describe('BrowserWindow module', () => {
       w = new BrowserWindow({ show: true });
       const p = once(w.webContents.session, 'preconnect');
       w.loadURL(url + '/link');
-      const [, preconnectUrl, allowCredentials] = await p;
+      const [, preconnectUrl, allowCredentials, frame] = await p;
       expect(preconnectUrl).to.equal('http://example.com/');
       expect(allowCredentials).to.be.true('allowCredentials');
+      expect(frame).to.equal(w.webContents.mainFrame);
     });
   });
 
