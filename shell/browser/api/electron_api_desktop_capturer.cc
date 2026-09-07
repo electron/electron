@@ -342,6 +342,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                     bool fetch_window_icons) {
   fetch_window_icons_ = fetch_window_icons;
 #if BUILDFLAG(IS_WIN)
+  using_directx_capturer_ = false;
   if (content::desktop_capture::CreateDesktopCaptureOptions()
           .allow_directx_capturer()) {
     // DxgiDuplicatorController should be alive in this scope according to
@@ -489,8 +490,13 @@ void DesktopCapturer::CollectSourcesFrom(DesktopMediaList* list) {
 #if BUILDFLAG(IS_WIN)
     // Gather the same unique screen IDs used by the electron.screen API in
     // order to provide an association between it and
-    // desktopCapturer/getUserMedia. This is only required when using the
-    // DirectX capturer, otherwise the IDs across the APIs already match.
+    // desktopCapturer/getUserMedia. The native source ID is already correct
+    // for non-DirectX capturers and is used as a fallback if the DirectX
+    // mapping cannot be resolved.
+    for (auto& source : screen_sources) {
+      source.display_id = base::NumberToString(source.media_list_source.id.id);
+    }
+
     if (using_directx_capturer_) {
       std::vector<std::string> device_names;
       // Crucially, this list of device names will be in the same order as
