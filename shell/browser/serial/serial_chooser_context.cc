@@ -9,6 +9,7 @@
 
 #include "base/base64.h"
 #include "base/command_line.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "chrome/browser/serial/serial_blocklist.h"
 #include "content/public/browser/device_service.h"
@@ -88,16 +89,18 @@ void SerialChooserContext::GrantPortPermission(
     content::RenderFrameHost* render_frame_host) {
   port_info_.try_emplace(port.token, port.Clone());
 
-  if (CanStorePersistentEntry(port)) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  // Remember the selection for this session in every case; it is what makes
+  // requestPort() -> open() work without a persistent identifier and what a
+  // device permission handler sees as details.selected.
+  ephemeral_ports_[origin].insert(port.token);
+  if (CanStorePersistentEntry(port) &&
+      !permission_manager->HasDevicePermissionHandler()) {
     permission_manager->GrantDevicePermission(blink::PermissionType::SERIAL,
                                               origin, PortInfoToValue(port),
                                               browser_context_);
-    return;
   }
-
-  ephemeral_ports_[origin].insert(port.token);
 }
 
 bool SerialChooserContext::HasPortPermission(
@@ -111,55 +114,85 @@ bool SerialChooserContext::HasPortPermission(
   }
 
   auto it = ephemeral_ports_.find(origin);
-  if (it != ephemeral_ports_.end()) {
-    const std::set<base::UnguessableToken>& ports = it->second;
-    if (ports.contains(port.token))
-      return true;
-  }
-
-  if (!CanStorePersistentEntry(port))
-    return false;
+  const bool selected =
+      it != ephemeral_ports_.end() && it->second.contains(port.token);
 
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
+  base::Value value = PortInfoToValue(port);
+  // The id select-serial-port reported for this port, so a handler can match a
+  // selection it recorded.
+  value.GetDict().Set("portId", port.token.ToString());
   return permission_manager->CheckDevicePermission(
-      blink::PermissionType::SERIAL, origin, PortInfoToValue(port),
-      browser_context_);
+      blink::PermissionType::SERIAL, origin, value, browser_context_,
+      render_frame_host, selected);
 }
 
 void SerialChooserContext::RevokePortPermissionWebInitiated(
-    const url::Origin& origin,
+    const url::Origin& requesting_origin,
     const base::UnguessableToken& token,
     content::RenderFrameHost* render_frame_host) {
+  // |requesting_origin| is owned by the frame the JS below can destroy.
+  const url::Origin origin = requesting_origin;
   auto ephemeral = ephemeral_ports_.find(origin);
   if (ephemeral != ephemeral_ports_.end()) {
-    std::set<base::UnguessableToken>& ports = ephemeral->second;
-    ports.erase(token);
+    ephemeral->second.erase(token);
+    if (ephemeral->second.empty())
+      ephemeral_ports_.erase(ephemeral);
   }
 
   auto it = port_info_.find(token);
   if (it == port_info_.end())
     return;
+  // Keep a copy: the JS below may remove the port.
+  device::mojom::SerialPortInfoPtr port = it->second->Clone();
 
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
-  permission_manager->RevokeDevicePermission(
-      blink::PermissionType::SERIAL, origin, PortInfoToValue(*it->second),
-      browser_context_);
+  permission_manager->RevokeDevicePermission(blink::PermissionType::SERIAL,
+                                             origin, PortInfoToValue(*port),
+                                             browser_context_);
 
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
   gin::WeakCell<api::Session>* session =
-      api::Session::FromBrowserContext(web_contents->GetBrowserContext());
+      api::Session::FromBrowserContext(browser_context_);
   if (session && session->Get()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
-    details.Set("port", it->second);
+    details.Set("port", port);
     details.SetGetter("frame", render_frame_host);
     details.Set("origin", origin.Serialize());
     session->Get()->Emit("serial-port-revoked", details);
   }
+  // Let every SerialService for this origin drop connections to ports it no
+  // longer has permission for (content re-checks HasPortPermission(), which may
+  // run app JS, so do it from a fresh task rather than under the caller).
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&SerialChooserContext::NotifyPermissionRevoked,
+                                weak_factory_.GetWeakPtr(), origin));
+}
+
+void SerialChooserContext::NotifyPermissionRevoked(const url::Origin& origin) {
+  for (auto& observer : port_observer_list_)
+    observer.OnPermissionRevoked(origin);
+}
+
+void SerialChooserContext::OnPortConnectedStateChanged(
+    device::mojom::SerialPortInfoPtr port) {
+  // Bluetooth serial ports stay enumerated and only toggle their connected
+  // state; keep the cached info current and tell SerialService so that
+  // navigator.serial fires connect/disconnect.
+  auto it = port_info_.find(port->token);
+  if (it != port_info_.end())
+    it->second->connected = port->connected;
+  for (auto& observer : port_observer_list_)
+    observer.OnPortConnectedStateChanged(*port);
+}
+
+void SerialChooserContext::SetPortManagerForTesting(
+    mojo::PendingRemote<device::mojom::SerialPortManager> manager) {
+  OnPortManagerConnectionError();
+  SetUpPortManagerConnection(std::move(manager));
 }
 
 // static

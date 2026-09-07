@@ -98,9 +98,14 @@ class SerialChooserContext : public KeyedService,
   void OnPortAdded(device::mojom::SerialPortInfoPtr port) override;
   void OnPortRemoved(device::mojom::SerialPortInfoPtr port) override;
   void OnPortConnectedStateChanged(
-      device::mojom::SerialPortInfoPtr port) override {}
+      device::mojom::SerialPortInfoPtr port) override;
+
+  void SetPortManagerForTesting(
+      mojo::PendingRemote<device::mojom::SerialPortManager> manager);
 
  private:
+  void NotifyPermissionRevoked(const url::Origin& origin);
+
   void EnsurePortManagerConnection();
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
@@ -109,7 +114,10 @@ class SerialChooserContext : public KeyedService,
 
   bool is_initialized_ = false;
 
-  // Tracks the set of ports to which an origin has access to.
+  // Ports each origin picked in a chooser during this session. Without
+  // ses.setDevicePermissionHandler() this is the grant store for ports that
+  // cannot be stored persistently; with a handler it is only reported to the
+  // handler as details.selected.
   std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
 
   // Map from port token to port info.
