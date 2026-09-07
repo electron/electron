@@ -17,7 +17,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_isolate_data.h"
 #include "net/base/data_url.h"
 #include "shell/browser/browser.h"
 #include "shell/common/asar/asar_util.h"
@@ -28,6 +27,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/per_context_template_data.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -604,14 +604,14 @@ NativeImage* NativeImage::CreateMenuSymbol(gin::Arguments* args,
 // static
 gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  auto* wrapper_info = &kWrapperInfo;
+  auto* data = gin_helper::PerContextTemplateData::From(
+      isolate->GetCurrentContext(), &kWrapperInfo);
   v8::Local<v8::FunctionTemplate> constructor =
-      data->GetFunctionTemplate(wrapper_info);
+      data->function_template.Get(isolate);
   if (constructor.IsEmpty()) {
     constructor = v8::FunctionTemplate::New(isolate);
     constructor->SetClassName(gin::StringToV8(isolate, GetClassName()));
-    data->SetFunctionTemplate(wrapper_info, constructor);
+    data->function_template.Reset(isolate, constructor);
   }
   return gin::ObjectTemplateBuilder(isolate, GetClassName(),
                                     constructor->InstanceTemplate())

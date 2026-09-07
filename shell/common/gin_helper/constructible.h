@@ -5,12 +5,10 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_CONSTRUCTIBLE_H_
 
-#include <memory>
-
 #include "gin/per_context_data.h"
-#include "gin/per_isolate_data.h"
 #include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/per_context_template_data.h"
 #include "v8/include/v8-context.h"
 
 namespace gin_helper {
@@ -45,10 +43,10 @@ class Constructible {
   static v8::Local<v8::Function> GetConstructor(
       v8::Isolate* const isolate,
       v8::Local<v8::Context> context) {
-    gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* const wrapper_info = &T::kWrapperInfo;
+    auto* data = PerContextTemplateData::From(context, wrapper_info);
     v8::Local<v8::FunctionTemplate> constructor =
-        data->DeprecatedGetFunctionTemplate(wrapper_info);
+        data->function_template.Get(isolate);
     if (constructor.IsEmpty()) {
       if (!gin::CreateConstructorFunctionTemplate(isolate,
                                                   base::BindRepeating(&T::New))
@@ -63,9 +61,8 @@ class Constructible {
           gin::kNumberOfInternalFields);
       constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
-      data->DeprecatedSetObjectTemplate(wrapper_info,
-                                        constructor->InstanceTemplate());
-      data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+      data->object_template.Reset(isolate, constructor->InstanceTemplate());
+      data->function_template.Reset(isolate, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();
   }
@@ -77,9 +74,9 @@ class Constructible {
     gin::PerContextData* data = gin::PerContextData::From(context);
     CHECK(data);
 
-    auto* constructor_data = static_cast<PerContextConstructorData*>(
-        data->GetUserData(wrapper_info));
-    if (constructor_data) {
+    auto* constructor_data =
+        PerContextTemplateData::From(context, wrapper_info);
+    if (!constructor_data->function_template.IsEmpty()) {
       return constructor_data->function_template.Get(isolate)
           ->GetFunction(context)
           .ToLocalChecked();
@@ -101,21 +98,10 @@ class Constructible {
     T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
 
     data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
-    data->SetUserData(wrapper_info, std::make_unique<PerContextConstructorData>(
-                                        isolate, constructor));
+    constructor_data->function_template.Reset(isolate, constructor);
 
     return constructor->GetFunction(context).ToLocalChecked();
   }
-
- private:
-  class PerContextConstructorData : public base::SupportsUserData::Data {
-   public:
-    PerContextConstructorData(v8::Isolate* isolate,
-                              v8::Local<v8::FunctionTemplate> function_template)
-        : function_template(isolate, function_template) {}
-
-    v8::Global<v8::FunctionTemplate> function_template;
-  };
 };
 
 }  // namespace gin_helper
