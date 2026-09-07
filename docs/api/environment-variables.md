@@ -175,6 +175,42 @@ Deployment finished.
 MSIX Deployment completed.
 ```
 
+### `ELECTRON_DEBUG_DRAGGABLE_REGIONS` _Experimental_
+
+> [!WARNING]
+> This variable is a debugging aid, not part of Electron's formal API. It is
+> experimental and its behavior, output, or existence may change or be removed
+> in any release without warning.
+
+Visualizes and logs the [draggable regions](../tutorial/custom-window-interactions.md#custom-draggable-regions)
+of every window to aid in debugging custom title bars. Only takes effect when
+[`app.isPackaged`](./app.md#appispackaged-readonly) is `false`.
+
+When set, the region that Electron hit tests against for each `WebContents` (the
+union of every `app-region: drag` rectangle minus every `app-region: no-drag`
+rectangle, as computed by the renderer) is painted as translucent red rectangles
+floating above the web contents, with the parts that changed in the latest update
+tinted yellow. The overlay ignores mouse events and follows the web contents as it
+moves or resizes. It reflects the region the main process actually uses rather than
+the CSS in the page, so it can lag behind the page while regions are in flight
+from the renderer; the stamp in its corner shows which update it is painting.
+
+Extra logs are also written whenever the renderer sends a new set of regions,
+whenever the web contents changes size, and, every couple of seconds, a summary
+of the hit tests served against the region. Logging must be enabled, for example
+with [`ELECTRON_ENABLE_LOGGING`](#electron_enable_logging), for these to be
+displayed.
+
+Sample output:
+
+```sh
+[draggable-regions] webContents 1: debugging enabled
+[draggable-regions] webContents 1: update #1: renderer sent 5 region(s) (1 drag, 4 no-drag); hit-test region computed in 3.2 us: 6 rect(s), bounds 0,0 1200x40
+[draggable-regions] webContents 1: contents view bounds changed to 464,245 1280x720, 8.3 ms since previous bounds change; overlay still shows update #1
+[draggable-regions] webContents 1: update #2, 16.4 ms since previous update, 7.1 ms after last bounds change to 1280x720: renderer sent 5 region(s) (1 drag, 4 no-drag); hit-test region computed in 2.8 us: 6 rect(s), bounds 0,0 1280x40
+[draggable-regions] webContents 1: 143 hit test(s) in the last 2.0 s (37 inside a draggable region), total 41.5 us, avg 0.3 us, max 1.9 us
+```
+
 ### `ELECTRON_LOG_ASAR_READS`
 
 When Electron reads from an ASAR file, log the read offset and file path to
