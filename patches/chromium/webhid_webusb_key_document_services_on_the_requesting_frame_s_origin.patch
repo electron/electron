@@ -19,7 +19,7 @@ This is specific to Electron's permission model and is not intended for
 upstream.
 
 diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
-index 17d318fda240a2a95399458388a62fd47e69fdfc..38e6c8194ea4847d3975316974b5245814a56e2c 100644
+index 2497764e77ff1413170aefd57729f5829f8f8d4a..7c729656f0494e077049434afacaf1217d03b4a7 100644
 --- a/content/browser/hid/hid_service.cc
 +++ b/content/browser/hid/hid_service.cc
 @@ -122,7 +122,7 @@ HidService::HidService(
@@ -32,7 +32,7 @@ index 17d318fda240a2a95399458388a62fd47e69fdfc..38e6c8194ea4847d3975316974b52458
  HidService::HidService(
      base::WeakPtr<ServiceWorkerVersion> service_worker_version,
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
-index e22f5428c2e309a85d29241fc3a0a7b2bc183f4e..bc94f1ee57892c1ab7153e38b1924029bc875d64 100644
+index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..0403a237756bbdc4cdd6b6a9992a65d191782771 100644
 --- a/content/browser/usb/web_usb_service_impl.cc
 +++ b/content/browser/usb/web_usb_service_impl.cc
 @@ -206,7 +206,7 @@ void WebUsbServiceImpl::Create(
