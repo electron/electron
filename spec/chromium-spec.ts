@@ -4413,6 +4413,49 @@ describe('navigator.clipboard.write', () => {
   });
 });
 
+describe('pointer lock permission request', () => {
+  let server: http.Server;
+  let crossOriginUrl: string;
+  before(async () => {
+    server = http.createServer((_req, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end('<!doctype html><body>frame</body>');
+    });
+    crossOriginUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('is attributed to the frame that called requestPointerLock()', async () => {
+    const ses = session.fromPartition(`pointer-lock-${Math.random()}`);
+    const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const f = document.createElement('iframe');
+      f.src = ${JSON.stringify(crossOriginUrl)};
+      f.onload = resolve;
+      document.body.appendChild(f);
+    })`);
+    const iframe = w.webContents.mainFrame.frames[0];
+    const requests: { wc: Electron.WebContents; permission: string; details: any }[] = [];
+    ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+      requests.push({ wc, permission, details });
+      callback(false);
+    });
+    w.webContents.focus();
+    const result = await iframe.executeJavaScript(
+      "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
+      true
+    );
+    expect(result).to.not.equal('locked');
+    const request = requests.find((r) => r.permission === 'pointerLock');
+    expect(request).to.exist();
+    expect(request!.wc).to.equal(w.webContents);
+    expect(request!.details.requestingUrl).to.equal(`${crossOriginUrl}/`);
+    expect(request!.details.isMainFrame).to.equal(false);
+  });
+});
+
 describe('paste execCommand', () => {
   const readClipboard = async (w: BrowserWindow) => {
     if (!w.webContents.isFocused()) {
@@ -4421,6 +4464,8 @@ describe('paste execCommand', () => {
       await focus;
     }
 
+    // No user gesture: these tests exercise the permission path, and a
+    // gesture on the requesting frame allows paste by itself.
     return w.webContents.executeJavaScript(
       `
       new Promise((resolve) => {
@@ -4436,7 +4481,7 @@ describe('paste execCommand', () => {
         document.execCommand('paste');
       });
     `,
-      true
+      false
     );
   };
 
@@ -4560,6 +4605,83 @@ describe('paste execCommand', () => {
     await clipboard.writeText(text);
     const paste = await readClipboard(childWindow);
     expect(paste).to.equal(text);
+  });
+
+  describe('user activation', () => {
+    // A cross-origin iframe next to a main frame that the user just clicked in.
+    let server: http.Server;
+    let crossOriginUrl: string;
+    before(async () => {
+      server = http.createServer((_req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('<!doctype html><body contenteditable>frame</body>');
+      });
+      crossOriginUrl = (await listen(server)).url;
+    });
+    after(() => server.close());
+
+    const pasteIn = (frame: Electron.WebFrameMain) =>
+      frame.executeJavaScript(
+        `new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(''), 1000);
+          document.addEventListener('paste', (event) => {
+            clearTimeout(timeout);
+            event.preventDefault();
+            resolve(event.clipboardData.getData('text'));
+          }, { once: true });
+          document.execCommand('paste');
+        })`,
+        false
+      );
+
+    const clickMainFrame = async (w: BrowserWindow) => {
+      if (!w.webContents.isFocused()) {
+        const focus = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focus;
+      }
+      w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
+      w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
+      await waitUntil(
+        async () => (await w.webContents.mainFrame.executeJavaScript('navigator.userActivation.isActive')) === true
+      );
+    };
+
+    it('lets the frame the user interacted with paste without a permission grant', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const text = 'paste with activation';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(w.webContents.mainFrame)).to.equal(text);
+    });
+
+    it('does not extend a click in the main frame to a cross-origin iframe', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute;top:200px;left:0;width:200px;height:100px';
+        f.src = ${JSON.stringify(crossOriginUrl)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const checks: string[] = [];
+      ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) => {
+        if (permission === 'deprecated-sync-clipboard-read') checks.push(requestingOrigin);
+        return false;
+      });
+      const text = 'main frame click, iframe paste';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(iframe)).to.equal('');
+      // The iframe had no activation of its own, so the decision went to the
+      // check handler, attributed to the iframe.
+      expect(checks).to.not.be.empty();
+      for (const origin of checks) expect(origin).to.equal(`${crossOriginUrl}/`);
+      expect(await clipboard.readText()).to.equal(text);
+    });
   });
 });
 
