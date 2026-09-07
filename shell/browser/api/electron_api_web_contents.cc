@@ -4281,17 +4281,30 @@ void WebContents::CancelDialogs(content::WebContents* web_contents,
       gin::DataObjectBuilder(isolate).Set("resetState", reset_state).Build());
 }
 
-v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
+v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* frame_host = web_contents()->GetPrimaryMainFrame();
-  if (!frame_host) {
+  // With a renderer process id, report that process, provided it hosts a frame
+  // of this WebContents; otherwise the primary main frame's process.
+  content::RenderProcessHost* process = nullptr;
+  int32_t process_id = 0;
+  if (args->GetNext(&process_id)) {
+    web_contents()->GetPrimaryMainFrame()->ForEachRenderFrameHost(
+        [&](content::RenderFrameHost* rfh) {
+          if (!process && rfh->GetProcess()->GetDeprecatedID() == process_id)
+            process = rfh->GetProcess();
+        });
+  } else if (auto* frame_host = web_contents()->GetPrimaryMainFrame()) {
+    process = frame_host->GetProcess();
+  }
+  if (!process || !process->GetProcess().IsValid()) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
     return handle;
   }
 
-  auto pid = frame_host->GetProcess()->GetProcess().Pid();
+  auto pid = process->GetProcess().Pid();
   v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
