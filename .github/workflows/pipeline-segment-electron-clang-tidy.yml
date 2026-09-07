@@ -192,9 +192,9 @@ jobs:
           OUT=src/out/${ELECTRON_OUT_DIR}
           SQRL=src/third_party/squirrel.mac
           mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
-          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
+          cp ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
           cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
-          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/Carthage/Checkouts/Mantle/Mantle/include/*.h ${SQRL}/Carthage/Checkouts/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
         fi
 
         e d python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
