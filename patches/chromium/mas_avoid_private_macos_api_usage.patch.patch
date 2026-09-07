@@ -375,6 +375,18 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  }
  
  }  // namespace base
+diff --git a/components/os_crypt/common/BUILD.gn b/components/os_crypt/common/BUILD.gn
+index 10db0687101b69542f9dd33592d0655c7343e3c8..a5ad767ff8e1854ee6840f8eb4e83a9e6b9f16c5 100644
+--- a/components/os_crypt/common/BUILD.gn
++++ b/components/os_crypt/common/BUILD.gn
+@@ -26,6 +26,7 @@ if (is_apple) {
+       "//base",
+       "//build:branding_buildflags",
+       "//crypto",
++      "//electron/build/config:generate_mas_config",
+     ]
+   }
+ }
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
 index f240dc22ee391c98c8768af7141b7447b6507cc6..69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
@@ -387,18 +399,6 @@ index f240dc22ee391c98c8768af7141b7447b6507cc6..69bfbbf0f58ca3b05a601bea87b14dcf
  #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
  
  using crypto::apple::KeychainV2;
-diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index f75238dedb47ff7927c715f21befede9cdc97615..e90e275b33bb88c6b1e8a7044ca6eb382460b467 100644
---- a/components/os_crypt/sync/BUILD.gn
-+++ b/components/os_crypt/sync/BUILD.gn
-@@ -52,6 +52,7 @@ component("sync") {
-     deps += [
-       "//components/os_crypt/common:keychain_password_mac",
-       "//crypto:mock_apple_keychain",
-+      "//electron/build/config:generate_mas_config"
-     ]
-   } else if (is_win) {
-     sources += [ "os_crypt_win.cc" ]
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
 index 8e61a19d40c2f2bfa01f0d434685b2c0c7ae1504..d5096225ce552147af1a273897364367c5e68e63 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn

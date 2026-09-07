@@ -14,6 +14,17 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (46.0)
+
+### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods, deprecated in Electron 45, have been
+removed along with Chromium's synchronous OSCrypt backend. Use
+`safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync()`
+and `safeStorage.decryptStringAsync()` instead. They use the same per-platform
+key stores, so data encrypted with `safeStorage.encryptString()` by earlier
+versions of Electron decrypts with `safeStorage.decryptStringAsync()`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
