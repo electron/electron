@@ -8,6 +8,7 @@
 #include "gin/persistent.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-external.h"
 #include "v8/include/v8-traced-handle.h"
 
 namespace gin_helper {

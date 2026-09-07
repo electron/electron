@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <atomic>
+#include <memory>
 #include <optional>
 
 #include "base/command_line.h"
@@ -13,11 +15,15 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/function_template.h"
+#include "shell/common/gin_helper/per_context_template_data.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
@@ -25,6 +31,71 @@
 
 #if DCHECK_IS_ON()
 namespace {
+
+std::atomic<int> live_callback_holder_probes{0};
+
+class CallbackHolderProbe {
+ public:
+  CallbackHolderProbe() { ++live_callback_holder_probes; }
+  ~CallbackHolderProbe() { --live_callback_holder_probes; }
+
+  int Run() const { return 42; }
+};
+
+base::RepeatingCallback<int()> CreateCallbackHolderProbeCallback() {
+  return base::BindRepeating(
+      [](const std::shared_ptr<CallbackHolderProbe>& probe) {
+        return probe->Run();
+      },
+      std::make_shared<CallbackHolderProbe>());
+}
+
+v8::Local<v8::Object> CreateCallbackHolderProbeForTesting(
+    v8::Isolate* isolate) {
+  // Use a direct function for the collectible probe V8's template
+  // instantiation cache keeps template backed functions alive in this context.
+  auto callback = CreateCallbackHolderProbeCallback();
+  auto [getter, data] =
+      gin_helper::CreateDataPropertyCallback(isolate, callback);
+  auto object = v8::Object::New(isolate);
+  object
+      ->SetLazyDataProperty(isolate->GetCurrentContext(),
+                            gin::StringToV8(isolate, "value"), getter, data)
+      .Check();
+  gin_helper::Dictionary dict(isolate, object);
+  dict.Set("run", v8::Function::New(
+                      isolate->GetCurrentContext(),
+                      &gin_helper::Dispatcher<int()>::DispatchToCallback, data)
+                      .ToLocalChecked());
+  return object;
+}
+
+v8::Local<v8::Function> GetCachedCallbackHolderProbeForTesting(
+    v8::Isolate* isolate) {
+  static const char kCacheKey = 0;
+  auto context = isolate->GetCurrentContext();
+  auto* data = gin_helper::PerContextTemplateData::From(context, &kCacheKey);
+  if (data->function_template.IsEmpty()) {
+    data->function_template.Reset(
+        isolate, gin_helper::CreateFunctionTemplate(
+                     isolate, CreateCallbackHolderProbeCallback()));
+  }
+  return data->function_template.Get(isolate)
+      ->GetFunction(context)
+      .ToLocalChecked();
+}
+
+int GetLiveCallbackHolderProbeCountForTesting() {
+  return live_callback_holder_probes.load();
+}
+
+gin_helper::Dictionary GetGinDataForTesting(v8::Isolate* isolate) {
+  auto result = gin_helper::Dictionary::CreateEmpty(isolate);
+  result.Set("hasIsolateData", gin::PerIsolateData::From(isolate) != nullptr);
+  auto* context_data = gin::PerContextData::From(isolate->GetCurrentContext());
+  result.Set("hasContextData", context_data != nullptr);
+  return result;
+}
 
 class CallbackTestingHelper final {
  public:
@@ -246,6 +317,13 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
+  dict.SetMethod("createCallbackHolderProbeForTesting",
+                 &CreateCallbackHolderProbeForTesting);
+  dict.SetMethod("getCachedCallbackHolderProbeForTesting",
+                 &GetCachedCallbackHolderProbeForTesting);
+  dict.SetMethod("getLiveCallbackHolderProbeCountForTesting",
+                 &GetLiveCallbackHolderProbeCountForTesting);
+  dict.SetMethod("getGinDataForTesting", &GetGinDataForTesting);
   dict.SetMethod("log", &Log);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
