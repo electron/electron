@@ -1081,7 +1081,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
 #### `ses.setPermissionCheckHandler(handler)`
 
 * `handler` Function\<boolean> | null
-  * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking.
   * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
     * `ar` - Access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
@@ -1132,10 +1132,10 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
-    * `securityOrigin` string (optional) - The security origin of the `media` check.
+    * `securityOrigin` string (optional) - The origin of the requesting frame, for `media`, `hid`, `usb` and `serial` checks.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
-    * `requestingUrl` string (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
+    * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
     * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `filePath` string (optional) - The path of a `fileSystem` request.
     * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
@@ -1187,7 +1187,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
         a string is specified, can be `loopback` or `loopbackWithMute`.
         Specifying a loopback device will capture system audio, and is
         currently only supported on Windows. If a WebFrameMain is specified,
-        will capture audio from that frame.
+        will capture audio from the `webContents` that contains that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
@@ -1220,14 +1220,22 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
-will capture the video or audio stream from that frame.
+captures the whole `webContents` that contains that frame (the tab), not just
+the frame: `request.frame` from an `<iframe>` therefore grants that iframe a
+capture of the page that embeds it. Check `request.frame` before using it this
+way, and note that the callback throws if the frame has been destroyed by the
+time it is called.
 
 ```js
 const { session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  // Allow the tab to capture itself.
-  callback({ video: request.frame })
+  // Allow a top-level page to capture its own tab.
+  if (request.frame && request.frame === request.frame.top) {
+    callback({ video: request.frame })
+  } else {
+    callback(null)
+  }
 })
 ```
 
