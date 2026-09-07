@@ -4,7 +4,11 @@
 
 #include "shell/browser/serial/electron_serial_delegate.h"
 
+#include <memory>
 #include <utility>
+
+#include "base/memory/raw_ptr.h"
+#include "base/scoped_observation.h"
 
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -20,6 +24,65 @@ SerialChooserContext* GetChooserContext(content::RenderFrameHost* frame) {
   auto* browser_context = web_contents->GetBrowserContext();
   return SerialChooserContextFactory::GetForBrowserContext(browser_context);
 }
+
+// Forwards one SerialChooserContext's events to the content::SerialService
+// observers of that browser context.
+class ElectronSerialDelegate::ContextObservation
+    : private SerialChooserContext::PortObserver {
+ public:
+  ContextObservation(ElectronSerialDelegate* parent,
+                     content::BrowserContext* browser_context)
+      : parent_(parent), browser_context_(browser_context) {
+    if (auto* chooser_context =
+            SerialChooserContextFactory::GetForBrowserContext(browser_context))
+      observation_.Observe(chooser_context);
+  }
+  ContextObservation(const ContextObservation&) = delete;
+  ContextObservation& operator=(const ContextObservation&) = delete;
+  ~ContextObservation() override = default;
+
+  void AddObserver(content::SerialDelegate::Observer* observer) {
+    observer_list_.AddObserver(observer);
+  }
+  void RemoveObserver(content::SerialDelegate::Observer* observer) {
+    observer_list_.RemoveObserver(observer);
+  }
+
+ private:
+  // SerialChooserContext::PortObserver:
+  void OnPortAdded(const device::mojom::SerialPortInfo& port) override {
+    observer_list_.Notify(&content::SerialDelegate::Observer::OnPortAdded,
+                          port);
+  }
+  void OnPortRemoved(const device::mojom::SerialPortInfo& port) override {
+    observer_list_.Notify(&content::SerialDelegate::Observer::OnPortRemoved,
+                          port);
+  }
+  void OnPortConnectedStateChanged(
+      const device::mojom::SerialPortInfo& port) override {
+    observer_list_.Notify(
+        &content::SerialDelegate::Observer::OnPortConnectedStateChanged, port);
+  }
+  void OnPortManagerConnectionError() override {
+    observer_list_.Notify(
+        &content::SerialDelegate::Observer::OnPortManagerConnectionError);
+  }
+  void OnPermissionRevoked(const url::Origin& origin) override {
+    observer_list_.Notify(
+        &content::SerialDelegate::Observer::OnPermissionRevoked, origin);
+  }
+  void OnSerialChooserContextShutdown() override {
+    parent_->observations_.erase(browser_context_);
+    // |this| is now deleted.
+  }
+
+  const raw_ptr<ElectronSerialDelegate> parent_;
+  const raw_ptr<content::BrowserContext> browser_context_;
+  base::ScopedObservation<SerialChooserContext,
+                          SerialChooserContext::PortObserver>
+      observation_{this};
+  base::ObserverList<content::SerialDelegate::Observer> observer_list_;
+};
 
 ElectronSerialDelegate::ElectronSerialDelegate() = default;
 
@@ -56,6 +119,11 @@ bool ElectronSerialDelegate::CanRequestPortPermission(
 bool ElectronSerialDelegate::HasPortPermission(
     content::RenderFrameHost* frame,
     const device::mojom::SerialPortInfo& port) {
+  // Access to an already-granted port is subject to the same "serial"
+  // permission check as opening the chooser, so that denying the check for a
+  // document cuts off getPorts()/open() as well as requestPort().
+  if (!CanRequestPortPermission(frame))
+    return false;
   return GetChooserContext(frame)->HasPortPermission(
       frame->GetLastCommittedOrigin(), port, frame);
 }
@@ -81,16 +149,22 @@ device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
 void ElectronSerialDelegate::AddObserver(
     content::RenderFrameHost* frame,
     content::SerialDelegate::Observer* observer) {
-  observer_list_.AddObserver(observer);
-  auto* chooser_context = GetChooserContext(frame);
-  if (!port_observation_.IsObserving())
-    port_observation_.Observe(chooser_context);
+  GetContextObserver(frame->GetBrowserContext())->AddObserver(observer);
 }
 
 void ElectronSerialDelegate::RemoveObserver(
     content::RenderFrameHost* frame,
     content::SerialDelegate::Observer* observer) {
-  observer_list_.RemoveObserver(observer);
+  GetContextObserver(frame->GetBrowserContext())->RemoveObserver(observer);
+}
+
+ElectronSerialDelegate::ContextObservation*
+ElectronSerialDelegate::GetContextObserver(
+    content::BrowserContext* browser_context) {
+  auto& observation = observations_[browser_context];
+  if (!observation)
+    observation = std::make_unique<ContextObservation>(this, browser_context);
+  return observation.get();
 }
 
 SerialChooserController* ElectronSerialDelegate::ControllerForFrame(
@@ -117,28 +191,6 @@ SerialChooserController* ElectronSerialDelegate::AddControllerForFrame(
 void ElectronSerialDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
-}
-
-// SerialChooserContext::PortObserver:
-void ElectronSerialDelegate::OnPortAdded(
-    const device::mojom::SerialPortInfo& port) {
-  observer_list_.Notify(&content::SerialDelegate::Observer::OnPortAdded, port);
-}
-
-void ElectronSerialDelegate::OnPortRemoved(
-    const device::mojom::SerialPortInfo& port) {
-  observer_list_.Notify(&content::SerialDelegate::Observer::OnPortRemoved,
-                        port);
-}
-
-void ElectronSerialDelegate::OnPortManagerConnectionError() {
-  port_observation_.Reset();
-  observer_list_.Notify(
-      &content::SerialDelegate::Observer::OnPortManagerConnectionError);
-}
-
-void ElectronSerialDelegate::OnSerialChooserContextShutdown() {
-  port_observation_.Reset();
 }
 
 }  // namespace electron
