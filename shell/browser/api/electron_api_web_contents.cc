@@ -29,6 +29,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/timer/elapsed_timer.h"
 #include "base/unguessable_token.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
@@ -111,6 +112,7 @@
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
+#include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -119,6 +121,7 @@
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/draggable_region_debugger.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -1114,6 +1117,7 @@ void WebContents::InitWithWebContents(
   // As the delegate we route permission checks through this helper, so every
   // adopted WebContents (including extension background pages) needs one.
   WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
+  FileSystemAccessWebContentsHelper::CreateForWebContents(web_contents.get());
 
   // A <webview> guest is created with a copy of its embedder's renderer
   // preferences, so caret browsing may already be enabled. Every path that
@@ -2311,11 +2315,30 @@ void WebContents::OnFirstNonEmptyLayout(
 void WebContents::DraggableRegionsChanged(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions,
     content::WebContents* contents) {
+  if (!draggable_region_debugger_ && DraggableRegionDebugger::IsEnabled()) {
+    views::View* contents_view = nullptr;
+    if (inspectable_web_contents_ && !is_guest() && !IsOffScreen())
+      contents_view = inspectable_web_contents_->GetView()->GetContentsView();
+    draggable_region_debugger_ =
+        std::make_unique<DraggableRegionDebugger>(ID(), contents_view);
+  }
+
   if (owner_window() && owner_window()->has_frame()) {
+    if (draggable_region_debugger_) {
+      draggable_region_debugger_->OnRegionsChanged(regions, nullptr,
+                                                   base::TimeDelta());
+    }
     return;
   }
 
+  std::optional<base::ElapsedTimer> timer;
+  if (draggable_region_debugger_)
+    timer.emplace();
   draggable_region_.emplace(DraggableRegionsToSkRegion(regions));
+  if (draggable_region_debugger_) {
+    draggable_region_debugger_->OnRegionsChanged(regions, &*draggable_region_,
+                                                 timer->Elapsed());
+  }
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -2362,17 +2385,22 @@ void WebContents::MaybeSendRendererStartupData(
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
   // that will actually compile the sandbox bundle.
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   const GURL& url = navigation_handle->GetURL();
   bool main_frame = navigation_handle->IsInMainFrame();
   bool allow_subframes =
       web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  // DevTools itself, or an extension document hosted inside the DevTools
+  // front-end (a devtools_page / panel). An extension frame embedded in an
+  // ordinary page is treated like any other subframe.
   bool is_devtools_like =
-      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+      url.SchemeIs("devtools") ||
+      (url.SchemeIs("chrome-extension") && !main_frame &&
+       rfh->GetMainFrame()->GetLastCommittedURL().SchemeIs("devtools"));
   if (!main_frame && !allow_subframes && !is_devtools_like)
-    return;
-
-  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
-  if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
   mojom::RendererStartupDataPtr data;

@@ -14,7 +14,23 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (46.0)
+## Breaking API Changes (46.0)
+
+### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+
+With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
+the same process as the main frame used to get Node.js integration even though
+the iframe itself had none. Workers now only get Node.js integration when the
+frame that creates them has it: the main frame, or any frame when
+`nodeIntegrationInSubFrames` is enabled.
+
+### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+
+A `chrome-extension://` document used to receive the window's preload script
+(and session preload scripts) wherever it was embedded. It now only does so
+when it is a top-level frame or is hosted inside the DevTools front-end (a
+`devtools_page` or panel); an extension frame embedded in an ordinary page is
+treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
 ### Behavior Changed: `webContents.print()` ignores undocumented option names
 
@@ -743,10 +759,11 @@ Per [Chromium update](https://source.chromium.org/chromium/chromium/src/+/ad17e8
 
 Electron's `desktopCapturer` will create a dead audio stream if the new permission is absent however no errors or warnings will occur. This is partially a side-effect of Chromium not falling back to the older `Screen & System Audio Recording` permissions system if the new system fails.
 
-To restore previous behavior:
+To restore previous behavior (Electron 39 through 44 only; the flag was removed upstream in
+Electron 45 and no longer has any effect):
 
 ```js
-// main.js (right beneath your require/import statments)
+// main.js (right beneath your require/import statements)
 app.commandLine.appendSwitch(
   'disable-features',
   'MacCatapLoopbackAudioForScreenShare'

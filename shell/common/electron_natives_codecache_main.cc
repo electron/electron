@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 //
 // Build-time host tool that emits the V8 code cache for the embedded
-// electron/js2c/* bundles -- and, for flavors whose processes host a Node.js
-// environment that is not deserialized from the embedded Node startup
+// internal/electron/js2c/* bundles -- and, for flavors whose processes host a
+// Node.js environment that is not deserialized from the embedded Node startup
 // snapshot, Node's own lib/**/*.js builtins -- for one process flavor, as a
 // generated .cc defining electron::internal::Js2cCache<Flavor>(). Run once per
 // flavor with that flavor's V8 flag set and snapshot blob (both feed V8's
@@ -93,7 +93,7 @@ const char* FlavorFn(std::string_view flavor) {
 // and would roughly double the per-flavor cache (~5.5 of ~12 MB) for no
 // startup benefit. They keep compiling from source on first use, as before.
 bool ShouldCacheNodeBuiltin(std::string_view id) {
-  constexpr std::string_view kJs2cPrefix = "electron/js2c/";
+  constexpr std::string_view kJs2cPrefix = "internal/electron/js2c/";
   constexpr std::string_view kDepsPrefix = "internal/deps/";
   return id.substr(0, kJs2cPrefix.size()) != kJs2cPrefix &&
          id.substr(0, kDepsPrefix.size()) != kDepsPrefix;
@@ -190,7 +190,7 @@ int main(int argc, char* argv[]) {
             : v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
 
-    // The ctor self-registers all builtins, incl. electron/js2c/*.
+    // The ctor self-registers all builtins, incl. internal/electron/js2c/*.
     node::builtins::BuiltinLoader loader;
     // Eagerly compile every inner function, not just the top-level wrapper,
     // so the cache covers the whole bundle and the consuming process never
@@ -251,8 +251,9 @@ int main(int argc, char* argv[]) {
         return 1;
       }
       for (const auto& info : node_caches) {
-        // (The electron/js2c/* ids are registered as builtins too; the ones
-        // this flavor needs were compiled above with their real parameters.)
+        // (The internal/electron/js2c/* ids are registered as builtins too; the
+        // ones this flavor needs were compiled above with their real
+        // parameters.)
         if (!ShouldCacheNodeBuiltin(info.id))
           continue;
         caches.emplace_back(
