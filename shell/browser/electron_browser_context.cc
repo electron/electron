@@ -145,6 +145,9 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
 
   // Observing CaptureHandle when either the capturing or the captured party
   // is incognito is disallowed, except for self-capture.
+  if (!capturer) {
+    return nullptr;
+  }
   if (capturer->GetPrimaryMainFrame() != captured->GetPrimaryMainFrame()) {
     if (capturer->GetBrowserContext()->IsOffTheRecord() ||
         captured->GetBrowserContext()->IsOffTheRecord()) {
@@ -754,6 +757,30 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
                             nullptr);
     return;
   }
+  // The WebContents that called getDisplayMedia(). Capture handles, zoom
+  // level and the incognito check are computed relative to it.
+  content::WebContents* capturer = content::WebContents::FromRenderFrameHost(
+      content::RenderFrameHost::FromID(request.render_process_id,
+                                       request.render_frame_id));
+  if (!capturer) {
+    std::move(callback).Run(
+        blink::mojom::StreamDevicesSet(),
+        blink::mojom::MediaStreamRequestResult::INVALID_STATE, nullptr);
+    return;
+  }
+  const url::Origin capturer_origin =
+      url::Origin::Create(request.security_origin);
+  // A WebFrameMain passed as `video` / `audio` selects the WebContents that
+  // contains it; content captures whole tabs, not individual frames.
+  auto tab_capture_id = [](content::RenderFrameHost* rfh,
+                           bool disable_local_echo = false) {
+    content::RenderFrameHost* main_frame = rfh->GetOutermostMainFrame();
+    return content::WebContentsMediaCaptureId(
+               main_frame->GetProcess()->GetDeprecatedID(),
+               main_frame->GetRoutingID(), disable_local_echo)
+        .ToString();
+  };
+
   stream_devices_set->stream_devices.emplace_back(
       blink::mojom::StreamDevices::New());
   blink::mojom::StreamDevices& devices = *stream_devices_set->stream_devices[0];
@@ -771,19 +798,24 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
         video_dict.Get("name", &name)) {
       blink::MediaStreamDevice video_device(request.video_type, id, name);
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          nullptr, url::Origin::Create(request.security_origin),
+          capturer, capturer_origin,
           content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else if (result_dict.Get("video", &rfh)) {
-      auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+      if (!rfh) {
+        args->ThrowTypeError("video refers to a frame that has been destroyed");
+        std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                                blink::mojom::MediaStreamRequestResult::
+                                    INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                                nullptr);
+        return;
+      }
+      auto* captured = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice video_device(
-          request.video_type,
-          content::WebContentsMediaCaptureId(
-              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID())
-              .ToString(),
-          base::UTF16ToUTF8(web_contents->GetTitle()));
+          request.video_type, tab_capture_id(rfh),
+          base::UTF16ToUTF8(captured->GetTitle()));
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          web_contents, url::Origin::Create(request.security_origin),
+          capturer, capturer_origin,
           content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else {
@@ -809,23 +841,26 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
         audio_dict.Get("name", &name)) {
       blink::MediaStreamDevice audio_device(request.audio_type, id, name);
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          nullptr, url::Origin::Create(request.security_origin),
+          capturer, capturer_origin,
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
+      if (!rfh) {
+        args->ThrowTypeError("audio refers to a frame that has been destroyed");
+        std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                                blink::mojom::MediaStreamRequestResult::
+                                    INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                                nullptr);
+        return;
+      }
       const bool enable_local_echo =
           result_dict.ValueOrDefault("enableLocalEcho", false);
-      const bool disable_local_echo = !enable_local_echo;
-      auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,
-          content::WebContentsMediaCaptureId(
-              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID(),
-              disable_local_echo)
-              .ToString(),
+          tab_capture_id(rfh, /*disable_local_echo=*/!enable_local_echo),
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          web_contents, url::Origin::Create(request.security_origin),
+          capturer, capturer_origin,
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
@@ -840,7 +875,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          nullptr, url::Origin::Create(request.security_origin),
+          capturer, capturer_origin,
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else {
