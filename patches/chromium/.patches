@@ -177,3 +177,4 @@ cherry-pick-29a203e805.patch
 cherry-pick-92e11f6fe0.patch
 cherry-pick-4dfbc081b5.patch
 cherry-pick-4d2a827481.patch
+fix_register_status_icon_with_unique_d-bus_name_when_owning_one.patch

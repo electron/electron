@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Sun, 6 Sep 2026 23:30:55 +0000
+Subject: fix: register status icon with unique D-Bus name when owning one
+ isn't allowed
+
+Flatpak and Snap don't let apps own arbitrary well-known names on the
+session bus, so RequestOwnership for org.freedesktop.StatusNotifierItem-*
+fails there and no tray icon is shown. In those sandboxes (and whenever
+ownership is refused) register with the connection's unique name instead,
+which StatusNotifierWatcher implementations accept, and use a private
+connection so the item goes away with the icon.
+
+Upstream bug: https://issues.chromium.org/issues/554905106
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 8169dfff20f281ebe9b489fb0449fbd09af7d0b8..98f72c7e778cb16304dde0d1a1f7d5e70bec1ee0 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -239,9 +239,18 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
+   return base::MakeRefCounted<dbus::Bus>(std::move(options));
+ }
+ 
++// Flatpak and Snap sandboxes don't allow owning arbitrary well-known names
++// on the session bus, so there the item is registered under the connection's
++// unique name instead. A private connection is used in that case so that the
++// name disappears (and the watcher drops the item) when the icon is removed.
++bool IsSandboxedWithoutOwnName() {
++  auto env = base::Environment::Create();
++  return env->HasVar("FLATPAK_SANDBOX_DIR") || env->HasVar("SNAP");
++}
++
+ scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  if (!g_shared_bus_in_use) {
++  if (!g_shared_bus_in_use && !IsSandboxedWithoutOwnName()) {
+     g_shared_bus_in_use = true;
+     return dbus_thread_linux::GetSharedSessionBus();
+   }
+@@ -353,7 +362,7 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
+       g_shared_bus_in_use = false;
+       bus_->UnregisterExportedObject(dbus::ObjectPath(kPathStatusNotifierItem));
+       bus_->UnregisterExportedObject(dbus::ObjectPath(kPathDbusMenu));
+-      if (!service_name_.empty()) {
++      if (owns_service_name_) {
+         bus_->GetDBusTaskRunner()->PostTask(
+             FROM_HERE, base::BindOnce(
+                            [](scoped_refptr<dbus::Bus> bus,
+@@ -501,6 +510,11 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
+       base::BindRepeating(&StatusIconLinuxDbus::OnNameOwnerChangedReceived,
+                           weak_factory_.GetWeakPtr()));
+ 
++  if (IsSandboxedWithoutOwnName()) {
++    RegisterWithUniqueName();
++    return;
++  }
++
+   bus_->RequestOwnership(
+       service_name_, dbus::Bus::REQUIRE_PRIMARY,
+       base::BindOnce(&StatusIconLinuxDbus::OnOwnershipAcquired,
+@@ -511,10 +525,22 @@ void StatusIconLinuxDbus::OnOwnershipAcquired(const std::string& service_name,
+                                               bool success) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   if (!success) {
+-    delegate_->OnImplInitializationFailed();
++    // The bus policy may still forbid owning the name outside of the known
++    // sandboxes; the watcher accepts a unique name just as well.
++    RegisterWithUniqueName();
+     return;
+   }
+ 
++  owns_service_name_ = true;
++  RegisterStatusNotifierItem();
++}
++
++void StatusIconLinuxDbus::RegisterWithUniqueName() {
++  service_name_ = bus_->GetConnectionName();
++  if (service_name_.empty()) {
++    delegate_->OnImplInitializationFailed();
++    return;
++  }
+   RegisterStatusNotifierItem();
+ }
+ 
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+index 9668ee5a48e180d0ace989c6cb6d9364a162c5ce..69514ff0be9fca3b990e678c7a47714ebbdfb4af 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+@@ -73,6 +73,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+ 
+   void OnInitialized(bool success);
+   void OnOwnershipAcquired(const std::string& service_name, bool success);
++  void RegisterWithUniqueName();
+   void RegisterStatusNotifierItem();
+ 
+   // Step 5: register the StatusNotifierItem with the StatusNotifierWatcher.
+@@ -133,6 +134,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+ 
+   int service_id_ = 0;
+   std::string service_name_;
++  // Whether |service_name_| is a well-known name owned by |bus_| (as opposed
++  // to the connection's unique name).
++  bool owns_service_name_ = false;
+   raw_ptr<dbus::ObjectProxy, DanglingUntriaged> watcher_ = nullptr;
+   raw_ptr<dbus::ExportedObject, DanglingUntriaged> item_ = nullptr;
+ 
