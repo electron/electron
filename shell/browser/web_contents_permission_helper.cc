@@ -223,7 +223,7 @@ void WebContentsPermissionHelper::RequestPermission(
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
           CreatePermissionDescriptorForPermissionType(permission),
-      requesting_frame, origin, false, std::move(details),
+      requesting_frame, origin, user_gesture, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -305,9 +305,26 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    const GURL& url) {
+    const GURL& url,
+    const std::optional<ExternalProtocolRequester>& requester) {
   base::DictValue details;
   details.Set("externalURL", url.spec());
+  if (requester) {
+    // |requesting_frame| only anchors the request; report who content holds
+    // responsible for the launch. An opaque origin is reported as "".
+    details.Set("requestingUrl", requester->origin.GetURL().spec());
+    details.Set("isMainFrame", requester->is_main_frame);
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+    permission_manager->RequestPermissionWithDetails(
+        content::PermissionDescriptorUtil::
+            CreatePermissionDescriptorForPermissionType(
+                blink::PermissionType::OPEN_EXTERNAL),
+        requesting_frame, requester->origin.GetURL(), user_gesture,
+        std::move(details),
+        base::BindOnce(&OnPermissionResponse, std::move(callback)));
+    return;
+  }
   RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
                     std::move(callback), user_gesture, std::move(details));
 }
