@@ -232,3 +232,5 @@ cherry-pick-65ac1eb90261.patch
 cherry-pick-0b4f1821f123.patch
 cherry-pick-76d750b58133.patch
 cherry-pick-4d2a8274815f.patch
+webhid_webusb_pass_the_frame_to_canrequestdevicepermission.patch
+webhid_webusb_key_document_services_on_the_requesting_frame_s_origin.patch
