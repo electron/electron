@@ -62,6 +62,7 @@
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_entry_restore_context.h"
@@ -1509,6 +1510,14 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+    // A link opened into a new window (modifier-click, middle-click,
+    // target=_blank form post routed here, ...) is a popup like window.open()
+    // and is subject to the same embedder policy; see
+    // ElectronBrowserClient::CanCreateWindow.
+    auto* source_preferences = WebContentsPreferences::From(source);
+    if (source_preferences && source_preferences->ShouldDisablePopups())
+      return nullptr;
+
     using SandboxFlags = network::mojom::WebSandboxFlags;
     SandboxFlags inherited_sandbox_flags = SandboxFlags::kNone;
     // For non-CURRENT_TAB dispositions params.frame_tree_node_id refers to
@@ -1541,8 +1550,31 @@ content::WebContents* WebContents::OpenURLFromTab(
         inherited_sandbox_flags = flags;
       }
     }
+    // The new window's first navigation keeps the initiator's identity
+    // (origin, frame, site instance, user gesture) instead of being re-issued
+    // as a browser-initiated load, so Sec-Fetch-Site / SameSite, external
+    // protocol attribution and navigation events describe who asked for it.
+    auto navigate = base::BindRepeating(
+        [](const content::OpenURLParams& params, content::WebContents* target) {
+          if (!target)
+            return;
+          content::NavigationController::LoadURLParams load_params(params);
+          // The initiator may live in a different session than the window the
+          // app created; a SiteInstance cannot cross browser contexts.
+          if (load_params.source_site_instance &&
+              load_params.source_site_instance->GetBrowserContext() !=
+                  target->GetBrowserContext()) {
+            load_params.source_site_instance = nullptr;
+          }
+          load_params.frame_tree_node_id = {};
+          load_params.override_user_agent =
+              content::NavigationController::UA_OVERRIDE_INHERIT;
+          target->GetController().LoadURLWithParams(load_params);
+        },
+        params);
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags));
+         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags),
+         navigate);
     return nullptr;
   }
 
