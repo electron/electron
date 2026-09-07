@@ -93,7 +93,7 @@ The following events are available on instances of `Session`:
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added the trailing `frame` argument."
 ```
 -->
@@ -227,7 +227,7 @@ app.on('window-all-closed', function () {
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53685
     description: "Added the trailing `frame` argument."
 ```
 -->
