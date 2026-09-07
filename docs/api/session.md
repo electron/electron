@@ -149,6 +149,14 @@ initialized to support the start of the extension's background page.
 
 #### Event: 'file-system-access-restricted'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53666
+    description: "Added `details.frame` and `details.webContents`; emitted once per requesting document instead of once per path."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -156,6 +164,8 @@ Returns:
   * `origin` string - The origin that initiated access to the blocked path.
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that initiated access. May be `null` if the frame has since been destroyed.
+  * `webContents` [WebContents](web-contents.md) | null - The WebContents that contains `frame`.
 * `callback` Function
   * `action` string - The action to take as a result of the restricted path access attempt.
     * `allow` - This will allow `path` to be accessed despite restricted status.
@@ -994,7 +1004,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
     * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`.
     * `display-capture` - Request access to capture the screen, a window or a tab via the [Screen Capture API](https://developer.mozilla.org/en-US/docs/Web/API/Screen_Capture_API) (`navigator.mediaDevices.getDisplayMedia`) or via `getUserMedia` with the `chromeMediaSource` constraints described in [desktopCapturer](desktop-capturer.md). Requests for camera or microphone devices are reported as `media` instead.
-    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API). As in Chrome, a cross-origin iframe cannot ask for more access than it already has, and grants for an origin are reset shortly after its last top-level document is closed or navigated away.
     * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
     * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
     * `geolocation-approximate` - Request access to a coarse approximation of the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API).

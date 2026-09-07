@@ -23,6 +23,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
@@ -1819,6 +1820,174 @@ describe('chromium features', () => {
         w.webContents.focus();
         w.webContents.paste();
       });
+    });
+  });
+
+  describe('File System Access permission scope', () => {
+    // Pages obtain FileSystemHandles by pasting a file:// URI, the same way the
+    // tests above do, so no picker is needed.
+    const handlePage = `<!doctype html><body contenteditable tabindex="0">fsa<script>
+      window.gotHandle = false; window.handle = null; window.handleError = null;
+      document.onpaste = (event) => {
+        event.preventDefault();
+        event.clipboardData.items[0].getAsFileSystemHandle().then(
+          (h) => { window.handle = h; window.gotHandle = true; },
+          (e) => { window.handleError = String(e); window.gotHandle = true; });
+      };
+    </script></body>`;
+    let serverA: http.Server;
+    let serverB: http.Server;
+    let urlA: string;
+    let urlB: string;
+    before(async () => {
+      const handler = (_req: http.IncomingMessage, res: http.ServerResponse) => {
+        res.setHeader('content-type', 'text/html');
+        res.end(handlePage);
+      };
+      serverA = http.createServer(handler);
+      serverB = http.createServer(handler);
+      urlA = (await listen(serverA)).url;
+      urlB = (await listen(serverB)).url;
+    });
+    after(() => {
+      serverA.close();
+      serverB.close();
+    });
+    afterEach(closeAllWindows);
+
+    const pasteHandle = async (w: BrowserWindow, frame: Electron.WebFrameMain, dirOrFile: string) => {
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(dirOrFile).href })]);
+      if (!w.webContents.isFocused()) {
+        const focused = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focused;
+      }
+      await frame.executeJavaScript('window.focus(); document.body.focus(); window.gotHandle = false; true');
+      w.webContents.paste();
+    };
+    const waitForHandle = (frame: Electron.WebFrameMain) =>
+      waitUntil(async () => (await frame.executeJavaScript('window.gotHandle')) === true);
+
+    it('does not let a cross-origin iframe request more access than it was granted', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlB)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const requests: any[] = [];
+      ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        if (permission === 'fileSystem') requests.push(details);
+        callback(true);
+      });
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      await pasteHandle(w, iframe, testFile);
+      await waitForHandle(iframe);
+      expect(await iframe.executeJavaScript('window.handle && window.handle.kind')).to.equal('file');
+      // Matches Chrome: a third-party iframe cannot ask for more than it has.
+      const status = await iframe.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' }).catch((e) => e.name)",
+        true
+      );
+      expect(status).to.equal('SecurityError');
+      expect(requests).to.be.empty();
+
+      // The same request from the top-level document reaches the handler.
+      await pasteHandle(w, w.webContents.mainFrame, testFile);
+      await waitForHandle(w.webContents.mainFrame);
+      const topStatus = await w.webContents.mainFrame.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' })",
+        true
+      );
+      expect(topStatus).to.equal('granted');
+      expect(requests).to.have.lengthOf(1);
+      expect(requests[0].isMainFrame).to.equal(true);
+    });
+
+    it("asks about a restricted path once per requester, with that requester's identity", async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const events: { details: any; callback: (action: 'allow' | 'deny' | 'tryAgain') => void }[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        events.push({ details, callback });
+      });
+      const wa = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wa.loadURL(urlA);
+      const wb = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wb.loadURL(urlB);
+      const restricted = os.homedir();
+
+      await pasteHandle(wa, wa.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 1);
+      await pasteHandle(wb, wb.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 2);
+
+      expect(events[0].details.origin).to.equal(`${urlA}/`);
+      expect(events[0].details.webContents).to.equal(wa.webContents);
+      expect(events[0].details.frame).to.equal(wa.webContents.mainFrame);
+      expect(events[1].details.origin).to.equal(`${urlB}/`);
+      expect(events[1].details.webContents).to.equal(wb.webContents);
+      expect(events[1].details.frame).to.equal(wb.webContents.mainFrame);
+
+      // Answers are independent.
+      events[1].callback('allow');
+      events[0].callback('deny');
+      await waitForHandle(wb.webContents.mainFrame);
+      await waitForHandle(wa.webContents.mainFrame);
+      expect(await wb.webContents.executeJavaScript('window.handle && window.handle.kind')).to.equal('directory');
+      expect(await wa.webContents.executeJavaScript('window.handle')).to.equal(null);
+    });
+
+    it('revokes active grants once no top-level document of the origin remains', async function () {
+      this.timeout(60000);
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      // A top-level document of origin A obtains read/write access to the file.
+      const top = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await top.loadURL(urlA);
+      await pasteHandle(top, top.webContents.mainFrame, testFile);
+      await waitForHandle(top.webContents.mainFrame);
+      expect(
+        await top.webContents.mainFrame.executeJavaScript(
+          "window.handle.requestPermission({ mode: 'readwrite' })",
+          true
+        )
+      ).to.equal('granted');
+
+      // An origin-A iframe inside an origin-B page holds a handle to the same
+      // file and shares that grant.
+      const host = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await host.loadURL(urlB);
+      await host.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlA)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = host.webContents.mainFrame.frames[0];
+      await pasteHandle(host, iframe, testFile);
+      await waitForHandle(iframe);
+      const query = () => iframe.executeJavaScript("window.handle.queryPermission({ mode: 'readwrite' })");
+      expect(await query()).to.equal('granted');
+
+      // While another top-level origin-A document exists the grant survives the
+      // first one closing...
+      const otherTop = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await otherTop.loadURL(urlA);
+      top.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('granted');
+
+      // ...and once the last one is gone it is revoked, so the embedded frame
+      // can no longer write without the app being asked again.
+      otherTop.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('prompt');
     });
   });
 
