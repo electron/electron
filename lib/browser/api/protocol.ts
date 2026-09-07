@@ -165,6 +165,9 @@ Protocol.prototype.handle = function (
         body,
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
+      // The origin that issued the request, if web content did; not something
+      // a standard Request can carry, so it is attached as an own property.
+      if (preq.initiator !== undefined) (req as any).initiator = preq.initiator;
       const res = await handler(req);
       if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });

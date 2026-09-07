@@ -118,6 +118,11 @@ void ToDictionary(gin_helper::Dictionary* details,
   details->Set("resourceType", info->web_request_type);
   if (!info->response_ip.empty())
     details->Set("ip", info->response_ip);
+  // The origin that issued the request (Chrome's webRequest `initiator`). It
+  // is kept from the original request across redirects and, unlike
+  // `referrer`, is not under the requesting document's control.
+  if (info->initiator)
+    details->Set("initiator", info->initiator->Serialize());
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
     details->Set("statusLine", info->response_headers->GetStatusLine());

@@ -699,6 +699,10 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
       .Set("headers", val.headers);
   if (val.request_body)
     builder.Set("uploadData", ConvertToV8(isolate, *val.request_body));
+  // The origin that issued the request; absent for requests the browser
+  // started itself. Unlike `referrer` this is not controlled by the page.
+  if (val.request_initiator)
+    builder.Set("initiator", val.request_initiator->Serialize());
   return builder.Build();
 }
 

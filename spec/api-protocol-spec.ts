@@ -1493,6 +1493,29 @@ describe('protocol module', () => {
   describe('handle', () => {
     afterEach(closeAllWindows);
 
+    it('reports the origin that issued the request', async () => {
+      // http-like is registered as standard + fetch-enabled in spec/index.js.
+      const initiators: Record<string, string | undefined> = {};
+      protocol.handle('http-like', (req) => {
+        initiators[new URL(req.url).pathname] = (req as any).initiator;
+        return new Response('<p>hi</p>', { headers: { 'content-type': 'text/html' } });
+      });
+      defer(() => {
+        protocol.unhandle('http-like');
+      });
+      const w = new BrowserWindow({ show: false });
+      // Browser-initiated navigation: no initiator.
+      await w.loadURL('http-like://page/');
+      expect(initiators).to.have.property('/');
+      expect(initiators['/']).to.equal(undefined);
+      // A fetch from that document carries the document's origin, even with
+      // no referrer.
+      await w.webContents.executeJavaScript(
+        "fetch('http-like://page/data', { referrerPolicy: 'no-referrer' }).then(r => r.text())"
+      );
+      expect(initiators['/data']).to.equal('http-like://page');
+    });
+
     it('receives requests to a custom scheme', async () => {
       protocol.handle('test-scheme', (req) => new Response('hello ' + req.url));
       defer(() => {

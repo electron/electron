@@ -674,6 +674,67 @@ describe('session module', () => {
 
   describe('will-download event', () => {
     afterEach(closeAllWindows);
+    it('identifies the frame and origin that started the download', async () => {
+      const mockFile = Buffer.alloc(16);
+      const downloadServer = http.createServer((req, res) => {
+        if (req.url === '/file') {
+          res.writeHead(200, {
+            'Content-Length': mockFile.length,
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="f.bin"'
+          });
+          res.end(mockFile);
+          return;
+        }
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<a id="dl" href="/file" download>dl</a>');
+      });
+      const pageServer = http.createServer((_req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<p>top</p>');
+      });
+      const downloadOrigin = (await listen(downloadServer)).url;
+      const topUrl = (await listen(pageServer)).url;
+      defer(() => {
+        downloadServer.close();
+        pageServer.close();
+      });
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(topUrl);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(downloadOrigin)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const willDownload = new Promise<{ item: Electron.DownloadItem; wc: Electron.WebContents; frame: any }>(
+        (resolve) => {
+          w.webContents.session.once('will-download', (e, item, wc, frame) => {
+            e.preventDefault();
+            resolve({ item, wc, frame });
+          });
+        }
+      );
+      await iframe.executeJavaScript("document.getElementById('dl').click()", true);
+      const { item, wc, frame } = await willDownload;
+      expect(wc).to.equal(w.webContents);
+      expect(frame).to.equal(iframe);
+      expect(item.getInitiatorOrigin()).to.equal(downloadOrigin);
+
+      // A download the app starts itself has no initiating origin or frame.
+      const own = new Promise<{ item: Electron.DownloadItem; frame: any }>((resolve) => {
+        w.webContents.session.once('will-download', (e, item, _wc, frame) => {
+          e.preventDefault();
+          resolve({ item, frame });
+        });
+      });
+      w.webContents.session.downloadURL(`${downloadOrigin}/file`);
+      const ownResult = await own;
+      expect(ownResult.item.getInitiatorOrigin()).to.equal('');
+      expect(ownResult.frame).to.equal(null);
+    });
+
     it('can cancel default download behavior', async () => {
       const w = new BrowserWindow({ show: false });
       const mockFile = Buffer.alloc(1024);
