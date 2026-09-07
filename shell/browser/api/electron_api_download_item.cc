@@ -16,6 +16,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "url/gurl.h"
+#include "url/origin.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
@@ -209,6 +210,14 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
+std::string DownloadItem::GetInitiatorOrigin() const {
+  if (!CheckAlive())
+    return {};
+  const std::optional<url::Origin>& initiator =
+      download_item_->GetRequestInitiator();
+  return initiator ? initiator->Serialize() : std::string();
+}
+
 v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
     return {};
@@ -283,6 +292,7 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getContentDisposition", &DownloadItem::GetContentDisposition)
       .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getURLChain", &DownloadItem::GetURLChain)
+      .SetMethod("getInitiatorOrigin", &DownloadItem::GetInitiatorOrigin)
       .SetMethod("getState", &DownloadItem::GetState)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
       .SetMethod("getSavePath", &DownloadItem::GetSavePath)

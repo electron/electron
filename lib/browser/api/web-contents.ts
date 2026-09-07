@@ -117,13 +117,17 @@ WebContents.prototype._sendInternal = function (channel, ...args) {
 };
 
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
+  let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {
-    return webFrameMain.fromId(contents.mainFrame.processId, frame);
+    webFrame = webFrameMain.fromId(contents.mainFrame.processId, frame);
   } else if (Array.isArray(frame) && frame.length === 2 && frame.every((value) => typeof value === 'number')) {
-    return webFrameMain.fromId(frame[0], frame[1]);
+    webFrame = webFrameMain.fromId(frame[0], frame[1]);
   } else {
     throw new Error('Missing required frame argument (must be number or [processId, frameId])');
   }
+  // Frame ids are global; only address frames that belong to |contents|.
+  if (webFrame && webFrame.top !== contents.mainFrame) return undefined;
+  return webFrame;
 }
 
 WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
@@ -603,45 +607,49 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags) => {
-      const postBody = postData
-        ? {
-            data: postData,
-            ...parseContentTypeFormat(postData)
-          }
-        : undefined;
-      const details: Electron.HandlerDetails = {
-        url,
-        frameName,
-        features: rawFeatures,
-        referrer,
-        postBody,
-        disposition
-      };
-
-      let result: ReturnType<typeof this._callWindowOpenHandler>;
-      try {
-        result = this._callWindowOpenHandler(event, details);
-      } catch (err) {
-        event.preventDefault();
-        throw err;
-      }
-
-      const options = result.browserWindowConstructorOptions;
-      if (!event.defaultPrevented) {
-        openGuestWindow({
-          embedder: this,
-          disposition,
+    this.on(
+      '-new-window',
+      (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags, navigate) => {
+        const postBody = postData
+          ? {
+              data: postData,
+              ...parseContentTypeFormat(postData)
+            }
+          : undefined;
+        const details: Electron.HandlerDetails = {
+          url,
+          frameName,
+          features: rawFeatures,
           referrer,
-          postData,
-          overrideBrowserWindowOptions: options || {},
-          windowOpenArgs: details,
-          outlivesOpener: result.outlivesOpener,
-          createWindow: result.createWindow,
-          inheritedSandboxFlags: sandboxFlags
-        });
+          postBody,
+          disposition
+        };
+
+        let result: ReturnType<typeof this._callWindowOpenHandler>;
+        try {
+          result = this._callWindowOpenHandler(event, details);
+        } catch (err) {
+          event.preventDefault();
+          throw err;
+        }
+
+        const options = result.browserWindowConstructorOptions;
+        if (!event.defaultPrevented) {
+          openGuestWindow({
+            embedder: this,
+            disposition,
+            referrer,
+            postData,
+            overrideBrowserWindowOptions: options || {},
+            windowOpenArgs: details,
+            outlivesOpener: result.outlivesOpener,
+            createWindow: result.createWindow,
+            inheritedSandboxFlags: sandboxFlags,
+            navigate
+          });
+        }
       }
-    });
+    );
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
