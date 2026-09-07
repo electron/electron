@@ -350,13 +350,24 @@ It will always return `granted` for `screen` and for all media types on older ve
 
 ### `systemPreferences.askForMediaAccess(mediaType)` _macOS_
 
-* `mediaType` string - the type of media being requested; can be `microphone`, `camera`.
+* `mediaType` string - the type of media being requested; can be `microphone`, `camera` or `system-audio`.
 
 Returns `Promise<boolean>` - A promise that resolves with `true` if consent was granted and `false` if it was denied. If an invalid `mediaType` is passed, the promise will be rejected. If an access request was denied and later is changed through the System Preferences pane, a restart of the app will be required for the new permissions to take effect. If access has already been requested and denied, it _must_ be changed through the preference pane; an alert will not pop up and the promise will resolve with the existing access status.
 
-**Important:** In order to properly leverage this API, you [must set](https://developer.apple.com/documentation/avfoundation/cameras_and_media_capture/requesting_authorization_for_media_capture_on_macos?language=objc) the `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` strings in your app's `Info.plist` file. The values for these keys will be used to populate the permission dialogs so that the user will be properly informed as to the purpose of the permission request. See [Electron Application Distribution](../tutorial/application-distribution.md#rebranding-with-downloaded-binaries) for more information about how to set these in the context of Electron.
+**Important:** In order to properly leverage this API, you [must set](https://developer.apple.com/documentation/avfoundation/cameras_and_media_capture/requesting_authorization_for_media_capture_on_macos?language=objc) the `NSMicrophoneUsageDescription`, `NSCameraUsageDescription` and (for `system-audio`) `NSAudioCaptureUsageDescription` strings in your app's `Info.plist` file. The values for these keys will be used to populate the permission dialogs so that the user will be properly informed as to the purpose of the permission request. See [Electron Application Distribution](../tutorial/application-distribution.md#rebranding-with-downloaded-binaries) for more information about how to set these in the context of Electron.
 
-This user consent was not required until macOS 10.14 Mojave, so this method will always return `true` if your system is running 10.13 High Sierra.
+This user consent was not required until macOS 10.14 Mojave, so this method will always return `true` for `microphone` and `camera` if your system is running 10.13 High Sierra.
+
+`system-audio` covers capturing system audio output (the `loopback` / `loopbackWithMute` audio
+sources used with [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts)).
+macOS offers no API to query this permission directly, so Electron determines it the same way
+Chrome's share picker does: by briefly opening a system-audio capture stream. On macOS 14.2 and
+later that is gated on the "System Audio Recording" privacy permission, and the first call will
+show the system prompt (attributed to the app, or to the terminal/IDE when running unpackaged);
+subsequent calls resolve with the stored decision without prompting. The promise resolves with
+`false` if the stream could not be started for any reason, including on macOS versions that do not
+support system audio capture. There is no corresponding `getMediaAccessStatus` type because the
+status cannot be read without performing this check.
 
 ### `systemPreferences.getAnimationSettings()`
 

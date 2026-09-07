@@ -642,6 +642,10 @@ source_set("electron_lib") {
   }
   if (is_mac) {
     sources += filenames.lib_sources_mac
+    deps += [
+      "//media",
+      "//services/audio/public/cpp",
+    ]
   }
   if (is_posix) {
     sources += filenames.lib_sources_posix
