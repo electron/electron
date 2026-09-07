@@ -70,8 +70,9 @@ void UsbChooserController::OnDeviceAdded(
     devices_.push_back(device_info.Clone());
     gin::WeakCell<api::Session>* session = GetSession();
     if (session && session->Get()) {
-      session->Get()->Emit("usb-device-added", device_info.Clone(),
-                           web_contents());
+      session->Get()->Emit(
+          "usb-device-added", device_info.Clone(), web_contents(),
+          content::RenderFrameHost::FromID(render_frame_host_id_));
     }
   }
 }
@@ -83,8 +84,9 @@ void UsbChooserController::OnDeviceRemoved(
   });
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
-    session->Get()->Emit("usb-device-removed", device_info.Clone(),
-                         web_contents());
+    session->Get()->Emit(
+        "usb-device-removed", device_info.Clone(), web_contents(),
+        content::RenderFrameHost::FromID(render_frame_host_id_));
   }
 }
 
