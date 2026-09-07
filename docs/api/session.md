@@ -149,6 +149,14 @@ initialized to support the start of the extension's background page.
 
 #### Event: 'file-system-access-restricted'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53666
+    description: "Added `details.frame` and `details.webContents`; emitted once per requesting document instead of once per path."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -156,6 +164,8 @@ Returns:
   * `origin` string - The origin that initiated access to the blocked path.
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that initiated access. May be `null` if the frame has since been destroyed.
+  * `webContents` [WebContents](web-contents.md) | null - The WebContents that contains `frame`.
 * `callback` Function
   * `action` string - The action to take as a result of the restricted path access attempt.
     * `allow` - This will allow `path` to be accessed despite restricted status.
@@ -939,7 +949,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request.
-    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
+    * `fileSystem` - Request access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API). As in Chrome, a cross-origin iframe cannot ask for more access than it already has, and grants for an origin are reset shortly after its last top-level document is closed or navigated away.
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
   * `details` [PermissionRequest](structures/permission-request.md)  | [FilesystemPermissionRequest](structures/filesystem-permission-request.md) | [MediaAccessPermissionRequest](structures/media-access-permission-request.md) | [OpenExternalPermissionRequest](structures/open-external-permission-request.md) - Additional information about the permission being requested.
