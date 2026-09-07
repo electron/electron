@@ -881,11 +881,11 @@ Emitted when there is a new context menu that needs to be handled.
 <!--
 ```YAML history
 changes:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53661
     description: "Added the trailing `frame` argument; no longer auto-selects a device when the event is not handled."
     breaking-changes-header: behavior-changed-select-bluetooth-device-no-longer-auto-selects-a-device
 deprecated:
-  - pr-url: https://github.com/electron/electron/pull/00000
+  - pr-url: https://github.com/electron/electron/pull/53661
     breaking-changes-header: deprecated-select-bluetooth-device-on-webcontents
 ```
 -->
