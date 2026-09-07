@@ -2198,6 +2198,61 @@ describe('session module', () => {
           expect(captured!.details.isMainFrame).to.be.false();
           expect(captured!.details.requestingUrl).to.equal(iframeUrl);
           expect(captured!.details.securityOrigin).to.equal(iframeUrl);
+          expect(captured!.details.frame).to.equal(frame);
+        } finally {
+          ses.protocol.uninterceptProtocol('https');
+          ses.setPermissionCheckHandler(null);
+        }
+      });
+    }
+
+    for (const [permission, api] of [
+      ['hid', 'navigator.hid.requestDevice({ filters: [] })'],
+      ['usb', 'navigator.usb.requestDevice({ filters: [] })']
+    ] as const) {
+      it(`attributes ${permission} checks from an opaque-origin sandboxed subFrame to that frame`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            partition: `very-temp-permission-handler-opaque-${permission}`
+          }
+        });
+        const ses = w.webContents.session;
+        const iframeUrl = 'https://myfakesite/';
+        let captured: { origin: string; webContents: Electron.WebContents | null; details: any } | undefined;
+
+        ses.protocol.interceptStringProtocol('https', (req, cb) => {
+          cb('<html><body>iframe</body></html>');
+        });
+        ses.setPermissionCheckHandler((wc, perm, requestingOrigin, details) => {
+          if (perm === permission) captured = { origin: requestingOrigin, webContents: wc, details };
+          return false;
+        });
+
+        try {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`
+            var iframe = document.createElement('iframe');
+            iframe.src = '${iframeUrl}';
+            iframe.allow = '${permission}';
+            iframe.sandbox = 'allow-scripts';
+            document.body.appendChild(iframe);
+            null;
+          `);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+          expect(frame.origin).to.equal('null');
+          await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
+
+          expect(captured).to.not.be.undefined();
+          // An opaque origin has no URL form; the frame identifies the requester.
+          expect(captured!.origin).to.equal('');
+          expect(captured!.webContents).to.equal(w.webContents);
+          expect(captured!.details.isMainFrame).to.be.false();
+          expect(captured!.details.requestingUrl).to.equal(iframeUrl);
+          expect(captured!.details.frame).to.equal(frame);
+          expect(captured!.details.frame.origin).to.equal('null');
+          expect(captured!.details.frame.top).to.equal(w.webContents.mainFrame);
         } finally {
           ses.protocol.uninterceptProtocol('https');
           ses.setPermissionCheckHandler(null);
