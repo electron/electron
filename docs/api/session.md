@@ -397,6 +397,15 @@ specified device.
 
 #### Event: 'hid-device-revoked'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -410,6 +419,15 @@ to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
 #### Event: 'select-serial-port'
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
 
 Returns:
 
@@ -482,6 +500,15 @@ app.whenReady().then(() => {
 
 #### Event: 'serial-port-added'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -496,6 +523,15 @@ use when using a UI to ask users to pick a port so that the UI can be updated
 with the newly added port.
 
 #### Event: 'serial-port-removed'
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
 
 Returns:
 
@@ -627,6 +663,15 @@ app.whenReady().then(() => {
 
 #### Event: 'usb-device-added'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -642,6 +687,15 @@ with the newly added device.
 
 #### Event: 'usb-device-removed'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -656,6 +710,15 @@ a UI to ask users to pick a device so that the UI can be updated to remove the
 specified device.
 
 #### Event: 'usb-device-revoked'
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
 
 Returns:
 
@@ -1120,6 +1183,15 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
 
 #### `ses.setPermissionCheckHandler(handler)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame` and `details.embeddingOrigin`; denying `hid`/`usb`/`serial` also blocks granted devices."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 * `handler` Function\<boolean> | null
   * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking, and `embeddingOrigin` for the top-level document.
   * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
@@ -1284,6 +1356,15 @@ Passing `null` instead of a function resets the handler to its default state.
 
 #### `ses.setDevicePermissionHandler(handler)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Consulted for chooser-selected devices too; added `details.frame` and `details.selected`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 * `handler` Function\<boolean> | null
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
@@ -1366,6 +1447,15 @@ app.whenReady().then(() => {
 ```
 
 #### `ses.setUSBProtectedClassesHandler(handler)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "The handler receives `details.origin` and `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
 
 * `handler` Function\<string[]> | null
   * `details` Object
