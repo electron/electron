@@ -31,7 +31,8 @@ export function openGuestWindow({
   windowOpenArgs,
   outlivesOpener,
   createWindow,
-  inheritedSandboxFlags
+  inheritedSandboxFlags,
+  navigate
 }: {
   embedder: WebContents;
   guest?: WebContents;
@@ -43,6 +44,9 @@ export function openGuestWindow({
   outlivesOpener: boolean;
   createWindow?: Electron.CreateWindowFunction;
   inheritedSandboxFlags?: number;
+  // For windows opened from a link (OpenURLFromTab): starts the navigation in
+  // the new webContents with the initiating frame's identity preserved.
+  navigate?: (webContents: WebContents) => void;
 }): void {
   const { url, frameName, features } = windowOpenArgs;
   const { options: parsedOptions } = parseFeatures(features);
@@ -94,13 +98,17 @@ export function openGuestWindow({
     // When we open a new window from a link (via OpenURLFromTab),
     // the browser process is responsible for initiating navigation
     // in the new window.
-    window.loadURL(url, {
-      httpReferrer: referrer,
-      ...(postData && {
-        postData,
-        extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
-      })
-    });
+    if (navigate) {
+      navigate(window.webContents);
+    } else {
+      window.loadURL(url, {
+        httpReferrer: referrer,
+        ...(postData && {
+          postData,
+          extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
+        })
+      });
+    }
   }
 
   handleWindowLifecycleEvents({ embedder, guest: window.webContents, outlivesOpener });
