@@ -1044,7 +1044,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
         a string is specified, can be `loopback` or `loopbackWithMute`.
         Specifying a loopback device will capture system audio, and is
         currently only supported on Windows. If a WebFrameMain is specified,
-        will capture audio from that frame.
+        will capture audio from the `webContents` that contains that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
          to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
@@ -1077,14 +1077,22 @@ session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
-will capture the video or audio stream from that frame.
+captures the whole `webContents` that contains that frame (the tab), not just
+the frame: `request.frame` from an `<iframe>` therefore grants that iframe a
+capture of the page that embeds it. Check `request.frame` before using it this
+way, and note that the callback throws if the frame has been destroyed by the
+time it is called.
 
 ```js
 const { session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  // Allow the tab to capture itself.
-  callback({ video: request.frame })
+  // Allow a top-level page to capture its own tab.
+  if (request.frame && request.frame === request.frame.top) {
+    callback({ video: request.frame })
+  } else {
+    callback(null)
+  }
 })
 ```
 
