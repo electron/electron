@@ -876,7 +876,23 @@ Returns:
 
 Emitted when there is a new context menu that needs to be handled.
 
-#### Event: 'select-bluetooth-device'
+#### Event: 'select-bluetooth-device' _Deprecated_
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/00000
+    description: "Added the trailing `frame` argument; no longer auto-selects a device when the event is not handled."
+    breaking-changes-header: behavior-changed-select-bluetooth-device-no-longer-auto-selects-a-device
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/00000
+    breaking-changes-header: deprecated-select-bluetooth-device-on-webcontents
+```
+-->
+
+**Deprecated:** Use the [`select-bluetooth-device`](session.md#event-select-bluetooth-device)
+and [`bluetooth-device-added`](session.md#event-bluetooth-device-added) events on
+`session` instead.
 
 Returns:
 
@@ -884,16 +900,20 @@ Returns:
 * `devices` [BluetoothDevice[]](structures/bluetooth-device.md)
 * `callback` Function
   * `deviceId` string
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `navigator.bluetooth.requestDevice()`. `null` if the frame has gone away.
 
 Emitted when a bluetooth device needs to be selected when a call to
-`navigator.bluetooth.requestDevice` is made. `callback` should be called with
-the `deviceId` of the device to be selected.  Passing an empty string to
-`callback` will cancel the request.
+`navigator.bluetooth.requestDevice` is made. Call `event.preventDefault()` and
+then `callback` with the `deviceId` of the device to be selected. Passing an
+empty string to `callback` will cancel the request.
 
-If no event listener is added for this event, all bluetooth requests will be cancelled.
-
-If `event.preventDefault` is not called when handling this event, the first available
-device will be automatically selected.
+If there is no listener for this event (or the session event), the request is
+cancelled immediately. If there are listeners but none calls
+`event.preventDefault()`, the request is cancelled once device discovery
+finishes; Electron does not pick a device on the app's behalf.
+The `bluetooth` check in [`ses.setPermissionCheckHandler`](session.md#sessetpermissioncheckhandlerhandler)
+runs for the requesting frame before this event; returning `false` there makes
+Web Bluetooth report as unavailable to that frame.
 
 Due to the nature of bluetooth, scanning for devices when
 `navigator.bluetooth.requestDevice` is called may take time and will cause

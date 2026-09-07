@@ -13,22 +13,28 @@ function createWindow () {
     }
   })
 
-  mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  const pickTestDevice = (device) => {
+    if (selectBluetoothCallback && device.deviceName === 'test') {
+      selectBluetoothCallback(device.deviceId)
+      selectBluetoothCallback = null
+    }
+  }
+
+  mainWindow.webContents.session.on('select-bluetooth-device', (event, details, callback) => {
     event.preventDefault()
     selectBluetoothCallback = callback
-    const result = deviceList.find((device) => {
-      return device.deviceName === 'test'
-    })
-    if (result) {
-      callback(result.deviceId)
-    } else {
-      // The device wasn't found so we need to either wait longer (eg until the
-      // device is turned on) or until the user cancels the request
-    }
+    // Devices already discovered; more arrive through bluetooth-device-added
+    // until the callback is called (or the user cancels the request).
+    details.deviceList.forEach(pickTestDevice)
+  })
+
+  mainWindow.webContents.session.on('bluetooth-device-added', (event, details) => {
+    pickTestDevice(details.device)
   })
 
   ipcMain.on('cancel-bluetooth-request', (event) => {
-    selectBluetoothCallback('')
+    if (selectBluetoothCallback) selectBluetoothCallback('')
+    selectBluetoothCallback = null
   })
 
   // Listen for a message from the renderer to get the response for the Bluetooth pairing.

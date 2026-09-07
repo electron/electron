@@ -158,6 +158,10 @@ WebContents.prototype._callWindowOpenHandler = function (
 
 // Deprecation warnings for navigation related APIs.
 const canGoBackDeprecated = deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
+const selectBluetoothDeviceDeprecated = deprecate.warnOnce(
+  "webContents.on('select-bluetooth-device')",
+  "session.on('select-bluetooth-device')"
+);
 WebContents.prototype.canGoBack = function () {
   canGoBackDeprecated();
   return this._canGoBack();
@@ -496,6 +500,7 @@ WebContents.prototype._init = function () {
       if (listener.length > 1) consoleMessageDeprecated();
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
+    if (eventName === 'select-bluetooth-device') selectBluetoothDeviceDeprecated();
   });
   this.on('removeListener' as any, (eventName: string | symbol) => {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {

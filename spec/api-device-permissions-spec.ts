@@ -95,7 +95,7 @@ describe('device permission attribution (hid / usb / serial)', () => {
       } else {
         const sandbox = u.searchParams.get('sandbox');
         res.end(
-          `<!doctype html><iframe allow="hid; usb; serial" ${sandbox ? `sandbox="${sandbox}"` : ''} src="${urlB}/leaf"></iframe>`
+          `<!doctype html><iframe allow="hid; usb; serial; bluetooth" ${sandbox ? `sandbox="${sandbox}"` : ''} src="${urlB}/leaf"></iframe>`
         );
       }
     };
@@ -126,7 +126,11 @@ describe('device permission attribution (hid / usb / serial)', () => {
 
   type Topology = 'main frame' | 'cross-origin iframe' | 'sandboxed iframe';
   async function open(topology: Topology) {
-    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    // Web Bluetooth is behind a Blink feature on Linux.
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: { session: ses, enableBlinkFeatures: 'WebBluetooth' }
+    });
     if (topology === 'main frame') {
       await w.loadURL(`${urlA}/leaf`);
       return { w, frame: w.webContents.mainFrame };
@@ -402,6 +406,128 @@ describe('device permission attribution (hid / usb / serial)', () => {
       expect(await run(frame, 'return window.p.connected')).to.equal(false);
       testing.setFakeSerialPortConnected(ses, token, true);
       await waitUntil(async () => (await run(frame, 'return window.events.join()')) === 'disconnect,connect');
+    });
+  });
+  describe('bluetooth', () => {
+    const address = 'AA:BB:CC:DD:EE:01';
+    // content drops an override adapter once the last Web Bluetooth service
+    // using it goes away (i.e. when the previous test's window closes), so
+    // install a fresh one for every test.
+    beforeEach(() => {
+      testing.enableFakeBluetooth('powered-on');
+      testing.addFakeBluetoothPeripheral(address, 'Fake Thermometer');
+    });
+    afterEach(() => testing.disableFakeBluetooth());
+
+    const request =
+      "return await navigator.bluetooth.requestDevice({ acceptAllDevices: true }).then(d => 'device:' + d.name, e => 'error:' + e.name)";
+
+    for (const topology of ['main frame', 'cross-origin iframe', 'sandboxed iframe'] as Topology[]) {
+      it(`attributes the permission check and chooser to the requesting ${topology}`, async () => {
+        const { w, frame } = await open(topology);
+        const checks: any[] = [];
+        ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+          if (permission === 'bluetooth') checks.push({ wc, requestingOrigin, details });
+          return true;
+        });
+        const selects: any[] = [];
+        w.webContents.on('select-bluetooth-device', (event, devices, callback, chooserFrame) => {
+          event.preventDefault();
+          selects.push({ devices, frame: chooserFrame });
+          const device = devices.find((d) => d.deviceId === address);
+          if (device) callback(device.deviceId);
+        });
+        expect(await run(frame, request)).to.equal('device:Fake Thermometer');
+        expect(checks).to.not.be.empty();
+        for (const c of checks) {
+          expect(c.wc).to.equal(w.webContents);
+          expect(c.requestingOrigin).to.equal(frame.origin === 'null' ? '' : `${frame.origin}/`);
+          expect(c.details.requestingUrl).to.equal(frame.url);
+          expect(c.details.isMainFrame).to.equal(frame === w.webContents.mainFrame);
+          expect(c.details.frame).to.equal(frame);
+        }
+        expect(selects).to.not.be.empty();
+        for (const sel of selects) expect(sel.frame).to.equal(frame);
+        expect(selects[selects.length - 1].devices.map((d: any) => d.deviceId)).to.include(address);
+      });
+    }
+
+    it('emits select-bluetooth-device and bluetooth-device-added on the session with the requesting frame', async () => {
+      const { frame } = await open('cross-origin iframe');
+      const selects: any[] = [];
+      const added: any[] = [];
+      let pick: ((id: string) => void) | undefined;
+      ses.on('select-bluetooth-device' as any, (event: any, details: any, callback: any) => {
+        event.preventDefault();
+        selects.push(details);
+        pick = callback;
+      });
+      ses.on('bluetooth-device-added' as any, (_event: any, details: any) => added.push(details));
+      const result = run(frame, request);
+      await waitUntil(() => !!pick && (selects[0].deviceList.length > 0 || added.length > 0));
+      expect(selects).to.have.lengthOf(1);
+      expect(selects[0].frame).to.equal(frame);
+      const ids = [...selects[0].deviceList, ...added.map((a) => a.device)].map((d: any) => d.deviceId);
+      expect(ids).to.include(address);
+      for (const a of added) expect(a.frame).to.equal(frame);
+      pick!(address);
+      expect(await result).to.equal('device:Fake Thermometer');
+      ses.removeAllListeners('select-bluetooth-device');
+      ses.removeAllListeners('bluetooth-device-added');
+    });
+
+    it('accepts a synchronous answer on the first emission', async () => {
+      // The first emission happens while content is still starting discovery;
+      // answering inside it must not re-enter content synchronously.
+      const { frame } = await open('main frame');
+      ses.on('select-bluetooth-device' as any, (event: any, _details: any, callback: any) => {
+        event.preventDefault();
+        callback(address);
+      });
+      expect(await run(frame, request)).to.equal('device:Fake Thermometer');
+      ses.removeAllListeners('select-bluetooth-device');
+    });
+
+    it('the session listener alone keeps the request open', async () => {
+      const { frame } = await open('main frame');
+      let pick: ((id: string) => void) | undefined;
+      ses.on('select-bluetooth-device' as any, (event: any, _details: any, callback: any) => {
+        event.preventDefault();
+        pick = callback;
+      });
+      const result = run(frame, request);
+      await waitUntil(() => !!pick);
+      await setTimeout(200);
+      pick!('');
+      expect(await result).to.equal('error:NotFoundError');
+      ses.removeAllListeners('select-bluetooth-device');
+    });
+
+    it('cancels the request when no select-bluetooth-device listener answers', async () => {
+      const { frame } = await open('main frame');
+      expect(await run(frame, request)).to.equal('error:NotFoundError');
+    });
+
+    it('cancels the request when a listener does not call preventDefault', async () => {
+      const { w, frame } = await open('main frame');
+      let emitted = 0;
+      w.webContents.on('select-bluetooth-device', () => {
+        emitted++;
+      });
+      expect(await run(frame, request)).to.equal('error:NotFoundError');
+      expect(emitted).to.be.greaterThan(0);
+    });
+
+    it('does not open a chooser when the permission check denies bluetooth', async () => {
+      const { w, frame } = await open('cross-origin iframe');
+      ses.setPermissionCheckHandler((_wc, permission) => permission !== 'bluetooth');
+      let emitted = 0;
+      w.webContents.on('select-bluetooth-device', () => {
+        emitted++;
+      });
+      expect(await run(frame, request)).to.equal('error:NotFoundError');
+      expect(await run(frame, 'return await navigator.bluetooth.getAvailability()')).to.equal(false);
+      expect(emitted).to.equal(0);
     });
   });
 });

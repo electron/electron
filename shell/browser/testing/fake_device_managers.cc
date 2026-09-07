@@ -8,9 +8,15 @@
 
 #include "base/containers/map_util.h"
 #include "base/files/file_path.h"
+#include "base/functional/callback_helpers.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
+#include "content/browser/bluetooth/bluetooth_adapter_factory_wrapper.h"  // nogncheck
+#include "content/browser/bluetooth/bluetooth_device_chooser_controller.h"  // nogncheck
+#include "device/bluetooth/bluetooth_adapter_factory.h"
+#include "device/bluetooth/emulation/fake_central.h"
+#include "device/bluetooth/public/mojom/emulation/fake_bluetooth.mojom.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/hid.mojom.h"
@@ -562,6 +568,73 @@ void FakeSerialPortManager::OpenPort(
       std::make_unique<Port>(port.InitWithNewPipeAndPassReceiver(),
                              std::move(client), std::move(watcher)));
   std::move(callback).Run(std::move(port));
+}
+
+// ---------------------------------------------------------- Bluetooth -----
+
+namespace {
+
+struct FakeBluetoothState {
+  std::unique_ptr<device::BluetoothAdapterFactory::GlobalOverrideValues>
+      override_values;
+  scoped_refptr<bluetooth::FakeCentral> central;
+  mojo::Remote<bluetooth::mojom::FakeCentral> remote;
+};
+
+FakeBluetoothState& BluetoothState() {
+  static base::NoDestructor<FakeBluetoothState> state;
+  return *state;
+}
+
+}  // namespace
+
+// static
+void FakeBluetooth::Enable(const std::string& state_name) {
+  Disable();
+  auto& state = BluetoothState();
+  bluetooth::mojom::CentralState central_state =
+      state_name == "absent" ? bluetooth::mojom::CentralState::ABSENT
+      : state_name == "powered-off"
+          ? bluetooth::mojom::CentralState::POWERED_OFF
+          : bluetooth::mojom::CentralState::POWERED_ON;
+  state.override_values =
+      device::BluetoothAdapterFactory::Get()->InitGlobalOverrideValues();
+  state.override_values->SetLESupported(true);
+  state.central = base::MakeRefCounted<bluetooth::FakeCentral>(
+      central_state, state.remote.BindNewPipeAndPassReceiver());
+  content::BluetoothAdapterFactoryWrapper::Get().SetBluetoothAdapterOverride(
+      state.central);
+  // Let discovery settle immediately so an unanswered chooser is observable.
+  // This is process-wide and content has no way to restore the default, so
+  // every later requestDevice() in this process also idles immediately; the
+  // only other Bluetooth spec (chromium-spec navigator.bluetooth) accepts a
+  // cancelled chooser.
+  content::BluetoothDeviceChooserController::SetTestScanDurationForTesting(
+      content::BluetoothDeviceChooserController::TestScanDurationSetting::
+          IMMEDIATE_TIMEOUT);
+}
+
+// static
+void FakeBluetooth::Disable() {
+  auto& state = BluetoothState();
+  if (!state.central)
+    return;
+  content::BluetoothAdapterFactoryWrapper::Get().SetBluetoothAdapterOverride(
+      nullptr);
+  state.remote.reset();
+  state.central.reset();
+  state.override_values.reset();
+}
+
+// static
+bool FakeBluetooth::AddPeripheral(const std::string& address,
+                                  const std::string& name) {
+  auto& state = BluetoothState();
+  if (!state.central)
+    return false;
+  state.central->SimulatePreconnectedPeripheral(address, name, {}, {},
+                                                base::DoNothing());
+  return true;
 }
 
 // -------------------------------------------------------- Registry --------
