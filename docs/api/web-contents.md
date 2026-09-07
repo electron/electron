@@ -876,7 +876,7 @@ Returns:
 
 Emitted when there is a new context menu that needs to be handled.
 
-#### Event: 'select-bluetooth-device' _Deprecated_
+#### Event: 'select-bluetooth-device'
 
 <!--
 ```YAML history
@@ -890,10 +890,6 @@ deprecated:
 ```
 -->
 
-**Deprecated:** Use the [`select-bluetooth-device`](session.md#event-select-bluetooth-device)
-and [`bluetooth-device-added`](session.md#event-bluetooth-device-added) events on
-`session` instead.
-
 Returns:
 
 * `event` Event
@@ -901,6 +897,10 @@ Returns:
 * `callback` Function
   * `deviceId` string
 * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `navigator.bluetooth.requestDevice()`. `null` if the frame has gone away.
+
+**Deprecated:** Use the [`select-bluetooth-device`](session.md#event-select-bluetooth-device)
+and [`bluetooth-device-added`](session.md#event-bluetooth-device-added) events on
+`session` instead.
 
 Emitted when a bluetooth device needs to be selected when a call to
 `navigator.bluetooth.requestDevice` is made. Call `event.preventDefault()` and
