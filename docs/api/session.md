@@ -149,6 +149,14 @@ initialized to support the start of the extension's background page.
 
 #### Event: 'file-system-access-restricted'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53666
+    description: "Added `details.frame` and `details.webContents`; emitted once per requesting document instead of once per path."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -156,6 +164,8 @@ Returns:
   * `origin` string - The origin that initiated access to the blocked path.
   * `isDirectory` boolean - Whether or not the path is a directory.
   * `path` string - The blocked path attempting to be accessed.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that initiated access. May be `null` if the frame has since been destroyed.
+  * `webContents` [WebContents](web-contents.md) | null - The WebContents that contains `frame`.
 * `callback` Function
   * `action` string - The action to take as a result of the restricted path access attempt.
     * `allow` - This will allow `path` to be accessed despite restricted status.
