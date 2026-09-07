@@ -689,10 +689,11 @@ Per [Chromium update](https://source.chromium.org/chromium/chromium/src/+/ad17e8
 
 Electron's `desktopCapturer` will create a dead audio stream if the new permission is absent however no errors or warnings will occur. This is partially a side-effect of Chromium not falling back to the older `Screen & System Audio Recording` permissions system if the new system fails.
 
-To restore previous behavior:
+To restore previous behavior (Electron 39 through 44 only; the flag was removed upstream in
+Electron 45 and no longer has any effect):
 
 ```js
-// main.js (right beneath your require/import statments)
+// main.js (right beneath your require/import statements)
 app.commandLine.appendSwitch(
   'disable-features',
   'MacCatapLoopbackAudioForScreenShare'
