@@ -2308,17 +2308,22 @@ void WebContents::MaybeSendRendererStartupData(
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
   // that will actually compile the sandbox bundle.
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   const GURL& url = navigation_handle->GetURL();
   bool main_frame = navigation_handle->IsInMainFrame();
   bool allow_subframes =
       web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  // DevTools itself, or an extension document hosted inside the DevTools
+  // front-end (a devtools_page / panel). An extension frame embedded in an
+  // ordinary page is treated like any other subframe.
   bool is_devtools_like =
-      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+      url.SchemeIs("devtools") ||
+      (url.SchemeIs("chrome-extension") && !main_frame &&
+       rfh->GetMainFrame()->GetLastCommittedURL().SchemeIs("devtools"));
   if (!main_frame && !allow_subframes && !is_devtools_like)
-    return;
-
-  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
-  if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
   mojom::RendererStartupDataPtr data;
