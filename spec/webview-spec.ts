@@ -1627,20 +1627,6 @@ describe('<webview> tag', function () {
         expect(channel).to.equal('channel');
         expect(args).to.deep.equal(['arg1', 'arg2']);
       });
-
-      it('identifies the frame in the guest that sent the message', async () => {
-        const { frameOrigin, frameUrl } = await loadWebViewAndWaitForEvent(
-          w,
-          {
-            src: `file://${fixtures}/pages/ipc-message.html`,
-            nodeintegration: 'on',
-            webpreferences: 'contextIsolation=no'
-          },
-          'ipc-message'
-        );
-        expect(frameOrigin).to.equal('file://');
-        expect(frameUrl).to.equal(url.pathToFileURL(path.join(fixtures, 'pages', 'ipc-message.html')).href);
-      });
     });
 
     describe('guest-view IPCs', () => {

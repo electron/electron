@@ -170,13 +170,8 @@ const createGuest = function (
 
   // Dispatch guest's IPC messages to embedder.
   guest.on('-ipc-message-host' as any, function (event: Electron.IpcMainEvent, channel: string, args: any[]) {
-    // Capture the sending document's identity now; the guest may navigate
-    // before the embedder handles the event.
-    const senderFrame = event.senderFrame;
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'ipc-message', {
       frameId: [event.processId, event.frameId],
-      frameOrigin: senderFrame ? senderFrame.origin : null,
-      frameUrl: senderFrame ? senderFrame.url : null,
       channel,
       args
     });
