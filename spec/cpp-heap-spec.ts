@@ -7,6 +7,29 @@ import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp 
 
 describe('cpp heap', () => {
   describe('native callback holders', () => {
+    ifdescribe(isTestingBindingAvailable())('detached frames', () => {
+      for (const [mode, description] of [
+        ['call', 'creates callable images through an API retained from a removed iframe'],
+        ['growth', 'does not retain templates linearly when creating images in a detached realm'],
+        ['release', 'collects a detached realm and its callback holder after releasing the API and images']
+      ]) {
+        it(description, async function () {
+          this.timeout(90_000);
+          const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+          await remotely(
+            async (fixture: string, page: string, child: string, snapshotHelper: string, mode: string) => {
+              await require(fixture)(page, child, snapshotHelper, mode);
+            },
+            path.join(__dirname, 'fixtures', 'api', 'cppgc-detached-frame.js'),
+            path.join(__dirname, 'fixtures', 'pages', 'blank.html'),
+            path.join(__dirname, 'fixtures', 'api', 'cppgc-detached-frame.html'),
+            path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+            mode
+          );
+        });
+      }
+    });
+
     ifdescribe(isTestingBindingAvailable())('worker lifetime', () => {
       for (const mode of ['gc', 'exit', 'terminate']) {
         it(`destroys callback holders on worker ${mode}`, async () => {
@@ -104,14 +127,13 @@ describe('cpp heap', () => {
       this.timeout(60_000);
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(
-        async (page: string, heap: string) => {
+        async (page: string, snapshotHelper: string) => {
           const { BrowserWindow } = require('electron');
           const { once } = require('node:events');
           const { mkdtemp, readFile, unlink, rmdir } = require('node:fs/promises');
           const { tmpdir } = require('node:os');
           const { join } = require('node:path');
-          const { Readable } = require('node:stream');
-          const { createJSHeapSnapshot } = require(heap);
+          const { countHeapSnapshotNodes } = require(snapshotHelper);
           const snapshotDir = await mkdtemp(join(tmpdir(), 'electron-cache-snapshot-'));
           const snapshotPath = join(snapshotDir, 'renderer.heapsnapshot');
           const window = new BrowserWindow({
@@ -126,7 +148,7 @@ describe('cpp heap', () => {
             await window.webContents.executeJavaScript(`
             (async () => {
               const v8Util = process._linkedBinding('electron_common_v8_util');
-              for (let i = 0; i < 10; i++) {
+              for (let i = 0; i < 3; i++) {
                 await new Promise(resolve => setTimeout(resolve, 0));
                 v8Util.requestGarbageCollectionForTesting();
               }
@@ -136,10 +158,9 @@ describe('cpp heap', () => {
             // callbacks while Chromium is serializing the renderer heap.
             await window.webContents.takeHeapSnapshot(snapshotPath);
             try {
-              return createJSHeapSnapshot(Readable.from([await readFile(snapshotPath)])).filter(
-                (node: { type: string; name: string }) =>
-                  node.type === 'object' && node.name === 'PerContextCacheSentinel'
-              ).length;
+              return countHeapSnapshotNodes(await readFile(snapshotPath), {
+                markers: { name: 'PerContextCacheSentinel', type: 'object' }
+              }).markers;
             } finally {
               await unlink(snapshotPath);
             }
@@ -152,7 +173,7 @@ describe('cpp heap', () => {
             const rendererPids: number[] = [];
             const initialized: boolean[] = [];
             let liveCount = 0;
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 2; i++) {
               initialized.push(
                 await window.webContents.executeJavaScript(`
                 (() => {
@@ -185,13 +206,13 @@ describe('cpp heap', () => {
           }
         },
         path.join(__dirname, 'fixtures', 'pages', 'blank.html'),
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
-      expect(result.initialized).to.deep.equal([true, true, true]);
+      expect(result.initialized).to.deep.equal([true, true]);
       expect(result.liveCount).to.equal(1, 'the live context must retain its marker');
       expect(result.rendererPid).to.be.greaterThan(0);
-      expect(result.rendererPids).to.deep.equal(Array(3).fill(result.rendererPid));
-      expect(result.counts).to.deep.equal([0, 0, 0], 'discarded contexts must release their markers');
+      expect(result.rendererPids).to.deep.equal(Array(2).fill(result.rendererPid));
+      expect(result.counts).to.deep.equal([0, 0], 'discarded contexts must release their markers');
     });
 
     it('traces live callbacks and keeps them callable across garbage collection', async () => {

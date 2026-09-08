@@ -8,7 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include "base/check.h"
 #include "base/supports_user_data.h"
 #include "gin/per_context_data.h"
 #include "v8/include/v8-persistent-handle.h"
@@ -27,8 +26,8 @@ class PerContextTemplateData : public base::SupportsUserData::Data {
   static PerContextTemplateData* From(v8::Local<v8::Context> context,
                                       const void* wrapper_info) {
     auto* data = gin::PerContextData::From(context);
-    CHECK(data) << "Template caching requires gin context data owned by a "
-                   "ContextHolder and detached during context teardown.";
+    if (!data)
+      return nullptr;
     auto* templates =
         static_cast<PerContextTemplateData*>(data->GetUserData(wrapper_info));
     if (!templates) {

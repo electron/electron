@@ -27,7 +27,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
-#include "shell/common/gin_helper/per_context_template_data.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -604,15 +603,9 @@ NativeImage* NativeImage::CreateMenuSymbol(gin::Arguments* args,
 // static
 gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  auto* data = gin_helper::PerContextTemplateData::From(
-      isolate->GetCurrentContext(), &kWrapperInfo);
-  v8::Local<v8::FunctionTemplate> constructor =
-      data->function_template.Get(isolate);
-  if (constructor.IsEmpty()) {
-    constructor = v8::FunctionTemplate::New(isolate);
-    constructor->SetClassName(gin::StringToV8(isolate, GetClassName()));
-    data->function_template.Reset(isolate, constructor);
-  }
+  // gin::WrappableBase caches the completed object template for this context.
+  auto constructor = v8::FunctionTemplate::New(isolate);
+  constructor->SetClassName(gin::StringToV8(isolate, GetClassName()));
   return gin::ObjectTemplateBuilder(isolate, GetClassName(),
                                     constructor->InstanceTemplate())
       .SetMethod("toPNG", &NativeImage::ToPNG)

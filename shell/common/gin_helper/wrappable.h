@@ -31,26 +31,33 @@ class Wrappable : public WrappableBase {
   Wrappable() = default;
 
   template <typename Sig>
-  static void SetConstructor(v8::Isolate* isolate,
-                             const base::RepeatingCallback<Sig>& constructor) {
+  static v8::Local<v8::FunctionTemplate> CreateConstructorTemplate(
+      v8::Isolate* isolate,
+      const base::RepeatingCallback<Sig>& constructor) {
     v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
         isolate, base::BindRepeating(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
-    PerContextTemplateData::From(isolate->GetCurrentContext(), &kWrapperInfo)
-        ->function_template.Reset(isolate, templ);
+    auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
+                                              &kWrapperInfo);
+    if (data)
+      data->function_template.Reset(isolate, templ);
+    return templ;
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
     auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
                                               &kWrapperInfo);
-    auto templ = data->function_template.Get(isolate);
+    v8::Local<v8::FunctionTemplate> templ;
+    if (data)
+      templ = data->function_template.Get(isolate);
     if (templ.IsEmpty()) {
       templ = v8::FunctionTemplate::New(isolate);
       templ->InstanceTemplate()->SetInternalFieldCount(1);
       T::BuildPrototype(isolate, templ);
-      data->function_template.Reset(isolate, templ);
+      if (data)
+        data->function_template.Reset(isolate, templ);
     }
     return templ;
   }
