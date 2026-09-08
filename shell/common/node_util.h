@@ -30,8 +30,8 @@ void EmitWarning(v8::Isolate* isolate,
                  std::string_view warning_msg,
                  std::string_view warning_type);
 
-// Emit a warning via node's process.emitWarning(),
-// using JavascriptEnvironment's isolate
+// Emit a warning via node's process.emitWarning() on the currently entered
+// isolate, or log it if there is no isolate / Node.js environment.
 void EmitWarning(std::string_view warning_msg, std::string_view warning_type);
 
 // Emit a deprecation warning via node's process.emitWarning()
@@ -39,8 +39,8 @@ void EmitDeprecationWarning(v8::Isolate* isolate,
                             std::string_view warning_msg,
                             std::string_view deprecation_code = "");
 
-// Emit a deprecation warning via node's process.emitWarning(),
-// using JavascriptEnvironment's isolate
+// Emit a deprecation warning via node's process.emitWarning() on the current
+// isolate, or log it if there is no isolate / Node.js environment.
 void EmitDeprecationWarning(std::string_view warning_msg,
                             std::string_view deprecation_code = "");
 
