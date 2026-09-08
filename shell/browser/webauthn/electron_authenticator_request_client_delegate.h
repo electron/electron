@@ -5,19 +5,29 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 
+#include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/dcheck_is_on.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
 #include "content/public/browser/authenticator_request_client_delegate.h"
 #include "content/public/browser/global_routing_id.h"
+#include "device/fido/cable/v2_constants.h"
 #include "device/fido/fido_discovery_base.h"
 #include "device/fido/fido_request_handler_base.h"
+#include "device/fido/public/fido_constants.h"
+
+namespace device {
+class BluetoothAdapter;
+}  // namespace device
 
 namespace content {
 class RenderFrameHost;
@@ -30,6 +40,8 @@ class WeakCell;
 }  // namespace gin
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 namespace api {
 class Session;
@@ -58,6 +70,18 @@ class ElectronAuthenticatorRequestClientDelegate
 
   // content::AuthenticatorRequestClientDelegate:
   void SetRelyingPartyId(const std::string& rp_id) override;
+  void SetUIPresentation(UIPresentation ui_presentation) override;
+  void ConfigureDiscoveries(
+      const url::Origin& origin,
+      const std::string& rp_id,
+      RequestSource request_source,
+      device::FidoRequestType request_type,
+      std::optional<device::ResidentKeyRequirement> resident_key_requirement,
+      device::UserVerificationRequirement user_verification_requirement,
+      bool cmtg_key_requested,
+      std::optional<std::string_view> user_name,
+      bool is_enclave_authenticator_available,
+      device::FidoDiscoveryFactory* fido_discovery_factory) override;
   void StartObserving(device::FidoRequestHandlerBase* request_handler) override;
   void StopObserving(device::FidoRequestHandlerBase* request_handler) override;
   void RegisterActionCallbacks(
@@ -100,17 +124,42 @@ class ElectronAuthenticatorRequestClientDelegate
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
   void CancelRequest();
+  // Emits 'webauthn-hybrid-request' on the session. Returns true iff at least
+  // one listener received the event.
+  bool EmitHybridRequestEvent(device::FidoRequestType request_type,
+                              const std::string& qr_code);
+  void OnBleStatus(device::FidoRequestHandlerBase::BleStatus status);
   void MaybeEmitSelectAuthenticatorEvent();
   void DispatchDefaultAuthenticator();
   void OnAuthenticatorSelected(gin::Arguments* args);
+  void StartOver();
+  void RestartWithBluetoothAdapter(
+      scoped_refptr<device::BluetoothAdapter> adapter);
   void EmitCollectPinEvent(const CollectPINOptions& options);
   void OnPinProvided(uint64_t prompt_id, gin::Arguments* args);
   void CancelPendingPinCollection();
 
   const content::GlobalRenderFrameHostId render_frame_host_id_;
   std::string relying_party_id_;
+  UIPresentation ui_presentation_ = UIPresentation::kModal;
   base::OnceClosure cancel_callback_;
   device::FidoRequestHandlerBase::RequestCallback request_callback_;
+  base::RepeatingCallback<void(
+      device::FidoRequestHandlerBase::BlePermissionCallback)>
+      request_ble_permission_callback_;
+
+  // Set once an app listener accepted the 'webauthn-hybrid-request' event
+  // and hybrid (caBLE v2) discovery was configured for this request. The
+  // browser context outlives the request; the frame may not, so the
+  // completion event is delivered through this handle.
+  base::WeakPtr<ElectronBrowserContext> hybrid_browser_context_;
+  // The key behind the QR code the app was given; reused if the request
+  // restarts so the code stays valid.
+  std::optional<std::array<uint8_t, device::cablev2::kQRKeySize>>
+      hybrid_qr_generator_key_;
+  base::RepeatingClosure start_over_callback_;
+  // Held across a restart; see RestartWithBluetoothAdapter().
+  scoped_refptr<device::BluetoothAdapter> bluetooth_adapter_;
 
   base::ScopedObservation<device::FidoRequestHandlerBase,
                           device::FidoRequestHandlerBase::Observer>

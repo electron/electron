@@ -634,7 +634,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
         `);
 
       // Answers each event with the next entry, recording the details it saw.
-      const answerWith = (entries: (string | undefined)[]) => {
+      const answerWith = (entries: (string | { useAnotherDevice: boolean } | undefined)[]) => {
         const seen: any[] = [];
         session.defaultSession.on('collect-webauthn-pin' as any, (event: any, details: any, callback: any) => {
           seen.push({ ...details, frame: undefined });
@@ -677,6 +677,205 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
         answerWith([undefined]);
         expect(await createCredential()).toEqual({ ok: false, name: 'NotAllowedError' });
       });
+
+      it('starts over with the same QR code when asked to use another device', async () => {
+        const codes: string[] = [];
+        session.defaultSession.on('webauthn-hybrid-request', (event, details) => {
+          codes.push(details.qrCode);
+        });
+        try {
+          const seen = answerWith([{ useAnotherDevice: true }, pin]);
+          expect(await createCredential()).toEqual({ ok: true });
+          // The restarted request keeps the QR code the app already shows; the
+          // simulated key then reports a touch and is asked for its PIN again.
+          expect(codes).toHaveLength(1);
+          expect(seen).toHaveLength(2);
+          expect(seen[1].reason).toBe('challenge');
+        } finally {
+          session.defaultSession.removeAllListeners('webauthn-hybrid-request');
+        }
+      });
+
+      it('rejects with NotAllowedError when the listener answers with another object', async () => {
+        answerWith([{ useAnotherDevice: false }]);
+        expect(await createCredential()).toEqual({ ok: false, name: 'NotAllowedError' });
+      });
     });
   }
 );
+
+// Windows 11 serves hybrid transport natively, so Electron does not offer it
+// there and the event is not emitted.
+ifdescribe(process.platform !== 'win32')("session 'webauthn-hybrid-request' event", () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  beforeAll(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    w.webContents.debugger.attach();
+    // Without enableUI, a virtual authenticator environment runs every request
+    // with UIPresentation::kDisabled, for which hybrid is never offered.
+    await w.webContents.debugger.sendCommand('WebAuthn.enable', { enableUI: true });
+    // Discoverable get() requests are cancelled without an account picker.
+    w.webContents.session.on('select-webauthn-account', (event, details, callback) => {
+      callback(details.accounts[0].credentialId);
+    });
+    // A virtual authenticator lets the ceremony complete on CI machines that
+    // have no Bluetooth adapter. The hybrid event fires before any
+    // authenticator is consulted, so it is observable either way.
+    await w.webContents.debugger.sendCommand('WebAuthn.addVirtualAuthenticator', {
+      options: {
+        protocol: 'ctap2',
+        transport: 'internal',
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true
+      }
+    });
+  });
+
+  afterEach(async () => {
+    session.defaultSession.removeAllListeners('webauthn-hybrid-request');
+    session.defaultSession.removeAllListeners('webauthn-hybrid-request-completed');
+    session.defaultSession.removeAllListeners('select-webauthn-account');
+    try {
+      w.webContents.debugger.detach();
+    } catch {}
+    await closeAllWindows();
+  });
+
+  function makeCredential() {
+    return w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            residentKey: 'required',
+            userVerification: 'required'
+          }
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+  }
+
+  function getAssertion() {
+    return w.webContents.executeJavaScript(`
+      navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32),
+          rpId: 'localhost',
+          userVerification: 'required'
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+  }
+
+  it('fires for navigator.credentials.create() with a FIDO QR code', async () => {
+    let received: any;
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      received = details;
+    });
+
+    const result = await makeCredential();
+    expect(result.ok).toBe(true);
+
+    expect(received).toBeDefined();
+    expect(received.relyingPartyId).toBe('localhost');
+    expect(received.requestType).toBe('create');
+    // caBLE v2 QR payloads are the "FIDO:/" prefix followed by base-10 digits.
+    expect(received.qrCode).toMatch(/^FIDO:\/\d+$/);
+    expect(received.frame).toBe(w.webContents.mainFrame);
+  });
+
+  it('fires for navigator.credentials.get() and emits a completion event', async () => {
+    await makeCredential();
+
+    const requests: any[] = [];
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      requests.push(details);
+    });
+    const completed = new Promise<any>((resolve) => {
+      (w.webContents.session as NodeJS.EventEmitter).once('webauthn-hybrid-request-completed', (event, details) => {
+        resolve(details);
+      });
+    });
+
+    const result = await getAssertion();
+    expect(result.ok).toBe(true);
+
+    const getRequest = requests.find((r) => r.requestType === 'get');
+    expect(getRequest).toBeDefined();
+    expect(getRequest.qrCode).toMatch(/^FIDO:\/\d+$/);
+
+    const details = await completed;
+    expect(details.relyingPartyId).toBe('localhost');
+    expect(details.frame).toBe(w.webContents.mainFrame);
+  });
+
+  it('generates a fresh QR code for every request', async () => {
+    const codes: string[] = [];
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      codes.push(details.qrCode);
+    });
+
+    await makeCredential();
+    await getAssertion();
+
+    expect(codes).toHaveLength(2);
+    expect(codes[0]).not.toBe(codes[1]);
+  });
+
+  it('leaves other authenticators working when no listener is registered', async () => {
+    expect(w.webContents.session.listenerCount('webauthn-hybrid-request')).toBe(0);
+
+    const created = await makeCredential();
+    expect(created.ok).toBe(true);
+
+    const asserted = await getAssertion();
+    expect(asserted.ok).toBe(true);
+    expect(asserted.id).toBe(created.id);
+  });
+
+  it('does not emit a completion event when no listener accepted the request', async () => {
+    let completions = 0;
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request-completed', () => {
+      completions++;
+    });
+
+    const result = await makeCredential();
+    expect(result.ok).toBe(true);
+    // The completion task is posted to the UI thread; give it a turn to run.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(completions).toBe(0);
+  });
+});

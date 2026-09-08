@@ -5,6 +5,7 @@
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 
 #include <algorithm>
+#include <array>
 #include <iterator>
 #include <string>
 #include <string_view>
@@ -16,10 +17,19 @@
 #include "base/location.h"
 #include "base/notreached.h"
 #include "base/task/sequenced_task_runner.h"
+#include "components/device_event_log/device_event_log.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
+#include "crypto/random.h"
+#include "device/bluetooth/bluetooth_adapter.h"
+#include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/fido/authenticator_get_assertion_response.h"
+#include "device/fido/cable/v2_constants.h"
+#include "device/fido/cable/v2_handshake.h"
 #include "device/fido/fido_authenticator.h"
+#include "device/fido/fido_discovery_factory.h"
 #include "device/fido/pin.h"
 #include "device/fido/public/fido_types.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
@@ -27,7 +37,9 @@
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
+#include "services/network/public/mojom/network_context.mojom-forward.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
@@ -35,11 +47,15 @@
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
+#include "url/origin.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/browser/webauthn/electron_platform_passkeys_discovery.h"
-#include "url/origin.h"
+#endif
+
+#if BUILDFLAG(IS_WIN)
+#include "device/fido/win/webauthn_api.h"
 #endif
 
 #if DCHECK_IS_ON()
@@ -103,6 +119,86 @@ std::string_view PinEntryErrorToString(device::pin::PINEntryError error) {
       return "same-as-current-pin";
   }
   NOTREACHED();
+}
+
+// Hybrid transport tunnels to the phone over a WebSocket, which needs a
+// network context. Use the one belonging to the requesting session so proxy
+// and certificate settings match the page that made the request. The request
+// handler that owns the discovery is torn down with the frame, before the
+// browser context, so the context is live for every call made during a
+// request.
+network::mojom::NetworkContext* NetworkContextFor(
+    base::WeakPtr<ElectronBrowserContext> browser_context) {
+  if (!browser_context) {
+    return nullptr;
+  }
+  return browser_context->GetDefaultStoragePartition()->GetNetworkContext();
+}
+
+// True when Chromium would actually create a hybrid discovery for this
+// process. Mirrors the checks in FidoDiscoveryFactory::Create(kHybrid) so the
+// app is not asked to show a QR code that can never be scanned.
+bool HybridTransportAvailable() {
+  if (!device::BluetoothAdapterFactory::Get()->IsLowEnergySupported()) {
+    return false;
+  }
+#if BUILDFLAG(IS_WIN)
+  // Windows 11 implements hybrid natively and shows its own QR code.
+  device::WinWebAuthnApi* const webauthn_api =
+      device::WinWebAuthnApi::GetDefault();
+  if (webauthn_api && webauthn_api->SupportsHybrid()) {
+    return false;
+  }
+#endif
+  return true;
+}
+
+std::string_view RequestTypeName(device::FidoRequestType request_type) {
+  switch (request_type) {
+    case device::FidoRequestType::kMakeCredential:
+      return "create";
+    case device::FidoRequestType::kGetAssertion:
+      return "get";
+  }
+  NOTREACHED();
+}
+
+// Completion of a WebAuthn request is signalled by //content destroying the
+// delegate, so this runs from a task posted by the destructor rather than
+// re-entering JavaScript from inside teardown. The frame is often already
+// gone at that point (navigation is the usual reason a request ends early),
+// so the session is resolved from the browser context instead.
+void EmitHybridRequestCompleted(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    content::GlobalRenderFrameHostId render_frame_host_id,
+    std::string relying_party_id) {
+  gin::WeakCell<api::Session>* session =
+      browser_context ? api::Session::FromBrowserContext(browser_context.get())
+                      : nullptr;
+  if (!session || !session->Get()) {
+    return;
+  }
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  v8::Local<v8::Object> session_wrapper;
+  if (!session->Get()->GetWrapper(isolate).ToLocal(&session_wrapper)) {
+    return;
+  }
+
+  v8::Local<v8::Object> details =
+      gin::DataObjectBuilder(isolate)
+          .Set("relyingPartyId", relying_party_id)
+          .Set("frame", content::RenderFrameHost::FromID(render_frame_host_id))
+          .Build();
+
+  v8::Local<v8::Object> event_object = gin_helper::internal::Event::New(isolate)
+                                           ->GetWrapper(isolate)
+                                           .ToLocalChecked();
+  gin_helper::EmitEvent(isolate, session_wrapper,
+                        "webauthn-hybrid-request-completed", event_object,
+                        details);
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -180,7 +276,16 @@ ElectronAuthenticatorRequestClientDelegate::
     : render_frame_host_id_(render_frame_host->GetGlobalId()) {}
 
 ElectronAuthenticatorRequestClientDelegate::
-    ~ElectronAuthenticatorRequestClientDelegate() = default;
+    ~ElectronAuthenticatorRequestClientDelegate() {
+  if (hybrid_browser_context_) {
+    // During browser shutdown the task runner may refuse the task; the app is
+    // going away with it, so the dropped event is harmless.
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&EmitHybridRequestCompleted, hybrid_browser_context_,
+                       render_frame_host_id_, relying_party_id_));
+  }
+}
 
 gin::WeakCell<api::Session>*
 ElectronAuthenticatorRequestClientDelegate::GetSession() const {
@@ -196,6 +301,109 @@ ElectronAuthenticatorRequestClientDelegate::GetSession() const {
 void ElectronAuthenticatorRequestClientDelegate::SetRelyingPartyId(
     const std::string& rp_id) {
   relying_party_id_ = rp_id;
+}
+
+void ElectronAuthenticatorRequestClientDelegate::SetUIPresentation(
+    UIPresentation ui_presentation) {
+  ui_presentation_ = ui_presentation;
+}
+
+void ElectronAuthenticatorRequestClientDelegate::ConfigureDiscoveries(
+    const url::Origin& origin,
+    const std::string& rp_id,
+    RequestSource request_source,
+    device::FidoRequestType request_type,
+    std::optional<device::ResidentKeyRequirement> resident_key_requirement,
+    device::UserVerificationRequirement user_verification_requirement,
+    bool cmtg_key_requested,
+    std::optional<std::string_view> user_name,
+    bool is_enclave_authenticator_available,
+    device::FidoDiscoveryFactory* fido_discovery_factory) {
+  // A null factory means the request is for passwords only. Conditional
+  // (autofill) and passkey-upgrade requests show no UI in Chromium either, so
+  // a QR code must not appear for them.
+  if (!fido_discovery_factory ||
+      request_source != RequestSource::kWebAuthentication ||
+      ui_presentation_ != UIPresentation::kModal ||
+      !HybridTransportAvailable()) {
+    return;
+  }
+
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(render_frame_host_id_);
+  if (!rfh) {
+    return;
+  }
+  base::WeakPtr<ElectronBrowserContext> browser_context =
+      static_cast<ElectronBrowserContext*>(rfh->GetBrowserContext())
+          ->GetWeakPtr();
+
+  // Chromium adds kHybrid to every request's transport set but only creates
+  // the hybrid discovery once a QR generator key is configured. Without one
+  // the request has no hybrid authenticator and never completes on that
+  // transport. A restart from StartOver() keeps the QR code the app is
+  // already showing.
+  if (!hybrid_qr_generator_key_) {
+    std::array<uint8_t, device::cablev2::kQRKeySize> qr_generator_key;
+    crypto::RandBytes(qr_generator_key);
+    const std::string qr_code =
+        device::cablev2::qr::Encode(qr_generator_key, request_type);
+
+    // The app renders the QR code, so hybrid is only useful when a listener
+    // exists. Without one, leave the transport unconfigured so the remaining
+    // authenticators behave exactly as before.
+    base::WeakPtr<ElectronAuthenticatorRequestClientDelegate> weak_this =
+        weak_factory_.GetWeakPtr();
+    if (!EmitHybridRequestEvent(request_type, qr_code) || !weak_this) {
+      return;
+    }
+    hybrid_qr_generator_key_ = qr_generator_key;
+  }
+
+  hybrid_browser_context_ = browser_context;
+  fido_discovery_factory->set_cable_data(request_type,
+                                         *hybrid_qr_generator_key_);
+  fido_discovery_factory->set_network_context_factory(
+      base::BindRepeating(&NetworkContextFor, browser_context));
+}
+
+bool ElectronAuthenticatorRequestClientDelegate::EmitHybridRequestEvent(
+    device::FidoRequestType request_type,
+    const std::string& qr_code) {
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (!session || !session->Get()) {
+    return false;
+  }
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  v8::Local<v8::Object> session_wrapper;
+  if (!session->Get()->GetWrapper(isolate).ToLocal(&session_wrapper)) {
+    return false;
+  }
+
+  v8::Local<v8::Object> details =
+      gin::DataObjectBuilder(isolate)
+          .Set("relyingPartyId", relying_party_id_)
+          .Set("requestType", RequestTypeName(request_type))
+          .Set("qrCode", qr_code)
+          .Set("frame", content::RenderFrameHost::FromID(render_frame_host_id_))
+          .Build();
+
+  v8::Local<v8::Object> event_object = gin_helper::internal::Event::New(isolate)
+                                           ->GetWrapper(isolate)
+                                           .ToLocalChecked();
+
+  v8::Local<v8::Value> emit_result =
+      gin_helper::EmitEvent(isolate, session_wrapper, "webauthn-hybrid-request",
+                            event_object, details);
+
+  // EventEmitter.prototype.emit() returns true iff there was at least one
+  // listener.
+  bool had_listener = false;
+  return gin::ConvertFromV8(isolate, emit_result, &had_listener) &&
+         had_listener;
 }
 
 void ElectronAuthenticatorRequestClientDelegate::StartObserving(
@@ -221,7 +429,9 @@ void ElectronAuthenticatorRequestClientDelegate::RegisterActionCallbacks(
         void(device::FidoRequestHandlerBase::BlePermissionCallback)>
         request_ble_permission_callback) {
   cancel_callback_ = std::move(cancel_callback);
+  start_over_callback_ = std::move(start_over_callback);
   request_callback_ = std::move(request_callback);
+  request_ble_permission_callback_ = std::move(request_ble_permission_callback);
 }
 
 void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
@@ -402,9 +612,40 @@ void ElectronAuthenticatorRequestClientDelegate::FidoAuthenticatorAdded(
 void ElectronAuthenticatorRequestClientDelegate::
     OnTransportAvailabilityEnumerated(
         device::FidoRequestHandlerBase::TransportAvailabilityInfo data) {
+  // Hybrid discovery listens for the phone's BLE advertisement, which on
+  // macOS needs the Bluetooth permission. Ask for it now rather than letting
+  // the request sit until the OS prompt happens to appear.
+  if (hybrid_browser_context_ && request_ble_permission_callback_ &&
+      data.ble_status == device::FidoRequestHandlerBase::BleStatus::
+                             kPendingPermissionRequest) {
+    request_ble_permission_callback_.Run(
+        base::BindOnce(&ElectronAuthenticatorRequestClientDelegate::OnBleStatus,
+                       weak_factory_.GetWeakPtr()));
+  }
+
   if (!controls_dispatch_ || pending_authenticators_.empty())
     return;
   MaybeEmitSelectAuthenticatorEvent();
+}
+
+void ElectronAuthenticatorRequestClientDelegate::OnBleStatus(
+    device::FidoRequestHandlerBase::BleStatus status) {
+  switch (status) {
+    case device::FidoRequestHandlerBase::BleStatus::kOn:
+      break;
+    case device::FidoRequestHandlerBase::BleStatus::kOff:
+      // Turning the adapter on is the user's decision; without a prompt to
+      // ask for it, leave it off.
+      FIDO_LOG(ERROR) << "Bluetooth is off; hybrid transport cannot discover "
+                         "the phone.";
+      break;
+    case device::FidoRequestHandlerBase::BleStatus::kPermissionDenied:
+      FIDO_LOG(ERROR) << "Bluetooth permission denied; hybrid transport "
+                         "cannot discover the phone.";
+      break;
+    case device::FidoRequestHandlerBase::BleStatus::kPendingPermissionRequest:
+      break;
+  }
 }
 
 void ElectronAuthenticatorRequestClientDelegate::
@@ -563,6 +804,31 @@ void ElectronAuthenticatorRequestClientDelegate::CollectPIN(
   EmitCollectPinEvent(options);
 }
 
+void ElectronAuthenticatorRequestClientDelegate::StartOver() {
+  provide_pin_callback_.Reset();
+  if (!hybrid_qr_generator_key_) {
+    // Restarting destroys the request handler, which may be on the stack.
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, start_over_callback_);
+    return;
+  }
+  device::BluetoothAdapterFactory::Get()->GetAdapter(base::BindOnce(
+      &ElectronAuthenticatorRequestClientDelegate::RestartWithBluetoothAdapter,
+      weak_factory_.GetWeakPtr()));
+}
+
+void ElectronAuthenticatorRequestClientDelegate::RestartWithBluetoothAdapter(
+    scoped_refptr<device::BluetoothAdapter> adapter) {
+  // The hybrid discovery of the abandoned attempt holds the only other
+  // reference to the adapter. Were it released, BlueZ would still be
+  // stopping that scan when the new attempt creates a fresh adapter and
+  // starts one, and refuse it, so the phone could never connect. Keeping
+  // this adapter alive lets it order the stop and the start itself.
+  bluetooth_adapter_ = std::move(adapter);
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, start_over_callback_);
+}
+
 void ElectronAuthenticatorRequestClientDelegate::EmitCollectPinEvent(
     const CollectPINOptions& options) {
   gin::WeakCell<api::Session>* session = GetSession();
@@ -642,6 +908,25 @@ void ElectronAuthenticatorRequestClientDelegate::OnPinProvided(
   // Repeating callback: ignore any call after the first, and calls to the
   // callback of an earlier prompt in the same request.
   if (!provide_pin_callback_ || prompt_id != pin_prompt_id_) {
+    return;
+  }
+
+  // Chromium asks for the PIN of a lone security key without waiting for a
+  // touch, which commits the request to that key. Like Chrome's "use another
+  // device", restart the request so that every authenticator, including a
+  // phone scanning the QR code already shown, can serve it; the key then
+  // waits to be touched before its PIN is asked again.
+  if (v8::Local<v8::Value> next = args->PeekNext();
+      !next.IsEmpty() && next->IsObject()) {
+    gin_helper::Dictionary options;
+    bool use_another_device = false;
+    if (args->GetNext(&options) &&
+        options.Get("useAnotherDevice", &use_another_device) &&
+        use_another_device && start_over_callback_) {
+      StartOver();
+    } else {
+      CancelPendingPinCollection();
+    }
     return;
   }
 
