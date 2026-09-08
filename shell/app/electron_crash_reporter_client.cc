@@ -179,8 +179,8 @@ std::string ElectronCrashReporterClient::GetUploadUrl() {
 }
 
 void ElectronCrashReporterClient::GetProductInfo(ProductInfo* product_info) {
-  product_info->product_name = ELECTRON_PRODUCT_NAME;
-  product_info->version = ELECTRON_VERSION_STRING;
+  *product_info = ProductInfo(ELECTRON_PRODUCT_NAME, ELECTRON_VERSION_STRING,
+                              /*channel=*/"");
 }
 
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
