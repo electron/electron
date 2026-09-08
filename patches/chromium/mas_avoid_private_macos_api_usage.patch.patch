@@ -1816,26 +1816,6 @@ index 86d0cefd4c815d1da2f4bf6e06b5657c1ce04784..47e9e8429f0fd457762ce6cf53c68616
    ]
  
    if (is_mac) {
-diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index cd01cf1da3d1154b88aa1d733c3255923d82876d..720b6955b28cfa4fb296af220b1246368452c9cc 100644
---- a/third_party/blink/renderer/core/editing/build.gni
-+++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -378,10 +378,14 @@ blink_core_sources_editing = [
- if (is_mac) {
-   blink_core_sources_editing += [
-     "commands/smart_replace_cf.cc",
--    "kill_ring_mac.mm",
-     "substring_util.h",
-     "substring_util.mm",
-   ]
-+  if (is_mas_build) {
-+    blink_core_sources_editing += [ "kill_ring_mac.mm" ]
-+  } else {
-+    blink_core_sources_editing += [ "kill_ring_none.cc" ]
-+  }
- } else {
-   blink_core_sources_editing += [ "kill_ring_none.cc" ]
- }
 diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3af01ab73a 100644
 --- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm

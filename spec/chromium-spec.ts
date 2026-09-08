@@ -4382,6 +4382,29 @@ describe('chromium features', () => {
   });
 });
 
+ifdescribe(process.platform === 'darwin' && !process.mas)('kill ring', () => {
+  afterEach(closeAllWindows);
+
+  it('yanks back text killed with Ctrl+K', async () => {
+    const w = new BrowserWindow({ show: true });
+    await w.loadURL('data:text/html,<textarea id="t">kill me</textarea>');
+    w.webContents.focus();
+    await w.webContents.executeJavaScript(
+      'const t = document.getElementById("t"); t.focus(); t.setSelectionRange(0, 0); null'
+    );
+    w.webContents.debugger.attach();
+    const press = async (key: string, code: string, keyCode: number, commands: string[]) => {
+      const base = { key, code, windowsVirtualKeyCode: keyCode, modifiers: 2 };
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown', commands });
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    };
+    await press('k', 'KeyK', 75, ['deleteToEndOfParagraph']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('');
+    await press('y', 'KeyY', 89, ['yank']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('kill me');
+  });
+});
+
 describe('font fallback', () => {
   async function getRenderedFonts(html: string) {
     const w = new BrowserWindow({ show: false });
@@ -5887,6 +5910,59 @@ describe('external protocol permission attribution', () => {
     expect(details.externalURL).to.equal('magnet:attribution-test');
     expect(details.requestingUrl).to.equal(`${untrustedUrl}/self`);
     expect(details.isMainFrame).to.equal(false);
+  });
+});
+
+describe('links opened into a new window', () => {
+  // A modifier-clicked link goes through OpenURLFromTab. The window the app
+  // creates for it must start its navigation as the clicking document did
+  // (renderer-initiated, with that document as initiator), not as a fresh
+  // browser-initiated load.
+  let server: http.Server;
+  let serverUrl: string;
+  const requests: Record<string, http.IncomingHttpHeaders> = {};
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      requests[req.url!] = req.headers;
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/popup') {
+        res.end('<p>popup</p>');
+        return;
+      }
+      res.end(`<a id="a" href="/popup" target="_blank">link</a><script>
+        window.clickLink = () => document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+          ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+        }));
+      </script>`);
+    });
+    serverUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('navigates the new window as the initiating document', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { show: false } }));
+    await w.loadURL(`${serverUrl}/opener`);
+    // The navigation starts before did-create-window is emitted, so hook the
+    // new webContents as soon as it exists.
+    const started = new Promise<any>((resolve) => {
+      app.once('web-contents-created', (_event, contents) => {
+        contents.once('did-start-navigation', (details: any) => resolve(details));
+      });
+    });
+    const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+    await w.webContents.executeJavaScript('window.clickLink(); true');
+    const [child] = await created;
+    const details = await started;
+    if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+    expect(details.url).to.equal(`${serverUrl}/popup`);
+    // The clicking document is the initiator...
+    expect(details.initiator).to.exist();
+    expect(details.initiator.routingId).to.equal(w.webContents.mainFrame.routingId);
+    // ...so the request is same-origin rather than a browser-typed load.
+    expect(requests['/popup']['sec-fetch-site']).to.equal('same-origin');
   });
 });
 

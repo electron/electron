@@ -362,6 +362,36 @@ describe('BrowserWindow module', () => {
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, '-before-unload-fired');
     });
+
+    it('is ignored when called from an iframe', async () => {
+      const server = http.createServer((_req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('<!doctype html><body>frame</body>');
+      });
+      defer(() => server.close());
+      const crossOriginUrl = (await listen(server)).url;
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: false, nodeIntegrationInSubFrames: true, contextIsolation: true }
+      });
+      defer(() => win.isDestroyed() || win.destroy());
+      await win.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await win.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(crossOriginUrl)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = win.webContents.mainFrame.frames[0];
+      let closed = false;
+      win.on('closed', () => {
+        closed = true;
+      });
+      await iframe.executeJavaScript('window.close(); true', true);
+      await setTimeout(500);
+      expect(closed).to.equal(false);
+      expect(win.isDestroyed()).to.equal(false);
+    });
   });
 
   describe('BrowserWindow.destroy()', () => {
@@ -1616,11 +1646,16 @@ describe('BrowserWindow module', () => {
         w.show();
         w.destroy();
 
-        // We first need to resign app focus for this test to work
-        const isInactive = once(app, 'did-resign-active');
+        // The test needs the app inactive and Finder frontmost. The app may
+        // already be inactive, in which case there is no activation to resign.
+        const getActiveAppOsa =
+          'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = () => childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+        const isInactive: Promise<unknown> = app.isActive() ? once(app, 'did-resign-active') : Promise.resolve();
         childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
         defer(() => childProcess.execSync('osascript -e \'tell application "Finder" to quit\''));
         await isInactive;
+        await waitUntil(() => activeApp() === 'Finder');
 
         // Create new window
         w = new BrowserWindow({
@@ -1631,20 +1666,17 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        const isShow = once(w, 'show');
+        // Wait for 'focus', not 'show': on macOS 'show' is emitted when the
+        // window reports itself unoccluded, and a panel shown behind another
+        // app's windows may never do so. Becoming key is what matters here.
         const isFocus = once(w, 'focus');
 
         w.show();
         w.focus();
 
-        await isShow;
         await isFocus;
 
-        const getActiveAppOsa =
-          'tell application "System Events" to get the name of the first process whose frontmost is true';
-        const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
-
-        expect(activeApp).to.equal('Finder');
+        expect(activeApp()).to.equal('Finder');
       });
     });
 
@@ -7829,6 +7861,32 @@ describe('BrowserWindow module', () => {
 
         sw.destroy();
       });
+    });
+
+    it('paints <select> popups into the frame', async () => {
+      const ow = new BrowserWindow({
+        width: 300,
+        height: 300,
+        show: false,
+        webPreferences: { backgroundThrottling: false, offscreen: true }
+      });
+      await ow.loadURL(
+        'data:text/html,<select id="s" style="position:absolute;left:10px;top:10px;width:120px;height:24px">' +
+          '<option>one</option><option>two</option><option>three</option><option>four</option></select>'
+      );
+      ow.webContents.focus();
+      const paintedBelowSelect = new Promise<void>((resolve) => {
+        ow.webContents.on('paint', (_e, dirty) => {
+          if (dirty.y + dirty.height > 40) resolve();
+        });
+      });
+      await ow.webContents.executeJavaScript('document.getElementById("s").showPicker()', true);
+      await expect(
+        Promise.race([
+          paintedBelowSelect,
+          setTimeout(5000).then(() => Promise.reject(new Error('popup was not painted')))
+        ])
+      ).to.eventually.be.fulfilled();
     });
   });
 

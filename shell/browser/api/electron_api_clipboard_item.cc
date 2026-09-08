@@ -64,15 +64,17 @@ std::optional<std::string> PayloadToUtf8(v8::Isolate* isolate,
   return std::nullopt;
 }
 
-// Write `bytes` to `writer` under the raw platform format `format` via
-// `WriteUnsafeRawData`. Used by the `electron application/osclipboard;
-// format="..."` MIME and the arbitrary-MIME fallback so the bytes land
-// under `format` verbatim for native-app interop.
+// Write `bytes` to `writer` under the raw platform format `format`. Used by
+// the `electron application/osclipboard; format="..."` MIME and the
+// arbitrary-MIME fallback so the bytes land under `format` verbatim for
+// native-app interop. Despite its name, WriteRawDataForTest is the plain
+// "write these bytes under this platform format" entry point.
 void WriteRawData(ui::ScopedClipboardWriter& writer,
                   const std::string& format,
                   base::span<const uint8_t> bytes) {
-  writer.WriteUnsafeRawData(base::UTF8ToUTF16(format),
-                            mojo_base::BigBuffer{bytes});
+  writer.WriteRawDataForTest(
+      ui::ClipboardFormatType::CustomPlatformType(format),
+      {bytes.begin(), bytes.end()});
 }
 
 // Write a W3C `web `-prefixed custom format. Unlike `WriteRawData`, this
