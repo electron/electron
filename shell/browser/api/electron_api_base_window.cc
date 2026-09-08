@@ -1428,12 +1428,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
+  auto constructor_template = BaseWindow::CreateConstructorTemplate(
+      isolate, base::BindRepeating(&BaseWindow::New));
 
-  gin_helper::Dictionary constructor(isolate,
-                                     BaseWindow::GetConstructor(isolate)
-                                         ->GetFunction(context)
-                                         .ToLocalChecked());
+  gin_helper::Dictionary constructor(
+      isolate, constructor_template->GetFunction(context).ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
   constructor.SetMethod("clearPersistedState",

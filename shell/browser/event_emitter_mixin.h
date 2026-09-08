@@ -65,8 +65,9 @@ class EventEmitterMixin {
     constexpr bool is_deprecated_wrapper =
         std::is_same_v<decltype(wrapper_info), gin::DeprecatedWrapperInfo*>;
 
-    v8::Local<v8::FunctionTemplate> constructor =
-        data->function_template.Get(isolate);
+    v8::Local<v8::FunctionTemplate> constructor;
+    if (data)
+      constructor = data->function_template.Get(isolate);
 
     const char* class_name = "";
     if constexpr (is_deprecated_wrapper) {
@@ -79,7 +80,8 @@ class EventEmitterMixin {
       constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(gin::StringToV8(isolate, class_name));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
-      data->function_template.Reset(isolate, constructor);
+      if (data)
+        data->function_template.Reset(isolate, constructor);
     }
     return gin::ObjectTemplateBuilder(isolate, class_name,
                                       constructor->InstanceTemplate());

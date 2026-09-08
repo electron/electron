@@ -17,7 +17,9 @@ gin::DeprecatedWrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
   auto* data =
       PerContextTemplateData::From(isolate->GetCurrentContext(), &kWrapperInfo);
-  v8::Local<v8::FunctionTemplate> tmpl = data->function_template.Get(isolate);
+  v8::Local<v8::FunctionTemplate> tmpl;
+  if (data)
+    tmpl = data->function_template.Get(isolate);
 
   if (tmpl.IsEmpty()) {
     tmpl = v8::FunctionTemplate::New(isolate);
@@ -35,7 +37,8 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
               ->SetPrototype(context, eventemitter_prototype)
               .ToChecked());
 
-    data->function_template.Reset(isolate, tmpl);
+    if (data)
+      data->function_template.Reset(isolate, tmpl);
   }
 
   return tmpl;
