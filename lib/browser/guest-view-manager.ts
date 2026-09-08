@@ -16,6 +16,9 @@ interface GuestInstance {
   elementInstanceId: number;
   visibilityState?: DocumentVisibilityState;
   embedder: Electron.WebContents;
+  // The frame in |embedder| that created the <webview>; only it may drive the
+  // guest through the guest-view IPCs.
+  embedderFrame: Electron.WebFrameMain | null;
   guest: Electron.WebContents;
 }
 
@@ -86,6 +89,7 @@ function makeLoadURLOptions(params: Record<string, any>) {
 // Create a new guest instance.
 const createGuest = function (
   embedder: Electron.WebContents,
+  embedderFrame: Electron.WebFrameMain | null,
   embedderFrameToken: string,
   elementInstanceId: number,
   params: Record<string, any>
@@ -116,7 +120,8 @@ const createGuest = function (
   guestInstances.set(guestInstanceId, {
     elementInstanceId,
     guest,
-    embedder
+    embedder,
+    embedderFrame
   });
 
   // Clear the guest from map when it is destroyed.
@@ -298,7 +303,7 @@ const handleMessage = function (channel: string, handler: (event: Electron.IpcMa
 
 const handleMessageSync = function (
   channel: string,
-  handler: (event: { sender: Electron.WebContents }, ...args: any[]) => any
+  handler: (event: { sender: Electron.WebContents; senderFrame?: Electron.WebFrameMain | null }, ...args: any[]) => any
 ) {
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
@@ -306,11 +311,12 @@ const handleMessageSync = function (
 handleMessage(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST,
   function (event, embedderFrameToken: string, elementInstanceId: number, params) {
-    return createGuest(event.sender, embedderFrameToken, elementInstanceId, params);
+    return createGuest(event.sender, event.senderFrame ?? null, embedderFrameToken, elementInstanceId, params);
   }
 );
 
 handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event, guestInstanceId: number) {
+  getGuestForFrame(guestInstanceId, event);
   return detachGuest(event.sender, guestInstanceId);
 });
 
@@ -324,7 +330,7 @@ ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event
 handleMessage(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL,
   function (event, guestInstanceId: number, method: string, args: any[]) {
-    const guest = getGuestForWebContents(guestInstanceId, event.sender);
+    const guest = getGuestForFrame(guestInstanceId, event);
     if (!asyncMethods.has(method)) {
       throw new Error(`Invalid method: ${method}`);
     }
@@ -336,7 +342,7 @@ handleMessage(
 handleMessageSync(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL,
   function (event, guestInstanceId: number, method: string, args: any[]) {
-    const guest = getGuestForWebContents(guestInstanceId, event.sender);
+    const guest = getGuestForFrame(guestInstanceId, event);
     if (!syncMethods.has(method)) {
       throw new Error(`Invalid method: ${method}`);
     }
@@ -356,7 +362,7 @@ handleMessageSync(
 handleMessageSync(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET,
   function (event, guestInstanceId: number, property: string) {
-    const guest = getGuestForWebContents(guestInstanceId, event.sender);
+    const guest = getGuestForFrame(guestInstanceId, event);
     if (!properties.has(property)) {
       throw new Error(`Invalid property: ${property}`);
     }
@@ -368,7 +374,7 @@ handleMessageSync(
 handleMessageSync(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET,
   function (event, guestInstanceId: number, property: string, val: any) {
-    const guest = getGuestForWebContents(guestInstanceId, event.sender);
+    const guest = getGuestForFrame(guestInstanceId, event);
     if (!properties.has(property)) {
       throw new Error(`Invalid property: ${property}`);
     }
@@ -377,13 +383,20 @@ handleMessageSync(
   }
 );
 
-// Returns WebContents from its guest id hosted in given webContents.
-const getGuestForWebContents = function (guestInstanceId: number, contents: Electron.WebContents) {
+// Returns the guest WebContents for |guestInstanceId| if the IPC came from the
+// frame that created it (not merely from the same WebContents).
+const getGuestForFrame = function (
+  guestInstanceId: number,
+  event: { sender: Electron.WebContents; senderFrame?: Electron.WebFrameMain | null }
+) {
   const guestInstance = guestInstances.get(guestInstanceId);
   if (!guestInstance) {
     throw new Error(`Invalid guestInstanceId: ${guestInstanceId}`);
   }
-  if (guestInstance.guest.hostWebContents !== contents) {
+  if (
+    guestInstance.guest.hostWebContents !== event.sender ||
+    (guestInstance.embedderFrame && event.senderFrame !== guestInstance.embedderFrame)
+  ) {
     throw new Error(`Access denied to guestInstanceId: ${guestInstanceId}`);
   }
   return guestInstance.guest;
