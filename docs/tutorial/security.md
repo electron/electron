@@ -771,8 +771,10 @@ ipcMain.handle('get-secrets', (e) => {
 })
 
 function validateSender (frame) {
-  // Validate the host of the URL using an actual URL parser and an allowlist
-  if ((new URL(frame.url)).host === 'electronjs.org') return true
+  // Validate the frame's origin against an allowlist. Use the origin, not the
+  // URL: about:blank, blob: and sandboxed documents have URLs that do not
+  // identify who controls them, and the frame may be null if it has gone away.
+  if (frame && frame.origin === 'https://electronjs.org') return true
   return false
 }
 ```
