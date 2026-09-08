@@ -13,3 +13,7 @@
     works when `standard` is also set to true. Default false.
   * `allowExtensions` boolean (optional) - Allow Chrome extensions to be used
     on pages served over this protocol. Default false.
+  * `preservePortAndUserinfo` boolean (optional) - Keep the port number and
+    userinfo in URLs for this scheme instead of stripping them, which is the
+    default behavior for standard schemes. Only works when `standard` is also
+    set to true. Default false.

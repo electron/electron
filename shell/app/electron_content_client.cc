@@ -4,6 +4,7 @@
 
 #include "shell/app/electron_content_client.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,6 +25,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
+#include "url/url_util.h"
 
 #if BUILDFLAG(ENABLE_WIDEVINE)
 #include "base/native_library.h"
@@ -145,7 +147,34 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
     append_cli_schemes(schemes->csp_bypassing_schemes, kBypassCSPSchemes);
     append_cli_schemes(schemes->secure_schemes, kSecureSchemes);
     append_cli_schemes(schemes->service_worker_schemes, kServiceWorkerSchemes);
-    append_cli_schemes(schemes->standard_schemes, kStandardSchemes);
+
+    // Schemes that opted into preservePortAndUserinfo are deliberately NOT
+    // routed through schemes->standard_schemes here: content::
+    // RegisterContentSchemes() unconditionally registers every entry in that
+    // list with url::SCHEME_WITH_HOST, which silently drops port and
+    // userinfo. The browser (api::Protocol::RegisterSchemesAsPrivileged) and
+    // renderer (RendererClientBase) processes register these schemes with
+    // url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION instead, so the
+    // network utility process must match that registration directly or its
+    // GURL canonicalization of these schemes disagrees with the other
+    // processes, e.g. dropping the port from a custom-scheme URL, or
+    // tripping Mojo struct validation when such a GURL is round-tripped
+    // through the network service. Standard schemes that didn't opt in still
+    // go through schemes->standard_schemes below, same as before, so they
+    // stay in sync with however Chromium registers standard schemes.
+    const std::vector<std::string> port_and_userinfo_schemes =
+        base::SplitString(
+            cmd.GetSwitchValueASCII(kStandardSchemesWithPortAndUserinfo), ",",
+            base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    for (const auto& scheme :
+         base::SplitString(cmd.GetSwitchValueASCII(kStandardSchemes), ",",
+                           base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
+      if (std::ranges::contains(port_and_userinfo_schemes, scheme))
+        url::AddStandardScheme(
+            scheme.c_str(), url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION);
+      else
+        schemes->standard_schemes.push_back(scheme);
+    }
   }
 
   if (electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled()) {

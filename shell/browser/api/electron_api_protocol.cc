@@ -41,6 +41,7 @@ struct SchemeOptions {
   bool stream = false;
   bool codeCache = false;
   bool allowExtensions = false;
+  bool preservePortAndUserinfo = false;
 };
 
 struct CustomScheme {
@@ -74,6 +75,8 @@ struct Converter<CustomScheme> {
       opt.Get("stream", &(out->options.stream));
       opt.Get("codeCache", &(out->options.codeCache));
       opt.Get("allowExtensions", &(out->options.allowExtensions));
+      opt.Get("preservePortAndUserinfo",
+             &(out->options.preservePortAndUserinfo));
     }
     return true;
   }
@@ -126,16 +129,37 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
           "as standard scheme.");
       return;
     }
+    if (custom_scheme.options.preservePortAndUserinfo &&
+       !custom_scheme.options.standard) {
+      thrower.ThrowError(
+          "preservePortAndUserinfo can only be enabled when the custom scheme "
+          "is registered as standard scheme.");
+      return;
+    }
   }
 
   std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
-      service_worker_schemes, cors_schemes, extension_schemes;
+      service_worker_schemes, cors_schemes, extension_schemes,
+      port_and_userinfo_schemes;
   for (const auto& custom_scheme : custom_schemes) {
     // Register scheme to privileged list (https, wss, data, chrome-extension)
     if (custom_scheme.options.standard) {
       auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
-      url::AddStandardScheme(custom_scheme.scheme.c_str(),
-                             url::SCHEME_WITH_HOST);
+      // Standard schemes strip the port number and userinfo from their URLs
+      // by default, matching how http/https behave for a bare host. Schemes
+      // that need to round-trip a port or userinfo (e.g. a custom transport
+      // scheme that encodes a port in the URL) can opt into keeping them via
+      // preservePortAndUserinfo; this is opt-in because flipping it for every
+      // standard scheme would change how existing apps' URLs parse.
+      if (custom_scheme.options.preservePortAndUserinfo) {
+        url::AddStandardScheme(
+            custom_scheme.scheme.c_str(),
+            url::SCHEME_WITH_HOST_PORT_AND_USER_INFORMATION);
+        port_and_userinfo_schemes.push_back(custom_scheme.scheme);
+      } else {
+        url::AddStandardScheme(custom_scheme.scheme.c_str(),
+                               url::SCHEME_WITH_HOST);
+      }
       GetStandardSchemes().push_back(custom_scheme.scheme);
       policy->RegisterWebSafeScheme(custom_scheme.scheme);
     }
@@ -192,6 +216,9 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          extension_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          GetStandardSchemes());
+  AppendSchemesToCmdLine(
+      electron::switches::kStandardSchemesWithPortAndUserinfo,
+      port_and_userinfo_schemes);
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
                          GetStreamingSchemes());
   AppendSchemesToCmdLine(electron::switches::kCodeCacheSchemes,

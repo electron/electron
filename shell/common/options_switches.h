@@ -267,6 +267,11 @@ inline constexpr base::cstring_view kDisableHttpCache = "disable-http-cache";
 // The list of standard schemes.
 inline constexpr base::cstring_view kStandardSchemes = "standard-schemes";
 
+// The subset of standard schemes that should keep their port number and
+// userinfo instead of having them stripped.
+inline constexpr base::cstring_view kStandardSchemesWithPortAndUserinfo =
+    "standard-schemes-with-port-and-userinfo";
+
 // Register schemes to handle service worker.
 inline constexpr base::cstring_view kServiceWorkerSchemes =
     "service-worker-schemes";
