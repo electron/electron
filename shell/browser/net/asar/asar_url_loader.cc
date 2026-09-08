@@ -358,7 +358,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       head->did_mime_sniff = true;
     }
     if (head->headers) {
-      head->headers->AddHeader(net::HttpRequestHeaders::kContentType,
+      head->headers->SetHeader(net::HttpRequestHeaders::kContentType,
                                head->mime_type);
     }
     client_->OnReceiveResponse(std::move(head), std::move(consumer_handle),

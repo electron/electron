@@ -75,20 +75,12 @@ ProtocolRegistry::CreateRegisteredFactory(std::string_view scheme) const {
 
 // static
 bool ProtocolRegistry::IsBuiltinScheme(std::string_view scheme) {
-  static constexpr std::string_view kSchemes[] = {url::kAboutScheme,
-                                                  url::kBlobScheme,
-                                                  url::kDataScheme,
-                                                  url::kFileScheme,
-                                                  url::kFileSystemScheme,
-                                                  url::kHttpScheme,
-                                                  url::kHttpsScheme,
-                                                  url::kJavaScriptScheme,
-                                                  url::kWsScheme,
-                                                  url::kWssScheme,
-                                                  "chrome",
-                                                  "chrome-extension",
-                                                  "chrome-untrusted",
-                                                  "devtools"};
+  static constexpr std::string_view kSchemes[] = {
+      url::kAboutScheme,  url::kBlobScheme,       url::kDataScheme,
+      url::kFileScheme,   url::kFileSystemScheme, url::kHttpScheme,
+      url::kHttpsScheme,  url::kJavaScriptScheme, url::kViewSourceScheme,
+      url::kWsScheme,     url::kWssScheme,        "chrome",
+      "chrome-extension", "chrome-untrusted",     "devtools"};
   return std::ranges::contains(kSchemes, scheme);
 }
 

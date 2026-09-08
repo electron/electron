@@ -245,8 +245,7 @@ bool Protocol::UnregisterProtocol(const std::string& scheme,
 }
 
 bool Protocol::IsProtocolRegistered(const std::string& scheme) {
-  return protocol_registry_->FindRegistered(scheme) != nullptr ||
-         protocol_registry_->FindSource(scheme) != nullptr;
+  return protocol_registry_->FindRegistered(scheme) != nullptr;
 }
 
 void Protocol::RegisterSource(gin_helper::ErrorThrower thrower,

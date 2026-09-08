@@ -201,7 +201,7 @@ Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string)
 
 Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {
   const isRegistered = isBuiltInScheme(scheme) ? this.isProtocolIntercepted : this.isProtocolRegistered;
-  return isRegistered.call(this, scheme);
+  return isRegistered.call(this, scheme) || this.getSource(scheme) !== null;
 };
 
 const protocol = {

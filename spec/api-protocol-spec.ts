@@ -1115,6 +1115,14 @@ describe('protocol module', () => {
       expect(r.headers.get('cross-origin-opener-policy')).to.equal('same-origin');
     });
 
+    it('keeps a single Content-Type when a route sets one', async () => {
+      register({ headers: { 'Content-Type': 'text/x-custom' } });
+      for (const method of ['GET', 'HEAD']) {
+        const r = await net.fetch('http-like://bundle/data.json', { method });
+        expect(r.headers.get('content-type'), method).to.equal('application/json');
+      }
+    });
+
     it('serves files inside asar archives', async () => {
       protocol.registerSource('http-like', {
         routes: [{ source: { type: 'directory', root: path.join(fixturesPath, 'test.asar', 'a.asar') } }]
@@ -1148,6 +1156,9 @@ describe('protocol module', () => {
       expect(protocol.getSource('http-like')).to.have.property('routes').with.lengthOf(2);
       expect(() => protocol.handle('http-like', () => new Response('x'))).to.throw();
       expect(() => register()).to.throw(/already handled/);
+      expect(protocol.isProtocolRegistered('http-like')).to.equal(false);
+      expect(protocol.unregisterProtocol('http-like')).to.equal(false);
+      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
       protocol.unhandle('http-like');
       expect(protocol.isProtocolHandled('http-like')).to.equal(false);
       expect(protocol.getSource('http-like')).to.equal(null);
@@ -1169,7 +1180,7 @@ describe('protocol module', () => {
       expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
         /built-in/
       );
-      for (const scheme of ['https', 'file', 'blob', 'javascript', 'wss', 'devtools', 'chrome-extension']) {
+      for (const scheme of ['https', 'file', 'blob', 'javascript', 'wss', 'devtools', 'chrome-extension', 'view-source']) {
         expect(
           () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
           scheme
