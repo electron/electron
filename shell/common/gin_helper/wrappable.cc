@@ -256,6 +256,8 @@ DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
   DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
       object->GetAlignedPointerFromInternalField(
           kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
+  if (!info)
+    return nullptr;
   return info->embedder == kEmbedderNativeGin ? info : nullptr;
 }
 

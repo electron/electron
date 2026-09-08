@@ -1,3 +1,4 @@
+import { nativeImage } from 'electron/common';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 
 import { expect } from 'chai';
@@ -24,6 +25,18 @@ describe('WebContentsView', () => {
   it('can be instantiated with no webPreferences', () => {
     // eslint-disable-next-line no-new
     new WebContentsView({});
+  });
+
+  it('rejects plain objects and cppgc wrappers as webContents', () => {
+    for (const invalidWebContents of [{}, nativeImage.createEmpty()]) {
+      expect(
+        () =>
+          new WebContentsView({
+            // @ts-expect-error Test invalid webContents values.
+            webContents: invalidWebContents
+          })
+      ).to.throw(TypeError, 'options.webContents must be a WebContents');
+    }
   });
 
   it('accepts existing webContents object', async () => {
