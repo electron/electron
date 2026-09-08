@@ -21,10 +21,10 @@ index ee16374591d6e40165d909c61b7db7e586b159e0..e0307e278c7ca4314ebb87b0fbdeb110
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 0016174ffc095bf077e1ad3455bea5e28973eb63..b5879712fb76e792124491fb511ef5aa7a421da2 100644
+index 368e761bb19770f20dc46dae14c68054072e768e..baa4893b429efe3ab7515059d022aa6eb10ea454 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1093,6 +1093,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1099,6 +1099,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
  
    base::TimeDelta GetHungRendererDelayForTesting();
  
@@ -34,7 +34,7 @@ index 0016174ffc095bf077e1ad3455bea5e28973eb63..b5879712fb76e792124491fb511ef5aa
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 4fe236a5e01edcd48b102118092d285add9ae1e8..4ff08b167d6702fcdf8a02c2d80beffd5abf026b 100644
+index 277febb199dac5fdb40b3f1fada416694808b137..e88749a8d5d8431e0cf67b5e6337b0f51a9ec69f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -751,7 +751,7 @@ void RenderWidgetHostViewAura::HideImpl() {

@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fdfe3630b4c0fa473e012f21b57dd826c5603167..898ac10c04bd16c56d2fc8ce447d15305db59eb4 100644
+index c3b1cc739d72682c7d059bf7e09248a633d3d50e..1e09963340c31a7d2bf629ff9716aa75156804c9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1152,6 +1152,7 @@ component("base") {
+@@ -1153,6 +1153,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 91b8ec5bd65162dcef13b12df747a3d36f9ec8a4..e9b357b3a55e3dd44f7eaf9620535c71829bf294 100644
+index 2a91343e72431fecc7837850f7ce0228eb68faa1..ecbd5221f7916aba12c5a99c748455a6205f7d17 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1043,6 +1043,7 @@ if (is_clang_or_gcc) {
+@@ -1044,6 +1044,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -959,7 +959,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e831627f964e164965386ccc9b7e5f45e1f6fe9a..5b7b98e8b4f02c201098f605e63647c06912e3bc 100644
+index be5e64d9f2c5cd8ae5a7ae2a42e0f672c2e184af..b35b35a2a05682d68b287649d1d884d15b08a699 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -970,7 +970,7 @@ index e831627f964e164965386ccc9b7e5f45e1f6fe9a..5b7b98e8b4f02c201098f605e63647c0
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2415,15 +2416,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2432,15 +2433,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -993,7 +993,7 @@ index e831627f964e164965386ccc9b7e5f45e1f6fe9a..5b7b98e8b4f02c201098f605e63647c0
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 115c2fbcac14aba4d5024e78e49a0a70217e01a9..1f954f840efba8641c079d7577c8fb6355ae3cb7 100644
+index 4c0bdc9b0a9869ef873b1254816be70f29443d46..d84f32b97f737d22486651c03a3c9b06e5064cb0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -380,6 +380,7 @@ source_set("browser") {
@@ -2173,10 +2173,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e5c2b29c8ac4792c47f55b9adf04dedee97c56a8..831e2e1c2ba900a84de4cbe3fd630fedd37e109b 100644
+index 905834f159cf0c34282635febf3bf3bfacef2ad9..24156551757a097e3e4c6c0a979d88751c5c9fad 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -356,6 +356,13 @@ component("base") {
+@@ -354,6 +354,13 @@ component("base") {
      ]
    }
  
@@ -2190,7 +2190,7 @@ index e5c2b29c8ac4792c47f55b9adf04dedee97c56a8..831e2e1c2ba900a84de4cbe3fd630fed
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -511,6 +518,12 @@ component("base") {
+@@ -509,6 +516,12 @@ component("base") {
      "//url",
    ]
  
@@ -2341,7 +2341,7 @@ index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 7d565cb844cced403259c16cfdaa7700d072da05..50666da2f880abca5e5e4fc0f9583db67ccab94a 100644
+index 6b5120fe123dcd86d1618df838f71c0bc975559d..de9d0f89cc6b693f42f95328aaddbd2154dc3706 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -284,6 +284,8 @@ component("gfx") {
@@ -2392,7 +2392,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 2e970caa0b78e42bfafa0a822f1e1fbd832eb864..1a7678b8a1af0e31a58637a90eb2b2785ce4a617 100644
+index 55ae2533513bf0e44adbd5a79d68bb3e8481aebf..e56c57bdb10d4ea0be91ef30f8a8b44adf221c78 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -791,6 +791,8 @@ component("views") {
