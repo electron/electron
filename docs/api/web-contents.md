@@ -1344,6 +1344,13 @@ Returns `boolean` - Whether the renderer process has crashed.
 
 #### `contents.discard()`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53741
+```
+-->
+
 Returns `boolean` - Whether the page was accepted for discard.
 
 Discards the page hosted by this `webContents`, terminating its renderer when
@@ -1360,6 +1367,13 @@ is `true` in the newly loaded document. Other owners, including a
 to restore discarded contents.
 
 #### `contents.isDiscarded()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53741
+```
+-->
 
 Returns `boolean` - Whether the page has been discarded and is waiting to be
 reloaded.
