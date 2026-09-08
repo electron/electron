@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_COMPONENT_EXTENSION_RESOURCE_MANAGER_H_
 
 #include <memory>
-#include <string>
 
 #include "extensions/browser/component_extension_resource_manager.h"
 #include "extensions/buildflags/buildflags.h"
@@ -40,14 +39,6 @@ class ElectronComponentExtensionResourceManager
                                     int* resource_id) const override;
   const ui::TemplateReplacements* GetTemplateReplacementsForExtension(
       const ExtensionId& extension_id,
-      content::BrowserContext* context) const override;
-  bool IsDynamicComponentExtensionResource(
-      const ExtensionId& extension_id,
-      const std::string& path,
-      content::BrowserContext* context) const override;
-  std::string GetDynamicResourceContent(
-      const ExtensionId& extension_id,
-      const std::string& path,
       content::BrowserContext* context) const override;
 
  private:
