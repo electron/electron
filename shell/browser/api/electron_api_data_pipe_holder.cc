@@ -157,7 +157,10 @@ DataPipeHolder::DataPipeHolder(const network::DataElement& element)
       element.As<network::DataElementDataPipe>().CloneDataPipeGetter());
 }
 
-DataPipeHolder::~DataPipeHolder() = default;
+DataPipeHolder::~DataPipeHolder() {
+  // Off-heap registry; safe to touch from the finalizer.
+  AllDataPipeHolders().erase(id_);
+}
 
 v8::Local<v8::Promise> DataPipeHolder::ReadAll(v8::Isolate* isolate) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
