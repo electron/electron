@@ -80,7 +80,7 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index 68aabb908e006c3bd86a2c13847e76dd348fc9a6..efb87db772f2224a320ecef56b3bc6af6a035bfd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11071,25 +11071,13 @@ void WebContentsImpl::RendererUnresponsive(
+@@ -11074,25 +11074,13 @@ void WebContentsImpl::RendererUnresponsive(
      base::RepeatingClosure hang_monitor_restarter) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RendererUnresponsive",
                          "render_widget_host", render_widget_host);

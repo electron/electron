@@ -17,7 +17,7 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index b1874108e2dcff28d0dc3d37507e245e01ba2524..68aabb908e006c3bd86a2c13847e76dd348fc9a6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5565,7 +5565,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5568,7 +5568,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
            : IsGuest();
    // While some guest types do not have a guest SiteInstance, the ones that
    // don't all override WebContents creation above.

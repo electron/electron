@@ -90,7 +90,7 @@ diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser
 index 91008b553242914cb776a391d42dc3334cacc93d..b1874108e2dcff28d0dc3d37507e245e01ba2524 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10910,7 +10910,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -10913,7 +10913,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
      return;
    }
    RenderWidgetHostViewBase* root_view =
