@@ -491,3 +491,172 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.name).to.equal('NotAllowedError');
   });
 });
+
+// Windows 11 serves hybrid transport natively, so Electron does not offer it
+// there and the event is not emitted.
+ifdescribe(process.platform !== 'win32')("session 'webauthn-hybrid-request' event", () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    w.webContents.debugger.attach();
+    await w.webContents.debugger.sendCommand('WebAuthn.enable');
+    // A virtual authenticator lets the ceremony complete on CI machines that
+    // have no Bluetooth adapter. The hybrid event fires before any
+    // authenticator is consulted, so it is observable either way.
+    await w.webContents.debugger.sendCommand('WebAuthn.addVirtualAuthenticator', {
+      options: {
+        protocol: 'ctap2',
+        transport: 'internal',
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true
+      }
+    });
+  });
+
+  afterEach(async () => {
+    session.defaultSession.removeAllListeners('webauthn-hybrid-request');
+    session.defaultSession.removeAllListeners('webauthn-hybrid-request-completed');
+    try {
+      w.webContents.debugger.detach();
+    } catch {}
+    await closeAllWindows();
+  });
+
+  function makeCredential() {
+    return w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            residentKey: 'required',
+            userVerification: 'required'
+          }
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+  }
+
+  function getAssertion() {
+    return w.webContents.executeJavaScript(`
+      navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32),
+          rpId: 'localhost',
+          userVerification: 'required'
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+  }
+
+  it('fires for navigator.credentials.create() with a FIDO QR code', async () => {
+    let received: any;
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      received = details;
+    });
+
+    const result = await makeCredential();
+    expect(result.ok).to.be.true();
+
+    expect(received).to.exist();
+    expect(received.relyingPartyId).to.equal('localhost');
+    expect(received.requestType).to.equal('create');
+    // caBLE v2 QR payloads are the "FIDO:/" prefix followed by base-10 digits.
+    expect(received.qrCode).to.match(/^FIDO:\/\d+$/);
+    expect(received.frame).to.equal(w.webContents.mainFrame);
+  });
+
+  it('fires for navigator.credentials.get() and emits a completion event', async () => {
+    await makeCredential();
+
+    const requests: any[] = [];
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      requests.push(details);
+    });
+    const completed = new Promise<any>((resolve) => {
+      (w.webContents.session as NodeJS.EventEmitter).once('webauthn-hybrid-request-completed', (event, details) => {
+        resolve(details);
+      });
+    });
+
+    const result = await getAssertion();
+    expect(result.ok).to.be.true();
+
+    const getRequest = requests.find((r) => r.requestType === 'get');
+    expect(getRequest).to.exist();
+    expect(getRequest.qrCode).to.match(/^FIDO:\/\d+$/);
+
+    const details = await completed;
+    expect(details.relyingPartyId).to.equal('localhost');
+    expect(details.frame).to.equal(w.webContents.mainFrame);
+  });
+
+  it('generates a fresh QR code for every request', async () => {
+    const codes: string[] = [];
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request', (event, details) => {
+      codes.push(details.qrCode);
+    });
+
+    await makeCredential();
+    await getAssertion();
+
+    expect(codes).to.have.lengthOf(2);
+    expect(codes[0]).to.not.equal(codes[1]);
+  });
+
+  it('leaves other authenticators working when no listener is registered', async () => {
+    expect(w.webContents.session.listenerCount('webauthn-hybrid-request')).to.equal(0);
+
+    const created = await makeCredential();
+    expect(created.ok).to.be.true();
+
+    const asserted = await getAssertion();
+    expect(asserted.ok).to.be.true();
+    expect(asserted.id).to.equal(created.id);
+  });
+
+  it('does not emit a completion event when no listener accepted the request', async () => {
+    let completions = 0;
+    (w.webContents.session as NodeJS.EventEmitter).on('webauthn-hybrid-request-completed', () => {
+      completions++;
+    });
+
+    const result = await makeCredential();
+    expect(result.ok).to.be.true();
+    // The completion task is posted to the UI thread; give it a turn to run.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(completions).to.equal(0);
+  });
+});
