@@ -35,7 +35,7 @@ See https://github.com/electron/electron/issues/53387.
 (cherry picked from commit fd325a7fc2b33839c024220aa0c44b9104749686)
 
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index c489cd3ce46347279d33dc229e55294245862dff..2ab0d899be8932158d57280831374ed3cb3ceb32 100644
+index 25af62aafe5249fb153663370c1d49c93fa02e37..7e7b29430d880e94364ec52e5765e0f0609949c2 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
 @@ -27,6 +27,12 @@ static void at_exit_callback_ordered2(void* arg);

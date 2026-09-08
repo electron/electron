@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/common.gypi b/common.gypi
-index ed40c5671cc3b7d60b3ef8e15e01ec60c6542f47..1702a921fde2d8c26da579c6c8c6578dd1a3dadc 100644
+index 456f3d86e49f6cefda6d3a7c93ead63945f74049..3e0acfbe0556cb2be84dda6f8b4758a351c4ed40 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -90,7 +90,7 @@
@@ -20,13 +20,13 @@ index ed40c5671cc3b7d60b3ef8e15e01ec60c6542f47..1702a921fde2d8c26da579c6c8c6578d
 -    'v8_use_perfetto': 0,
 +    'v8_use_perfetto%': 0,
      'tsan%': 0,
-     'v8_cppgc_microtask_queue%': 0,
  
+     'using_electron_config_gypi%': 0,
 diff --git a/configure.py b/configure.py
-index 86aea91a11eb9bf39247ccf90479542aa7558319..4f945f30076ef0ba9ea0bb2dcfaf9bded4675f57 100755
+index f7577d93244e4543db732f7e4c1f0db14f0565b2..41f3a4fbe4051a6a05e22611de26267d66987483 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1039,6 +1039,12 @@ parser.add_argument('--without-inspector',
+@@ -1031,6 +1031,12 @@ parser.add_argument('--without-inspector',
      default=None,
      help='disable the V8 inspector protocol')
  
@@ -39,8 +39,8 @@ index 86aea91a11eb9bf39247ccf90479542aa7558319..4f945f30076ef0ba9ea0bb2dcfaf9bde
  parser.add_argument('--shared',
      action='store_true',
      dest='shared',
-@@ -2006,6 +2012,7 @@ def configure_v8(o, configs):
-   o['variables']['v8_cppgc_microtask_queue'] = 1 if options.v8_enable_cppgc_microtask_queue else 0
+@@ -1997,6 +2003,7 @@ def configure_v8(o, configs):
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_extensible_ro_snapshot'] = 0
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
 +  o['variables']['v8_use_perfetto'] = 1 if options.with_perfetto else 0
