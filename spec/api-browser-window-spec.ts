@@ -325,6 +325,36 @@ describe('BrowserWindow module', () => {
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, '-before-unload-fired');
     });
+
+    it('is ignored when called from an iframe', async () => {
+      const server = http.createServer((_req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('<!doctype html><body>frame</body>');
+      });
+      defer(() => server.close());
+      const crossOriginUrl = (await listen(server)).url;
+      const win = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: false, nodeIntegrationInSubFrames: true, contextIsolation: true }
+      });
+      defer(() => win.isDestroyed() || win.destroy());
+      await win.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await win.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(crossOriginUrl)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = win.webContents.mainFrame.frames[0];
+      let closed = false;
+      win.on('closed', () => {
+        closed = true;
+      });
+      await iframe.executeJavaScript('window.close(); true', true);
+      await setTimeout(500);
+      expect(closed).to.equal(false);
+      expect(win.isDestroyed()).to.equal(false);
+    });
   });
 
   describe('BrowserWindow.destroy()', () => {

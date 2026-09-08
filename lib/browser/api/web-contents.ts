@@ -117,13 +117,17 @@ WebContents.prototype._sendInternal = function (channel, ...args) {
 };
 
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
+  let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {
-    return webFrameMain.fromId(contents.mainFrame.processId, frame);
+    webFrame = webFrameMain.fromId(contents.mainFrame.processId, frame);
   } else if (Array.isArray(frame) && frame.length === 2 && frame.every((value) => typeof value === 'number')) {
-    return webFrameMain.fromId(frame[0], frame[1]);
+    webFrame = webFrameMain.fromId(frame[0], frame[1]);
   } else {
     throw new Error('Missing required frame argument (must be number or [processId, frameId])');
   }
+  // Frame ids are global; only address frames that belong to |contents|.
+  if (webFrame && webFrame.top !== contents.mainFrame) return undefined;
+  return webFrame;
 }
 
 WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
