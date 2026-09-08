@@ -101,7 +101,7 @@ declare namespace Electron {
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
-    _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
+    _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
     _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
@@ -282,7 +282,8 @@ declare namespace Electron {
         rawFeatures: string,
         referrer: Electron.Referrer,
         postData: LoadURLOptions['postData'],
-        inheritedSandboxFlags: number
+        inheritedSandboxFlags: number,
+        navigate: (webContents: Electron.WebContents) => void
       ) => void
     ): this;
     on(
