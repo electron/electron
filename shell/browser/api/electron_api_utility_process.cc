@@ -16,9 +16,12 @@
 #include "base/process/process.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
+#include "content/public/browser/child_process_termination_info.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
@@ -191,6 +194,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   // Watch for service process termination events.
   content::ServiceProcessHost::AddObserver(this);
+  content::BrowserChildProcessObserver::Add(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -260,6 +264,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
@@ -289,6 +294,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 
   pid_ = base::kNullProcessId;
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
   CloseConnectorPort();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
@@ -325,16 +331,31 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  // A non-zero code from process.exit() arrives first through
+  // OnServiceProcessDisconnected.
+  HandleTermination(0);
 }
 
-void UtilityProcessWrapper::OnServiceProcessCrashed(
-    const content::ServiceProcessInfo& info) {
-  if (!info.IsService<node::mojom::NodeService>() ||
-      info.GetProcess().Pid() != pid_)
-    return;
+bool UtilityProcessWrapper::IsThisProcess(
+    const content::ChildProcessData& data) const {
+  return pid_ != base::kNullProcessId &&
+         data.process_type == content::PROCESS_TYPE_UTILITY &&
+         data.metrics_name == node::mojom::NodeService::Name_ &&
+         data.GetProcess().Pid() == pid_;
+}
 
-  HandleTermination(info.exit_code());
+void UtilityProcessWrapper::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {

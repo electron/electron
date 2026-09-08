@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Mon, 7 Sep 2026 12:00:00 +0000
+Subject: build: add ai_assistance bundle dep on generated skill files
+
+Backport of https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8344907
+(devtools-frontend commit 1e7b64528042ebd13ebe3e6d7b2952ca7da53fbb).
+
+front_end/models/ai_assistance/skills/SkillRegistry.ts imports six
+generated files (accessibility/network/performance/sources/storage/
+styling.skill.js) that action_foreach("generate_skills") in
+skills/BUILD.gn produces from Markdown at build time. The only
+dependency on that action is devtools_module("ai_assistance")'s
+`public_deps = [ "skills:generate_skills" ]`. With split_compilation
+enabled, devtools_entrypoint("bundle") turns `ts_deps = [ ":ai_assistance" ]`
+into a dependency on the `ai_assistance_sources` group, and that group
+only forwards `deps` (ts_library_split.gni: `public_deps = _non_ts_deps`),
+not `public_deps`. As a result the esbuild action
+//third_party/devtools-frontend/src/front_end/models/ai_assistance:bundle_bundle
+has no ninja edge to skills:generate_skills at all, and Ninja/Siso is
+free to schedule it before the .skill.js files exist. When it loses the
+race the publish build fails with:
+
+  X [ERROR] Cannot read file: ...\front_end\models\ai_assistance\skills\styling.skill.js
+  Failed to run esbuild: Build failed with 6 errors
+
+Seen on Windows publish builds:
+  https://github.com/electron/electron/actions/runs/33510834437 (v46 nightly, 2026-09-01)
+  https://github.com/electron/electron/actions/runs/34157803757 (v45.0.0-alpha.5, publish-arm64-win)
+
+The upstream fix adds an explicit `deps = [ "skills:generate_skills" ]`
+to the bundle entrypoint (so the esbuild action orders after the
+generator) and wraps the action_foreach in a group that exposes the
+generated files as public_inputs (so remote execution receives them as
+declared inputs).
+
+Chromium main picks this up from 155.0.8044.0, so this can be removed
+from main once Electron rolls to a Chromium that includes it. The M155
+release branch (refs/branch-heads/8038) still pins devtools-frontend
+da97eec27511514557700bef3595f616e669deed, which predates the fix, so
+45-x-y needs to carry it.
+
+diff --git a/front_end/models/ai_assistance/BUILD.gn b/front_end/models/ai_assistance/BUILD.gn
+index c49c747cb6120045dca1f51e2e829ba43e308d90..ec0c2e046fb01c8e989fd79073c59e574847ad91 100644
+--- a/front_end/models/ai_assistance/BUILD.gn
++++ b/front_end/models/ai_assistance/BUILD.gn
+@@ -115,6 +115,8 @@ devtools_entrypoint("bundle") {
+   split_compilation = true
+   entrypoint = "ai_assistance.ts"
+ 
++  deps = [ "skills:generate_skills" ]
++
+   ts_deps = [ ":ai_assistance" ]
+ 
+   visibility = [
+diff --git a/front_end/models/ai_assistance/skills/BUILD.gn b/front_end/models/ai_assistance/skills/BUILD.gn
+index 0201e52480006393c46709d24c32569b684d9be1..80c20acd835c4fe479d866e4bc5045a5551153f2 100644
+--- a/front_end/models/ai_assistance/skills/BUILD.gn
++++ b/front_end/models/ai_assistance/skills/BUILD.gn
+@@ -10,17 +10,19 @@ import("../../../../scripts/build/ninja/vars.gni")
+ # gen/front_end/models/ai_assistance/skills/
+ # so they can be imported relatively by files in this directory.
+ 
+-action_foreach("generate_skills") {
++_skill_sources = [
++  "accessibility.md",
++  "network.md",
++  "performance.md",
++  "sources.md",
++  "storage.md",
++  "styling.md",
++]
++
++action_foreach("_generate_skills") {
+   script = "//third_party/node/node.py"
+ 
+-  sources = [
+-    "accessibility.md",
+-    "network.md",
+-    "performance.md",
+-    "sources.md",
+-    "storage.md",
+-    "styling.md",
+-  ]
++  sources = _skill_sources
+ 
+   inputs = [
+     "../../../../scripts/build/build_ai_skills.mjs",
+@@ -48,3 +50,10 @@ action_foreach("generate_skills") {
+     }
+   }
+ }
++
++group("generate_skills") {
++  public_deps = [ ":_generate_skills" ]
++  public_inputs =
++      process_file_template(_skill_sources,
++                            [ "$target_gen_dir/{{source_name_part}}.skill.js" ])
++}

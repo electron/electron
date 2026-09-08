@@ -1733,12 +1733,6 @@ bool WebContents::PlatformHandleKeyboardEvent(
 }
 #endif
 
-bool WebContents::PreHandleMouseEvent(content::WebContents* source,
-                                      const blink::WebMouseEvent& event) {
-  // |true| means that the event should be prevented.
-  return Emit("before-mouse-event", event);
-}
-
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const input::NativeWebKeyboardEvent& event) {
@@ -2152,8 +2146,19 @@ void WebContents::HandleNewRenderFrame(
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
-  if (rwh_impl)
+  if (rwh_impl) {
     rwh_impl->disable_hidden_ = !background_throttling_;
+    if (!mouse_event_callback_) {
+      mouse_event_callback_ = base::BindRepeating(
+          [](base::WeakPtr<WebContents> self, const blink::WebMouseEvent& e) {
+            return self && self->OnMouseEvent(e);
+          },
+          weak_factory_.GetWeakPtr());
+    }
+    // Frames in one local root share a widget, so re-registering is expected.
+    rwh_impl->RemoveMouseEventCallback(mouse_event_callback_);
+    rwh_impl->AddMouseEventCallback(mouse_event_callback_);
+  }
 
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
@@ -4483,6 +4488,11 @@ void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
 
 void WebContents::PDFReadyToPrint() {
   Emit("-pdf-ready-to-print");
+}
+
+bool WebContents::OnMouseEvent(const blink::WebMouseEvent& event) {
+  // |true| means that the event should be prevented.
+  return Emit("before-mouse-event", event);
 }
 
 void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
