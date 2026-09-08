@@ -75,14 +75,16 @@ v8::Local<v8::Function> GetCachedCallbackHolderProbeForTesting(
   static const char kCacheKey = 0;
   auto context = isolate->GetCurrentContext();
   auto* data = gin_helper::PerContextTemplateData::From(context, &kCacheKey);
-  if (data->function_template.IsEmpty()) {
-    data->function_template.Reset(
-        isolate, gin_helper::CreateFunctionTemplate(
-                     isolate, CreateCallbackHolderProbeCallback()));
+  v8::Local<v8::FunctionTemplate> templ;
+  if (data)
+    templ = data->function_template.Get(isolate);
+  if (templ.IsEmpty()) {
+    templ = gin_helper::CreateFunctionTemplate(
+        isolate, CreateCallbackHolderProbeCallback());
+    if (data)
+      data->function_template.Reset(isolate, templ);
   }
-  return data->function_template.Get(isolate)
-      ->GetFunction(context)
-      .ToLocalChecked();
+  return templ->GetFunction(context).ToLocalChecked();
 }
 
 int GetLiveCallbackHolderProbeCountForTesting() {
