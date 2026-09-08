@@ -89,6 +89,57 @@ describe('chrome extensions', () => {
     ).to.eventually.have.property('id');
   });
 
+  describe('Chrome Web Store origin', () => {
+    // The core //extensions feature files expose some APIs to web pages on the
+    // Chrome Web Store origin. Electron does not support chrome.webstorePrivate
+    // and overrides it to be unavailable everywhere; make sure that sticks.
+    const webstoreUrl = 'https://chromewebstore.google.com/category/extensions';
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      customSession = session.fromPartition(`webstore-${randomUUID()}`);
+      // Serve the origin locally so the test does not touch the network.
+      customSession.protocol.handle(
+        'https',
+        () => new Response(emptyPage, { headers: { 'content-type': 'text/html' } })
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    });
+
+    afterEach(async () => {
+      customSession.protocol.unhandle('https');
+      await closeAllWindows();
+    });
+
+    it('does not expose chrome.webstorePrivate to web pages', async () => {
+      await w.loadURL(webstoreUrl);
+      const type = await w.webContents.executeJavaScript(
+        "typeof chrome === 'undefined' ? 'undefined' : typeof chrome.webstorePrivate"
+      );
+      expect(type).to.equal('undefined');
+    });
+
+    it('does not crash if the page tries to call chrome.webstorePrivate', async () => {
+      await w.loadURL(webstoreUrl);
+      // If bindings were ever exposed again this would reach the browser process,
+      // which must respond with an error rather than crash.
+      const result = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        try {
+          chrome.webstorePrivate.getReferrerChain(() => resolve(chrome.runtime.lastError ? chrome.runtime.lastError.message : 'ok'));
+        } catch (e) {
+          resolve('threw: ' + e.message);
+        }
+      })`);
+      expect(result)
+        .to.be.a('string')
+        .and.match(/^threw: |not supported/);
+      expect(w.webContents.isCrashed()).to.be.false();
+      // The browser process is still alive if we get here; do a round trip to be sure.
+      expect(await w.webContents.executeJavaScript('1 + 1')).to.equal(2);
+    });
+  });
+
   describe('host_permissions', async () => {
     let customSession: Session;
     let w: BrowserWindow;
