@@ -83,6 +83,10 @@ void MessagePort::PostMessage(gin::Arguments* args) {
     }
   }
 
+  // Serialization above can run JS that transfers or closes this port.
+  if (!IsEntangled())
+    return;
+
   bool threw_exception = false;
   transferable_message.ports = MessagePort::DisentanglePorts(
       args->isolate(), wrapped_ports, &threw_exception, this);
