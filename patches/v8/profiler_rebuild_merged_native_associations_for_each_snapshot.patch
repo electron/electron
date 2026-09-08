@@ -37,7 +37,7 @@ each snapshot. This removes stale native addresses while preserving the
 existing JavaScript object IDs. Rebuild both cppgc and embedder graph
 associations through their existing traversal paths.
 
-Will be upstreamed.
+Upstreamed at https://chromium-review.googlesource.com/c/v8/v8/+/8369219.
 
 diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
 index 6681d711108a51e021e0ffa5ef22048f865c47be..7b2bcee6affcbfcba03939293862e272936efacc 100644
