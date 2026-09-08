@@ -695,7 +695,7 @@ class WebFrameRenderer final
         blink::BackForwardCacheAware::kAllow,
         blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait,
-        /*is_injected_extension_script=*/false);
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
   }
@@ -777,7 +777,7 @@ class WebFrameRenderer final
         blink::BackForwardCacheAware::kPossiblyDisallow,
         blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait,
-        /*is_injected_extension_script=*/false);
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
   }
