@@ -240,6 +240,8 @@ class WebContents final : public ExclusiveAccessContext,
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
   std::string GetOrCreateDevToolsTargetId();
   bool IsCrashed() const;
+  bool Discard();
+  bool IsDiscarded() const;
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();

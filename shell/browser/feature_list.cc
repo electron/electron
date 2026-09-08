@@ -95,6 +95,11 @@ void InitializeFeatureList() {
       std::string(",") + chrome_pdf::features::kPdfUseShowSaveFilePicker.name;
 #endif
 
+  // Electron exposes explicit WebContents lifecycle control to applications.
+  // The Chromium feature is disabled by default on desktop, so enable the
+  // underlying discard mechanism while allowing --disable-features to win.
+  enable_features += std::string(",") + features::kWebContentsDiscard.name;
+
 #if BUILDFLAG(IS_LINUX)
   // Without this, globalShortcut is a silent no-op on GNOME Wayland (the
   // ozone factory returns no listener there). Chromium keeps it off due to
