@@ -5,10 +5,12 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
 #include "base/no_destructor.h"
+#include "base/timer/elapsed_timer.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/draggable_region_debugger.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -100,8 +102,17 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
     gfx::Point local_point(point);
     views::View::ConvertPointFromWidget(contents_view, &local_point);
     SkRegion* region = api_web_contents_->draggable_region();
-    if (region && region->contains(local_point.x(), local_point.y()))
-      return HTCAPTION;
+    if (region) {
+      auto* debugger = api_web_contents_->draggable_region_debugger();
+      std::optional<base::ElapsedTimer> timer;
+      if (debugger)
+        timer.emplace();
+      const bool hit = region->contains(local_point.x(), local_point.y());
+      if (debugger)
+        debugger->OnHitTest(timer->Elapsed(), hit);
+      if (hit)
+        return HTCAPTION;
+    }
   }
 
   return HTNOWHERE;
