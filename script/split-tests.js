@@ -28,8 +28,7 @@ const specFiles = glob.sync('spec/*-spec.ts').map((f) => path.normalize(f));
 
 const BUILD_TYPES = { darwin: 'darwin', linux: 'linux', win32: 'win' };
 
-const jobKey = () =>
-  process.env.ARTIFACT_KEY || `${BUILD_TYPES[process.platform] ?? process.platform}_${process.arch}`;
+const jobKey = () => process.env.ARTIFACT_KEY || `${BUILD_TYPES[process.platform] ?? process.platform}_${process.arch}`;
 
 // The table for this job, else the nearest one of the same build type (MAS
 // falls back to darwin): same arch first, then the plainest, else a legacy
