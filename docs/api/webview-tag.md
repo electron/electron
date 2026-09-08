@@ -679,6 +679,13 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 > zoom level for a specific domain propagates across all instances of windows with
 > the same domain. Differentiating the window URLs will make zoom work per-window.
 
+> [!NOTE]
+> A `<webview>` inherits the zoom level of its embedder and follows the embedder's
+> subsequent zoom changes while its zoom mode is `default`. A guest whose zoom mode
+> has been set to `isolated`, `manual`, or `disabled` via
+> [`webContents.setZoomMode`](web-contents.md#contentssetzoommodemode) manages
+> its own zoom level and does not follow the embedder's zoom changes.
+
 ### `<webview>.getZoomFactor()`
 
 Returns `number` - the current zoom factor.

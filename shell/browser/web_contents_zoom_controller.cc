@@ -137,6 +137,10 @@ void WebContentsZoomController::SetDefaultZoomFactor(double factor) {
 
 void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // Cannot zoom in disabled mode.
+  if (zoom_mode_ == ZOOM_MODE_DISABLED)
+    return;
+
   content::GlobalRenderFrameHostId old_rfh_id_ =
       web_contents()->GetPrimaryMainFrame()->GetGlobalId();
   host_zoom_map_->SetTemporaryZoomLevel(old_rfh_id_, level);
