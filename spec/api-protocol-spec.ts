@@ -960,6 +960,44 @@ describe('protocol module', () => {
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
+
+    it('throws for invalid scheme names', () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
+      const bootEval = `
+        const { protocol } = require('electron');
+        const results = {};
+        for (const scheme of ['foo,bar', '1foo', 'foo_bar', '', 'foo-bar.baz+qux']) {
+          try {
+            protocol.registerSchemesAsPrivileged([{ scheme, privileges: { standard: true } }]);
+            results[scheme] = null;
+          } catch (e) {
+            results[scheme] = e.message;
+          }
+        }
+        console.log(JSON.stringify(results));
+        process.exit(0);
+      `;
+      const result = ChildProcess.spawnSync(process.execPath, [appPath, `--boot-eval=${bootEval}`]);
+
+      const stdout = result.stdout.toString();
+      expect(result.status, `stdout: ${stdout}\nstderr: ${result.stderr.toString()}`).to.equal(0);
+
+      const line = stdout.split('\n').find((l) => l.startsWith('{'));
+      expect(line, `unexpected stdout: ${stdout}`).to.be.a('string');
+
+      const invalid = (scheme: string) =>
+        `Invalid scheme name '${scheme}'. Scheme names must ` +
+        "start with an ASCII letter and contain only ASCII letters, digits, '+', '-', or '.'.";
+
+      expect(JSON.parse(line!)).to.deep.equal({
+        'foo,bar': invalid('foo,bar'),
+        '1foo': invalid('1foo'),
+        foo_bar: invalid('foo_bar'),
+        '': invalid(''),
+        // A valid RFC 3986 scheme still registers.
+        'foo-bar.baz+qux': null
+      });
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
