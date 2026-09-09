@@ -1,0 +1,12 @@
+<html>
+<body>
+  <input id="i">
+</body>
+<script type="text/javascript" charset="utf-8">
+  window.log = []
+  const input = document.getElementById('i')
+  for (const type of ['compositionstart', 'compositionupdate', 'compositionend', 'input']) {
+    input.addEventListener(type, (e) => window.log.push({ type: e.type, data: e.data }))
+  }
+</script>
+</html>

@@ -34,6 +34,8 @@
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
+#include "ui/base/ime/ime_text_span.h"
+#include "ui/base/ime/mojom/text_input_state.mojom.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
 #include "ui/compositor/layer_surface.h"
@@ -45,6 +47,8 @@
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/native_ui_types.h"
+#include "ui/gfx/range/range.h"
+#include "ui/gfx/selection_bound.h"
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
 
@@ -94,6 +98,13 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
 }
 
 }  // namespace
+
+OffscreenTextInputCallbacks::OffscreenTextInputCallbacks() = default;
+OffscreenTextInputCallbacks::OffscreenTextInputCallbacks(
+    const OffscreenTextInputCallbacks&) = default;
+OffscreenTextInputCallbacks& OffscreenTextInputCallbacks::operator=(
+    const OffscreenTextInputCallbacks&) = default;
+OffscreenTextInputCallbacks::~OffscreenTextInputCallbacks() = default;
 
 class ElectronDelegatedFrameHostClient
     : public content::DelegatedFrameHostClient {
@@ -212,6 +223,10 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   render_widget_host_->SetView(this);
 
+  // Child and popup widgets report through the root view's TextInputManager.
+  if (!parent_host_view_ && GetTextInputManager())
+    GetTextInputManager()->AddObserver(this);
+
   if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
     video_consumer_ = std::make_unique<OffScreenVideoConsumer>(
         this, base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
@@ -234,6 +249,9 @@ void OffScreenRenderWidgetHostView::OnLocalSurfaceIdChanged(
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
+  if (text_input_manager_)
+    text_input_manager_->RemoveObserver(this);
+
   ReleaseCompositor();
   root_layer_.reset();
 
@@ -853,6 +871,111 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   if (!render_widget_host_)
     return;
   render_widget_host_->ForwardWheelEvent(event);
+}
+
+content::RenderWidgetHostImpl*
+OffScreenRenderWidgetHostView::GetImeTargetWidget() {
+  if (GetTextInputManager() && GetTextInputManager()->GetActiveWidget())
+    return GetTextInputManager()->GetActiveWidget();
+  return render_widget_host_;
+}
+
+void OffScreenRenderWidgetHostView::SendImeSetComposition(
+    const std::u16string& text,
+    const std::vector<ui::ImeTextSpan>& spans,
+    const gfx::Range& replacement_range,
+    int selection_start,
+    int selection_end) {
+  if (auto* widget = GetImeTargetWidget()) {
+    widget->ImeSetComposition(text, spans, replacement_range, selection_start,
+                              selection_end);
+  }
+}
+
+void OffScreenRenderWidgetHostView::SendImeCommitText(
+    const std::u16string& text,
+    const gfx::Range& replacement_range,
+    int relative_cursor_position) {
+  if (auto* widget = GetImeTargetWidget()) {
+    widget->ImeCommitText(text, {}, replacement_range,
+                          relative_cursor_position);
+  }
+}
+
+void OffScreenRenderWidgetHostView::SendImeFinishComposingText(
+    bool keep_selection) {
+  if (auto* widget = GetImeTargetWidget())
+    widget->ImeFinishComposingText(keep_selection);
+}
+
+void OffScreenRenderWidgetHostView::SendImeCancelComposition() {
+  if (auto* widget = GetImeTargetWidget())
+    widget->ImeCancelComposition();
+}
+
+void OffScreenRenderWidgetHostView::SetTextInputCallbacks(
+    const OffscreenTextInputCallbacks& callbacks) {
+  text_input_callbacks_ = callbacks;
+}
+
+bool OffScreenRenderWidgetHostView::ShouldReportTextInputState() const {
+  // A speculative main-frame view observes the same TextInputManager; only
+  // the committed one reports so the embedder sees each change once.
+  return render_widget_host_ && render_widget_host_->delegate() &&
+         render_widget_host_->delegate()->IsWidgetForPrimaryMainFrame(
+             render_widget_host_);
+}
+
+void OffScreenRenderWidgetHostView::OnUpdateTextInputStateCalled(
+    content::TextInputManager* manager,
+    RenderWidgetHostViewBase* updated_view,
+    bool did_update_state) {
+  const ui::mojom::TextInputState* state = manager->GetTextInputState();
+  const bool editable = state && state->type != ui::TEXT_INPUT_TYPE_NONE;
+
+  // Have the renderer push composition range updates while an editable
+  // element is focused, as Aura does.
+  if (auto* widget = updated_view->host())
+    widget->RequestCompositionUpdates(false, editable);
+
+  if (!did_update_state || !ShouldReportTextInputState() ||
+      !text_input_callbacks_.state_changed) {
+    return;
+  }
+  text_input_callbacks_.state_changed.Run(
+      editable ? state->type : ui::TEXT_INPUT_TYPE_NONE,
+      editable ? state->mode : ui::TEXT_INPUT_MODE_DEFAULT,
+      editable ? state->can_compose_inline : false);
+}
+
+void OffScreenRenderWidgetHostView::OnSelectionBoundsChanged(
+    content::TextInputManager* manager,
+    RenderWidgetHostViewBase* updated_view) {
+  if (!ShouldReportTextInputState() ||
+      !text_input_callbacks_.selection_bounds_changed) {
+    return;
+  }
+  const auto* region = manager->GetSelectionRegion();
+  if (!region)
+    return;
+  text_input_callbacks_.selection_bounds_changed.Run(
+      gfx::RectBetweenSelectionBounds(region->anchor, region->anchor),
+      gfx::RectBetweenSelectionBounds(region->focus, region->focus));
+}
+
+void OffScreenRenderWidgetHostView::OnImeCompositionRangeChanged(
+    content::TextInputManager* manager,
+    RenderWidgetHostViewBase* updated_view,
+    bool character_bounds_changed) {
+  if (!character_bounds_changed || !ShouldReportTextInputState() ||
+      !text_input_callbacks_.composition_range_changed) {
+    return;
+  }
+  const auto* info = manager->GetCompositionRangeInfo();
+  if (!info || !info->range.IsValid())
+    return;
+  text_input_callbacks_.composition_range_changed.Run(info->range,
+                                                      info->character_bounds);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {

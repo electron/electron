@@ -39,13 +39,13 @@ class OffScreenWebContentsView : public content::WebContentsView,
       bool transparent,
       bool offscreen_use_shared_texture,
       const std::string& offscreen_shared_texture_pixel_format,
-      float offscreen_device_scale_factor,
-      const OnPaintCallback& callback);
+      float offscreen_device_scale_factor);
   ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
   void SetCallback(const OnPaintCallback& callback);
+  void SetTextInputCallbacks(const OffscreenTextInputCallbacks& callbacks);
 
   // NativeWindowObserver:
   void OnWindowResize() override;
@@ -120,6 +120,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   bool painting_ = true;
   int frame_rate_ = 60;
   OnPaintCallback callback_;
+  OffscreenTextInputCallbacks text_input_callbacks_;
 
   // Weak refs.
   raw_ptr<content::WebContents> web_contents_ = nullptr;
