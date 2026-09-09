@@ -1,0 +1,1574 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Tue, 1 Sep 2026 23:23:04 -0700
+Subject: views: Fix UAF in MenuController and simplify teardown
+
+This CL fixes a Use-After-Free (UAF) in MenuController::OpenMenuImpl
+by deferring MenuController and MenuRunnerImpl destruction when the
+execution stack is active (tracked via stack_depth_ > 0).
+
+To support this:
+- Fix UAF in MenuItemView by clearing parent pointers during
+  destruction.
+- Fix gesture transfer issue in MenuHost by returning early in
+  HideMenuHost if we are destroying and it is already hidden.
+- Fix dangling pointers in ClipboardHistory and BirchBar menus by
+  clearing delegates/history pointers during menu teardown.
+
+Bug: 516996291
+AX-Relnotes: n/a.
+TAG=agy
+CONV=b4c86621-d1cd-478c-ae64-25a090f21efa
+
+Change-Id: I4d4d4cf14c95bab5745653f1d0d59845dc3b9024
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8246240
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1690483}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index 31d319ca34fd0f940e2bebe196794d9b01312d51..4f4fa1d6d216fd6df56ead3bf66b86cd4b4b836e 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -11,7 +11,6 @@
+ #include "base/callback_list.h"
+ #include "base/check.h"
+ #include "base/containers/flat_set.h"
+-#include "base/debug/dump_without_crashing.h"
+ #include "base/functional/bind.h"
+ #include "base/i18n/case_conversion.h"
+ #include "base/i18n/rtl.h"
+@@ -47,6 +46,7 @@
+ #include "ui/views/controls/menu/menu_host_root_view.h"
+ #include "ui/views/controls/menu/menu_item_view.h"
+ #include "ui/views/controls/menu/menu_pre_target_handler.h"
++#include "ui/views/controls/menu/menu_runner_impl.h"
+ #include "ui/views/controls/menu/menu_scroll_view_container.h"
+ #include "ui/views/controls/menu/menu_types.h"
+ #include "ui/views/controls/menu/submenu_view.h"
+@@ -685,6 +685,9 @@ void MenuController::Run(Widget* parent,
+                          MenuType menu_type,
+                          bool is_nested_drag,
+                          gfx::NativeView native_view_for_gestures) {
++  // Track stack depth to defer controller destruction during initial menu
++  // display.
++  ScopedDeletionGuard guard(AsWeakPtr());
+   exit_type_ = ExitType::kNone;
+   possible_drag_ = false;
+   drag_in_progress_ = false;
+@@ -826,6 +829,9 @@ void MenuController::Run(Widget* parent,
+ }
+ 
+ void MenuController::Cancel(ExitType type, bool disable_animation) {
++  // Track stack depth to defer controller destruction during menu
++  // cancellation.
++  ScopedDeletionGuard guard(AsWeakPtr());
+ #if BUILDFLAG(IS_MAC)
+   menu_closure_animation_.reset();
+ #endif
+@@ -928,12 +934,12 @@ bool MenuController::IsContextMenu() const {
+ 
+ void MenuController::SelectItemAndOpenSubmenu(MenuItemView* item) {
+   DCHECK(item);
+-  auto this_ref = AsWeakPtr();
++  ScopedDeletionGuard guard(AsWeakPtr());
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
+   // Accessibility events fired as a result of the selection changing may have
+-  // closed the menu and deleted `this`. Guard against that.
+-  if (!this_ref) {
++  // closed the menu and destroyed `this`. Guard against that.
++  if (destroy_pending_) {
+     return;
+   }
+ 
+@@ -947,6 +953,7 @@ void MenuController::SelectItemAndOpenSubmenu(MenuItemView* item) {
+ 
+ bool MenuController::OnMousePressed(SubmenuView* source,
+                                     const ui::MouseEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   // We should either have no current_mouse_event_target_, or should have a
+   // pressed state stored.
+   DCHECK(!current_mouse_event_target_ || current_mouse_pressed_state_);
+@@ -978,12 +985,11 @@ bool MenuController::OnMousePressed(SubmenuView* source,
+     View* view =
+         forward_to_root->GetEventHandlerForPoint(event_for_root.location());
+     Button* button = Button::AsButton(view);
+-    auto this_ref = AsWeakPtr();
+     if (hot_button_ != button) {
+       SetHotTrackedButton(button);
+     }
+ 
+-    if (!this_ref) {
++    if (destroy_pending_) {
+       return true;
+     }
+ 
+@@ -992,7 +998,7 @@ bool MenuController::OnMousePressed(SubmenuView* source,
+       bool processed = forward_to_root->ProcessMousePressed(event_for_root);
+       // This object may be destroyed as a result of a mouse press event (some
+       // item may close the menu).
+-      if (!this_ref) {
++      if (destroy_pending_) {
+         return true;
+       }
+ 
+@@ -1016,6 +1022,7 @@ bool MenuController::OnMousePressed(SubmenuView* source,
+ 
+ bool MenuController::OnMouseDragged(SubmenuView* source,
+                                     const ui::MouseEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   if (current_mouse_event_target_) {
+     return current_mouse_event_target_->ProcessMouseDragged(
+         ConvertLocatedEventForRootView(*source, *current_mouse_event_target_,
+@@ -1035,9 +1042,6 @@ bool MenuController::OnMouseDragged(SubmenuView* source,
+     }
+     return true;
+   }
+-  // Changing the selection or showing a sibling menu can cause `this` to be
+-  // deleted as a side effect of accessibility notifications.
+-  auto this_ref = AsWeakPtr();
+   MenuItemView* mouse_menu = nullptr;
+   if (part.type == MenuPartType::kMenuItem) {
+     // If there is no menu target, but a submenu target, then we are interacting
+@@ -1065,7 +1069,9 @@ bool MenuController::OnMouseDragged(SubmenuView* source,
+       }
+     }
+   }
+-  if (!this_ref) {
++  // Changing the selection or showing a sibling menu can cause `this` to be
++  // destroyed as a side effect of accessibility notifications.
++  if (destroy_pending_) {
+     return false;
+   }
+   UpdateActiveMouseView(source, event, mouse_menu);
+@@ -1075,10 +1081,9 @@ bool MenuController::OnMouseDragged(SubmenuView* source,
+ 
+ void MenuController::OnMouseReleased(SubmenuView* source,
+                                      const ui::MouseEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   current_mouse_pressed_state_ &= ~event.changed_button_flags();
+ 
+-  auto this_ref = AsWeakPtr();
+-
+   if (current_mouse_event_target_) {
+     // If this was the final mouse button, then remove the forwarding target.
+     // We need to do this *before* dispatching the event to the root view
+@@ -1157,7 +1162,7 @@ void MenuController::OnMouseReleased(SubmenuView* source,
+     // On the rare, off chance that an accessibility event is fired as a result
+     // of the selection changing *and* the Accessibility tool causes the menu to
+     // be closed, `this` will be otherwise dangling. Guard against that.
+-    if (!this_ref) {
++    if (destroy_pending_) {
+       return;
+     }
+   }
+@@ -1167,6 +1172,7 @@ void MenuController::OnMouseReleased(SubmenuView* source,
+ 
+ void MenuController::OnMouseMoved(SubmenuView* source,
+                                   const ui::MouseEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   if (current_mouse_event_target_) {
+     current_mouse_event_target_->ProcessMouseMoved(
+         ConvertLocatedEventForRootView(*source, *current_mouse_event_target_,
+@@ -1200,9 +1206,8 @@ void MenuController::OnMouseMoved(SubmenuView* source,
+ 
+   // `HandleMouseLocation()` may change the selection, which can cause `this` to
+   // be deleted as a side effect of accessibility notifications.
+-  auto this_ref = AsWeakPtr();
+   HandleMouseLocation(source, event.location());
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+ 
+@@ -1223,6 +1228,7 @@ void MenuController::OnMouseEntered(SubmenuView* source,
+ 
+ bool MenuController::OnMouseWheel(SubmenuView* source,
+                                   const ui::MouseWheelEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   // Stop scrolling via scroll button to prevent flickering.
+   StopScrollingViaButton();
+ 
+@@ -1230,12 +1236,18 @@ bool MenuController::OnMouseWheel(SubmenuView* source,
+ 
+   SetSelection(part.menu ? part.menu.get() : state_.item.get(),
+                SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
++  if (destroy_pending_) {
++    return false;
++  }
+ 
+   return part.submenu && part.submenu->OnMouseWheel(event);
+ }
+ 
+ void MenuController::OnGestureEvent(SubmenuView* source,
+                                     ui::GestureEvent* event) {
++  // Track stack depth to defer controller destruction during gesture
++  // processing and potential command execution.
++  ScopedDeletionGuard guard(AsWeakPtr());
+   if (owner_ && send_gesture_events_to_owner()) {
+ #if defined(USE_AURA)
+     gfx::NativeView target = native_view_for_gestures_
+@@ -1318,6 +1330,9 @@ void MenuController::OnGestureEvent(SubmenuView* source,
+ }
+ 
+ void MenuController::OnTouchEvent(SubmenuView* source, ui::TouchEvent* event) {
++  // Track stack depth to defer controller destruction if RepostEventAndCancel
++  // closes the menu.
++  ScopedDeletionGuard guard(AsWeakPtr());
+   // Bail if owner wants the current active gesture sequence.
+   if (owner_ && send_gesture_events_to_owner()) {
+     return;
+@@ -1394,6 +1409,7 @@ void MenuController::OnDragEntered(SubmenuView* source,
+ 
+ int MenuController::OnDragUpdated(SubmenuView* source,
+                                   const ui::DropTargetEvent& event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   StopCancelAllTimer();
+ 
+   const gfx::Point screen_loc =
+@@ -1419,7 +1435,6 @@ int MenuController::OnDragUpdated(SubmenuView* source,
+   }
+   MenuDelegate::DropPosition drop_position = MenuDelegate::DropPosition::kNone;
+   int drop_operation = ui::DragDropTypes::DRAG_NONE;
+-  auto this_ref = AsWeakPtr();
+   if (menu_item) {
+     gfx::Point menu_item_loc(event.location());
+     View::ConvertPointToTarget(source, menu_item, &menu_item_loc);
+@@ -1457,7 +1472,7 @@ int MenuController::OnDragUpdated(SubmenuView* source,
+   }
+   // Accessibility events fired as a result of the selection changing may have
+   // closed the menu and deleted `this`. Guard against that.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return drop_operation;
+   }
+   SetDropMenuItem(menu_item, drop_position);
+@@ -1536,6 +1551,7 @@ void MenuController::OnDragDropWillStart() {
+ }
+ 
+ void MenuController::OnDragDropCompleted(bool should_close) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   DCHECK(drag_in_progress_);
+   drag_in_progress_ = false;
+   // During a drag, mouse events are processed directly by the widget, and not
+@@ -1563,11 +1579,10 @@ void MenuController::OnDragDropCompleted(bool should_close) {
+     // canceled and deleted. Verify that this is still active before closing
+     // the widgets.
+     if (active_instance_ == this) {
+-      base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+       CloseAllNestedMenus();
+       Cancel(ExitType::kAll);
+       // The above may have deleted us. If not perform a full shutdown.
+-      if (!this_ref) {
++      if (destroy_pending_) {
+         return;
+       }
+       ExitMenu();
+@@ -1581,6 +1596,7 @@ void MenuController::OnDragDropCompleted(bool should_close) {
+ 
+ ui::PostDispatchAction MenuController::OnWillDispatchKeyEvent(
+     ui::KeyEvent* event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   if (exit_type() == ExitType::kAll || exit_type() == ExitType::kDestroyed) {
+     // If the event has arrived after the menu's exit type has changed but
+     // before its Widgets have been destroyed, the event will continue its
+@@ -1592,7 +1608,6 @@ ui::PostDispatchAction MenuController::OnWillDispatchKeyEvent(
+     return ui::POST_DISPATCH_PERFORM_DEFAULT;
+   }
+ 
+-  base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+   if (event->type() == ui::EventType::kKeyPressed) {
+     bool key_handled = false;
+ #if BUILDFLAG(IS_MAC)
+@@ -1618,7 +1633,7 @@ ui::PostDispatchAction MenuController::OnWillDispatchKeyEvent(
+     }
+ 
+     // Key events can lead to this being deleted.
+-    if (!this_ref) {
++    if (destroy_pending_) {
+       event->StopPropagation();
+       return ui::POST_DISPATCH_NONE;
+     }
+@@ -1633,7 +1648,7 @@ ui::PostDispatchAction MenuController::OnWillDispatchKeyEvent(
+         char16_t c = event->GetCharacter();
+         SelectByChar(c);
+         // SelectByChar can lead to this being deleted.
+-        if (!this_ref) {
++        if (destroy_pending_) {
+           event->StopPropagation();
+           return ui::POST_DISPATCH_NONE;
+         }
+@@ -1654,7 +1669,7 @@ ui::PostDispatchAction MenuController::OnWillDispatchKeyEvent(
+       ViewsDelegate::GetInstance()->ProcessAcceleratorWhileMenuShowing(
+           accelerator);
+   // Above can lead to |this| being deleted.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     event->StopPropagation();
+     return ui::POST_DISPATCH_NONE;
+   }
+@@ -1696,6 +1711,9 @@ void MenuController::ClearOwner() {
+ }
+ 
+ void MenuController::OnWidgetDestroying(Widget* widget) {
++  // Track stack depth to defer controller destruction if ExitMenu() leads
++  // to releasing the runner or destroying the controller.
++  ScopedDeletionGuard guard(AsWeakPtr());
+   DCHECK_EQ(owner_, widget);
+   ClearOwner();
+   native_view_for_gestures_ = gfx::NativeView();
+@@ -1705,8 +1723,11 @@ void MenuController::OnWidgetDestroying(Widget* widget) {
+ #endif
+ 
+   // Exit menu to ensure that we are not holding on to resources when the
+-  // widget has been destroyed.
+-  ExitMenu();
++  // widget has been destroyed. Only trigger if not already exiting to avoid
++  // re-entrant exit calls during teardown.
++  if (exit_type_ == ExitType::kNone) {
++    ExitMenu();
++  }
+ }
+ 
+ bool MenuController::IsCancelAllTimerRunningForTest() {
+@@ -1731,6 +1752,7 @@ void MenuController::SetShowing(bool showing) {
+     }
+   }
+ }
++
+ // static
+ void MenuController::TurnOffMenuSelectionHoldForTest() {
+   menu_selection_hold_time = base::TimeDelta();
+@@ -1753,33 +1775,18 @@ void MenuController::OnMenuItemDestroying(MenuItemView* menu_item) {
+ #endif
+   UnregisterAlertedItem(menu_item);
+ 
+-  bool found_in_pending_state = false;
+-  bool found_in_current_state = false;
+-  int menu_stack_matches = 0;
+-
+   if (pending_state_.item == menu_item) {
+     pending_state_.item = nullptr;
+-    found_in_pending_state = true;
+   }
+   if (state_.item == menu_item) {
+     state_.item = nullptr;
+-    found_in_current_state = true;
+   }
+ 
+   for (auto& menu_state_pair : menu_stack_) {
+     if (menu_state_pair.first.item == menu_item) {
+       menu_state_pair.first.item = nullptr;
+-      menu_stack_matches++;
+     }
+   }
+-
+-  if (found_in_pending_state || found_in_current_state ||
+-      menu_stack_matches > 0) {
+-    // This indicates a lifecycle management issue - MenuItemView destroyed
+-    // while still referenced by MenuController.
+-    // Remove this DumpWithoutCrashing once we get enough information.
+-    base::debug::DumpWithoutCrashing();
+-  }
+ }
+ 
+ void MenuController::AnimationProgressed(const gfx::Animation* animation) {
+@@ -1796,6 +1803,7 @@ void MenuController::AnimationProgressed(const gfx::Animation* animation) {
+ 
+ void MenuController::SetSelection(MenuItemView* menu_item,
+                                   int selection_types) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   size_t paths_differ_at = 0;
+   std::vector<MenuItemView*> current_path;
+   std::vector<MenuItemView*> new_path;
+@@ -1813,15 +1821,13 @@ void MenuController::SetSelection(MenuItemView* menu_item,
+       pending_state_.submenu_open !=
+           !!(selection_types & SELECTION_OPEN_SUBMENU);
+ 
+-  auto this_ref = AsWeakPtr();
+-
+   if (pending_item_changed && pending_state_.item) {
+     SetHotTrackedButton(nullptr);
+   }
+ 
+   // SetHotTrackedButton does some accessibility stuff that could conceivably
+-  // cause `this` to be deleted, so protect against that.
+-  if (!this_ref) {
++  // cause `this` to be destroyed, so protect against that.
++  if (destroy_pending_) {
+     return;
+   }
+ 
+@@ -1855,7 +1861,7 @@ void MenuController::SetSelection(MenuItemView* menu_item,
+   // getting deleted as a side effect of accessibility code above. The crash
+   // happens when accessibility has been turned on around the same time as
+   // opening the menu.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+   // Notify the old path it isn't selected.
+@@ -1894,7 +1900,7 @@ void MenuController::SetSelection(MenuItemView* menu_item,
+   // Possible fix for https:://crbug.com/443019015, in case `this` is getting
+   // deleted as a side effect of code above. From the crash dumps, it's pretty
+   // clear that both `cancel_all_timer_` and `this` have been deleted.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+   // Stop timers.
+@@ -1983,6 +1989,7 @@ void MenuController::SetSelectionOnPointerDown(SubmenuView* source,
+ 
+ void MenuController::StartDrag(SubmenuView* source_raw,
+                                const gfx::Point& location) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   // TODO(crbug.com/497736679): Intended to keep `source_raw` quarantined inside
+   // StartDrag(). Since `source_raw` might be destroyed while RunDrawDropLoop(),
+   // `source` will be sometimes dangling pointer. So detecting
+@@ -2011,12 +2018,11 @@ void MenuController::StartDrag(SubmenuView* source_raw,
+   StopScrollingViaButton();
+   int drag_ops = item->GetDelegate()->GetDragOperations(item);
+   bool had_capture = source->host()->HasCapture();
+-  base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+   // TODO(varunjain): Properly determine and send DragEventSource below.
+   item->GetWidget()->RunDragDropLoop(nullptr, std::move(data), widget_loc,
+                                      drag_ops,
+                                      ui::mojom::DragEventSource::kMouse);
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+   if (showing_ && had_capture) {
+@@ -2199,6 +2205,77 @@ void MenuController::ShowContextMenu() {
+   }
+ }
+ 
++MenuController::ScopedDeletionGuard::ScopedDeletionGuard(
++    base::WeakPtr<MenuController> controller)
++    : controller_(controller) {
++  // `controller_` must be valid when entering an active call frame.
++  CHECK(controller_);
++  controller_->stack_depth_++;
++}
++
++MenuController::ScopedDeletionGuard::~ScopedDeletionGuard() {
++  // `controller_` must never be destroyed while an execution stack is active
++  // (which is also asserted by `CHECK_EQ(stack_depth_, 0)` in
++  // `~MenuController`). If `controller_` were destroyed prematurely, this
++  // WeakPtr check would fail.
++  CHECK(controller_);
++  controller_->stack_depth_--;
++  if (controller_->stack_depth_ == 0) {
++    if (controller_->destroy_pending_) {
++      delete controller_.get();
++    } else {
++      controller_->ProcessDeferredDestructions();
++    }
++  }
++}
++
++void MenuController::DeferWidgetDestruction(base::WeakPtr<Widget> widget) {
++  CHECK(widget);
++  const bool already_deferred = std::ranges::contains(
++      deferred_destroy_widgets_, widget.get(), &base::WeakPtr<Widget>::get);
++  if (already_deferred) {
++    DUMP_WILL_BE_CHECK(false);
++    return;
++  }
++  deferred_destroy_widgets_.push_back(widget);
++}
++
++void MenuController::DeferMenuRunnerDestruction(
++    std::unique_ptr<internal::MenuRunnerImpl> runner) {
++  CHECK(runner);
++  const bool already_deferred =
++      std::ranges::contains(deferred_destroy_runners_, runner.get(),
++                            &std::unique_ptr<internal::MenuRunnerImpl>::get);
++  if (already_deferred) {
++    DUMP_WILL_BE_CHECK(false);
++    return;
++  }
++  deferred_destroy_runners_.push_back(std::move(runner));
++}
++
++void MenuController::ProcessDeferredDestructions() {
++  std::vector<base::WeakPtr<Widget>> widgets;
++  widgets.swap(deferred_destroy_widgets_);
++  for (auto& widget : widgets) {
++    if (widget) {
++      widget->Close();
++    }
++  }
++  deferred_destroy_runners_.clear();
++}
++
++void MenuController::Destroy() {
++  if (stack_depth_ > 0) {
++    destroy_pending_ = true;
++    if (active_instance_ == this) {
++      active_instance_ = nullptr;
++    }
++  } else {
++    // This is safe because the controller is not on the call stack.
++    delete this;
++  }
++}
++
+ MenuController::MenuController(bool for_drop,
+                                internal::MenuControllerDelegate* delegate)
+     : for_drop_(for_drop),
+@@ -2210,13 +2287,23 @@ MenuController::MenuController(bool for_drop,
+ }
+ 
+ MenuController::~MenuController() {
++  CHECK_EQ(stack_depth_, 0);
+   DCHECK(!showing_);
++  state_ = State();
++  pending_state_ = State();
++  hot_button_ = nullptr;
++  result_ = nullptr;
++  alerted_items_.clear();
++  current_mouse_event_target_ = nullptr;
++  delegate_stack_.clear();
++  menu_stack_.clear();
+   ClearOwner();
+   if (active_instance_ == this) {
+     active_instance_ = nullptr;
+   }
+   StopShowTimer();
+   StopCancelAllTimer();
++  ProcessDeferredDestructions();
+   CHECK(!IsInObserverList());
+ }
+ 
+@@ -2226,11 +2313,10 @@ bool MenuController::SendAcceleratorToHotTrackedView(int event_flags) {
+     return false;
+   }
+ 
+-  base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+   ui::Accelerator accelerator(ui::VKEY_RETURN, event_flags);
+   hot_view->AcceleratorPressed(accelerator);
+   // An accelerator may have canceled the menu after activation.
+-  if (this_ref) {
++  if (!destroy_pending_) {
+     Button* button = static_cast<Button*>(hot_view);
+     SetHotTrackedButton(button);
+   }
+@@ -2529,6 +2615,9 @@ bool MenuController::IsLocationOverSubmenuAreaOfActionableSubmenu(
+ }
+ 
+ void MenuController::CommitPendingSelection() {
++  // Track stack depth to defer controller destruction when invoked
++  // asynchronously via show_timer_.
++  ScopedDeletionGuard guard(AsWeakPtr());
+   StopShowTimer();
+ 
+   size_t paths_differ_at = 0;
+@@ -2608,6 +2697,7 @@ void MenuController::OpenMenu(MenuItemView* item) {
+ }
+ 
+ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   // TODO(oshima|sky): Don't show the menu if drag is in progress and
+   // this menu doesn't support drag drop. See crbug.com/110495.
+   if (show) {
+@@ -2685,14 +2775,16 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+     } else {
+       params.context = owner_;
+     }
+-    auto weak_this = AsWeakPtr();
++    // Deletion of `this` and release of the runner are deferred during ShowAt.
+     item->GetSubmenu()->ShowAt(params);
+-    // It is possible that the ShowAt() above can synchronously re-enter and
+-    // destroy `this` and the entire MenuItemView tree. We do a CHECK() here
+-    // instead of a early return. There are still other things up the stack that
+-    // would require additional guarding. It is also unknown what state things
+-    // would be left in should it be allowed to continue.
+-    CHECK(weak_this);
++
++    // Showing the submenu can trigger synchronous events (e.g., focus change,
++    // window deactivation, or runner release) that close or destroy the submenu
++    // widget.
++    if (destroy_pending_ || !item->GetSubmenu()->GetWidget()) {
++      showing_submenu_ = false;
++      return;
++    }
+ 
+     // Remember the mouse location so we can ignore the first mouse move
+     // event(s) with that location. We do this after `ShowAt` because
+@@ -2718,6 +2810,7 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+ }
+ 
+ void MenuController::MenuChildrenChanged(MenuItemView* item) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   DCHECK(item);
+   // Menu shouldn't be updated during drag operation.
+   DCHECK(!active_mouse_view_tracker_->view());
+@@ -2745,9 +2838,8 @@ void MenuController::MenuChildrenChanged(MenuItemView* item) {
+   // Setting the selection can indirectly destroy this object via accessibility
+   // system callbacks and activation changes. This should be rare but must be
+   // protected against.
+-  const auto weak_this = AsWeakPtr();
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+-  if (weak_this && item->HasSubmenu()) {
++  if (!destroy_pending_ && item->HasSubmenu()) {
+     OpenMenuImpl(item, false);
+   }
+ }
+@@ -3389,18 +3481,18 @@ MenuItemView* MenuController::FindInitialSelectableMenuItem(
+ }
+ 
+ void MenuController::OpenSubmenuChangeSelectionIfCan() {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   MenuItemView* item = pending_state_.item;
+   if (!item->HasSubmenu() || !item->GetEnabled()) {
+     return;
+   }
+ 
+   // Show the sub-menu.
+-  auto this_ref = AsWeakPtr();
+   SetSelection(item, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
+   // Accessibility events fired as a result of the selection changing may have
+   // closed the menu and deleted `this`. Guard against that.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+ 
+@@ -3540,11 +3632,11 @@ void MenuController::SelectByChar(char16_t character) {
+ 
+ void MenuController::RepostEventAndCancel(SubmenuView* source,
+                                           const ui::LocatedEvent* event) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   const gfx::Point screen_loc = ConvertToScreen(*source, event->location());
+ 
+ #if BUILDFLAG(IS_WIN)
+   if (event->IsMouseEvent() || event->IsTouchEvent()) {
+-    base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+     if (state_.item) {
+       // This must be done before we ReleaseCapture() below, which can lead to
+       // deleting the `source`.
+@@ -3568,7 +3660,7 @@ void MenuController::RepostEventAndCancel(SubmenuView* source,
+     }
+ 
+     // Reposting the event may have deleted this, if so exit.
+-    if (!this_ref) {
++    if (destroy_pending_) {
+       return;
+     }
+   }
+@@ -3717,22 +3809,29 @@ void MenuController::SetExitType(ExitType type) {
+ }
+ 
+ void MenuController::ExitMenu() {
++  // Track stack depth to defer controller destruction during ExitMenu().
++  ScopedDeletionGuard guard(AsWeakPtr());
++  if (exit_type_ == ExitType::kNone) {
++    SetExitType(ExitType::kAll);
++  }
+   bool nested = delegate_stack_.size() > 1;
+   // ExitTopMostMenu unwinds nested delegates
+   internal::MenuControllerDelegate* delegate = this->delegate();
+   int accept_event_flags = accept_event_flags_;
+-  // Since |delegate| may delete this, get a weak pointer first, and ensure
+-  // |result| is safe from deletion (it can be freed but will be quarantined).
+-  base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+   // Dangling since a lot of tests in `views_unittests` and
+   // `interactive_ui_tests` detect this (likely correctly) as a dangling
+   // pointer.
+   raw_ptr<MenuItemView, DanglingUntriaged> result =
+       ExitTopMostMenu().ExtractAsDangling();
+-  delegate->OnMenuClosed(internal::MenuControllerDelegate::NOTIFY_DELEGATE,
+-                         result.get(), accept_event_flags);
+-  // |delegate| may have deleted this.
+-  if (this_ref && nested && exit_type_ == ExitType::kAll) {
++  if (delegate) {
++    delegate->OnMenuClosed(internal::MenuControllerDelegate::NOTIFY_DELEGATE,
++                           result.get(), accept_event_flags);
++  }
++  // The delegate may have destroyed this.
++  if (destroy_pending_) {
++    return;
++  }
++  if (nested && exit_type_ == ExitType::kAll) {
+     ExitMenu();
+   }
+ }
+@@ -3779,10 +3878,6 @@ raw_ptr<MenuItemView> MenuController::ExitTopMostMenu() {
+     hot_button_ = state_.hot_button;
+     nested_pressed_lock = std::move(menu_stack_.back().second);
+     menu_stack_.pop_back();
+-    // Even though the menus are nested, there may not be nested delegates.
+-    if (delegate_stack_.size() > 1) {
+-      delegate_stack_.pop_back();
+-    }
+   } else {
+ #if defined(USE_AURA)
+     menu_pre_target_handler_.reset();
+@@ -3792,12 +3887,21 @@ raw_ptr<MenuItemView> MenuController::ExitTopMostMenu() {
+     did_capture_ = false;
+   }
+ 
++  // Even though the menus are nested, there may not be nested delegates.
++  // Pop the nested delegate if present, regardless of menu_stack_ state.
++  if (delegate_stack_.size() > 1) {
++    delegate_stack_.pop_back();
++  }
++
+   // In case we're nested, reset |result_|, but use a raw_ptr to ensure we keep
+   // UaF protection.
+   raw_ptr<MenuItemView> result = result_;
+   result_ = nullptr;
+ 
+-  if (exit_type_ == ExitType::kOutermost) {
++  // If only the outermost nested menu is exiting (or was destroyed), reset the
++  // exit type to kNone so the parent menu can continue running.
++  if (exit_type_ == ExitType::kOutermost ||
++      (nested_menu && exit_type_ == ExitType::kDestroyed)) {
+     SetExitType(ExitType::kNone);
+   } else if (nested_menu && result) {
+     // We're nested and about to return a value. The caller might enter
+@@ -3862,15 +3966,15 @@ void MenuController::HandleMouseLocation(SubmenuView* source,
+ void MenuController::SetInitialHotTrackedView(
+     MenuItemView* item,
+     SelectionIncrementDirectionType direction) {
++  ScopedDeletionGuard guard(AsWeakPtr());
+   if (!item) {
+     return;
+   }
+-  auto this_ref = AsWeakPtr();
+   SetSelection(item, SELECTION_DEFAULT);
+ 
+   // Accessibility events fired as a result of the selection changing may have
+   // closed the menu and deleted `this`. Guard against that.
+-  if (!this_ref) {
++  if (destroy_pending_) {
+     return;
+   }
+   View* hot_view =
+diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
+index 263f2fa8c226f801c7b76ba943298df26b3a93db..db6df41d7e91df5fe1451efc83c551cea86345ae 100644
+--- a/ui/views/controls/menu/menu_controller.h
++++ b/ui/views/controls/menu/menu_controller.h
+@@ -324,10 +324,34 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+     return value;
+   }
+ 
++  // Returns true if the controller is currently executing code on the call
++  // stack (e.g. inside OpenMenuImpl).
++  bool IsStackActive() const { return stack_depth_ > 0; }
++
++  // Returns whether the menu is currently in the showing state.
++  bool showing_for_testing() const { return showing_; }
++
++  // Defers closing the given widget until the current call stack unwinds.
++  void DeferWidgetDestruction(base::WeakPtr<Widget> widget);
++
++  // Defers destroying the given MenuRunnerImpl until the current call stack
++  // unwinds.
++  void DeferMenuRunnerDestruction(
++      std::unique_ptr<internal::MenuRunnerImpl> runner);
++
++  // Destroys this MenuController, or marks destruction pending if the call
++  // stack is currently active.
++  void Destroy();
++
+   base::WeakPtr<MenuController> AsWeakPtr() {
+     return weak_ptr_factory_.GetWeakPtr();
+   }
+ 
++  // Deletes the given MenuController directly for tests.
++  static void DeleteForTesting(MenuController* controller) {
++    delete controller;
++  }
++
+  private:
+   friend class internal::MenuRunnerImpl;
+   friend class MenuControllerTest;
+@@ -336,6 +360,30 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+   friend class SubmenuView;
+   friend class test::MenuControllerUITest;
+ 
++  // RAII helper that tracks active call stack frames on MenuController to
++  // prevent premature destruction during re-entrant calls. While active
++  // (stack_depth_ > 0), deletion of the MenuController itself is blocked (which
++  // sets `destroy_pending_ = true`). Additionally, closing of associated
++  // MenuHost Widgets and destruction of released MenuRunnerImpl instances are
++  // deferred. Upon unwinding the outermost guard (stack_depth_ == 0), the
++  // MenuController is deleted if destruction was requested, or
++  // `ProcessDeferredDestructions()` is called to clean up deferred widgets and
++  // runners.
++  class ScopedDeletionGuard {
++   public:
++    explicit ScopedDeletionGuard(base::WeakPtr<MenuController> controller);
++    ScopedDeletionGuard(const ScopedDeletionGuard&) = delete;
++    ScopedDeletionGuard& operator=(const ScopedDeletionGuard&) = delete;
++    ~ScopedDeletionGuard();
++
++   private:
++    base::WeakPtr<MenuController> controller_;
++  };
++
++  // Closes deferred widgets and releases deferred menu runners once the stack
++  // has unwound.
++  void ProcessDeferredDestructions();
++
+   struct MenuPart;
+ 
+   class MenuScrollTask;
+@@ -873,6 +921,18 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+   // its successful presentation
+   std::optional<std::string> show_menu_host_duration_histogram_;
+ 
++  // True if destruction was requested while the call stack was active.
++  bool destroy_pending_ = false;
++
++  // Depth of active re-entrant stack frames managed by ScopedDeletionGuard.
++  int stack_depth_ = 0;
++
++  // Widgets whose Close() is deferred until the call stack unwinds.
++  std::vector<base::WeakPtr<Widget>> deferred_destroy_widgets_;
++
++  // Menu runners whose destruction is deferred until the call stack unwinds.
++  std::vector<std::unique_ptr<internal::MenuRunnerImpl>>
++      deferred_destroy_runners_;
+   base::WeakPtrFactory<MenuController> weak_ptr_factory_{this};
+ };
+ 
+diff --git a/ui/views/controls/menu/menu_controller_unittest.cc b/ui/views/controls/menu/menu_controller_unittest.cc
+index 8c13124353ccac5f6f23de58d418ddf78ce08b94..b0db67a694c17dce9d2556a80f85ed7c465995e2 100644
+--- a/ui/views/controls/menu/menu_controller_unittest.cc
++++ b/ui/views/controls/menu/menu_controller_unittest.cc
+@@ -1063,13 +1063,8 @@ void MenuControllerTest::DestroyMenuController() {
+     return;
+   }
+ 
+-  if (!owner_->IsClosed()) {
+-    owner_->RemoveObserver(menu_controller_);
+-  }
+-
+-  menu_controller_->showing_ = false;
+-  menu_controller_->owner_ = nullptr;
+-  delete menu_controller_.ExtractAsDangling();
++  menu_controller_->ClearOwner();
++  menu_controller_.ExtractAsDangling()->Destroy();
+ }
+ 
+ // static
+diff --git a/ui/views/controls/menu/menu_host.cc b/ui/views/controls/menu/menu_host.cc
+index 81281fb257cfd85da95106a2e10867d8b386c5dd..547be87232685847ab0caf1c07e22a329d68767a 100644
+--- a/ui/views/controls/menu/menu_host.cc
++++ b/ui/views/controls/menu/menu_host.cc
+@@ -7,6 +7,7 @@
+ #include <utility>
+ 
+ #include "base/auto_reset.h"
++#include "base/check.h"
+ #include "base/check_op.h"
+ #include "base/functional/bind.h"
+ #include "base/memory/raw_ptr.h"
+@@ -213,6 +214,13 @@ void MenuHost::ShowMenuHost(bool do_capture) {
+   // Doing a capture may make us get capture lost. Ignore it while we're in the
+   // process of showing.
+   base::AutoReset<bool> reseter(&ignore_capture_lost_, true);
++#if defined(USE_AURA)
++  std::unique_ptr<aura::Window::ScopedDeleteBlocker> delete_blocker;
++  if (GetNativeWindow()) {
++    delete_blocker =
++        std::make_unique<aura::Window::ScopedDeleteBlocker>(GetNativeWindow());
++  }
++#endif
+   ShowInactive();
+ 
+   // ShowInactive() can trigger events that cause the menu to be destroyed
+@@ -248,8 +256,11 @@ void MenuHost::ShowMenuHost(bool do_capture) {
+ }
+ 
+ void MenuHost::HideMenuHost() {
++  if (destroying_ && !IsVisible()) {
++    return;
++  }
+   MenuController* menu_controller =
+-      submenu_->GetMenuItem()->GetMenuController();
++      submenu_ ? submenu_->GetMenuItem()->GetMenuController() : nullptr;
+   if (GetOwner() && menu_controller &&
+       menu_controller->send_gesture_events_to_owner()) {
+     gfx::NativeView target_view = native_view_for_gestures_
+@@ -265,14 +276,28 @@ void MenuHost::HideMenuHost() {
+ }
+ 
+ void MenuHost::DestroyMenuHost() {
+-  HideMenuHost();
++  if (destroying_) {
++    DUMP_WILL_BE_CHECK(false);
++    return;
++  }
+   destroying_ = true;
++  MenuController* menu_controller =
++      submenu_ ? submenu_->GetMenuItem()->GetMenuController() : nullptr;
++
++  bool defer_destruction = menu_controller && menu_controller->IsStackActive();
++  if (defer_destruction) {
++    menu_controller->DeferWidgetDestruction(GetWeakPtr());
++  }
++
++  HideMenuHost();
+   submenu_ = nullptr;
+ #if defined(USE_AURA)
+   pre_dispatch_handler_.reset();
+ #endif
+   static_cast<MenuHostRootView*>(GetRootView())->ClearSubmenu();
+-  Close();
++  if (!defer_destruction) {
++    Close();
++  }
+ }
+ 
+ void MenuHost::SetMenuHostBounds(const gfx::Rect& bounds) {
+diff --git a/ui/views/controls/menu/menu_host.h b/ui/views/controls/menu/menu_host.h
+index 0fcc13c805a643c96f682d10bfeb8ffdf6a64db1..1b0dd04e1d2693c8b35e5e57306a27b09b72daab 100644
+--- a/ui/views/controls/menu/menu_host.h
++++ b/ui/views/controls/menu/menu_host.h
+@@ -92,6 +92,8 @@ class MenuHost : public Widget, public WidgetObserver {
+   // Releases a mouse grab installed by |ShowMenuHost|.
+   void ReleaseMenuHostCapture();
+ 
++  bool destroying_for_testing() const { return destroying_; }
++
+  private:
+   friend class MenuControllerTest;
+ 
+diff --git a/ui/views/controls/menu/menu_item_view.cc b/ui/views/controls/menu/menu_item_view.cc
+index 73c658c58871b3652911b2667689cb0fd45f554c..d13f6c15c1eca0f935db21d9bc301b36a5e2b39d 100644
+--- a/ui/views/controls/menu/menu_item_view.cc
++++ b/ui/views/controls/menu/menu_item_view.cc
+@@ -109,6 +109,17 @@ std::u16string GetBadgeString(ui::NewBadgeType new_badge_type) {
+       return l10n_util::GetStringUTF16(IDS_PREVIEW_BADGE);
+   }
+ }
++
++void NotifyControllerOfDestructionRecursively(MenuItemView* item,
++                                              MenuController* controller) {
++  controller->OnMenuItemDestroying(item);
++  if (item->HasSubmenu()) {
++    for (auto* child : item->GetSubmenu()->GetMenuItems()) {
++      NotifyControllerOfDestructionRecursively(child, controller);
++    }
++  }
++}
++
+ }  // namespace
+ 
+ // MenuItemView ---------------------------------------------------------------
+@@ -120,8 +131,13 @@ MenuItemView::MenuItemView(MenuDelegate* delegate)
+                    delegate) {}
+ 
+ MenuItemView::~MenuItemView() {
+-  if (GetMenuController()) {
+-    GetMenuController()->OnMenuItemDestroying(this);
++  if (controller_) {
++    NotifyControllerOfDestructionRecursively(this, controller_.get());
++  }
++  if (submenu_) {
++    for (auto* item : submenu_->GetMenuItems()) {
++      item->parent_menu_item_ = nullptr;
++    }
+   }
+   for (views::View* item : removed_items_) {
+     delete item;
+diff --git a/ui/views/controls/menu/menu_item_view.h b/ui/views/controls/menu/menu_item_view.h
+index 4bbd576fb2aabc98cf1b55ab107afffb7916541d..855e457d780d03349319cb35d4c25875177a413a 100644
+--- a/ui/views/controls/menu/menu_item_view.h
++++ b/ui/views/controls/menu/menu_item_view.h
+@@ -673,7 +673,7 @@ class VIEWS_EXPORT MenuItemView : public View, public LayoutDelegate {
+   bool canceled_ = false;
+ 
+   // Our parent.
+-  const raw_ptr<MenuItemView> parent_menu_item_ = nullptr;
++  raw_ptr<MenuItemView> parent_menu_item_ = nullptr;
+ 
+   // Type of menu. NOTE: MenuItemView doesn't itself represent SEPARATOR,
+   // that is handled by an entirely different view class.
+diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
+index 4bc381a5c5a35716c8753ec50833ab6e0ee82fc5..ff503cf157a654238348d5bc77191ec09df306ae 100644
+--- a/ui/views/controls/menu/menu_runner_impl.cc
++++ b/ui/views/controls/menu/menu_runner_impl.cc
+@@ -7,6 +7,7 @@
+ #include <memory>
+ #include <utility>
+ 
++#include "base/memory/ptr_util.h"
+ #include "build/build_config.h"
+ #include "ui/accessibility/platform/ax_platform_node_base.h"
+ #include "ui/native_theme/native_theme.h"
+@@ -79,24 +80,23 @@ bool MenuRunnerImpl::IsRunning() const {
+ }
+ 
+ void MenuRunnerImpl::Release() {
++  // Swap in a different delegate. That way we know the original MenuDelegate
++  // won't be notified later on (when it's likely already been deleted).
++  if (!empty_delegate_) {
++    empty_delegate_ = std::make_unique<MenuDelegate>();
++    menu_->set_delegate(empty_delegate_.get());
++    for (MenuItemView* sibling_menu : sibling_menus_) {
++      sibling_menu->set_delegate(empty_delegate_.get());
++    }
++  }
++
+   if (running_) {
+     if (delete_after_run_) {
+       return;  // We already canceled.
+     }
+ 
+-    // The menu is running a nested run loop, we can't delete it now
+-    // otherwise the stack would be in a really bad state (many frames would
+-    // have deleted objects on them). Instead cancel the menu, when it returns
+-    // Holder will delete itself.
+     delete_after_run_ = true;
+ 
+-    // Swap in a different delegate. That way we know the original MenuDelegate
+-    // won't be notified later on (when it's likely already been deleted).
+-    if (!empty_delegate_.get()) {
+-      empty_delegate_ = std::make_unique<MenuDelegate>();
+-    }
+-    menu_->set_delegate(empty_delegate_.get());
+-
+     // Verify that the MenuController is still active. It may have been
+     // destroyed out of order.
+     if (controller_) {
+@@ -108,6 +108,13 @@ void MenuRunnerImpl::Release() {
+     }
+   }
+ 
++  bool is_stack_active = controller_ && controller_->IsStackActive();
++  if (is_stack_active) {
++    // Transfer ownership to controller.
++    controller_->DeferMenuRunnerDestruction(base::WrapUnique(this));
++    return;
++  }
++
+   delete this;
+ }
+ 
+@@ -230,22 +237,33 @@ void MenuRunnerImpl::OnMenuClosed(NotifyType type,
+   }
+ 
+   menu_->set_controller(nullptr);
++  for (MenuItemView* sibling_menu : sibling_menus_) {
++    sibling_menu->set_controller(nullptr);
++  }
+ 
+   if (owns_controller_ && controller_) {
+     // We created the controller and need to delete it.
+-    delete controller_.get();
++    controller_->Destroy();
+     owns_controller_ = false;
+   }
+-  controller_ = nullptr;
+   // Make sure all the windows we created to show the menus have been
+   // destroyed.
+   menu_->DestroyAllMenuHosts();
++
+   if (delete_after_run_) {
+     FireFocusAfterMenuClose(parent_widget);
+-    delete this;
++
++    bool is_stack_active = controller_ && controller_->IsStackActive();
++    if (is_stack_active) {
++      // Transfer ownership to controller.
++      controller_->DeferMenuRunnerDestruction(base::WrapUnique(this));
++    } else {
++      delete this;
++    }
+     return;
+   }
+   running_ = false;
++  controller_ = nullptr;
+   if (menu_->GetDelegate()) {
+     // Executing the command may also delete this.
+     base::WeakPtr<MenuRunnerImpl> ref(weak_factory_.GetWeakPtr());
+diff --git a/ui/views/controls/menu/menu_runner_impl.h b/ui/views/controls/menu/menu_runner_impl.h
+index 539eb9e7294f933b4de4415609a758e6bd9fdfe0..d6022d082640f4f605b2d54a74e5caba3829795f 100644
+--- a/ui/views/controls/menu/menu_runner_impl.h
++++ b/ui/views/controls/menu/menu_runner_impl.h
+@@ -70,6 +70,7 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
+ 
+  private:
+   friend class ::views::test::MenuRunnerDestructionTest;
++  friend std::default_delete<MenuRunnerImpl>;
+ 
+   ~MenuRunnerImpl() override;
+ 
+@@ -92,6 +93,8 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
+   bool running_ = false;
+ 
+   // Set if |running_| and Release() has been invoked.
++  // TODO(crbug.com/516996291): Investigate if this can be removed or simplified
++  // since the nested loop has already been removed.
+   bool delete_after_run_ = false;
+ 
+   // Are we running for a drop?
+diff --git a/ui/views/controls/menu/menu_runner_unittest.cc b/ui/views/controls/menu/menu_runner_unittest.cc
+index cde50741485f3d7162b8cd0dbe873008f94a06ce..9ba9dd83461c2875f29c2e01d409559fcecd9c00 100644
+--- a/ui/views/controls/menu/menu_runner_unittest.cc
++++ b/ui/views/controls/menu/menu_runner_unittest.cc
+@@ -13,6 +13,7 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/bind.h"
++#include "base/test/gtest_util.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/run_until.h"
+ #include "base/test/simple_test_tick_clock.h"
+@@ -37,6 +38,7 @@
+ #include "ui/views/test/menu_test_utils.h"
+ #include "ui/views/test/test_views.h"
+ #include "ui/views/test/views_test_base.h"
++#include "ui/views/test/widget_test.h"
+ #include "ui/views/widget/any_widget_observer.h"
+ #include "ui/views/widget/native_widget_private.h"
+ #include "ui/views/widget/widget.h"
+@@ -680,6 +682,32 @@ class MenuRunnerImplTest : public MenuRunnerTest {
+   ~MenuRunnerImplTest() override = default;
+ };
+ 
++// Tests that when nested menu runners are destroyed out of order, that
++// MenuController is not accessed after it has been destroyed. This should not
++// crash on ASAN bots.
++TEST_F(MenuRunnerImplTest, NestedMenuRunnersDestroyedOutOfOrder) {
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(CreateMenuItemView());
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(),
++                         MenuAnchorPosition::kTopLeft);
++
++  auto menu_delegate2 = std::make_unique<TestMenuDelegate>();
++  auto menu_item_view2 = std::make_unique<MenuItemView>(menu_delegate2.get());
++  menu_item_view2->AppendMenuItem(1, u"One");
++
++  internal::MenuRunnerImpl* menu_runner2 =
++      new internal::MenuRunnerImpl(std::move(menu_item_view2));
++  menu_runner2->RunMenuAt(
++      owner(), nullptr, gfx::Rect(), MenuAnchorPosition::kTopLeft,
++      ui::mojom::MenuSourceType::kNone, MenuRunner::IS_NESTED);
++
++  menu_runner->Cancel();
++
++  // This should not access the destroyed MenuController
++  menu_runner2->Release();
++  ResetMenuItemView();
++  menu_runner->Release();
++}
+ 
+ // Regression test demonstrating that the host_-exists branch of
+ // SubmenuView::ShowAt lacks a WeakPtr liveness guard after ShowMenuHost.
+@@ -752,6 +780,351 @@ TEST_F(MenuRunnerImplTest, SubmenuReentrantDestructionDuringReshow) {
+   EXPECT_TRUE(fired);
+ }
+ 
++// Regression test demonstrating that MenuItemView destruction during ShowAt
++// is deferred and completes safely without crash.
++TEST_F(MenuRunnerImplTest, NestedRunnerReleasedDuringShowAtSafe) {
++  // Build a root menu containing one submenu item.
++  auto root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* sub_item = root->AppendSubMenu(100, u"Sub");
++  sub_item->AppendMenuItem(101, u"Leaf");
++
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(std::move(root));
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                         MenuAnchorPosition::kTopLeft);
++
++  MenuController* controller = MenuController::GetForOwnerWidget(owner());
++  ASSERT_TRUE(controller);
++
++  // We need to create a nested runner to simulate the nested menu.
++  auto nested_root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* nested_sub_item = nested_root->AppendSubMenu(200, u"NestedSub");
++  nested_sub_item->AppendMenuItem(201, u"NestedLeaf");
++
++  internal::MenuRunnerImpl* nested_runner =
++      new internal::MenuRunnerImpl(std::move(nested_root));
++  nested_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                           MenuAnchorPosition::kTopLeft,
++                           ui::mojom::MenuSourceType::kNone,
++                           MenuRunner::IS_NESTED);
++
++  bool fired = false;
++  base::WeakPtr<Widget> host_widget;
++  AnyWidgetObserver observer(views::test::AnyWidgetTestPasskey{});
++  observer.set_shown_callback(
++      base::BindLambdaForTesting([&](views::Widget* widget) {
++        if (fired || widget->GetName() != "MenuHost") {
++          return;
++        }
++        fired = true;
++        host_widget = widget->GetWeakPtr();
++        // Release the runner. This should NOT crash, but defer deletion.
++        nested_runner->Release();
++
++        // The widget should still be alive because deletion is deferred.
++        ASSERT_TRUE(host_widget);
++      }));
++
++  nested_sub_item->GetMenuController()->SelectItemAndOpenSubmenu(
++      nested_sub_item);
++
++  EXPECT_TRUE(fired);
++
++  // After ShowSubmenuImmediately returns, the stack depth returns to 0.
++  // But since we didn't cancel the menu, the widget should still be alive.
++  EXPECT_TRUE(host_widget);
++
++  // Now cancel the menu. This should trigger OnMenuClosed, which will
++  // see delete_after_run_ is true, and delete the runner.
++  controller->Cancel(MenuController::ExitType::kAll);
++
++  // Wait for the runner to be deleted and destroy the widget.
++  if (host_widget) {
++    views::test::WidgetDestroyedWaiter(host_widget.get()).Wait();
++  }
++  EXPECT_FALSE(host_widget);
++
++  // Clean up parent.
++  menu_runner->Release();
++}
++
++// Regression test demonstrating that MenuController destruction during ShowAt
++// is blocked and results in a CHECK failure.
++using MenuRunnerImplDeathTest = MenuRunnerImplTest;
++TEST_F(MenuRunnerImplDeathTest, MenuControllerDeletedDuringShowAtCHECK) {
++  // Build a root menu containing one submenu item.
++  auto root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* root_ptr = root.get();
++  MenuItemView* sub_item = root->AppendSubMenu(100, u"Sub");
++  sub_item->AppendMenuItem(101, u"Leaf");
++
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(std::move(root));
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                         MenuAnchorPosition::kTopLeft);
++
++  MenuController* controller = MenuController::GetForOwnerWidget(owner());
++  ASSERT_TRUE(controller);
++  Widget* root_widget = root_ptr->GetSubmenu()->GetWidget();
++  ASSERT_TRUE(root_widget);
++
++  // We need to create a nested runner to simulate the nested menu.
++  auto nested_root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* nested_root_ptr = nested_root.get();
++  MenuItemView* nested_sub_item = nested_root->AppendSubMenu(200, u"NestedSub");
++  nested_sub_item->AppendMenuItem(201, u"NestedLeaf");
++
++  internal::MenuRunnerImpl* nested_runner =
++      new internal::MenuRunnerImpl(std::move(nested_root));
++  nested_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                           MenuAnchorPosition::kTopLeft,
++                           ui::mojom::MenuSourceType::kNone,
++                           MenuRunner::IS_NESTED);
++  Widget* nested_widget = nested_root_ptr->GetSubmenu()->GetWidget();
++  ASSERT_TRUE(nested_widget);
++
++  // We expect the deletion to crash the process.
++  EXPECT_DEATH(
++      {
++        AnyWidgetObserver observer(views::test::AnyWidgetTestPasskey{});
++        bool fired = false;
++        observer.set_shown_callback(
++            base::BindLambdaForTesting([&](views::Widget* widget) {
++              if (fired || widget->GetName() != "MenuHost") {
++                return;
++              }
++              fired = true;
++              // Fake scenario to delete the instance while blocking the
++              // deletion.
++              MenuController::DeleteForTesting(
++                  MenuController::GetActiveInstance());
++            }));
++        MenuController::GetActiveInstance()->SelectItemAndOpenSubmenu(
++            nested_sub_item);
++      },
++      "Check failed: stack_depth_ == 0");
++
++  // Clean up in the parent process.
++  base::WeakPtr<Widget> root_weak = root_widget->GetWeakPtr();
++  base::WeakPtr<Widget> nested_weak = nested_widget->GetWeakPtr();
++
++  nested_runner->Release();
++  menu_runner->Release();
++
++  if (nested_weak) {
++    views::test::WidgetDestroyedWaiter(nested_weak.get()).Wait();
++  }
++  if (root_weak) {
++    views::test::WidgetDestroyedWaiter(root_weak.get()).Wait();
++  }
++}
++
++// Regression test demonstrating that MenuHost destruction during ShowAt
++// is deferred and completed after ShowAt returns.
++TEST_F(MenuRunnerImplTest, MenuHostDeferredDuringShowAt) {
++  // Build a root menu containing one submenu item.
++  auto root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* sub_item = root->AppendSubMenu(100, u"Sub");
++  sub_item->AppendMenuItem(101, u"Leaf");
++
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(std::move(root));
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                         MenuAnchorPosition::kTopLeft);
++
++  MenuController* controller = MenuController::GetForOwnerWidget(owner());
++  ASSERT_TRUE(controller);
++
++  // We need to create a nested runner to simulate the nested menu.
++  auto nested_root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* nested_sub_item = nested_root->AppendSubMenu(200, u"NestedSub");
++  nested_sub_item->AppendMenuItem(201, u"NestedLeaf");
++
++  internal::MenuRunnerImpl* nested_runner =
++      new internal::MenuRunnerImpl(std::move(nested_root));
++  nested_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                           MenuAnchorPosition::kTopLeft,
++                           ui::mojom::MenuSourceType::kNone,
++                           MenuRunner::IS_NESTED);
++
++  bool fired = false;
++  base::WeakPtr<Widget> host_widget;
++  AnyWidgetObserver observer(views::test::AnyWidgetTestPasskey{});
++  observer.set_shown_callback(
++      base::BindLambdaForTesting([&](views::Widget* widget) {
++        if (fired || widget->GetName() != "MenuHost") {
++          return;
++        }
++        fired = true;
++        host_widget = widget->GetWeakPtr();
++
++        // Cancel the menu during ShowAt. This calls DestroyMenuHost on
++        // MenuHost. Since we are in ShowAt, the destruction should be deferred.
++        controller->Cancel(MenuController::ExitType::kAll);
++
++        // The widget should still be alive (destruction deferred).
++        ASSERT_TRUE(host_widget);
++        EXPECT_TRUE(static_cast<MenuHost*>(host_widget.get())
++                        ->destroying_for_testing());
++      }));
++
++  nested_sub_item->GetMenuController()->SelectItemAndOpenSubmenu(
++      nested_sub_item);
++
++  EXPECT_TRUE(fired);
++  // Wait for the deferred Widget::Close() to complete.
++  if (host_widget) {
++    views::test::WidgetDestroyedWaiter(host_widget.get()).Wait();
++  }
++  // After ShowSubmenuImmediately returns and waiter finishes, the deferred
++  // close should have run, destroying the widget.
++  EXPECT_FALSE(host_widget);
++
++  // Clean up
++  nested_runner->Release();
++  menu_runner->Release();
++}
++
++// Regression test demonstrating that MenuController destruction during ShowAt
++// is deferred and completed after ShowAt returns.
++TEST_F(MenuRunnerImplTest, MenuControllerDeferredDestructionDuringShowAt) {
++  // Build a root menu containing one submenu item.
++  auto root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* sub_item = root->AppendSubMenu(100, u"Sub");
++  sub_item->AppendMenuItem(101, u"Leaf");
++
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(std::move(root));
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                         MenuAnchorPosition::kTopLeft);
++
++  MenuController* controller = MenuController::GetForOwnerWidget(owner());
++  ASSERT_TRUE(controller);
++  base::WeakPtr<MenuController> controller_weak = controller->AsWeakPtr();
++
++  // We need to create a nested runner to simulate the nested menu.
++  auto nested_root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* nested_sub_item = nested_root->AppendSubMenu(200, u"NestedSub");
++  nested_sub_item->AppendMenuItem(201, u"NestedLeaf");
++
++  internal::MenuRunnerImpl* nested_runner =
++      new internal::MenuRunnerImpl(std::move(nested_root));
++  nested_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                           MenuAnchorPosition::kTopLeft,
++                           ui::mojom::MenuSourceType::kNone,
++                           MenuRunner::IS_NESTED);
++
++  bool fired = false;
++  AnyWidgetObserver observer(views::test::AnyWidgetTestPasskey{});
++  observer.set_shown_callback(
++      base::BindLambdaForTesting([&](views::Widget* widget) {
++        if (fired || widget->GetName() != "MenuHost") {
++          return;
++        }
++        fired = true;
++
++        // Cancel the menu during ShowAt. This unwinds delegate stack and
++        // requests MenuController deletion.
++        controller->Cancel(MenuController::ExitType::kAll);
++
++        // The controller should still be alive (deletion deferred).
++        ASSERT_TRUE(controller_weak);
++      }));
++
++  nested_sub_item->GetMenuController()->SelectItemAndOpenSubmenu(
++      nested_sub_item);
++
++  EXPECT_TRUE(fired);
++  // After ShowSubmenuImmediately returns, the controller should be deleted.
++  EXPECT_FALSE(controller_weak);
++  EXPECT_FALSE(MenuController::GetActiveInstance());
++
++  // Clean up
++  nested_runner->Release();
++  menu_runner->Release();
++}
++
++// Regression test verifying that when a new MenuController is created and run
++// while an existing MenuController is on the call stack, both controllers
++// co-exist safely on the single owner widget,
++// MenuController::GetForOwnerWidget(owner()) resolves to the newly created
++// controller, and the old controller unwinds and deletes safely.
++TEST_F(MenuRunnerImplTest, MenuControllerRecreatedWhileOnCallStack) {
++  auto root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* sub_item = root->AppendSubMenu(100, u"Sub");
++  sub_item->AppendMenuItem(101, u"Leaf");
++
++  internal::MenuRunnerImpl* menu_runner =
++      new internal::MenuRunnerImpl(std::move(root));
++  menu_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                         MenuAnchorPosition::kTopLeft);
++
++  MenuController* controller1 = MenuController::GetForOwnerWidget(owner());
++  ASSERT_TRUE(controller1);
++  base::WeakPtr<MenuController> controller1_weak = controller1->AsWeakPtr();
++
++  // Create a nested runner to simulate a submenu open and put controller1 on
++  // the call stack.
++  auto nested_root = std::make_unique<TestMenuItemView>(menu_delegate());
++  MenuItemView* nested_sub_item = nested_root->AppendSubMenu(200, u"NestedSub");
++  nested_sub_item->AppendMenuItem(201, u"NestedLeaf");
++
++  internal::MenuRunnerImpl* nested_runner =
++      new internal::MenuRunnerImpl(std::move(nested_root));
++  nested_runner->RunMenuAt(owner(), nullptr, gfx::Rect(gfx::Size(200, 200)),
++                           MenuAnchorPosition::kTopLeft,
++                           ui::mojom::MenuSourceType::kNone,
++                           MenuRunner::IS_NESTED);
++
++  bool fired = false;
++  AnyWidgetObserver observer(views::test::AnyWidgetTestPasskey{});
++  observer.set_shown_callback(
++      base::BindLambdaForTesting([&](views::Widget* widget) {
++        if (fired || widget->GetName() != "MenuHost") {
++          return;
++        }
++        fired = true;
++
++        // While controller1 is actively on the call stack inside ShowAt /
++        // OpenMenuImpl, start a new drop menu runner on the SAME owner widget.
++        auto root2 = std::make_unique<TestMenuItemView>(menu_delegate());
++        internal::MenuRunnerImpl* menu_runner2 =
++            new internal::MenuRunnerImpl(std::move(root2));
++        menu_runner2->RunMenuAt(
++            owner(), nullptr, gfx::Rect(gfx::Size(100, 100)),
++            MenuAnchorPosition::kTopLeft, ui::mojom::MenuSourceType::kNone,
++            MenuRunner::FOR_DROP);
++
++        MenuController* controller2 =
++            MenuController::GetForOwnerWidget(owner());
++
++        // Verify that both MenuControllers co-exist simultaneously.
++        ASSERT_TRUE(controller1_weak);
++        ASSERT_TRUE(controller2);
++        EXPECT_NE(controller1_weak.get(), controller2);
++
++        // Verify that the single owner widget resolves to controller2.
++        EXPECT_EQ(MenuController::GetForOwnerWidget(owner()), controller2);
++        EXPECT_FALSE(controller1_weak->showing_for_testing());
++        EXPECT_TRUE(controller2->showing_for_testing());
++
++        // Release the second runner.
++        menu_runner2->Release();
++      }));
++
++  nested_sub_item->GetMenuController()->SelectItemAndOpenSubmenu(
++      nested_sub_item);
++
++  EXPECT_TRUE(fired);
++
++  // After ShowSubmenuImmediately returns, controller1 should be safely deleted.
++  EXPECT_FALSE(controller1_weak);
++
++  // Clean up.
++  nested_runner->Release();
++  menu_runner->Release();
++}
++
+ // Tests that when a MenuRunner's MenuController becomes inactive while a
+ // second MenuController is active (e.g. during drag-and-drop), releasing the
+ // original MenuRunner after the active MenuController has already been
+@@ -768,21 +1141,21 @@ TEST_F(MenuRunnerImplTest, MenuRunnerDestroyedWithNoActiveController) {
+ 
+   // Simulate a drag starting from the active menu controller.
+   base::WeakPtr<MenuController> controller1 =
+-      MenuController::GetActiveInstance()->AsWeakPtr();
++      MenuController::GetForOwnerWidget(owner())->AsWeakPtr();
+   controller1->OnDragDropWillStart();
+ 
+-  std::unique_ptr<TestMenuDelegate> menu_delegate2(new TestMenuDelegate);
+-  MenuItemView* menu_item_view2 = new MenuItemView(menu_delegate2.get());
++  auto menu_delegate2 = std::make_unique<TestMenuDelegate>();
++  auto menu_item_view2 = std::make_unique<MenuItemView>(menu_delegate2.get());
+   menu_item_view2->AppendMenuItem(1, u"One");
+ 
+-  internal::MenuRunnerImpl* menu_runner2 = new internal::MenuRunnerImpl(
+-      base::WrapUnique<MenuItemView>(menu_item_view2));
++  internal::MenuRunnerImpl* menu_runner2 =
++      new internal::MenuRunnerImpl(std::move(menu_item_view2));
+   menu_runner2->RunMenuAt(
+       owner(), nullptr, gfx::Rect(), MenuAnchorPosition::kTopLeft,
+       ui::mojom::MenuSourceType::kNone, MenuRunner::FOR_DROP);
+   EXPECT_TRUE(menu_runner2->IsRunning());
+ 
+-  EXPECT_NE(controller1.get(), MenuController::GetActiveInstance());
++  EXPECT_NE(controller1.get(), MenuController::GetForOwnerWidget(owner()));
+   controller1->OnDragDropCompleted(true);
+ 
+   // Close the runner with the active menu first.
+diff --git a/ui/views/controls/menu/submenu_view.cc b/ui/views/controls/menu/submenu_view.cc
+index abf1e86bae58cb3be5d3260b566ad217c1f39b4d..e9c5f0f46d9dc7730b2a2064e8a6b1685d27037a 100644
+--- a/ui/views/controls/menu/submenu_view.cc
++++ b/ui/views/controls/menu/submenu_view.cc
+@@ -509,7 +509,10 @@ void SubmenuView::ShowAt(const MenuHost::InitParams& init_params) {
+   if (host_) {
+     host_->SetMenuHostBounds(init_params.bounds);
+     host_->ShowMenuHost(init_params.do_capture);
+-    if (!weak_this) {
++    // Showing the menu host can synchronously trigger teardown (e.g. via focus
++    // change). SubmenuView may outlive MenuHost, in which case we should just
++    // early exit.
++    if (!weak_this || !host_) {
+       return;
+     }
+   } else {
+@@ -523,7 +526,10 @@ void SubmenuView::ShowAt(const MenuHost::InitParams& init_params) {
+     MenuHost::InitParams new_init_params = init_params;
+     new_init_params.contents_view = detached_scroll_view_container_.release();
+     host_->InitMenuHost(new_init_params);
+-    if (!weak_this) {
++    // Showing the menu host can synchronously trigger teardown (e.g. via focus
++    // change). SubmenuView may outlive MenuHost, in which case we should just
++    // early exit.
++    if (!weak_this || !host_) {
+       return;
+     }
+   }

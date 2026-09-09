@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 2 Sep 2026 11:37:44 +0200
+Subject: [snapshot] Reset weak reference descriptor in ReadRootArrayConstants
+
+This CL updates ReadRootArrayConstants to write through WriteHeapPointer
+with GetAndResetNextReferenceDescriptor(), ensuring the reference
+descriptor is properly consumed and reset.
+
+TAG=agy
+CONV=6a397150-d53d-4615-b1b8-ce8c94c1a9dd
+
+Fixed: 554236352
+Change-Id: Idab7c9703b4d1210f8fd77564016bdc501543411
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8346067
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109637}
+
+diff --git a/src/snapshot/deserializer.cc b/src/snapshot/deserializer.cc
+index fee3fa250355384cebde615a50427b5441fcae13..9db502d38a2861972fee35d38ae7b35cf5ba78f1 100644
+--- a/src/snapshot/deserializer.cc
++++ b/src/snapshot/deserializer.cc
+@@ -943,6 +943,9 @@ template <typename IsolateT>
+ template <typename SlotAccessor>
+ int Deserializer<IsolateT>::ReadRepeatedRoot(SlotAccessor slot_accessor,
+                                              int repeat_count) {
++  DCHECK(!next_reference_is_weak_);
++  DCHECK(!next_reference_is_indirect_pointer_);
++  DCHECK(!next_reference_is_protected_pointer);
+   CHECK_LE(2, repeat_count);
+ 
+   uint8_t id = source_.Get();
+@@ -1602,8 +1605,9 @@ int Deserializer<IsolateT>::ReadRootArrayConstants(uint8_t data,
+     PrintF("%*sRootArrayConstants [%u] : %s\n", depth_, "",
+            static_cast<int>(root_index), RootsTable::name(root_index));
+   }
+-  return slot_accessor.Write(heap_object, HeapObjectReferenceType::STRONG, 0,
+-                             SKIP_WRITE_BARRIER);
++  return WriteHeapPointer(slot_accessor, heap_object,
++                          GetAndResetNextReferenceDescriptor(),
++                          SKIP_WRITE_BARRIER);
+ }
+ 
+ template <typename IsolateT>
+diff --git a/test/mjsunit/regress/regress-554236352.js b/test/mjsunit/regress/regress-554236352.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..63faeffd3e2606d463647a44781c2a45403bedcf
+--- /dev/null
++++ b/test/mjsunit/regress/regress-554236352.js
+@@ -0,0 +1,9 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --cache=after-execute
++
++var R = Array.of(() => { 'use strict'; return eval('1'); }, "hello_world");
++assertEquals("hello_world", R[1]);
++assertEquals(1, R[0]());

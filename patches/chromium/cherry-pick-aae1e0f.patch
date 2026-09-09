@@ -1,0 +1,271 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rob Pitkin <robpitkin@google.com>
+Date: Wed, 2 Sep 2026 14:19:00 -0700
+Subject: gamepad: Fix UAF in XboxDataFetcher on macOS via IOKit notifications
+
+In XboxDataFetcher::RegisterForInterestNotifications, a raw pointer to a
+short-lived PendingController was previously passed as the refcon to
+IOServiceAddInterestNotification on the fetcher's persistent
+IONotificationPortRef. When device open attempts succeeded or failed
+with general errors, PendingController was deallocated. However,
+releasing an IOKit notification token does not purge Mach messages
+already buffered on the Mach port queue. When the CFRunLoop subsequently
+dispatched buffered kIOMessageServiceWasClosed events, InterestCallback
+dereferenced the dangling PendingController pointer, causing a browser-
+process Use-After-Free.
+
+This CL fixes the vulnerability by:
+1. Passing XboxDataFetcher* (this) as the refcon to
+   IOServiceAddInterestNotification so the refcon lifetime matches the
+   notification port.
+2. Replacing PendingController with PendingService, tracking pending
+   devices in a base::flat_map indexed by IOKit registry entry ID.
+3. Deferring interest notification registration until OpenDevice()
+   explicitly fails with kOpenFailedExclusiveAccess.
+4. Safely removing pending service entries when devices are disconnected
+   (in DeviceRemoved and on kIOMessageServiceIsTerminated).
+
+TAG=agy
+CONV=5c4a4873-feaf-45e3-bd54-98ca5dea9dfe
+
+Bug: 553122131
+Change-Id: I52dff6338fab55b16f765fd78ac87e48a02ce814
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8299319
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Reviewed-by: Alvin Ji <alvinji@chromium.org>
+Commit-Queue: Rob Pitkin <robpitkin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1691092}
+
+diff --git a/device/gamepad/xbox_data_fetcher_mac.cc b/device/gamepad/xbox_data_fetcher_mac.cc
+index 0e98f3b943354416842346f414301c381c13ac67..b194fc23e1baacd7e9cbae5eb5b785b45c7803ca 100644
+--- a/device/gamepad/xbox_data_fetcher_mac.cc
++++ b/device/gamepad/xbox_data_fetcher_mac.cc
+@@ -47,16 +47,6 @@ constexpr auto kSupportedDeviceIds = base::MakeFixedFlatSet<GamepadId>({
+ 
+ }  // namespace
+ 
+-XboxDataFetcher::PendingController::PendingController(
+-    XboxDataFetcher* fetcher,
+-    std::unique_ptr<XboxControllerMac> controller)
+-    : fetcher(fetcher), controller(std::move(controller)) {}
+-
+-XboxDataFetcher::PendingController::~PendingController() {
+-  if (controller)
+-    controller->Shutdown();
+-}
+-
+ XboxDataFetcher::XboxDataFetcher() = default;
+ 
+ XboxDataFetcher::~XboxDataFetcher() {
+@@ -133,6 +123,10 @@ void XboxDataFetcher::DeviceRemoved(void* context, io_iterator_t iterator) {
+   io_service_t ref;
+   while ((ref = IOIteratorNext(iterator))) {
+     base::mac::ScopedIOObject<io_service_t> scoped_ref(ref);
++    uint64_t entry_id = 0;
++    if (IORegistryEntryGetRegistryEntryID(ref, &entry_id) == KERN_SUCCESS) {
++      fetcher->pending_services_.erase(entry_id);
++    }
+     base::apple::ScopedCFTypeRef<CFNumberRef> number(
+         base::apple::CFCastStrict<CFNumberRef>(IORegistryEntryCreateCFProperty(
+             ref, CFSTR(kUSBDevicePropertyLocationID), kCFAllocatorDefault,
+@@ -148,42 +142,48 @@ void XboxDataFetcher::InterestCallback(void* context,
+                                        io_service_t service,
+                                        IOMessage message_type,
+                                        void* message_argument) {
++  // `context` is the XboxDataFetcher. Its lifetime matches the notification
++  // port: the port is destroyed before the fetcher is deleted, so `context`
++  // cannot dangle here.
++  XboxDataFetcher* fetcher = static_cast<XboxDataFetcher*>(context);
+   if (message_type == kIOMessageServiceWasClosed) {
+-    PendingController* pending = static_cast<PendingController*>(context);
+-    pending->fetcher->PendingControllerBecameAvailable(service, pending);
++    fetcher->PendingServiceBecameAvailable(service);
++  } else if (message_type == kIOMessageServiceIsTerminated) {
++    uint64_t entry_id = 0;
++    if (IORegistryEntryGetRegistryEntryID(service, &entry_id) == KERN_SUCCESS) {
++      fetcher->pending_services_.erase(entry_id);
++    }
+   }
+ }
+ 
+-void XboxDataFetcher::PendingControllerBecameAvailable(
+-    io_service_t service,
+-    PendingController* pending) {
+-  // Destroying the PendingController object unregisters our interest
+-  // notification.
+-  auto it = pending_controllers_.find(pending);
+-  if (it != pending_controllers_.end()) {
+-    pending_controllers_.erase(it);
++void XboxDataFetcher::PendingServiceBecameAvailable(io_service_t service) {
++  // Look up the pending service registered for this device by registry entry
++  // ID. Stale or duplicate notifications find no entry and are safely ignored.
++  uint64_t entry_id = 0;
++  kern_return_t kr = IORegistryEntryGetRegistryEntryID(service, &entry_id);
++  if (kr != KERN_SUCCESS) {
++    return;
++  }
++
++  if (pending_services_.erase(entry_id) == 0) {
++    return;
+   }
++
+   TryOpenDevice(service);
+ }
+ 
+ bool XboxDataFetcher::TryOpenDevice(io_service_t service) {
+-  auto pending = std::make_unique<PendingController>(
+-      this, std::make_unique<XboxControllerMac>(this));
+-  bool did_register_interest =
+-      RegisterForInterestNotifications(service, pending.get());
+-
+-  auto* controller = pending->controller.get();
++  auto controller = std::make_unique<XboxControllerMac>(this);
+   XboxControllerMac::OpenDeviceResult result = controller->OpenDevice(service);
+   if (result == XboxControllerMac::OpenDeviceResult::kOpenSucceeded) {
+     RecordXboxMacOutcome(XboxMacOutcome::kSuccess);
+-    AddController(pending->controller.release());
++    AddController(controller.release());
+     return true;
+   }
+ 
+-  if (did_register_interest &&
+-      result ==
+-          XboxControllerMac::OpenDeviceResult::kOpenFailedExclusiveAccess) {
+-    pending_controllers_.insert(std::move(pending));
++  if (result ==
++      XboxControllerMac::OpenDeviceResult::kOpenFailedExclusiveAccess) {
++    RegisterForInterestNotifications(service);
+   }
+   return false;
+ }
+@@ -256,28 +256,44 @@ bool XboxDataFetcher::RegisterForDeviceNotifications(int vendor_id,
+   return true;
+ }
+ 
+-bool XboxDataFetcher::RegisterForInterestNotifications(
+-    io_service_t service,
+-    PendingController* pending) {
+-  if (port_ == nullptr)
+-    port_.reset(IONotificationPortCreate(kIOMainPortDefault));
++bool XboxDataFetcher::RegisterForInterestNotifications(io_service_t service) {
+   if (!port_.is_valid())
+     return false;
+ 
++  uint64_t entry_id = 0;
++  if (IORegistryEntryGetRegistryEntryID(service, &entry_id) != KERN_SUCCESS) {
++    return false;
++  }
++
++  if (pending_services_.contains(entry_id)) {
++    return true;
++  }
++
++  base::mac::ScopedIOObject<io_object_t> notify;
++  // Pass `this` (whose lifetime matches the notification port) as `refCon`:
++  // queued notification messages carry the `refCon` and outlive temporary
++  // device open attempt objects.
+   kern_return_t kr = IOServiceAddInterestNotification(
+-      port_.get(), service, kIOGeneralInterest, InterestCallback, pending,
+-      pending->notify.InitializeInto());
+-  return kr == KERN_SUCCESS;
++      port_.get(), service, kIOGeneralInterest, InterestCallback,
++      /*refCon=*/this, notify.InitializeInto());
++  if (kr != KERN_SUCCESS) {
++    return false;
++  }
++
++  pending_services_.emplace(entry_id, std::move(notify));
++  return true;
+ }
+ 
+ void XboxDataFetcher::UnregisterFromNotifications() {
+   if (!listening_)
+     return;
+   listening_ = false;
+-  if (source_)
++  if (source_) {
+     CFRunLoopSourceInvalidate(source_);
++    source_ = nullptr;
++  }
+   port_.reset();
+-  pending_controllers_.clear();
++  pending_services_.clear();
+ }
+ 
+ XboxControllerMac* XboxDataFetcher::ControllerForLocation(UInt32 location_id) {
+diff --git a/device/gamepad/xbox_data_fetcher_mac.h b/device/gamepad/xbox_data_fetcher_mac.h
+index 53c8b6861e70a52a0880fb84854c9683baee27d1..4e4c70041f5d2461a47899e97648764ac6e90b57 100644
+--- a/device/gamepad/xbox_data_fetcher_mac.h
++++ b/device/gamepad/xbox_data_fetcher_mac.h
+@@ -5,17 +5,15 @@
+ #ifndef DEVICE_GAMEPAD_XBOX_DATA_FETCHER_MAC_H_
+ #define DEVICE_GAMEPAD_XBOX_DATA_FETCHER_MAC_H_
+ 
++#include <IOKit/IOMessage.h>
+ #include <stdint.h>
+ 
+ #include <set>
+ #include <vector>
+ 
+-#include <IOKit/IOMessage.h>
+-
+-#include "base/containers/unique_ptr_adapters.h"
++#include "base/containers/flat_map.h"
+ #include "base/mac/scoped_ionotificationportref.h"
+ #include "base/mac/scoped_ioobject.h"
+-#include "base/memory/raw_ptr.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "device/gamepad/gamepad_data_fetcher.h"
+ #include "device/gamepad/xbox_controller_mac.h"
+@@ -50,18 +48,6 @@ class XboxDataFetcher : public GamepadDataFetcher,
+   XboxControllerMac* ControllerForLocation(UInt32 location_id);
+ 
+  private:
+-  struct PendingController {
+-   public:
+-    PendingController(XboxDataFetcher*, std::unique_ptr<XboxControllerMac>);
+-    PendingController(const PendingController& entry);
+-    PendingController& operator=(const PendingController& entry);
+-    ~PendingController();
+-
+-    raw_ptr<XboxDataFetcher> fetcher;
+-    std::unique_ptr<XboxControllerMac> controller;
+-    base::mac::ScopedIOObject<io_iterator_t> notify;
+-  };
+-
+   static void DeviceAdded(void* context, io_iterator_t iterator);
+   static void DeviceRemoved(void* context, io_iterator_t iterator);
+   static void InterestCallback(void* context,
+@@ -69,13 +55,11 @@ class XboxDataFetcher : public GamepadDataFetcher,
+                                IOMessage message_type,
+                                void* message_argument);
+ 
+-  bool TryOpenDevice(io_service_t iterator);
++  bool TryOpenDevice(io_service_t service);
+   bool RegisterForNotifications();
+   bool RegisterForDeviceNotifications(int vendor_id, int product_id);
+-  bool RegisterForInterestNotifications(io_service_t service,
+-                                        PendingController* pending);
+-  void PendingControllerBecameAvailable(io_service_t service,
+-                                        PendingController* pending);
++  bool RegisterForInterestNotifications(io_service_t service);
++  void PendingServiceBecameAvailable(io_service_t service);
+   void UnregisterFromNotifications();
+ 
+   void OnAddedToProvider() override;
+@@ -94,10 +78,11 @@ class XboxDataFetcher : public GamepadDataFetcher,
+   std::set<XboxControllerMac*> controllers_;
+ 
+   // The set of enumerated controllers that received an exclusive access error
+-  // on opening the device. The data fetcher is notified when these devices
+-  // become available so we can try opening them again.
+-  std::set<std::unique_ptr<PendingController>, base::UniquePtrComparator>
+-      pending_controllers_;
++  // on opening the device, keyed by registry entry ID. The data fetcher is
++  // notified when these devices become available so we can try opening them
++  // again.
++  base::flat_map<uint64_t, base::mac::ScopedIOObject<io_object_t>>
++      pending_services_;
+ 
+   bool listening_ = false;
+ 

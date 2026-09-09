@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Vitale <mrcvtl@chromium.org>
+Date: Mon, 31 Aug 2026 14:03:34 +0000
+Subject: [maglev] Invalidate for-in receiver map check on inlined map changes
+
+When inlining a call inside an active for-in loop, operations in the
+inlinee may invalidate object maps. Previously, BuildEagerInlineCall
+copied the inlinee's final receiver_needs_map_check into the caller.
+If the inlinee iterated another object or validated hasOwnProperty,
+receiver_needs_map_check was reset to false, erroneously clearing
+ the caller's requirement to re-check its own receiver map.
+
+Track whether map mutations occurred during inlining with
+may_have_changed_maps. In BuildEagerInlineCall, invalidate the caller's
+receiver map cache if any map change was observed in the inlinee.
+
+Fixed: 550360762
+Change-Id: I7adcf8f479a162d82fb13b1b2f607ad54d8996ae
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8322427
+Commit-Queue: Marco Vitale <mrcvtl@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109603}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 9e0916a46c274717e537a83207a873c04f231cd9..77acb557e66ad351a5518e46c58dea084522d764 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -7808,8 +7808,10 @@ ReduceResult MaglevGraphBuilder::BuildEagerInlineCall(
+   // Propagate frame information back to the caller.
+   current_interpreter_frame_.set_known_node_aspects(
+       inner_graph_builder.current_interpreter_frame_.known_node_aspects());
+-  current_for_in_state.receiver_needs_map_check =
+-      inner_graph_builder.current_for_in_state.receiver_needs_map_check;
++  if (inner_graph_builder.may_have_changed_maps()) {
++    may_have_changed_maps_ = true;
++    current_for_in_state.receiver_needs_map_check = true;
++  }
+ 
+   // Resume execution using the final block of the inner builder.
+   inner_graph_builder.reducer_.FlushNodesToBlock();
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index fc531f910a9863efd6280240955ca998b0b49eb8..b7daff4146271c1788c13711a63148168b1bc826 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1986,6 +1986,9 @@ class MaglevGraphBuilder {
+ 
+   // When set, inline only small functions.
+   bool only_inline_small_ = false;
++
++  bool may_have_changed_maps() const { return may_have_changed_maps_; }
++  bool may_have_changed_maps_ = false;
+ };
+ 
+ template <bool is_possible_map_change>
+@@ -1996,6 +1999,7 @@ void MaglevGraphBuilder::ResetBuilderCachedState() {
+   // TODO(leszeks): Track this on merge states / known node aspects, rather
+   // than on the graph, so that it can survive control flow.
+   if constexpr (is_possible_map_change) {
++    may_have_changed_maps_ = true;
+     current_for_in_state.receiver_needs_map_check = true;
+   }
+ }
+diff --git a/test/mjsunit/maglev/regress/regress-550360762.js b/test/mjsunit/maglev/regress/regress-550360762.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..7e8a663e114412b47024aa52427e5ed12933fd15
+--- /dev/null
++++ b/test/mjsunit/maglev/regress/regress-550360762.js
+@@ -0,0 +1,48 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --maglev --maglev-inlining --allow-natives-syntax
++
++const probe = {a: 1};
++
++function Receiver(v) {
++  this.p0 = 10;
++  this.p1 = 11;
++  this.p2 = 12;
++  this.p3 = 13;
++  this.x = v;
++  this.y = 99;
++  for (let i = 0; i < 4; ++i) Object.defineProperty(this, 'p' + i, {enumerable: false});
++}
++
++function erasePressureThenRevalidate(victim, other) {
++  delete victim.x;
++  let key;
++  OUT: {
++    for (key in other) break OUT;
++    throw 0;
++  }
++  return other.hasOwnProperty(key);
++}
++
++function vulnerable(victim, other) {
++  for (let key in victim) {
++    erasePressureThenRevalidate(victim, other);
++    return victim[key];
++  }
++  return -1;
++}
++
++%PrepareFunctionForOptimization(Receiver);
++%PrepareFunctionForOptimization(erasePressureThenRevalidate);
++%PrepareFunctionForOptimization(vulnerable);
++
++for (let i = 0; i < 2; ++i) {
++  vulnerable(new Receiver(0), probe);
++}
++%OptimizeMaglevOnNextCall(vulnerable);
++vulnerable(new Receiver(0), probe);
++
++const victim = new Receiver(1337);
++assertEquals(undefined, vulnerable(victim, probe));
