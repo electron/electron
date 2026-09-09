@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Wed, 29 Jul 2026 08:23:59 -0700
+Subject: Prevent use-after-free in WidgetBase by adding weak pointer checks.
+
+In WidgetBase::DidBeginMainFrame and WidgetBase::ShowVirtualKeyboardOnElementFocus, synchronous calls to update text input state or show the virtual keyboard can result in the destruction of the WidgetBase instance. This CL adds weak pointer checks to safely return early if the instance is destroyed during these calls.
+
+BUG=540058837,540058837
+
+Change-Id: I9c87677f6ec186faaefda461f2a9f0ef49e19bb3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8162668
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1670274}
+(cherry picked from commit 1a454d58b0eb6ab832f5db00c18bb3b7380f8df4)
+
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 20a8240f4ca1f9772e2deb2de0f204023a947f7d..30931bd605570e1481d49ae9c06f0cf382db17e8 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -678,7 +678,11 @@ void WidgetBase::OnCommitRequested() {
+ }
+ 
+ void WidgetBase::DidBeginMainFrame() {
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+   UpdateTextInputState();
++  if (!weak_this) {
++    return;
++  }
+   client_->DidBeginMainFrame();
+ }
+ 
+@@ -1272,6 +1276,7 @@ void WidgetBase::ClearTextInputState() {
+ }
+ 
+ void WidgetBase::ShowVirtualKeyboardOnElementFocus() {
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+ #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_IOS_TVOS)
+   // On ChromeOS, virtual keyboard is triggered only when users leave the
+   // mouse button or the finger and a text input element is focused at that
+@@ -1283,6 +1288,9 @@ void WidgetBase::ShowVirtualKeyboardOnElementFocus() {
+ #else
+   ShowVirtualKeyboard();
+ #endif
++  if (!weak_this) {
++    return;
++  }
+ 
+ // TODO(rouslan): Fix ChromeOS and Windows 8 behavior of autofill popup with
+ // virtual keyboard.

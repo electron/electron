@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hayato Ito <hayato@chromium.org>
+Date: Thu, 13 Aug 2026 00:24:28 -0700
+Subject: Fix reentrant pending_loaders_ UAF in WebBundleManager
+
+In WebBundleManager::CreateWebBundleURLLoaderFactory, iterating over
+pending_loaders_[key] while calling factory->StartLoader(loader) could
+cause a synchronous failure when factory is created in an error state.
+
+The loader's deletion callback synchronously invoked
+CleanUpWillBeDeletedURLLoader, which erased the map entry from
+pending_loaders_ while the outer loop was actively iterating over it,
+causing a heap-use-after-free and container-overflow.
+
+To fix this, we detach the vector out of pending_loaders_ and erase the
+map iterator before calling StartLoader.
+
+Bug: 544415098
+Change-Id: I854f117a04bdfd8f210e236a217401e4556914bf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8243029
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Hayato Ito <hayato@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1678651}
+(cherry picked from commit e70631df78a1825ace2949e3dc4fa225808d88ff)
+
+diff --git a/services/network/web_bundle/web_bundle_manager.cc b/services/network/web_bundle/web_bundle_manager.cc
+index 44aac0b3bc9b6d061cbf2132eeee6e4974fdcbfa..b6994593d72f167fe14b45dfa533030eade0caae 100644
+--- a/services/network/web_bundle/web_bundle_manager.cc
++++ b/services/network/web_bundle/web_bundle_manager.cc
+@@ -87,9 +87,15 @@ WebBundleManager::CreateWebBundleURLLoaderFactory(
+   // These subresource requests arrived earlier than the request for the bundle.
+   auto it = pending_loaders_.find(key);
+   if (it != pending_loaders_.end()) {
+-    for (auto& loader : it->second)
+-      factory->StartLoader(loader);
++    // Detach the vector and erase the map entry before invoking StartLoader(),
++    // because a synchronous failure inside StartLoader() can reentrantly
++    // call CleanUpWillBeDeletedURLLoader() and modify pending_loaders_.
++    std::vector<base::WeakPtr<WebBundleURLLoaderFactory::URLLoader>>
++        pending_loaders = std::move(it->second);
+     pending_loaders_.erase(it);
++    for (auto& loader : pending_loaders) {
++      factory->StartLoader(loader);
++    }
+   }
+ 
+   auto weak_factory = factory->GetWeakPtr();
+diff --git a/services/network/web_bundle/web_bundle_manager_unittest.cc b/services/network/web_bundle/web_bundle_manager_unittest.cc
+index ad7a4f76621c5a0110a4ce5c7076da1712155bfc..7a42f071d5a4c099970c83a8c9e2a5d3dc359b51 100644
+--- a/services/network/web_bundle/web_bundle_manager_unittest.cc
++++ b/services/network/web_bundle/web_bundle_manager_unittest.cc
+@@ -701,4 +701,79 @@ TEST_F(WebBundleManagerTest, WebBundleURLRedirection) {
+             client->completion_status().error_code);
+ }
+ 
++// Regression test for crbug.com/544415098.
++//
++// When a WebBundle request is redirected, the factory is created in an error
++// state. In this state, StartLoader(loader1) fails synchronously and deletes
++// loader1, which in turn removes loader1 from the pending loaders list.
++//
++// We queue multiple requests (request1 and request2) to verify that an error
++// during request1's processing does not prevent request2 from being handled
++// properly.
++TEST_F(WebBundleManagerTest, WebBundleURLRedirectionEarlySubresourceRequest) {
++  WebBundleManager manager;
++  base::UnguessableToken token = base::UnguessableToken::Create();
++  mojo::PendingRemote<mojom::WebBundleHandle> handle_remote;
++  auto handle = std::make_unique<TestWebBundleHandle>(
++      handle_remote.InitWithNewPipeAndPassReceiver());
++  ResourceRequest::WebBundleTokenParams create_params(GURL(kBundleUrl), token,
++                                                      std::move(handle_remote));
++
++  // Subresource requests arrive earlier than the bundle request.
++  //
++  // The 1st request.
++  mojo::Remote<network::mojom::URLLoader> loader1;
++  auto client1 = std::make_unique<network::TestURLLoaderClient>();
++  network::ResourceRequest request1;
++  request1.url = GURL(kResourceUrl);
++  request1.method = "GET";
++  request1.request_initiator = url::Origin::Create(GURL(kInitiatorUrl));
++  ResourceRequest::WebBundleTokenParams subresource_params1(
++      GURL(kBundleUrl), token, mojo::PendingRemote<mojom::WebBundleHandle>());
++  request1.web_bundle_token_params = subresource_params1;
++
++  manager.StartSubresourceRequest(
++      loader1.BindNewPipeAndPassReceiver(), request1, client1->CreateRemote(),
++      process_id1, mojo::Remote<mojom::TrustedHeaderClient>());
++
++  // The 2nd request.
++  mojo::Remote<network::mojom::URLLoader> loader2;
++  auto client2 = std::make_unique<network::TestURLLoaderClient>();
++  network::ResourceRequest request2;
++  request2.url = GURL("https://example.com/subresource2.js");
++  request2.method = "GET";
++  request2.request_initiator = url::Origin::Create(GURL(kInitiatorUrl));
++  ResourceRequest::WebBundleTokenParams subresource_params2(
++      GURL(kBundleUrl), token, mojo::PendingRemote<mojom::WebBundleHandle>());
++  request2.web_bundle_token_params = subresource_params2;
++
++  manager.StartSubresourceRequest(
++      loader2.BindNewPipeAndPassReceiver(), request2, client2->CreateRemote(),
++      process_id1, mojo::Remote<mojom::TrustedHeaderClient>());
++
++  // Create a WebBundleURLLoaderFactory where bundle request URL is different
++  // from WebBundleTokenParams::bundle_url. This triggers an error factory that
++  // synchronously fails early subresource loaders during StartLoader iteration.
++  GURL redirected_bundle_url("https://redirected.example.com/bundle.wbn");
++  base::WeakPtr<WebBundleURLLoaderFactory> factory =
++      manager.CreateWebBundleURLLoaderFactory(
++          redirected_bundle_url, create_params, process_id1,
++          CrossOriginEmbedderPolicy(), /*coep_reporter=*/nullptr);
++
++  handle->RunUntilBundleError();
++  ASSERT_TRUE(handle->last_bundle_error().has_value());
++  EXPECT_EQ(handle->last_bundle_error()->first,
++            mojom::WebBundleErrorType::kWebBundleRedirected);
++
++  client1->RunUntilComplete();
++  EXPECT_EQ(net::ERR_INVALID_WEB_BUNDLE,
++            client1->completion_status().error_code);
++
++  // Verify that the second subresource request also completes safely without
++  // crashing or hanging.
++  client2->RunUntilComplete();
++  EXPECT_EQ(net::ERR_INVALID_WEB_BUNDLE,
++            client2->completion_status().error_code);
++}
++
+ }  // namespace network

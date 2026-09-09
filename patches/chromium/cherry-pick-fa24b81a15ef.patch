@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Thu, 30 Jul 2026 14:17:41 -0700
+Subject: Ensure renderer sends CDP messages in expected format
+
+Validate that CBOR is coming from the renderer if and only if we requested it.
+
+Fixed: 540021969
+Change-Id: Ie4eb1550ccf0de9510beb04a0bb72cb4fe64cfee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8176419
+Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671419}
+(cherry picked from commit fa24b81a15efa7af73e4c8a7b3ea8446db3b57b7)
+
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index ff7141c291decd8e0444760476a157f58fb5ca84..32b2df81cb28aa7175d3ab77167698d85a039b82 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -547,7 +547,8 @@ void DevToolsSession::DispatchProtocolResponseOrNotification(
+     const bool& is_notification) {
+   base::span<const uint8_t> message_span = message->data;
+   if (!ValidateMessage(session_id, /*expected_has_id=*/!is_notification,
+-                       message_span)) {
++                       message_span,
++                       /*expect_cbor */ client->UsesBinaryProtocol())) {
+     if (RenderProcessHost* process_host = agent_host->GetProcessHost()) {
+       bad_message::ReceivedBadMessage(
+           process_host, bad_message::RFH_INCONSISTENT_DEVTOOLS_MESSAGE);
+@@ -717,11 +718,18 @@ DevToolsSession* DevToolsSession::GetSessionById(const std::string& session_id)
+ // static
+ bool DevToolsSession::ValidateMessage(const std::string& expected_session_id,
+                                       const bool expected_has_id,
+-                                      base::span<const uint8_t> message) {
++                                      base::span<const uint8_t> message,
++                                      bool expect_cbor) {
+   std::vector<uint8_t> cbor_message;
+   crdtp::span<uint8_t> span_message = crdtp::SpanFrom(message);
+ 
+-  if (!crdtp::cbor::IsCBORMessage(span_message)) {
++  const bool is_cbor = crdtp::cbor::IsCBORMessage(span_message);
++  if (expect_cbor != is_cbor) {
++    // The renderer has sent a message in the format different that we asked
++    // for, something is fishy.
++    return false;
++  }
++  if (!is_cbor) {
+     if (!crdtp::json::ConvertJSONToCBOR(span_message, &cbor_message).ok()) {
+       return false;  // Safely terminate renderer on malformed JSON
+     }
+diff --git a/content/browser/devtools/devtools_session.h b/content/browser/devtools/devtools_session.h
+index 8b7f9cfa27965c23487994fe018a4d9b03cd2fe9..586d1dbf2b22537ab5aab69d82d7d466d78c2df1 100644
+--- a/content/browser/devtools/devtools_session.h
++++ b/content/browser/devtools/devtools_session.h
+@@ -63,7 +63,8 @@ class DevToolsSession : public protocol::FrontendChannel,
+   static CONTENT_EXPORT bool ValidateMessage(
+       const std::string& expected_session_id,
+       const bool expected_has_id,
+-      base::span<const uint8_t> message);
++      base::span<const uint8_t> message,
++      bool expect_cbor);
+ 
+   // For sessions attached to the Tab target, the mode is set to TabTarget.
+   // For other sessions, the mode is inherited from the parent.

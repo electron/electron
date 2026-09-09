@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Thu, 16 Jul 2026 15:24:02 +0000
+Subject: GL: Clamp BASE/MAX texture levels
+
+Clamp base_level and max_level to device limits in TextureGL before
+passing to the driver. This prevents driver crashes (heap OOB) when
+wild values are set for these parameters. Handles 2D, 2DArray, 3D,
+CubeMap, and CubeMapArray textures.
+
+Bug: b/534912743
+Test: angle_unittests, angle_end2end_tests --gtest_filter=*CubeMapArrayBaseLevelOutOfRange*
+Change-Id: I8ca8c53a9902d3a9af40ccda98e792655a2d79da
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8110757
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 0e80263dfe758c132ec20c5ef649d587de3942f0)
+
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index d554f0859b0cf8612ce10732f34725765339b43e..3bfad8bc69922d2a2d654c16c4f168b6a91beb54 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -11,6 +11,7 @@
+ #endif
+ 
+ #include "libANGLE/renderer/gl/TextureGL.h"
++#include "common/mathutil.h"
+ 
+ #include "common/bitset_utils.h"
+ #include "common/debug.h"
+@@ -43,6 +44,23 @@ namespace rx
+ 
+ namespace
+ {
++GLuint GetMaxMipmapLevel(const gl::Caps &caps, gl::TextureType target)
++{
++    switch (target)
++    {
++        case gl::TextureType::_2D:
++        case gl::TextureType::_2DArray:
++            return static_cast<GLuint>(gl::log2(caps.max2DTextureSize));
++        case gl::TextureType::_3D:
++            return static_cast<GLuint>(gl::log2(caps.max3DTextureSize));
++        case gl::TextureType::CubeMap:
++        case gl::TextureType::CubeMapArray:
++            return static_cast<GLuint>(gl::log2(caps.maxCubeMapTextureSize));
++        default:
++            return 0u;
++    }
++}
++
+ // For use with the uploadTextureDataInChunks feature.  See http://crbug.com/1181068
+ constexpr const size_t kUploadTextureDataInChunksUploadSize = (120 * 1024) - 1;
+ 
+@@ -2077,21 +2095,31 @@ angle::Result TextureGL::syncState(const gl::Context *context,
+                                                   &mAppliedSwizzle.swizzleAlpha));
+                 break;
+             case gl::Texture::DIRTY_BIT_BASE_LEVEL:
+-                if (mAppliedBaseLevel != mState.getEffectiveBaseLevel())
+                 {
+-                    mAppliedBaseLevel = mState.getEffectiveBaseLevel();
+-                    ANGLE_GL_TRY(context, functions->texParameteri(
+-                                              nativegl::GetTextureBindingTarget(getType()),
+-                                              GL_TEXTURE_BASE_LEVEL, mAppliedBaseLevel));
++                    const GLuint maxLevelLimit = GetMaxMipmapLevel(context->getCaps(), getType());
++                    const GLuint clampedBaseLevel =
++                        std::min(mState.getEffectiveBaseLevel(), maxLevelLimit);
++                    if (mAppliedBaseLevel != clampedBaseLevel)
++                    {
++                        mAppliedBaseLevel = clampedBaseLevel;
++                        ANGLE_GL_TRY(context, functions->texParameteri(
++                                                  nativegl::GetTextureBindingTarget(getType()),
++                                                  GL_TEXTURE_BASE_LEVEL, mAppliedBaseLevel));
++                    }
+                 }
+                 break;
+             case gl::Texture::DIRTY_BIT_MAX_LEVEL:
+-                if (mAppliedMaxLevel != mState.getEffectiveMaxLevel())
+                 {
+-                    mAppliedMaxLevel = mState.getEffectiveMaxLevel();
+-                    ANGLE_GL_TRY(context, functions->texParameteri(
+-                                              nativegl::GetTextureBindingTarget(getType()),
+-                                              GL_TEXTURE_MAX_LEVEL, mAppliedMaxLevel));
++                    const GLuint maxLevelLimit = GetMaxMipmapLevel(context->getCaps(), getType());
++                    const GLuint clampedMaxLevel =
++                        std::min(mState.getEffectiveMaxLevel(), maxLevelLimit);
++                    if (mAppliedMaxLevel != clampedMaxLevel)
++                    {
++                        mAppliedMaxLevel = clampedMaxLevel;
++                        ANGLE_GL_TRY(context, functions->texParameteri(
++                                                  nativegl::GetTextureBindingTarget(getType()),
++                                                  GL_TEXTURE_MAX_LEVEL, mAppliedMaxLevel));
++                    }
+                 }
+                 break;
+             case gl::Texture::DIRTY_BIT_DEPTH_STENCIL_TEXTURE_MODE:
+@@ -2146,12 +2174,14 @@ bool TextureGL::hasAnyDirtyBit() const
+ 
+ angle::Result TextureGL::setBaseLevel(const gl::Context *context, GLuint baseLevel)
+ {
+-    if (baseLevel != mAppliedBaseLevel)
++    const GLuint maxLevelLimit    = GetMaxMipmapLevel(context->getCaps(), getType());
++    const GLuint clampedBaseLevel = std::min(baseLevel, maxLevelLimit);
++    if (clampedBaseLevel != mAppliedBaseLevel)
+     {
+         const FunctionsGL *functions = GetFunctionsGL(context);
+         StateManagerGL *stateManager = GetStateManagerGL(context);
+ 
+-        mAppliedBaseLevel = baseLevel;
++        mAppliedBaseLevel = clampedBaseLevel;
+         mLocalDirtyBits.set(gl::Texture::DIRTY_BIT_BASE_LEVEL);
+ 
+         // Signal to the GL layer that the Impl has dirty bits.
+@@ -2159,27 +2189,29 @@ angle::Result TextureGL::setBaseLevel(const gl::Context *context, GLuint baseLev
+ 
+         stateManager->bindTexture(getType(), mTextureID);
+         ANGLE_GL_TRY(context, functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_BASE_LEVEL,
+-                                                       baseLevel));
++                                                       clampedBaseLevel));
+     }
+     return angle::Result::Continue;
+ }
+ 
+ angle::Result TextureGL::setMaxLevel(const gl::Context *context, GLuint maxLevel)
+ {
+-    if (maxLevel != mAppliedMaxLevel)
++    const GLuint maxLevelLimit   = GetMaxMipmapLevel(context->getCaps(), getType());
++    const GLuint clampedMaxLevel = std::min(maxLevel, maxLevelLimit);
++    if (clampedMaxLevel != mAppliedMaxLevel)
+     {
+         const FunctionsGL *functions = GetFunctionsGL(context);
+         StateManagerGL *stateManager = GetStateManagerGL(context);
+ 
+-        mAppliedMaxLevel = maxLevel;
++        mAppliedMaxLevel = clampedMaxLevel;
+         mLocalDirtyBits.set(gl::Texture::DIRTY_BIT_MAX_LEVEL);
+ 
+         // Signal to the GL layer that the Impl has dirty bits.
+         onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
+ 
+         stateManager->bindTexture(getType(), mTextureID);
+-        ANGLE_GL_TRY(context,
+-                     functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAX_LEVEL, maxLevel));
++        ANGLE_GL_TRY(context, functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAX_LEVEL,
++                                                       clampedMaxLevel));
+     }
+     return angle::Result::Continue;
+ }
+@@ -2316,7 +2348,7 @@ angle::Result TextureGL::recreateTexture(const gl::Context *context)
+     mAppliedSampler = gl::SamplerState::CreateDefaultForTarget(getType());
+ 
+     mAppliedBaseLevel = 0;
+-    mAppliedBaseLevel = gl::kInitialMaxLevel;
++    mAppliedMaxLevel  = gl::kInitialMaxLevel;
+ 
+     mLocalDirtyBits = mAllModifiedDirtyBits;
+ 
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 6bd91bd9dfc3c199d21ff919f361727f9a141237..fd1bba8a286045458ce39c0e00eda09328fd1c87 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -15669,6 +15669,55 @@ TEST_P(TextureCubeTestES32, ValidateCubeMapArrayTexImage)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Test that cube map array texture base level and max level are clamped.
++TEST_P(TextureCubeTestES32, CubeMapArrayBaseLevelOutOfRange)
++{
++    // Create a program with samplerCubeArray.
++    const char *essl32_fs =
++        R"(#version 320 es
++        precision highp float;
++        precision highp samplerCubeArray;
++        out vec4 my_FragColor;
++        uniform samplerCubeArray texCubeArray;
++        void main()
++        {
++            my_FragColor = texture(texCubeArray, vec4(0.0, 0.0, 0.0, 0.0));
++        })";
++
++    const char *essl32_vs =
++        R"(#version 320 es
++        in vec4 position;
++        void main()
++        {
++            gl_Position = position;
++        })";
++
++    ANGLE_GL_PROGRAM(program, essl32_vs, essl32_fs);
++    glUseProgram(program);
++    GLint textureLocation = glGetUniformLocation(program, "texCubeArray");
++    ASSERT_NE(-1, textureLocation);
++    glUniform1i(textureLocation, 0);
++
++    GLTexture cubeMapArrayTexture;
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, cubeMapArrayTexture);
++
++    // Define level 0.
++    glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA8, 2, 2, 6, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    // Set wild base/max level.
++    glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_BASE_LEVEL, 10000);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP_ARRAY, GL_TEXTURE_MAX_LEVEL, 10000);
++
++    EXPECT_GL_NO_ERROR();
++
++    // Draw to trigger syncState.
++    drawQuad(program, "position", 0.5f);
++
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Tests defining a cube map array texture using glTexStorage3D() and filling all levels using
+ // glTexSubImage3D().
+ TEST_P(TextureCubeTestES32, ValidateCubeMapArrayTexStorage)

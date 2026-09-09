@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Mon, 31 Aug 2026 16:48:24 -0700
+Subject: GPU: add finish-before-multi-attachment-blit workaround.
+
+If performing glBlitFramebuffer to a draw framebuffer which either has
+multiple color attachments, or has a color texture attachment with
+base level greater than zero, glFinish() as a workaround. Apply this
+to Mali GPUs.
+
+It wasn't feasible to add a regression test for this workaround.
+
+Bug: 546252753
+Change-Id: I993df9351ccdfcdf980d6dc6e8e93344f90e0199
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8309990
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: vikas soni <vikassoni@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689411}
+(cherry picked from commit b8986b4e67e729acebe111e709b5b91c86477595)
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 50f18a46eaa536e11d99034b3d6f7fdabe00b5c8..523e0fbcd087747db1bc606a50767c41f22ce2b6 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -8148,6 +8148,35 @@ void GLES2DecoderImpl::DoBlitFramebufferCHROMIUM(
+     state_.EnableDisableFramebufferSRGB(enable_srgb);
+   }
+ 
++  if (workarounds().finish_before_blit_framebuffer_multi_attachment &&
++      draw_framebuffer) {
++    int color_attachment_count = 0;
++    bool need_finish = false;
++    for (uint32_t i = 0; i < group_->max_color_attachments(); ++i) {
++      const Framebuffer::Attachment* attachment =
++          draw_framebuffer->GetAttachment(GL_COLOR_ATTACHMENT0 + i);
++      if (attachment) {
++        ++color_attachment_count;
++        if (color_attachment_count > 1) {
++          need_finish = true;
++          break;
++        }
++        if (attachment->IsTextureAttachment()) {
++          GLuint client_id = attachment->object_name();
++          const TextureRef* texture_ref =
++              texture_manager()->GetTexture(client_id);
++          if (texture_ref && texture_ref->texture()->base_level() > 0) {
++            need_finish = true;
++            break;
++          }
++        }
++      }
++    }
++    if (need_finish) {
++      api()->glFinishFn();
++    }
++  }
++
+   api()->glBlitFramebufferFn(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1,
+                              dstY1, mask, filter);
+ }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+index 4a84773cb7bc6ec940cba05c66e513f531e1211a..02ce14db5afd01d550db9662d469439aff1bda04 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+@@ -3924,6 +3924,153 @@ TEST_P(GLES2DecoderManualInitTest, MESAFramebufferFlipYExtensionDisabled) {
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+ }
+ 
++TEST_P(GLES3DecoderManualInitTest,
++       FinishBeforeBlitFramebufferMultiAttachmentWorkaround) {
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.finish_before_blit_framebuffer_multi_attachment = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLuint kTex0Client = client_texture_id_;
++  const GLuint kTex0Service = kServiceTextureId;
++  const GLuint kTex1Client = client_texture_id_ + 1;
++  const GLuint kTex1Service = kServiceTextureId + 1;
++  const GLuint kReadTexClient = client_texture_id_ + 2;
++  const GLuint kReadTexService = kServiceTextureId + 2;
++
++  const GLuint kDrawFboClient = client_framebuffer_id_;
++  const GLuint kDrawFboService = kServiceFramebufferId;
++  const GLuint kReadFboClient = client_framebuffer_id_ + 1;
++  const GLuint kReadFboService = kServiceFramebufferId + 1;
++
++  // Create Tex0 (16x16 RGBA8)
++  DoBindTexture(GL_TEXTURE_2D, kTex0Client, kTex0Service);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               shared_memory_id_, kSharedMemoryOffset);
++
++  // Create Tex1 (16x16 RGBA8)
++  EXPECT_CALL(*gl_, GenTextures(1, _))
++      .WillOnce(SetArgPointee<1>(kTex1Service))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenTexturesImmediate>(kTex1Client);
++  DoBindTexture(GL_TEXTURE_2D, kTex1Client, kTex1Service);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               shared_memory_id_, kSharedMemoryOffset);
++
++  // Create ReadTex (16x16 RGBA8)
++  EXPECT_CALL(*gl_, GenTextures(1, _))
++      .WillOnce(SetArgPointee<1>(kReadTexService))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenTexturesImmediate>(kReadTexClient);
++  DoBindTexture(GL_TEXTURE_2D, kReadTexClient, kReadTexService);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               shared_memory_id_, kSharedMemoryOffset);
++
++  // Setup Draw FBO with 2 color attachments: COLOR_ATTACHMENT0 and
++  // COLOR_ATTACHMENT1
++  DoBindFramebuffer(GL_DRAW_FRAMEBUFFER, kDrawFboClient, kDrawFboService);
++  DoFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                         GL_TEXTURE_2D, kTex0Client, kTex0Service, 0,
++                         GL_NO_ERROR);
++  DoFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
++                         GL_TEXTURE_2D, kTex1Client, kTex1Service, 0,
++                         GL_NO_ERROR);
++
++  // Setup Read FBO with COLOR_ATTACHMENT0
++  EXPECT_CALL(*gl_, GenFramebuffersEXT(1, _))
++      .WillOnce(SetArgPointee<1>(kReadFboService))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenFramebuffersImmediate>(kReadFboClient);
++  DoBindFramebuffer(GL_READ_FRAMEBUFFER, kReadFboClient, kReadFboService);
++  DoFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                         GL_TEXTURE_2D, kReadTexClient, kReadTexService, 0,
++                         GL_NO_ERROR);
++
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_DRAW_FRAMEBUFFER))
++      .WillRepeatedly(Return(GL_FRAMEBUFFER_COMPLETE));
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_READ_FRAMEBUFFER))
++      .WillRepeatedly(Return(GL_FRAMEBUFFER_COMPLETE));
++
++  // Mark all attachments as cleared so framebuffer is complete
++  FramebufferManager* framebuffer_manager = GetFramebufferManager();
++  Framebuffer* draw_fbo = framebuffer_manager->GetFramebuffer(kDrawFboClient);
++  ASSERT_TRUE(draw_fbo != nullptr);
++  framebuffer_manager->MarkAttachmentsAsCleared(
++      draw_fbo, group().renderbuffer_manager(), group().texture_manager());
++  EXPECT_TRUE(draw_fbo->IsCleared());
++
++  Framebuffer* read_fbo = framebuffer_manager->GetFramebuffer(kReadFboClient);
++  ASSERT_TRUE(read_fbo != nullptr);
++  framebuffer_manager->MarkAttachmentsAsCleared(
++      read_fbo, group().renderbuffer_manager(), group().texture_manager());
++  EXPECT_TRUE(read_fbo->IsCleared());
++
++  // 1) Blit with 2 color attachments on draw FBO: should trigger glFinish
++  // before glBlitFramebuffer.
++  {
++    ::testing::InSequence sequence;
++    EXPECT_CALL(*gl_, Finish()).Times(1).RetiresOnSaturation();
++    EXPECT_CALL(*gl_, BlitFramebuffer(0, 0, 16, 16, 0, 0, 16, 16,
++                                      GL_COLOR_BUFFER_BIT, GL_NEAREST))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::BlitFramebufferCHROMIUM cmd;
++    cmd.Init(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++
++  // 2) Detach COLOR_ATTACHMENT1, so draw FBO has only 1 color attachment
++  // (COLOR_ATTACHMENT0) with base_level == 0. No glFinish should be called.
++  DoFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
++                         GL_TEXTURE_2D, 0, 0, 0, GL_NO_ERROR);
++  {
++    EXPECT_CALL(*gl_, Finish()).Times(0);
++    EXPECT_CALL(*gl_, BlitFramebuffer(0, 0, 16, 16, 0, 0, 16, 16,
++                                      GL_COLOR_BUFFER_BIT, GL_NEAREST))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::BlitFramebufferCHROMIUM cmd;
++    cmd.Init(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++
++  // 3) Set base_level = 1 on Tex0 (COLOR_ATTACHMENT0).
++  // Draw FBO has 1 color attachment, but its texture has base_level > 0.
++  // Should trigger glFinish before glBlitFramebuffer.
++  DoBindTexture(GL_TEXTURE_2D, kTex0Client, kTex0Service);
++  DoTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               shared_memory_id_, kSharedMemoryOffset);
++  framebuffer_manager->MarkAttachmentsAsCleared(
++      draw_fbo, group().renderbuffer_manager(), group().texture_manager());
++  cmds::TexParameteri param_cmd;
++  param_cmd.Init(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_EQ(error::kNoError, ExecuteCmd(param_cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++
++  {
++    ::testing::InSequence sequence;
++    EXPECT_CALL(*gl_, Finish()).Times(1).RetiresOnSaturation();
++    EXPECT_CALL(*gl_, BlitFramebuffer(0, 0, 16, 16, 0, 0, 16, 16,
++                                      GL_COLOR_BUFFER_BIT, GL_NEAREST))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::BlitFramebufferCHROMIUM cmd;
++    cmd.Init(0, 0, 16, 16, 0, 0, 16, 16, GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++}
++
+ // TODO(gman): PixelStorei
+ 
+ }  // namespace gles2
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 9dbe3823172b17e876a91216148b4a95bfd02a5c..1e1e35f77fd949a2a19d33724a32b9f586f5402f 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3857,6 +3857,19 @@
+       "features": [
+         "upload_oversized_mip_levels_via_unpack_buffer"
+       ]
++    },
++    {
++      "id": 493,
++      "cr_bugs": [546252753],
++      "description": "Issue a glFinish before calling glBlitFramebuffer if the draw framebuffer has multiple color attachments or any color attachment's texture has base_level > 0.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "ARM.*",
++      "gl_renderer": "Mali-G.*",
++      "features": [
++        "finish_before_blit_framebuffer_multi_attachment"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 4c5ed3c328bf050a2305fdbba47614877962436f..cbe084117bdcce1a3b0153c51b960e5a2d130457 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -84,6 +84,7 @@ enable_webgl_timer_query_extensions
+ ensure_previous_framebuffer_not_deleted
+ etc1_power_of_two_only
+ exit_on_context_lost
++finish_before_blit_framebuffer_multi_attachment
+ flush_before_create_fence
+ flush_on_framebuffer_change
+ flush_queries_before_deleting_or_unbinding_fbo
