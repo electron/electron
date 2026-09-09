@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gaston Rodriguez <gastonr@microsoft.com>
+Date: Fri, 4 Sep 2026 09:52:04 -0700
+Subject: Prevent UAF if DetachFromInputMethod frees RWHVA
+
+RenderWidgetHostViewAura::DetachFromInputMethod() calls
+input_method->DetachTextInputClient(), which can result in RWHVA being
+freed. DetachFromInputMethod() guards against this by getting a weak
+pointer to `this` and checking it after the call.
+
+RWHVA::OnWindowFocused() calls DetachFromInputMethod(), but doesn't
+account for the possibility that RWHVA will be freed, and
+unconditionally continues execution. If DetachFromInputMethod() has
+freed RWHVA, this results in a UAF.
+
+This CL addresses this issue by adding the same weak pointer mechanism
+to the focus change function, and also adds a unit test that would crash
+if this check weren't introduced.
+
+Bug: 542565481
+Change-Id: If73645258ebf19765f2eb625928e56f821229561
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8306510
+Reviewed-by: Olga Gerchikov <gerchiko@microsoft.com>
+Commit-Queue: Gaston Rodriguez <gastonr@microsoft.com>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1692536}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 4cfc2470096128aa39f23fa91b71c6d13bbaa0ee..3a75fbf82a10ab42bb2e6add79915c92d37c04c4 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -2850,7 +2850,11 @@ void RenderWidgetHostViewAura::OnWindowFocused(aura::Window* gained_focus,
+   UpdateActiveState(false);
+   host()->LostFocus();
+ 
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   DetachFromInputMethod(false);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // TODO(wjmaclean): Do we need to let TouchSelectionControllerClientAura
+   // handle this, just in case it stomps on a new highlight in another view
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index 10341a0b0ec1ab0d69fc4b70f7a39d01330f5ae3..33ed433801c887ffb9cd23298c64ad85e621508e 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -7045,6 +7045,13 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     }
+   }
+ 
++  void DetachTextInputClient(ui::TextInputClient* client) override {
++    ui::MockInputMethod::DetachTextInputClient(client);
++    if (on_detach_text_input_client_) {
++      std::move(on_detach_text_input_client_).Run();
++    }
++  }
++
+   void set_on_caret_bounds_changed(base::OnceClosure closure) {
+     on_caret_bounds_changed_ = std::move(closure);
+   }
+@@ -7053,9 +7060,14 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     on_text_input_type_changed_ = std::move(closure);
+   }
+ 
++  void set_on_detach_text_input_client(base::OnceClosure closure) {
++    on_detach_text_input_client_ = std::move(closure);
++  }
++
+  private:
+   base::OnceClosure on_caret_bounds_changed_;
+   base::OnceClosure on_text_input_type_changed_;
++  base::OnceClosure on_detach_text_input_client_;
+ };
+ 
+ class RenderWidgetHostViewAuraReentrantDestructionIME
+@@ -7143,6 +7155,46 @@ TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
+   GetTextInputManager(view_)->UpdateTextInputState(view_, state);
+ }
+ 
++// RWHVA::OnWindowFocused()'s lost-focus branch calls
++// DetachFromInputMethod(false). On Windows this reaches
++// TSFBridge::RemoveFocusedClient() -> ITfThreadMgr::AssociateFocus(), a
++// synchronous COM call into the platform text-services framework that can run
++// arbitrary code registered by a third-party Text Input Processor (e.g. an
++// IME). DetachFromInputMethod() already guards its own remaining statements
++// with a weak_ptr check in case that callout destroys the view re-entrantly,
++// but OnWindowFocused()'s lost-focus branch does not: it unconditionally
++// continues on to
++// `selection_controller_->HideAndDisallowShowingAutomatically()` afterward,
++// touching the now-freed `this`.
++TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
++       DestroyDuringDetachTextInputClientOnLostFocus) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  // `view_` shares the root window (and thus the InputMethod) with
++  // `parent_view_`.
++  ASSERT_EQ(static_cast<ui::InputMethod*>(input_method_.get()),
++            GetInputMethod());
++
++  // Focus `view_` so that DetachTextInputClient(view_) below is not a no-op.
++  input_method_->SetFocusedTextInputClient(view_.get());
++
++  // Arrange for the view to be synchronously destroyed inside
++  // DetachTextInputClient, simulating re-entrant destruction triggered by a
++  // TSF/IME callout that pumps a queued window.close() task
++  // while the view is losing focus.
++  FakeRenderWidgetHostViewAura* raw_view = view_.get();
++  input_method_->set_on_detach_text_input_client(
++      base::BindLambdaForTesting([&]() {
++        widget_host_ = nullptr;
++        view_.ExtractAsDangling()->Destroy();
++      }));
++
++  // If the weak_ptr check wasn't in place, OnWindowFocused()'s lost-focus
++  // branch resumes after DetachFromInputMethod() returns and dereferences
++  // `this->selection_controller_` on the freed view.
++  raw_view->OnWindowFocused(nullptr, raw_view->GetNativeView());
++}
++
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+ class MockVirtualKeyboardController final
+     : public ui::VirtualKeyboardController {
