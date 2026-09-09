@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Sat, 15 Aug 2026 07:56:49 -0400
+Subject: [m153] D3D11: Fix use-after-free when redefining 2D array mip levels
+
+Validate image index bounds before committing texture storage regions
+and track all associated images in TextureStorage11_2DArray to prevent
+dangling pointers upon storage release.
+
+Test: angle_end2end_tests --gtest_filter="*RedefineOffChainMipLevelAfterStorageRelease*"
+Bug: b/541715128
+Change-Id: I35bcce19336025db1d7921baced563b165dcf045
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8263907
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+(cherry picked from commit a871bdb05932b9bbaf511e531a8497cf1a6e1865)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8272990
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index 4b65716656ee8975a37f230c8564ffd34cd12900..2f73745a96be60118d044c48f3af2c120d0bd311 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -283,7 +283,7 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
+ 
+ bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const
+ {
+-    if (!isImageComplete(index))
++    if (!isValidIndex(index) || !isImageComplete(index))
+     {
+         return false;
+     }
+@@ -730,9 +730,8 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
+                                        const gl::ImageIndex &index,
+                                        const gl::Box &region)
+ {
+-    if (mTexStorage && isImageComplete(index))
++    if (isValidIndex(index) && isImageComplete(index))
+     {
+-        ASSERT(isValidIndex(index));
+         ImageD3D *image = getImage(index);
+         ANGLE_TRY(image->copyToStorage(context, mTexStorage, index, region));
+         image->markClean();
+@@ -960,7 +959,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+     // Slow path: non-renderable texture, incomplete level, or texture storage doesn't exist.
+     ANGLE_TRY(image->initializeContents(context));
+ 
+-    if (mTexStorage && isImageComplete(index))
++    if (isValidIndex(index) && isImageComplete(index))
+     {
+         gl::Box fullImageArea(0, 0, 0, image->getWidth(), image->getHeight(), image->getDepth());
+         ANGLE_TRY(commitRegion(context, index, fullImageArea));
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index 4ad3d2c6b7054319c71ac25ddb9383f43a596e1d..ac1caf842360d593d205ac256bb1926ad3b96476 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -2853,9 +2853,9 @@ void TextureStorage11_2DArray::associateImage(Image11 *image, const gl::ImageInd
+     const GLint layerTarget = index.getLayerIndex();
+     const GLint numLayers   = index.getLayerCount();
+ 
+-    ASSERT(0 <= level && level < getLevelCount());
++    ASSERT(0 <= level && level < gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS);
+ 
+-    if (0 <= level && level < getLevelCount())
++    if (0 <= level && level < gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
+     {
+         LevelLayerRangeKey key(level, layerTarget, numLayers);
+         mAssociatedImages[key] = image;
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index b2d6f2ee054c4a454fd7f409cd9f58cb6e335b0e..b5897c923d3ca5e3f2a1d38be37ccaba40e247ea 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -9097,6 +9097,60 @@ TEST_P(Texture2DArrayTestES3, TextureArrayRedefineThenUse)
+     EXPECT_PIXEL_COLOR_EQ(px, py, GLColor::green);
+ }
+ 
++// Test that redefining an out-of-range mip level after texture storage is released does not cause a
++// use-after-free.
++TEST_P(Texture2DArrayTestES3, RedefineOffChainMipLevelAfterStorageRelease)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, tex);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Level 0 = 64x64x1 (complete storage would have 7 mip levels: 0..6)
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 64, 64, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    // Specify off-chain level 10 (independent of level 0 mip chain)
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 10, GL_RGBA8, 4, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Write data to level 10 before storage exists to create a staging texture
++    std::vector<GLColor> px(4 * 4, GLColor::red);
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 10, 0, 0, 0, 4, 4, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    px.data());
++
++    // Sample the texture to force complete storage allocation (with 7 levels)
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    glFinish();
++
++    // Write to level 10 again (should not associate with 7-level storage or result in dangling
++    // pointers)
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 10, 0, 0, 0, 4, 4, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    px.data());
++
++    // Free the storage by redefining level 0 with new dimensions
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 128, 128, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++
++    // Redefining level 10 should not cause UAF / crash
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 10, GL_RGBA8, 8, 8, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    // Also verify writing subimage to level 10 works without error
++    std::vector<GLColor> px8(8 * 8, GLColor::blue);
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 10, 0, 0, 0, 8, 8, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    px8.data());
++    EXPECT_GL_NO_ERROR();
++
++    // Verify drawing with level 10 samples the correct color
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 10);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 10);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
+ // Verify that redefining a 2D array level's layer count to 1 and then respecifying the image
+ // doesn't cause an out-of-bounds write during the self-copy.
+ TEST_P(Texture2DArrayTestES3, RedefineLayerCountTo1AndRespecify)

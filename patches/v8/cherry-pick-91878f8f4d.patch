@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Fri, 4 Sep 2026 15:14:54 +0200
+Subject: [M152] [turboshaft] LLE: non-writing calls can create aliases
+
+Original change's description:
+> [turboshaft] LLE: non-writing calls can create aliases
+>
+> The can_write effect really means "can_write to pre-existing memory"
+> and excludes memory allocated by the operation itself. A builtin that
+> allocates memory and writes to it (but nowhere else) can thus be
+> marked as !can_write(), but it could still create aliases to its
+> inputs, which we do need to invalidate when processing it.
+>
+> Fixed: 554421904
+> Change-Id: I8045ec40d2819d9ab92795b2352374a0df20cbc8
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8345010
+> Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109635}
+
+(cherry picked from commit 7e94f5ffc1041f9c37b5a9db38c54b149b9f0332)
+
+Bug: 557049913,554421904
+Change-Id: I8045ec40d2819d9ab92795b2352374a0df20cbc8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8353535
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.2@{#52}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/compiler/turboshaft/late-load-elimination-reducer.cc b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+index 7b78d3f68a700bb5b049b32437cc56aa3e5dcbfe..d9e386fb31036a6bfd8295116e093ee785d61e69 100644
+--- a/src/compiler/turboshaft/late-load-elimination-reducer.cc
++++ b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+@@ -566,28 +566,32 @@ void LateLoadEliminationAnalyzer::ProcessCall(OpIndex op_idx,
+   // Some builtins do not create aliases and do not invalidate existing
+   // memory, and some even return fresh objects. For such cases, we don't
+   // invalidate the state, and record the non-alias if any.
+-  if (!op.Effects().can_write()) {
+-    TRACE(">> Call doesn't write, skipping");
+-    return;
+-  }
+-
+   auto builtin_id = TryGetBuiltinId(callee.TryCast<ConstantOp>(), broker_);
+-
+-  // Not a builtin call, or not a builtin that we know doesn't invalidate
+-  // memory.
+-  InvalidateAllNonAliasingInputs(op);
+-
+   if (builtin_id) {
+     switch (*builtin_id) {
+       case Builtin::kCreateShallowObjectLiteral:
+         // This builtin creates a fresh non-aliasing object.
+         non_aliasing_objects_.Set(op_idx, true);
+-        break;
++        return;
+       default:
+         break;
+     }
+   }
+ 
++  // Not a builtin call, or not a builtin that we know doesn't invalidate
++  // memory.
++  InvalidateAllNonAliasingInputs(op);
++
++  // Keep in mind that "can_write" really means "can write to already allocated
++  // memory" and excludes writes to memory that the call itself allocates.
++  // Hence, InvalidateAllNonAliasingInputs must be called before this can_write
++  // bailout, to account for the fact that some builtins may create fresh
++  // objects that copy their inputs, thus creating aliases.
++  if (!op.Effects().can_write()) {
++    TRACE(">> Call doesn't write, skipping");
++    return;
++  }
++
+   // The call could modify arbitrary memory, so we invalidate every
+   // potentially-aliasing object.
+   memory_.InvalidateMaybeAliasing();
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 4c94507c7cf667680dc7321b3b7a70e5d3affa32..b5e69bf4c97ab874ab03b8542955444bb529bb8f 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -75,6 +75,7 @@
+   'maglev/regress-421228426': [PASS, SLOW, ['mode == debug', SKIP]],
+ 
+   'turbolev/regress-532607231': [PASS, SLOW],
++  'turboshaft/regress-554421904': [PASS, SLOW],
+ 
+   # https://crbug.com/1129854
+   'tools/log': ['arch == arm or arch == arm64', SKIP],
+diff --git a/test/mjsunit/turboshaft/regress-554421904.js b/test/mjsunit/turboshaft/regress-554421904.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..1635e70d6de40cce6a27d35da11826e7f5185538
+--- /dev/null
++++ b/test/mjsunit/turboshaft/regress-554421904.js
+@@ -0,0 +1,52 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function set7(arr, v) { arr[7] = v; }
++function set0(arr, v) { arr[0] = v; }
++function carrier(...rest) {
++  const receiver = rest[32765] ? rest[32766] : doubleArray;
++  set0(receiver, 1.1);
++}
++function victim(payload) {
++  const staleArray = Array(8);
++  const target = [];
++  if (!trigger) staleArray.x = 0;
++  boundCarrier(trigger, staleArray);
++  set7(staleArray, payload);
++  return { target, staleArray };
++}
++
++%PrepareFunctionForOptimization(set0);
++%PrepareFunctionForOptimization(set7);
++%PrepareFunctionForOptimization(carrier);
++%PrepareFunctionForOptimization(victim);
++
++const doubleArray = Array(8);
++set0(doubleArray, 1.1);
++set7(doubleArray, 0);
++set0(Array(8), 0);
++
++// 32765 bound arguments + 2 call arguments = 32767 (kMaxArguments).
++const boundCarrier = carrier.bind(null, ...Array(32765).fill(0));
++
++let trigger = 0;
++victim(0);
++
++trigger = 1;
++boundCarrier(trigger, doubleArray);
++
++trigger = 0;
++victim(0);
++
++%OptimizeFunctionOnNextCall(victim);
++trigger = 1;
++const { target, staleArray } = victim(1.1);
++
++assertEquals(0, target.length);
++target[0] = 1;
++
++assertEquals(1.1, staleArray[0]);
++assertEquals(1.1, staleArray[7]);
