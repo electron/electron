@@ -333,10 +333,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1cb3ba4df520e782037d63bf1aeaef8b
    let debugLogCategoryEnabled = false;
    let timerFlags = kNone;
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 1dba37d373218b791aa73c14cb41f7f9d057d0bf..ded0f00b3b39af94872393ffa4d445967986e5b8 100644
+index fd35fabe452e9264a57029f7ac5d30070958a558..a6b0823aa560280fb059a5e6bfbe820061e34047 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1318,9 +1318,6 @@ void DefineTraceConstants(Local<Object> target) {
+@@ -1323,9 +1323,6 @@ void DefineTraceConstants(Local<Object> target) {
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MEMORY_DUMP);
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_MARK);
    NODE_DEFINE_CONSTANT(target, TRACE_EVENT_PHASE_CLOCK_SYNC);

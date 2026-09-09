@@ -18,7 +18,7 @@ index c2579269ec6396097aee1acd45d2830500a6a57a..70cb459d10d60caac56f9c980fbba242
        !isAnyArrayBuffer(source) &&
        !isArrayBufferView(source) &&
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 7bc69b3eb5c358e1c99ee00449243f8bb4b36536..fcb9007a93293ff7227586f7f927e9121cc18348 100644
+index b486337fac8307765d0a2f4f3e8d11d8781855ae..3d30f8dc006d3caef6aa90f6f0b4118862c057e0 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -83,6 +83,7 @@ const protocolHandlers = {
@@ -30,7 +30,7 @@ index 7bc69b3eb5c358e1c99ee00449243f8bb4b36536..fcb9007a93293ff7227586f7f927e912
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 94879761553e02746853eecf316d88da61ab4277..080d917129990f3593ece63ebcf650379fe373a3 100644
+index ed271a40e5c470978dd6e4060c263209027dd0a3..c61cbdc86ad5e644da987932dc73985801d561c6 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -81,7 +81,7 @@ function defaultLoad(url, context = kEmptyObject) {
@@ -116,7 +116,7 @@ index f6c8078228419eaca8fbed5a9d43d8b56cacffb0..beb3452ea134e4b408f8a3335a6cc65e
  
    if (hasPackageMap()) {
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 54e15417addea96cdb6d70fd9e2b65caa0f1ae34..f54a8ca32a601e886b0cb09f0a9361a0c9c184ee 100644
+index 5e90e0d06fe94341f58c954f000d42737507c93f..06f931edaf39a0dc2634db4da14df83bec821bf7 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -217,7 +217,9 @@ function createCJSModuleWrap(url, translateContext, parentURL) {
@@ -142,10 +142,10 @@ index 54e15417addea96cdb6d70fd9e2b65caa0f1ae34..f54a8ca32a601e886b0cb09f0a9361a0
  // This path is only used by require() from imported CJS customized by the *async*
  // loader hooks.
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 0845f867fcd8eef099b572422e932daf256d2db0..12b2aaa6985879e5c1500379efc50444195b3abf 100644
+index f58a26d94e7ed5b5a9830c4e93e9beb0545eb30d..f9eb426e7d6c418e0ac39d4ae4271a156f2188be 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1625,6 +1625,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1643,6 +1643,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

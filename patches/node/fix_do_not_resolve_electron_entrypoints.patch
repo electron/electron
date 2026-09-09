@@ -6,7 +6,7 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index f54a8ca32a601e886b0cb09f0a9361a0c9c184ee..bf371a06e5c20c69ce37c0deb15ed999fdde145b 100644
+index 06f931edaf39a0dc2634db4da14df83bec821bf7..95e99e3bc9b74e4f217225a542b6a0748f6f0c1d 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -429,6 +429,10 @@ function cjsPreparseModuleExports(filename, source, format) {

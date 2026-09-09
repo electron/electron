@@ -23,7 +23,7 @@ index a2ed68a62156ec3465dfacda8e6043c78c589b9a..d2a4f02f642fcd41fdcbe3406d90d935
  
      'using_electron_config_gypi%': 0,
 diff --git a/configure.py b/configure.py
-index f7577d93244e4543db732f7e4c1f0db14f0565b2..41f3a4fbe4051a6a05e22611de26267d66987483 100755
+index 443818802df9bf62c17aa783617ec5b932cedf81..be0707fa1781201959fa0f4b3712021657dbfee8 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1031,6 +1031,12 @@ parser.add_argument('--without-inspector',
@@ -48,10 +48,10 @@ index f7577d93244e4543db732f7e4c1f0db14f0565b2..41f3a4fbe4051a6a05e22611de26267d
    o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
    o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
 diff --git a/node.gyp b/node.gyp
-index 72dd7525473c96293374019dc1626ec8798b2e09..0602f93ae89f314c91d335793c3932adf4b408e7 100644
+index 5df80c48e7c747a49bd2e86ea7706de757fff32e..a5c17ed75b5513fdba2a5ea0d9fb7b259041da75 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -1385,6 +1385,14 @@
+@@ -1387,6 +1387,14 @@
          }, {
            'sources!': [ '<@(node_cctest_quic_sources)' ],
          }],
@@ -66,7 +66,7 @@ index 72dd7525473c96293374019dc1626ec8798b2e09..0602f93ae89f314c91d335793c3932ad
          ['v8_enable_inspector==1', {
            'defines': [
              'HAVE_INSPECTOR=1',
-@@ -1707,6 +1715,14 @@
+@@ -1709,6 +1717,14 @@
              'NODE_USE_NODE_CODE_CACHE=1',
            ],
          }],

@@ -35,7 +35,7 @@ See https://github.com/electron/electron/issues/53387.
 (cherry picked from commit fd325a7fc2b33839c024220aa0c44b9104749686)
 
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 3e8e4a65a81bdd6c9181764c541a2e9b42fb5e57..721cc2a66911d4b89909ba6bbda475c37c3a6a9a 100644
+index a219d512570136a9b1e940942b8426bf19d0d1f1..3ccd7845849beecdd251d1c81197abd774b18d52 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
 @@ -27,6 +27,12 @@ static void at_exit_callback_ordered2(void* arg);
@@ -51,7 +51,7 @@ index 3e8e4a65a81bdd6c9181764c541a2e9b42fb5e57..721cc2a66911d4b89909ba6bbda475c3
  class EnvironmentTest : public EnvironmentTestFixture {
   private:
    void TearDown() override {
-@@ -288,6 +294,27 @@ TEST_F(EnvironmentTest, AtExitRunsJS) {
+@@ -309,6 +315,27 @@ TEST_F(EnvironmentTest, AtExitRunsJS) {
    EXPECT_TRUE(called_at_exit_js);
  }
  
@@ -79,7 +79,7 @@ index 3e8e4a65a81bdd6c9181764c541a2e9b42fb5e57..721cc2a66911d4b89909ba6bbda475c3
  TEST_F(EnvironmentTest, MultipleEnvironmentsPerIsolate) {
    const v8::HandleScope handle_scope(isolate_);
    const Argv argv;
-@@ -371,6 +398,19 @@ static void at_exit_js(void* arg) {
+@@ -392,6 +419,19 @@ static void at_exit_js(void* arg) {
    called_at_exit_js = true;
  }
  
