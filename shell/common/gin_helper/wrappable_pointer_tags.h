@@ -50,6 +50,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronSystemPreferences,       // electron::api::SystemPreferences
   kElectronTray,                    // electron::api::Tray
   kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
+  kElectronWebContents,             // electron::api::WebContents
   kElectronWebFrameMain,            // electron::api::WebFrameMain
   kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
   kElectronWebRequest,              // electron::api::WebRequest

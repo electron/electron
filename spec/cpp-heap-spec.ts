@@ -532,20 +532,33 @@ describe('cpp heap', () => {
           const isClosed = once(w, 'closed');
           w.destroy();
           await isClosed;
-          const numSessions = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / Session'], {
-            occurrences: 4
-          });
-          const canTraceJSReferences = containsRetainingPath(state.snapshot, [
+          const hasThreeSessionRoots = containsRetainingPath(
+            state.snapshot,
+            ['C++ Persistent roots', 'Electron / Session'],
+            {
+              occurrences: 3
+            }
+          );
+          const tracesWindowSession = containsRetainingPath(state.snapshot, [
+            'Electron / WebContents',
+            'Electron / Session'
+          ]);
+          const tracesCookies = containsRetainingPath(state.snapshot, [
             'C++ Persistent roots',
             'Electron / Session',
             'Electron / Cookies'
           ]);
-          return numSessions && canTraceJSReferences;
+          return { hasThreeSessionRoots, tracesWindowSession, tracesCookies };
         },
         path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
-      expect(result).to.equal(true);
+      expect(result.hasThreeSessionRoots).to.equal(true, 'each distinct Session should have its own persistent root');
+      expect(result.tracesWindowSession).to.equal(
+        true,
+        'WebContents should trace its Session instead of adding a persistent root'
+      );
+      expect(result.tracesCookies).to.equal(true, 'Session should trace its Cookies');
     });
   });
 
@@ -1601,6 +1614,432 @@ describe('cpp heap', () => {
         `C++ heap grew by ${growth} bytes between two identical rounds of 100 menu rebuilds — likely a leak`
       );
     });
+  });
+
+  describe('webContents module', () => {
+    it('collects unowned WebContents and their traced debugger', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { webContents } = require('electron');
+          const { recordState } = require(heap);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const countContents = () =>
+            recordState().snapshot.filter(
+              (node: { name: string; type: string }) => node.name === 'Electron / WebContents' && node.type !== 'string'
+            ).length;
+          const before = countContents();
+          let detachedEvents = 0;
+          const onDetach = () => {
+            detachedEvents++;
+          };
+          const refs = await (async () => {
+            const contents = webContents.create();
+            await contents.loadURL('about:blank');
+            contents.on('test-cycle', () => contents.id);
+            contents.debugger.attach();
+            contents.debugger.on('detach', onDetach);
+            return {
+              contents: new WeakRef(contents),
+              debugger: new WeakRef(contents.debugger),
+              frame: contents.mainFrame,
+              id: contents.id
+            };
+          })();
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (!refs.contents.deref() && !refs.debugger.deref()) break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          let frameError = '';
+          try {
+            frameError = `Frame is still live: ${refs.frame.url}`;
+          } catch (error) {
+            frameError = (error as Error).message;
+          }
+          return {
+            released: !refs.contents.deref() && !refs.debugger.deref(),
+            removedFromRegistry: webContents.fromId(refs.id) === undefined,
+            detachedEvents,
+            frameError,
+            before,
+            after: countContents()
+          };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(result.released).to.equal(true);
+      expect(result.removedFromRegistry).to.equal(true);
+      expect(result.detachedEvents).to.equal(1);
+      expect(result.frameError).to.include('Render frame was disposed');
+      expect(result.after).to.equal(result.before);
+    });
+
+    it('defers guest destruction and emits destroyed only once', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const { once } = require('node:events');
+        const embedder = webContents.create();
+        const guest = webContents.create({ type: 'webview', embedder });
+        const type = guest.getType();
+        let destroyedEvents = 0;
+        guest.on('destroyed', () => {
+          destroyedEvents++;
+        });
+        const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        guest.destroy();
+        const destroyedOnReturn = guest.isDestroyed();
+        const eventsOnReturn = destroyedEvents;
+        guest.destroy();
+        await destroyed;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        embedder.destroy();
+        await embedderDestroyed;
+        return { type, destroyedOnReturn, eventsOnReturn, destroyedEvents, destroyed: guest.isDestroyed() };
+      });
+
+      expect(result).to.deep.equal({
+        type: 'webview',
+        destroyedOnReturn: false,
+        eventsOnReturn: 0,
+        destroyedEvents: 1,
+        destroyed: true
+      });
+    });
+
+    it('disposes frame wrappers when an attached guest wrapper is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const { once } = require('node:events');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const embedder = webContents.create();
+
+        const frameState = await (async () => {
+          await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+          const embedderFrame = embedder.mainFrame.frames[0];
+          const guest = (webContents as typeof ElectronInternal.WebContents).create({
+            type: 'webview',
+            embedder
+          });
+          await guest.loadURL('about:blank');
+          guest.attachToIframe(embedder, embedderFrame.frameToken);
+
+          const guestFrame = guest.mainFrame;
+          const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          guest.destroy();
+          await destroyed;
+
+          let frameError = '';
+          try {
+            frameError = `Frame is still live: ${guestFrame.url}`;
+          } catch (error) {
+            frameError = (error as Error).message;
+          }
+          return {
+            frameDestroyed: guestFrame.isDestroyed(),
+            frameError,
+            frameRef: new WeakRef(guestFrame)
+          };
+        })();
+
+        for (let attempt = 0; attempt < 30; ++attempt) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (!frameState.frameRef.deref()) break;
+        }
+
+        const frameReleased = !frameState.frameRef.deref();
+        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        embedder.destroy();
+        await embedderDestroyed;
+
+        return {
+          frameDestroyed: frameState.frameDestroyed,
+          frameError: frameState.frameError,
+          frameReleased
+        };
+      });
+
+      expect(result.frameDestroyed).to.equal(true);
+      expect(result.frameError).to.include('Render frame was disposed');
+      expect(result.frameReleased).to.equal(true, 'the attached guest frame should release its SelfKeepAlive root');
+    });
+
+    it('disposes frame wrappers when a background page wrapper is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(
+        async (extensionPath: string) => {
+          const { app, session } = require('electron');
+          const { randomUUID } = require('node:crypto');
+          const { once } = require('node:events');
+          const customSession = session.fromPartition(`persist:cppgc-background-page-${randomUUID()}`);
+          const created = once(app, 'web-contents-created', { signal: AbortSignal.timeout(10000) });
+          const extension = await customSession.extensions.loadExtension(extensionPath);
+          const [, backgroundPage] = await created;
+
+          try {
+            if (backgroundPage.isLoading()) {
+              await once(backgroundPage, 'did-finish-load', { signal: AbortSignal.timeout(10000) });
+            }
+            const type = backgroundPage.getType();
+            const frame = backgroundPage.mainFrame;
+            const destroyed = once(backgroundPage, 'destroyed', { signal: AbortSignal.timeout(10000) });
+            backgroundPage.destroy();
+            await destroyed;
+
+            let frameError = '';
+            try {
+              frameError = `Frame is still live: ${frame.url}`;
+            } catch (error) {
+              frameError = (error as Error).message;
+            }
+            return {
+              type,
+              frameDestroyed: frame.isDestroyed(),
+              frameError
+            };
+          } finally {
+            await customSession.extensions.removeExtension(extension.id);
+          }
+        },
+        path.join(__dirname, 'fixtures', 'extensions', 'persistent-background-page')
+      );
+
+      expect(result.type).to.equal('backgroundPage');
+      expect(result.frameDestroyed).to.equal(true);
+      expect(result.frameError).to.include('Render frame was disposed');
+    });
+
+    it('retains WebContents through their WebContentsView until native destruction', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { WebContentsView } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const view = new WebContentsView();
+          const ref = new WeakRef(view.webContents);
+
+          for (let attempt = 0; attempt < 5; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          const retained = ref.deref() === view.webContents && !view.webContents.isDestroyed();
+          const rooted = containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const destroyed = once(view.webContents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          view.webContents.close();
+          await destroyed;
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (!ref.deref()) break;
+          }
+          return { retained, rooted, released: !ref.deref() };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      expect(result.retained).to.equal(true);
+      expect(result.rooted).to.equal(true);
+      expect(result.released).to.equal(true);
+    });
+
+    it('invalidates native methods while a destroyed JS wrapper remains reachable', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { webContents } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const countContents = () =>
+            recordState().snapshot.filter(
+              (node: { name: string; type: string }) => node.name === 'Electron / WebContents' && node.type !== 'string'
+            ).length;
+          const before = countContents();
+          const contents = webContents.create();
+          const id = contents.id;
+          let destroyedEvents = 0;
+          let destroyedDuringEvent = false;
+          contents.on('destroyed', () => {
+            destroyedEvents++;
+            destroyedDuringEvent = contents.isDestroyed();
+          });
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.destroy();
+          contents.destroy();
+          await destroyed;
+
+          for (let attempt = 0; attempt < 10; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          let methodError = '';
+          try {
+            contents.getURL();
+          } catch (error) {
+            methodError = (error as Error).message;
+          }
+          const after = countContents();
+          return {
+            destroyedEvents,
+            destroyedDuringEvent,
+            methodError,
+            idPreserved: contents.id === id,
+            removedFromRegistry: webContents.fromId(id) === undefined,
+            isDestroyed: contents.isDestroyed(),
+            before,
+            after
+          };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(result.destroyedEvents).to.equal(1);
+      expect(result.destroyedDuringEvent).to.equal(true);
+      expect(result.methodError).to.equal('Object has been destroyed');
+      expect(result.idPreserved).to.equal(true);
+      expect(result.removedFromRegistry).to.equal(true);
+      expect(result.isDestroyed).to.equal(true);
+      expect(result.after).to.equal(result.before);
+    });
+
+    it('releases the remote DevTools root when DevTools closes', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { webContents } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const contents = webContents.create();
+          await contents.loadURL('about:blank');
+          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+          contents.openDevTools({ mode: 'detach', activate: false });
+          v8Util.requestGarbageCollectionForTesting();
+          await opened;
+          const ref = new WeakRef(contents.devToolsWebContents);
+          const rooted = containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const closed = once(contents, 'devtools-closed', { signal: AbortSignal.timeout(10000) });
+          contents.closeDevTools();
+          await closed;
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (!ref.deref()) break;
+          }
+          const released = !ref.deref();
+          const rootReleased = !containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.close();
+          await destroyed;
+          return { rooted, released, rootReleased };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      expect(result.rooted).to.equal(true);
+      expect(result.released).to.equal(true);
+      expect(result.rootReleased).to.equal(true);
+    });
+
+    it('stops DevTools indexing without retaining cppgc handles on its worker sequence', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      await rc.remotely(async () => {
+        const { app, webContents } = require('electron');
+        const { once } = require('node:events');
+        const fs = require('node:fs');
+        const os = require('node:os');
+        const path = require('node:path');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-devtools-index-'));
+        const contents = webContents.create();
+
+        try {
+          for (let i = 0; i < 500; ++i) {
+            fs.writeFileSync(path.join(workspace, `${i}.txt`), `indexed content ${i}`);
+          }
+
+          await contents.loadURL('about:blank');
+          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+          contents.openDevTools({ mode: 'detach', activate: false });
+          await opened;
+          contents.addWorkSpace(workspace);
+
+          const devTools = contents.devToolsWebContents;
+          await devTools.executeJavaScript(`InspectorFrontendHost.indexPath(42, ${JSON.stringify(workspace)}, '[]')`);
+          await devTools.executeJavaScript('InspectorFrontendHost.stopIndexing(42)');
+
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.destroy();
+          await destroyed;
+          for (let attempt = 0; attempt < 10; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        } finally {
+          fs.rmSync(workspace, { recursive: true, force: true });
+        }
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    for (const collect of [false, true]) {
+      it(`does not crash on exit with ${collect ? 'collected' : 'live'} WebContents`, async () => {
+        const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+        await rc.remotely(async (collect: boolean) => {
+          const { app, webContents } = require('electron');
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          if (collect) {
+            const ref = (() => {
+              const contents = webContents.create();
+              return new WeakRef(contents);
+            })();
+            for (let attempt = 0; attempt < 30; ++attempt) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+              if (!ref.deref()) break;
+            }
+            if (ref.deref()) {
+              app.exit(1);
+              return;
+            }
+          } else {
+            (globalThis as any).contents = webContents.create();
+          }
+          setTimeout(() => app.quit());
+        }, collect);
+        const [code] = await once(rc.process, 'exit');
+        expect(code).to.equal(0);
+      });
+    }
   });
 
   describe('webFrameMain module', () => {

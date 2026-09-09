@@ -1286,22 +1286,15 @@ describe('webContents module', () => {
     it('Inspect activates detached devtools window', async () => {
       const window = new BrowserWindow({ show: true });
       await window.loadURL('about:blank');
-      const webContentsBeforeOpenedDevtools = webContents.getAllWebContents();
+      window.focus();
+      await waitUntil(() => window.isFocused());
 
       const windowWasBlurred = once(window, 'blur');
+      const devToolsOpened = once(window.webContents, 'devtools-opened');
       window.webContents.openDevTools({ mode: 'detach' });
-      await windowWasBlurred;
+      await Promise.all([windowWasBlurred, devToolsOpened]);
 
-      let devToolsWebContents = null;
-      for (const newWebContents of webContents.getAllWebContents()) {
-        const oldWebContents = webContentsBeforeOpenedDevtools.find((oldWebContents) => {
-          return newWebContents.id === oldWebContents.id;
-        });
-        if (oldWebContents !== null) {
-          devToolsWebContents = newWebContents;
-          break;
-        }
-      }
+      const devToolsWebContents = window.webContents.devToolsWebContents;
       assert(devToolsWebContents !== null);
 
       const windowFocused = once(window, 'focus');
