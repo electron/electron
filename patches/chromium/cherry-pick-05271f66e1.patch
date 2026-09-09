@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Patrick Meenan <pmeenan@chromium.org>
+Date: Thu, 3 Sep 2026 10:36:17 -0700
+Subject: [M152] Block renderer-provided dcb or dcz Accept-Encoding headers
+
+Original change's description:
+> Block renderer-provided dcb or dcz Accept-Encoding headers
+>
+> Dictionary compression is 100% handled in the network service and net
+> stack. This makes sure that renderer's don't accidentally try to
+> advertise dictionary compression when it's not really enabled.
+>
+> Bug: 553118043
+> Change-Id: If9cdcf100520e0f74216daa80dc948e0f397748f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8300933
+> Commit-Queue: Patrick Meenan <pmeenan@chromium.org>
+> Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1687719}
+
+(cherry picked from commit 4568e184333b8b92b07c135f11b10b3d811d8f36)
+
+Bug: 554321594,553118043
+Change-Id: If9cdcf100520e0f74216daa80dc948e0f397748f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8349509
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2376}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/services/network/public/cpp/header_util.cc b/services/network/public/cpp/header_util.cc
+index 402042af85321c1b1796051cef0234e83a707f85..a06abd25db95cb33b3d726407936662a88ca123c 100644
+--- a/services/network/public/cpp/header_util.cc
++++ b/services/network/public/cpp/header_util.cc
+@@ -18,6 +18,7 @@
+ #include "net/http/http_response_headers.h"
+ #include "net/http/http_status_code.h"
+ #include "net/http/http_util.h"
++#include "net/shared_dictionary/shared_dictionary_constants.h"
+ #include "services/network/public/cpp/cors/cors.h"
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
+@@ -75,6 +76,26 @@ bool IsRequestHeaderSafe(std::string_view key, std::string_view value) {
+       return false;
+   }
+ 
++  // The Accept-Encoding header can be set by the media pipeline (e.g.
++  // "identity;q=1, *;q=0"), but must not be used to negotiate shared
++  // dictionary compression (dcb, dcz) which is managed by the network stack.
++  if (base::EqualsCaseInsensitiveASCII(
++          key, net::HttpRequestHeaders::kAcceptEncoding)) {
++    net::HttpUtil::ValuesIterator encodings(value, ',');
++    while (encodings.GetNext()) {
++      if (base::StartsWith(
++              encodings.value(),
++              net::shared_dictionary::kSharedBrotliContentEncodingName,
++              base::CompareCase::INSENSITIVE_ASCII) ||
++          base::StartsWith(
++              encodings.value(),
++              net::shared_dictionary::kSharedZstdContentEncodingName,
++              base::CompareCase::INSENSITIVE_ASCII)) {
++        return false;
++      }
++    }
++  }
++
+   // The Connection header is a comma-separated list of tokens. Per RFC 9110
+   // section 7.6.1, intermediaries treat each listed token as the name of a
+   // header to remove before forwarding, so only allow the connection-management
+diff --git a/services/network/public/cpp/header_util_unittest.cc b/services/network/public/cpp/header_util_unittest.cc
+index 9d2adf4cf63ae099e52c825ae2716021c17294f2..f4635e2be8bab90053f6fe10d7432c5f6c1a8040 100644
+--- a/services/network/public/cpp/header_util_unittest.cc
++++ b/services/network/public/cpp/header_util_unittest.cc
+@@ -8,6 +8,7 @@
+ #include "base/strings/stringprintf.h"
+ #include "net/http/http_request_headers.h"
+ #include "net/http/http_response_headers.h"
++#include "net/shared_dictionary/shared_dictionary_constants.h"
+ #include "services/network/public/cpp/features.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+@@ -28,6 +29,15 @@ TEST(HeaderUtilTest, IsRequestHeaderSafe) {
+       {"Upgrade", "webbedsocket", false},
+       {"hOsT", "foo.test", false},
+ 
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "identity;q=1, *;q=0", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, identity;q=1, *;q=0",
++       true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz;q=1", false},
++
+       {net::HttpRequestHeaders::kConnection, "Upgrade", false},
+       {net::HttpRequestHeaders::kConnection, "Close", true},
+       {net::HttpRequestHeaders::kConnection, "keep-alive", true},
+@@ -92,6 +102,15 @@ TEST(HeaderUtilTest, AreRequestHeadersSafe) {
+       {net::HttpRequestHeaders::kTransferEncoding, "gzip", false},
+       {"Set-Cookie", "foo=bar", false},
+ 
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "identity;q=1, *;q=0", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, identity;q=1, *;q=0",
++       true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz;q=1", false},
++
+       {net::HttpRequestHeaders::kConnection, "Upgrade", false},
+       {net::HttpRequestHeaders::kConnection, "Close", true},
+       {net::HttpRequestHeaders::kConnection, "keep-alive", true},

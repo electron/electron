@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 2 Sep 2026 13:14:21 +0200
+Subject: [M152] [builtins] Fix Array.prototype.flat
+
+Original change's description:
+> [builtins] Fix Array.prototype.flat
+>
+> This CL replaces the unsafe cast with a safe Cast<Smi>, branching to
+> the slow path when sourceLength is not a Smi.
+>
+> TAG=agy
+> CONV=1183a007-e898-453b-9823-1c970699f025
+>
+> Fixed: 552342545
+> Change-Id: I539dd7006dfece6c247565a0940aeac9d7cc669a
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8346487
+> Auto-Submit: Igor Sheludko <ishell@chromium.org>
+> Reviewed-by: Patrick Thier <pthier@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Commit-Queue: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109636}
+
+(cherry picked from commit 50a6c0c69c1384720d9c3599dadfa73e55b865d7)
+
+Bug: 557050968,552342545
+Change-Id: I539dd7006dfece6c247565a0940aeac9d7cc669a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8351473
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#46}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/builtins/array-flat.tq b/src/builtins/array-flat.tq
+index a40b8a0d8e8f44cb082f9136433b0afdba828dc2..659de786c9ec8f322b19bb458fd54032378e6b86 100644
+--- a/src/builtins/array-flat.tq
++++ b/src/builtins/array-flat.tq
+@@ -420,9 +420,8 @@ transitioning macro FlattenIntoArrayFast(
+       otherwise goto Bailout(targetIndex, smiSourceIndex);
+   let fastOW = NewFastJSArrayWitness(fastSource);
+ 
+-  // The source is a FastJSArray, thus its length must be a Smi.
+-  dcheck(Is<Smi>(sourceLength));
+-  const smiSourceLength = UnsafeCast<Smi>(sourceLength);
++  const smiSourceLength = Cast<Smi>(sourceLength)
++      otherwise goto Bailout(targetIndex, smiSourceIndex);
+ 
+   // 3. Repeat, while sourceIndex < sourceLen
+   for (; smiSourceIndex < smiSourceLength; smiSourceIndex++) {
