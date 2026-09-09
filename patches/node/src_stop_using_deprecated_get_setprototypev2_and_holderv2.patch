@@ -83,7 +83,7 @@ index 8004c8ed06cac33853b227df377b8e2bef2af7e2..134fcd561af053e2a42f54398a28abaa
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5..2543d6f3b5e357cf9090f2f7d51d67d084b34f38 100644
+index 573e1da2c210bf67e813e21daa5a0a48001808e0..c631ad615cc8acad6f96a01f4b619e7326149273 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -279,7 +279,7 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -96,10 +96,10 @@ index 01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5..2543d6f3b5e357cf9090f2f7d51d67d0
      return MaybeLocal<Uint8Array>();
    }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index c68dde10f4972a9eb6834bed5e763f9102866ab0..070180902b5ffe62a3a28795d793761cb767c89d 100644
+index 0cc09fd10e83e59852bbf9abfecd5e30622c0f02..12a1bde53574acb1a4cd91108fd4151f4c979b40 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1347,7 +1347,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1352,7 +1352,7 @@ void CreatePerContextProperties(Local<Object> target,
    Environment* env = Environment::GetCurrent(context);
  
    CHECK(
@@ -122,10 +122,10 @@ index 6efb4ec8391356f1141990e8f49aa2d3da3a8b0c..b03b19f4b6f84332766a3e1192235e0c
  
  ContextifyContext* ContextifyContext::Get(Local<Object> object) {
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 34ced47c7142be3ab8d97840ea88770c18b0742b..d12bf33f2f6b15a0f571d1dd43252758d51e911c 100644
+index 51c097e69388a516aa7a9239053367faa4f7595e..d2337033fc1bf538f84c619add57bcc7d7b9f219 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -690,7 +690,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+@@ -705,7 +705,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
    // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
    // returns a nullptr and retrieve the creation context via `this` object and
    // get the creation Realm.
@@ -135,10 +135,10 @@ index 34ced47c7142be3ab8d97840ea88770c18b0742b..d12bf33f2f6b15a0f571d1dd43252758
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 9435a20299b817cef92125375a6d08143cc88c2d..9a329d5f91f7396c36b1e3e9b47175b4f177091d 100644
+index 5cbb2e7c593f08a18e670a49c1025a25c2511e7c..d4dffb1093f7a792b0e9cef2756b530cbc78ce88 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1814,7 +1814,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1820,7 +1820,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
  
    Local<Map> options = Map::New(isolate);
    if (options
@@ -147,7 +147,7 @@ index 9435a20299b817cef92125375a6d08143cc88c2d..9a329d5f91f7396c36b1e3e9b47175b4
                             env->primordials_safe_map_prototype_object())
            .IsNothing()) {
      return;
-@@ -1855,7 +1855,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1861,7 +1861,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
    if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
  
    if (aliases.As<Object>()
@@ -157,10 +157,10 @@ index 9435a20299b817cef92125375a6d08143cc88c2d..9a329d5f91f7396c36b1e3e9b47175b4
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 272e6ffd0aebac5b8f075d6ba9911f96347bc2a4..1b9fdd75da8ce7207b0b41a439e1b0f1e3e0cf4f 100644
+index a04c7b97e743d75a53e8e01f31e40f601a207572..a44d310411b1de86f72f2d817c046fc11b558f71 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+@@ -765,7 +765,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -169,7 +169,7 @@ index 272e6ffd0aebac5b8f075d6ba9911f96347bc2a4..1b9fdd75da8ce7207b0b41a439e1b0f1
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -790,7 +790,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -797,7 +797,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -178,7 +178,7 @@ index 272e6ffd0aebac5b8f075d6ba9911f96347bc2a4..1b9fdd75da8ce7207b0b41a439e1b0f1
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -2998,9 +2998,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
+@@ -3039,9 +3039,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
    }
  
    if (iter->object()
