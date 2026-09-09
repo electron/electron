@@ -2791,6 +2791,11 @@ void WebContents::WebContentsDestroyed() {
   // Drop this instance's contribution to the process-wide caret browsing count.
   ReconcileCaretBrowsingCount(false);
 
+  // For a content::WebContents we do not own (guest, background page), frames
+  // outlive us but no longer get lifecycle notifications; dispose them now.
+  if (web_contents())
+    WebFrameMain::DestroyAllForWebContents(web_contents());
+
   // The underlying content::WebContents is gone, let the wrapper be collected.
   Unpin();
 
