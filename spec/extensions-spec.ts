@@ -1652,7 +1652,9 @@ describe('chrome extensions', () => {
 
   describe('custom protocol', () => {
     async function runFixture(name: string) {
-      const appProcess = spawn(process.execPath, [path.join(fixtures, 'extensions', name, 'main.js')]);
+      const args = [path.join(fixtures, 'extensions', name, 'main.js')];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const appProcess = spawn(process.execPath, args);
 
       let output = '';
       appProcess.stdout.on('data', (data) => {
