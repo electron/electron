@@ -1,0 +1,463 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 1 Apr 2026 14:19:28 -0400
+Subject: Translator: Disallow arrays of external samplers
+
+The Vulkan backend does not support it yet, and there are seemingly no
+users.  For now, catch this unsupported case in the translator and fail
+compilation.  This is only done for webgl/hardened contexts, as there
+are dEQP tests that create such shaders, even though they don't draw
+with them.
+
+Test credit jerrylulu7 AT gmail DOT com
+
+Bug: angleproject:158215272
+Bug: chromium:536648007
+Change-Id: Iaddcdbbfdb5bdaa180cb4924187723ca33a8a099
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7727387
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/scripts/code_generation_hashes/ANGLE_load_functions_table.json b/scripts/code_generation_hashes/ANGLE_load_functions_table.json
+index 13ca99370ce65e3b0beef0983f04fddc2ed5e185..a06aa168b8cf2409f8871f0c9ac65b77e32c01dd 100644
+--- a/scripts/code_generation_hashes/ANGLE_load_functions_table.json
++++ b/scripts/code_generation_hashes/ANGLE_load_functions_table.json
+@@ -4,7 +4,7 @@
+   "src/libANGLE/renderer/gen_load_functions_table.py":
+     "10e66c76a350a1c70fadd2e10a28981e",
+   "src/libANGLE/renderer/load_functions_data.json":
+-    "cf538e24465732f6ca79cc3b91833451",
++    "2e978236d74283de6b986580fea099b4",
+   "src/libANGLE/renderer/load_functions_table_autogen.cpp":
+-    "c10713aabfbb66dae7d9b7ee89454bc4"
++    "f06e85caeb22491b9dd010b7fac3cecb"
+ }
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 8207d7a15994b1aff55654f7c2c8ec37c5203653..9abfb33cfd79c4ea5162d2e8e80ea678b1e06e33 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1894,6 +1894,20 @@ bool TParseContext::checkIsValidTypeAndQualifierForArray(const TSourceLoc &index
+               typeString.c_str());
+         return false;
+     }
++
++    // Support for arrays of samplerExternalOES and __samplerExternal2DY2Y are broken in some
++    // backends.
++    if (mCompileOptions.rejectWebglShadersWithUndefinedBehavior &&
++        (elementType.getBasicType() == EbtSamplerExternalOES ||
++         elementType.getBasicType() == EbtSamplerExternal2DY2YEXT))
++    {
++        TInfoSinkBase typeString;
++        typeString << TType(elementType);
++        error(indexLocation, "arrays of external samplers are currently unsupported",
++              typeString.c_str());
++        return false;
++    }
++
+     return checkIsValidQualifierForArray(indexLocation, elementType);
+ }
+ 
+diff --git a/src/libANGLE/renderer/load_functions_data.json b/src/libANGLE/renderer/load_functions_data.json
+index 3c878af27d63a456326fb211a16ca36c0408eeda..97918f4a0c42ba8a0e7eafc9786bb707bec99073 100644
+--- a/src/libANGLE/renderer/load_functions_data.json
++++ b/src/libANGLE/renderer/load_functions_data.json
+@@ -1313,7 +1313,7 @@
+   },
+   "GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE": {
+     "NONE": {
+-      "GL_UNSIGNED_BYTE": "UnimplementedLoadFunction"
++      "GL_UNSIGNED_BYTE": "LoadYuvToNative"
+     }
+   },
+   "GL_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_ANGLE": {
+diff --git a/src/libANGLE/renderer/load_functions_table_autogen.cpp b/src/libANGLE/renderer/load_functions_table_autogen.cpp
+index 32d21e6b4dad18b915bd2fa48af56957c05601ec..823043e0694ca4faeff3192febee0fa8ae31afb9 100644
+--- a/src/libANGLE/renderer/load_functions_table_autogen.cpp
++++ b/src/libANGLE/renderer/load_functions_table_autogen.cpp
+@@ -1988,7 +1988,7 @@ LoadImageFunctionInfo G8_B8_R8_3PLANE_420_UNORM_ANGLE_to_default(GLenum type)
+     switch (type)
+     {
+         case GL_UNSIGNED_BYTE:
+-            return LoadImageFunctionInfo(UnimplementedLoadFunction, true);
++            return LoadImageFunctionInfo(LoadYuvToNative, true);
+         default:
+             UNREACHABLE();
+             return LoadImageFunctionInfo(UnreachableLoadFunction, true);
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index f275bd4d464580da2630b8d362f198303534db65..fd0a8dc6eface3945a1f693d0827a330ac708e54 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -34,6 +34,8 @@
+ 532592076 : ImageTestES3RobustInit.RobustClearInTarget/* = SKIP
+ 532592076 : ImageTestES3RobustInit.NonZeroLevelAndSliceReadback/* = SKIP
+ 532592076 : ImageTestES3RobustInit.NonZeroLevelAndSliceReadbackRenderbuffer/* = SKIP
++// Array external samplers are not supported by Vulkan
++158215272 VULKAN : ImageTestES3.SourceYUVTextureTargetExternalRGBSampleArray/* = SKIP
+ 
+ // Generate mipmap or draw on mismatched stale levels fails on some OpenGL/GLES drivers when robust init is enabled
+ 532617619 OPENGL : Texture2DTestES3RobustInit.MismatchedStaleLevel*/* = SKIP
+@@ -357,6 +359,7 @@
+ 42265709 NVIDIA VULKAN : GLSLTest_ES31.TessellationControlShaderMatrixCopyBug/* = SKIP
+ 42265709 NVIDIA VULKAN : GLSLTest_ES31.TessellationControlShaderMatrixMultiplicationBug/* = SKIP
+ 537235696 NVIDIA OPENGL : ClipDistance*.ThreeClipDistancesRedeclaredAndPassedToFunction/* = SKIP
++540256225 NVIDIA VULKAN : ImageTestES3.SourceYUVTextureTargetExternalRGBSample/* = SKIP
+ 
+ // Intel Vulkan
+ 
+@@ -401,6 +404,7 @@
+ 536046166 INTEL VULKAN : FramebufferTest_ES31.MultisampleResolveWithBlitIntoMixedTexturesAfterFinish/* = SKIP
+ 536046166 INTEL VULKAN : FramebufferTest_ES31_MSAA.MultisampleResolveWithBlitIntoMixedTextures/* = SKIP
+ 536046166 WIN INTEL VULKAN : FramebufferTest_ES31_MSAA.MultisampleStencilSampling/*EmulatedPrerotation* = SKIP
++540256225 INTEL VULKAN : ImageTestES3.SourceYUVTextureTargetExternalRGBSample/* = SKIP
+ 
+ // Robust init of OOB framebuffer reads is not zero'd
+ 500528706 VULKAN : CopyTexImageTestRobustResourceInit.OOBReadShouldBeZeroInit/* = SKIP
+@@ -793,6 +797,7 @@
+ 40096826 PIXEL6 VULKAN : GLSLTest_ES31.ConsecutiveArraysOfArraysImage/* = SKIP
+ 40096826 PIXEL6 VULKAN : GeometryShaderTest.GeometryShaderImplementationDependentLimits/* = SKIP
+ 40096826 PIXEL6 VULKAN : ImageTestES3.RGBXAHBImport* = SKIP
++540256225 PIXEL6 VULKAN : ImageTestES3.SourceYUVTextureTargetExternalRGBSample/* = SKIP
+ 40096826 PIXEL6 VULKAN : IndexedBufferCopyTest.IndexRangeBug/* = SKIP
+ 40096826 PIXEL6 VULKAN : IndexedPointsTest* = SKIP
+ 40096826 PIXEL6 VULKAN : MultisampleTest.Point/* = SKIP
+@@ -1504,6 +1509,7 @@
+ 
+ // Fails on swangle builders
+ 42266918 SWIFTSHADER : WebGL2GLSLTest.TexelFetchLodOutOfBounds/* = SKIP
++540256225 SWIFTSHADER : ImageTestES3.SourceYUVTextureTargetExternalRGBSample/* = SKIP
+ 
+ // HLSL compiler bug
+ 42261155 D3D11 : GLSLTest_ES3.ComplexCrossExpression/* = SKIP
+diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+index 92a95fa8b43d4918d430c04e378e4d129d128964..e140de3836e70537651c1c244f26346b47be7d0e 100644
+--- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
++++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+@@ -260,6 +260,7 @@
+ # VVL error
+ 42264614 LINUX : VulkanExternalImageTestES31.UninitializedOnGLImportAndStorageWrite/* = SKIP_FOR_CAPTURE
+ 42264614 LINUX : VulkanExternalImageTest.NonRenderableWithFlags/* = SKIP_FOR_CAPTURE
++540256225 : ImageTestES3.SourceYUVTextureTargetExternalRGBSample/* = SKIP_FOR_CAPTURE
+ 
+ # CoherentBufferTracker deadlocks and flaky crashes
+ 42266529 LINUX : BufferDataTestES3.* = SKIP_FOR_CAPTURE
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 82b68ab28abdbb10d26e82389f7ebea476924f2f..410c34d61059e3c2846eb4261ff18b613c849cad 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -6584,6 +6584,42 @@ void main()
+     validateSuccess(GL_FRAGMENT_SHADER, kFS);
+ }
+ 
++// External sampler arrays are not implemented correctly and so are forbidden for now.
++TEST_P(WebGL2GLSLValidationTest, SamplerExternalArray)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_OES_EGL_image_external"));
++
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_OES_EGL_image_external_essl3 : require
++precision highp float;
++uniform samplerExternalOES textures[2];
++out vec4 fragColor;
++void main()
++{
++    fragColor = texture(textures[0], vec2(0))
++              + texture(textures[1], vec2(0));
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS, "arrays of external samplers are currently unsupported");
++}
++
++// External Y2Y sampler arrays are not implemented correctly and so are forbidden for now.
++TEST_P(WebGL2GLSLValidationTest, SamplerExternalY2YArray)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_YUV_target"));
++
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_EXT_YUV_target : require
++precision highp float;
++uniform __samplerExternal2DY2YEXT textures[2];
++out vec4 fragColor;
++void main()
++{
++    fragColor = texture(textures[0], vec2(0))
++              + texture(textures[1], vec2(0));
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS, "arrays of external samplers are currently unsupported");
++}
++
+ class WebGLGLSLValidationExtensionDisableTest : public WebGLGLSLValidationTest
+ {};
+ 
+diff --git a/src/tests/gl_tests/ImageTest.cpp b/src/tests/gl_tests/ImageTest.cpp
+index 03826dd20cfc038871d44f5259e6fbf59e3c3c6f..c298ea774faab1d73cced1170ad7efd9a71b00f3 100644
+--- a/src/tests/gl_tests/ImageTest.cpp
++++ b/src/tests/gl_tests/ImageTest.cpp
+@@ -4769,6 +4769,268 @@ void main()
+     eglDestroyImageKHR(window->getDisplay(), image1);
+ }
+ 
++// Test sampling from two YUV textures using GL_ANGLE_yuv_internal_format as external texture.
++TEST_P(ImageTestES3, SourceYUVTextureTargetExternalRGBSample)
++{
++    ANGLE_SKIP_TEST_IF(!hasOESExt() || !hasBaseExt() || !has2DTextureExt() ||
++                       !hasYUVInternalFormatExt() || !hasExternalESSL3Ext());
++
++    // YUV color data for Red: 4 Y bytes + 2 CbCr bytes for a 2x2 NV12 image
++    constexpr GLubyte kYuv2PlaneColor[6] = {40, 40, 40, 40, 240, 109};
++    // YUV color data for Green : 4 Y bytes + 2 CbCr bytes for a 2x2 YV12 image
++    constexpr GLubyte kYuv3PlaneColor[6] = {144, 144, 144, 144, 54, 34};
++    constexpr size_t kWidth              = 2;
++    constexpr size_t kHeight             = 2;
++
++    // Create first 2-plane YUV texture
++    GLTexture yuvTexture0;
++    glBindTexture(GL_TEXTURE_2D, yuvTexture0);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE,
++                    GL_UNSIGNED_BYTE, kYuv2PlaneColor);
++    ASSERT_GL_NO_ERROR();
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    // Create second 2-plane YUV texture with a different format
++    GLTexture yuvTexture1;
++    glBindTexture(GL_TEXTURE_2D, yuvTexture1);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE,
++                    GL_UNSIGNED_BYTE, kYuv3PlaneColor);
++    ASSERT_GL_NO_ERROR();
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    // Create EGL images from the YUV textures
++    EGLWindow *window = getEGLWindow();
++    EGLImageKHR image0 =
++        eglCreateImageKHR(window->getDisplay(), window->getContext(), EGL_GL_TEXTURE_2D_KHR,
++                          reinterpretHelper<EGLClientBuffer>(yuvTexture0), kDefaultAttribs);
++    ASSERT_EGL_SUCCESS();
++
++    EGLImageKHR image1 =
++        eglCreateImageKHR(window->getDisplay(), window->getContext(), EGL_GL_TEXTURE_2D_KHR,
++                          reinterpretHelper<EGLClientBuffer>(yuvTexture1), kDefaultAttribs);
++    ASSERT_EGL_SUCCESS();
++
++    // Create external texture targets bound to the EGL images
++    GLTexture target0;
++    createEGLImageTargetTextureExternal(image0, target0);
++
++    GLTexture target1;
++    createEGLImageTargetTextureExternal(image1, target1);
++
++    // Use two samplerExternalOESs.
++    constexpr char kVS[] = R"(#version 300 es
++in vec4 position;
++out vec2 texcoord;
++void main()
++{
++    gl_Position = vec4(position.xy, 0.0, 1.0);
++    texcoord = (position.xy * 0.5) + 0.5;
++})";
++
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_OES_EGL_image_external_essl3 : require
++precision highp float;
++uniform sampler2D otherSampler;
++uniform samplerExternalOES texture0;
++uniform samplerExternalOES texture1;
++out vec4 fragColor;
++in vec2 texcoord;
++void main()
++{
++    fragColor = texture(otherSampler, texcoord) * 0.001
++              + max(texture(texture0, texcoord), vec4(0))
++              + max(texture(texture1, texcoord), vec4(0));
++})";
++
++    ANGLE_GL_PROGRAM(arrayProgram, kVS, kFS);
++    glUseProgram(arrayProgram);
++
++    // Create a separate RGBA texture for the regular sampler2D binding
++    const std::array<GLColor, kWidth * kHeight> kRGBAInitData = {
++        GLColor::red,
++        GLColor::red,
++        GLColor::red,
++        GLColor::red,
++    };
++    GLTexture rgbaTexture;
++    glBindTexture(GL_TEXTURE_2D, rgbaTexture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kRGBAInitData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    GLint rgbaLoc = glGetUniformLocation(arrayProgram, "otherSampler");
++    ASSERT_NE(-1, rgbaLoc);
++    GLint tex0Loc = glGetUniformLocation(arrayProgram, "texture0");
++    ASSERT_NE(-1, tex0Loc);
++    GLint tex1Loc = glGetUniformLocation(arrayProgram, "texture1");
++    ASSERT_NE(-1, tex1Loc);
++
++    // Bind the RGBA texture to unit 2
++    glActiveTexture(GL_TEXTURE2);
++    glBindTexture(GL_TEXTURE_2D, rgbaTexture);
++
++    // Bind YUV external textures to units 0 and 1
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_EXTERNAL_OES, target0);
++    glActiveTexture(GL_TEXTURE1);
++    glBindTexture(GL_TEXTURE_EXTERNAL_OES, target1);
++    ASSERT_GL_NO_ERROR();
++
++    glUniform1i(rgbaLoc, 2);
++    glUniform1i(tex0Loc, 0);
++    glUniform1i(tex1Loc, 1);
++
++    drawQuad(arrayProgram, "position", 0.5f);
++    ASSERT_GL_NO_ERROR();
++
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor::cyan, 1);
++
++    // Clean up
++    eglDestroyImageKHR(window->getDisplay(), image0);
++    eglDestroyImageKHR(window->getDisplay(), image1);
++}
++
++// Test sampling from two YUV textures using GL_ANGLE_yuv_internal_format as external texture, when
++// the shader uses an array samplerExternalOES declaration.
++TEST_P(ImageTestES3, SourceYUVTextureTargetExternalRGBSampleArray)
++{
++    ANGLE_SKIP_TEST_IF(!hasOESExt() || !hasBaseExt() || !has2DTextureExt() ||
++                       !hasYUVInternalFormatExt() || !hasExternalESSL3Ext());
++
++    // YUV color data for Red: 4 Y bytes + 2 CbCr bytes for a 2x2 NV12 image
++    constexpr GLubyte kYuv2PlaneColor[6] = {40, 40, 40, 40, 240, 109};
++    // YUV color data for Green : 4 Y bytes + 2 CbCr bytes for a 2x2 YV12 image
++    constexpr GLubyte kYuv3PlaneColor[6] = {144, 144, 144, 144, 54, 34};
++    constexpr size_t kWidth              = 2;
++    constexpr size_t kHeight             = 2;
++
++    // Create first 2-plane YUV texture
++    GLTexture yuvTexture0;
++    glBindTexture(GL_TEXTURE_2D, yuvTexture0);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_G8_B8R8_2PLANE_420_UNORM_ANGLE,
++                    GL_UNSIGNED_BYTE, kYuv2PlaneColor);
++    ASSERT_GL_NO_ERROR();
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    // Create second 2-plane YUV texture with a different format
++    GLTexture yuvTexture1;
++    glBindTexture(GL_TEXTURE_2D, yuvTexture1);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_G8_B8_R8_3PLANE_420_UNORM_ANGLE,
++                    GL_UNSIGNED_BYTE, kYuv3PlaneColor);
++    ASSERT_GL_NO_ERROR();
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    // Create EGL images from the YUV textures
++    EGLWindow *window = getEGLWindow();
++    EGLImageKHR image0 =
++        eglCreateImageKHR(window->getDisplay(), window->getContext(), EGL_GL_TEXTURE_2D_KHR,
++                          reinterpretHelper<EGLClientBuffer>(yuvTexture0), kDefaultAttribs);
++    ASSERT_EGL_SUCCESS();
++
++    EGLImageKHR image1 =
++        eglCreateImageKHR(window->getDisplay(), window->getContext(), EGL_GL_TEXTURE_2D_KHR,
++                          reinterpretHelper<EGLClientBuffer>(yuvTexture1), kDefaultAttribs);
++    ASSERT_EGL_SUCCESS();
++
++    // Create external texture targets bound to the EGL images
++    GLTexture target0;
++    createEGLImageTargetTextureExternal(image0, target0);
++
++    GLTexture target1;
++    createEGLImageTargetTextureExternal(image1, target1);
++
++    // Use a samplerExternalOES *array*.
++    constexpr char kVS[] = R"(#version 300 es
++in vec4 position;
++out vec2 texcoord;
++void main()
++{
++    gl_Position = vec4(position.xy, 0.0, 1.0);
++    texcoord = (position.xy * 0.5) + 0.5;
++})";
++
++    constexpr char kFS[] = R"(#version 300 es
++#extension GL_OES_EGL_image_external_essl3 : require
++precision highp float;
++uniform sampler2D otherSampler;
++uniform samplerExternalOES textures[2];
++out vec4 fragColor;
++in vec2 texcoord;
++void main()
++{
++    fragColor = texture(otherSampler, texcoord) * 0.001
++              + max(texture(textures[0], texcoord), vec4(0))
++              + max(texture(textures[1], texcoord), vec4(0));
++})";
++
++    ANGLE_GL_PROGRAM(arrayProgram, kVS, kFS);
++    glUseProgram(arrayProgram);
++
++    // Create a separate RGBA texture for the regular sampler2D binding
++    const std::array<GLColor, kWidth * kHeight> kRGBAInitData = {
++        GLColor::red,
++        GLColor::red,
++        GLColor::red,
++        GLColor::red,
++    };
++    GLTexture rgbaTexture;
++    glBindTexture(GL_TEXTURE_2D, rgbaTexture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kRGBAInitData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    ASSERT_GL_NO_ERROR();
++
++    GLint rgbaLoc = glGetUniformLocation(arrayProgram, "otherSampler");
++    ASSERT_NE(-1, rgbaLoc);
++    GLint tex0Loc = glGetUniformLocation(arrayProgram, "textures[0]");
++    ASSERT_NE(-1, tex0Loc);
++    GLint tex1Loc = glGetUniformLocation(arrayProgram, "textures[1]");
++    ASSERT_NE(-1, tex1Loc);
++
++    // Bind the RGBA texture to unit 2
++    glActiveTexture(GL_TEXTURE2);
++    glBindTexture(GL_TEXTURE_2D, rgbaTexture);
++
++    // Bind YUV external textures to units 0 and 1
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_EXTERNAL_OES, target0);
++    glActiveTexture(GL_TEXTURE1);
++    glBindTexture(GL_TEXTURE_EXTERNAL_OES, target1);
++    ASSERT_GL_NO_ERROR();
++
++    glUniform1i(rgbaLoc, 2);
++    glUniform1i(tex0Loc, 0);
++    glUniform1i(tex1Loc, 1);
++
++    drawQuad(arrayProgram, "position", 0.5f);
++    ASSERT_GL_NO_ERROR();
++
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor::cyan, 1);
++
++    // Clean up
++    eglDestroyImageKHR(window->getDisplay(), image0);
++    eglDestroyImageKHR(window->getDisplay(), image1);
++}
++
+ // Test sampling from a YUV AHB with a regular external sampler and pre-initialized data
+ TEST_P(ImageTest, SourceYUVAHBTargetExternalRGBSampleInitData)
+ {

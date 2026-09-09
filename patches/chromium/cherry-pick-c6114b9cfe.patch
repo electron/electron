@@ -1,0 +1,189 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Tue, 11 Aug 2026 13:38:09 -0700
+Subject: [agy][gpu] Clamp texture levels in decoder.
+
+Clamp base_level and max_level to max_levels - 1 for mutable
+textures in Texture::UpdateNumMipLevels to prevent passing wild
+values to the driver. Also use unclamped_base_level for completeness
+checks to preserve completeness logic.
+
+Fixed: 534912743
+Test: gpu_unittests --gtest_filter=*BaseMaxLevelClamping*
+Change-Id: Ic75871f47e0e680d6febabccec5cd1d2239f5924
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8106876
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Tzarial <zork@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1677506}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index 1f57e8c13245d93b6318f7d8cefdbe38ada0d8e4..70e377be4b83ec4afa5fdfd7d3156eee8845d0d7 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -4307,6 +4307,7 @@ TEST_P(GLES3DecoderTest, ImmutableTextureBaseLevelMaxLevelClamping) {
+   GLsizei kDepth = 20;
+   GLint kClampedBaseLevel = kLevels - 1;
+   GLint kClampedMaxLevel = kLevels - 1;
++  GLint kMax3DLevel = 10;  // log2(kMax3DTextureSize (1024))
+ 
+   DoBindTexture(kTarget, client_texture_id_, kServiceTextureId);
+   TextureRef* texture_ref =
+@@ -4314,9 +4315,10 @@ TEST_P(GLES3DecoderTest, ImmutableTextureBaseLevelMaxLevelClamping) {
+   ASSERT_TRUE(texture_ref != nullptr);
+   Texture* texture = texture_ref->texture();
+ 
+-  // Before TexStorage3D call, base/max levels are not clamped.
++  // Before TexStorage3D call, base/max levels are clamped to target max levels.
+   {
+-    EXPECT_CALL(*gl_, TexParameteri(kTarget, GL_TEXTURE_BASE_LEVEL, kBaseLevel))
++    EXPECT_CALL(*gl_,
++                TexParameteri(kTarget, GL_TEXTURE_BASE_LEVEL, kMax3DLevel))
+         .Times(1)
+         .RetiresOnSaturation();
+     cmds::TexParameteri cmd;
+@@ -4324,7 +4326,7 @@ TEST_P(GLES3DecoderTest, ImmutableTextureBaseLevelMaxLevelClamping) {
+     EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
+   }
+   {
+-    EXPECT_CALL(*gl_, TexParameteri(kTarget, GL_TEXTURE_MAX_LEVEL, kMaxLevel))
++    EXPECT_CALL(*gl_, TexParameteri(kTarget, GL_TEXTURE_MAX_LEVEL, kMax3DLevel))
+         .Times(1)
+         .RetiresOnSaturation();
+     cmds::TexParameteri cmd;
+@@ -4332,8 +4334,8 @@ TEST_P(GLES3DecoderTest, ImmutableTextureBaseLevelMaxLevelClamping) {
+     EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
+   }
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+-  EXPECT_EQ(kBaseLevel, texture->base_level());
+-  EXPECT_EQ(kMaxLevel, texture->max_level());
++  EXPECT_EQ(kMax3DLevel, texture->base_level());
++  EXPECT_EQ(kMax3DLevel, texture->max_level());
+ 
+   {
+     EXPECT_CALL(*gl_, TexStorage3D(kTarget, kLevels, kInternalFormat, kWidth,
+@@ -4420,7 +4422,9 @@ TEST_P(GLES3DecoderTest, ClearRenderableLevelsWithOutOfRangeBaseLevel) {
+   ASSERT_TRUE(texture_ref != nullptr);
+ 
+   {
+-    EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 55));
++    // GL_TEXTURE_2D max levels is log2(kMaxTextureSize (2048)) = 11.
++    // 55 is clamped to 11.
++    EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 11));
+     cmds::TexParameteri cmd;
+     cmd.Init(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 55);
+     EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
+diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
+index 0b5dd1ad40d2f024d2a56e0fedb9e11b6066d822..c7fc97c47c67cc49c2fa52dc3b4d5bdf6031accc 100644
+--- a/gpu/command_buffer/service/texture_manager.cc
++++ b/gpu/command_buffer/service/texture_manager.cc
+@@ -1102,8 +1102,11 @@ void Texture::UpdateNumMipLevels() {
+     max_level_ = std::max(base_level_, unclamped_max_level_);
+     max_level_ = std::min(max_level_, levels - 1);
+   } else {
+-    base_level_ = unclamped_base_level_;
+-    max_level_ = unclamped_max_level_;
++    DCHECK_LE(0, unclamped_base_level_);
++    DCHECK_LE(0, unclamped_max_level_);
++    GLint max_levels = static_cast<GLint>(face_infos_[0].level_infos.size());
++    base_level_ = std::min(unclamped_base_level_, max_levels - 1);
++    max_level_ = std::min(unclamped_max_level_, max_levels - 1);
+   }
+   for (size_t ii = 0; ii < face_infos_.size(); ++ii)
+     UpdateFaceNumMipLevels(ii);
+@@ -1453,9 +1456,10 @@ void Texture::Update() {
+     return;
+ 
+   if (face_infos_.empty() ||
+-      static_cast<size_t>(base_level_) >= MaxValidMipLevel()) {
++      static_cast<size_t>(unclamped_base_level_) >= MaxValidMipLevel()) {
+     texture_complete_ = false;
+     cube_complete_ = false;
++    completeness_dirty_ = false;
+     return;
+   }
+ 
+diff --git a/gpu/command_buffer/service/texture_manager_unittest.cc b/gpu/command_buffer/service/texture_manager_unittest.cc
+index 29a7f0f9df6feb77c0ba06ad97079f44a086e67a..50fa6397a7009a7bbef068248e7702de598e8d13 100644
+--- a/gpu/command_buffer/service/texture_manager_unittest.cc
++++ b/gpu/command_buffer/service/texture_manager_unittest.cc
+@@ -295,6 +295,80 @@ TEST_F(TextureManagerES3Test, UseDefaultTexturesFalseES3) {
+   manager.Destroy();
+ }
+ 
++TEST_F(TextureManagerES3Test, BaseMaxLevelClampingMutable) {
++  const GLuint kClient1Id = 1;
++  const GLuint kService1Id = 11;
++  manager_->CreateTexture(kClient1Id, kService1Id);
++  TextureRef* texture_ref = manager_->GetTexture(kClient1Id);
++  ASSERT_TRUE(texture_ref != nullptr);
++  Texture* texture = texture_ref->texture();
++  manager_->SetTarget(texture_ref, GL_TEXTURE_2D);
++
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 5))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref,
++                          GL_TEXTURE_BASE_LEVEL, 10);
++  EXPECT_EQ(5, texture->base_level());
++  EXPECT_EQ(10, texture->unclamped_base_level());
++
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref,
++                          GL_TEXTURE_MAX_LEVEL, 10);
++  EXPECT_EQ(5, texture->max_level());
++  EXPECT_EQ(10, texture->unclamped_max_level());
++}
++
++TEST_F(TextureManagerES3Test, CompletenessUsesUnclampedBaseLevel) {
++  const GLuint kClient1Id = 1;
++  const GLuint kService1Id = 11;
++  manager_->CreateTexture(kClient1Id, kService1Id);
++  TextureRef* texture_ref = manager_->GetTexture(kClient1Id);
++  ASSERT_TRUE(texture_ref != nullptr);
++  Texture* texture = texture_ref->texture();
++  manager_->SetTarget(texture_ref, GL_TEXTURE_2D);
++
++  manager_->SetLevelInfo(texture_ref, GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 1, 0,
++                         GL_RGBA, GL_UNSIGNED_BYTE, gfx::Rect(4, 4));
++
++  EXPECT_CALL(*gl_,
++              TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref,
++                          GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++
++  // Set MAX_LEVEL to 0 to make it mipmap complete with only level 0 defined.
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref,
++                          GL_TEXTURE_MAX_LEVEL, 0);
++
++  EXPECT_TRUE(texture->texture_complete());
++
++  // Set BASE_LEVEL to 10 (out of range). Clamped to 5.
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 5))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref,
++                          GL_TEXTURE_BASE_LEVEL, 10);
++
++  EXPECT_EQ(5, texture->base_level());
++  EXPECT_EQ(10, texture->unclamped_base_level());
++
++  // Define level 5. If we only checked base_level_ (5), it would be complete
++  // (since level 5 is defined and MAX_LEVEL is 0 which is clamped to 5, so
++  // levels 5 to 5 are defined).
++  // But unclamped_base_level_ is 10, so it should be incomplete.
++  manager_->SetLevelInfo(texture_ref, GL_TEXTURE_2D, 5, GL_RGBA, 1, 1, 1, 0,
++                         GL_RGBA, GL_UNSIGNED_BYTE, gfx::Rect(1, 1));
++
++  EXPECT_FALSE(texture->texture_complete());
++}
++
+ TEST_F(TextureManagerTest, TextureUsageExt) {
+   TestHelper::SetupTextureManagerInitExpectations(
+       gl_.get(), false, false, {"GL_ANGLE_texture_usage"}, kUseDefaultTextures);

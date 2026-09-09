@@ -1,0 +1,349 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Thu, 6 Aug 2026 15:59:38 -0400
+Subject: D3D11: Fix crash and garbage readbacks on incomplete levels
+
+Skip commits on incomplete mip levels to prevent device context
+out-of-bounds reads. Delegate initialization to Image11 on incomplete
+or non-renderable levels to avoid redundant clears on full uploads.
+
+Test: angle_end2end_tests --gtest_filter="*MismatchedStaleLevelTexSubImage*"
+Bug: b/541546782
+Change-Id: I2252c50b6a13925a86fbb720710c0919a7e96600
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8214667
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/ImageD3D.h b/src/libANGLE/renderer/d3d/ImageD3D.h
+index ac58ca5cf626ff7cb9f4e1bc5bea83dda0982a4a..f7ef13b3a64ec7386e1d75770c023c08b7c8885f 100644
+--- a/src/libANGLE/renderer/d3d/ImageD3D.h
++++ b/src/libANGLE/renderer/d3d/ImageD3D.h
+@@ -63,6 +63,8 @@ class ImageD3D : angle::NonCopyable
+                                              const gl::Box &area,
+                                              const void *input) = 0;
+ 
++    virtual angle::Result initializeContents(const gl::Context *context) = 0;
++
+     virtual angle::Result setManagedSurface2D(const gl::Context *context,
+                                               TextureStorage *storage,
+                                               int level);
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd34cd12900 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -281,8 +281,13 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
+-bool TextureD3D::shouldUseSetData(const ImageD3D *image) const
++bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const
+ {
++    if (!isImageComplete(index))
++    {
++        return false;
++    }
++
+     if (!mRenderer->getFeatures().setDataFasterThanImageUpload.enabled)
+     {
+         return false;
+@@ -338,7 +343,7 @@ angle::Result TextureD3D::setImageImpl(const gl::Context *context,
+ 
+     if (pixelData != nullptr)
+     {
+-        if (shouldUseSetData(image))
++        if (shouldUseSetData(index, image))
+         {
+             ANGLE_TRY(
+                 mTexStorage->setData(context, index, image, nullptr, type, unpack, pixelData));
+@@ -376,7 +381,7 @@ angle::Result TextureD3D::subImage(const gl::Context *context,
+         ImageD3D *image = getImage(index);
+         ASSERT(image);
+ 
+-        if (shouldUseSetData(image) && !mTexStorage->isMultiplanar(context))
++        if (shouldUseSetData(index, image) && !mTexStorage->isMultiplanar(context))
+         {
+             return mTexStorage->setData(context, index, image, &area, type, unpack, pixelData);
+         }
+@@ -725,7 +730,7 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
+                                        const gl::ImageIndex &index,
+                                        const gl::Box &region)
+ {
+-    if (mTexStorage)
++    if (mTexStorage && isImageComplete(index))
+     {
+         ASSERT(isValidIndex(index));
+         ImageD3D *image = getImage(index);
+@@ -884,8 +889,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+                                              GLenum binding,
+                                              const gl::OwnImageIndex &ownImageIndex)
+ {
+-    ContextD3D *contextD3D = GetImplAs<ContextD3D>(context);
+-    gl::ImageIndex index   = ownImageIndex.getUntranslated();
++    gl::ImageIndex index = ownImageIndex.getUntranslated();
+ 
+     // Special case for D3D11 3D textures. We can't create render targets for individual layers of a
+     // 3D texture, so force the clear to the entire mip. There shouldn't ever be a case where we
+@@ -953,55 +957,18 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+ 
+     ASSERT(image != nullptr);
+ 
+-    // Slow path: non-renderable texture or the texture levels aren't set up.
+-    const auto &formatInfo = gl::GetSizedInternalFormatInfo(image->getInternalFormat());
+-
+-    GLuint imageBytes = 0;
+-    if (formatInfo.compressed)
+-    {
+-        ANGLE_CHECK_GL_MATH(
+-            contextD3D, formatInfo.computeCompressedImageSize(
+-                            gl::Extents(image->getWidth(), image->getHeight(), image->getDepth()),
+-                            &imageBytes));
+-    }
+-    else
+-    {
+-        ANGLE_CHECK_GL_MATH(contextD3D, formatInfo.computeRowPitch(
+-                                            formatInfo.type, image->getWidth(), 1, 0, &imageBytes));
+-
+-        angle::CheckedNumeric<GLuint> checkedImageBytes(imageBytes);
+-        checkedImageBytes *= image->getHeight();
+-        checkedImageBytes *= image->getDepth();
+-        ANGLE_CHECK_GL_MATH(contextD3D, checkedImageBytes.AssignIfValid(&imageBytes));
+-    }
+-
+-    gl::PixelUnpackState zeroDataUnpackState;
+-    zeroDataUnpackState.alignment = 1;
+-
+-    const angle::MemoryBuffer *zeroBuffer = nullptr;
+-    ANGLE_CHECK_GL_ALLOC(contextD3D, context->getZeroFilledBuffer(imageBytes, &zeroBuffer));
++    // Slow path: non-renderable texture, incomplete level, or texture storage doesn't exist.
++    ANGLE_TRY(image->initializeContents(context));
+ 
+-    if (shouldUseSetData(image))
++    if (mTexStorage && isImageComplete(index))
+     {
+-        ANGLE_TRY(mTexStorage->setData(context, index, image, nullptr, formatInfo.type,
+-                                       zeroDataUnpackState, zeroBuffer->data()));
++        gl::Box fullImageArea(0, 0, 0, image->getWidth(), image->getHeight(), image->getDepth());
++        ANGLE_TRY(commitRegion(context, index, fullImageArea));
++        image->markClean();
+     }
+     else
+     {
+-        gl::Box fullImageArea(0, 0, 0, image->getWidth(), image->getHeight(), image->getDepth());
+-        ANGLE_TRY(image->loadData(context, fullImageArea, zeroDataUnpackState, formatInfo.type,
+-                                  zeroBuffer->data(), false));
+-
+-        // Force an update to the tex storage so we avoid problems with subImage and dirty regions.
+-        if (mTexStorage)
+-        {
+-            ANGLE_TRY(commitRegion(context, index, fullImageArea));
+-            image->markClean();
+-        }
+-        else
+-        {
+-            mDirtyImages = true;
+-        }
++        mDirtyImages = true;
+     }
+     return angle::Result::Continue;
+ }
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index ee2dbe66d161bd7448a14b8133a67a16a31d8cb9..2963d41328b402ffa8df15402bc2a425ada9d87d 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -227,7 +227,7 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+ 
+     virtual angle::Result updateStorage(const gl::Context *context) = 0;
+ 
+-    bool shouldUseSetData(const ImageD3D *image) const;
++    bool shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const;
+ 
+     angle::Result generateMipmapUsingImages(const gl::Context *context, const GLuint maxLevel);
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+index 66fd0a308ca9ff07dec82f9cff2b59b9150240fa..c9b1c48352833760415789b4f29ee3d4448f3ee9 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+@@ -299,7 +299,9 @@ angle::Result Image11::loadData(const gl::Context *context,
+     LoadImageFunction loadFunction = d3dFormatInfo.getLoadFunctions()(type).loadFunction;
+ 
+     D3D11_MAPPED_SUBRESOURCE mappedImage;
+-    ANGLE_TRY(map(context, D3D11_MAP_WRITE, &mappedImage));
++    // Map as read-write to prevent the driver from discarding the manual zero-initialization on
++    // unwritten pixels.
++    ANGLE_TRY(map(context, D3D11_MAP_READ_WRITE, &mappedImage));
+ 
+     uint8_t *offsetMappedData =
+         (ANGLE_UNSAFE_TODO(static_cast<uint8_t *>(mappedImage.pData) +
+@@ -359,6 +361,52 @@ angle::Result Image11::loadCompressedData(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
++angle::Result Image11::initializeContents(const gl::Context *context)
++{
++    const d3d11::Format &formatInfo =
++        d3d11::Format::Get(mInternalFormat, mRenderer->getRenderer11DeviceCaps());
++
++    D3D11_MAPPED_SUBRESOURCE mappedImage;
++    ANGLE_TRY(map(context, D3D11_MAP_WRITE, &mappedImage));
++
++    if (formatInfo.dataInitializerFunction != nullptr)
++    {
++        formatInfo.dataInitializerFunction(mWidth, mHeight, mDepth,
++                                           static_cast<uint8_t *>(mappedImage.pData),
++                                           mappedImage.RowPitch, mappedImage.DepthPitch);
++    }
++    else
++    {
++        const d3d11::DXGIFormatSize &dxgiFormatInfo = d3d11::GetDXGIFormatSizeInfo(mDXGIFormat);
++        GLuint outputBlockWidth                     = dxgiFormatInfo.blockWidth;
++        GLuint outputBlockHeight                    = dxgiFormatInfo.blockHeight;
++        GLuint outputPixelSize                      = dxgiFormatInfo.pixelBytes;
++
++        GLuint numBlocksWide = (mWidth + outputBlockWidth - 1) / outputBlockWidth;
++        GLuint blockHeight   = (mHeight + outputBlockHeight - 1) / outputBlockHeight;
++        size_t rowBytes      = numBlocksWide * outputPixelSize;
++
++        for (GLsizei z = 0; z < mDepth; ++z)
++        {
++            uint8_t *sliceData = ANGLE_UNSAFE_BUFFERS(static_cast<uint8_t *>(mappedImage.pData) +
++                                                      z * mappedImage.DepthPitch);
++            for (size_t y = 0; y < blockHeight; ++y)
++            {
++                uint8_t *rowData = ANGLE_UNSAFE_BUFFERS(sliceData + y * mappedImage.RowPitch);
++                size_t bytesToClear =
++                    std::min<size_t>(rowBytes, static_cast<size_t>(mappedImage.RowPitch));
++                angle::Span<uint8_t> clearSpan =
++                    ANGLE_UNSAFE_BUFFERS(angle::Span<uint8_t>(rowData, bytesToClear));
++                std::fill(clearSpan.begin(), clearSpan.end(), static_cast<uint8_t>(0));
++            }
++        }
++    }
++
++    unmap();
++    mDirty = true;
++    return angle::Result::Continue;
++}
++
+ angle::Result Image11::copyFromTexStorage(const gl::Context *context,
+                                           const gl::ImageIndex &imageIndex,
+                                           TextureStorage *source)
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.h b/src/libANGLE/renderer/d3d/d3d11/Image11.h
+index cde20d5ac2a33513f1486f1e880a3202fc79ef47..b784620fd7e0c98f006b31835fe4ca575b590a53 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.h
+@@ -76,6 +76,7 @@ class Image11 : public ImageD3D
+     angle::Result loadCompressedData(const gl::Context *context,
+                                      const gl::Box &area,
+                                      const void *input) override;
++    angle::Result initializeContents(const gl::Context *context) override;
+ 
+     angle::Result copyFromTexStorage(const gl::Context *context,
+                                      const gl::ImageIndex &imageIndex,
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 1e374de1cfca6e3aace3a760fba415a07640074b..b2d6f2ee054c4a454fd7f409cd9f58cb6e335b0e 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -22587,6 +22587,103 @@ TEST_P(Texture2DTestES3RobustInit, MismatchedStaleLevelCompressedDraw)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::black);
+ }
+ 
++// Test that robust initialization of a mismatched stale texture level during texSubImage2D
++// succeeds and does not cause a crash/OOB read.
++TEST_P(Texture2DTestES3RobustInit, MismatchedStaleLevelTexSubImage)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    // Mip level 1 is 128 x 1 RGBA8 with null pixels.
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 128, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set up framebuffer to copy from (for copyTexImage2D).
++    // We need a 512 x 128 source.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 512, 128);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    EXPECT_GL_NO_ERROR();
++
++    // Define level 0 using copyTexImage2D.
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, 512, 128, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Partially update level 1 with texSubImage2D.
++    // This triggers ensureSubImageInitialized on level 1, which should not crash.
++    const GLColor updateData = GLColor::blue;
++    glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, &updateData);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine level 0 to 256 x 2. This makes level 1 (128 x 1) mip-compatible with level 0.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Bind level 1 to the framebuffer and read pixels.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Level 1 was only partially initialized. Verify the uploaded data. Additionally, verify
++    // the rest of the level is robust-initialized transparentBlack.
++    EXPECT_PIXEL_COLOR_EQ(1, 0, GLColor::transparentBlack);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
++// Test that robust initialization of a mismatched stale texture level during texSubImage2D
++// succeeds, does not cause a crash/OOB read, and preserves full level sub-image updates.
++TEST_P(Texture2DTestES3RobustInit, MismatchedStaleLevelTexSubImageFull)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    // Mip level 1 is 128 x 1 RGBA8 with null pixels.
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 128, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set up framebuffer to copy from (for copyTexImage2D).
++    // We need a 512 x 128 source.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 512, 128);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    EXPECT_GL_NO_ERROR();
++
++    // Define level 0 using copyTexImage2D.
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, 512, 128, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Fully update level 1 with texSubImage2D.
++    std::vector<GLColor> updateData(128, GLColor::blue);
++    glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 128, 1, GL_RGBA, GL_UNSIGNED_BYTE, updateData.data());
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine level 0 to 256 x 2. This makes level 1 (128 x 1) mip-compatible with level 0.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Bind level 1 to the framebuffer and read pixels.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Check that level 1 has the updated blue pixel since it was a full update.
++    EXPECT_PIXEL_RECT_EQ(0, 0, 128, 1, GLColor::blue);
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ #define ES2_EMULATE_COPY_TEX_IMAGE_VIA_SUB()             \
