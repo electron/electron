@@ -38,6 +38,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/osr/osr_drag_delegate.h"
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -129,6 +130,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public content::WebContentsDelegate,
                           private content::RenderWidgetHost::InputEventObserver,
+                          private OffScreenDragDelegate,
                           public content::JavaScriptDialogManager,
                           public InspectableWebContentsDelegate,
                           public InspectableWebContentsViewDelegate,
@@ -498,6 +500,14 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void OnInputEvent(const content::RenderWidgetHost& rfh,
                     const blink::WebInputEvent& event,
                     input::InputEventSource source) override;
+
+  // OffScreenDragDelegate:
+  void OnOffScreenDragStart(const gfx::ImageSkia& image,
+                            const gfx::Vector2d& image_offset,
+                            blink::DragOperationsMask allowed_ops) override;
+  void OnOffScreenDragUpdate(ui::mojom::DragOperation operation) override;
+  void OnOffScreenDragEnd(ui::mojom::DragOperation operation,
+                          bool cancelled) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
