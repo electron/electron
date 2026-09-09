@@ -10,10 +10,12 @@
 #include <utility>
 
 #include "base/functional/bind.h"
+#include "base/location.h"
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
@@ -46,6 +48,8 @@
 #include "v8/include/cppgc/allocation.h"
 
 #if BUILDFLAG(IS_POSIX)
+#include <unistd.h>
+
 #include "base/posix/eintr_wrapper.h"
 #endif
 
@@ -85,6 +89,8 @@ UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
   return *registry;
 }
 
+constexpr uint32_t kLaunchFailureExitCode = 1;
+
 }  // namespace
 
 namespace api {
@@ -111,6 +117,21 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
 #endif
+  // Nothing else calls HandleTermination() if we bail before launch; post it
+  // so 'exit' fires after JS has attached its listeners.
+  auto fail_launch = [&] {
+#if BUILDFLAG(IS_POSIX)
+    for (const auto& [fd, _] : fds_to_remap)
+      close(fd);
+#endif
+    CloseStdioReadFds();
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            &UtilityProcessWrapper::HandleTermination,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
+            kLaunchFailureExitCode));
+  };
   for (const auto& [io_handle, io_type] : stdio) {
     if (io_handle == IOHandle::STDIN)
       continue;
@@ -131,6 +152,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       // https://source.chromium.org/chromium/chromium/src/+/main:base/process/launch_win.cc;l=303-332
       if (!::CreatePipe(&read, &write, nullptr, 0)) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -148,6 +170,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int pipe_fd[2];
       if (HANDLE_EINTR(pipe(pipe_fd)) < 0) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -166,7 +189,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
-        Emit("error", "Failed to create null handle for ignoring stdio");
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -178,6 +201,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int devnull = open("/dev/null", O_WRONLY);
       if (devnull < 0) {
         PLOG(ERROR) << "failed to open /dev/null";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -264,13 +288,16 @@ UtilityProcessWrapper::~UtilityProcessWrapper() {
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
+  if (terminated_)
+    return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().Add(pid_, this);
+  // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
-    EmitWithoutEvent("stdout", stdout_read_fd_);
+    EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
   if (stderr_read_fd_ != -1)
-    EmitWithoutEvent("stderr", stderr_read_fd_);
+    EmitWithoutEvent("stderr", std::exchange(stderr_read_fd_, -1));
   if (url_loader_network_observer_) {
     url_loader_network_observer_->set_process_id(pid_);
   }
@@ -290,6 +317,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
   pid_ = base::kNullProcessId;
   content::ServiceProcessHost::RemoveObserver(this);
   CloseConnectorPort();
+  CloseStdioReadFds();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
     // UtilityProcessWrapper::Kill relies on base::Process::Terminate
@@ -316,6 +344,10 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     const std::string& description) {
   if (description == "process_exit_termination") {
     HandleTermination(exit_code);
+  } else if (pid_ == base::kNullProcessId) {
+    // Pipe dropped before launch means the child failed to launch; the host
+    // is deleted without notifying observers, so this is the only signal.
+    HandleTermination(kLaunchFailureExitCode);
   }
 }
 
@@ -337,8 +369,22 @@ void UtilityProcessWrapper::OnServiceProcessCrashed(
   HandleTermination(info.exit_code());
 }
 
+void UtilityProcessWrapper::CloseStdioReadFds() {
+  // Read ends not yet handed to JS; on Windows the CRT fd owns the HANDLE.
+  for (int* fd : {&stdout_read_fd_, &stderr_read_fd_}) {
+    if (*fd == -1)
+      continue;
+#if BUILDFLAG(IS_WIN)
+    _close(*fd);
+#else
+    close(*fd);
+#endif
+    *fd = -1;
+  }
+}
+
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_->is_valid()) {
+  if (!connector_closed_ && connector_ && connector_->is_valid()) {
     host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
     connector_ = nullptr;
     host_port_.Reset();
