@@ -349,7 +349,9 @@ void Notification::Close() {
   } else {
     notification->Dismiss();
   }
-  notification->set_delegate(nullptr);
+  // Dismiss() may run JS ('close' is emitted synchronously on some platforms).
+  if (notification)
+    notification->set_delegate(nullptr);
 }
 
 // Showing notifications
@@ -360,6 +362,9 @@ void Notification::Show() {
     return;
 
   Close();
+  // A 'close' listener may have re-entered Show() and already created one.
+  if (notification_)
+    return;
   if (presenter_) {
     notification_ = presenter_->CreateNotification(delegate_.get(), id_);
     if (notification_) {
