@@ -90,13 +90,23 @@ The following events are available on instances of `Session`:
 
 #### Event: 'will-download'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53685
+    description: "Added the trailing `frame` argument."
+```
+-->
+
 Returns:
 
 * `event` Event
 * `item` [DownloadItem](download-item.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame that started the download, if it still exists.
 
-Emitted when Electron is about to download `item` in `webContents`.
+Emitted when Electron is about to download `item` in `webContents`. See also
+[`item.getInitiatorOrigin()`](download-item.md#downloaditemgetinitiatororigin).
 
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
@@ -224,6 +234,14 @@ app.on('window-all-closed', function () {
 
 #### Event: 'preconnect'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53685
+    description: "Added the trailing `frame` argument."
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -232,6 +250,7 @@ Returns:
 * `allowCredentials` boolean - True if the renderer is requesting that the
   connection include credentials (see the
   [spec](https://w3c.github.io/resource-hints/#preconnect) for more details.)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame that requested the preconnection, if it still exists.
 
 Emitted when a render process requests preconnection to a URL, generally due to
 a [resource hint](https://w3c.github.io/resource-hints/).
