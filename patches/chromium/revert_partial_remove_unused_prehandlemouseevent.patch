@@ -42,7 +42,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
 index 827fe79b39e47fe2361f7b6eea96cb4ab4570b94..5024a05f7cc2b2b0ca22e32952d1aef72e147ef4 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1630,6 +1630,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+@@ -1632,6 +1632,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
    CHECK_GE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeFirst);
    CHECK_LE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeLast);
  
