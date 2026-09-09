@@ -1617,7 +1617,7 @@ describe('cpp heap', () => {
   });
 
   describe('webContents module', () => {
-    it('collects unowned WebContents and their traced debugger', async () => {
+    it('detaches a retained debugger before collecting it with an unowned WebContents', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
         async (heap: string) => {
@@ -1633,15 +1633,17 @@ describe('cpp heap', () => {
           const onDetach = () => {
             detachedEvents++;
           };
-          const refs = await (async () => {
+          const state = await (async () => {
             const contents = webContents.create();
             await contents.loadURL('about:blank');
             contents.on('test-cycle', () => contents.id);
-            contents.debugger.attach();
-            contents.debugger.on('detach', onDetach);
+            const debuggerApi = contents.debugger;
+            debuggerApi.attach();
+            debuggerApi.on('detach', onDetach);
             return {
               contents: new WeakRef(contents),
-              debugger: new WeakRef(contents.debugger),
+              debugger: debuggerApi as typeof debuggerApi | null,
+              debuggerRef: new WeakRef(debuggerApi),
               frame: contents.mainFrame,
               id: contents.id
             };
@@ -1650,18 +1652,24 @@ describe('cpp heap', () => {
           for (let attempt = 0; attempt < 30; ++attempt) {
             await new Promise((resolve) => setTimeout(resolve, 0));
             v8Util.requestGarbageCollectionForTesting();
-            if (!refs.contents.deref() && !refs.debugger.deref()) break;
+            if (detachedEvents === 1) break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          state.debugger = null;
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
           }
           await new Promise((resolve) => setTimeout(resolve, 0));
           let frameError = '';
           try {
-            frameError = `Frame is still live: ${refs.frame.url}`;
+            frameError = `Frame is still live: ${state.frame.url}`;
           } catch (error) {
             frameError = (error as Error).message;
           }
           return {
-            released: !refs.contents.deref() && !refs.debugger.deref(),
-            removedFromRegistry: webContents.fromId(refs.id) === undefined,
+            released: !state.contents.deref() && !state.debuggerRef.deref(),
+            removedFromRegistry: webContents.fromId(state.id) === undefined,
             detachedEvents,
             frameError,
             before,
