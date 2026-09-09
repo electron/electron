@@ -19,7 +19,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_isolate_data.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
@@ -37,18 +37,14 @@ gin::WrapperInfo Debugger::kWrapperInfo =
 
 class Debugger::AgentHostLifecycle final
     : public content::DevToolsAgentHostClient,
-      public gin::PerIsolateData::DisposeObserver,
+      public MicrotasksRunner::Observer,
       private content::WebContentsObserver {
  public:
   using PendingRequestMap = std::map<int, gin_helper::Promise<base::DictValue>>;
 
-  AgentHostLifecycle(v8::Isolate* isolate,
-                     Debugger* debugger,
-                     content::WebContents* web_contents)
-      : content::WebContentsObserver(web_contents),
-        per_isolate_data_(gin::PerIsolateData::From(isolate)),
-        debugger_(debugger) {
-    per_isolate_data_->AddDisposeObserver(this);
+  AgentHostLifecycle(Debugger* debugger, content::WebContents* web_contents)
+      : content::WebContentsObserver(web_contents), debugger_(debugger) {
+    MicrotasksRunner::AddObserver(this);
   }
 
   ~AgentHostLifecycle() override {
@@ -78,15 +74,11 @@ class Debugger::AgentHostLifecycle final
   }
 
   bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
-  void OnBeforeDispose(v8::Isolate*) override {}
-
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate*) override {
     debugger_.Clear();
     StopObserving();
     Detach();
   }
-
-  void OnDisposed() override {}
 
   void AgentHostClosed(DevToolsAgentHost* agent_host) override {
     DCHECK_EQ(agent_host, agent_host_.get());
@@ -181,10 +173,10 @@ class Debugger::AgentHostLifecycle final
   }
 
   void StopObserving() {
-    if (!per_isolate_data_)
+    if (!is_observing_)
       return;
-    per_isolate_data_->RemoveDisposeObserver(this);
-    per_isolate_data_ = nullptr;
+    MicrotasksRunner::RemoveObserver(this);
+    is_observing_ = false;
   }
 
   void ClearPendingRequests() {
@@ -193,16 +185,16 @@ class Debugger::AgentHostLifecycle final
       promise.RejectWithErrorMessage("target closed while handling command");
   }
 
-  raw_ptr<gin::PerIsolateData> per_isolate_data_;
   cppgc::WeakPersistent<Debugger> debugger_;
   scoped_refptr<DevToolsAgentHost> agent_host_;
   PendingRequestMap pending_requests_;
   int previous_request_id_ = 0;
+  bool is_observing_ = true;
 };
 
-Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
+Debugger::Debugger(content::WebContents* web_contents)
     : agent_host_lifecycle_(
-          new AgentHostLifecycle(isolate, this, web_contents),
+          new AgentHostLifecycle(this, web_contents),
           base::OnTaskRunnerDeleter(content::GetUIThreadTaskRunner({}))) {}
 
 Debugger::~Debugger() = default;
@@ -295,7 +287,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
 Debugger* Debugger::Create(v8::Isolate* isolate,
                            content::WebContents* web_contents) {
   return cppgc::MakeGarbageCollected<Debugger>(
-      isolate->GetCppHeap()->GetAllocationHandle(), isolate, web_contents);
+      isolate->GetCppHeap()->GetAllocationHandle(), web_contents);
 }
 
 gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(

@@ -7,10 +7,10 @@
 
 #include <string>
 
-#include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/browser/auto_updater.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/browser/window_list_observer.h"
 
 namespace electron::api {
@@ -18,7 +18,7 @@ namespace electron::api {
 class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
                           public gin_helper::EventEmitterMixin<AutoUpdater>,
                           public auto_updater::Delegate,
-                          public gin::PerIsolateData::DisposeObserver,
+                          public MicrotasksRunner::Observer,
                           private WindowListObserver {
  public:
   static AutoUpdater* Create(v8::Isolate* isolate);
@@ -31,10 +31,8 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
       v8::Isolate* isolate) override;
   const char* GetClassName() const { return "AutoUpdater"; }
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  // MicrotasksRunner::Observer
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
 
   // Make public for cppgc::MakeGarbageCollected.
   explicit AutoUpdater(v8::Isolate* isolate);

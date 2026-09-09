@@ -72,7 +72,7 @@ class Notification final : public gin::Wrappable<Notification>,
   // Constructor for restored notifications (used by GetHistory).
   // Does not set presenter_ or parse options — only populates fields from
   // the delivered notification info.
-  Notification(v8::Isolate* isolate, const NotificationInfo& info);
+  explicit Notification(const NotificationInfo& info);
 
  private:
   friend class NotificationDelegateProxy;

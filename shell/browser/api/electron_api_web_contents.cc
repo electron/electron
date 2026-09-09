@@ -128,6 +128,7 @@
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
 #include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -960,7 +961,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
 // deferred cleanup runs. Only weak lookups may cross back into the cppgc heap.
 // One dispose observer also drains these resources before isolate shutdown.
 class WebContents::NativeLifecycle final
-    : public gin::PerIsolateData::DisposeObserver,
+    : public MicrotasksRunner::Observer,
       public content::WebContentsObserver,
       public content::WebContentsDelegate,
       public content::RenderWidgetHost::InputEventObserver,
@@ -972,17 +973,14 @@ class WebContents::NativeLifecycle final
   using content::WebContentsObserver::Observe;
 
   NativeLifecycle(v8::Isolate* isolate, WebContents* contents)
-      : isolate_(isolate), contents_(contents) {
-    gin::PerIsolateData::From(isolate_)->AddDisposeObserver(this);
-  }
+      : isolate_(isolate), contents_(contents) {}
+
+  void StartObservingShutdown() { MicrotasksRunner::AddObserver(this); }
 
   ~NativeLifecycle() override { DisposeNative(); }
 
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnDisposed() override {}
-
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {
-    gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
+    MicrotasksRunner::RemoveObserver(this);
     isolate_ = nullptr;
     if (auto* contents = contents_.Get())
       contents->Dispose();
@@ -1620,7 +1618,7 @@ class WebContents::NativeLifecycle final
     disposed_ = true;
     weak_factory_.InvalidateWeakPtrs();
     if (isolate_) {
-      gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
+      MicrotasksRunner::RemoveObserver(this);
       isolate_ = nullptr;
     }
     DetachCallbacks();
@@ -1711,6 +1709,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   web_contents->SetSupportsDraggableRegions(true);
 
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
+  native_lifecycle_->StartObservingShutdown();
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
@@ -1734,6 +1733,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   native_lifecycle_ = std::make_unique<NativeLifecycle>(isolate, this);
   Observe(web_contents.get());
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
+  native_lifecycle_->StartObservingShutdown();
   InitWithSessionAndOptions(isolate, std::move(web_contents),
                             session_->browser_context(),
                             gin::Dictionary::CreateEmpty(isolate));
@@ -1874,6 +1874,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   InitWithSessionAndOptions(isolate, std::move(web_contents), browser_context,
                             options);
+  native_lifecycle_->StartObservingShutdown();
 }
 
 namespace {

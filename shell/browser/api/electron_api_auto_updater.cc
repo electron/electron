@@ -25,15 +25,13 @@ const gin::WrapperInfo AutoUpdater::kWrapperInfo =
 
 AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
   auto_updater::AutoUpdater::SetDelegate(this);
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddObserver(this);
 }
 
 AutoUpdater::~AutoUpdater() = default;
 
 void AutoUpdater::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+  MicrotasksRunner::RemoveObserver(this);
   auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
