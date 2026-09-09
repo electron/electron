@@ -13,16 +13,14 @@ diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
 index 4033b8ac80d28d5e7af3cd57b8670922a72f84cf..b07da3a191cd0424fe76ee762de091a9ec24d5a4 100644
 --- a/gin/object_template_builder.cc
 +++ b/gin/object_template_builder.cc
-@@ -143,6 +143,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+@@ -143,6 +143,11 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
                      "constructor"))),
        template_(constructor_template_->InstanceTemplate()) {}
  
 +ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
 +                                             const char* type_name,
 +                                             v8::Local<v8::ObjectTemplate> tmpl)
-+    : isolate_(isolate), type_name_(type_name), template_(tmpl) {
-+  template_->SetInternalFieldCount(kNumberOfInternalFields);
-+}
++    : isolate_(isolate), type_name_(type_name), template_(tmpl) {}
 +
  ObjectTemplateBuilder::ObjectTemplateBuilder(
      const ObjectTemplateBuilder& other) = default;

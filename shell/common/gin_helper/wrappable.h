@@ -6,22 +6,15 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
 
 #include "base/functional/bind.h"
-#include "gin/public/wrapper_info.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/per_context_template_data.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 
 namespace gin_helper {
 
-bool IsValidWrappable(const v8::Local<v8::Value>& obj,
-                      const gin::DeprecatedWrapperInfo* wrapper_info);
-
 namespace internal {
 
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val);
-void* FromV8Impl(v8::Isolate* isolate,
-                 v8::Local<v8::Value> val,
-                 gin::DeprecatedWrapperInfo* info);
 
 }  // namespace internal
 
@@ -39,7 +32,7 @@ class Wrappable : public WrappableBase {
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
     auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
-                                              &kWrapperInfo);
+                                              &kTemplateKey);
     if (data)
       data->function_template.Reset(isolate, templ);
     return templ;
@@ -48,7 +41,7 @@ class Wrappable : public WrappableBase {
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
     auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
-                                              &kWrapperInfo);
+                                              &kTemplateKey);
     v8::Local<v8::FunctionTemplate> templ;
     if (data)
       templ = data->function_template.Get(isolate);
@@ -82,31 +75,8 @@ class Wrappable : public WrappableBase {
   }
 
  private:
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static inline const char kTemplateKey = 0;
 };
-
-// Copied from https://chromium-review.googlesource.com/c/chromium/src/+/6799157
-// Will be removed as part of https://github.com/electron/electron/issues/47922
-template <typename T>
-class DeprecatedWrappable : public DeprecatedWrappableBase {
- public:
-  DeprecatedWrappable(const DeprecatedWrappable&) = delete;
-  DeprecatedWrappable& operator=(const DeprecatedWrappable&) = delete;
-
-  // Retrieve (or create) the v8 wrapper object corresponding to this object.
-  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) {
-    return GetWrapperImpl(isolate, &T::kWrapperInfo);
-  }
-
- protected:
-  DeprecatedWrappable() = default;
-  ~DeprecatedWrappable() override = default;
-};
-
-// static
-template <typename T>
-gin::DeprecatedWrapperInfo Wrappable<T>::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
 
 }  // namespace gin_helper
 
@@ -127,28 +97,6 @@ struct Converter<
   static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
     *out = static_cast<T*>(static_cast<gin_helper::WrappableBase*>(
         gin_helper::internal::FromV8Impl(isolate, val)));
-    return *out != nullptr;
-  }
-};
-
-// This converter handles any subclass of DeprecatedWrappable.
-template <typename T>
-  requires(std::is_convertible_v<T*, gin_helper::DeprecatedWrappableBase*>)
-struct Converter<T*> {
-  static v8::MaybeLocal<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
-    if (val == nullptr) {
-      return v8::Null(isolate);
-    }
-    v8::Local<v8::Object> wrapper;
-    if (!val->GetWrapper(isolate).ToLocal(&wrapper)) {
-      return v8::MaybeLocal<v8::Value>();
-    }
-    return v8::MaybeLocal<v8::Value>(wrapper);
-  }
-
-  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
-    *out = static_cast<T*>(static_cast<gin_helper::DeprecatedWrappableBase*>(
-        gin_helper::internal::FromV8Impl(isolate, val, &T::kWrapperInfo)));
     return *out != nullptr;
   }
 };

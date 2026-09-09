@@ -24,16 +24,16 @@ class PerContextTemplateData : public base::SupportsUserData::Data {
   ~PerContextTemplateData() override;
 
   static PerContextTemplateData* From(v8::Local<v8::Context> context,
-                                      const void* wrapper_info) {
+                                      const void* key) {
     auto* data = gin::PerContextData::From(context);
     if (!data)
       return nullptr;
     auto* templates =
-        static_cast<PerContextTemplateData*>(data->GetUserData(wrapper_info));
+        static_cast<PerContextTemplateData*>(data->GetUserData(key));
     if (!templates) {
       auto owned_templates = std::make_unique<PerContextTemplateData>();
       templates = owned_templates.get();
-      data->SetUserData(wrapper_info, std::move(owned_templates));
+      data->SetUserData(key, std::move(owned_templates));
     }
     return templates;
   }
