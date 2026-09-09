@@ -7888,6 +7888,140 @@ describe('BrowserWindow module', () => {
         ])
       ).to.eventually.be.fulfilled();
     });
+
+    describe('drag and drop', () => {
+      let ow: BrowserWindow;
+      const sourcePoint = { x: 50, y: 50 };
+      const targetPoint = { x: 150, y: 50 };
+      const held = { button: 'left' as const, modifiers: ['leftbuttondown' as const] };
+
+      beforeEach(async () => {
+        ow = new BrowserWindow({
+          width: 240,
+          height: 120,
+          show: false,
+          webPreferences: { backgroundThrottling: false, offscreen: true }
+        });
+        const painted = once(ow.webContents, 'paint');
+        await ow.loadFile(path.join(fixtures, 'api', 'offscreen-drag-drop.html'));
+        await painted;
+      });
+
+      const withTimeout = <T>(p: Promise<T>, what: string) =>
+        Promise.race([p, setTimeout(5000).then(() => Promise.reject(new Error(`timed out waiting for ${what}`)))]);
+
+      // Press on the source and move until Blink starts the drag.
+      const beginDrag = async () => {
+        const started = once(ow.webContents, 'offscreen-drag-start') as Promise<
+          [any, Electron.OffscreenDragStartDetails]
+        >;
+        ow.webContents.sendInputEvent({ type: 'mouseMove', ...sourcePoint });
+        ow.webContents.sendInputEvent({ type: 'mouseDown', ...sourcePoint, button: 'left', clickCount: 1 });
+        let details: Electron.OffscreenDragStartDetails | null = null;
+        for (let x = sourcePoint.x; !details && x < targetPoint.x; x += 5) {
+          ow.webContents.sendInputEvent({ type: 'mouseMove', x, y: sourcePoint.y, ...held });
+          details = await Promise.race([started.then(([, d]) => d), setTimeout(20).then(() => null)]);
+        }
+        if (!details) throw new Error('renderer never started the drag');
+        return details;
+      };
+
+      // Move over the drop target until it accepts the drag.
+      const dragOntoTarget = async () => {
+        const accepted = new Promise<string>((resolve) => {
+          ow.webContents.on('offscreen-drag-update', (_e, d) => {
+            if (d.operation !== 'none') resolve(d.operation);
+          });
+        });
+        let operation: string | null = null;
+        for (let i = 0; !operation && i < 100; i++) {
+          ow.webContents.sendInputEvent({ type: 'mouseMove', x: targetPoint.x + (i % 2), y: targetPoint.y, ...held });
+          operation = await Promise.race([accepted, setTimeout(20).then(() => null)]);
+        }
+        if (!operation) throw new Error('drop target never accepted the drag');
+        return operation;
+      };
+
+      const pageDragResult = () =>
+        ow.webContents.executeJavaScript('window.waitForDragEnd()') as Promise<{
+          result: string | null;
+          events: string[];
+        }>;
+
+      it('delivers a drop driven by sendInputEvent', async () => {
+        const start = await beginDrag();
+        expect(start.operations).to.include('copy');
+        expect(start.imageOffset).to.have.keys(['x', 'y']);
+        if (start.image) expect(start.image.isEmpty()).to.be.false('drag image is empty');
+
+        expect(await dragOntoTarget()).to.equal('copy');
+
+        const ended = once(ow.webContents, 'offscreen-drag-end');
+        ow.webContents.sendInputEvent({ type: 'mouseUp', ...targetPoint, button: 'left', clickCount: 1 });
+        const [, end] = await withTimeout(ended, 'offscreen-drag-end');
+        expect(end).to.deep.equal({ operation: 'copy', cancelled: false });
+
+        const page = await withTimeout(pageDragResult(), 'dragend in page');
+        expect(page.result).to.equal('hello');
+        expect(page.events).to.include('drop');
+        expect(page.events.at(-1)).to.equal('dragend:copy');
+
+        // The renderer is not left mid-drag: another drag can start.
+        await beginDrag();
+        const endedAgain = once(ow.webContents, 'offscreen-drag-end');
+        ow.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+        await withTimeout(endedAgain, 'second offscreen-drag-end');
+      });
+
+      it('ends without a drop when released outside a drop target', async () => {
+        await beginDrag();
+        const ended = once(ow.webContents, 'offscreen-drag-end');
+        ow.webContents.sendInputEvent({ type: 'mouseMove', x: 50, y: 100, ...held });
+        ow.webContents.sendInputEvent({ type: 'mouseUp', x: 50, y: 100, button: 'left', clickCount: 1 });
+        const [, end] = await withTimeout(ended, 'offscreen-drag-end');
+        expect(end).to.deep.equal({ operation: 'none', cancelled: false });
+
+        const page = await withTimeout(pageDragResult(), 'dragend in page');
+        expect(page.result).to.equal(null);
+        expect(page.events).to.not.include('drop');
+        expect(page.events.at(-1)).to.equal('dragend:none');
+      });
+
+      it('can be cancelled with Escape', async () => {
+        await beginDrag();
+        await dragOntoTarget();
+
+        const ended = once(ow.webContents, 'offscreen-drag-end');
+        ow.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+        const [, end] = await withTimeout(ended, 'offscreen-drag-end');
+        expect(end).to.deep.equal({ operation: 'none', cancelled: true });
+
+        const page = await withTimeout(pageDragResult(), 'dragend in page');
+        expect(page.result).to.equal(null);
+        expect(page.events).to.include('dragleave');
+        expect(page.events).to.not.include('drop');
+        expect(page.events.at(-1)).to.equal('dragend:none');
+
+        // Input is no longer captured by the drag.
+        ow.webContents.sendInputEvent({ type: 'mouseUp', ...targetPoint, button: 'left', clickCount: 1 });
+        expect(await ow.webContents.executeJavaScript('window.result')).to.equal(null);
+      });
+
+      it('is cancelled when the renderer crashes mid-drag', async () => {
+        await beginDrag();
+        await dragOntoTarget();
+        const ended = once(ow.webContents, 'offscreen-drag-end');
+        ow.webContents.forcefullyCrashRenderer();
+        const [, end] = await withTimeout(ended, 'offscreen-drag-end');
+        expect(end).to.deep.equal({ operation: 'none', cancelled: true });
+      });
+
+      it('does not crash when the contents is destroyed mid-drag', async () => {
+        await beginDrag();
+        await dragOntoTarget();
+        expect(() => ow.destroy()).to.not.throw();
+      });
+    });
   });
 
   describe('offscreen rendering with device scale factor', () => {

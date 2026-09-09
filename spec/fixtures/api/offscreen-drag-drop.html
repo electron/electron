@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+      }
+      #source,
+      #target {
+        position: absolute;
+        top: 20px;
+        width: 60px;
+        height: 60px;
+      }
+      #source {
+        left: 20px;
+        background: #c33;
+      }
+      #target {
+        left: 120px;
+        background: #33c;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="source" draggable="true"></div>
+    <div id="target"></div>
+    <script>
+      window.result = null;
+      window.events = [];
+      const source = document.getElementById('source');
+      const target = document.getElementById('target');
+      source.addEventListener('dragstart', (e) => {
+        window.events.push('dragstart');
+        e.dataTransfer.setData('text/plain', 'hello');
+        e.dataTransfer.effectAllowed = 'copyMove';
+      });
+      source.addEventListener('dragend', (e) => {
+        window.events.push('dragend:' + e.dataTransfer.dropEffect);
+      });
+      target.addEventListener('dragenter', (e) => {
+        window.events.push('dragenter');
+        e.preventDefault();
+      });
+      target.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      target.addEventListener('dragleave', () => {
+        window.events.push('dragleave');
+      });
+      target.addEventListener('drop', (e) => {
+        e.preventDefault();
+        window.events.push('drop');
+        window.result = e.dataTransfer.getData('text/plain');
+      });
+      window.waitForDragEnd = () =>
+        new Promise((resolve) => {
+          const check = () => {
+            if (window.events.some((e) => e.startsWith('dragend'))) {
+              resolve({ result: window.result, events: window.events });
+            } else {
+              setTimeout(check, 10);
+            }
+          };
+          check();
+        });
+    </script>
+  </body>
+</html>

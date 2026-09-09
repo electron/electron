@@ -179,9 +179,14 @@
 #include "ui/accessibility/platform/ax_platform.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/vector2d.h"
+#include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -450,6 +455,31 @@ namespace {
 
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
+
+std::string_view DragOperationToString(ui::mojom::DragOperation operation) {
+  switch (operation) {
+    case ui::mojom::DragOperation::kCopy:
+      return "copy";
+    case ui::mojom::DragOperation::kLink:
+      return "link";
+    case ui::mojom::DragOperation::kMove:
+      return "move";
+    default:
+      return "none";
+  }
+}
+
+std::vector<std::string_view> DragOperationsMaskToStrings(
+    blink::DragOperationsMask mask) {
+  std::vector<std::string_view> operations;
+  if (mask & blink::kDragOperationCopy)
+    operations.push_back("copy");
+  if (mask & blink::kDragOperationLink)
+    operations.push_back("link");
+  if (mask & blink::kDragOperationMove)
+    operations.push_back("move");
+  return operations;
+}
 
 // Number of WebContents with caret browsing enabled.
 int g_caret_browsing_count = 0;
@@ -1009,6 +1039,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
+    view->SetDragDelegate(this);
   } else {
     content::WebContents::CreateParams params{browser_context};
     params.starting_sandbox_flags = starting_sandbox_flags;
@@ -1238,6 +1269,10 @@ WebContents::~WebContents() {
   if (inspectable_web_contents_) {
     inspectable_web_contents_->GetView()->SetDelegate(nullptr);
     inspectable_web_contents_->SetDelegate(nullptr);
+  }
+  if (web_contents()) {
+    if (auto* osr_wcv = GetOffScreenWebContentsView())
+      osr_wcv->SetDragDelegate(nullptr);
   }
 
   if (web_contents()) {
@@ -1520,6 +1555,7 @@ content::WebContents* WebContents::AddNewContents(
   if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
     osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
                                               api_web_contents->GetWeakPtr()));
+    osr_view->SetDragDelegate(api_web_contents.get());
   }
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
@@ -2270,6 +2306,9 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
+  if (auto* osr_wcv = GetOffScreenWebContentsView())
+    osr_wcv->CancelDrag();
+
   // This fires while RenderProcessHostImpl is still notifying observers of
   // the process death. Emit asynchronously so app code (e.g. a synchronous
   // reload() in the handler) can't re-launch the renderer from inside that
@@ -4028,7 +4067,9 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseEvent mouse_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
-        GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
+        auto* osr_wcv = GetOffScreenWebContentsView();
+        if (!osr_wcv || !osr_wcv->HandleDragMouseEvent(mouse_event))
+          GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
       } else {
         rwh->ForwardMouseEvent(mouse_event);
       }
@@ -4042,6 +4083,11 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       // For backwards compatibility, convert `kKeyDown` to `kRawKeyDown`.
       if (keyboard_event.GetType() == blink::WebKeyboardEvent::Type::kKeyDown)
         keyboard_event.SetType(blink::WebKeyboardEvent::Type::kRawKeyDown);
+      if (IsOffScreen()) {
+        auto* osr_wcv = GetOffScreenWebContentsView();
+        if (osr_wcv && osr_wcv->HandleDragKeyEvent(keyboard_event))
+          return;
+      }
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
@@ -4240,6 +4286,39 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
 
   EmitWithoutEvent("paint", event_object, dirty_rect,
                    gfx::Image::CreateFrom1xBitmap(bitmap));
+}
+
+void WebContents::OnOffScreenDragStart(const gfx::ImageSkia& image,
+                                       const gfx::Vector2d& image_offset,
+                                       blink::DragOperationsMask allowed_ops) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
+  if (image.isNull())
+    details.Set("image", nullptr);
+  else
+    details.Set("image", gfx::Image(image));
+  details.Set("imageOffset", gfx::Point(image_offset.x(), image_offset.y()));
+  details.Set("operations", DragOperationsMaskToStrings(allowed_ops));
+  Emit("offscreen-drag-start", details);
+}
+
+void WebContents::OnOffScreenDragUpdate(ui::mojom::DragOperation operation) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
+  details.Set("operation", DragOperationToString(operation));
+  Emit("offscreen-drag-update", details);
+}
+
+void WebContents::OnOffScreenDragEnd(ui::mojom::DragOperation operation,
+                                     bool cancelled) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
+  details.Set("operation", DragOperationToString(operation));
+  details.Set("cancelled", cancelled);
+  Emit("offscreen-drag-end", details);
 }
 
 void WebContents::StartPainting() {
