@@ -302,6 +302,21 @@ describe('systemPreferences module', () => {
     }
   );
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.askForMediaAccess(mediaType)', () => {
+    it('rejects an unknown media type', async () => {
+      await expect(systemPreferences.askForMediaAccess('bogus' as any)).to.eventually.be.rejectedWith(
+        'Invalid media type'
+      );
+    });
+
+    it('resolves with a boolean for system-audio', async function () {
+      // If the OS decides to prompt, CoreAudio waits up to a minute for an answer.
+      this.timeout(90000);
+      const granted = await systemPreferences.askForMediaAccess('system-audio');
+      expect(granted).to.be.a('boolean');
+    });
+  });
+
   describe('systemPreferences.getAnimationSettings()', () => {
     it('returns an object with all properties', () => {
       const settings = systemPreferences.getAnimationSettings();

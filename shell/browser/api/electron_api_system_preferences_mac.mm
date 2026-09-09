@@ -20,7 +20,13 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
+#include "content/public/browser/audio_service.h"
+#include "media/audio/audio_device_description.h"
+#include "media/base/audio_parameters.h"
+#include "media/mojo/mojom/audio_stream_factory.mojom.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "net/base/apple/url_conversions.h"
+#include "services/audio/public/cpp/input_ipc.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/color_util.h"
@@ -101,6 +107,71 @@ AVMediaType ParseMediaType(const std::string& media_type) {
     return nil;
   }
 }
+
+// macOS has no API to query or request the "System Audio Recording"
+// permission that CoreAudio taps are gated on. The only way to surface the
+// prompt (or learn that access was denied) is to try to open a system-audio
+// loopback stream, which is what Chrome's share picker does as well. This asks
+// the audio service for one, resolves the promise with whether it could be
+// created, and tears everything down again. Self-owned.
+class SystemAudioAccessProbe : public media::AudioInputIPCDelegate {
+ public:
+  static void Run(gin_helper::Promise<bool> promise) {
+    new SystemAudioAccessProbe(std::move(promise));
+  }
+
+  SystemAudioAccessProbe(const SystemAudioAccessProbe&) = delete;
+  SystemAudioAccessProbe& operator=(const SystemAudioAccessProbe&) = delete;
+
+  // Public for base::DeleteHelper; use Run().
+  ~SystemAudioAccessProbe() override = default;
+
+ private:
+  explicit SystemAudioAccessProbe(gin_helper::Promise<bool> promise)
+      : promise_(std::move(promise)) {
+    mojo::PendingRemote<media::mojom::AudioStreamFactory> factory;
+    content::GetAudioService().BindStreamFactory(
+        factory.InitWithNewPipeAndPassReceiver());
+    input_ipc_ = std::make_unique<audio::InputIPC>(
+        std::move(factory),
+        media::AudioDeviceDescription::kLoopbackInputDeviceId,
+        /*log=*/mojo::NullRemote());
+    input_ipc_->CreateStream(
+        this,
+        media::AudioParameters(media::AudioParameters::AUDIO_PCM_LOW_LATENCY,
+                               media::ChannelLayoutConfig::Stereo(), 48000,
+                               960),
+        /*automatic_gain_control=*/false, /*total_segments=*/1);
+  }
+
+  // media::AudioInputIPCDelegate
+  void OnStreamCreated(base::UnsafeSharedMemoryRegion shared_memory_region,
+                       base::SyncSocket::ScopedHandle socket_handle,
+                       bool initially_muted) override {
+    Finish(true);
+  }
+  void OnError(media::AudioCapturerSource::ErrorCode code) override {
+    Finish(false);
+  }
+  void OnMuted(bool is_muted) override {}
+  void OnIPCClosed() override { Finish(false); }
+
+  void Finish(bool granted) {
+    if (finished_)
+      return;
+    finished_ = true;
+    input_ipc_->CloseStream();
+    promise_.Resolve(granted);
+    // We're inside an InputIPC callback; defer destruction.
+    auto task_runner = base::SequencedTaskRunner::GetCurrentDefault();
+    task_runner->DeleteSoon(FROM_HERE, std::move(input_ipc_));
+    task_runner->DeleteSoon(FROM_HERE, this);
+  }
+
+  bool finished_ = false;
+  gin_helper::Promise<bool> promise_;
+  std::unique_ptr<audio::InputIPC> input_ipc_;
+};
 
 std::string ConvertSystemPermission(
     system_permission_settings::SystemPermission value) {
@@ -630,7 +701,9 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
   gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (auto type = ParseMediaType(media_type)) {
+  if (media_type == "system-audio") {
+    SystemAudioAccessProbe::Run(std::move(promise));
+  } else if (auto type = ParseMediaType(media_type)) {
     __block gin_helper::Promise<bool> p = std::move(promise);
     [AVCaptureDevice requestAccessForMediaType:type
                              completionHandler:^(BOOL granted) {
