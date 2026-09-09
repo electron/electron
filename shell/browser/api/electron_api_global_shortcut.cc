@@ -9,6 +9,7 @@
 
 #include "base/containers/map_util.h"
 #include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
@@ -48,6 +49,34 @@ bool MapHasMediaKeys(
       accelerator_map, [](const auto& ac) { return ac.first.IsMediaKey(); });
 }
 #endif
+
+// xdg GlobalShortcuts portal session key; persisted so a later session can
+// pick up shortcuts already registered with the portal.
+std::string GetPortalProfileId() {
+  auto* context = electron::ElectronBrowserContext::GetDefaultBrowserContext();
+  PrefService* prefs = context->prefs();
+  std::string profile_id =
+      prefs->GetString(electron::kElectronGlobalShortcutsUuid);
+  if (profile_id.empty()) {
+    profile_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
+    prefs->SetString(electron::kElectronGlobalShortcutsUuid, profile_id);
+  }
+  return profile_id;
+}
+
+// See the fake extension id note in GlobalShortcut::Register().
+std::string GetPortalExtensionId(const std::string& command_str,
+                                 const std::string& profile_id) {
+  return command_str + "+" + profile_id;
+}
+
+void ClearPortalCommand(ui::GlobalAcceleratorListener* instance,
+                        const std::string& command_str,
+                        const std::string& profile_id) {
+  instance->OnCommandsChanged(GetPortalExtensionId(command_str, profile_id),
+                              profile_id, ui::CommandMap(),
+                              gfx::kNullAcceleratedWidget, base::DoNothing());
+}
 
 }  // namespace
 
@@ -91,14 +120,9 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
+  // May arrive after the command was unregistered; ignore it then.
   if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
     cb->Run();
-  } else {
-    // This should never occur, because if it does, GlobalAcceleratorListener
-    // notifies us with wrong command.
-    if (!is_disposed_) {
-      NOTREACHED();
-    }
   }
 }
 
@@ -149,18 +173,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   }
 
   if (instance->IsRegistrationHandledExternally()) {
-    auto* context = ElectronBrowserContext::GetDefaultBrowserContext();
-    PrefService* prefs = context->prefs();
-
-    // Need a unique profile id. Set one if not generated yet, otherwise re-use
-    // the same so that the session for the globalShortcuts is able to get
-    // already registered shortcuts from the previous session. This will be used
-    // by GlobalAcceleratorListenerLinux as a session key.
-    std::string profile_id = prefs->GetString(kElectronGlobalShortcutsUuid);
-    if (profile_id.empty()) {
-      profile_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
-      prefs->SetString(kElectronGlobalShortcutsUuid, profile_id);
-    }
+    const std::string profile_id = GetPortalProfileId();
 
     // There is no way to get command id for the accelerator as it's extensions'
     // thing. Instead, we can convert it to string in a following example form
@@ -184,9 +197,9 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // Alt+Shift+M will trigger global shortcuts, but the command id that is
     // received by GlobalShortcut will correspond to Alt+Shift+K as our command
     // id is basically a stringified accelerator.
-    const std::string fake_extension_id = command_str + "+" + profile_id;
     instance->OnCommandsChanged(
-        fake_extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
+        GetPortalExtensionId(command_str, profile_id), profile_id, commands,
+        gfx::kNullAcceleratedWidget,
         base::BindRepeating(
             &GlobalShortcut::ExecuteCommand,
             gin::WrapPersistent(weak_factory_.GetWeakCell(
@@ -208,12 +221,22 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
         .ThrowError("globalShortcut cannot be used before the app is ready");
     return;
   }
+  auto* instance = ui::GlobalAcceleratorListener::GetInstance();
+  if (instance && instance->IsRegistrationHandledExternally()) {
+    const std::string command_str =
+        extensions::Command::AcceleratorToString(accelerator);
+    if (!command_callback_map_.contains(command_str))
+      return;
+    ClearPortalCommand(instance, command_str, GetPortalProfileId());
+    command_callback_map_.erase(command_str);
+    return;
+  }
+
   if (!accelerator_callback_map_.contains(accelerator))
     return;
 
-  if (ui::GlobalAcceleratorListener::GetInstance()) {
-    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerator(
-        accelerator, this);
+  if (instance) {
+    instance->UnregisterAccelerator(accelerator, this);
   }
 
   // Remove from local callback map after unregistering from UI listener to
@@ -254,8 +277,16 @@ void GlobalShortcut::UnregisterAll() {
 }
 
 void GlobalShortcut::UnregisterAllInternal() {
-  if (ui::GlobalAcceleratorListener::GetInstance()) {
-    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerators(this);
+  if (auto* instance = ui::GlobalAcceleratorListener::GetInstance()) {
+    instance->UnregisterAccelerators(this);
+    // Portal commands are not in the listener's accelerator map; Dispose()
+    // has already pruned them via the invalidated WeakCell.
+    if (!is_disposed_ && instance->IsRegistrationHandledExternally() &&
+        !command_callback_map_.empty()) {
+      const std::string profile_id = GetPortalProfileId();
+      for (const auto& [command_str, _] : command_callback_map_)
+        ClearPortalCommand(instance, command_str, profile_id);
+    }
   }
   accelerator_callback_map_.clear();
   command_callback_map_.clear();
