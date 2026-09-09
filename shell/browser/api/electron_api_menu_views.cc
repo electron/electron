@@ -67,11 +67,20 @@ void MenuViews::PopupAt(BaseWindow* window,
                      gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
                          isolate->GetCppHeap()->GetAllocationHandle())),
                      window_id, std::move(callback_with_ref)));
-  auto& runner = menu_runners_[window_id] =
-      std::make_unique<MenuRunner>(model(), flags, std::move(close_callback));
-  runner->RunMenuAt(native_window->widget(), nullptr,
-                    gfx::Rect{location, gfx::Size{}},
-                    views::MenuAnchorPosition::kTopLeft, source_type);
+  auto runner = std::make_unique<MenuRunner>(model(), flags, close_callback);
+  auto* const runner_ptr = runner.get();
+  menu_runners_[window_id] = std::move(runner);
+  runner_ptr->RunMenuAt(native_window->widget(), nullptr,
+                        gfx::Rect{location, gfx::Size{}},
+                        views::MenuAnchorPosition::kTopLeft, source_type);
+
+  // MenuRunner silently no-ops if another menu is active and never runs the
+  // close callback; treat that as an immediate close so nothing leaks.
+  if (auto iter = menu_runners_.find(window_id);
+      iter != menu_runners_.end() && iter->second.get() == runner_ptr &&
+      !runner_ptr->IsRunning()) {
+    close_callback.Run();
+  }
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
