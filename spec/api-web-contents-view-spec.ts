@@ -530,6 +530,23 @@ describe('WebContentsView', () => {
         await capture.expectColorAtCenterMatches(HexColors.GREEN);
       });
 
+      it('should keep the clip and compositor radii in sync after resizing', async () => {
+        const parent = new View();
+        w.setContentView(parent);
+        parent.addChildView(v);
+        v.setBorderRadius(100);
+
+        const corner = corners[0];
+        const screenCapture = new ScreenCapture(display);
+        v.setBounds({ x: 0, y: 0, width: 40, height: 40 });
+        await nextFrameTime();
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, () => corner);
+
+        v.setBounds({ x: 0, y: 0, width: 200, height: 200 });
+        await nextFrameTime();
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.BLUE, () => corner);
+      });
+
       it('should render when set before attached', async () => {
         v = new WebContentsView();
         v.setBorderRadius(100); // must set before
