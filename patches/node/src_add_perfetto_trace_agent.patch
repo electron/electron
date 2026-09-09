@@ -10,10 +10,10 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 0602f93ae89f314c91d335793c3932adf4b408e7..76d289ef572255b3d7d9526f0a0f8d80f2178b78 100644
+index a5c17ed75b5513fdba2a5ea0d9fb7b259041da75..83508bde4111861b6fab2b4d679cc2dd8225c88d 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -192,10 +192,11 @@
+@@ -193,10 +193,11 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -26,7 +26,7 @@ index 0602f93ae89f314c91d335793c3932adf4b408e7..76d289ef572255b3d7d9526f0a0f8d80
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -329,11 +330,12 @@
+@@ -331,11 +332,12 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -163,10 +163,10 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 1f9a53d80e8d8ac70241563d2dfcf4a863030fb6..0df7bbcb11089d7f2a525c31d4cfb65442d1b19d 100644
+index 4ffcdb8c1f9e1d866960c419569f3410f8e50934..04ca2785b9da5cd4083c6dee200cfaeb6e06bfc6 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -332,7 +332,11 @@ class PerProcessOptions : public Options {
+@@ -333,7 +333,11 @@ class PerProcessOptions : public Options {
  
    std::string title;
    std::string trace_event_categories;
