@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 2 Sep 2026 14:11:30 +0200
+Subject: [builtins] Add regression test for Array.prototype.flat issue
+
+TAG=agy
+CONV=1183a007-e898-453b-9823-1c970699f025
+
+Bug: 552342545
+Change-Id: Ie1c4020f9d3a713f2cddb954bbe3bd580267f705
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8345769
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109638}
+
+diff --git a/test/mjsunit/regress/regress-crbug-552342545.js b/test/mjsunit/regress/regress-crbug-552342545.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a2ab94cb6c16df8f7c59187ef750f4ade8d04c3
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-552342545.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const proxy = new Proxy([], {
++  get(t, p) {
++    if (p === 'length') throw new Error('stopped_early');
++    return Reflect.get(t, p);
++  }
++});
++
++const o = [];
++o.length = 2000000000;
++o[0] = proxy;
++
++assertThrows(() => {
++  o.flat({
++    valueOf() {
++      o.length = 8;
++      o.fill(proxy);
++      return 1;
++    }
++  });
++}, Error, 'stopped_early');

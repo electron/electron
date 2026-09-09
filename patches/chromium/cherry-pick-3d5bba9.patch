@@ -1,0 +1,197 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 2 Sep 2026 13:53:53 -0700
+Subject: [Ozone] Prevent Use-After-Free in
+ DesktopDragDropClientOzone::OnDragDrop
+
+During OnDragDrop, DropIfAllowed can invoke the drop callback
+synchronously. If the target view or window is destroyed as part of the
+drop handler, DesktopDragDropClientOzone is destroyed as well.
+
+Previously, OnDragDrop continued executing on `this` after
+DropIfAllowed returned, notifying observers and resetting the target on
+a freed object.
+
+Fix this by:
+1. Notifying DragDropClientObserver::OnDragCompleted before DropIfAllowed
+   is called.
+2. Tracking DesktopDragDropClientOzone lifetime with a WeakPtr across
+   observer and drop callbacks.
+3. Guarding subsequent calls with liveness checks.
+
+Fixed: 532916987
+Change-Id: Iebe9d6d3cc1fe893fcfaf422fb33924d78675606
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8347108
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1691070}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
+index 123561db996956440841eda3cf23c8bd59791fae..51cbdb376fff90c71d423a6541c2ca784afbb26c 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
+@@ -94,7 +94,7 @@ std::unique_ptr<Widget> CreateDragWidget(
+ // stack uninitialised) or if there are rules allowing the data transfer.
+ // Otherwise the drag is cancelled.
+ void DropIfAllowed(const ui::OSExchangeData* drag_data,
+-                   aura::client::DragUpdateInfo& drag_info,
++                   const aura::client::DragUpdateInfo& drag_info,
+                    base::OnceClosure drop_cb) {
+   if (ui::DataTransferPolicyController::HasInstance()) {
+     ui::DataTransferPolicyController::Get()->DropIfAllowed(
+@@ -215,6 +215,9 @@ DragOperation DesktopDragDropClientOzone::StartDragAndDrop(
+   if (!drag_succeeded) {
+     selected_operation_ = DragOperation::kNone;
+     observers_.Notify(&aura::client::DragDropClientObserver::OnDragCancelled);
++    if (!alive) {
++      return DragOperation::kNone;
++    }
+   }
+ 
+   if (cursor_client) {
+@@ -295,8 +298,12 @@ int DesktopDragDropClientOzone::OnDragMotion(const gfx::PointF& location,
+   int client_operation = ui::DragDropTypes::DRAG_NONE;
+   auto event = UpdateTargetAndCreateDropEvent();
+   if (event) {
++    auto alive = weak_factory_.GetWeakPtr();
+     observers_.Notify(&aura::client::DragDropClientObserver::OnDragUpdated,
+                       *event);
++    if (!alive) {
++      return ui::DragDropTypes::DRAG_NONE;
++    }
+     if (delegate_) {
+       current_drag_update_info_ = delegate_->OnDragUpdated(*event);
+       client_operation = current_drag_update_info_.drag_operation;
+@@ -307,12 +314,19 @@ int DesktopDragDropClientOzone::OnDragMotion(const gfx::PointF& location,
+ 
+ void DesktopDragDropClientOzone::OnDragDrop(int modifiers) {
+   modifiers_ = modifiers;
++  auto alive = weak_factory_.GetWeakPtr();
+   // Ensure |data_to_drop_| is set, so crashes, such as
+   // https://crbug.com/1151836, are avoided.
+   if (data_to_drop_) {
+     auto event = UpdateTargetAndCreateDropEvent();
+     if (delegate_ && event) {
+       if (auto drop_cb = delegate_->GetDropCallback(*event)) {
++        observers_.Notify(
++            &aura::client::DragDropClientObserver::OnDragCompleted, *event);
++        if (!alive) {
++          return;
++        }
++
+         base::ScopedClosureRunner drag_cancel(
+             base::BindOnce(&DesktopDragDropClientOzone::DragCancel,
+                            weak_factory_.GetWeakPtr()));
+@@ -322,13 +336,12 @@ void DesktopDragDropClientOzone::OnDragDrop(int modifiers) {
+             data_to_drop_raw, current_drag_update_info_,
+             base::BindOnce(&PerformDrop, std::move(drop_cb),
+                            std::move(data_to_drop_), std::move(drag_cancel)));
+-
+-        observers_.Notify(
+-            &aura::client::DragDropClientObserver::OnDragCompleted, *event);
+       }
+     }
+   }
+-  ResetDragDropTarget(/*send_exit=*/false);
++  if (alive) {
++    ResetDragDropTarget(/*send_exit=*/false);
++  }
+ }
+ 
+ void DesktopDragDropClientOzone::OnDragLeave() {
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
+index 1f6b3d5f726f8f1077c69dc9421269a8db53bf75..3e263ab8c24df3ca8f1df47818e7bd7bb1c2b4f4 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
+@@ -217,6 +217,10 @@ class FakeDragDropDelegate : public aura::client::DragDropDelegate {
+     destination_operation_ = operation;
+   }
+ 
++  void set_on_drop_callback(base::RepeatingClosure callback) {
++    on_drop_callback_ = std::move(callback);
++  }
++
+  private:
+   // aura::client::DragDropDelegate:
+   void OnDragEntered(const ui::DropTargetEvent& event) override {
+@@ -239,7 +243,7 @@ class FakeDragDropDelegate : public aura::client::DragDropDelegate {
+   DropCallback GetDropCallback(const ui::DropTargetEvent& event) override {
+     last_event_flags_ = event.flags();
+     return base::BindOnce(&FakeDragDropDelegate::PerformDrop,
+-                          base::Unretained(this));
++                          weak_factory_.GetWeakPtr());
+   }
+ 
+   void PerformDrop(std::unique_ptr<ui::OSExchangeData> data,
+@@ -248,6 +252,9 @@ class FakeDragDropDelegate : public aura::client::DragDropDelegate {
+     ++num_drops_;
+     received_data_ = std::move(data);
+     output_drag_op = destination_operation_;
++    if (on_drop_callback_) {
++      on_drop_callback_.Run();
++    }
+   }
+ 
+   int num_enters_ = 0;
+@@ -257,6 +264,8 @@ class FakeDragDropDelegate : public aura::client::DragDropDelegate {
+   std::unique_ptr<ui::OSExchangeData> received_data_;
+   DragOperation destination_operation_;
+   int last_event_flags_ = ui::EF_NONE;
++  base::RepeatingClosure on_drop_callback_;
++  base::WeakPtrFactory<FakeDragDropDelegate> weak_factory_{this};
+ };
+ 
+ }  // namespace
+@@ -277,6 +286,15 @@ class DesktopDragDropClientOzoneTest : public ViewsTestBase {
+     platform_window_->set_modifiers(modifiers);
+   }
+ 
++  void ResetClient() {
++    SetWmDropHandler(platform_window_.get(), nullptr);
++    client_.reset();
++  }
++
++  base::WeakPtr<DesktopDragDropClientOzoneTest> GetWeakPtr() {
++    return weak_factory_.GetWeakPtr();
++  }
++
+   DragOperation StartDragAndDrop(int allowed_operations) {
+     auto data = std::make_unique<ui::OSExchangeData>();
+     data->SetString(u"Test");
+@@ -335,6 +353,8 @@ class DesktopDragDropClientOzoneTest : public ViewsTestBase {
+ 
+   // The widget used to initiate drags.
+   std::unique_ptr<Widget> widget_;
++
++  base::WeakPtrFactory<DesktopDragDropClientOzoneTest> weak_factory_{this};
+ };
+ 
+ TEST_F(DesktopDragDropClientOzoneTest, StartDrag) {
+@@ -601,4 +621,27 @@ TEST_F(DesktopDragDropClientOzoneTest, RejectDragDuringWindowMove) {
+   EXPECT_EQ(DragOperation::kNone, operation);
+ }
+ 
++TEST_F(DesktopDragDropClientOzoneTest, DestroyClientDuringDrop) {
++  dragdrop_delegate_->SetOperation(DragOperation::kMove);
++  dragdrop_delegate_->set_on_drop_callback(base::BindRepeating(
++      &DesktopDragDropClientOzoneTest::ResetClient, GetWeakPtr()));
++
++  const std::u16string sample_data = u"DestroyDuringDrop";
++  std::unique_ptr<ui::OSExchangeData> data =
++      std::make_unique<ui::OSExchangeData>();
++  data->SetString(sample_data);
++
++  int suggested_operation =
++      ui::DragDropTypes::DRAG_COPY | ui::DragDropTypes::DRAG_MOVE;
++  platform_window_->OnDragEnter(kStartDragLocation, std::move(data),
++                                suggested_operation);
++  platform_window_->OnDragMotion(kStartDragLocation, suggested_operation);
++  platform_window_->OnDragDrop();
++  platform_window_->OnDragLeave();
++
++  EXPECT_EQ(1, dragdrop_delegate_->num_enters());
++  EXPECT_EQ(1, dragdrop_delegate_->num_updates());
++  EXPECT_EQ(1, dragdrop_delegate_->num_drops());
++}
++
+ }  // namespace views
