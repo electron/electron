@@ -107,10 +107,10 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index 7a8c470e7abb74f7422901d083a26671522928ff..52b971ecd8d5fed8a4348aebbec2b0138e906355 100644
+index 84957de5cb0149e518c92ca0608f6e16faf5e5e6..c68bb8e4854a301b6899d2f7183b77dd9ff98c31 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -609,7 +609,7 @@ IsolateData::~IsolateData() {}
+@@ -642,7 +642,7 @@ IsolateData::~IsolateData() {}
  // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
@@ -120,7 +120,7 @@ index 7a8c470e7abb74f7422901d083a26671522928ff..52b971ecd8d5fed8a4348aebbec2b013
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index fc7751813343cf36a7597c514525499cec3b71e3..9d42692040941f7ed2813a9fb329722f70939638 100644
+index 3bd4849bb93340569c0067fedd37fefeebff4eb5..952d51946d9412c376dfe305a2c5fd564b60998c 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -141,7 +141,7 @@ index fc7751813343cf36a7597c514525499cec3b71e3..9d42692040941f7ed2813a9fb329722f
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1710,9 +1712,10 @@ void RegisterSignalHandler(int signal,
+@@ -1720,9 +1722,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",

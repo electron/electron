@@ -3,11 +3,13 @@
 // found in the LICENSE file.
 
 #include <optional>
+#include <string>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/power_monitor/power_monitor_source.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
@@ -18,6 +20,7 @@
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
@@ -240,6 +243,21 @@ void ClearHeldPromiseForTesting() {
   GetHeldPromise().reset();
 }
 
+// Reaches the protected PowerMonitorSource::ProcessPowerEvent().
+struct PowerEventInjector : base::PowerMonitorSource {
+  static void Inject(PowerEvent event) { ProcessPowerEvent(event); }
+};
+
+void SimulatePowerEvent(gin_helper::ErrorThrower thrower,
+                        const std::string& event) {
+  if (event == "suspend")
+    PowerEventInjector::Inject(base::PowerMonitorSource::SUSPEND_EVENT);
+  else if (event == "resume")
+    PowerEventInjector::Inject(base::PowerMonitorSource::RESUME_EVENT);
+  else
+    thrower.ThrowTypeError("unknown power event");
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -251,6 +269,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("simulatePowerEvent", &SimulatePowerEvent);
   dict.SetMethod("holdRepeatingCallbackForTesting",
                  &HoldRepeatingCallbackForTesting);
   dict.SetMethod("copyHeldRepeatingCallbackForTesting",
