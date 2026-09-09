@@ -179,9 +179,11 @@
 #include "ui/accessibility/platform/ax_platform.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/ime/ime_text_span.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/range/range.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -975,11 +977,11 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.enable_wake_locks = !disable_wake_locks;
 
     if (embedder_ && embedder_->IsOffScreen()) {
-      auto* view = new OffScreenWebContentsView(
-          false, offscreen_use_shared_texture_,
-          offscreen_shared_texture_pixel_format_,
-          offscreen_device_scale_factor_,
-          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+      auto* view =
+          new OffScreenWebContentsView(false, offscreen_use_shared_texture_,
+                                       offscreen_shared_texture_pixel_format_,
+                                       offscreen_device_scale_factor_);
+      BindOffScreenCallbacks(view);
       params.view = view;
       params.delegate_view = view;
 
@@ -1001,8 +1003,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     params.starting_sandbox_flags = starting_sandbox_flags;
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
-        offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
-        base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+        offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_);
+    BindOffScreenCallbacks(view);
     params.view = view;
     params.delegate_view = view;
     params.enable_wake_locks = !disable_wake_locks;
@@ -1476,12 +1478,11 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
          dict.Get(options::kOffscreen, &is_offscreen) && is_offscreen);
 
     if (is_offscreen) {
-      // Use a no-op callback here. The real OnPaint callback will be bound
-      // to the child WebContents in AddNewContents via SetCallback().
-      auto* view = new OffScreenWebContentsView(
-          false, offscreen_use_shared_texture_,
-          offscreen_shared_texture_pixel_format_,
-          offscreen_device_scale_factor_, base::DoNothing());
+      // Callbacks are bound to the child WebContents in AddNewContents.
+      auto* view =
+          new OffScreenWebContentsView(false, offscreen_use_shared_texture_,
+                                       offscreen_shared_texture_pixel_format_,
+                                       offscreen_device_scale_factor_);
       create_params->view = view;
       create_params->delegate_view = view;
     }
@@ -1513,14 +1514,10 @@ content::WebContents* WebContents::AddNewContents(
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents = CreateAndTake(isolate, std::move(new_contents), type);
 
-  // Rebind the paint callback to the child WebContents. The
-  // OffScreenWebContentsView was initially created with the parent's OnPaint
-  // in MaybeOverrideCreateParamsForNewWindow, but the paint data
-  // belongs to the child.
-  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
-    osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
-                                              api_web_contents->GetWeakPtr()));
-  }
+  // The OffScreenWebContentsView created in
+  // MaybeOverrideCreateParamsForNewWindow belongs to the child; bind it now.
+  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView())
+    api_web_contents->BindOffScreenCallbacks(osr_view);
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
@@ -4282,6 +4279,126 @@ void WebContents::Invalidate() {
   }
 }
 
+void WebContents::BindOffScreenCallbacks(OffScreenWebContentsView* view) {
+  view->SetCallback(base::BindRepeating(&WebContents::OnPaint, GetWeakPtr()));
+  OffscreenTextInputCallbacks callbacks;
+  callbacks.state_changed =
+      base::BindRepeating(&WebContents::OnTextInputStateChanged, GetWeakPtr());
+  callbacks.composition_range_changed = base::BindRepeating(
+      &WebContents::OnImeCompositionRangeChanged, GetWeakPtr());
+  callbacks.selection_bounds_changed =
+      base::BindRepeating(&WebContents::OnSelectionBoundsChanged, GetWeakPtr());
+  view->SetTextInputCallbacks(callbacks);
+}
+
+void WebContents::ImeSetComposition(
+    gin_helper::ErrorThrower thrower,
+    const std::u16string& text,
+    std::optional<gin_helper::Dictionary> options) {
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (!osr_rwhv) {
+    thrower.ThrowError("imeSetComposition requires offscreen rendering");
+    return;
+  }
+  int selection_start = static_cast<int>(text.length());
+  int selection_end = selection_start;
+  gfx::Range replacement_range = gfx::Range::InvalidRange();
+  std::vector<ui::ImeTextSpan> underlines;
+  if (options) {
+    options->Get("selectionStart", &selection_start);
+    options->Get("selectionEnd", &selection_end);
+    uint32_t start = 0, end = 0;
+    if (options->Get("replacementStart", &start) &&
+        options->Get("replacementEnd", &end)) {
+      replacement_range = gfx::Range(start, end);
+    }
+    if (options->Has("underlines") &&
+        !options->Get("underlines", &underlines)) {
+      thrower.ThrowTypeError("Invalid 'underlines'");
+      return;
+    }
+  }
+  osr_rwhv->SendImeSetComposition(text, underlines, replacement_range,
+                                  selection_start, selection_end);
+}
+
+void WebContents::ImeCommitText(gin_helper::ErrorThrower thrower,
+                                const std::u16string& text,
+                                std::optional<gin_helper::Dictionary> options) {
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (!osr_rwhv) {
+    thrower.ThrowError("imeCommitText requires offscreen rendering");
+    return;
+  }
+  gfx::Range replacement_range = gfx::Range::InvalidRange();
+  int relative_cursor_position = 0;
+  if (options) {
+    uint32_t start = 0, end = 0;
+    if (options->Get("replacementStart", &start) &&
+        options->Get("replacementEnd", &end)) {
+      replacement_range = gfx::Range(start, end);
+    }
+    options->Get("relativeCursorPosition", &relative_cursor_position);
+  }
+  osr_rwhv->SendImeCommitText(text, replacement_range,
+                              relative_cursor_position);
+}
+
+void WebContents::ImeFinishComposingText(gin_helper::ErrorThrower thrower,
+                                         std::optional<bool> keep_selection) {
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (!osr_rwhv) {
+    thrower.ThrowError("imeFinishComposingText requires offscreen rendering");
+    return;
+  }
+  osr_rwhv->SendImeFinishComposingText(keep_selection.value_or(false));
+}
+
+void WebContents::ImeCancelComposition(gin_helper::ErrorThrower thrower) {
+  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
+  if (!osr_rwhv) {
+    thrower.ThrowError("imeCancelComposition requires offscreen rendering");
+    return;
+  }
+  osr_rwhv->SendImeCancelComposition();
+}
+
+void WebContents::OnTextInputStateChanged(ui::TextInputType type,
+                                          ui::TextInputMode mode,
+                                          bool can_compose_inline) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  Emit("text-input-state-changed",
+       gin::DataObjectBuilder(isolate)
+           .Set("type", type)
+           .Set("inputMode", mode)
+           .Set("canComposeInline", can_compose_inline)
+           .Build());
+}
+
+void WebContents::OnImeCompositionRangeChanged(
+    const gfx::Range& range,
+    const std::vector<gfx::Rect>& character_bounds) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  Emit("ime-composition-range-changed",
+       gin::DataObjectBuilder(isolate)
+           .Set("start", range.start())
+           .Set("end", range.end())
+           .Build(),
+       character_bounds);
+}
+
+void WebContents::OnSelectionBoundsChanged(const gfx::Rect& anchor,
+                                           const gfx::Rect& focus) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  Emit("selection-bounds-changed", gin::DataObjectBuilder(isolate)
+                                       .Set("anchor", anchor)
+                                       .Set("focus", focus)
+                                       .Build());
+}
+
 gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
   if (IsOffScreen() && wc == web_contents()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents());
@@ -5150,6 +5267,10 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
       .SetMethod("invalidate", &WebContents::Invalidate)
+      .SetMethod("imeSetComposition", &WebContents::ImeSetComposition)
+      .SetMethod("imeCommitText", &WebContents::ImeCommitText)
+      .SetMethod("imeFinishComposingText", &WebContents::ImeFinishComposingText)
+      .SetMethod("imeCancelComposition", &WebContents::ImeCancelComposition)
       .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)

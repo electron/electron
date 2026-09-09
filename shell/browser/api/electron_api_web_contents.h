@@ -47,6 +47,8 @@
 #include "v8/include/cppgc/persistent.h"
 
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
+#include "ui/base/ime/text_input_mode.h"
+#include "ui/base/ime/text_input_type.h"
 #include "ui/base/models/image_model.h"
 #endif
 
@@ -73,6 +75,10 @@ enum class KeyboardEventProcessingResult;
 class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
+
+namespace gfx {
+class Range;
+}
 
 namespace gin {
 class Arguments;
@@ -352,6 +358,17 @@ class WebContents final : public ExclusiveAccessContext,
   int GetFrameRate() const;
   void Invalidate();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) override;
+
+  // Offscreen IME.
+  void ImeSetComposition(gin_helper::ErrorThrower thrower,
+                         const std::u16string& text,
+                         std::optional<gin_helper::Dictionary> options);
+  void ImeCommitText(gin_helper::ErrorThrower thrower,
+                     const std::u16string& text,
+                     std::optional<gin_helper::Dictionary> options);
+  void ImeFinishComposingText(gin_helper::ErrorThrower thrower,
+                              std::optional<bool> keep_selection);
+  void ImeCancelComposition(gin_helper::ErrorThrower thrower);
 
   // Methods for zoom handling.
   void SetZoomLevel(double level);
@@ -709,6 +726,17 @@ class WebContents final : public ExclusiveAccessContext,
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
+
+  // Binds the paint and text input callbacks of |view| to this object.
+  void BindOffScreenCallbacks(OffScreenWebContentsView* view);
+  void OnTextInputStateChanged(ui::TextInputType type,
+                               ui::TextInputMode mode,
+                               bool can_compose_inline);
+  void OnImeCompositionRangeChanged(
+      const gfx::Range& range,
+      const std::vector<gfx::Rect>& character_bounds);
+  void OnSelectionBoundsChanged(const gfx::Rect& anchor,
+                                const gfx::Rect& focus);
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.

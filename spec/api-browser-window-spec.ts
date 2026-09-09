@@ -7863,6 +7863,101 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('IME', () => {
+      type LogEntry = { type: string; data: string | null };
+      const readLog = (): Promise<LogEntry[]> => w.webContents.executeJavaScript('window.log');
+      const inputValue = (): Promise<string> => w.webContents.executeJavaScript('document.getElementById("i").value');
+
+      beforeEach(async () => {
+        await w.loadFile(path.join(fixtures, 'api', 'offscreen-ime.html'));
+        // The widget needs page focus to accept IME input; for offscreen windows
+        // BrowserWindow.focus() focuses the web contents directly.
+        w.focus();
+        const textFocused = emittedUntil(
+          w.webContents,
+          'text-input-state-changed',
+          (_: Event, state: any) => state.type === 'text'
+        );
+        await w.webContents.executeJavaScript('document.getElementById("i").focus()');
+        const [, state] = await textFocused;
+        expect(state).to.have.property('inputMode', 'default');
+        expect(state).to.have.property('canComposeInline').that.is.a('boolean');
+      });
+
+      it('throws for non-offscreen contents', () => {
+        const c = new BrowserWindow({ show: false });
+        expect(() => c.webContents.imeSetComposition('a')).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeCommitText('a')).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeFinishComposingText()).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeCancelComposition()).to.throw(/requires offscreen rendering/);
+        c.destroy();
+      });
+
+      it('composes and commits text into the focused element', async () => {
+        const rangeChanged = once(w.webContents, 'ime-composition-range-changed');
+        w.webContents.imeSetComposition('にほ');
+        const [, range, characterBounds] = await rangeChanged;
+        expect(range).to.deep.equal({ start: 0, end: 2 });
+        expect(characterBounds).to.be.an('array').with.lengthOf(2);
+        for (const rect of characterBounds) {
+          expect(rect).to.include.all.keys('x', 'y', 'width', 'height');
+        }
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionupdate' && e.data === 'にほ'));
+        expect(await readLog()).to.deep.include({ type: 'compositionstart', data: '' });
+
+        w.webContents.imeCommitText('日本');
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionend'));
+        expect(await readLog()).to.deep.include({ type: 'compositionend', data: '日本' });
+        expect(await inputValue()).to.equal('日本');
+
+        w.webContents.imeSetComposition('ご');
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionupdate' && e.data === 'ご'));
+        w.webContents.imeCancelComposition();
+        await waitUntil(async () => (await readLog()).filter((e) => e.type === 'compositionend').length === 2);
+        expect(await inputValue()).to.equal('日本');
+      });
+
+      it('finishes composing text with imeFinishComposingText()', async () => {
+        w.webContents.imeSetComposition('한');
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionupdate' && e.data === '한'));
+        w.webContents.imeFinishComposingText();
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionend'));
+        expect(await inputValue()).to.equal('한');
+      });
+
+      it('accepts composition options', async () => {
+        w.webContents.imeSetComposition('abc', {
+          selectionStart: 1,
+          selectionEnd: 2,
+          underlines: [{ start: 0, end: 1, thick: true, color: '#ff0000', backgroundColor: 'rgba(0, 0, 255, 0.5)' }]
+        });
+        await waitUntil(async () => (await readLog()).some((e) => e.type === 'compositionupdate' && e.data === 'abc'));
+        expect(() => w.webContents.imeSetComposition('abc', { underlines: [{ start: -1, end: 1 }] } as any)).to.throw(
+          /underlines/
+        );
+        w.webContents.imeCommitText('abc', { relativeCursorPosition: -1 });
+        await waitUntil(async () => (await inputValue()) === 'abc');
+        const caret = await w.webContents.executeJavaScript('document.getElementById("i").selectionStart');
+        expect(caret).to.equal(2);
+      });
+
+      it('emits selection-bounds-changed and text-input-state-changed on blur', async () => {
+        const boundsChanged = once(w.webContents, 'selection-bounds-changed');
+        w.webContents.imeCommitText('xy');
+        const [, bounds] = await boundsChanged;
+        expect(bounds.anchor).to.include.all.keys('x', 'y', 'width', 'height');
+        expect(bounds.focus).to.include.all.keys('x', 'y', 'width', 'height');
+
+        const blurred = emittedUntil(
+          w.webContents,
+          'text-input-state-changed',
+          (_: Event, state: any) => state.type === 'none'
+        );
+        await w.webContents.executeJavaScript('document.getElementById("i").blur()');
+        await blurred;
+      });
+    });
+
     it('paints <select> popups into the frame', async () => {
       const ow = new BrowserWindow({
         width: 300,

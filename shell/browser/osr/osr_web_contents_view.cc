@@ -5,6 +5,7 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 
 #include "base/check.h"
+#include "base/functional/callback_helpers.h"
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -19,14 +20,13 @@ OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     bool offscreen_use_shared_texture,
     const std::string& offscreen_shared_texture_pixel_format,
-    float offscreen_device_scale_factor,
-    const OnPaintCallback& callback)
+    float offscreen_device_scale_factor)
     : transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
       offscreen_shared_texture_pixel_format_(
           offscreen_shared_texture_pixel_format),
       offscreen_device_scale_factor_(offscreen_device_scale_factor),
-      callback_(callback) {
+      callback_(base::DoNothing()) {
 #if BUILDFLAG(IS_MAC)
   PlatformCreate();
 #endif
@@ -51,6 +51,13 @@ void OffScreenWebContentsView::SetWebContents(
 
 void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
   callback_ = callback;
+}
+
+void OffScreenWebContentsView::SetTextInputCallbacks(
+    const OffscreenTextInputCallbacks& callbacks) {
+  text_input_callbacks_ = callbacks;
+  if (auto* view = GetView())
+    view->SetTextInputCallbacks(callbacks);
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -122,11 +129,13 @@ OffScreenWebContentsView::CreateViewForWidget(
   if (auto* rwhv = render_widget_host->GetView())
     return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 
-  return new OffScreenRenderWidgetHostView(
+  auto* view = new OffScreenRenderWidgetHostView(
       transparent_, offscreen_use_shared_texture_,
       offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
       painting_, GetFrameRate(), callback_, render_widget_host, nullptr,
       GetSize());
+  view->SetTextInputCallbacks(text_input_callbacks_);
+  return view;
 }
 
 content::RenderWidgetHostViewBase*
