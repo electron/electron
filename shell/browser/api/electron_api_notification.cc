@@ -10,11 +10,11 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "build/build_config.h"
-#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -77,29 +77,24 @@ namespace electron::api {
 gin::WrapperInfo Notification::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronNotification);
 
-class NotificationDelegateProxy final
-    : public electron::NotificationDelegate,
-      public gin::PerIsolateData::DisposeObserver {
+class NotificationDelegateProxy final : public electron::NotificationDelegate,
+                                        public MicrotasksRunner::Observer {
  public:
   NotificationDelegateProxy(v8::Isolate* isolate, Notification* notification)
       : isolate_(isolate), notification_(notification) {
-    gin::PerIsolateData::From(isolate_)->AddDisposeObserver(this);
+    MicrotasksRunner::AddObserver(this);
   }
 
   ~NotificationDelegateProxy() override {
     if (is_observing_)
-      gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
+      MicrotasksRunner::RemoveObserver(this);
   }
-
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
 
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {
     notification_.Clear();
-    gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
+    MicrotasksRunner::RemoveObserver(this);
     is_observing_ = false;
   }
-
-  void OnDisposed() override {}
 
   void NotificationAction(int action_index, int selection_index) override {
     if (auto* notification = notification_.Get())

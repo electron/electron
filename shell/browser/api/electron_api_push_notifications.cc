@@ -20,13 +20,13 @@ gin::WrapperInfo PushNotifications::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronPushNotifications);
 
 PushNotifications::PushNotifications(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+  MicrotasksRunner::AddObserver(this);
 }
 
 PushNotifications::~PushNotifications() = default;
 
 void PushNotifications::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+  MicrotasksRunner::RemoveObserver(this);
   apns_promise_set_.clear();
 }
 

@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_MICROTASKS_RUNNER_H_
 
 #include "base/memory/raw_ptr.h"
+#include "base/observer_list.h"
 #include "base/task/task_observer.h"
 
 namespace v8 {
@@ -22,7 +23,18 @@ namespace electron {
 // microtasks.
 class MicrotasksRunner : public base::TaskObserver {
  public:
+  class Observer : public base::CheckedObserver {
+   public:
+    virtual void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) = 0;
+  };
+
   explicit MicrotasksRunner(v8::Isolate* isolate);
+  ~MicrotasksRunner() override;
+
+  static void AddObserver(Observer* observer);
+  static void RemoveObserver(Observer* observer);
+
+  void NotifyBeforeDispose();
 
   // base::TaskObserver
   void WillProcessTask(const base::PendingTask& pending_task,
@@ -31,6 +43,7 @@ class MicrotasksRunner : public base::TaskObserver {
 
  private:
   raw_ptr<v8::Isolate> isolate_;
+  base::ObserverList<Observer> observers_;
 };
 
 }  // namespace electron

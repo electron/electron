@@ -5,12 +5,43 @@
 
 #include "shell/browser/microtasks_runner.h"
 
+#include "base/check.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8.h"
 
 namespace electron {
 
-MicrotasksRunner::MicrotasksRunner(v8::Isolate* isolate) : isolate_(isolate) {}
+namespace {
+
+MicrotasksRunner* g_microtasks_runner = nullptr;
+
+}  // namespace
+
+MicrotasksRunner::MicrotasksRunner(v8::Isolate* isolate) : isolate_(isolate) {
+  CHECK(!g_microtasks_runner);
+  g_microtasks_runner = this;
+}
+
+MicrotasksRunner::~MicrotasksRunner() {
+  CHECK_EQ(g_microtasks_runner, this);
+  g_microtasks_runner = nullptr;
+}
+
+// static
+void MicrotasksRunner::AddObserver(Observer* observer) {
+  CHECK(g_microtasks_runner);
+  g_microtasks_runner->observers_.AddObserver(observer);
+}
+
+// static
+void MicrotasksRunner::RemoveObserver(Observer* observer) {
+  if (g_microtasks_runner)
+    g_microtasks_runner->observers_.RemoveObserver(observer);
+}
+
+void MicrotasksRunner::NotifyBeforeDispose() {
+  observers_.Notify(&Observer::OnBeforeMicrotasksRunnerDispose, isolate_.get());
+}
 
 void MicrotasksRunner::WillProcessTask(const base::PendingTask& pending_task,
                                        bool was_blocked_or_low_priority) {}

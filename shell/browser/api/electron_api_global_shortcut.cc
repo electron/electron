@@ -57,8 +57,7 @@ const gin::WrapperInfo GlobalShortcut::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronGlobalShortcut);
 
 GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddObserver(this);
 }
 
 GlobalShortcut::~GlobalShortcut() = default;
@@ -318,8 +317,7 @@ const char* GlobalShortcut::GetHumanReadableName() const {
 }
 
 void GlobalShortcut::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+  MicrotasksRunner::RemoveObserver(this);
   Dispose();
 }
 

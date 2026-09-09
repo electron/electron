@@ -11,9 +11,9 @@
 #include "base/memory/scoped_refptr.h"
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
-#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 
@@ -33,7 +33,7 @@ class ObjectTemplateBuilder;
 namespace electron::api {
 
 class SafeStorage final : public gin::Wrappable<SafeStorage>,
-                          public gin::PerIsolateData::DisposeObserver {
+                          public MicrotasksRunner::Observer {
  public:
   static SafeStorage* Create(v8::Isolate* isolate);
 
@@ -46,10 +46,8 @@ class SafeStorage final : public gin::Wrappable<SafeStorage>,
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  // MicrotasksRunner::Observer
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
 
   // disable copy
   SafeStorage(const SafeStorage&) = delete;

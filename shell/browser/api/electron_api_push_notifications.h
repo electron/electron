@@ -9,9 +9,9 @@
 #include <vector>
 
 #include "base/values.h"
-#include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/promise.h"
 
 namespace electron::api {
@@ -19,7 +19,7 @@ namespace electron::api {
 class PushNotifications final
     : public gin::Wrappable<PushNotifications>,
       public gin_helper::EventEmitterMixin<PushNotifications>,
-      public gin::PerIsolateData::DisposeObserver {
+      public MicrotasksRunner::Observer {
  public:
   static PushNotifications* Get();
 
@@ -31,10 +31,8 @@ class PushNotifications final
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  // MicrotasksRunner::Observer
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
 
   // disable copy
   PushNotifications(const PushNotifications&) = delete;

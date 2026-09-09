@@ -44,7 +44,6 @@ struct OomState : public gin::PerIsolateData::DisposeObserver {
     }
     isolate = nullptr;
   }
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* /*disposing*/) override {}
   void OnDisposed() override {}
 };
 
