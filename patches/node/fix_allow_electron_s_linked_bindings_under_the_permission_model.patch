@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 9 Sep 2026 13:41:43 +0000
+Subject: fix: allow Electron's linked bindings under the permission model
+
+https://github.com/nodejs/node/pull/65432 made process._linkedBinding()
+throw ERR_ACCESS_DENIED when the permission model is enabled without
+--allow-addons. Electron exposes all of its built-in modules to JS as
+linked bindings (electron_common_*, electron_browser_*, ...), and its
+own bootstrap script (node_init and friends) reaches them through
+process._linkedBinding(), so with that change `electron --permission`
+in ELECTRON_RUN_AS_NODE mode can no longer initialise Electron's Node.js
+integration (ASAR support etc.) and logs a CompileAndCall error.
+
+In an Electron build the linked-binding list only ever contains
+Electron's own runtime modules; applications cannot link bindings into
+the binary and real native addons still go through process.dlopen(),
+which remains gated on --allow-addons. Exempt the electron_* bindings
+from the addon check so the runtime can bootstrap, while keeping the
+upstream behaviour for any other name.
+
+This can be removed if upstream grows a way for embedders to register
+linked bindings that are not treated as addons by the permission model,
+or if Electron stops routing its internal bindings through
+process._linkedBinding().
+
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index 86e91d9cab04eef5bee3c5ca38f2181794dca0fb..f49d6ab66fe49416e495efcab2c1d51fc74ae99e 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -674,8 +674,15 @@ void GetLinkedBinding(const FunctionCallbackInfo<Value>& args) {
+ 
+   node::Utf8Value module_name_v(env->isolate(), module_name);
+   const char* name = *module_name_v;
+-  THROW_IF_INSUFFICIENT_PERMISSIONS(
+-      env, permission::PermissionScope::kAddon, module_name_v.ToStringView());
++  // Electron's built-in modules are registered as linked bindings and are
++  // part of the runtime rather than user-supplied addons; Electron's own
++  // bootstrap scripts cannot run without them, so they are not subject to
++  // the addon permission.
++  if (!module_name_v.ToStringView().starts_with("electron_")) {
++    THROW_IF_INSUFFICIENT_PERMISSIONS(env,
++                                      permission::PermissionScope::kAddon,
++                                      module_name_v.ToStringView());
++  }
+ 
+   node_module* mod = nullptr;
+ 
