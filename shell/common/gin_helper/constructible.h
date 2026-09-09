@@ -21,25 +21,26 @@ class EventEmitterMixin;
 // Helper class for Wrappable objects which should be constructible with 'new'
 // in JavaScript.
 //
-// To use, inherit from gin_helper::Wrappable and gin_helper::Constructible, and
+// To use, inherit from gin::Wrappable and gin_helper::Constructible, and
 // define the static methods New and FillObjectTemplate:
 //
-//   class Example : public gin_helper::DeprecatedWrappable<Example>,
+//   class Example : public gin::Wrappable<Example>,
 //                   public gin_helper::Constructible<Example> {
 //    public:
-//     static gin_helper::Handle<Example> New(...usual gin method arguments...);
+//     static Example* New(...usual gin method arguments...);
 //     static void FillObjectTemplate(
 //         v8::Isolate*,
 //         v8::Local<v8::ObjectTemplate>);
 //   }
 //
-// Do NOT define the usual gin_helper::Wrappable::GetObjectTemplateBuilder. It
+// Do NOT define the usual gin::Wrappable::GetObjectTemplateBuilder. It
 // will not be called for Constructible classes.
 //
 // To expose the constructor, call GetConstructor:
 //
 //   gin::Dictionary dict(isolate, exports);
-//   dict.Set("Example", Example::GetConstructor(context));
+//   dict.Set("Example", Example::GetConstructor(
+//                           isolate, context, &Example::kWrapperInfo));
 template <typename T>
 class Constructible {
  public:
@@ -68,18 +69,13 @@ class Constructible {
         constructor->Inherit(
             gin_helper::internal::GetEventEmitterTemplate(isolate));
       }
-      constructor->InstanceTemplate()->SetInternalFieldCount(
-          gin::kNumberOfInternalFields);
+
       constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
       if (data) {
         if constexpr (std::is_same_v<WrapperInfo, gin::WrapperInfo>) {
           gin::PerContextData::From(context)->SetObjectTemplate(
               wrapper_info, constructor->InstanceTemplate());
-        } else {
-          static_assert(
-              std::is_same_v<WrapperInfo, gin::DeprecatedWrapperInfo>);
-          data->object_template.Reset(isolate, constructor->InstanceTemplate());
         }
         data->function_template.Reset(isolate, constructor);
       }

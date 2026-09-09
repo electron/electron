@@ -709,7 +709,6 @@ filenames = {
     "shell/common/gin_helper/per_context_template_data.h",
     "shell/common/gin_helper/persistent_dictionary.cc",
     "shell/common/gin_helper/persistent_dictionary.h",
-    "shell/common/gin_helper/pinnable.h",
     "shell/common/gin_helper/promise.cc",
     "shell/common/gin_helper/promise.h",
     "shell/common/gin_helper/reply_channel.cc",
