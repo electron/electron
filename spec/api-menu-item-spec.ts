@@ -69,17 +69,8 @@ describe('MenuItems', () => {
       expect(item).to.have.property('type').that.is.a('string').equal('normal');
       expect(item).to.have.property('commandId').that.is.a('number');
       expect(item).to.have.property('toolTip').that.is.a('string');
-      expect(item).to.have.property('fontType').that.is.a('string');
       expect(item).to.have.property('role').that.is.a('string');
       expect(item).to.have.property('icon');
-    });
-
-    it('should throw when fontType is invalid without modifying the menu', () => {
-      const menu = new Menu();
-      expect(() => {
-        menu.append(new MenuItem({ label: '09:45', fontType: 'bold' as any }));
-      }).to.throw("fontType must be one of 'monospaced' or 'monospacedDigit'");
-      expect(menu.getItemCount()).to.equal(0);
     });
 
     it('should have a default accelerator for certain roles', () => {
@@ -856,6 +847,49 @@ describe('MenuItems', () => {
         item.badge = { type: 'bogus' } as any;
       }).to.throw(/Invalid badge type/);
       expect(item.badge).to.be.undefined();
+    });
+  });
+
+  describe('MenuItem.fontType', () => {
+    it('should be undefined when not set', () => {
+      const item = new MenuItem({ label: 'test' });
+      expect(item.fontType).to.be.undefined();
+    });
+
+    it('should set fontType from constructor options', () => {
+      const monospaced = new MenuItem({ label: '09:45', fontType: 'monospaced' });
+      const monospacedDigit = new MenuItem({ label: '11:15', fontType: 'monospacedDigit' });
+      expect(monospaced.fontType).to.equal('monospaced');
+      expect(monospacedDigit.fontType).to.equal('monospacedDigit');
+    });
+
+    it('should set fontType on items added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: '09:45', fontType: 'monospacedDigit' }]);
+      expect(menu.items[0].fontType).to.equal('monospacedDigit');
+    });
+
+    it('should allow dynamic fontType updates', () => {
+      const item = new MenuItem({ label: '09:45', fontType: 'monospaced' });
+      item.fontType = 'monospacedDigit';
+      expect(item.fontType).to.equal('monospacedDigit');
+
+      const menu = Menu.buildFromTemplate([{ label: '11:15' }]);
+      menu.items[0].fontType = 'monospacedDigit';
+      expect(menu.items[0].fontType).to.equal('monospacedDigit');
+      menu.items[0].fontType = undefined;
+      expect(menu.items[0].fontType).to.be.undefined();
+    });
+
+    it('should throw on an invalid fontType', () => {
+      expect(() => new MenuItem({ label: '09:45', fontType: 'bold' as any })).to.throw(/Invalid fontType 'bold'/);
+      expect(() => new MenuItem({ label: '09:45', fontType: 0 as any })).to.throw(/Invalid fontType/);
+      expect(() => new MenuItem({ label: '09:45', fontType: false as any })).to.throw(/Invalid fontType/);
+
+      const menu = Menu.buildFromTemplate([{ label: '11:15', fontType: 'monospaced' }]);
+      expect(() => {
+        menu.items[0].fontType = 'bold' as any;
+      }).to.throw(/Invalid fontType 'bold'/);
+      expect(menu.items[0].fontType).to.equal('monospaced');
     });
   });
 });

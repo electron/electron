@@ -48,8 +48,11 @@ std::u16string ElectronMenuModel::GetToolTipAt(size_t index) {
 
 void ElectronMenuModel::SetFontType(size_t index,
                                     const std::u16string& fontType) {
-  int command_id = GetCommandIdAt(index);
-  fontTypes_[command_id] = fontType;
+  const int command_id = GetCommandIdAt(index);
+  if (fontType.empty())
+    fontTypes_.erase(command_id);
+  else
+    fontTypes_[command_id] = fontType;
 }
 
 std::u16string ElectronMenuModel::GetFontTypeAt(size_t index) {

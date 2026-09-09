@@ -32,6 +32,15 @@ const validateBadge = (badge: any) => {
   }
 };
 
+const fontTypes = ['monospaced', 'monospacedDigit'];
+
+const validateFontType = (fontType: any) => {
+  if (fontType == null) return;
+  if (!fontTypes.includes(fontType)) {
+    throw new TypeError(`Invalid fontType '${fontType}': must be one of ${fontTypes.join(', ')}`);
+  }
+};
+
 const MenuItem = function (this: any, options: any) {
   // Preserve extra fields specified by user
   for (const key in options) {
@@ -61,12 +70,27 @@ const MenuItem = function (this: any, options: any) {
   this.overrideProperty('accessibilityLabel', '');
   this.overrideProperty('sublabel', '');
   this.overrideProperty('toolTip', '');
-  this.overrideProperty('fontType', '');
   this.overrideProperty('enabled', true);
   this.overrideProperty('visible', true);
   this.overrideProperty('checked', false);
   this.overrideProperty('acceleratorWorksWhenHidden', true);
   this.overrideProperty('registerAccelerator', roles.shouldRegisterAccelerator(this.role));
+
+  validateFontType(options.fontType);
+  let fontTypeValue = options.fontType ?? undefined;
+  Object.defineProperty(this, 'fontType', {
+    get: () => fontTypeValue,
+    set: (newValue) => {
+      validateFontType(newValue);
+      fontTypeValue = newValue ?? undefined;
+      // Push the change to the native item if this item is already in a menu.
+      if (this.menu) {
+        const index = this.menu.getIndexOfCommandId(this.commandId);
+        if (index !== -1) this.menu.setFontType(index, fontTypeValue ?? '');
+      }
+    },
+    enumerable: true
+  });
 
   if (process.platform === 'darwin') {
     validateBadge(options.badge);

@@ -347,28 +347,35 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   return item;
 }
 
-// Renders the item's label via attributedTitle with the requested system font
-// variant, if any. Section headers are excluded, they carry their own distinct
-// system styling.
+// Renders the item's label with the requested system font variant, if any,
+// by setting attributedTitle from the item's current title. attributedTitle
+// takes display precedence over title, so it is explicitly cleared when no
+// variant is requested; that restores plain title rendering (and, on
+// macOS 14, the subtitle, which AppKit hides while attributedTitle is set).
+// Section headers are excluded since they carry their own system styling.
 - (void)applyFontTypeToMenuItem:(NSMenuItem*)item
                       fromModel:(electron::ElectronMenuModel*)model
                         atIndex:(NSInteger)index {
-  std::u16string fontType = model->GetFontTypeAt(index);
-  if (fontType != u"monospaced" && fontType != u"monospacedDigit")
-    return;
-  if (model->GetCustomTypeAt(index) == u"header")
-    return;
+  NSFont* font = nil;
+  if (model->GetCustomTypeAt(index) != u"header") {
+    const std::u16string fontType = model->GetFontTypeAt(index);
+    const CGFloat font_size = [NSFont menuFontOfSize:0].pointSize;
+    if (fontType == u"monospaced") {
+      font = [NSFont monospacedSystemFontOfSize:font_size
+                                         weight:NSFontWeightRegular];
+    } else if (fontType == u"monospacedDigit") {
+      font = [NSFont monospacedDigitSystemFontOfSize:font_size
+                                              weight:NSFontWeightRegular];
+    }
+  }
 
-  CGFloat font_size = [[NSFont menuFontOfSize:0] pointSize];
-  NSFont* font =
-      fontType == u"monospaced"
-          ? [NSFont monospacedSystemFontOfSize:font_size
-                                        weight:NSFontWeightRegular]
-          : [NSFont monospacedDigitSystemFontOfSize:font_size
-                                             weight:NSFontWeightRegular];
-  item.attributedTitle =
-      [[NSAttributedString alloc] initWithString:item.title
-                                      attributes:@{NSFontAttributeName : font}];
+  if (font) {
+    item.attributedTitle = [[NSAttributedString alloc]
+        initWithString:item.title
+            attributes:@{NSFontAttributeName : font}];
+  } else {
+    item.attributedTitle = nil;
+  }
 }
 
 - (NSMenuItem*)makeMenuItemForIndex:(NSInteger)index
@@ -568,10 +575,9 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   item.title = label;
-  // A set attributedTitle takes display precedence over title, so re-render
-  // it with the updated label.
-  if (item.attributedTitle)
-    [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
+  // Re-apply (or clear) the font variant so attributedTitle tracks both the
+  // updated label and any change to the item's fontType.
+  [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
   if (!accessibility_label16.empty()) {
     NSString* accessibility_label =
         base::SysUTF16ToNSString(accessibility_label16);
