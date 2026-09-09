@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Thu, 20 Aug 2026 07:21:54 -0700
+Subject: [M150] Thread-safe access to WidgetInputHandlerHost in
+ WidgetInputHandlerManager
+
+Original change's description:
+> Thread-safe access to WidgetInputHandlerHost in WidgetInputHandlerManager
+>
+> This change protects the WidgetInputHandlerHost remote (host_) with a lock and updates GetWidgetInputHandlerHost() to return a mojo::SharedRemote copy instead of a raw pointer. This ensures safe multi-threaded access to the host.
+>
+> Additionally, ClearClient() now explicitly disconnects the host remote before resetting it, which breaks potential reference cycles even if other copies of the SharedRemote are still alive. Callers and unit tests have been updated accordingly.
+>
+> BUG=542756749
+>
+> Change-Id: I660982a3521f80072e052d1865d35ac9e9142232
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8201369
+> Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+> Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1674168}
+
+(cherry picked from commit 6b68466b7f4c03c26ad5e47d1a0d600c1cad1e87)
+
+Bug: 546215903
+Change-Id: I660982a3521f80072e052d1865d35ac9e9142232
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8257657
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: David Bokan <bokan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4317}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+index a536e2dbd65ac608ad1f5af8700c2ffda2c8d226..e838808f7cb345d35b364f8bc93a70fdb40040a0 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -3278,7 +3278,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+     bool has_transient_user_activation,
+     bool request_unadjusted_movement,
+     mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
+-  mojom::blink::WidgetInputHandlerHost* host =
++  auto host =
+       widget_base_->widget_input_handler_manager()->GetWidgetInputHandlerHost();
+ 
+   // If we don't have a host just leave the callback uncalled. This simulates
+@@ -4073,7 +4073,7 @@ void WebFrameWidgetImpl::ProcessTouchAction(WebTouchAction touch_action) {
+ void WebFrameWidgetImpl::SetPanAction(mojom::blink::PanAction pan_action) {
+   if (!widget_base_->widget_input_handler_manager())
+     return;
+-  mojom::blink::WidgetInputHandlerHost* host =
++  auto host =
+       widget_base_->widget_input_handler_manager()->GetWidgetInputHandlerHost();
+   if (!host)
+     return;
+@@ -4136,18 +4136,16 @@ void WebFrameWidgetImpl::FlushInputForTesting(base::OnceClosure done_callback) {
+ }
+ 
+ void WebFrameWidgetImpl::SetMouseCapture(bool capture) {
+-  if (mojom::blink::WidgetInputHandlerHost* host =
+-          widget_base_->widget_input_handler_manager()
+-              ->GetWidgetInputHandlerHost()) {
++  if (auto host = widget_base_->widget_input_handler_manager()
++                      ->GetWidgetInputHandlerHost()) {
+     host->SetMouseCapture(capture);
+   }
+ }
+ 
+ void WebFrameWidgetImpl::NotifyAutoscrollForSelectionInMainFrame(
+     bool autoscroll_selection) {
+-  if (mojom::blink::WidgetInputHandlerHost* host =
+-          widget_base_->widget_input_handler_manager()
+-              ->GetWidgetInputHandlerHost()) {
++  if (auto host = widget_base_->widget_input_handler_manager()
++                      ->GetWidgetInputHandlerHost()) {
+     host->SetAutoscrollSelectionActiveInMainFrame(autoscroll_selection);
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+index d4daf056ef3bff11a0c84045f278ccbc2273307c..52764f3e3ad3f170b092d3670f05c7d61c732d28 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+@@ -339,6 +339,8 @@ void WidgetInputHandlerManager::OnFirstContentfulPaint() {
+ 
+ void WidgetInputHandlerManager::SetHost(
+     mojo::PendingRemote<mojom::blink::WidgetInputHandlerHost> host) {
++  DCHECK(main_thread_task_runner_->BelongsToCurrentThread());
++  base::AutoLock lock(host_lock_);
+   CHECK(host && !host_);
+   if (compositor_thread_default_task_runner_) {
+     host_ = mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>(
+@@ -414,7 +416,11 @@ WidgetInputHandlerManager::~WidgetInputHandlerManager() {
+ 
+ void WidgetInputHandlerManager::AddInterface(
+     mojo::PendingReceiver<mojom::blink::WidgetInputHandler> receiver) {
+-  CHECK(host_);
++  DCHECK(main_thread_task_runner_->BelongsToCurrentThread());
++  {
++    base::AutoLock lock(host_lock_);
++    CHECK(host_);
++  }
+   if (compositor_thread_default_task_runner_) {
+     // Mojo channel bound on compositor thread.
+     compositor_thread_default_task_runner_->PostTask(
+@@ -525,8 +531,8 @@ void WidgetInputHandlerManager::FindScrollTargetOnMainThread(
+ }
+ 
+ void WidgetInputHandlerManager::DidStartScrollingViewport() {
+-  if (mojom::blink::WidgetInputHandlerHost* host =
+-          GetWidgetInputHandlerHost()) {
++  DCHECK(InputThreadTaskRunner()->BelongsToCurrentThread());
++  if (auto host = GetWidgetInputHandlerHost()) {
+     host->DidStartScrollingViewport();
+   }
+ 
+@@ -542,8 +548,8 @@ void WidgetInputHandlerManager::SetAllowedTouchAction(
+ 
+ void WidgetInputHandlerManager::ProcessTouchAction(
+     cc::TouchAction touch_action) {
+-  if (mojom::blink::WidgetInputHandlerHost* host =
+-          GetWidgetInputHandlerHost()) {
++  DCHECK(main_thread_task_runner_->BelongsToCurrentThread());
++  if (auto host = GetWidgetInputHandlerHost()) {
+     host->SetTouchActionFromMain(touch_action);
+   }
+ 
+@@ -552,11 +558,14 @@ void WidgetInputHandlerManager::ProcessTouchAction(
+   }
+ }
+ 
+-mojom::blink::WidgetInputHandlerHost*
++mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>
+ WidgetInputHandlerManager::GetWidgetInputHandlerHost() {
+-  if (host_)
+-    return host_.get();
+-  return nullptr;
++  base::AutoLock lock(host_lock_);
++  // Returning a copy of the SharedRemote increments the refcount of the
++  // underlying state while under the lock, ensuring it remains valid for the
++  // caller even if host_ is reset on another thread after the lock is
++  // released.
++  return host_;
+ }
+ 
+ mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>
+@@ -1256,7 +1265,13 @@ void WidgetInputHandlerManager::ClearClient() {
+     }
+     viz_host_.reset();
+   }
+-  host_.reset();
++  {
++    base::AutoLock lock(host_lock_);
++    if (host_) {
++      host_.Disconnect();
++    }
++    host_.reset();
++  }
+ }
+ 
+ void WidgetInputHandlerManager::UpdateBrowserControlsState(
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+index ca72e284599e97633d9ad78cf2398882dcddf3eb..89f373c60b93ced1c3e6c7b46e6fac9e20ad6b92 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+@@ -141,7 +141,8 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+ 
+   void ProcessTouchAction(cc::TouchAction touch_action);
+ 
+-  mojom::blink::WidgetInputHandlerHost* GetWidgetInputHandlerHost();
++  mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>
++  GetWidgetInputHandlerHost();
+   mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>
+   GetVizWidgetInputHandlerHost();
+ 
+@@ -337,7 +338,9 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+ 
+   // The WidgetInputHandlerHost is bound on the compositor task runner
+   // but class can be called on the compositor and main thread.
+-  mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost> host_;
++  base::Lock host_lock_;
++  mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost> host_
++      GUARDED_BY(host_lock_);
+   base::Lock viz_host_lock_;
+   mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost> viz_host_
+       GUARDED_BY(viz_host_lock_);
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
+index 0be9b474d2c917d4d050d1c83b2a981776d76c38..e7552957cfb3acf2bad8b7bb7e8b03aeca1ec25b 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
+@@ -285,6 +285,59 @@ TEST_P(WidgetInputHandlerManagerTest, VizHostRace) {
+   }
+ }
+ 
++TEST_P(WidgetInputHandlerManagerTest, MultiThreadedHostAccess) {
++  std::atomic<bool> start_flag{false};
++  std::atomic<int> threads_ready{0};
++  std::atomic<int> threads_finished{0};
++  const int kOpsPerThread = 1000;
++
++  scoped_refptr<WidgetInputHandlerManager> manager =
++      WidgetInputHandlerManager::Create(
++          widget_base_->GetWeakPtr(), frame_widget_input_handler_,
++          /*never_composited=*/false,
++          /*compositor_thread_scheduler=*/nullptr, widget_scheduler_,
++          /*uses_input_handler=*/false,
++          /*allow_scroll_resampling=*/false,
++          /*io_thread_id=*/base::kInvalidThreadId,
++          /*main_thread_id=*/base::PlatformThread::CurrentId());
++
++  mojo::PendingRemote<mojom::blink::WidgetInputHandlerHost> host_remote;
++  auto receiver = host_remote.InitWithNewPipeAndPassReceiver();
++  manager->SetHost(std::move(host_remote));
++
++  auto reader_runner = base::ThreadPool::CreateSequencedTaskRunner({});
++
++  auto reader_worker = [&]() {
++    threads_ready++;
++    while (!start_flag.load(std::memory_order_acquire)) {
++      std::this_thread::yield();
++    }
++
++    for (int i = 0; i < kOpsPerThread; ++i) {
++      manager->GetWidgetInputHandlerHost();
++    }
++    threads_finished++;
++  };
++
++  reader_runner->PostTask(FROM_HERE, base::BindLambdaForTesting(reader_worker));
++
++  threads_ready++;
++  while (threads_ready.load(std::memory_order_relaxed) < 2) {
++    std::this_thread::yield();
++  }
++
++  start_flag.store(true, std::memory_order_release);
++
++  for (int i = 0; i < kOpsPerThread; ++i) {
++    manager->GetWidgetInputHandlerHost();
++  }
++  threads_finished++;
++
++  while (threads_finished.load(std::memory_order_relaxed) < 2) {
++    std::this_thread::yield();
++  }
++}
++
+ INSTANTIATE_TEST_SUITE_P(,
+                          WidgetInputHandlerManagerTest,
+                          testing::Bool(),
+@@ -292,4 +345,5 @@ INSTANTIATE_TEST_SUITE_P(,
+                            return info.param ? "IgnoreInputWhileHidden"
+                                              : "ProcessInputWhileHidden";
+                          });
++
+ }  // namespace blink::test
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index f672ccefd909c0a529429833ba8160f8266cd4e1..d560915ee81b09505ecb77942c9c0101339b7d7c 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1427,8 +1427,7 @@ void WidgetBase::UpdateCompositionInfo(bool immediate_request) {
+     frame_widget->UpdateCursorAnchorInfo(/*update_requested=*/true);
+     return;
+   }
+-  if (mojom::blink::WidgetInputHandlerHost* host =
+-          widget_input_handler_manager_->GetWidgetInputHandlerHost()) {
++  if (auto host = widget_input_handler_manager_->GetWidgetInputHandlerHost()) {
+     host->ImeCompositionRangeChanged(composition_range_,
+                                      composition_character_bounds_);
+   }
+@@ -1602,7 +1601,7 @@ void WidgetBase::ImeSetComposition(
+     // If we failed to set the composition text, then we need to let the browser
+     // process to cancel the input method's ongoing composition session, to make
+     // sure we are in a consistent state.
+-    if (mojom::blink::WidgetInputHandlerHost* host =
++    if (auto host =
+             widget_input_handler_manager_->GetWidgetInputHandlerHost()) {
+       host->ImeCancelComposition();
+     }
+@@ -1702,7 +1701,7 @@ void WidgetBase::FlushInputProcessedCallback() {
+ }
+ 
+ void WidgetBase::CancelComposition() {
+-  if (mojom::blink::WidgetInputHandlerHost* host =
++  if (auto host =
+           widget_input_handler_manager_->GetWidgetInputHandlerHost()) {
+     host->ImeCancelComposition();
+   }

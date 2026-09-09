@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 2 Sep 2026 13:14:21 +0200
+Subject: [builtins] Fix Array.prototype.flat
+
+This CL replaces the unsafe cast with a safe Cast<Smi>, branching to
+the slow path when sourceLength is not a Smi.
+
+TAG=agy
+CONV=1183a007-e898-453b-9823-1c970699f025
+
+Fixed: 552342545
+Change-Id: I539dd7006dfece6c247565a0940aeac9d7cc669a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8346487
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109636}
+
+diff --git a/src/builtins/array-flat.tq b/src/builtins/array-flat.tq
+index f1465f5786906dfde625c4ac821360fbfce16725..3f01affc1556e89148eff588bad601005d2baadc 100644
+--- a/src/builtins/array-flat.tq
++++ b/src/builtins/array-flat.tq
+@@ -363,9 +363,8 @@ transitioning macro FlattenIntoArrayFast(
+       otherwise goto Bailout(targetIndex, smiSourceIndex);
+   let fastOW = NewFastJSArrayWitness(fastSource);
+ 
+-  // The source is a FastJSArray, thus its length must be a Smi.
+-  dcheck(Is<Smi>(sourceLength));
+-  const smiSourceLength = UnsafeCast<Smi>(sourceLength);
++  const smiSourceLength = Cast<Smi>(sourceLength)
++      otherwise goto Bailout(targetIndex, smiSourceIndex);
+ 
+   // 3. Repeat, while sourceIndex < sourceLen
+   for (; smiSourceIndex < smiSourceLength; smiSourceIndex++) {

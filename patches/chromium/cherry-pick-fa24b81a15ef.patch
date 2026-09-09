@@ -1,0 +1,220 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Thu, 30 Jul 2026 14:17:41 -0700
+Subject: Ensure renderer sends CDP messages in expected format
+
+Validate that CBOR is coming from the renderer if and only if we requested it.
+
+Fixed: 540021969
+Change-Id: Ie4eb1550ccf0de9510beb04a0bb72cb4fe64cfee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8176419
+Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671419}
+
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index 221784dfd178d86fc6670aa005240311e78871f6..8de773485576d1712280de9163fde9973e0cb0b9 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -590,9 +590,12 @@ void DevToolsSession::DispatchProtocolResponseOrNotification(
+       break;
+   }
+ 
+-  if (message_span.empty() ||
+-      !ValidateMessage(session_id, /*expected_has_id=*/!is_notification,
+-                       message_span)) {
++  const bool message_is_valid =
++      !message_span.empty() &&
++      ValidateMessage(session_id,
++                      /*expected_has_id=*/!is_notification, message_span,
++                      /*expect_cbor */ client->UsesBinaryProtocol());
++  if (!message_is_valid) {
+     if (RenderProcessHost* process_host = agent_host->GetProcessHost()) {
+       bad_message::ReceivedBadMessage(
+           process_host, bad_message::RFH_INCONSISTENT_DEVTOOLS_MESSAGE);
+@@ -769,11 +772,18 @@ DevToolsSession* DevToolsSession::GetSessionById(const std::string& session_id)
+ // static
+ bool DevToolsSession::ValidateMessage(const std::string& expected_session_id,
+                                       const bool expected_has_id,
+-                                      base::span<const uint8_t> message) {
++                                      base::span<const uint8_t> message,
++                                      bool expect_cbor) {
+   std::vector<uint8_t> cbor_message;
+   crdtp::span<uint8_t> span_message = crdtp::SpanFrom(message);
+ 
+-  if (!crdtp::cbor::IsCBORMessage(span_message)) {
++  const bool is_cbor = crdtp::cbor::IsCBORMessage(span_message);
++  if (expect_cbor != is_cbor) {
++    // The renderer has sent a message in the format different that we asked
++    // for, something is fishy.
++    return false;
++  }
++  if (!is_cbor) {
+     if (!crdtp::json::ConvertJSONToCBOR(span_message, &cbor_message).ok()) {
+       return false;  // Safely terminate renderer on malformed JSON
+     }
+diff --git a/content/browser/devtools/devtools_session.h b/content/browser/devtools/devtools_session.h
+index c8c43ccec9f529c34ee1b408b7703ede6feb6d29..0c01e2e8d6e39b4bf964a099d82939cf213ec8a2 100644
+--- a/content/browser/devtools/devtools_session.h
++++ b/content/browser/devtools/devtools_session.h
+@@ -64,7 +64,8 @@ class DevToolsSession : public protocol::FrontendChannel,
+   static CONTENT_EXPORT bool ValidateMessage(
+       const std::string& expected_session_id,
+       const bool expected_has_id,
+-      base::span<const uint8_t> message);
++      base::span<const uint8_t> message,
++      bool expect_cbor);
+ 
+   // For sessions attached to the Tab target, the mode is set to TabTarget.
+   // For other sessions, the mode is inherited from the parent.
+diff --git a/content/browser/devtools/devtools_session_unittest.cc b/content/browser/devtools/devtools_session_unittest.cc
+index 59c64656a1aaeee7622f8963e31685308b8cbdaf..bb27382a5a8c383468382bd47505c3eabcce605c 100644
+--- a/content/browser/devtools/devtools_session_unittest.cc
++++ b/content/browser/devtools/devtools_session_unittest.cc
+@@ -30,78 +30,90 @@ std::vector<uint8_t> JsonToCbor(const std::string& json) {
+ 
+ TEST(DevToolsSessionValidateMessageTest, MalformedJson) {
+   std::vector<uint8_t> message = ToVector("{invalid cbor/json");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest, EmptyMessage) {
+   std::vector<uint8_t> message;
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ValidJson_RootSession_NoIdExpected_Valid) {
+   std::vector<uint8_t> message =
+       ToVector("{\"method\": \"Page.loadEventFired\"}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("", false, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("", false, message,
++                                               /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ValidCbor_RootSession_NoIdExpected_Valid) {
+   std::vector<uint8_t> message =
+       JsonToCbor("{\"method\": \"Page.loadEventFired\"}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("", false, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("", false, message,
++                                               /*expect_cbor=*/true));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      RootSession_NoIdExpected_HasId_Invalid) {
+   std::vector<uint8_t> message =
+       ToVector("{\"id\": 1, \"method\": \"Page.loadEventFired\"}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest, RootSession_IdExpected_HasId_Valid) {
+   std::vector<uint8_t> message = ToVector("{\"id\": 1, \"result\": {}}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("", true, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("", true, message,
++                                               /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest, RootSession_IdExpected_NoId_Valid) {
+   // ValidateMessage does not enforce 'id' presence when expected_has_id is
+   // true.
+   std::vector<uint8_t> message = ToVector("{\"result\": {}}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("", true, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("", true, message,
++                                               /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest, RootSession_HasSessionId_Invalid) {
+   std::vector<uint8_t> message =
+       ToVector("{\"id\": 1, \"sessionId\": \"123\", \"result\": {}}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("", true, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", true, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ChildSession_ValidMatchingSessionId_NoIdExpected) {
+   std::vector<uint8_t> message = ToVector(
+       "{\"method\": \"Page.loadEventFired\", \"sessionId\": \"session1\"}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("session1", false, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("session1", false, message,
++                                               /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ChildSession_ValidMatchingSessionId_IdExpected) {
+   std::vector<uint8_t> message =
+       ToVector("{\"id\": 1, \"result\": {}, \"sessionId\": \"session1\"}");
+-  EXPECT_TRUE(DevToolsSession::ValidateMessage("session1", true, message));
++  EXPECT_TRUE(DevToolsSession::ValidateMessage("session1", true, message,
++                                               /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ChildSession_MissingSessionId_Invalid) {
+   std::vector<uint8_t> message = ToVector("{\"id\": 1, \"result\": {}}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+      ChildSession_MismatchingSessionId_Invalid) {
+   std::vector<uint8_t> message =
+       ToVector("{\"id\": 1, \"result\": {}, \"sessionId\": \"session2\"}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+@@ -109,7 +121,8 @@ TEST(DevToolsSessionValidateMessageTest,
+   std::vector<uint8_t> message = ToVector(
+       "{\"id\": 1, \"method\": \"Page.loadEventFired\", \"sessionId\": "
+       "\"session1\"}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", false, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", false, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+@@ -117,7 +130,8 @@ TEST(DevToolsSessionValidateMessageTest,
+   std::vector<uint8_t> message = ToVector(
+       "{\"id\": 1, \"result\": {}, \"sessionId\": \"session1\", \"sessionId\": "
+       "\"session1\"}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message,
++                                                /*expect_cbor=*/false));
+ }
+ 
+ TEST(DevToolsSessionValidateMessageTest,
+@@ -125,7 +139,22 @@ TEST(DevToolsSessionValidateMessageTest,
+   std::vector<uint8_t> message = ToVector(
+       "{\"id\": 1, \"result\": {}, \"sessionId\": \"session1\", \"sessionId\": "
+       "\"session2\"}");
+-  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message));
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("session1", true, message,
++                                                /*expect_cbor=*/false));
++}
++
++TEST(DevToolsSessionValidateMessageTest, CborMessage_ExpectCborFalse_Invalid) {
++  std::vector<uint8_t> message =
++      JsonToCbor("{\"method\": \"Page.loadEventFired\"}");
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message,
++                                                /*expect_cbor=*/false));
++}
++
++TEST(DevToolsSessionValidateMessageTest, JsonMessage_ExpectCborTrue_Invalid) {
++  std::vector<uint8_t> message =
++      ToVector("{\"method\": \"Page.loadEventFired\"}");
++  EXPECT_FALSE(DevToolsSession::ValidateMessage("", false, message,
++                                                /*expect_cbor=*/true));
+ }
+ 
+ }  // namespace

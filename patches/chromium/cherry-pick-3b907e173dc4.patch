@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Mon, 24 Aug 2026 14:23:54 -0700
+Subject: gpu: Reject FBO attachment levels below TEXTURE_BASE_LEVEL
+
+Per ES 3.0 section 4.4.4.1, a framebuffer attachment is incomplete if
+its texture level is less than TEXTURE_BASE_LEVEL. Chrome was missing
+this check in Texture::CanRenderTo, potentially allowing a level <
+base_level to be rendered to.
+
+Bug: 548130125
+Change-Id: Ie13bb528873610aaf61e1768a91928574d5d4653
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8280604
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1685010}
+
+diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
+index a8e2073482774555b35a4004ef67a98dfdb9b620..1f35cbc662a7953cded5ebd432188b6b3a3ec2a1 100644
+--- a/gpu/command_buffer/service/texture_manager.cc
++++ b/gpu/command_buffer/service/texture_manager.cc
+@@ -1768,6 +1768,9 @@ bool Texture::CanRenderTo(const FeatureInfo* feature_info, GLint level) const {
+   if (face_infos_.size() == 6 && !cube_complete())
+     return false;
+   DCHECK(level >= 0 && level < static_cast<GLint>(MaxValidMipLevel()));
++  if (level < base_level_) {
++    return false;
++  }
+   if (level > base_level_ && !texture_complete()) {
+     return false;
+   }
+diff --git a/gpu/command_buffer/service/texture_manager_unittest.cc b/gpu/command_buffer/service/texture_manager_unittest.cc
+index f948eca77b0dde9f99f0d124fd9abbfd09710490..337a8391e560f87a96d55f92119be3e4e117a07c 100644
+--- a/gpu/command_buffer/service/texture_manager_unittest.cc
++++ b/gpu/command_buffer/service/texture_manager_unittest.cc
+@@ -742,6 +742,17 @@ TEST_F(TextureTest, CanRenderTo) {
+   manager_->SetLevelInfo(texture_ref_.get(), GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1,
+                          0, GL_RGBA, GL_UNSIGNED_BYTE, gfx::Rect());
+   EXPECT_TRUE(texture_ref_->texture()->CanRenderTo(feature_info.get(), 0));
++
++  // Verify that rendering to a level < base_level is not allowed.
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1))
++      .Times(1)
++      .RetiresOnSaturation();
++  manager_->SetParameteri("", error_state_.get(), texture_ref_.get(),
++                          GL_TEXTURE_BASE_LEVEL, 1);
++  manager_->SetLevelInfo(texture_ref_.get(), GL_TEXTURE_2D, 1, GL_RGBA, 0, 0, 1,
++                         0, GL_RGBA, GL_UNSIGNED_BYTE, gfx::Rect());
++  EXPECT_FALSE(texture_ref_->texture()->CanRenderTo(feature_info.get(), 0));
++  EXPECT_TRUE(texture_ref_->texture()->CanRenderTo(feature_info.get(), 1));
+ }
+ 
+ TEST_F(TextureTest, CanNotRenderTo) {
