@@ -5,15 +5,22 @@
 #ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
+#include <memory>
+#include <optional>
+
 #include "shell/browser/native_window_observer.h"
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
+#include "base/memory/weak_ptr.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_view_drag_security_info.h"  // nogncheck
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/blink/public/common/page/drag_operation.h"
 #include "third_party/blink/public/mojom/drag/drag.mojom-forward.h"
+#include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
+#include "ui/gfx/geometry/point_f.h"
 
 #if BUILDFLAG(IS_MAC)
 #ifdef __OBJC__
@@ -23,6 +30,11 @@ class OffScreenView;
 #endif
 #endif
 
+namespace blink {
+class WebKeyboardEvent;
+class WebMouseEvent;
+}  // namespace blink
+
 namespace content {
 class WebContents;
 }
@@ -30,6 +42,7 @@ class WebContents;
 namespace electron {
 
 class NativeWindow;
+class OffScreenDragDelegate;
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,
@@ -46,6 +59,13 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
   void SetCallback(const OnPaintCallback& callback);
+  void SetDragDelegate(OffScreenDragDelegate* delegate);
+
+  // Renderer-initiated drag and drop, driven by embedder input events.
+  // These return true if |event| was consumed by an in-progress drag.
+  bool HandleDragMouseEvent(const blink::WebMouseEvent& event);
+  bool HandleDragKeyEvent(const blink::WebKeyboardEvent& event);
+  void CancelDrag();
 
   // NativeWindowObserver:
   void OnWindowResize() override;
@@ -111,7 +131,33 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   OffScreenRenderWidgetHostView* GetView() const;
 
+  struct DragState {
+    DragState();
+    DragState(DragState&&);
+    ~DragState();
+
+    std::unique_ptr<content::DropData> drop_data;
+    blink::DragOperationsMask allowed_ops = blink::kDragOperationNone;
+    base::WeakPtr<content::RenderWidgetHostImpl> source_rwh;
+    base::WeakPtr<content::RenderWidgetHostImpl> target_rwh;
+    ui::mojom::DragOperation operation = ui::mojom::DragOperation::kNone;
+    gfx::PointF last_client_pt;
+    gfx::PointF last_screen_pt;
+  };
+
+  content::RenderWidgetHostImpl* GetDragTargetWidget() const;
+  void DragTargetUpdate(const blink::WebMouseEvent& event);
+  void DragTargetLeave();
+  void OnDragOperationNegotiated(ui::mojom::DragOperation operation,
+                                 bool document_is_handling_drag);
+  void SetDragOperation(ui::mojom::DragOperation operation);
+  void EndDrag(ui::mojom::DragOperation operation, bool cancelled);
+
   raw_ptr<NativeWindow> native_window_ = nullptr;
+  raw_ptr<OffScreenDragDelegate> drag_delegate_ = nullptr;
+
+  std::optional<DragState> drag_;
+  content::WebContentsViewDragSecurityInfo drag_security_info_;
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
@@ -127,6 +173,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
 #if BUILDFLAG(IS_MAC)
   RAW_PTR_EXCLUSION OffScreenView* offScreenView_ = nullptr;
 #endif
+
+  base::WeakPtrFactory<OffScreenWebContentsView> weak_factory_{this};
 };
 
 }  // namespace electron
