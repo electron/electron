@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 31 Jul 2026 14:19:56 -0700
+Subject: Fix an OpenJPEG double-free on early OOM return
+
+In opj_j2k_copy_default_tcp_and_create_tcd(), zero out m_nb_mct_records
+and m_nb_mcc_records when resetting tcp fields after the initial
+memcpy(), and increment m_nb_mct_records instead of m_nb_max_mct_records
+when copying MCT records.
+
+TAG=agy
+CONV=f83c340a-9268-4995-b1c0-b8bddd9c38c8
+
+Bug: 540817065
+Change-Id: I85b02da08a1a598d1ad5406004314b11f309acca
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/153973
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+
+diff --git a/third_party/libopenjpeg/0051-opj_j2k_copy_default_double_free.patch b/third_party/libopenjpeg/0051-opj_j2k_copy_default_double_free.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..fd112c6411c3130e587d3d481caaa492c38c3003
+--- /dev/null
++++ b/third_party/libopenjpeg/0051-opj_j2k_copy_default_double_free.patch
+@@ -0,0 +1,32 @@
++diff --git a/third_party/libopenjpeg/j2k.c b/third_party/libopenjpeg/j2k.c
++index fc5ce62df..1fb83f8b5 100644
++--- a/third_party/libopenjpeg/j2k.c
+++++ b/third_party/libopenjpeg/j2k.c
++@@ -9246,8 +9246,10 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
++         /* Remove memory not owned by this tile in case of early error return. */
++         l_tcp->m_mct_decoding_matrix = 00;
++         l_tcp->m_nb_max_mct_records = 0;
+++        l_tcp->m_nb_mct_records = 0;
++         l_tcp->m_mct_records = 00;
++         l_tcp->m_nb_max_mcc_records = 0;
+++        l_tcp->m_nb_mcc_records = 0;
++         l_tcp->m_mcc_records = 00;
++         /* Reconnect the tile-compo coding parameters pointer to the current tile coding parameters*/
++         l_tcp->tccps = l_current_tccp;
++@@ -9270,6 +9272,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
++             return OPJ_FALSE;
++         }
++         memcpy(l_tcp->m_mct_records, l_default_tcp->m_mct_records, l_mct_records_size);
+++        l_tcp->m_nb_max_mct_records = l_default_tcp->m_nb_max_mct_records;
++
++         /* Copy the mct record data from dflt_tile_cp to the current tile*/
++         l_src_mct_rec = l_default_tcp->m_mct_records;
++@@ -9290,7 +9293,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
++             ++l_src_mct_rec;
++             ++l_dest_mct_rec;
++             /* Update with each pass to free exactly what has been allocated on early return. */
++-            l_tcp->m_nb_max_mct_records += 1;
+++            l_tcp->m_nb_mct_records += 1;
++         }
++
++         /* Get the mcc_record of the dflt_tile_cp and copy them into the current tile cp*/
+diff --git a/third_party/libopenjpeg/README.pdfium b/third_party/libopenjpeg/README.pdfium
+index 9006106d0ec26073ef3ce2244f45ecdfe361f3af..2823e66e0ce0bd692bebfdc9e0f54c57829f5796 100644
+--- a/third_party/libopenjpeg/README.pdfium
++++ b/third_party/libopenjpeg/README.pdfium
+@@ -36,6 +36,7 @@ Local Modifications:
+ 0048-dwt_neon_9-7_idwt.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1629
+ 0049-dwt_neon_5-3_idwt.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1630
+ 0050-opj_pi_initialise_encode_overflow.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1619
++0051-opj_j2k_copy_default_double_free.patch: Fix a double free.
+ 
+ Note:
+ 
+diff --git a/third_party/libopenjpeg/j2k.c b/third_party/libopenjpeg/j2k.c
+index fc5ce62df206000a6c2c3d75144cb38f34273edf..1fb83f8b5f640c6c9c1c3d54fb09ae5f6ee53e9d 100644
+--- a/third_party/libopenjpeg/j2k.c
++++ b/third_party/libopenjpeg/j2k.c
+@@ -9246,8 +9246,10 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
+         /* Remove memory not owned by this tile in case of early error return. */
+         l_tcp->m_mct_decoding_matrix = 00;
+         l_tcp->m_nb_max_mct_records = 0;
++        l_tcp->m_nb_mct_records = 0;
+         l_tcp->m_mct_records = 00;
+         l_tcp->m_nb_max_mcc_records = 0;
++        l_tcp->m_nb_mcc_records = 0;
+         l_tcp->m_mcc_records = 00;
+         /* Reconnect the tile-compo coding parameters pointer to the current tile coding parameters*/
+         l_tcp->tccps = l_current_tccp;
+@@ -9270,6 +9272,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
+             return OPJ_FALSE;
+         }
+         memcpy(l_tcp->m_mct_records, l_default_tcp->m_mct_records, l_mct_records_size);
++        l_tcp->m_nb_max_mct_records = l_default_tcp->m_nb_max_mct_records;
+ 
+         /* Copy the mct record data from dflt_tile_cp to the current tile*/
+         l_src_mct_rec = l_default_tcp->m_mct_records;
+@@ -9290,7 +9293,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
+             ++l_src_mct_rec;
+             ++l_dest_mct_rec;
+             /* Update with each pass to free exactly what has been allocated on early return. */
+-            l_tcp->m_nb_max_mct_records += 1;
++            l_tcp->m_nb_mct_records += 1;
+         }
+ 
+         /* Get the mcc_record of the dflt_tile_cp and copy them into the current tile cp*/

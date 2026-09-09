@@ -14,5 +14,7 @@
   { "patch_dir": "src/electron/patches/reclient-configs", "repo": "src/third_party/engflow-reclient-configs" },
   { "patch_dir": "src/electron/patches/sqlite", "repo": "src/third_party/sqlite/src" },
   { "patch_dir": "src/electron/patches/dawn", "repo": "src/third_party/dawn" },
-  { "patch_dir": "src/electron/patches/skia", "repo": "src/third_party/skia" }
+  { "patch_dir": "src/electron/patches/skia", "repo": "src/third_party/skia" },
+  { "patch_dir": "src/electron/patches/pdfium", "repo": "src/third_party/pdfium" },
+  { "patch_dir": "src/electron/patches/libyuv", "repo": "src/third_party/libyuv" }
 ]

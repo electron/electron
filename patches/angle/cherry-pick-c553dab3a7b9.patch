@@ -1,0 +1,742 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 21 Jul 2026 16:58:28 -0400
+Subject: Translator: Fix name collision in extracted samplers
+
+Instead of generating a name out of the path from the uniform that leads
+to the sampler, a name is generated for these samplers with the
+AngleInternal symbol so it cannot collide with other shader names.
+
+Currently, samplers in structs are always considered active (so won't be
+dead-code eliminated).  No transformation reorders them either.  These
+two properties are now requirements of this transformation.
+
+Bug: angleproject:42262930
+Bug: chromium:536434693
+Change-Id: I2b64bef23ceaa0c03615eb10035aecf491d78111
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8133266
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/include/GLSLANG/ShaderLang.h b/include/GLSLANG/ShaderLang.h
+index 5d5a61966dfead52f2512e7bf3c9213052b8232f..b2bf5c5a61083951dc1b472ee159f2c5e2763157 100644
+--- a/include/GLSLANG/ShaderLang.h
++++ b/include/GLSLANG/ShaderLang.h
+@@ -26,7 +26,7 @@
+ 
+ // Version number for shader translation API.
+ // It is incremented every time the API changes.
+-#define ANGLE_SH_VERSION 419
++#define ANGLE_SH_VERSION 420
+ 
+ enum ShShaderSpec
+ {
+@@ -1007,6 +1007,10 @@ enum class MetadataFlags
+     EnumCount = InvalidEnum,
+ };
+ 
++// If samplers are extracted from structs, their names will be <prefix><N>, where <N> is a
++// zero-based index assigned in DFS-order of declaration.
++extern const char kExtractedSamplerNamePrefix[];
++
+ namespace vk
+ {
+ 
+diff --git a/samples/shader_translator/shader_translator.cpp b/samples/shader_translator/shader_translator.cpp
+index fb72363f23b9587683279ebb2ba5bbf25683fa68..b6106c43e59a81eedfdad44172f5393c881a7f24 100644
+--- a/samples/shader_translator/shader_translator.cpp
++++ b/samples/shader_translator/shader_translator.cpp
+@@ -114,6 +114,9 @@ int main(int argc, char *argv[])
+                 case 'u':
+                     printActiveVariables = true;
+                     break;
++                case 'g':
++                    compileOptions.outputDebugInfo = true;
++                    break;
+                 case 'r':
+                     compileOptions.useIR = true;
+                     break;
+@@ -180,6 +183,7 @@ int main(int argc, char *argv[])
+                                 break;
+                             case 'v':
+                                 output = SH_SPIRV_VULKAN_OUTPUT;
++                                compileOptions.emitSPIRV14 = true;
+                                 compileOptions.initializeUninitializedLocals = true;
+                                 compileOptions.removeInactiveVariables       = true;
+                                 break;
+@@ -441,6 +445,7 @@ void usage()
+         "       -i       : print intermediate tree\n"
+         "       -o       : print translated code\n"
+         "       -u       : print active attribs, uniforms, varyings and program outputs\n"
++        "       -g       : include debug info in the output\n"
+         "       -r       : use the IR instead of AST\n"
+         "       -s=e2    : use GLES2 spec (this is by default)\n"
+         "       -s=e3    : use GLES3 spec\n"
+diff --git a/src/compiler/translator/spirv/TranslatorSPIRV.cpp b/src/compiler/translator/spirv/TranslatorSPIRV.cpp
+index dbaf91e617d347158509edd1cfaf407501e89df3..80d645f5885d41c9d73b1c13f53a913b23c0d639 100644
+--- a/src/compiler/translator/spirv/TranslatorSPIRV.cpp
++++ b/src/compiler/translator/spirv/TranslatorSPIRV.cpp
+@@ -559,52 +559,29 @@ ShaderVariable *FindIOBlockShaderVariable(std::vector<ShaderVariable> *vars,
+     return nullptr;
+ }
+ 
+-ShaderVariable *FindUniformFieldShaderVariable(std::vector<ShaderVariable> *vars,
+-                                               const ImmutableString &name,
+-                                               const char *prefix)
++void GetSamplersInStruct(std::vector<ShaderVariable> *fields, TVector<ShaderVariable *> *samplers)
+ {
+-    for (ShaderVariable &var : *vars)
++    for (ShaderVariable &var : *fields)
+     {
+-        // The name of the sampler is derived from the uniform name + fields
+-        // that reach the uniform, concatenated with '_' per RewriteStructSamplers.
+-        std::string varName = prefix;
+-        varName += '_';
+-        varName += var.name;
+-
+-        if (name == varName)
++        if (gl::IsSamplerType(var.type))
+         {
+-            return &var;
++            samplers->push_back(&var);
+         }
+-
+-        ShaderVariable *field = FindUniformFieldShaderVariable(&var.fields, name, varName.c_str());
+-        if (field != nullptr)
++        else
+         {
+-            return field;
++            GetSamplersInStruct(&var.fields, samplers);
+         }
+     }
+-    return nullptr;
+ }
+ 
+-ShaderVariable *FindUniformShaderVariable(std::vector<ShaderVariable> *vars,
+-                                          const ImmutableString &name)
++TVector<ShaderVariable *> GetSamplersInStructs(std::vector<ShaderVariable> *vars)
+ {
++    TVector<ShaderVariable *> samplers;
+     for (ShaderVariable &var : *vars)
+     {
+-        if (name == var.name)
+-        {
+-            return &var;
+-        }
+-
+-        // Note: samplers in structs are moved out.  Such samplers will be found in the fields of
+-        // the struct uniform.
+-        ShaderVariable *field = FindUniformFieldShaderVariable(&var.fields, name, var.name.c_str());
+-        if (field != nullptr)
+-        {
+-            return field;
+-        }
++        GetSamplersInStruct(&var.fields, &samplers);
+     }
+-    UNREACHABLE();
+-    return nullptr;
++    return samplers;
+ }
+ 
+ void SetSpirvIdInFields(uint32_t id, std::vector<ShaderVariable> *fields)
+@@ -1227,6 +1204,12 @@ void TranslatorSPIRV::assignSpirvIds(TIntermBlock *root)
+     // of this fact for optimal hashing.
+     mFirstUnusedSpirvId = vk::spirv::kIdFirstUnreserved;
+ 
++    // Extracted samplers are given generic names and cannot be looked up.  They are given IDs in
++    // sequence based on declaration order, which also means they cannot be dead-code eliminated or
++    // reordered by any transformation
++    TVector<ShaderVariable *> extractedSamplers = GetSamplersInStructs(&mUniforms);
++    uint32_t nextExtractedSampler               = 0;
++
+     for (TIntermNode *node : *root->getSequence())
+     {
+         TIntermDeclaration *decl = node->getAsDeclarationNode();
+@@ -1294,8 +1277,22 @@ void TranslatorSPIRV::assignSpirvIds(TIntermBlock *root)
+         }
+         else if (qualifier == EvqUniform)
+         {
+-            ShaderVariable *uniform = FindUniformShaderVariable(&mUniforms, symbol->getName());
+-            variableId              = &uniform->id;
++            // The translator never adds any samplers that are not declared in the shader.  As such,
++            // the only |AngleInternal| samplers are those that are extracted from uniforms.
++            if (IsSampler(type.getBasicType()) &&
++                symbol->variable().symbolType() == SymbolType::AngleInternal)
++            {
++                // Since the samplers are declared in the shader in the same order as they are
++                // collected in reflection info, pick the next |ShaderVariable| for these samplers.
++                ASSERT(nextExtractedSampler < extractedSamplers.size());
++                variableId = &extractedSamplers[nextExtractedSampler]->id;
++                ++nextExtractedSampler;
++            }
++            else
++            {
++                ShaderVariable *uniform = FindShaderVariable(&mUniforms, symbol->getName());
++                variableId              = &uniform->id;
++            }
+         }
+         else if (qualifier == EvqAttribute || qualifier == EvqVertexIn)
+         {
+diff --git a/src/compiler/translator/tree_ops/RewriteStructSamplers.cpp b/src/compiler/translator/tree_ops/RewriteStructSamplers.cpp
+index 77262ed6e5b598fde791b1b4b9ce9e76afaf288f..ee8dc88920d6bc78811cd9753479db8189c69d5e 100644
+--- a/src/compiler/translator/tree_ops/RewriteStructSamplers.cpp
++++ b/src/compiler/translator/tree_ops/RewriteStructSamplers.cpp
+@@ -20,9 +20,10 @@
+ 
+ namespace sh
+ {
++const char kExtractedSamplerNamePrefix[] = "extractedSampler";
++
+ namespace
+ {
+-
+ // Used to map one structure type to another (one where the samplers are removed).
+ struct StructureData
+ {
+@@ -189,7 +190,7 @@ TIntermTyped *RewriteModifiedStructFieldSelectionExpression(
+     const bool isSampler = node->getType().isSampler();
+ 
+     TIntermSymbol *baseUniform = nullptr;
+-    std::string samplerName;
++    std::string samplerPath;
+ 
+     TVector<TIntermBinary *> indexNodeStack;
+ 
+@@ -206,15 +207,15 @@ TIntermTyped *RewriteModifiedStructFieldSelectionExpression(
+             {
+                 // When indexed into a struct, get the field name instead and construct the sampler
+                 // name.
+-                samplerName.insert(0, iter->getIndexStructFieldName().data());
+-                samplerName.insert(0, "_");
++                samplerPath.insert(0, iter->getIndexStructFieldName().data());
++                samplerPath.insert(0, ".");
+             }
+ 
+             if (baseUniform)
+             {
+                 // If left is a symbol, we have reached the end of the chain.  Use the struct name
+                 // to finish building the name of the sampler.
+-                samplerName.insert(0, baseUniform->variable().name().data());
++                samplerPath.insert(0, baseUniform->variable().name().data());
+             }
+         }
+ 
+@@ -225,8 +226,8 @@ TIntermTyped *RewriteModifiedStructFieldSelectionExpression(
+ 
+     if (isSampler)
+     {
+-        ASSERT(extractedSamplers.find(samplerName) != extractedSamplers.end());
+-        rewritten = new TIntermSymbol(extractedSamplers.at(samplerName));
++        ASSERT(extractedSamplers.find(samplerPath) != extractedSamplers.end());
++        rewritten = new TIntermSymbol(extractedSamplers.at(samplerPath));
+     }
+     else
+     {
+@@ -532,7 +533,7 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
+         const TType &fieldType = *field->type();
+         if (fieldType.isSampler() || fieldType.isStructureContainingSamplers())
+         {
+-            std::string newPrefix = prefix + "_" + field->name().data();
++            std::string newPrefix = prefix + "." + field->name().data();
+ 
+             if (fieldType.isSampler())
+             {
+@@ -565,7 +566,7 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
+     }
+ 
+     // Extracts a sampler from a struct. Declares the new extracted sampler.
+-    void extractSampler(const std::string &newName,
++    void extractSampler(const std::string &path,
+                         const TType &fieldType,
+                         TIntermSequence *newSequence)
+     {
+@@ -580,6 +581,10 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
+         GenerateArraySizesFromStack(&parentArraySizes);
+         newType->makeArrays(parentArraySizes);
+ 
++        std::ostringstream newNameBuilder;
++        newNameBuilder << kExtractedSamplerNamePrefix << mExtractedSamplers.size();
++        const std::string newName = newNameBuilder.str();
++
+         ImmutableStringBuilder nameBuilder(newName.size() + 1);
+         nameBuilder << newName;
+ 
+@@ -593,12 +598,8 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
+ 
+         newSequence->push_back(samplerDecl);
+ 
+-        // TODO: Use a temp name instead of generating a name as currently done.  There is no
+-        // guarantee that these generated names cannot clash.  Create a mapping from the previous
+-        // name to the name assigned to the temp variable so ShaderVariable::mappedName can be
+-        // updated post-transformation.  http://anglebug.com/42262930
+-        ASSERT(mExtractedSamplers.find(newName) == mExtractedSamplers.end());
+-        mExtractedSamplers[newName] = newVariable;
++        ASSERT(mExtractedSamplers.find(path) == mExtractedSamplers.end());
++        mExtractedSamplers[path] = newVariable;
+     }
+ 
+     void enterArray(const TType &arrayType)
+diff --git a/src/compiler/translator/tree_ops/RewriteStructSamplers.h b/src/compiler/translator/tree_ops/RewriteStructSamplers.h
+index 41ec8bf92d88c3005123c45b26ab5b2b654df6b8..806f1c731b4806d8141461d2c68ef5276fb862c7 100644
+--- a/src/compiler/translator/tree_ops/RewriteStructSamplers.h
++++ b/src/compiler/translator/tree_ops/RewriteStructSamplers.h
+@@ -11,12 +11,20 @@
+ // wouldn't need to deal with functions that are passed such structs.
+ //
+ // For example:
++//
+ //   struct S { sampler2D samp; int i; };
+ //   uniform S uni;
++//
+ // Is rewritten as:
++//
+ //   struct S { int i; };
+ //   uniform S uni;
+-//   uniform sampler2D uni_i;
++//   uniform sampler2D extractedSampler0;
++//
++// Note that |extractedSamplerN| is given an AngleInternal symbol type so that it cannot collide
++// with user names (such as |uni|).  The extracted samplers are declared in DFS order when visiting
++// the uniforms; this order must be kept so that they can be mapped back to reflection info
++// collected in |ShaderVariable|s.
+ 
+ #ifndef COMPILER_TRANSLATOR_TREEOPS_REWRITESTRUCTSAMPLERS_H_
+ #define COMPILER_TRANSLATOR_TREEOPS_REWRITESTRUCTSAMPLERS_H_
+diff --git a/src/compiler/translator/wgsl/OutputUniformBlocks.cpp b/src/compiler/translator/wgsl/OutputUniformBlocks.cpp
+index fc8fc235828f2d424065acf95d0b5f34fd987f92..d0bfd66ec8efb1961599600ba1ebff4fefbb3b2f 100644
+--- a/src/compiler/translator/wgsl/OutputUniformBlocks.cpp
++++ b/src/compiler/translator/wgsl/OutputUniformBlocks.cpp
+@@ -364,34 +364,4 @@ bool OutputUniformBlocksAndSamplers(TCompiler *compiler,
+     return true;
+ }
+ 
+-std::string WGSLGetMappedSamplerName(const std::string &originalName)
+-{
+-    std::string samplerName = originalName;
+-
+-    // Samplers in structs are extracted.
+-    std::replace(samplerName.begin(), samplerName.end(), '.', '_');
+-
+-    // Remove array elements
+-    auto out = samplerName.begin();
+-    for (auto in = samplerName.begin(); in != samplerName.end(); in++)
+-    {
+-        if (*in == '[')
+-        {
+-            while (*in != ']')
+-            {
+-                in++;
+-                ASSERT(in != samplerName.end());
+-            }
+-        }
+-        else
+-        {
+-            *out++ = *in;
+-        }
+-    }
+-
+-    samplerName.erase(out, samplerName.end());
+-
+-    return samplerName;
+-}
+-
+ }  // namespace sh
+diff --git a/src/compiler/translator/wgsl/OutputUniformBlocks.h b/src/compiler/translator/wgsl/OutputUniformBlocks.h
+index 8b1debe3adbb9fe69f4d978450d477ce08595596..63bff914d0ba0a2f559a518dc25bcc7b9e160569 100644
+--- a/src/compiler/translator/wgsl/OutputUniformBlocks.h
++++ b/src/compiler/translator/wgsl/OutputUniformBlocks.h
+@@ -105,10 +105,6 @@ bool OutputUniformBlocksAndSamplers(TCompiler *compiler,
+                                     TIntermBlock *root,
+                                     const TVariable *defaultUniformBlock);
+ 
+-// GLSL sampler uniforms are extracted from structs. Given a GLSL sampler's associated name string,
+-// this function retrieves its new WGSL name and strips off array indices.
+-std::string WGSLGetMappedSamplerName(const std::string &originalName);
+-
+ }  // namespace sh
+ 
+ #endif  // COMPILER_TRANSLATOR_WGSL_OUTPUT_UNIFORM_BLOCKS_H_
+diff --git a/src/libANGLE/renderer/metal/mtl_msl_utils.mm b/src/libANGLE/renderer/metal/mtl_msl_utils.mm
+index be06ab1c20611a887ede83d3aa7d2d7399fba7a8..1f1016a10bb0288b692b19e8676c19c7a31630b3 100644
+--- a/src/libANGLE/renderer/metal/mtl_msl_utils.mm
++++ b/src/libANGLE/renderer/metal/mtl_msl_utils.mm
+@@ -16,6 +16,7 @@
+ #include "libANGLE/renderer/metal/ContextMtl.h"
+ #include "libANGLE/renderer/metal/ShaderMtl.h"
+ #include "libANGLE/renderer/metal/mtl_msl_utils.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ namespace rx
+ {
+@@ -167,44 +168,21 @@
+ using OriginalSamplerBindingMap =
+     std::unordered_map<std::string, std::vector<std::pair<uint32_t, uint32_t>>>;
+ 
+-bool MappedSamplerNameNeedsUserDefinedPrefix(const std::string &originalName)
++static std::string MSLGetMappedSamplerName(
++    const std::string &originalName,
++    angle::HashMap<std::string, size_t> *extractedSamplerIndices)
+ {
+-    return originalName.find('.') == std::string::npos;
+-}
+-
+-static std::string MSLGetMappedSamplerName(const std::string &originalName)
+-{
+-    std::string samplerName = originalName;
+-
+-    // Samplers in structs are extracted.
+-    std::replace(samplerName.begin(), samplerName.end(), '.', '_');
+-
+     // Remove array elements
+-    auto out = samplerName.begin();
+-    for (auto in = samplerName.begin(); in != samplerName.end(); in++)
+-    {
+-        if (*in == '[')
+-        {
+-            while (*in != ']')
+-            {
+-                in++;
+-                ASSERT(in != samplerName.end());
+-            }
+-        }
+-        else
+-        {
+-            *out++ = *in;
+-        }
+-    }
++    const std::string samplerName = RemoveArraySubscripts(originalName);
+ 
+-    samplerName.erase(out, samplerName.end());
+-
+-    if (MappedSamplerNameNeedsUserDefinedPrefix(originalName))
++    // Samplers in structs are extracted.
++    if (samplerName.find('.') != std::string::npos)
+     {
+-        samplerName = kUserDefinedNamePrefix + samplerName;
++        ASSERT(extractedSamplerIndices != nullptr);
++        return GetExtractedStructSamplerName(samplerName, extractedSamplerIndices);
+     }
+ 
+-    return samplerName;
++    return kUserDefinedNamePrefix + samplerName;
+ }
+ 
+ void MSLGetShaderSource(const gl::ProgramState &programState,
+@@ -232,7 +210,7 @@ void GetAssignedSamplerBindings(const sh::TranslatorMetalReflection *reflection,
+         // Assign sequential index for subsequent array elements
+         const bool structSampler = structSamplers.find(name) != structSamplers.end();
+         const std::string mappedName =
+-            structSampler ? name : MSLGetMappedSamplerName(kUserDefinedNamePrefix + name);
++            structSampler ? name : MSLGetMappedSamplerName(kUserDefinedNamePrefix + name, nullptr);
+         auto original = originalBindings.find(mappedName);
+         if (original != originalBindings.end())
+         {
+@@ -633,6 +611,7 @@ void GenerateTransformFeedbackEmulationOutputs(
+     const std::vector<gl::SamplerBinding> &samplerBindings = executable.getSamplerBindings();
+     std::unordered_set<std::string> structSamplers         = {};
+ 
++    angle::HashMap<std::string, size_t> extractedSamplerIndices;
+     for (uint32_t textureIndex = 0; textureIndex < samplerBindings.size(); ++textureIndex)
+     {
+         const gl::SamplerBinding &samplerBinding = samplerBindings[textureIndex];
+@@ -640,12 +619,13 @@ void GenerateTransformFeedbackEmulationOutputs(
+         const std::string &uniformName = executable.getUniformNames()[uniformIndex];
+         const std::string &uniformMappedName = executable.getUniformMappedNames()[uniformIndex];
+         bool isSamplerInStruct               = uniformName.find('.') != std::string::npos;
+-        std::string mappedSamplerName        = isSamplerInStruct
+-                                                   ? MSLGetMappedSamplerName(uniformName)
+-                                                   : MSLGetMappedSamplerName(uniformMappedName);
++        std::string mappedSamplerName        = MSLGetMappedSamplerName(
++            isSamplerInStruct ? uniformName : uniformMappedName, &extractedSamplerIndices);
+         // These need to be prefixed later seperately
+         if (isSamplerInStruct)
++        {
+             structSamplers.insert(mappedSamplerName);
++        }
+         originalSamplerBindings[mappedSamplerName].push_back(
+             {textureIndex, static_cast<uint32_t>(samplerBinding.textureUnitsCount)});
+     }
+diff --git a/src/libANGLE/renderer/renderer_utils.cpp b/src/libANGLE/renderer/renderer_utils.cpp
+index 6c9ff82719433619fca80328ad99341c808da88c..101a715e2170f133ceaed394d4144faa1b83da28 100644
+--- a/src/libANGLE/renderer/renderer_utils.cpp
++++ b/src/libANGLE/renderer/renderer_utils.cpp
+@@ -1564,6 +1564,57 @@ template void GetUniform<GLfloat>(const gl::ProgramExecutable *executable,
+                                   GLenum entryPointType,
+                                   const DefaultUniformBlockMap *defaultUniformBlocks);
+ 
++std::string RemoveArraySubscripts(const std::string &uniformName)
++{
++    std::string strippedName = uniformName;
++
++    auto out = strippedName.begin();
++    for (auto in = strippedName.begin(); in != strippedName.end(); in++)
++    {
++        if (*in == '[')
++        {
++            while (*in != ']')
++            {
++                in++;
++                ASSERT(in != strippedName.end());
++            }
++        }
++        else
++        {
++            *out++ = *in;
++        }
++    }
++
++    strippedName.erase(out, strippedName.end());
++    return strippedName;
++}
++
++std::string GetExtractedStructSamplerName(
++    const std::string uniformNameWithoutIndices,
++    angle::HashMap<std::string, size_t> *extractedSamplerIndices)
++{
++    ASSERT(uniformNameWithoutIndices.find('.') != std::string::npos);
++    ASSERT(uniformNameWithoutIndices.find('[') == std::string::npos);
++
++    // The first time this uniform is visited, the extracted sampler name is generated.  For
++    // arrays, consecutive visits reuse the same extracted sampler name.
++    size_t index = extractedSamplerIndices->size();
++
++    auto extracted = extractedSamplerIndices->find(uniformNameWithoutIndices);
++    if (extracted != extractedSamplerIndices->end())
++    {
++        index = extracted->second;
++    }
++    else
++    {
++        (*extractedSamplerIndices)[uniformNameWithoutIndices] = index;
++    }
++
++    std::ostringstream name;
++    name << sh::kExtractedSamplerNamePrefix << index;
++    return name.str();
++}
++
+ const angle::Format &GetFormatFromFormatType(GLenum format, GLenum type)
+ {
+     GLenum sizedInternalFormat    = gl::GetInternalFormatInfo(format, type).sizedInternalFormat;
+diff --git a/src/libANGLE/renderer/renderer_utils.h b/src/libANGLE/renderer/renderer_utils.h
+index 626122122b454f48d221e79a2a07bbf7935b9dac..df82242a7f9bed02a76506a3180f9153ee8bc9f8 100644
+--- a/src/libANGLE/renderer/renderer_utils.h
++++ b/src/libANGLE/renderer/renderer_utils.h
+@@ -21,6 +21,7 @@
+ 
+ #include "GLSLANG/ShaderLang.h"
+ #include "common/angleutils.h"
++#include "common/hash_containers.h"
+ #include "common/utilities.h"
+ #include "libANGLE/ImageIndex.h"
+ #include "libANGLE/angletypes.h"
+@@ -343,6 +344,16 @@ void GetUniform(const gl::ProgramExecutable *executable,
+                 GLenum entryPointType,
+                 const DefaultUniformBlockMap *defaultUniformBlocks);
+ 
++// Remove `[*]` from uniform names
++std::string RemoveArraySubscripts(const std::string &uniformName);
++
++// Maps sampler-in-struct uniform names to extracted sampler names, matching the transformation done
++// by the translator (RewriteStructSamplers).  Indices must have already been stripped from the
++// uniformName.
++std::string GetExtractedStructSamplerName(
++    const std::string uniformNameWithoutIndices,
++    angle::HashMap<std::string, size_t> *extractedSamplerIndices);
++
+ const angle::Format &GetFormatFromFormatType(GLenum format, GLenum type);
+ 
+ angle::Result ComputeStartVertex(ContextImpl *contextImpl,
+diff --git a/src/libANGLE/renderer/wgpu/wgpu_wgsl_util.cpp b/src/libANGLE/renderer/wgpu/wgpu_wgsl_util.cpp
+index 33c1c1a82882f0d5bdc093d8dda0e2518a59c6fd..ce08c5a241e7e036404dcf7f544bb19f0314a892 100644
+--- a/src/libANGLE/renderer/wgpu/wgpu_wgsl_util.cpp
++++ b/src/libANGLE/renderer/wgpu/wgpu_wgsl_util.cpp
+@@ -20,6 +20,7 @@
+ #include "compiler/translator/wgsl/OutputUniformBlocks.h"
+ #include "libANGLE/Program.h"
+ #include "libANGLE/ProgramExecutable.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ namespace rx
+ {
+@@ -30,6 +31,25 @@ namespace
+ {
+ const bool kOutputReplacements = false;
+ 
++// GLSL sampler uniforms are extracted from structs. Given a GLSL sampler's associated name string,
++// this function retrieves its new WGSL name and strips off array indices.
++//
++// For extracted samplers, their names are generated and indexed by their order.
++std::string GetMappedSamplerName(const std::string &originalName,
++                                 angle::HashMap<std::string, size_t> *extractedSamplerIndices)
++{
++    // Remove array elements
++    const std::string samplerName = RemoveArraySubscripts(originalName);
++
++    // Samplers in structs are extracted.
++    if (samplerName.find('.') != std::string::npos)
++    {
++        return GetExtractedStructSamplerName(samplerName, extractedSamplerIndices);
++    }
++
++    return samplerName;
++}
++
+ void ReplaceFoundMarker(const std::string &shaderSource,
+                         std::string &newSource,
+                         const std::map<std::string, int> &varNameToLocation,
+@@ -217,6 +237,7 @@ std::string WgslAssignLocationsAndSamplerBindings(const gl::ProgramExecutable &e
+     // locations, alternating between a sampler and its corresponding texture.
+     // The WGPU backend will read the same metadata and lay out its bind groups in the same
+     // alternating fashion.
++    angle::HashMap<std::string, size_t> extractedSamplerIndices;
+     for (uint32_t textureIndex = 0; textureIndex < samplerBindings.size(); ++textureIndex)
+     {
+         if (samplerBindings[textureIndex].textureUnitsCount != 1)
+@@ -228,7 +249,7 @@ std::string WgslAssignLocationsAndSamplerBindings(const gl::ProgramExecutable &e
+         // Get the name of the sampler variable from the uniform metadata.
+         uint32_t uniformIndex          = executable.getUniformIndexFromSamplerIndex(textureIndex);
+         const std::string &uniformName = executable.getUniformNames()[uniformIndex];
+-        std::string mappedSamplerName  = sh::WGSLGetMappedSamplerName(uniformName);
++        std::string mappedSamplerName = GetMappedSamplerName(uniformName, &extractedSamplerIndices);
+ 
+         varNameToLocation[std::string(sh::kAngleSamplerPrefix) + mappedSamplerName] =
+             textureIndex * 2;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 0b5ce694c409cffeee05f47ceed4f0ee19fb19cc..e44d3c6de800d8c3eb92fd2c398cb02df4002b2b 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -615,6 +615,7 @@
+ 512896813 WIN D3D11 : LineLoopTestES3.LineLoopDrawElementsInstancedBaseVertexBaseInstance/* = SKIP
+ 514615434 D3D11 : DrawBaseVertexBaseInstanceTest.NegativeBaseVertex/* = SKIP
+ 515698970 D3D11 : DrawBaseVertexBaseInstanceTest_ES3.BaseInstanceSmallDivisorClientMemory/* = SKIP
++537801203 WIN D3D11 : GLSLTest.SamplersInStructNoNameCollision/* = SKIP
+ 
+ // Android
+ 42264624 ANDROID GLES : GLSLTest_ES3.InitGlobalComplexConstant/* = SKIP
+@@ -2498,6 +2499,7 @@
+ 42267100 WGPU : GLSLTest.StructsWithSamplersAsFunctionArgWithPrototype/* = SKIP
+ 42267100 WGPU : GLSLTest.ArrayOfStructsWithSamplersAsFunctionArg/* = SKIP
+ 42267100 WGPU : GLSLTest.StructWithSamplerArrayAsFunctionArg/* = SKIP
++42267100 WGPU : GLSLTest.SamplersInStructNoNameCollision2/* = SKIP
+ 42267100 WGPU : GLSLTest.VectorScalarDivideAndAddInLoop/* = SKIP
+ 42267100 WGPU : GLSLTest.PointCoordConsistency/* = SKIP
+ 42267100 WGPU : GLSLTest.ScreenFlipCauseStandardDerivativesWrong/* = SKIP
+diff --git a/src/tests/compiler_tests/WGSLOutput_test.cpp b/src/tests/compiler_tests/WGSLOutput_test.cpp
+index 2b97ee2268b7e373a88393a9698bc242b1e5db99..cb4a51b691b87608a3b60579f484a7a337f18198 100644
+--- a/src/tests/compiler_tests/WGSLOutput_test.cpp
++++ b/src/tests/compiler_tests/WGSLOutput_test.cpp
+@@ -2123,8 +2123,8 @@ struct ANGLE_Output_Annotated {
+ @group(1) @binding(@@@@@@) var ANGLE_texture_samp3D : texture_3d<f32>;
+ @group(1) @binding(@@@@@@) var ANGLE_sampler_sampCube : sampler;
+ @group(1) @binding(@@@@@@) var ANGLE_texture_sampCube : texture_cube<f32>;
+-@group(1) @binding(@@@@@@) var ANGLE_sampler_sampStruct_samp1 : sampler;
+-@group(1) @binding(@@@@@@) var ANGLE_texture_sampStruct_samp1 : texture_2d<f32>;
++@group(1) @binding(@@@@@@) var ANGLE_sampler_extractedSampler0 : sampler;
++@group(1) @binding(@@@@@@) var ANGLE_texture_extractedSampler0 : texture_2d<f32>;
+ 
+ struct ANGLEDepthRangeParams
+ {
+@@ -2153,7 +2153,7 @@ struct ANGLEUniformBlock
+ 
+ fn _umain()
+ {
+-  (ANGLE_output_global._ufragColor) = (textureSample(ANGLE_texture_sampStruct_samp1, ANGLE_sampler_sampStruct_samp1, (vec2<f32>(0.0f, 0.0f)).xy));
++  (ANGLE_output_global._ufragColor) = (textureSample(ANGLE_texture_extractedSampler0, ANGLE_sampler_extractedSampler0, (vec2<f32>(0.0f, 0.0f)).xy));
+   (ANGLE_output_global._ufragColor) += (textureSample(ANGLE_texture_samp2D, ANGLE_sampler_samp2D, (vec2<f32>(0.0f, 0.0f)).xy));
+   (ANGLE_output_global._ufragColor) += (textureSample(ANGLE_texture_samp3D, ANGLE_sampler_samp3D, (vec3<f32>(0.0f, 0.0f, 0.0f)).xyz));
+   (ANGLE_output_global._ufragColor) += (textureSample(ANGLE_texture_sampCube, ANGLE_sampler_sampCube, (vec3<f32>(0.0f, 0.0f, 0.0f)).xyz));
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index a1179b297e29d3d29b5cfc7ec648087045a3eda1..49119221132d60df26257a94de5b69fcf5371592 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -2941,16 +2941,15 @@ void main()
+ // Test that array of structs containing array of samplers work as expected.
+ TEST_P(GLSLTest, ArrayOfStructContainingArrayOfSamplers)
+ {
+-    constexpr char kFS[] =
+-        "precision mediump float;\n"
+-        "struct Data { mediump sampler2D data[2]; };\n"
+-        "uniform Data test[2];\n"
+-        "void main() {\n"
+-        "    gl_FragColor = vec4(texture2D(test[1].data[1], vec2(0.0, 0.0)).r,\n"
+-        "                        texture2D(test[1].data[0], vec2(0.0, 0.0)).r,\n"
+-        "                        texture2D(test[0].data[1], vec2(0.0, 0.0)).r,\n"
+-        "                        texture2D(test[0].data[0], vec2(0.0, 0.0)).r);\n"
+-        "}\n";
++    constexpr char kFS[] = R"(precision mediump float;
++struct Data { mediump sampler2D data[2]; };
++uniform Data test[2];
++void main() {
++    gl_FragColor = vec4(texture2D(test[1].data[1], vec2(0.0, 0.0)).r,
++                        texture2D(test[1].data[0], vec2(0.0, 0.0)).r,
++                        texture2D(test[0].data[1], vec2(0.0, 0.0)).r,
++                        texture2D(test[0].data[0], vec2(0.0, 0.0)).r);
++})";
+ 
+     ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
+     glUseProgram(program);
+@@ -11750,8 +11749,62 @@ void main() {
+ })";
+ 
+     ANGLE_GL_PROGRAM(program, kVS, kFS);
++    drawQuad(program, "a_position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
+ 
++// Test that samplers in structs don't create name collisions if extracted.
++TEST_P(GLSLTest, SamplersInStructNoNameCollision)
++{
++    constexpr char kVS[] = R"(attribute vec4 a_position;
++void main() {
++  gl_Position = a_position;
++})";
++
++    constexpr char kFS[] = R"(precision highp float;
++struct S
++{
++    sampler2D s;
++};
++uniform struct A
++{
++    vec4 v;
++    S a;
++    sampler2D a_s;
++} a;
++void main() {
++  gl_FragColor = a.v;
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    drawQuad(program, "a_position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that samplers in structs don't create name collisions if extracted.
++TEST_P(GLSLTest, SamplersInStructNoNameCollision2)
++{
++    constexpr char kVS[] = R"(attribute vec4 a_position;
++void main() {
++  gl_Position = a_position;
++})";
++
++    constexpr char kFS[] = R"(precision mediump float;
++struct A { sampler2D b_t; };
++struct B { sampler2D t; };
++uniform A a[4];
++uniform B a_b[2];
++void main()
++{
++    gl_FragColor = texture2D(a[3].b_t, vec2(0.0)) + texture2D(a_b[1].t, vec2(0.0));
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
+     drawQuad(program, "a_position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::black);
++    ASSERT_GL_NO_ERROR();
+ }
+ 
+ // Helper functions for MixedRowAndColumnMajorMatrices* tests

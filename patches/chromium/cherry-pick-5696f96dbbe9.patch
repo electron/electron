@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: vikas soni <vikassoni@chromium.org>
+Date: Tue, 1 Sep 2026 13:58:04 -0700
+Subject: [GPU Security]Require initial data for compressed GL SharedImages.
+
+GLCommonImageBackingFactory::CanCreateTexture only ran compressed-format
+validation when pixel_data was non-empty, so a compressed SharedImage
+could be created with no initial data. Compressed formats are not
+color-renderable and therefore cannot be cleared after creation, and
+glCompressedTexImage2D does not accept null data for non-zero
+dimensions.
+
+Run compressed-format validation unconditionally and require that
+pixel_data matches the computed compressed size, which rejects requests
+with empty pixel data.
+
+Bug: 536673946
+Change-Id: I6c25102d8d10685aadbd993efac0bb6cf5296cd6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8299334
+Commit-Queue: vikas soni <vikassoni@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1690102}
+
+diff --git a/gpu/command_buffer/service/shared_image/gl_common_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/gl_common_image_backing_factory.cc
+index 05b2dcfbf15c51689b680675a8d9ea834c9334fd..7a1df1974e424f32775284a19ac4b57ea590b89c 100644
+--- a/gpu/command_buffer/service/shared_image/gl_common_image_backing_factory.cc
++++ b/gpu/command_buffer/service/shared_image/gl_common_image_backing_factory.cc
+@@ -216,62 +216,63 @@ bool GLCommonImageBackingFactory::CanCreateTexture(
+     return false;
+   }
+ 
+-  // If we have initial data to upload, ensure it is sized appropriately.
+-  if (!pixel_data.empty()) {
+-    DCHECK_EQ(format_infos.size(), 1u);
++  if (format_infos[0].is_compressed) {
++    CHECK_EQ(format_infos.size(), 1u);
+     const FormatInfo& format_info = format_infos[0];
++    const char* error_message = "unspecified";
++    if (!gles2::ValidateCompressedTexDimensions(
++            target, /*level=*/0, size.width(), size.height(), /*depth=*/1,
++            format_info.image_internal_format, &error_message)) {
++      DVLOG(2) << "CreateSharedImage: "
++                  "ValidateCompressedTexDimensionsFailed with error: "
++               << error_message;
++      return false;
++    }
+ 
+-    if (format_info.is_compressed) {
+-      const char* error_message = "unspecified";
+-      if (!gles2::ValidateCompressedTexDimensions(
+-              target, /*level=*/0, size.width(), size.height(), /*depth=*/1,
+-              format_info.image_internal_format, &error_message)) {
+-        DVLOG(2) << "CreateSharedImage: "
+-                    "ValidateCompressedTexDimensionsFailed with error: "
+-                 << error_message;
+-        return false;
+-      }
++    GLsizei bytes_required = 0;
++    if (!gles2::GetCompressedTexSizeInBytes(
++            /*function_name=*/nullptr, size.width(), size.height(),
++            /*depth=*/1, format_info.image_internal_format, &bytes_required,
++            /*error_state=*/nullptr)) {
++      DVLOG(2) << "CreateSharedImage: Unable to compute required size for "
++                  "initial texture upload.";
++      return false;
++    }
+ 
+-      GLsizei bytes_required = 0;
+-      if (!gles2::GetCompressedTexSizeInBytes(
+-              /*function_name=*/nullptr, size.width(), size.height(),
+-              /*depth=*/1, format_info.image_internal_format, &bytes_required,
+-              /*error_state=*/nullptr)) {
+-        DVLOG(2) << "CreateSharedImage: Unable to compute required size for "
++    // Compressed textures cannot be cleared so they must be created with
++    // initial pixel data of the correct size.
++    if (bytes_required < 0 ||
++        pixel_data.size() != static_cast<size_t>(bytes_required)) {
++      DVLOG(2) << "CreateSharedImage: Initial data does not have expected "
++                  "size.";
++      return false;
++    }
++  } else if (!pixel_data.empty()) {
++    // If we have initial data to upload, ensure it is sized appropriately.
++    CHECK_EQ(format_infos.size(), 1u);
++    const FormatInfo& format_info = format_infos[0];
++    uint32_t bytes_required;
++    uint32_t unpadded_row_size = 0u;
++    uint32_t padded_row_size = 0u;
++    if (!gles2::GLES2Util::ComputeImageDataSizes(
++            size.width(), size.height(), /*depth=*/1, format_info.gl_format,
++            format_info.gl_type, /*alignment=*/4, &bytes_required,
++            &unpadded_row_size, &padded_row_size)) {
++      LOG(ERROR) << "CreateSharedImage: Unable to compute required size for "
+                     "initial texture upload.";
+-        return false;
+-      }
++      return false;
++    }
+ 
+-      if (bytes_required < 0 ||
+-          pixel_data.size() != static_cast<size_t>(bytes_required)) {
+-        DVLOG(2) << "CreateSharedImage: Initial data does not have expected "
++    // The GL spec, used in the computation for required bytes in the function
++    // above, assumes no padding is required for the last row in the image.
++    // But the client data does include this padding, so we add it for the
++    // data validation check here.
++    uint32_t padding = padded_row_size - unpadded_row_size;
++    bytes_required += padding;
++    if (pixel_data.size() != bytes_required) {
++      LOG(ERROR) << "CreateSharedImage: Initial data does not have expected "
+                     "size.";
+-        return false;
+-      }
+-    } else {
+-      uint32_t bytes_required;
+-      uint32_t unpadded_row_size = 0u;
+-      uint32_t padded_row_size = 0u;
+-      if (!gles2::GLES2Util::ComputeImageDataSizes(
+-              size.width(), size.height(), /*depth=*/1, format_info.gl_format,
+-              format_info.gl_type, /*alignment=*/4, &bytes_required,
+-              &unpadded_row_size, &padded_row_size)) {
+-        LOG(ERROR) << "CreateSharedImage: Unable to compute required size for "
+-                      "initial texture upload.";
+-        return false;
+-      }
+-
+-      // The GL spec, used in the computation for required bytes in the function
+-      // above, assumes no padding is required for the last row in the image.
+-      // But the client data does include this padding, so we add it for the
+-      // data validation check here.
+-      uint32_t padding = padded_row_size - unpadded_row_size;
+-      bytes_required += padding;
+-      if (pixel_data.size() != bytes_required) {
+-        LOG(ERROR) << "CreateSharedImage: Initial data does not have expected "
+-                      "size.";
+-        return false;
+-      }
++      return false;
+     }
+   }
+ 
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
+index 94139b6ce7bbac313e951ebf389925fd7cd575a3..13f10505e03fc8d17989a86be5fb55c41b1b82ca 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
+@@ -167,6 +167,33 @@ class GLTextureImageBackingFactoryWithUploadTest
+ using GLTextureImageBackingFactoryWithReadbackTest =
+     GLTextureImageBackingFactoryWithUploadTest;
+ 
++TEST_F(GLTextureImageBackingFactoryTest, CompressedFormatRequiresInitialData) {
++  if (!supports_etc1_) {
++    GTEST_SKIP();
++  }
++
++  auto format = viz::SinglePlaneFormat::kETC1;
++  gfx::Size size(64, 64);
++  // Note: The specific usage doesn't matter here as long as it's supported by
++  // GLTextureImageBacking.
++  gpu::SharedImageUsageSet usage = SHARED_IMAGE_USAGE_GLES2_READ;
++
++  // Compressed textures cannot be cleared so they must be created with initial
++  // pixel data.
++  bool supported = backing_factory_->CanCreateSharedImage(
++      usage, format, size, /*thread_safe=*/false, gfx::EMPTY_BUFFER,
++      GrContextType::kGL, {});
++  EXPECT_FALSE(supported);
++
++  // With correctly sized initial data the format is supported.
++  size_t required_size = format.MaybeEstimatedSizeInBytes(size).value();
++  std::vector<uint8_t> initial_data(required_size);
++  supported = backing_factory_->CanCreateSharedImage(
++      usage, format, size, /*thread_safe=*/false, gfx::EMPTY_BUFFER,
++      GrContextType::kGL, initial_data);
++  EXPECT_TRUE(supported);
++}
++
+ TEST_F(GLTextureImageBackingFactoryTest, InvalidFormat) {
+   auto format = viz::SinglePlaneFormat::kBGR_565;
+   gfx::Size size(256, 256);

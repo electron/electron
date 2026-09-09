@@ -1,0 +1,381 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 11 Aug 2026 20:27:41 +0200
+Subject: [wasm][sandbox] Fix side effects of WasmGetOwnProperty builtin
+
+We want this builtin to have no side effects, so it should not
+invoke any getters.
+
+Fixed: 543557673
+Change-Id: Ifa3c166e54f2084524c562ba2f57d55e0a51bff6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8234942
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109190}
+
+diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
+index 9c70f3429abc30de1bb333bbd71db98a77dcd2ee..9906dddde98ecbb63c5ec93379fcad0fa0781794 100644
+--- a/src/builtins/builtins-definitions.h
++++ b/src/builtins/builtins-definitions.h
+@@ -1410,6 +1410,7 @@ constexpr int kGearboxGenericBuiltinIdOffset = -2;
+   IF_WASM(TFC, WasmFloat64ToNumber, WasmFloat64ToTagged)                       \
+   IF_WASM(TFC, WasmFloat64ToString, WasmFloat64ToTagged)                       \
+   IF_WASM(TFC, JSToWasmLazyDeoptContinuation, SingleParameterOnStack)          \
++  IF_WASM(TFS, WasmGetOwnProperty, NeedsContext{false}, kObject, kSymbol)      \
+                                                                                \
+   /* WeakMap */                                                                \
+   TFJ(WeakMapConstructor, kDontAdaptArgumentsSentinel)                         \
+diff --git a/src/builtins/builtins-wasm-gen.cc b/src/builtins/builtins-wasm-gen.cc
+index 058b9021d16903b48c9591ebd6077438524c509a..1d71b2c871f4009f8fafd65884aa4cecaf93b5f0 100644
+--- a/src/builtins/builtins-wasm-gen.cc
++++ b/src/builtins/builtins-wasm-gen.cc
+@@ -273,6 +273,71 @@ TNode<BoolT> WasmBuiltinsAssembler::InSharedSpace(TNode<HeapObject> object) {
+   return IsPageFlagSet(address, MemoryChunk::kInSharedHeap);
+ }
+ 
++// Wasm uses private symbols (e.g. wasm_exception_tag_symbol) to stamp certain
++// objects. This builtin checks for presence of such symbols; it is a
++// specialization of "GetOwnProperty" behavior: if the object is not a plain
++// JS object or the property is not an own data property, return undefined.
++// To allow compilers to assume no side effects from this builtin, it's
++// particularly important to not invoke any getters.
++TF_BUILTIN(WasmGetOwnProperty, WasmBuiltinsAssembler) {
++  TNode<Object> object = Parameter<Object>(Descriptor::kObject);
++  TNode<Symbol> symbol = Parameter<Symbol>(Descriptor::kSymbol);
++
++  Label return_undefined(this, Label::kDeferred);
++
++  GotoIf(TaggedIsSmi(object), &return_undefined);
++  TNode<HeapObject> heap_object = CAST(object);
++
++  TNode<Map> map = LoadMap(heap_object);
++  TNode<Int32T> instance_type = LoadMapInstanceType(map);
++
++  GotoIfNot(IsJSReceiverInstanceType(instance_type), &return_undefined);
++  GotoIf(IsSpecialReceiverInstanceType(instance_type), &return_undefined);
++
++  TNode<JSObject> js_object = CAST(heap_object);
++
++  {
++    TVARIABLE(HeapObject, var_meta_storage);
++    TVARIABLE(IntPtrT, var_entry);
++    TVARIABLE(Object, var_value);
++    TVARIABLE(Uint32T, var_details);
++    Label if_found_fast(this), if_found_dict(this), got_value(this);
++
++    TryLookupPropertyInSimpleObject(
++        js_object, map, symbol, &if_found_fast, &if_found_dict,
++        &var_meta_storage, &var_entry, &return_undefined, &return_undefined);
++
++    BIND(&if_found_fast);
++    {
++      TNode<DescriptorArray> descriptors = CAST(var_meta_storage.value());
++      LoadPropertyFromFastObject(js_object, map, descriptors, var_entry.value(),
++                                 &var_details, &var_value);
++      Goto(&got_value);
++    }
++
++    BIND(&if_found_dict);
++    {
++      TNode<PropertyDictionary> dictionary = CAST(var_meta_storage.value());
++      LoadPropertyFromDictionary(dictionary, var_entry.value(), &var_details,
++                                 &var_value);
++      Goto(&got_value);
++    }
++
++    BIND(&got_value);
++    {
++      TNode<Uint32T> kind =
++          DecodeWord32<PropertyDetails::KindField>(var_details.value());
++      constexpr int kData = static_cast<int>(PropertyKind::kData);
++      GotoIfNot(Word32Equal(kind, Int32Constant(kData)), &return_undefined);
++      GotoIfLazyClosure(CAST(var_value.value()), &return_undefined);
++      Return(var_value.value());
++    }
++  }
++
++  BIND(&return_undefined);
++  Return(UndefinedConstant());
++}
++
+ #include "src/codegen/undef-code-stub-assembler-macros.inc"
+ 
+ }  // namespace v8::internal
+diff --git a/src/builtins/wasm.tq b/src/builtins/wasm.tq
+index bd01f678fa62717a5de8c8cb5e1140b94e36b048..43215f69e744add8796f8b3f2315e00f67744e7d 100644
+--- a/src/builtins/wasm.tq
++++ b/src/builtins/wasm.tq
+@@ -878,35 +878,6 @@ builtin CallIndirectIC(
+   return TargetAndImplicitArg{target: target, implicit_arg: implicitArg};
+ }
+ 
+-extern macro TryHasOwnProperty(HeapObject, Map, InstanceType, Name): never
+-    labels Found, NotFound, Bailout;
+-type OnNonExistent constexpr 'OnNonExistent';
+-const kReturnUndefined: constexpr OnNonExistent
+-    generates 'OnNonExistent::kReturnUndefined';
+-extern macro SmiConstant(constexpr OnNonExistent): Smi;
+-extern transitioning builtin GetPropertyWithReceiver(
+-    implicit context: Context)(JSAny, Name, JSAny, Smi): JSAny;
+-
+-transitioning builtin WasmGetOwnProperty(
+-    implicit context: Context)(object: Object, uniqueName: Name): JSAny {
+-  try {
+-    const heapObject: HeapObject =
+-        TaggedToHeapObject(object) otherwise NotFound;
+-    const receiver: JSReceiver =
+-        Cast<JSReceiver>(heapObject) otherwise NotFound;
+-    try {
+-      TryHasOwnProperty(
+-          receiver, receiver.map, receiver.instanceType, uniqueName)
+-          otherwise Found, NotFound, NotFound;
+-    } label Found {
+-      return GetPropertyWithReceiver(
+-          receiver, uniqueName, receiver, SmiConstant(kReturnUndefined));
+-    }
+-  } label NotFound deferred {
+-    return Undefined;
+-  }
+-}
+-
+ // Trap builtins.
+ 
+ builtin WasmTrap(error: Smi): JSAny {
+diff --git a/src/compiler/turboshaft/builtin-call-descriptors.h b/src/compiler/turboshaft/builtin-call-descriptors.h
+index b1d946d8495cb015afa3698fd0862787687f8265..e2a9b6959809f9c979d3a0c085e249cbbd3e6c62 100644
+--- a/src/compiler/turboshaft/builtin-call-descriptors.h
++++ b/src/compiler/turboshaft/builtin-call-descriptors.h
+@@ -1094,14 +1094,10 @@ struct BuiltinCallDescriptor {
+     using results_t = std::tuple<V<Object>>;
+ 
+     static constexpr bool kNeedsFrameState = false;
+-    static constexpr bool kNeedsContext = true;
++    static constexpr bool kNeedsContext = false;
+     static constexpr Operator::Properties kProperties = Operator::kNoThrow;
+-    // Calls {GetPropertyWithReceiver}, which has paths that can allocate,
+-    // but from this caller we won't reach them. Nevertheless, to please the
+-    // verifier we currently have no other choice than setting the CanAllocate
+-    // effect here.
+-    // TODO(dmercadier): Support overriding the automatic can-allocate
+-    // inference.
++    // Can allocate a HeapNumber when it encounters a MutableHeapNumber. This
++    // won't happen in practice, but can-allocate verification detects it.
+     static constexpr OpEffects kEffects =
+         base_effects.CanReadHeapMemory().CanAllocate();
+   };
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index 5f8fefb45cfa72ae5a4bd9664fcd9f31e5bb17e8..8d12162da93c99f13baa66838b61e16274989c1b 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -1712,16 +1712,12 @@ class LiftoffCompiler {
+     LiftoffRegister tag_symbol_reg =
+         pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+     LoadExceptionSymbol(tag_symbol_reg.gp(), pinned, root_index);
+-    LiftoffRegister context_reg =
+-        pinned.set(__ GetUnusedRegister(kGpReg, pinned));
+-    LOAD_TAGGED_PTR_INSTANCE_FIELD(context_reg.gp(), NativeContext, pinned);
+ 
+     VarState tag_symbol{kRef, tag_symbol_reg, 0};
+-    VarState context{kRef, context_reg, 0};
+ 
+     CallBuiltin(Builtin::kWasmGetOwnProperty,
+-                MakeSig::Returns(kRef).Params(kRef, kRef, kRef),
+-                {exception, tag_symbol, context}, kNoSourcePosition);
++                MakeSig::Returns(kRef).Params(kRef, kRef),
++                {exception, tag_symbol}, kNoSourcePosition);
+ 
+     return LiftoffRegister(kReturnRegister0);
+   }
+diff --git a/src/wasm/turboshaft-graph-interface.cc b/src/wasm/turboshaft-graph-interface.cc
+index 3eaae20795b7167c54a00d687070c7fb69f5c02b..2938c305ca14e5a1f2ec64be3c5fc11f7dcb3fa3 100644
+--- a/src/wasm/turboshaft-graph-interface.cc
++++ b/src/wasm/turboshaft-graph-interface.cc
+@@ -3814,12 +3814,10 @@ class TurboshaftGraphBuildingInterface
+ 
+     BindBlockAndGeneratePhis(decoder, block->false_or_loop_or_catch_block,
+                              nullptr, &block->exception);
+-    V<NativeContext> native_context = instance_cache_.native_context();
+     V<WasmExceptionTag> caught_tag = V<WasmExceptionTag>::Cast(
+         CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmGetOwnProperty>(
+-            decoder, native_context,
+-            {block->exception,
+-             __ LoadRoot<RootIndex::kwasm_exception_tag_symbol>()}));
++            decoder, {block->exception,
++                      __ LoadRoot<RootIndex::kwasm_exception_tag_symbol>()}));
+     // TODO(14616): Support shared tags.
+     V<FixedArray> instance_tags = LOAD_IMMUTABLE_INSTANCE_FIELD(
+         trusted_instance_data(SharedFlag::kNo), TagsTable,
+@@ -3849,7 +3847,7 @@ class TurboshaftGraphBuildingInterface
+ 
+       IF (UNLIKELY(caught_tag_undefined)) {
+         V<Object> tag_object = __ Load(
+-            native_context, LoadOp::Kind::TaggedBase(),
++            instance_cache_.native_context(), LoadOp::Kind::TaggedBase(),
+             MemoryRepresentation::TaggedPointer(),
+             NativeContext::OffsetOfElementAt(Context::WASM_JS_TAG_INDEX));
+         V<Object> js_tag = __ Load(tag_object, LoadOp::Kind::TaggedBase(),
+@@ -3949,12 +3947,10 @@ class TurboshaftGraphBuildingInterface
+       BrOrRet(decoder, catch_case.br_imm.depth);
+       return;
+     }
+-    V<NativeContext> native_context = instance_cache_.native_context();
+     V<WasmExceptionTag> caught_tag = V<WasmExceptionTag>::Cast(
+         CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmGetOwnProperty>(
+-            decoder, native_context,
+-            {block->exception,
+-             __ LoadRoot<RootIndex::kwasm_exception_tag_symbol>()}));
++            decoder, {block->exception,
++                      __ LoadRoot<RootIndex::kwasm_exception_tag_symbol>()}));
+     // TODO(14616): Support shared tags.
+     V<FixedArray> instance_tags = LOAD_IMMUTABLE_INSTANCE_FIELD(
+         trusted_instance_data(SharedFlag::kNo), TagsTable,
+@@ -3984,7 +3980,7 @@ class TurboshaftGraphBuildingInterface
+ 
+       IF (UNLIKELY(caught_tag_undefined)) {
+         V<Object> tag_object = __ Load(
+-            native_context, LoadOp::Kind::TaggedBase(),
++            instance_cache_.native_context(), LoadOp::Kind::TaggedBase(),
+             MemoryRepresentation::TaggedPointer(),
+             NativeContext::OffsetOfElementAt(Context::WASM_JS_TAG_INDEX));
+         V<Object> js_tag = __ Load(tag_object, LoadOp::Kind::TaggedBase(),
+@@ -9020,7 +9016,7 @@ class TurboshaftGraphBuildingInterface
+                            base::Vector<Value> values) {
+     V<FixedArray> exception_values_array = V<FixedArray>::Cast(
+         CallBuiltinThroughJumptable<BuiltinCallDescriptor::WasmGetOwnProperty>(
+-            decoder, instance_cache_.native_context(),
++            decoder,
+             {exception,
+              __ LoadRoot<RootIndex::kwasm_exception_values_symbol>()}));
+ 
+diff --git a/test/mjsunit/sandbox/regress/regress-543557673.js b/test/mjsunit/sandbox/regress/regress-543557673.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ddf0591c099c936886df6b2bd220409facf40067
+--- /dev/null
++++ b/test/mjsunit/sandbox/regress/regress-543557673.js
+@@ -0,0 +1,125 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --sandbox-testing --allow-natives-syntax
++
++const moduleABytes = new Uint8Array([
++    0,   97,  115, 109, 1,   0,   0,   0,   1,   22,  5,   96,  0,   1,   127,
++    96,  1,   111, 0,   96,  0,   1,   111, 96,  1,   127, 1,   127, 96,  0,
++    1,   127, 2,   27,  2,   1,   109, 9,   102, 117, 110, 99,  116, 105, 111,
++    110, 115, 1,   112, 1,   1,   1,   1,   109, 3,   116, 97,  103, 4,   0,
++    1,   3,   3,   2,   3,   4,   4,   5,   1,   105, 1,   1,   1,   6,   32,
++    6,   127, 1,   65,  239, 0,   11,  127, 1,   65,  0,   11,  127, 1,   65,
++    0,   11,  127, 1,   65,  0,   11,  127, 1,   65,  0,   11,  127, 1,   65,
++    0,   11,  7,   30,  3,   10,  101, 120, 99,  101, 112, 116, 105, 111, 110,
++    115, 1,   1,   6,   100, 114, 105, 118, 101, 114, 0,   0,   4,   115, 101,
++    101, 100, 0,   1,   10,  48,  2,   41,  0,   65,  0,   17,  0,   0,   26,
++    32,  0,   4,   64,  2,   2,   31,  2,   1,   0,   0,   0,   65,  0,   37,
++    1,   10,  11,  11,  26,  65,  0,   36,  5,   65,  0,   17,  0,   0,   15,
++    11,  65,  0,   11,  4,   0,   65,  7,   11,  0,   22,  4,   110, 97,  109,
++    101, 1,   15,  2,   0,   6,   100, 114, 105, 118, 101, 114, 1,   4,   115,
++    101, 101, 100,
++]);
++const moduleDBytes = new Uint8Array([
++    0,  97, 115, 109, 1,  0,   0,   0,   1,   13,  3,  96,  0,   1,   127,
++    96, 0,  1,   127, 96, 0,   1,   127, 3,   4,   3,  0,   1,   2,   7,
++    10, 1,  6,   116, 97, 114, 103, 101, 116, 0,   2,  10,  17,  3,   4,
++    0,  65, 0,   11,  4,  0,   65,  1,   11,  5,   0,  65,  222, 1,   11,
++    0,  28, 4,   110, 97, 109, 101, 1,   21,  3,   0,  4,   112, 97,  100,
++    48, 1,  4,   112, 97, 100, 49,  2,   6,   116, 97, 114, 103, 101, 116
++]);
++
++const kHeapObjectTag = 1;
++const memory = new DataView(new Sandbox.MemoryView(0, 0x100000000));
++const read32 = address => memory.getUint32(address, true);
++const write32 = (address, val) => memory.setUint32(address, val >>> 0, true);
++const tagged = object => (Sandbox.getAddressOf(object) + kHeapObjectTag) >>> 0;
++
++function instanceTypeAt(address) {
++  try {
++    return Sandbox.getInstanceTypeOfObjectAt(address);
++  } catch (_) {
++    return undefined;
++  }
++}
++
++function descriptorArrayOf(object) {
++  const map = read32(Sandbox.getAddressOf(object)) & ~kHeapObjectTag;
++  const size = Sandbox.getSizeOfObjectAt(map);
++  for (let offset = 0; offset < size; offset += 4) {
++    const candidate = read32(map + offset) & ~kHeapObjectTag;
++    if (instanceTypeAt(candidate) === 'DESCRIPTOR_ARRAY_TYPE') return candidate;
++  }
++  throw new Error('descriptor array not found');
++}
++
++function findTaggedWord(objectAddress, expectedType, expectedValue) {
++  const size = Sandbox.getSizeOfObjectAt(objectAddress);
++  for (let offset = 0; offset < size; offset += 4) {
++    const value = read32(objectAddress + offset);
++    if (expectedValue !== undefined && value !== expectedValue) continue;
++    if (instanceTypeAt(value & ~kHeapObjectTag) === expectedType) {
++      return {offset, value};
++    }
++  }
++  throw new Error(`tagged ${expectedType} word not found`);
++}
++
++const table =
++    new WebAssembly.Table({element: 'anyfunc', initial: 1, maximum: 1});
++const d = new WebAssembly.Instance(new WebAssembly.Module(moduleDBytes));
++const a = new WebAssembly.Instance(new WebAssembly.Module(moduleABytes), {
++  m: {functions: table, tag: WebAssembly.JSTag},
++});
++if (d.exports.target() !== 222) throw new Error('D target sanity failed');
++
++// Recover the private exception-tag symbol from a genuine exception.
++const genuine =
++    new WebAssembly.Exception(new WebAssembly.Tag({parameters: []}), []);
++const genuineDescriptors = descriptorArrayOf(genuine);
++const hiddenTagSymbol = findTaggedWord(genuineDescriptors, 'SYMBOL_TYPE').value;
++
++let getterCount = 0;
++const forged = Object.defineProperty({}, 'x', {
++  get() {
++    ++getterCount;
++    table.set(0, d.exports.target);
++    return undefined;
++  },
++  configurable: true,
++});
++
++// Replace only the one-property donor descriptor's key. Its accessor details
++// and AccessorPair remain unchanged.
++const forgedDescriptors = descriptorArrayOf(forged);
++const xName = Object.getOwnPropertyNames(forged)[0];
++const descriptorKey = findTaggedWord(
++    forgedDescriptors,
++    Sandbox.getInstanceTypeOfObjectAt(Sandbox.getAddressOf(xName)),
++    tagged(xName));
++write32(forgedDescriptors + descriptorKey.offset, hiddenTagSymbol);
++
++// Put the ordinary JSReceiver into the backing FixedArray of the exported
++// Wasm-declared exnref table.
++const tableType = Sandbox.getInstanceTypeIdFor('WASM_TABLE_OBJECT_TYPE');
++const entriesOffset = Sandbox.getFieldOffset(tableType, 'entries');
++const fixedArrayType = Sandbox.getInstanceTypeIdFor('FIXED_ARRAY_TYPE');
++const fixedArrayDataOffset = Sandbox.getFieldOffset(fixedArrayType, 'data');
++const exnTableAddress = Sandbox.getAddressOf(a.exports.exceptions);
++const entries = read32(exnTableAddress + entriesOffset) & ~kHeapObjectTag;
++write32(entries + fixedArrayDataOffset, tagged(forged));
++
++// Only the first call_indirect site receives feedback and is inlined. The
++// second site remains uninitialized and therefore generic.
++table.set(0, a.exports.seed);
++for (let i = 0; i < 20; ++i) {
++  if (a.exports.driver(0) !== 0) throw new Error('training failed');
++}
++%WasmTierUpFunction(a.exports.driver);
++if (a.exports.driver(0) !== 0) throw new Error('optimized training failed');
++
++const result = a.exports.driver(1);
++const tableChanged = table.get(0) === d.exports.target;
++assertEquals(getterCount, 0);
++assertFalse(tableChanged);
