@@ -7,10 +7,10 @@
 
 #include <optional>
 
-#include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/draggable_region_provider.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace gin_helper {
 class Dictionary;
@@ -37,7 +37,7 @@ class WebContentsView : public View,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Public APIs.
-  gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  WebContents* GetWebContents();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
 
@@ -45,8 +45,7 @@ class WebContentsView : public View,
 
  protected:
   // Takes an existing WebContents.
-  WebContentsView(v8::Isolate* isolate,
-                  gin_helper::Handle<WebContents> web_contents);
+  WebContentsView(v8::Isolate* isolate, WebContents* web_contents);
   ~WebContentsView() override;
 
   // content::WebContentsObserver:
@@ -61,9 +60,7 @@ class WebContentsView : public View,
 
   void ApplyBorderRadius();
 
-  // Keep a reference to v8 wrapper.
-  v8::Global<v8::Value> web_contents_;
-  base::WeakPtr<api::WebContents> api_web_contents_;
+  cppgc::Persistent<api::WebContents> api_web_contents_;
 };
 
 }  // namespace electron::api

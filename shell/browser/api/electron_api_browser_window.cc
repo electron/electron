@@ -74,10 +74,11 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
   // Save a reference of the WebContents.
-  gin_helper::Handle<WebContents> web_contents =
-      web_contents_view->GetWebContents(isolate);
-  web_contents_.Reset(isolate, web_contents.ToV8());
-  api_web_contents_ = web_contents->GetWeakPtr();
+  auto* web_contents = web_contents_view->GetWebContents();
+  v8::Local<v8::Object> wrapper =
+      web_contents->GetWrapper(isolate).ToLocalChecked();
+  web_contents_.Reset(isolate, wrapper);
+  api_web_contents_ = web_contents;
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());
 

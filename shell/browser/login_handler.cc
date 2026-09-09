@@ -81,7 +81,7 @@ void LoginHandler::EmitEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
-  raw_ptr<api::WebContents> api_web_contents = nullptr;
+  api::WebContents* api_web_contents = nullptr;
   if (has_web_contents) {
     // Cancel the request if the WebContents (or its JS wrapper) that issued
     // it has since been destroyed.

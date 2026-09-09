@@ -72,6 +72,7 @@
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -749,10 +750,9 @@ void App::AllowCertificateError(
       electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default = Emit(
-      "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
-      request_url, net::ErrorToString(cert_error), ssl_info.cert,
-      adapted_callback, is_main_frame_request);
+  bool prevent_default = Emit("certificate-error", web_contents, request_url,
+                              net::ErrorToString(cert_error), ssl_info.cert,
+                              adapted_callback, is_main_frame_request);
 
   // Deny the certificate by default.
   if (!prevent_default)
@@ -783,8 +783,7 @@ base::OnceClosure App::SelectClientCertificate(
   // |web_contents| is null for requests that did not originate from a renderer
   // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
   v8::Local<v8::Value> web_contents_value =
-      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
-                   : v8::Null(isolate).As<v8::Value>();
+      gin::ConvertToV8(isolate, web_contents);
   bool prevent_default =
       Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),

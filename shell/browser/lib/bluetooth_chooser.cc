@@ -50,6 +50,8 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
 }
 
 void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
+  if (!api_web_contents_ || api_web_contents_->IsDestroyed())
+    return;
   bool idle_state = false;
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
@@ -98,6 +100,8 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
                                          bool is_gatt_connected,
                                          bool is_paired,
                                          int signal_strength_level) {
+  if (!api_web_contents_ || api_web_contents_->IsDestroyed())
+    return;
   // Don't fire an event during refresh.
   if (refreshing_)
     return;
