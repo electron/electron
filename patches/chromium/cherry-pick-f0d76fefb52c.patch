@@ -52,7 +52,7 @@ index 5790f0b9f615eb8a84f00b3c600b9af6e49bb879..998f5bdc203e893ad2f4183f81f3e20e
                                  expansion_ratio);
    }
 diff --git a/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc b/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
-index 3c9f19604b173251d365e522edeefb1592436918..11a111a13a15fa629ffd4d9a78d358b32bb33fcc 100644
+index fb5277d9c165bd62e727ace654b012331c58ad2b..6e8ce02457d543d273004c221d2537c29915d834 100644
 --- a/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
 +++ b/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
 @@ -678,6 +678,25 @@ TEST_F(CullRectTest, TransformEscapingScroll) {
