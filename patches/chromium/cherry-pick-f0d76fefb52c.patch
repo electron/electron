@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sat, 5 Sep 2026 02:11:34 -0700
+Subject: [paint] Don't recurse forever in CullRect::ApplyPaintProperties()
+
+When the clip or transform of |source| is not an ancestor of
+|destination|, ApplyPaintProperties() falls back to mapping an infinite
+rect from |root| by calling itself with |source| = |root|. If the clip
+of |destination| is not under the clip of |root| either, that call takes
+the same branch with the same arguments and recurses until the stack
+overflows.
+
+This is reachable when printing a subframe: CullRectUpdater's root is
+then the subframe LayoutView's LocalBorderBoxProperties(), whose clip is
+the frame owner's clip rather than the root of the tree, and a fragment
+that hits FragmentData::LocalBorderBoxPropertiesFallback()
+(crbug.com/40218657) hands it PropertyTreeState::Root() as the
+destination. In the field this shows up as a renderer stack overflow in
+CullRect::ApplyPaintProperties() under LocalFrameView::PrintPage(),
+immediately preceded by the LocalBorderBoxPropertiesFallback() dump.
+
+Stop after one fallback: if |source| is already |root|, keep the
+infinite cull rect and return, which is what the abnormal-hierarchy
+path is meant to produce anyway.
+
+Bug: 40218657, 362302764
+Test: blink_platform_unittests --gtest_filter=CullRectTest.ClipNotUnderRootClip
+
+Change-Id: I5a47fe33611bcfbbd2d8ee7c8c64ad50f4f26c26
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8356469
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1692928}
+
+diff --git a/third_party/blink/renderer/platform/graphics/paint/cull_rect.cc b/third_party/blink/renderer/platform/graphics/paint/cull_rect.cc
+index 5790f0b9f615eb8a84f00b3c600b9af6e49bb879..998f5bdc203e893ad2f4183f81f3e20e4bf3e2b0 100644
+--- a/third_party/blink/renderer/platform/graphics/paint/cull_rect.cc
++++ b/third_party/blink/renderer/platform/graphics/paint/cull_rect.cc
+@@ -312,9 +312,12 @@ bool CullRect::ApplyPaintProperties(
+ 
+   if (abnormal_hierarchy) {
+     // Either the transform or the clip of |source| is not an ancestor of
+-    // |destination|. Map infinite rect from the root.
++    // |destination|. Map infinite rect from the root. If |source| is already
++    // the root, the clip of |destination| is not under the root either, and
++    // mapping from the root again would recurse forever; keep the infinite
++    // rect instead.
+     *this = Infinite();
+-    return root != destination &&
++    return root != source && root != destination &&
+            ApplyPaintProperties(root, root, destination, old_cull_rect,
+                                 expansion_ratio);
+   }
+diff --git a/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc b/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
+index 3c9f19604b173251d365e522edeefb1592436918..11a111a13a15fa629ffd4d9a78d358b32bb33fcc 100644
+--- a/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
++++ b/third_party/blink/renderer/platform/graphics/paint/cull_rect_test.cc
+@@ -678,6 +678,25 @@ TEST_F(CullRectTest, TransformEscapingScroll) {
+   EXPECT_EQ(cull_rect1, cull_rect3);
+ }
+ 
++TEST_F(CullRectTest, ClipNotUnderRootClip) {
++  // The root is not the root of the property trees (e.g. it is a subframe's
++  // LayoutView) and the destination clip is outside the root clip's subtree.
++  auto* root_clip = CreateClip(c0(), t0(), FloatRoundedRect(0, 0, 800, 600));
++  PropertyTreeState root(t0(), *root_clip, e0());
++  auto* source_clip =
++      CreateClip(*root_clip, t0(), FloatRoundedRect(0, 0, 400, 300));
++  PropertyTreeState source(t0(), *source_clip, e0());
++  PropertyTreeState destination = PropertyTreeState::Root();
++
++  CullRect cull_rect(gfx::Rect(0, 0, 400, 300));
++  EXPECT_FALSE(ApplyPaintProperties(cull_rect, root, source, destination));
++  EXPECT_TRUE(cull_rect.IsInfinite());
++
++  CullRect cull_rect2(gfx::Rect(0, 0, 400, 300));
++  EXPECT_FALSE(ApplyPaintProperties(cull_rect2, root, root, destination));
++  EXPECT_TRUE(cull_rect2.IsInfinite());
++}
++
+ TEST_F(CullRectTest, SmallScrollContentsAfterBigScrollContents) {
+   auto* t1 = CreateTransform(t0(), MakeTranslationMatrix(1, 2));
+   PropertyTreeState state1(*t1, c0(), e0());
