@@ -30,7 +30,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
                           content::WebContents* web_contents);
 
   // Make public for cppgc::MakeGarbageCollected.
-  Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
+  explicit Debugger(content::WebContents* web_contents);
   ~Debugger() override;
 
   // gin_helper::Wrappable

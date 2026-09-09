@@ -1823,6 +1823,28 @@ describe('cpp heap', () => {
         expect(code).to.equal(0);
       });
     }
+
+    it('destroys a live WebContentsView before its Session at exit', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, WebContentsView } = require('electron');
+        const view = new WebContentsView({
+          webPreferences: {
+            partition: `persist:shutdown-order-${process.pid}`
+          }
+        });
+        const session = view.webContents.session;
+        view.webContents.on('destroyed', () => {
+          session.getUserAgent();
+          session.getStoragePath();
+        });
+        (globalThis as any).view = view;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('webFrameMain module', () => {
