@@ -12,6 +12,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_contents_zoom_observer.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 
@@ -59,7 +60,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   // to subscribe for zoom changes.
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 
-  raw_ptr<api::WebContents> api_web_contents_ = nullptr;
+  cppgc::WeakPersistent<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<WebViewGuestDelegate> weak_ptr_factory_{this};
 };

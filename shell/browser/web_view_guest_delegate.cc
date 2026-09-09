@@ -72,6 +72,8 @@ content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
 
 void WebViewGuestDelegate::OnZoomChanged(
     const WebContentsZoomController::ZoomChangedEventData& data) {
+  if (!api_web_contents_ || api_web_contents_->IsDestroyed())
+    return;
   if (data.web_contents == GetOwnerWebContents()) {
     auto* zoom_controller = api_web_contents_->GetZoomController();
     if (data.temporary) {
