@@ -1,0 +1,583 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 27 Aug 2026 16:34:18 -0700
+Subject: GL: upload oversized mip levels through PBO.
+
+Add a workaround for the following scenario: if uploading data to a
+texture's mipmap level which is "oversized" compared to level 0 - in
+other words, larger than the OpenGL ES specification's mipmap rules -
+then upload the data via a pixel unpack buffer. Apply this workaround
+to PowerVR drivers.
+
+Due to another driver bug, the new workaround can not completely solve
+the issue for compressed textures; modify the new tests to accommodate
+this fact. It is believed this will not affect applications in the
+field.
+
+Bug: chromium:548127218
+Change-Id: If4e2e8fceb6a77897b50fa2c7c932f0e2c5c5ce1
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8305515
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 107da744f62a319b3c6851694740d9ebf247d048)
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 6cad962134c72f4af5d964cf04206395835c5374..9d9e441ad595927f717e7105664e2d84d832bbb5 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -752,6 +752,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo uploadOversizedMipLevelsViaUnpackBuffer = {
++        "uploadOversizedMipLevelsViaUnpackBuffer",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index f4733e212d89ae035909bea4f2230b73c3b1656d..23c63db65a08d07e20745f4c90a4a67d861ba4a1 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -984,6 +984,15 @@
+                 "object on ARM Mali Valhall/Avalon GPUs to avoid driver crash."
+             ],
+             "issue": "http://crbug.com/534468209"
++        },
++        {
++            "name": "upload_oversized_mip_levels_via_unpack_buffer",
++            "category": "Workarounds",
++            "description": [
++                "Stage oversized nonzero-level texture definitions through a scratch pixel unpack buffer ",
++                "to work around driver bugs."
++            ],
++            "issue": "http://crbug.com/548127218"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index b9d97191f7366984af8fd78b4568f229e0044be1..1a5ecce56fbc6bfd553476e84dbf5f9e29d75825 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -213,6 +213,30 @@ angle::Result TextureGL::setImage(const gl::Context *context,
+     gl::TextureTarget target = index.getTarget();
+     size_t level             = static_cast<size_t>(index.getLevelIndex());
+ 
++    // Oversized nonzero-level definitions may cause driver issues during immediate software
++    // texture upload when level 0 is already defined. Stage them through a scratch unpack buffer
++    // so the driver handles the upload safely.
++    if (features.uploadOversizedMipLevelsViaUnpackBuffer.enabled &&
++        getType() == gl::TextureType::_2D && level > 0 && unpackBuffer == nullptr &&
++        gl::GetInternalFormatInfo(internalFormat, type).depthBits == 0 &&
++        gl::GetInternalFormatInfo(internalFormat, type).stencilBits == 0)
++    {
++        const gl::ImageDesc &level0 = mState.getImageDesc(gl::TextureTarget::_2D, 0);
++        if (level0.size.width != 0 && level0.size.height != 0)
++        {
++            const int slotW =
++                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.width)) >> level);
++            const int slotH =
++                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.height)) >> level);
++            if (size.width > slotW || size.height > slotH)
++            {
++                return setImageViaScratchUnpackBuffer(context, target, level, internalFormat, size,
++                                                      format, type, unpack, /*isCompressed=*/false,
++                                                      /*imageSize=*/0, pixels);
++            }
++        }
++    }
++
+     if (features.unpackOverlappingRowsSeparatelyUnpackBuffer.enabled && unpackBuffer &&
+         unpack.rowLength != 0 && unpack.rowLength < size.width)
+     {
+@@ -351,6 +375,102 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
++angle::Result TextureGL::setImageViaScratchUnpackBuffer(const gl::Context *context,
++                                                        gl::TextureTarget target,
++                                                        size_t level,
++                                                        GLenum internalFormat,
++                                                        const gl::Extents &size,
++                                                        GLenum format,
++                                                        GLenum type,
++                                                        const gl::PixelUnpackState &unpack,
++                                                        bool isCompressed,
++                                                        size_t imageSize,
++                                                        const uint8_t *pixels)
++{
++    ContextGL *contextGL              = GetImplAs<ContextGL>(context);
++    const FunctionsGL *functions      = GetFunctionsGL(context);
++    StateManagerGL *stateManager      = GetStateManagerGL(context);
++    const angle::FeaturesGL &features = GetFeaturesGL(context);
++
++    if (features.reattachFboDepthStencilOnReallocation.enabled)
++    {
++        onStateChange(angle::SubjectMessage::ObjectReallocated);
++    }
++
++    GLuint uploadBytes = 0;
++    if (isCompressed)
++    {
++        uploadBytes = static_cast<GLuint>(imageSize);
++    }
++    else
++    {
++        ANGLE_CHECK_GL_MATH(contextGL, gl::GetInternalFormatInfo(format, type)
++                                           .computePackUnpackEndByte(type, size, unpack,
++                                                                     /*is3D=*/false, &uploadBytes));
++    }
++
++    GLuint scratch = 0;
++    functions->genBuffers(1, &scratch);
++    stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, scratch);
++    // Regardless of whether the user supplied data (pixels != nullptr), the pixel unpack buffer
++    // must be allocated with the expected amount of data.
++    if (uploadBytes > 0)
++    {
++        ANGLE_GL_TRY(context, functions->bufferData(GL_PIXEL_UNPACK_BUFFER, uploadBytes, pixels,
++                                                    GL_STREAM_DRAW));
++    }
++
++    ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
++
++    stateManager->bindTexture(getType(), mTextureID);
++
++    if (features.resetTexImage2DBaseLevel.enabled)
++    {
++        (void)setBaseLevel(context, 0);
++    }
++
++    if (isCompressed)
++    {
++        const gl::InternalFormat &originalInternalFormatInfo =
++            gl::GetSizedInternalFormatInfo(internalFormat);
++        nativegl::CompressedTexImageFormat compressedTexImageFormat =
++            nativegl::GetCompressedTexImageFormat(functions, features, internalFormat);
++
++        ANGLE_GL_TRY_ALWAYS_CHECK(
++            context, functions->compressedTexImage2D(
++                         nativegl::GetTextureBindingTarget(target), static_cast<GLint>(level),
++                         compressedTexImageFormat.internalFormat, size.width, size.height, 0,
++                         static_cast<GLsizei>(uploadBytes), nullptr));
++
++        LevelInfoGL levelInfo = GetLevelInfo(features, originalInternalFormatInfo,
++                                             compressedTexImageFormat.internalFormat);
++        ASSERT(!levelInfo.lumaWorkaround.enabled);
++        setLevelInfo(context, target, level, 1, levelInfo);
++    }
++    else
++    {
++        const gl::InternalFormat &originalInternalFormatInfo =
++            gl::GetInternalFormatInfo(internalFormat, type);
++        nativegl::TexImageFormat texImageFormat =
++            nativegl::GetTexImageFormat(functions, features, internalFormat, format, type);
++
++        ANGLE_GL_TRY_ALWAYS_CHECK(
++            context, functions->texImage2D(nativegl::GetTextureBindingTarget(target),
++                                           static_cast<GLint>(level), texImageFormat.internalFormat,
++                                           size.width, size.height, 0, texImageFormat.format,
++                                           texImageFormat.type, nullptr));
++
++        LevelInfoGL levelInfo =
++            GetLevelInfo(features, originalInternalFormatInfo, texImageFormat.internalFormat);
++        setLevelInfo(context, target, level, 1, levelInfo);
++    }
++
++    stateManager->deleteBuffer(scratch);
++
++    contextGL->markWorkSubmitted();
++    return angle::Result::Continue;
++}
++
+ angle::Result TextureGL::reserveTexImageToBeFilled(const gl::Context *context,
+                                                    gl::TextureTarget target,
+                                                    size_t level,
+@@ -703,6 +823,31 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
+     size_t level             = static_cast<size_t>(index.getLevelIndex());
+     ASSERT(TextureTargetToType(target) == getType());
+ 
++    // Oversized nonzero-level definitions may cause driver issues during immediate software
++    // texture upload when level 0 is already defined. Stage them through a scratch unpack buffer
++    // so the driver handles the upload safely.
++    if (features.uploadOversizedMipLevelsViaUnpackBuffer.enabled &&
++        getType() == gl::TextureType::_2D && level > 0 &&
++        context->getState().getTargetBuffer(gl::BufferBinding::PixelUnpack) == nullptr &&
++        gl::GetSizedInternalFormatInfo(internalFormat).depthBits == 0 &&
++        gl::GetSizedInternalFormatInfo(internalFormat).stencilBits == 0)
++    {
++        const gl::ImageDesc &level0 = mState.getImageDesc(gl::TextureTarget::_2D, 0);
++        if (level0.size.width != 0 && level0.size.height != 0)
++        {
++            const int slotW =
++                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.width)) >> level);
++            const int slotH =
++                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.height)) >> level);
++            if (size.width > slotW || size.height > slotH)
++            {
++                return setImageViaScratchUnpackBuffer(context, target, level, internalFormat, size,
++                                                      /*format=*/GL_NONE, /*type=*/GL_NONE, unpack,
++                                                      /*isCompressed=*/true, imageSize, pixels);
++            }
++        }
++    }
++
+     const gl::InternalFormat &originalInternalFormatInfo =
+         gl::GetSizedInternalFormatInfo(internalFormat);
+     nativegl::CompressedTexImageFormat compressedTexImageFormat =
+diff --git a/src/libANGLE/renderer/gl/TextureGL.h b/src/libANGLE/renderer/gl/TextureGL.h
+index cdbc4eb4fed6d92a72903164c85004836223d303..2bb879699a80cf94c67f756a4ea98d20553366d6 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.h
++++ b/src/libANGLE/renderer/gl/TextureGL.h
+@@ -248,6 +248,17 @@ class TextureGL : public TextureImpl
+                                  GLenum format,
+                                  GLenum type,
+                                  const uint8_t *pixels);
++    angle::Result setImageViaScratchUnpackBuffer(const gl::Context *context,
++                                                 gl::TextureTarget target,
++                                                 size_t level,
++                                                 GLenum internalFormat,
++                                                 const gl::Extents &size,
++                                                 GLenum format,
++                                                 GLenum type,
++                                                 const gl::PixelUnpackState &unpack,
++                                                 bool isCompressed,
++                                                 size_t imageSize,
++                                                 const uint8_t *pixels);
+     // This changes the current pixel unpack state that will have to be reapplied.
+     angle::Result reserveTexImageToBeFilled(const gl::Context *context,
+                                             gl::TextureTarget target,
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index f835070fd7fb60f42affd3e5f54ccc2c7b9c1c83..52a360dabcda0505ad0c056862c70ab64b24e3d1 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2423,6 +2423,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, splitLevel0PboFullSubImage2D,
+                             isPowerVRDriver && powerVRVersion < (std::array<int, 2>{26, 2}));
+ 
++    // TODO(crbug.com/548127218): conditionalize this workaround on PowerVR
++    // driver version.
++    ANGLE_FEATURE_CONDITION(features, uploadOversizedMipLevelsViaUnpackBuffer, isPowerVRDriver);
++
+     ANGLE_FEATURE_CONDITION(features, initializeCurrentVertexAttributes, isNvidia);
+ 
+     ANGLE_FEATURE_CONDITION(features, unpackLastRowSeparatelyForPaddingInclusion,
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6a2e6eba99c49075760f780b6ee7584f1f952382..9688c6a1972b6c77fe25fcc61e2974e7fe914367 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2865,6 +2865,12 @@
+ // This test fails because of incorrect GLX MakeCurrent calls in other tests
+ 520248049 LINUX OPENGL : EGLSurfacelessContextTest.CheckFramebufferStatus/* = SKIP
+ 
++// New tests failing on Windows Intel OpenGL
++548127218 WIN INTEL OPENGL : Texture2DTestES3_OversizedMipLevels.Uncompressed/* = SKIP
++548127218 WIN INTEL OPENGL : Texture2DTestES3_OversizedMipLevels.CompressedASTC/* = SKIP
++548127218 WIN INTEL OPENGL : Texture2DTestES3_OversizedMipLevels.CompressedDXT/* = SKIP
++548127218 WIN INTEL OPENGL : Texture2DTestES3_OversizedMipLevels.CompressedETC/* = SKIP
++
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 24037c1e0fed0e2847aab648fca48ce6068e8525..7b3a5b41ddc1e7cea99c78cedd5a24e14e61efc9 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -21474,12 +21474,268 @@ TEST_P(Texture2DTestES3_NonZeroBaseLevelGenMipmaps, VerifyMipmapContents)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++class Texture2DTestES3_OversizedMipLevels : public Texture2DTestES3
++{
++  protected:
++    Texture2DTestES3_OversizedMipLevels() : Texture2DTestES3() {}
++
++    void testSetUp() override
++    {
++        Texture2DTestES3::testSetUp();
++        setUpProgram();
++        glUseProgram(mProgram);
++        glUniform1i(mTexture2DUniformLocation, 0);
++        glActiveTexture(GL_TEXTURE0);
++    }
++};
++
++// Test that defining an oversized nonzero mip level on an uncompressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, Uncompressed)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Upload Level 0: 64x64 solid red.
++    constexpr int kLevel0Width  = 64;
++    constexpr int kLevel0Height = 64;
++    std::vector<GLColor> redData(kLevel0Width * kLevel0Height, GLColor::red);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kLevel0Width, kLevel0Height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, redData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Upload Level 1: 128x128 solid green (oversized relative to Level 0).
++    constexpr int kLevel1Width  = 128;
++    constexpr int kLevel1Height = 128;
++    std::vector<GLColor> greenData(kLevel1Width * kLevel1Height, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kLevel1Width, kLevel1Height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, greenData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::green);
++}
++
++// Test that defining an oversized nonzero mip level on an ETC compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedETC)
++{
++    const bool hasEtcExt = IsGLExtensionEnabled("GL_OES_compressed_ETC2_RGB8_texture");
++    const int clientVer  = getClientMajorVersion();
++    ANGLE_SKIP_TEST_IF(!hasEtcExt && clientVer < 3);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ETC2 RGB8: 8 bytes per 4x4 block.
++    // Level 0: 64x64 (256 blocks = 2048 bytes) solid red.
++    // Byte 0 = 0xFF (R1=15, R2=15), Bytes 1..7 = 0x00. Decodes to (255, 2, 2, 255).
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 8;
++    std::vector<uint8_t> redEtcData(kLevel0Bytes, 0);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        redEtcData[b * 8 + 0] = 0xFF;
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, kLevel0Width, kLevel0Height,
++                           0, static_cast<GLsizei>(kLevel0Bytes), redEtcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 8192 bytes) solid green.
++    // Byte 1 = 0xFF (G1=15, G2=15), Bytes 0, 2..7 = 0x00. Decodes to (2, 255, 2, 255).
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 8;
++    std::vector<uint8_t> greenEtcData(kLevel1Bytes, 0);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        greenEtcData[b * 8 + 1] = 0xFF;
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGB8_ETC2, kLevel1Width, kLevel1Height,
++                           0, static_cast<GLsizei>(kLevel1Bytes), greenEtcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor(255, 2, 2, 255));
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4,
++                         GLColor(2, 255, 2, 255));
++}
++
++// Test that defining an oversized nonzero mip level on an ASTC compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC 4x4 void-extent solid color blocks: 16 bytes per block.
++    // Red void-extent block: {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
++    // 0x00, 0x00, 0x00, 0xFF, 0xFF} Green void-extent block: {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF,
++    // 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF}
++    constexpr uint8_t kAstcRedBlock[16]   = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                             0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++    constexpr uint8_t kAstcGreenBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                             0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 64x64 (256 blocks = 4096 bytes) solid red.
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> redAstcData(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&redAstcData[b * 16], kAstcRedBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes),
++                           redAstcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 16384 bytes) solid green.
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> greenAstcData(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&greenAstcData[b * 16], kAstcGreenBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes),
++                           greenAstcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
++}
++
++// Test that defining an oversized nonzero mip level on a DXT compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedDXT)
++{
++    const bool hasDxt1  = IsGLExtensionEnabled("GL_EXT_texture_compression_dxt1");
++    const bool hasS3tc  = IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt1");
++    ANGLE_SKIP_TEST_IF(!hasDxt1 && !hasS3tc && !hasAngle);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // DXT1: 8 bytes per 4x4 block.
++    // Red block: {0x00, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
++    // Green block: {0xE0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
++    constexpr uint8_t kDxtRedBlock[8]   = {0x00, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++    constexpr uint8_t kDxtGreenBlock[8] = {0xE0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++
++    // Level 0: 64x64 (256 blocks = 2048 bytes) solid red.
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 8;
++    std::vector<uint8_t> redDxtData(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&redDxtData[b * 8], kDxtRedBlock, 8);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), redDxtData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 8192 bytes) solid green.
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 8;
++    std::vector<uint8_t> greenDxtData(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&greenDxtData[b * 8], kDxtGreenBlock, 8);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes),
++                           greenDxtData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_NonZeroBaseLevelGenMipmaps);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     Texture2DTestES3_NonZeroBaseLevelGenMipmaps,
+     ES3_OPENGL().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData),
+     ES3_OPENGLES().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData));
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_OversizedMipLevels);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3_OversizedMipLevels,
++    ES3_OPENGL().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer),
++    ES3_OPENGLES().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeLimitTest);
+ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+                        ES2_D3D11().enable(Feature::LimitMaxTextureBytesTo1MB),
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 5f73927723574957dbfabcb721b61409b11f1284..8e36eb5b9242afa25d180b1f0d9b6209d23a384b 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -481,6 +481,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::UnpackOverlappingRowsSeparatelyUnpackBuffer, "unpackOverlappingRowsSeparatelyUnpackBuffer"},
+     {Feature::UnsizedSRGBReadPixelsDoesntTransform, "unsizedSRGBReadPixelsDoesntTransform"},
+     {Feature::UploadDataToIosurfacesWithStagingBuffers, "uploadDataToIosurfacesWithStagingBuffers"},
++    {Feature::UploadOversizedMipLevelsViaUnpackBuffer, "uploadOversizedMipLevelsViaUnpackBuffer"},
+     {Feature::UploadTextureDataInChunks, "uploadTextureDataInChunks"},
+     {Feature::UseCullModeDynamicState, "useCullModeDynamicState"},
+     {Feature::UseDepthBiasEnableDynamicState, "useDepthBiasEnableDynamicState"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index f4e5cdeb5ec2dc6bc2a214836ce35568679ac183..95b57001d541522d825d38f5aa64a74ae7a5e37a 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -481,6 +481,7 @@ enum class Feature
+     UnpackOverlappingRowsSeparatelyUnpackBuffer,
+     UnsizedSRGBReadPixelsDoesntTransform,
+     UploadDataToIosurfacesWithStagingBuffers,
++    UploadOversizedMipLevelsViaUnpackBuffer,
+     UploadTextureDataInChunks,
+     UseCullModeDynamicState,
+     UseDepthBiasEnableDynamicState,

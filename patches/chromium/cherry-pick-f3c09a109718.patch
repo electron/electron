@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Mon, 17 Aug 2026 15:06:19 -0700
+Subject: media::IntervalMap: Use CHECK instead of DCHECK for fatal conditions
+
+Almost all of the DCHECKs in this header were migrated to CHECKs last
+year. Move the remaining ones.
+
+Bug: 513458719
+Change-Id: Ib08f2fe4bac642246616a2b0314740b9915859ea
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8265244
+Commit-Queue: ccameron chromium <ccameron@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1680851}
+(cherry picked from commit f3c09a109718794172b7f43356927c8aa8600790)
+
+diff --git a/media/base/interval_map.h b/media/base/interval_map.h
+index 259dc0816e25661b8eb2eeaa8f7162ab226b149c..4916b276f41cea8588c9ae263a9efcc507b2981c 100644
+--- a/media/base/interval_map.h
++++ b/media/base/interval_map.h
+@@ -142,7 +142,7 @@ class IntervalMapConstIterator {
+   // current interval. (But should always have a different value.)
+   // Not allowed if we're already at map_->begin().
+   void operator--() {
+-    DCHECK(iter_ != map_->begin());
++    CHECK(iter_ != map_->begin());
+     --iter_;
+   }
+ 
+@@ -173,7 +173,7 @@ class IntervalMap {
+   // Defaults to ValueType().
+   ValueType operator[](const KeyType& k) const {
+     typename MapType::const_iterator i = map_.upper_bound(k);
+-    DCHECK(i != map_.begin());
++    CHECK(i != map_.begin());
+     --i;
+     return i->second;
+   }
+@@ -226,7 +226,7 @@ class IntervalMap {
+   // Always returns a valid iterator.
+   const_iterator find(KeyType k) const {
+     typename MapType::const_iterator iter = map_.upper_bound(k);
+-    DCHECK(iter != map_.begin());
++    CHECK(iter != map_.begin());
+     --iter;
+     return const_iterator(&map(), iter);
+   }

@@ -1,0 +1,210 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Frank Barchard <fbarchard@google.com>
+Date: Thu, 20 Aug 2026 20:14:23 -0700
+Subject: Fix undeclared register clobbers in x86 and NEON assembly
+
+List of affected functions:
+- ARGBToAB64Row_SSSE3 (row_gcc.cc): add xmm3 clobber
+- ARGBToAB64Row_AVX2 (row_gcc.cc): add xmm3 clobber
+- ARGBToAB64Row_NEON (row_neon64.cc): add v5, v6, v7 clobbers
+- ARGBToUV444MatrixRow_NEON (row_neon.cc): add q13 clobber
+- ARGBSepiaRow_NEON_DotProd (row_neon64.cc): add v23 clobber
+- I422ToRGB24Row_NEON (row_neon.cc): remove dead d6 mutation
+- I422ToRGB565Row_NEON (row_neon.cc): remove dead d6 mutation
+- MergeAR64Row_NEON (row_neon.cc, row_neon64.cc): add q14, v30 clobbers
+- MergeXR30Row_AVX2 (row_gcc.cc): add xmm6 clobber
+- MergeXR64Row_NEON (row_neon.cc, row_neon64.cc): add q14, v30 clobbers
+- NV12ToRGB24Row_NEON (row_neon.cc): remove dead d6 mutation
+- NV12ToRGB565Row_NEON (row_neon.cc): remove dead d6 mutation
+- NV21ToRGB24Row_NEON (row_neon.cc): remove dead d6 mutation
+- RGBToUV444MatrixRow_NEON (row_neon.cc): add q13 clobber
+- ScaleRowDown2Box_SSSE3 (scale_gcc.cc): add xmm4 clobber
+- ScaleRowDown2Box_AVX2 (scale_gcc.cc): add xmm4 clobber
+- SobelToPlaneRow_SSE2 (row_gcc.cc): remove dead xmm5 mutation
+- UYVYToARGBRow_SSSE3 (row_gcc.cc): add xmm6, xmm7 clobbers
+
+Test: ninja -C out/Release libyuv_unittest && ./out/Release/libyuv_unittest
+Bug: 489489002
+Change-Id: I0a8794be0423ef36d679a45e276738c2e42d2fb8
+TAG=agy
+CONV=16035e35-dcc9-4b8f-90f7-f17b299bc523
+Reviewed-on: https://chromium-review.googlesource.com/c/libyuv/libyuv/+/8258080
+Commit-Queue: Frank Barchard <fbarchard@google.com>
+Reviewed-by: richard winterton <rrwinterton@gmail.com>
+
+(cherry picked from commit 8d7ed8af356a2a2b3feab24c501769705fdae989)
+
+diff --git a/source/row_gcc.cc b/source/row_gcc.cc
+index 9af3fc408b4b1d5abc2f33eda173295ada1b9393..57dca21479a0cf7028605286c66feb7bebe7b8dd 100644
+--- a/source/row_gcc.cc
++++ b/source/row_gcc.cc
+@@ -1140,7 +1140,7 @@ void ARGBToAB64Row_SSSE3(const uint8_t* src_argb,
+         "+r"(width)                 // %2
+       : "m"(kShuffleARGBToAB64Lo),  // %3
+         "m"(kShuffleARGBToAB64Hi)   // %4
+-      : "memory", "cc", "xmm0", "xmm1", "xmm2");
++      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3");
+ }
+ 
+ void AR64ToARGBRow_SSSE3(const uint16_t* src_ar64,
+@@ -1239,7 +1239,7 @@ void ARGBToAB64Row_AVX2(const uint8_t* src_argb,
+         "+r"(width)                 // %2
+       : "m"(kShuffleARGBToAB64Lo),  // %3
+         "m"(kShuffleARGBToAB64Hi)   // %3
+-      : "memory", "cc", "xmm0", "xmm1", "xmm2");
++      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3");
+ }
+ #endif
+ 
+@@ -3018,7 +3018,7 @@ void OMITFP UYVYToARGBRow_SSSE3(const uint8_t* uyvy_buf,
+       : [yuvconstants] "r"(yuvconstants),  // %[yuvconstants]
+         [kShuffleUYVYY] "m"(kShuffleUYVYY), [kShuffleUYVYUV] "m"(kShuffleUYVYUV)
+       : "memory", "cc", YUVTORGB_REGS "xmm0", "xmm1", "xmm2", "xmm3", "xmm4",
+-        "xmm5");
++        "xmm5", "xmm6", "xmm7");
+ }
+ 
+ void OMITFP P210ToARGBRow_SSSE3(const uint16_t* y_buf,
+@@ -6022,7 +6022,8 @@ void MergeXR30Row_AVX2(const uint16_t* src_r,
+ #else
+       : "rm"(shift)   // %5
+ #endif
+-      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5");
++      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5",
++        "xmm6");
+ }
+ #endif
+ 
+@@ -8090,8 +8091,6 @@ void SobelToPlaneRow_SSE2(const uint8_t* src_sobelx,
+                           int width) {
+   asm volatile(
+       "sub         %0,%1                         \n"
+-      "pcmpeqb     %%xmm5,%%xmm5                 \n"
+-      "pslld       $0x18,%%xmm5                  \n"
+ 
+       // 8 pixel loop.
+       LABELALIGN
+diff --git a/source/row_neon.cc b/source/row_neon.cc
+index 1f1a3bbf3c1b9ca69eabb13e937def21c2a70fed..b21043a4641a365dc6d66d8807a17f6313f30bcc 100644
+--- a/source/row_neon.cc
++++ b/source/row_neon.cc
+@@ -291,7 +291,6 @@ void I422ToRGB24Row_NEON(const uint8_t* src_y,
+                          int width) {
+   asm volatile(
+       YUVTORGB_SETUP
+-      "vmov.u8     d6, #255                      \n"
+       "1:          \n"  //
+       READYUV422
+       "subs        %[width], %[width], #8        \n" YUVTORGB RGBTORGB8
+@@ -322,7 +321,6 @@ void I422ToRGB565Row_NEON(const uint8_t* src_y,
+                           int width) {
+   asm volatile(
+       YUVTORGB_SETUP
+-      "vmov.u8     d6, #255                      \n"
+       "1:          \n"  //
+       READYUV422
+       "subs        %[width], %[width], #8        \n" YUVTORGB RGBTORGB8
+@@ -494,7 +492,6 @@ void NV12ToRGB24Row_NEON(const uint8_t* src_y,
+                          int width) {
+   asm volatile(
+       YUVTORGB_SETUP
+-      "vmov.u8     d6, #255                      \n"
+       "1:          \n"  //
+       READNV12 YUVTORGB RGBTORGB8
+       "subs        %[width], %[width], #8        \n"
+@@ -516,7 +513,6 @@ void NV21ToRGB24Row_NEON(const uint8_t* src_y,
+                          int width) {
+   asm volatile(
+       YUVTORGB_SETUP
+-      "vmov.u8     d6, #255                      \n"
+       "1:          \n"  //
+       READNV21 YUVTORGB RGBTORGB8
+       "subs        %[width], %[width], #8        \n"
+@@ -538,7 +534,6 @@ void NV12ToRGB565Row_NEON(const uint8_t* src_y,
+                           int width) {
+   asm volatile(
+       YUVTORGB_SETUP
+-      "vmov.u8     d6, #255                      \n"
+       "1:          \n"  //
+       READNV12 YUVTORGB RGBTORGB8
+       "subs        %[width], %[width], #8        \n" ARGBTORGB565
+@@ -1063,7 +1058,7 @@ void MergeAR64Row_NEON(const uint16_t* src_r,
+         "+r"(width)      // %5
+       : "r"(shift),      // %6
+         "r"(mask)        // %7
+-      : "memory", "cc", "q0", "q1", "q2", "q3", "q15");
++      : "memory", "cc", "q0", "q1", "q2", "q3", "q14", "q15");
+ }
+ 
+ void MergeXR64Row_NEON(const uint16_t* src_r,
+@@ -1100,7 +1095,7 @@ void MergeXR64Row_NEON(const uint16_t* src_r,
+         "+r"(width)      // %4
+       : "r"(shift),      // %5
+         "r"(mask)        // %6
+-      : "memory", "cc", "q0", "q1", "q2", "q3", "q15");
++      : "memory", "cc", "q0", "q1", "q2", "q3", "q14", "q15");
+ }
+ 
+ void MergeARGB16To8Row_NEON(const uint16_t* src_r,
+diff --git a/source/row_neon64.cc b/source/row_neon64.cc
+index c0fdc6d0d9496c57708965b80aa979998a234144..cb5bbea125745832b30697c35c330adcf24318e4 100644
+--- a/source/row_neon64.cc
++++ b/source/row_neon64.cc
+@@ -1702,7 +1702,7 @@ void MergeAR64Row_NEON(const uint16_t* src_r,
+         "+r"(width)      // %5
+       : "r"(shift),      // %6
+         "r"(mask)        // %7
+-      : "memory", "cc", "v0", "v1", "v2", "v3", "v31");
++      : "memory", "cc", "v0", "v1", "v2", "v3", "v30", "v31");
+ }
+ 
+ void MergeXR64Row_NEON(const uint16_t* src_r,
+@@ -1742,7 +1742,7 @@ void MergeXR64Row_NEON(const uint16_t* src_r,
+         "+r"(width)      // %4
+       : "r"(shift),      // %5
+         "r"(mask)        // %6
+-      : "memory", "cc", "v0", "v1", "v2", "v3", "v31");
++      : "memory", "cc", "v0", "v1", "v2", "v3", "v30", "v31");
+ }
+ 
+ void MergeARGB16To8Row_NEON(const uint16_t* src_r,
+@@ -2658,7 +2658,7 @@ void ARGBToAB64Row_NEON(const uint8_t* src_argb,
+         "+r"(dst_ab64),              // %1
+         "+r"(width)                  // %2
+       : "r"(&kShuffleARGBToAB64[0])  // %3
+-      : "cc", "memory", "v0", "v1", "v2", "v3", "v4");
++      : "cc", "memory", "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7");
+ }
+ #endif  // LIBYUV_USE_ST2
+ 
+@@ -4505,7 +4505,7 @@ void ARGBSepiaRow_NEON_DotProd(uint8_t* dst_argb, int width) {
+       : [coeffs] "r"(&kARGBSepiaRowCoeffs),        // %[coeffs]
+         [indices] "r"(&kARGBSepiaRowAlphaIndices)  // %[indices]
+       : "cc", "memory", "v0", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v20",
+-        "v21", "v22", "v24", "v25", "v26", "v28", "v29", "v30");
++        "v21", "v22", "v23", "v24", "v25", "v26", "v28", "v29", "v30");
+ }
+ 
+ // Tranform 8 ARGB pixels (32 bytes) with color matrix.
+diff --git a/source/scale_gcc.cc b/source/scale_gcc.cc
+index fdd38dfe5d19ed9b96e7a12e2799292285da075b..08f0d92560fc9ac6eed6e63bea92739bf07fbced 100644
+--- a/source/scale_gcc.cc
++++ b/source/scale_gcc.cc
+@@ -187,7 +187,7 @@ void ScaleRowDown2Box_SSSE3(const uint8_t* src_ptr,
+         "+r"(dst_ptr),               // %1
+         "+r"(dst_width)              // %2
+       : "r"((intptr_t)(src_stride))  // %3
+-      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm5");
++      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5");
+ }
+ 
+ #ifdef HAS_SCALEROWDOWN2_AVX2
+@@ -287,7 +287,7 @@ void ScaleRowDown2Box_AVX2(const uint8_t* src_ptr,
+         "+r"(dst_ptr),               // %1
+         "+r"(dst_width)              // %2
+       : "r"((intptr_t)(src_stride))  // %3
+-      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm5");
++      : "memory", "cc", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5");
+ }
+ #endif  // HAS_SCALEROWDOWN2_AVX2
+ 

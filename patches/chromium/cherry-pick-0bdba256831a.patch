@@ -1,0 +1,483 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Tue, 4 Aug 2026 20:34:14 -0700
+Subject: Check focused view before redispatching unhandled keys for dialog
+
+`UnhandledKeyboardEventHandler` forwards keyboard events that the
+renderer did not consume directly to
+`FocusManager::ProcessAccelerator()`. Unlike
+`FocusManager::OnKeyEvent()`, this path did not check whether the
+currently focused view wants to handle the key itself via
+`SkipDefaultKeyEventProcessing()`, so a focused non-default button did
+not get the chance to claim the Enter key before the default button's
+accelerator fired.
+
+In addition, dialogs built with `ui::DialogModel` default to
+`enable_input_protection_ = false`, allowing key events to be accepted
+immediately after a dialog appears. Combined, an unconsumed Enter
+keypress from web contents could bypass a focused Cancel button and
+trigger the default Allow button on sensitive tab-modal prompts such as
+the File System Access permission dialog.
+
+This CL explicitly enables input protection on
+`FileSystemAccessPermissionDialog` to protect against rapid or
+accidental keystrokes.
+
+Bug: 523277481
+Change-Id: I153353c3b8d80f17d42e432fb10ec888f1d284de
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8166200
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Reviewed-by: Dana Fried <dfried@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1673874}
+(cherry picked from commit 0bdba256831acfd7e96b8cce9746becfcd0deae5)
+
+diff --git a/chrome/browser/ui/file_system_access/file_system_access_permission_dialog.cc b/chrome/browser/ui/file_system_access/file_system_access_permission_dialog.cc
+index 43ee10cc9a371613bf46ef46b962f13995f30975..e5cc182c608eb1b7629453cbadae56cb45f4d33c 100644
+--- a/chrome/browser/ui/file_system_access/file_system_access_permission_dialog.cc
++++ b/chrome/browser/ui/file_system_access/file_system_access_permission_dialog.cc
+@@ -166,7 +166,8 @@ std::unique_ptr<ui::DialogModel> CreateFileSystemAccessPermissionDialog(
+                            .SetLabel(l10n_util::GetStringUTF16(
+                                GetCancelButtonLabel(file_request_data))))
+       .SetCloseActionCallback(std::move(cancel_callbacks.second))
+-      .SetInitiallyFocusedField(kCancelButtonId);
++      .SetInitiallyFocusedField(kCancelButtonId)
++      .SetEnableInputProtection(true);
+   return dialog_builder.Build();
+ }
+ 
+diff --git a/chrome/browser/ui/file_system_access/file_system_access_permission_dialog_unittest.cc b/chrome/browser/ui/file_system_access/file_system_access_permission_dialog_unittest.cc
+index 5256aa7e2c51aaf2fa7e4e1fb3e9c26b58aa02e5..d12c7aade1a7957d0dc95879160c92c9b91a1d9d 100644
+--- a/chrome/browser/ui/file_system_access/file_system_access_permission_dialog_unittest.cc
++++ b/chrome/browser/ui/file_system_access/file_system_access_permission_dialog_unittest.cc
+@@ -97,3 +97,12 @@ TEST_F(FileSystemAccessPermissionDialogTest, CancelButtonInitiallyFocused) {
+   EXPECT_EQ(host->GetInitiallyFocusedField(),
+             host->GetId(ui::TestDialogModelHost::ButtonId::kCancel));
+ }
++
++// Verifies that input protection is enabled to guard against accidental
++// or rapid-interaction keystrokes when the dialog appears.
++TEST_F(FileSystemAccessPermissionDialogTest, EnableInputProtection) {
++  TestFileSystemAccessPermissionDialog test_dialog;
++  auto host = test_dialog.CreateDialogModelHost();
++
++  EXPECT_TRUE(host->GetEnableInputProtection());
++}
+diff --git a/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc b/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
+index 84c01b6b13998d256433549bcc620240d69c06dd..f8b1fc40b861147be073232fc06d43b2849ce402 100644
+--- a/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
++++ b/chrome/browser/ui/views/web_dialog_view_interactive_uitest.cc
+@@ -2,6 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "ui/views/controls/webview/web_dialog_view.h"
++
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/location.h"
+@@ -20,13 +22,18 @@
+ #include "chrome/test/base/in_process_browser_test.h"
+ #include "chrome/test/base/interactive_test_utils.h"
+ #include "chrome/test/base/ui_test_utils.h"
++#include "components/input/native_web_keyboard_event.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/render_widget_host_view.h"
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/test/browser_test.h"
+-#include "content/public/test/test_utils.h"
++#include "third_party/blink/public/common/input/web_input_event.h"
++#include "ui/base/accelerators/accelerator.h"
++#include "ui/base/accelerators/test_accelerator_target.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
+-#include "ui/views/controls/webview/web_dialog_view.h"
++#include "ui/events/keycodes/keyboard_codes.h"
++#include "ui/views/controls/button/label_button.h"
++#include "ui/views/focus/focus_manager.h"
+ #include "ui/views/view_tracker.h"
+ #include "ui/views/widget/widget.h"
+ #include "ui/views/widget/widget_observer.h"
+@@ -320,6 +327,44 @@ IN_PROC_BROWSER_TEST_F(WebDialogBrowserTest, CloseDialogOnEscapeDisabled) {
+   EXPECT_FALSE(was_view_deleted());
+ }
+ 
++// Verifies that when focus has switched to a button that consumes key events
++// (such as a Confirm button), an unhandled Enter key event bubbling up from
++// WebContents does not trigger an Enter accelerator.
++// This is the regression test for crbug.com/523277481.
++IN_PROC_BROWSER_TEST_F(WebDialogBrowserTest,
++                       UnhandledEnterRespectsButtonFocus) {
++  views::FocusManager* focus_manager = view_->GetFocusManager();
++  ASSERT_TRUE(focus_manager);
++
++  ui::TestAcceleratorTarget target;
++  focus_manager->RegisterAccelerator(
++      ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
++      ui::AcceleratorManager::kNormalPriority, &target);
++
++  input::NativeWebKeyboardEvent event(
++      blink::WebInputEvent::Type::kRawKeyDown,
++      blink::WebInputEvent::kNoModifiers,
++      blink::WebInputEvent::GetStaticTimeStampForTests());
++  event.windows_key_code = ui::VKEY_RETURN;
++
++  // When WebDialogView is focused, an unhandled Enter event fires the
++  // accelerator.
++  focus_manager->SetFocusedView(view_);
++  EXPECT_EQ(view_, focus_manager->GetFocusedView());
++  view_->HandleKeyboardEvent(view_->web_contents(), event);
++  EXPECT_EQ(1, target.accelerator_count());
++
++  // After switching focus to a default button, an unhandled Enter event does
++  // not fire the accelerator.
++  auto* button = view_->AddChildView(std::make_unique<views::LabelButton>(
++      views::Button::PressedCallback(), u"Confirm"));
++  button->SetIsDefault(true);
++  focus_manager->SetFocusedView(button);
++  EXPECT_EQ(button, focus_manager->GetFocusedView());
++  view_->HandleKeyboardEvent(view_->web_contents(), event);
++  EXPECT_EQ(1, target.accelerator_count());
++}
++
+ // Test that key event is translated to a text input properly.
+ IN_PROC_BROWSER_TEST_F(WebDialogBrowserTest, TextInputViaKeyEvent) {
+   TestTextInputViaKeyEvent(view_->web_contents());
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index deb1ac14ad0824bfe0a5ec41dc2427761536a3e7..70167f93559e29e30a655cb40a9f1bbaef43b807 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -10669,6 +10669,7 @@ test("unit_tests") {
+     }
+ 
+     sources += [
++      "../../ui/views/controls/webview/unhandled_keyboard_event_handler_unittest.cc",
+       "../../ui/views/controls/webview/web_dialog_view_unittest.cc",
+       "../../ui/views/controls/webview/webview_unittest.cc",
+       "../browser/enterprise/data_protection/data_protection_navigation_observer_unittest.cc",
+diff --git a/ui/base/test/test_dialog_model_host.cc b/ui/base/test/test_dialog_model_host.cc
+index 077cb3d4bc49e746187e1a3bd66ecec54ce02d8e..ea7ad6848a5fd6eb19fda21216d7357ce22c759e 100644
+--- a/ui/base/test/test_dialog_model_host.cc
++++ b/ui/base/test/test_dialog_model_host.cc
+@@ -99,6 +99,10 @@ ElementIdentifier TestDialogModelHost::GetInitiallyFocusedField() {
+   return dialog_model_->initially_focused_field(DialogModelHost::GetPassKey());
+ }
+ 
++bool TestDialogModelHost::GetEnableInputProtection() {
++  return dialog_model_->enable_input_protection(DialogModelHost::GetPassKey());
++}
++
+ void TestDialogModelHost::Close() {
+   // For now, TestDialogModelHost::Close() is the expected interface to close.
+   NOTREACHED();
+diff --git a/ui/base/test/test_dialog_model_host.h b/ui/base/test/test_dialog_model_host.h
+index e4654d0c9ac9ccf6762d9f47e0aebd3f6737be18..66047ab606591e071fbc7b3753a4df3418223df7 100644
+--- a/ui/base/test/test_dialog_model_host.h
++++ b/ui/base/test/test_dialog_model_host.h
+@@ -51,6 +51,7 @@ class TestDialogModelHost final : public DialogModelHost,
+   const std::u16string& GetLabel(ButtonId button_id);
+   ElementIdentifier GetId(ButtonId button_id);
+   ElementIdentifier GetInitiallyFocusedField();
++  bool GetEnableInputProtection();
+ 
+  private:
+   // DialogModelHost:
+diff --git a/ui/views/controls/webview/unhandled_keyboard_event_handler.cc b/ui/views/controls/webview/unhandled_keyboard_event_handler.cc
+index 5caf765c345884769921f549ecd3a90890af2901..7e02d485f74ccb48ee610e7bb7b4e4cbc6762326 100644
+--- a/ui/views/controls/webview/unhandled_keyboard_event_handler.cc
++++ b/ui/views/controls/webview/unhandled_keyboard_event_handler.cc
+@@ -6,7 +6,9 @@
+ 
+ #include "components/input/native_web_keyboard_event.h"
+ #include "ui/content_accelerators/accelerator_util.h"
++#include "ui/views/controls/webview/webview.h"
+ #include "ui/views/focus/focus_manager.h"
++#include "ui/views/view_utils.h"
+ 
+ namespace views {
+ 
+@@ -31,10 +33,22 @@ bool UnhandledKeyboardEventHandler::HandleKeyboardEvent(
+   // always generate a Char event.
+   ignore_next_char_event_ = false;
+ 
++  auto should_skip_accelerator =
++      [focus_manager](const ui::Accelerator& accelerator) {
++        View* focused_view = focus_manager->GetFocusedView();
++        return focused_view && !IsViewClass<WebView>(focused_view) &&
++               focus_manager->ShouldSkipAcceleratorProcessing(accelerator);
++      };
++
+   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown) {
+     ui::Accelerator accelerator =
+         ui::GetAcceleratorFromNativeWebKeyboardEvent(event);
+ 
++    if (should_skip_accelerator(accelerator)) {
++      ignore_next_char_event_ = true;
++      return true;
++    }
++
+     // This is tricky: we want to set ignore_next_char_event_ if
+     // ProcessAccelerator returns true. But ProcessAccelerator might delete
+     // |this| if the accelerator is a "close tab" one. So we speculatively
+@@ -53,6 +67,11 @@ bool UnhandledKeyboardEventHandler::HandleKeyboardEvent(
+   if (event.GetType() == blink::WebInputEvent::Type::kKeyUp) {
+     const ui::Accelerator accelerator =
+         ui::GetAcceleratorFromNativeWebKeyboardEvent(event);
++
++    if (should_skip_accelerator(accelerator)) {
++      return true;
++    }
++
+     if (focus_manager->ProcessAccelerator(accelerator)) {
+       return true;
+     }
+diff --git a/ui/views/controls/webview/unhandled_keyboard_event_handler_unittest.cc b/ui/views/controls/webview/unhandled_keyboard_event_handler_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae4a3af9944bb34dff76e7c00e22250db40cbdf2
+--- /dev/null
++++ b/ui/views/controls/webview/unhandled_keyboard_event_handler_unittest.cc
+@@ -0,0 +1,186 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
++
++#include <memory>
++
++#include "base/functional/bind.h"
++#include "base/memory/raw_ptr.h"
++#include "base/test/task_environment.h"
++#include "components/input/native_web_keyboard_event.h"
++#include "content/public/browser/web_contents.h"
++#include "content/public/common/content_client.h"
++#include "content/public/test/browser_task_environment.h"
++#include "content/public/test/test_browser_context.h"
++#include "content/public/test/test_content_browser_client.h"
++#include "content/public/test/test_renderer_host.h"
++#include "content/public/test/web_contents_tester.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "ui/base/accelerators/accelerator.h"
++#include "ui/base/accelerators/accelerator_manager.h"
++#include "ui/base/accelerators/test_accelerator_target.h"
++#include "ui/base/metadata/metadata_header_macros.h"
++#include "ui/base/metadata/metadata_impl_macros.h"
++#include "ui/events/event.h"
++#include "ui/events/keycodes/keyboard_codes.h"
++#include "ui/views/controls/button/button.h"
++#include "ui/views/controls/button/label_button.h"
++#include "ui/views/controls/webview/webview.h"
++#include "ui/views/focus/focus_manager.h"
++#include "ui/views/test/widget_test.h"
++#include "ui/views/view.h"
++#include "ui/views/widget/widget.h"
++
++namespace views {
++namespace {
++
++class TestButtonThatSkipsDefaultKeyEventProcessing : public LabelButton {
++  METADATA_HEADER(TestButtonThatSkipsDefaultKeyEventProcessing, LabelButton)
++
++ public:
++  TestButtonThatSkipsDefaultKeyEventProcessing()
++      : LabelButton(Button::PressedCallback(), u"Cancel") {}
++  ~TestButtonThatSkipsDefaultKeyEventProcessing() override = default;
++
++  bool SkipDefaultKeyEventProcessing(const ui::KeyEvent& event) override {
++    return true;
++  }
++};
++
++BEGIN_METADATA(TestButtonThatSkipsDefaultKeyEventProcessing)
++END_METADATA
++
++}  // namespace
++
++class UnhandledKeyboardEventHandlerTest : public views::test::WidgetTest {
++ public:
++  UnhandledKeyboardEventHandlerTest()
++      : views::test::WidgetTest(std::unique_ptr<base::test::TaskEnvironment>(
++            std::make_unique<content::BrowserTaskEnvironment>())) {}
++
++  UnhandledKeyboardEventHandlerTest(const UnhandledKeyboardEventHandlerTest&) =
++      delete;
++  UnhandledKeyboardEventHandlerTest& operator=(
++      const UnhandledKeyboardEventHandlerTest&) = delete;
++
++  ~UnhandledKeyboardEventHandlerTest() override = default;
++
++  std::unique_ptr<content::WebContents> CreateWebContentsForWebView(
++      content::BrowserContext* browser_context) {
++    return content::WebContentsTester::CreateTestWebContents(browser_context,
++                                                             nullptr);
++  }
++
++  void SetUp() override {
++    SetBrowserClientForTesting(&test_browser_client_);
++    rvh_enabler_ = std::make_unique<content::RenderViewHostTestEnabler>();
++    WebView::WebContentsCreator creator = base::BindRepeating(
++        &UnhandledKeyboardEventHandlerTest::CreateWebContentsForWebView,
++        base::Unretained(this));
++    scoped_web_contents_creator_ =
++        std::make_unique<WebView::ScopedWebContentsCreatorForTesting>(creator);
++    browser_context_ = std::make_unique<content::TestBrowserContext>();
++    WidgetTest::SetUp();
++
++    top_level_widget_ = CreateTopLevelFramelessPlatformWidget();
++    top_level_widget_->SetBounds(gfx::Rect(0, 10, 100, 100));
++    View* const contents_view =
++        top_level_widget_->SetContentsView(std::make_unique<View>());
++    web_view_ = contents_view->AddChildView(
++        std::make_unique<WebView>(browser_context_.get()));
++    top_level_widget_->Show();
++
++    focus_manager_ = top_level_widget_->GetFocusManager();
++    ASSERT_TRUE(focus_manager_);
++
++    focus_manager_->RegisterAccelerator(
++        ui::Accelerator(ui::VKEY_RETURN, ui::EF_NONE),
++        ui::AcceleratorManager::kNormalPriority, &target_);
++  }
++
++  void TearDown() override {
++    if (focus_manager_) {
++      focus_manager_->UnregisterAccelerators(&target_);
++      focus_manager_ = nullptr;
++    }
++    web_view_ = nullptr;
++    top_level_widget_.ExtractAsDangling()->CloseNow();
++    WidgetTest::TearDown();
++    browser_context_.reset();
++    scoped_web_contents_creator_.reset();
++    rvh_enabler_.reset();
++  }
++
++  input::NativeWebKeyboardEvent CreateReturnKeyDownEvent() {
++    input::NativeWebKeyboardEvent event(
++        blink::WebInputEvent::Type::kRawKeyDown,
++        blink::WebInputEvent::kNoModifiers,
++        blink::WebInputEvent::GetStaticTimeStampForTests());
++    event.windows_key_code = ui::VKEY_RETURN;
++    return event;
++  }
++
++ protected:
++  content::TestContentBrowserClient test_browser_client_;
++  std::unique_ptr<content::RenderViewHostTestEnabler> rvh_enabler_;
++  std::unique_ptr<content::TestBrowserContext> browser_context_;
++  std::unique_ptr<WebView::ScopedWebContentsCreatorForTesting>
++      scoped_web_contents_creator_;
++  raw_ptr<Widget> top_level_widget_ = nullptr;
++  raw_ptr<WebView> web_view_ = nullptr;
++  raw_ptr<FocusManager> focus_manager_ = nullptr;
++  ui::TestAcceleratorTarget target_;
++  UnhandledKeyboardEventHandler handler_;
++};
++
++// Verifies that renderer-unhandled Enter events do not fire accelerators when
++// focus is on a button that consumes key events (e.g., Cancel button).
++TEST_F(UnhandledKeyboardEventHandlerTest,
++       ReturnSkipsAcceleratorWhenButtonFocused) {
++  auto* button = top_level_widget_->GetContentsView()->AddChildView(
++      std::make_unique<TestButtonThatSkipsDefaultKeyEventProcessing>());
++  focus_manager_->SetFocusedView(button);
++  EXPECT_EQ(button, focus_manager_->GetFocusedView());
++
++  EXPECT_TRUE(button->SkipDefaultKeyEventProcessing(
++      ui::KeyEvent(ui::EventType::kKeyPressed, ui::VKEY_RETURN, ui::EF_NONE)));
++
++  EXPECT_TRUE(
++      handler_.HandleKeyboardEvent(CreateReturnKeyDownEvent(), focus_manager_));
++  EXPECT_EQ(0, target_.accelerator_count());
++}
++
++// Verifies that renderer-unhandled Enter events fire accelerators when a
++// WebView is focused, since its renderer already had a chance to consume the
++// key.
++TEST_F(UnhandledKeyboardEventHandlerTest,
++       ReturnFiresAcceleratorWhenWebViewFocused) {
++  focus_manager_->SetFocusedView(web_view_);
++  EXPECT_EQ(web_view_, focus_manager_->GetFocusedView());
++
++  EXPECT_TRUE(
++      handler_.HandleKeyboardEvent(CreateReturnKeyDownEvent(), focus_manager_));
++  EXPECT_EQ(1, target_.accelerator_count());
++}
++
++// Verifies that renderer-unhandled Enter events fire accelerators when focus
++// is on a view that does not consume default key events.
++TEST_F(UnhandledKeyboardEventHandlerTest,
++       ReturnFiresAcceleratorWhenNormalViewFocused) {
++  View* normal_view = top_level_widget_->GetContentsView()->AddChildView(
++      std::make_unique<View>());
++  normal_view->SetFocusBehavior(View::FocusBehavior::ALWAYS);
++  focus_manager_->SetFocusedView(normal_view);
++  EXPECT_EQ(normal_view, focus_manager_->GetFocusedView());
++
++  EXPECT_FALSE(normal_view->SkipDefaultKeyEventProcessing(
++      ui::KeyEvent(ui::EventType::kKeyPressed, ui::VKEY_RETURN, ui::EF_NONE)));
++
++  EXPECT_TRUE(
++      handler_.HandleKeyboardEvent(CreateReturnKeyDownEvent(), focus_manager_));
++  EXPECT_EQ(1, target_.accelerator_count());
++}
++
++}  // namespace views
+diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
+index e08dd61b20c68398b0532f5ae74e0ffd5968c19b..52f9e8d8f104ef592c9f588efece7238d20eaf22 100644
+--- a/ui/views/controls/webview/web_dialog_view.cc
++++ b/ui/views/controls/webview/web_dialog_view.cc
+@@ -422,10 +422,6 @@ void WebDialogView::SetContentsBounds(WebContents* source,
+ bool WebDialogView::HandleKeyboardEvent(
+     content::WebContents* source,
+     const input::NativeWebKeyboardEvent& event) {
+-  if (!event.os_event) {
+-    return false;
+-  }
+-
+   return unhandled_keyboard_event_handler_.HandleKeyboardEvent(
+       event, GetFocusManager());
+ }
+diff --git a/ui/views/focus/focus_manager.cc b/ui/views/focus/focus_manager.cc
+index 4cc6235e8d0639cdf3181dd37a454fc63e122b90..89104639ecab32fb35b0c24091632ee2d8d28f20 100644
+--- a/ui/views/focus/focus_manager.cc
++++ b/ui/views/focus/focus_manager.cc
+@@ -48,6 +48,14 @@ FocusManager::~FocusManager() {
+                                  this);
+ }
+ 
++bool FocusManager::ShouldSkipAcceleratorProcessing(
++    const ui::Accelerator& accelerator) const {
++  return focused_view_ &&
++         focused_view_->SkipDefaultKeyEventProcessing(
++             accelerator.ToKeyEvent()) &&
++         !accelerator_manager_.HasPriorityHandler(accelerator);
++}
++
+ bool FocusManager::OnKeyEvent(const ui::KeyEvent& event) {
+   const ui::KeyboardCode key_code = event.key_code();
+ 
+@@ -63,8 +71,7 @@ bool FocusManager::OnKeyEvent(const ui::KeyEvent& event) {
+   ui::Accelerator accelerator(event);
+ 
+   // If the focused view wants to process the key event as is, let it be.
+-  if (focused_view_ && focused_view_->SkipDefaultKeyEventProcessing(event) &&
+-      !accelerator_manager_.HasPriorityHandler(accelerator)) {
++  if (ShouldSkipAcceleratorProcessing(accelerator)) {
+     return true;
+   }
+ 
+diff --git a/ui/views/focus/focus_manager.h b/ui/views/focus/focus_manager.h
+index 33ef25c228cbc498ed42f79fbe4e3e28a06fc7e5..6b852ed42adf9f4c430666e71f33108ece8d3055 100644
+--- a/ui/views/focus/focus_manager.h
++++ b/ui/views/focus/focus_manager.h
+@@ -159,6 +159,11 @@ class VIEWS_EXPORT FocusManager : public ViewObserver {
+   // further.
+   bool OnKeyEvent(const ui::KeyEvent& event);
+ 
++  // Returns true if the focused view wants to process the key event as is
++  // (and there is no priority handler registered for the accelerator).
++  bool ShouldSkipAcceleratorProcessing(
++      const ui::Accelerator& accelerator) const;
++
+   // Returns true is the specified is part of the hierarchy of the window
+   // associated with this FocusManager.
+   bool ContainsView(View* view);
