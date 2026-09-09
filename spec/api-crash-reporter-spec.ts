@@ -160,15 +160,17 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     // __fastfail crashes never reach crashpad's in-process handler; they are
     // captured out-of-process by the electron_wer.dll WER runtime exception
     // helper, which Windows only invokes on 10.0.19041 (20H1) and later.
-    ifit(process.platform === 'win32' && isWindows20H1OrLater())(
-      'when renderer terminates via __fastfail',
-      async () => {
-        const { port, waitForCrash } = await startServer();
-        runCrashApp('renderer-fastfail', port);
-        const crash = await waitForCrash();
-        checkCrash('renderer', crash);
-      }
-    );
+    for (const crashType of ['renderer-fastfail', 'node-renderer-fastfail']) {
+      ifit(process.platform === 'win32' && isWindows20H1OrLater())(
+        `when ${crashType === 'renderer-fastfail' ? 'sandboxed' : 'node-integrated'} renderer terminates via __fastfail`,
+        async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp(crashType, port);
+          const crash = await waitForCrash();
+          checkCrash('renderer', crash);
+        }
+      );
+    }
 
     it('when main process crashes', async () => {
       const { port, waitForCrash } = await startServer();
