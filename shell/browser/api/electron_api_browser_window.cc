@@ -161,16 +161,18 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   *prevent_default = true;
 
   // Already closed by renderer.
-  if (!web_contents() || !api_web_contents_)
+  content::WebContents* contents =
+      api_web_contents_ ? api_web_contents_->web_contents() : nullptr;
+  if (!contents)
     return;
 
   // Required to make beforeunload handler work.
   api_web_contents_->NotifyUserActivation();
 
-  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
-    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  if (contents->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    contents->DispatchBeforeUnload(false /* auto_cancel */);
   } else {
-    web_contents()->Close();
+    contents->Close();
   }
 }
 

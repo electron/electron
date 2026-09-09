@@ -127,7 +127,6 @@ class WebContents final : public ExclusiveAccessContext,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
                           public gin_helper::CleanedUpAtExit,
-                          public content::WebContentsObserver,
                           public content::WebContentsDelegate,
                           private content::RenderWidgetHost::InputEventObserver,
                           public content::JavaScriptDialogManager,
@@ -195,6 +194,7 @@ class WebContents final : public ExclusiveAccessContext,
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+  content::WebContents* web_contents() const;
 
   // BackgroundThrottlingSource
   bool GetBackgroundThrottling() const override;
@@ -422,9 +422,7 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents* embedder() { return embedder_; }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  extensions::ScriptExecutor* script_executor() {
-    return script_executor_.get();
-  }
+  extensions::ScriptExecutor* script_executor();
 #endif
 
   // Set the window as owner window.
@@ -442,17 +440,13 @@ class WebContents final : public ExclusiveAccessContext,
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
 
-  InspectableWebContents* inspectable_web_contents() const {
-    return inspectable_web_contents_.get();
-  }
+  InspectableWebContents* inspectable_web_contents() const;
 
-  NativeWindow* owner_window() const { return owner_window_.get(); }
+  NativeWindow* owner_window() const;
 
   bool is_html_fullscreen() const { return html_fullscreen_; }
 
-  void set_fullscreen_frame(content::RenderFrameHost* rfh) {
-    fullscreen_frame_ = rfh;
-  }
+  void set_fullscreen_frame(content::RenderFrameHost* rfh);
 
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
@@ -487,15 +481,18 @@ class WebContents final : public ExclusiveAccessContext,
 
   SkRegion* draggable_region();
 
-  DraggableRegionDebugger* draggable_region_debugger() const {
-    return draggable_region_debugger_.get();
-  }
+  DraggableRegionDebugger* draggable_region_debugger() const;
 
   // disable copy
   WebContents(const WebContents&) = delete;
   WebContents& operator=(const WebContents&) = delete;
 
  private:
+  // Owns the native resources and forwards the content:: callbacks that this
+  // wrapper registers for.
+  class NativeLifecycle;
+  using MediaPlayerInfo = content::WebContentsObserver::MediaPlayerInfo;
+
   // Store last emitted favicon URLs to avoid duplicate page-favicon-updated
   // events
   base::flat_set<GURL> last_favicon_urls_;
@@ -508,6 +505,8 @@ class WebContents final : public ExclusiveAccessContext,
   // Creates a new content::WebContents.
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
+
+  void Observe(content::WebContents* contents);
 
   // Delete this if garbage collection has not started.
   void DeleteThisIfAlive();
@@ -615,7 +614,7 @@ class WebContents final : public ExclusiveAccessContext,
       content::MediaResponseCallback callback) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
-  void OnAudioStateChanged(bool audible) override;
+  void OnAudioStateChanged(bool audible);
   void UpdatePreferredSize(content::WebContents* web_contents,
                            const gfx::Size& pref_size) override;
   void DraggableRegionsChanged(
@@ -630,66 +629,59 @@ class WebContents final : public ExclusiveAccessContext,
 #endif
 
   // content::WebContentsObserver:
-  void BeforeUnloadFired(bool proceed) override;
-  void OnBackgroundColorChanged() override;
-  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
-  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
-                              content::RenderFrameHost* new_host) override;
-  void FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) override;
-  void RenderViewDeleted(content::RenderViewHost*) override;
-  void PrimaryMainFrameRenderProcessGone(
-      base::TerminationStatus status) override;
-  void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
+  void BeforeUnloadFired(bool proceed);
+  void OnBackgroundColorChanged();
+  void RenderFrameCreated(content::RenderFrameHost* render_frame_host);
+  static void RenderFrameDeleted(content::RenderFrameHost* render_frame_host);
+  static void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                                     content::RenderFrameHost* new_host);
+  static void FrameDeleted(content::FrameTreeNodeId frame_tree_node_id);
+  void RenderViewDeleted(content::RenderViewHost*);
+  void PrimaryMainFrameRenderProcessGone(base::TerminationStatus status);
+  void DOMContentLoaded(content::RenderFrameHost* render_frame_host);
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
-                     const GURL& validated_url) override;
+                     const GURL& validated_url);
   void DidFailLoad(content::RenderFrameHost* render_frame_host,
                    const GURL& validated_url,
-                   int error_code) override;
-  void DidStartLoading() override;
-  void DidStopLoading() override;
-  void DidStartNavigation(
-      content::NavigationHandle* navigation_handle) override;
-  void DidRedirectNavigation(
-      content::NavigationHandle* navigation_handle) override;
-  void ReadyToCommitNavigation(
-      content::NavigationHandle* navigation_handle) override;
+                   int error_code);
+  void DidStartLoading();
+  void DidStopLoading();
+  void DidStartNavigation(content::NavigationHandle* navigation_handle);
+  void DidRedirectNavigation(content::NavigationHandle* navigation_handle);
+  void ReadyToCommitNavigation(content::NavigationHandle* navigation_handle);
   // Pushes preload script contents + process info to a sandboxed renderer over
   // the navigation's associated mojo channel, ahead of CommitNavigation.
   // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
-  void DidFinishNavigation(
-      content::NavigationHandle* navigation_handle) override;
-  void WebContentsDestroyed() override;
+  void DidFinishNavigation(content::NavigationHandle* navigation_handle);
+  void WebContentsDestroyed();
   void NavigationEntryCommitted(
-      const content::LoadCommittedDetails& load_details) override;
-  void TitleWasSet(content::NavigationEntry* entry) override;
+      const content::LoadCommittedDetails& load_details);
+  void TitleWasSet(content::NavigationEntry* entry);
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
-                           blink::mojom::FaviconUpdateReason reason) override;
+                           blink::mojom::FaviconUpdateReason reason);
   void NotifyPageTitleUpdated(content::NavigationEntry* entry,
                               bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
-                           const content::MediaPlayerId& id) override;
+                           const content::MediaPlayerId& id);
   void MediaStoppedPlaying(
       const MediaPlayerInfo& video_type,
       const content::MediaPlayerId& id,
-      content::WebContentsObserver::MediaStoppedReason reason) override;
-  void DidChangeThemeColor() override;
-  void OnCursorChanged(const ui::Cursor& cursor) override;
-  void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
-  void OnWebContentsFocused(
-      content::RenderWidgetHost* render_widget_host) override;
-  void OnWebContentsLostFocus(
-      content::RenderWidgetHost* render_widget_host) override;
+      content::WebContentsObserver::MediaStoppedReason reason);
+  void DidChangeThemeColor();
+  void OnCursorChanged(const ui::Cursor& cursor);
+  void DidAcquireFullscreen(content::RenderFrameHost* rfh);
+  void OnWebContentsFocused(content::RenderWidgetHost* render_widget_host);
+  void OnWebContentsLostFocus(content::RenderWidgetHost* render_widget_host);
   void OnDidAddMessageToConsole(
       content::RenderFrameHost* source_frame,
       blink::mojom::ConsoleMessageLevel level,
       const std::u16string& message,
       int32_t line_no,
       const std::u16string& source_id,
-      const std::optional<std::u16string>& untrusted_stack_trace) override;
+      const std::optional<std::u16string>& untrusted_stack_trace);
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;
@@ -701,6 +693,10 @@ class WebContents final : public ExclusiveAccessContext,
   void DevToolsResized() override;
 
   ElectronBrowserContext* GetBrowserContext() const;
+
+  // Detaches the native registrations that route callbacks back into this
+  // wrapper.
+  void DetachNativeCallbacks();
 
   void OnElectronBrowserConnectionError();
 
@@ -819,13 +815,6 @@ class WebContents final : public ExclusiveAccessContext,
   v8::Global<v8::Value> devtools_web_contents_;
   cppgc::Persistent<api::Debugger> debugger_;
 
-  std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
-  std::unique_ptr<FrameSubscriber> frame_subscriber_;
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  std::unique_ptr<extensions::ScriptExecutor> script_executor_;
-#endif
-
   // The host webcontents that may contain this webcontents.
   RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
 
@@ -849,10 +838,6 @@ class WebContents final : public ExclusiveAccessContext,
   // Kept by JS while 'console-message' has listeners.
   bool console_message_observed_ = false;
 
-  // Whether this WebContents currently contributes to the process-wide caret
-  // browsing refcount.
-  bool caret_browsing_counted_ = false;
-
   // Whether to enable devtools.
   bool enable_devtools_ = true;
 
@@ -863,9 +848,6 @@ class WebContents final : public ExclusiveAccessContext,
       observers_;
 
   v8::Global<v8::Value> pending_child_web_preferences_;
-
-  // The window that this WebContents belongs to.
-  base::WeakPtr<NativeWindow> owner_window_;
 
   bool offscreen_ = false;
 
@@ -884,22 +866,6 @@ class WebContents final : public ExclusiveAccessContext,
 
   const scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_ =
       base::MakeRefCounted<DevToolsFileSystemIndexer>();
-
-  ExclusiveAccessManager exclusive_access_manager_{this};
-
-  std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
-
-  raw_ptr<ElectronBrowserContext> browser_context_;
-
-  // The stored InspectableWebContents object.
-  // Notice that inspectable_web_contents_ must be placed after
-  // dialog_manager_, so we can make sure inspectable_web_contents_ is
-  // destroyed before dialog_manager_, otherwise a crash would happen.
-  std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
-
-  // Menu for context menu requests coming from a DevTools frontend hosted
-  // directly in this WebContents (e.g. via setDevToolsWebContents()).
-  std::unique_ptr<DevToolsContextMenu> devtools_context_menu_;
 
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 
@@ -929,13 +895,11 @@ class WebContents final : public ExclusiveAccessContext,
   // handler calls webContents.destroy() mid-emission.
   bool is_emitting_event_ = false;
 
-  // Stores the frame that's currently in fullscreen, nullptr if there is none.
-  raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
-
   std::optional<SkRegion> draggable_region_;
 
-  // Declared after |inspectable_web_contents_| because it observes its views.
-  std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
+  // Owns the native resources and registrations, so that they are torn down
+  // independently of this wrapper.
+  std::unique_ptr<NativeLifecycle> native_lifecycle_;
 
   // Registered on every widget of this WebContents; see HandleNewRenderFrame.
   content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
