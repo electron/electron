@@ -959,7 +959,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index be5e64d9f2c5cd8ae5a7ae2a42e0f672c2e184af..b35b35a2a05682d68b287649d1d884d15b08a699 100644
+index 9dbb76fcc73c3ed2acf58b584fe16f29581aa8ad..9d19d1aedc2e6334a5c6f7d42fa25838e520d938 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -970,7 +970,7 @@ index be5e64d9f2c5cd8ae5a7ae2a42e0f672c2e184af..b35b35a2a05682d68b287649d1d884d1
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2432,15 +2433,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2426,15 +2427,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1816,26 +1816,6 @@ index f889f600bba46c13849d2375f52eefade92fd3e7..7d1dd3fdb6e15886d68ac83e173876eb
    ]
  
    if (is_mac) {
-diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index cd01cf1da3d1154b88aa1d733c3255923d82876d..720b6955b28cfa4fb296af220b1246368452c9cc 100644
---- a/third_party/blink/renderer/core/editing/build.gni
-+++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -378,10 +378,14 @@ blink_core_sources_editing = [
- if (is_mac) {
-   blink_core_sources_editing += [
-     "commands/smart_replace_cf.cc",
--    "kill_ring_mac.mm",
-     "substring_util.h",
-     "substring_util.mm",
-   ]
-+  if (is_mas_build) {
-+    blink_core_sources_editing += [ "kill_ring_mac.mm" ]
-+  } else {
-+    blink_core_sources_editing += [ "kill_ring_none.cc" ]
-+  }
- } else {
-   blink_core_sources_editing += [ "kill_ring_none.cc" ]
- }
 diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3af01ab73a 100644
 --- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm

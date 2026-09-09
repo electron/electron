@@ -213,6 +213,35 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.sendToFrame(frameId, channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('only addresses frames that belong to this webContents', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-ipc-ping-pong.js');
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      await w1.loadURL('about:blank');
+      await w2.loadURL('about:blank');
+      const received: number[] = [];
+      ipcMain.on('pong', (e) => {
+        received.push(e.sender.id);
+      });
+      defer(() => ipcMain.removeAllListeners('pong'));
+      const other = w2.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([other.processId, other.routingId], 'ping')).to.equal(false);
+      const own = w1.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([own.processId, own.routingId], 'ping')).to.equal(true);
+      await waitUntil(() => received.length > 0);
+      await setTimeout(200);
+      expect(received).to.deep.equal([w1.webContents.id]);
+    });
+  });
+
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
@@ -4036,6 +4065,40 @@ describe('webContents module', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+    });
+
+    describe('on a destroyed WebContents', () => {
+      const destroyedWebContents = async (handler?: (...args: any[]) => void) => {
+        const w = new BrowserWindow({ show: false });
+        const wc = w.webContents;
+        if (handler) wc.on('console-message', handler);
+        const destroyed = once(wc, 'destroyed');
+        w.destroy();
+        await destroyed;
+        expect(wc.isDestroyed()).to.be.true();
+        return wc;
+      };
+
+      it('does not throw when adding a listener', async () => {
+        const wc = await destroyedWebContents();
+        expect(() => wc.on('console-message', () => {})).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(1);
+      });
+
+      it('does not throw when removing a listener', async () => {
+        const handler = () => {};
+        const wc = await destroyedWebContents(handler);
+        expect(() => wc.removeListener('console-message', handler)).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+      });
+
+      it('does not throw when removing all listeners', async () => {
+        const wc = await destroyedWebContents(() => {});
+        expect(() => wc.removeAllListeners('console-message')).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+        wc.on('console-message', () => {});
+        expect(() => wc.removeAllListeners()).to.not.throw();
+      });
     });
   });
 

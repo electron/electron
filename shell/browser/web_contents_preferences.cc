@@ -502,7 +502,12 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     }
   }
 
-  prefs->offscreen = renderer_.offscreen;
+#if BUILDFLAG(IS_MAC)
+  // Native <select> popups are separate windows that an offscreen frame
+  // cannot capture; have Blink draw them into the page instead.
+  if (renderer_.offscreen)
+    prefs->should_disable_external_popups = true;
+#endif
 
   prefs->node_integration = node_integration_;
   prefs->node_integration_in_worker = node_integration_in_worker_;

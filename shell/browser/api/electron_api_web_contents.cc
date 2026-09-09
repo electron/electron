@@ -29,6 +29,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/timer/elapsed_timer.h"
 #include "base/unguessable_token.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
@@ -60,6 +61,7 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_entry_restore_context.h"
@@ -111,6 +113,7 @@
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
+#include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
@@ -119,6 +122,7 @@
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/draggable_region_debugger.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
@@ -1186,6 +1190,7 @@ void WebContents::InitWithWebContents(
   // As the delegate we route permission checks through this helper, so every
   // adopted WebContents (including extension background pages) needs one.
   WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
+  FileSystemAccessWebContentsHelper::CreateForWebContents(web_contents.get());
 
   // A <webview> guest is created with a copy of its embedder's renderer
   // preferences, so caret browsing may already be enabled. Every path that
@@ -1547,6 +1552,14 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+    // A link opened into a new window (modifier-click, middle-click,
+    // target=_blank form post routed here, ...) is a popup like window.open()
+    // and is subject to the same embedder policy; see
+    // ElectronBrowserClient::CanCreateWindow.
+    auto* source_preferences = WebContentsPreferences::From(source);
+    if (source_preferences && source_preferences->ShouldDisablePopups())
+      return nullptr;
+
     using SandboxFlags = network::mojom::WebSandboxFlags;
     SandboxFlags inherited_sandbox_flags = SandboxFlags::kNone;
     // For non-CURRENT_TAB dispositions params.frame_tree_node_id refers to
@@ -1579,8 +1592,31 @@ content::WebContents* WebContents::OpenURLFromTab(
         inherited_sandbox_flags = flags;
       }
     }
+    // The new window's first navigation keeps the initiator's identity
+    // (origin, frame, site instance, user gesture) instead of being re-issued
+    // as a browser-initiated load, so Sec-Fetch-Site / SameSite, external
+    // protocol attribution and navigation events describe who asked for it.
+    auto navigate = base::BindRepeating(
+        [](const content::OpenURLParams& params, content::WebContents* target) {
+          if (!target)
+            return;
+          content::NavigationController::LoadURLParams load_params(params);
+          // The initiator may live in a different session than the window the
+          // app created; a SiteInstance cannot cross browser contexts.
+          if (load_params.source_site_instance &&
+              load_params.source_site_instance->GetBrowserContext() !=
+                  target->GetBrowserContext()) {
+            load_params.source_site_instance = nullptr;
+          }
+          load_params.frame_tree_node_id = {};
+          load_params.override_user_agent =
+              content::NavigationController::UA_OVERRIDE_INHERIT;
+          target->GetController().LoadURLWithParams(load_params);
+        },
+        params);
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags));
+         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags),
+         navigate);
     return nullptr;
   }
 
@@ -1694,12 +1730,6 @@ bool WebContents::PlatformHandleKeyboardEvent(
   return false;
 }
 #endif
-
-bool WebContents::PreHandleMouseEvent(content::WebContents* source,
-                                      const blink::WebMouseEvent& event) {
-  // |true| means that the event should be prevented.
-  return Emit("before-mouse-event", event);
-}
 
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
@@ -2102,8 +2132,19 @@ void WebContents::HandleNewRenderFrame(
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
-  if (rwh_impl)
+  if (rwh_impl) {
     rwh_impl->disable_hidden_ = !background_throttling_;
+    if (!mouse_event_callback_) {
+      mouse_event_callback_ = base::BindRepeating(
+          [](base::WeakPtr<WebContents> self, const blink::WebMouseEvent& e) {
+            return self && self->OnMouseEvent(e);
+          },
+          weak_factory_.GetWeakPtr());
+    }
+    // Frames in one local root share a widget, so re-registering is expected.
+    rwh_impl->RemoveMouseEventCallback(mouse_event_callback_);
+    rwh_impl->AddMouseEventCallback(mouse_event_callback_);
+  }
 
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
@@ -2383,11 +2424,30 @@ void WebContents::OnFirstNonEmptyLayout(
 void WebContents::DraggableRegionsChanged(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions,
     content::WebContents* contents) {
+  if (!draggable_region_debugger_ && DraggableRegionDebugger::IsEnabled()) {
+    views::View* contents_view = nullptr;
+    if (inspectable_web_contents_ && !is_guest() && !IsOffScreen())
+      contents_view = inspectable_web_contents_->GetView()->GetContentsView();
+    draggable_region_debugger_ =
+        std::make_unique<DraggableRegionDebugger>(ID(), contents_view);
+  }
+
   if (owner_window() && owner_window()->has_frame()) {
+    if (draggable_region_debugger_) {
+      draggable_region_debugger_->OnRegionsChanged(regions, nullptr,
+                                                   base::TimeDelta());
+    }
     return;
   }
 
+  std::optional<base::ElapsedTimer> timer;
+  if (draggable_region_debugger_)
+    timer.emplace();
   draggable_region_.emplace(DraggableRegionsToSkRegion(regions));
+  if (draggable_region_debugger_) {
+    draggable_region_debugger_->OnRegionsChanged(regions, &*draggable_region_,
+                                                 timer->Elapsed());
+  }
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -2434,17 +2494,22 @@ void WebContents::MaybeSendRendererStartupData(
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
   // that will actually compile the sandbox bundle.
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   const GURL& url = navigation_handle->GetURL();
   bool main_frame = navigation_handle->IsInMainFrame();
   bool allow_subframes =
       web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  // DevTools itself, or an extension document hosted inside the DevTools
+  // front-end (a devtools_page / panel). An extension frame embedded in an
+  // ordinary page is treated like any other subframe.
   bool is_devtools_like =
-      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+      url.SchemeIs("devtools") ||
+      (url.SchemeIs("chrome-extension") && !main_frame &&
+       rfh->GetMainFrame()->GetLastCommittedURL().SchemeIs("devtools"));
   if (!main_frame && !allow_subframes && !is_devtools_like)
-    return;
-
-  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
-  if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
   mojom::RendererStartupDataPtr data;
@@ -4411,6 +4476,11 @@ void WebContents::PDFReadyToPrint() {
   Emit("-pdf-ready-to-print");
 }
 
+bool WebContents::OnMouseEvent(const blink::WebMouseEvent& event) {
+  // |true| means that the event should be prevented.
+  return Emit("before-mouse-event", event);
+}
+
 void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
                                const blink::WebInputEvent& event,
                                input::InputEventSource source) {
@@ -4463,17 +4533,30 @@ void WebContents::CancelDialogs(content::WebContents* web_contents,
       gin::DataObjectBuilder(isolate).Set("resetState", reset_state).Build());
 }
 
-v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
+v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto* frame_host = web_contents()->GetPrimaryMainFrame();
-  if (!frame_host) {
+  // With a renderer process id, report that process, provided it hosts a frame
+  // of this WebContents; otherwise the primary main frame's process.
+  content::RenderProcessHost* process = nullptr;
+  int32_t process_id = 0;
+  if (args->GetNext(&process_id)) {
+    web_contents()->GetPrimaryMainFrame()->ForEachRenderFrameHost(
+        [&](content::RenderFrameHost* rfh) {
+          if (!process && rfh->GetProcess()->GetDeprecatedID() == process_id)
+            process = rfh->GetProcess();
+        });
+  } else if (auto* frame_host = web_contents()->GetPrimaryMainFrame()) {
+    process = frame_host->GetProcess();
+  }
+  if (!process || !process->GetProcess().IsValid()) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
     return handle;
   }
 
-  auto pid = frame_host->GetProcess()->GetProcess().Pid();
+  auto pid = process->GetProcess().Pid();
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           pid, std::vector<std::string>(),

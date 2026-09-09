@@ -123,6 +123,102 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('safeStorage module', () => {
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { safeStorage } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof safeStorage.isEncryptionAvailable);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.encryptString);
+        }
+        {
+          const { safeStorage } = require('electron');
+          console.log(typeof safeStorage.decryptString);
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { safeStorage } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof safeStorage.isEncryptionAvailable);
+          return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
+  describe('systemPreferences module', () => {
+    it('does not crash on exit with a live wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, systemPreferences } = require('electron');
+        systemPreferences.getAnimationSettings();
+        if (process.platform === 'darwin') {
+          systemPreferences.subscribeLocalNotification(null, () => {});
+        }
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should not allocate on every require', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const [usedBefore, usedAfter] = await remotely(async () => {
+        const { systemPreferences } = require('electron');
+        const { getCppHeapStatistics } = require('node:v8');
+        console.log(typeof systemPreferences.getAnimationSettings);
+        const heapStatsBefore = getCppHeapStatistics('brief');
+        {
+          const { systemPreferences } = require('electron');
+          console.log(typeof systemPreferences.getAccentColor);
+        }
+        {
+          const { systemPreferences } = require('electron');
+          console.log(systemPreferences.eventNames());
+        }
+        const heapStatsAfter = getCppHeapStatistics('brief');
+        return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
+      });
+      expect(usedBefore).to.equal(usedAfter);
+    });
+
+    it('should record as node in heap snapshot', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { systemPreferences } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          console.log(typeof systemPreferences.getAnimationSettings);
+          return containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / SystemPreferences'
+          ]);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+  });
+
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
@@ -670,6 +766,69 @@ describe('cpp heap', () => {
         return waitForGC(() => weakRef.deref() === undefined);
       });
       expect(released).to.equal(true, 'Notification should be released after GC when no JS references remain');
+    });
+  });
+
+  describe('MessagePort module', () => {
+    it('should be rooted while a started port is entangled', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const { port1, port2 } = new MessageChannelMain();
+          port1.start();
+          const snapshot = recordState().snapshot;
+          port2.close();
+          return containsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after a started port is closed', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { MessageChannelMain } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        const weakRef = new WeakRef((port1 as any)._internalPort);
+        port1.close();
+        port1 = null as any;
+
+        const released = await waitForGC(() => weakRef.deref() === undefined);
+        port2.close();
+        return released;
+      });
+      expect(released).to.equal(true, 'MessagePort should be released after close and GC');
+    });
+
+    it('does not crash on exit with a live started port', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, MessageChannelMain } = require('electron');
+        const { port1, port2 } = new MessageChannelMain();
+        port1.start();
+        port2.start();
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
     });
   });
 

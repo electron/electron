@@ -10,10 +10,6 @@ import type * as v8 from 'v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
-// We modified the original process.argv to let node.js load the init.js,
-// we need to restore it here.
-process.argv.splice(1, 1);
-
 // Import common settings.
 require('@electron/internal/common/init');
 
@@ -30,7 +26,7 @@ process.on('uncaughtException', function (error) {
   // We can't import { dialog } at the top of this file as this file is
   // responsible for setting up the require hook for the "electron" module
   // so we import it inside the handler down here
-  import('electron').then(({ dialog }) => {
+  import('electron/main').then(({ dialog }) => {
     const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
     const message = 'Uncaught Exception:\n' + stack;
     dialog.showErrorBox('A JavaScript error occurred in the main process', message);

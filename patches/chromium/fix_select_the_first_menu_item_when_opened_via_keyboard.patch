@@ -3,30 +3,41 @@ From: Samuel Attard <marshallofsound@electronjs.org>
 Date: Mon, 26 Jun 2023 00:50:45 -0700
 Subject: fix: select the first menu item when opened via keyboard
 
-This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
+When a views context menu is opened with sourceType 'keyboard'
+(Menu.popup), select its first item so screen readers announce it and arrow
+keys work immediately. Upstream does this on Windows through
+PlatformStyle::kAutoSelectFirstMenuItemFromKeyboard
+(https://chromium-review.googlesource.com/c/chromium/src/+/5868220); this
+covers the other views platforms.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index c0ac144111219d215580fa48a47f6efd2f08ae59..4f4fa1d6d216fd6df56ead3bf66b86cd4b4b836e 100644
+index c0ac144111219d215580fa48a47f6efd2f08ae59..66ab3bb0d70c445d1044ab9f1c075511d3e017c1 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -800,6 +800,16 @@ void MenuController::Run(Widget* parent,
+@@ -800,6 +800,22 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
++#if !BUILDFLAG(IS_WIN)
++  // Windows does this through kAutoSelectFirstMenuItemFromKeyboard above.
 +  if (source_type == ui::mojom::MenuSourceType::kKeyboard &&
-+      (menu_type == MenuType::kContextMenu || menu_type == MenuType::kMenuItemContextMenu) &&
++      (menu_type == MenuType::kContextMenu ||
++       menu_type == MenuType::kMenuItemContextMenu) &&
 +      root->HasSubmenu()) {
-+    // For context menus opened via the keyboard we select the first item by default
-+    // to match accessibility expectations
-+    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
-+    if (first_item)
++    // For context menus opened via the keyboard we select the first item by
++    // default to match accessibility expectations
++    MenuItemView* first_item =
++        FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
++    if (first_item) {
 +      SetSelection(first_item, SELECTION_UPDATE_IMMEDIATELY);
++    }
 +  }
++#endif
 +
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2776,18 +2786,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2776,18 +2792,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
        return;
      }
  

@@ -16,8 +16,10 @@ const Promise: PromiseConstructor = global.Promise;
 const envNoAsar = process.env.ELECTRON_NO_ASAR && process.type !== 'browser' && process.type !== 'renderer';
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
-const internalBinding = process.internalBinding!;
-delete process.internalBinding;
+// realm.js is a script, not a module, so its loader exports have no type.
+const { internalBinding } = __non_webpack_require__('internal/bootstrap/realm') as {
+  internalBinding: (name: string) => any;
+};
 
 const nextTick = (functionToCall: Function, args: any[] = []) => {
   process.nextTick(() => functionToCall(...args));

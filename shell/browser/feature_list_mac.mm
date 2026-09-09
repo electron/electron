@@ -11,24 +11,24 @@
 namespace electron {
 
 std::string EnablePlatformSpecificFeatures() {
+  // None of these flags are exported, so they are referenced by name.
+
+  // Throttle visual-property IPCs during live resize (kThrottleResizeIpc in
+  // content/browser/renderer_host/render_widget_host_view_mac.mm).
+  std::string features = "ThrottleResizeIpc";
   if (@available(macOS 14.4, *)) {
-    // These flags aren't exported so reference them by name directly, they are
-    // used to ensure that screen and window capture exclusive use
-    // ScreenCaptureKit APIs to avoid warning dialogs on macOS 14.4 and higher.
-    // kScreenCaptureKitPickerScreen,
-    // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-    // kScreenCaptureKitStreamPickerSonoma,
-    // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
+    // Make screen and window capture use ScreenCaptureKit APIs exclusively to
+    // avoid warning dialogs on macOS 14.4 and higher.
+    // kScreenCaptureKitPickerScreen, kScreenCaptureKitStreamPickerSonoma,
     // kThumbnailCapturerMac,
     // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
-#if DCHECK_IS_ON()
-    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma";
-#else
-    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,"
-           "ThumbnailCapturerMac:capture_mode/sc_screenshot_manager";
+    features +=
+        ",ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma";
+#if !DCHECK_IS_ON()
+    features += ",ThumbnailCapturerMac:capture_mode/sc_screenshot_manager";
 #endif
   }
-  return "";
+  return features;
 }
 
 std::string DisablePlatformSpecificFeatures() {

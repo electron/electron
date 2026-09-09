@@ -22,15 +22,78 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Fix llvm toolchain
+    # These four fix-ups are independent downloads into different directories,
+    # so run them concurrently. Each one logs to its own file, which is printed
+    # once they finish; the step fails if any of them failed.
+    - name: Fix llvm, rustc, dsymutil and angle git
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run : |
-        rm -rf src/third_party/llvm-build
-        python3 src/tools/clang/scripts/update.py
-        # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
-        python3 src/tools/clang/scripts/update.py --package objdump
-        python3 src/tools/clang/scripts/update.py --package clang-tidy
+        RETRY="$PWD/src/electron/script/actions/retry.sh"
+        LOG_DIR=$(mktemp -d)
+
+        fix_llvm() {
+          rm -rf src/third_party/llvm-build
+          python3 src/tools/clang/scripts/update.py
+          # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
+          python3 src/tools/clang/scripts/update.py --package objdump
+          python3 src/tools/clang/scripts/update.py --package clang-tidy
+        }
+
+        fix_rustc() {
+          rm -rf src/third_party/rust-toolchain
+          python3 src/tools/rust/update_rust.py
+        }
+
+        fix_dsymutil() {
+          if [ "$TARGET_PLATFORM" != "macos" ]; then
+            return 0
+          fi
+          if [ "$TARGET_ARCH" == "arm64" ]; then
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
+          else
+            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
+          fi
+          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
+        }
+
+        fix_angle_git() {
+          cd src/third_party/angle
+          rm -f .git/objects/info/alternates
+          git remote set-url origin https://github.com/google/angle.git
+          cp .git/config .git/config.backup
+          git remote remove origin
+          mv .git/config.backup .git/config
+          # A large fetch from github.com sometimes times out mid-transfer
+          # ("curl 56", "invalid index-pack output"); retry it.
+          bash "$RETRY" git fetch
+        }
+
+        TASKS="fix_llvm fix_rustc fix_dsymutil fix_angle_git"
+        PIDS=""
+        for task in $TASKS; do
+          ( set -eo pipefail; $task ) > "$LOG_DIR/$task.log" 2>&1 &
+          PIDS="$PIDS $!"
+        done
+
+        FAILED=""
+        set -- $PIDS
+        for task in $TASKS; do
+          if ! wait "$1"; then
+            FAILED="$FAILED $task"
+          fi
+          shift
+          echo "::group::$task"
+          cat "$LOG_DIR/$task.log"
+          echo "::endgroup::"
+        done
+
+        if [ -n "$FAILED" ]; then
+          echo "::error::Failed:$FAILED"
+          exit 1
+        fi
     - name: Fix esbuild
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -79,12 +142,6 @@ runs:
       run : |
         cd src/third_party/devtools-frontend/src
         python3 scripts/deps/sync_rollup_libs.py
-    - name: Fix rustc
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        rm -rf src/third_party/rust-toolchain
-        python3 src/tools/rust/update_rust.py
     - name: Fix gn (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -117,21 +174,6 @@ runs:
       shell: bash
       run : |
         python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
-    - name: Fix dsymutil (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      shell: bash
-      env:
-        TARGET_PLATFORM: ${{ inputs.target-platform }}
-      run : |
-        # Fix dsymutil
-        if [ "$TARGET_PLATFORM" = "macos" ]; then
-          if  [ "$TARGET_ARCH" == "arm64" ]; then
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
-          else
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
-          fi
-          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
-        fi
     - name: Fix ninja
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -154,20 +196,6 @@ runs:
         installation-dir: src/third_party/siso/cipd
         target-platform: ${{ inputs.target-platform }}
         package: build/siso/${platform}
-    - name: Fixup angle git
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        RETRY="$PWD/src/electron/script/actions/retry.sh"
-        cd src/third_party/angle
-        rm -f .git/objects/info/alternates
-        git remote set-url origin https://github.com/google/angle.git
-        cp .git/config .git/config.backup
-        git remote remove origin
-        mv .git/config.backup .git/config
-        # A large fetch from github.com sometimes times out mid-transfer
-        # ("curl 56", "invalid index-pack output"); retry it.
-        bash "$RETRY" git fetch
     - name: Get Windows toolchain
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell

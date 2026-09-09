@@ -37,10 +37,10 @@ index 6950b4bfa78399ec481f17c0f82dd83f36acf9b5..cedd00e054a2bac7a148b4b5c1ecf2f4
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1cb5efd12ffbef5da3f75b6f409c64f5f01dd99e..dea58760a6efd2550727cb1349ffb985043cb3e0 100644
+index 7f5dbff6f8c822aee3bd1dab0854233edd231687..bff9262c58c18b533f78cabf397d047edd895d4c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4733,21 +4733,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4733,21 +4733,28 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -66,11 +66,14 @@ index 1cb5efd12ffbef5da3f75b6f409c64f5f01dd99e..dea58760a6efd2550727cb1349ffb985
 +    if (handled == KeyboardEventProcessingResult::HANDLED)
 +       return KeyboardEventProcessingResult::HANDLED;
 +
-+    // When an inner WebContents has focus and is fullscreen, traverse through
-+    // containing webcontents to any that may handle the escape key.
-+    while (auto* outer_web_contents = GetOuterWebContents()) {
-+      auto result = outer_web_contents->PreHandleKeyboardEvent(event);
-+      if (result == KeyboardEventProcessingResult::HANDLED) {
++    // When an inner WebContents has focus and is fullscreen, offer <esc> to
++    // each containing WebContents' delegate so an embedder can leave
++    // fullscreen.
++    for (auto* outer = GetOuterWebContents(); outer;
++         outer = outer->GetOuterWebContents()) {
++      if (outer->delegate_ &&
++          outer->delegate_->PreHandleKeyboardEvent(outer, event) ==
++              KeyboardEventProcessingResult::HANDLED) {
 +        return KeyboardEventProcessingResult::HANDLED;
 +      }
 +    }

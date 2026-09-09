@@ -1375,8 +1375,7 @@ bool NativeWindowViews::HasShadow() const {
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
-  const double bounded_opacity =
-      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+  const double bounded_opacity = ClampOpacity(opacity);
   opacity_ = bounded_opacity;
 #if BUILDFLAG(IS_WIN)
   HWND hwnd = GetAcceleratedWidget();

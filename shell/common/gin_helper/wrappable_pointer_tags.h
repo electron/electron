@@ -29,6 +29,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
   kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
   kElectronMenu,                            // electron::api::Menu
+  kElectronMessagePort,                     // electron::MessagePort
   kElectronNativeImage,                     // electron::api::NativeImage
   kElectronNativeTheme,                     // electron::api::NativeTheme
   kElectronNetLog,                          // electron::api::NetLog
@@ -39,11 +40,13 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronProtocol,                        // electron::api::Protocol
   kElectronPushNotifications,               // electron::api::PushNotifications
   kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
+  kElectronSafeStorage,             // electron::api::SafeStorage
   kElectronScreen,                  // electron::api::Screen
   kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
   kElectronServiceWorkerMain,       // electron::api::ServiceWorkerMain
   kElectronSession,                 // electron::api::Session
   kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
+  kElectronSystemPreferences,       // electron::api::SystemPreferences
   kElectronTray,                    // electron::api::Tray
   kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
   kElectronWebFrameMain,            // electron::api::WebFrameMain

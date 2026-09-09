@@ -86,6 +86,12 @@ auto& GetIdMap() {
   return *g_id_map;
 }
 
+auto& GetKindMap() {
+  static base::NoDestructor<base::flat_map<int, NotificationCenterKind>>
+      g_kind_map;
+  return *g_kind_map;
+}
+
 AVMediaType ParseMediaType(const std::string& media_type) {
   if (media_type == "camera") {
     return AVMediaTypeVideo;
@@ -273,6 +279,7 @@ int SystemPreferences::DoSubscribeNotification(
                       base::Value(base::DictValue()), object);
                 }
               }];
+  GetKindMap()[request_id] = kind;
   return request_id;
 }
 
@@ -283,7 +290,17 @@ void SystemPreferences::DoUnsubscribeNotification(int request_id,
     id observer = iter->second;
     [GetNotificationCenter(kind) removeObserver:observer];
     GetIdMap().erase(iter);
+    GetKindMap().erase(request_id);
   }
+}
+
+void SystemPreferences::ClearNotificationSubscriptions() {
+  for (const auto& [request_id, observer] : GetIdMap()) {
+    auto kind = GetKindMap().at(request_id);
+    [GetNotificationCenter(kind) removeObserver:observer];
+  }
+  GetIdMap().clear();
+  GetKindMap().clear();
 }
 
 v8::Local<v8::Value> SystemPreferences::GetUserDefault(

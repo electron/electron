@@ -410,7 +410,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
     return;
   }
 
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  v8::LocalVector<v8::Value> wrapped_ports(isolate);
   if (transfer && !transfer.value()->IsUndefined()) {
     if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
       isolate->ThrowException(v8::Exception::Error(

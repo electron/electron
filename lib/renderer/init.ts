@@ -41,10 +41,6 @@ Module.wrapper = [
   '\n}.call(this, exports, require, module, __filename, __dirname); });'
 ];
 
-// We modified the original process.argv to let node.js load the
-// init.js, we need to restore it here.
-process.argv.splice(1, 1);
-
 // Import common settings.
 require('@electron/internal/common/init');
 
@@ -72,7 +68,7 @@ if (nodeIntegration) {
   const { makeRequireFunction } = __non_webpack_require__(
     'internal/modules/helpers'
   ) as typeof import('@node/lib/internal/modules/helpers');
-  global.module = new Module('electron/js2c/renderer_init');
+  global.module = new Module('internal/electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module) as NodeRequire;
 
   // Set the __filename to the path of html file if it is file: protocol.

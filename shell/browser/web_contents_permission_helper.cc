@@ -9,9 +9,12 @@
 
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/permission_descriptor_util.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom.h"
 #include "shell/browser/electron_browser_context.h"
@@ -28,6 +31,25 @@ using blink::mojom::MediaStreamRequestResult;
 using blink::mojom::MediaStreamType;
 
 namespace {
+
+// Returns the local-root frame in |web_contents|' primary frame tree that owns
+// |widget|, i.e. the document that asked for pointer or keyboard lock. Falls
+// back to the primary main frame if the widget is unknown.
+content::RenderFrameHost* FrameForLockWidget(
+    content::WebContents* web_contents,
+    content::RenderWidgetHost* widget) {
+  content::RenderFrameHost* result = nullptr;
+  if (widget) {
+    web_contents->GetPrimaryMainFrame()->ForEachRenderFrameHostWithAction(
+        [&](content::RenderFrameHost* rfh) {
+          if (rfh->GetRenderWidgetHost() != widget)
+            return content::RenderFrameHost::FrameIterationAction::kContinue;
+          result = rfh;
+          return content::RenderFrameHost::FrameIterationAction::kStop;
+        });
+  }
+  return result ? result : web_contents->GetPrimaryMainFrame();
+}
 
 constexpr std::string_view MediaStreamTypeToString(
     blink::mojom::MediaStreamType type) {
@@ -119,9 +141,14 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
         blink::MediaStreamDevice(request.video_type, "", "");
   } else if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     // If the DesktopMediaID can't be successfully parsed, throw an
-    // Invalid state error to match upstream.
+    // Invalid state error to match upstream. The `desktop` source only names
+    // screens and windows (ids from desktopCapturer.getSources()); a
+    // WebContents is captured through the `tab` source with an id from
+    // webContents.getMediaSourceId(), which is bound to the requesting
+    // contents, or through getDisplayMedia().
     auto dm_id = GetScreenId(request.requested_video_device_ids);
-    if (dm_id.is_null()) {
+    if (dm_id.is_null() ||
+        dm_id.type == content::DesktopMediaID::TYPE_WEB_CONTENTS) {
       std::move(callback).Run(blink::mojom::StreamDevicesSet(),
                               MediaStreamRequestResult::INVALID_STATE, nullptr);
       return;
@@ -235,7 +262,7 @@ void WebContentsPermissionHelper::RequestPermission(
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
           CreatePermissionDescriptorForPermissionType(permission),
-      requesting_frame, origin, false, std::move(details),
+      requesting_frame, origin, user_gesture, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
@@ -317,8 +344,15 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool last_unlocked_by_target,
     base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
         callback) {
-  RequestPermission(web_contents_->GetPrimaryMainFrame(),
-                    blink::PermissionType::POINTER_LOCK,
+  // content records the requesting widget before asking the delegate, so the
+  // request can be attributed to the frame that called requestPointerLock()
+  // rather than to the top-level document. GetPointerLockWidget() only
+  // answers once the lock is held; the pending widget is only exposed through
+  // this accessor.
+  auto* requesting_frame = FrameForLockWidget(
+      web_contents_, static_cast<content::WebContentsImpl*>(web_contents_)
+                         ->mouse_lock_widget_for_testing());
+  RequestPermission(requesting_frame, blink::PermissionType::POINTER_LOCK,
                     base::BindOnce(std::move(callback), web_contents_,
                                    user_gesture, last_unlocked_by_target),
                     user_gesture);
@@ -327,9 +361,11 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
 void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     bool esc_key_locked,
     base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
+  auto* requesting_frame = FrameForLockWidget(
+      web_contents_, static_cast<content::WebContentsImpl*>(web_contents_)
+                         ->GetKeyboardLockWidget());
   RequestPermission(
-      web_contents_->GetPrimaryMainFrame(),
-      blink::PermissionType::KEYBOARD_LOCK,
+      requesting_frame, blink::PermissionType::KEYBOARD_LOCK,
       base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
 }
 
@@ -337,9 +373,26 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    const GURL& url) {
+    const GURL& url,
+    const std::optional<ExternalProtocolRequester>& requester) {
   base::DictValue details;
   details.Set("externalURL", url.spec());
+  if (requester) {
+    // |requesting_frame| only anchors the request; report who content holds
+    // responsible for the launch. An opaque origin is reported as "".
+    details.Set("requestingUrl", requester->origin.GetURL().spec());
+    details.Set("isMainFrame", requester->is_main_frame);
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+    permission_manager->RequestPermissionWithDetails(
+        content::PermissionDescriptorUtil::
+            CreatePermissionDescriptorForPermissionType(
+                blink::PermissionType::OPEN_EXTERNAL),
+        requesting_frame, requester->origin.GetURL(), user_gesture,
+        std::move(details),
+        base::BindOnce(&OnPermissionResponse, std::move(callback)));
+    return;
+  }
   RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
                     std::move(callback), user_gesture, std::move(details));
 }

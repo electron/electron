@@ -157,10 +157,10 @@ index c1816d483d421135c265a08ca45d42e4b8423f29..f4094b05b0122377c826828457a842cd
    code_cache_->has_code_cache = true;
  }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 82999148a9ee740deb13ed4cc7968f2300299b1a..1dba37d373218b791aa73c14cb41f7f9d057d0bf 100644
+index 85c8d7f1d9cdc6c02b9338edf079a4632ee024fa..c68dde10f4972a9eb6834bed5e763f9102866ab0 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1075,6 +1075,18 @@ void DefineCryptoConstants(Local<Object> target) {
+@@ -1091,6 +1091,18 @@ void DefineCryptoConstants(Local<Object> target) {
  #endif
  }
  
@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
+index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef98795cfab 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -424,7 +424,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +362,121 @@ template("node_gn_build") {
+@@ -328,26 +362,127 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -465,6 +465,12 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
 +        args = [
 +          "./" +
 +              rebase_path(mksnapshot_dir + "/node_mksnapshot", root_build_dir),
++
++          # V8 flags that Node would otherwise default differently must match
++          # the runtime isolate, or the builtins' code cache embedded here is
++          # rejected on its flags hash (see NodeBindings::ParseNodeCliFlags).
++          # Node options go before the positional output path.
++          "--no-js-source-phase-imports",
 +          rebase_path("$target_gen_dir/node_snapshot.cc", root_build_dir),
 +
 +          # Electron's V8 has external startup data, so node_mksnapshot must
