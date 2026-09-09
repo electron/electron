@@ -14,7 +14,6 @@
 #include "base/containers/flat_set.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/task/thread_pool.h"
@@ -31,6 +30,9 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/per_isolate_data.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -39,10 +41,8 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -121,12 +121,10 @@ class FrameSubscriber;
 class Session;
 
 // Wrapper around the content::WebContents.
-class WebContents final : public ExclusiveAccessContext,
-                          public gin_helper::DeprecatedWrappable<WebContents>,
+class WebContents final : public gin::Wrappable<WebContents>,
+                          public ExclusiveAccessContext,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
-                          public gin_helper::Pinnable<WebContents>,
-                          public gin_helper::CleanedUpAtExit,
                           public content::WebContentsDelegate,
                           private content::RenderWidgetHost::InputEventObserver,
                           public content::JavaScriptDialogManager,
@@ -146,14 +144,13 @@ class WebContents final : public ExclusiveAccessContext,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static gin_helper::Handle<WebContents> New(
-      v8::Isolate* isolate,
-      const gin_helper::Dictionary& options);
+  static WebContents* New(v8::Isolate* isolate,
+                          const gin_helper::Dictionary& options);
 
   // Create a new V8 wrapper for an existing |web_content|.
   //
   // The lifetime of |web_contents| will be managed by this class.
-  static gin_helper::Handle<WebContents> CreateAndTake(
+  static WebContents* CreateAndTake(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
@@ -162,7 +159,7 @@ class WebContents final : public ExclusiveAccessContext,
   // if there is no associated wrapper.
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
-  static std::list<WebContents*> GetWebContentsList();
+  static std::vector<cppgc::Persistent<WebContents>> GetWebContentsList();
 
   // Whether to disable draggable regions globally. This can be used to allow
   // events to skip client region hit tests.
@@ -172,11 +169,10 @@ class WebContents final : public ExclusiveAccessContext,
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
   // of this wrapper is always REMOTE.
-  static gin_helper::Handle<WebContents> FromOrCreate(
-      v8::Isolate* isolate,
-      content::WebContents* web_contents);
+  static WebContents* FromOrCreate(v8::Isolate* isolate,
+                                   content::WebContents* web_contents);
 
-  static gin_helper::Handle<WebContents> CreateFromWebPreferences(
+  static WebContents* CreateFromWebPreferences(
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
@@ -184,16 +180,15 @@ class WebContents final : public ExclusiveAccessContext,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "WebContents"; }
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
-
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
+  static gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
 
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
-  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+  bool IsDestroyed() const { return destroyed_; }
+  cppgc::Persistent<gin::WeakCell<WebContents>> WeakRef();
   content::WebContents* web_contents() const;
 
   // BackgroundThrottlingSource
@@ -487,15 +482,6 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents(const WebContents&) = delete;
   WebContents& operator=(const WebContents&) = delete;
 
- private:
-  // Owns the native resources and forwards the content:: callbacks that this
-  // wrapper registers for.
-  class NativeLifecycle;
-  using MediaPlayerInfo = content::WebContentsObserver::MediaPlayerInfo;
-
-  // Store last emitted favicon URLs to avoid duplicate page-favicon-updated
-  // events
-  base::flat_set<GURL> last_favicon_urls_;
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
@@ -506,10 +492,12 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
 
+ private:
+  class NativeLifecycle;
+  using MediaPlayerInfo = content::WebContentsObserver::MediaPlayerInfo;
   void Observe(content::WebContents* contents);
 
-  // Delete this if garbage collection has not started.
-  void DeleteThisIfAlive();
+  base::flat_set<GURL> last_favicon_urls_;
 
   // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
@@ -694,8 +682,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   ElectronBrowserContext* GetBrowserContext() const;
 
-  // Detaches the native registrations that route callbacks back into this
-  // wrapper.
+  void Dispose();
   void DetachNativeCallbacks();
 
   void OnElectronBrowserConnectionError();
@@ -811,12 +798,12 @@ class WebContents final : public ExclusiveAccessContext,
 
   [[nodiscard]] bool CanGoToIndex(int index) const;
 
-  cppgc::Persistent<api::Session> session_;
-  v8::Global<v8::Value> devtools_web_contents_;
-  cppgc::Persistent<api::Debugger> debugger_;
+  cppgc::Member<api::Session> session_;
+  v8::TracedReference<v8::Value> devtools_web_contents_;
+  cppgc::Member<api::Debugger> debugger_;
 
   // The host webcontents that may contain this webcontents.
-  RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
+  cppgc::Member<WebContents> embedder_;
 
   // Whether the guest view has been attached.
   bool attached_ = false;
@@ -847,7 +834,7 @@ class WebContents final : public ExclusiveAccessContext,
                      base::ObserverListReentrancyPolicy::kAllowReentrancy>
       observers_;
 
-  v8::Global<v8::Value> pending_child_web_preferences_;
+  v8::TracedReference<v8::Value> pending_child_web_preferences_;
 
   bool offscreen_ = false;
 
@@ -890,21 +877,19 @@ class WebContents final : public ExclusiveAccessContext,
   // in LoadURL. Checked by LoadURL to reject re-entrant navigation attempts.
   bool is_safe_to_delete_ = true;
 
-  // Set to true while dispatching JS events via Emit(). When true, Destroy()
-  // defers guest WebContents deletion to prevent use-after-free when a JS
-  // handler calls webContents.destroy() mid-emission.
-  bool is_emitting_event_ = false;
-
   std::optional<SkRegion> draggable_region_;
-
-  // Owns the native resources and registrations, so that they are torn down
-  // independently of this wrapper.
-  std::unique_ptr<NativeLifecycle> native_lifecycle_;
 
   // Registered on every widget of this WebContents; see HandleNewRenderFrame.
   content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
 
-  base::WeakPtrFactory<WebContents> weak_factory_{this};
+  // Owns native resources and weakly forwards callbacks; deferred on GC so
+  // native teardown never runs during sweeping.
+  std::unique_ptr<NativeLifecycle> native_lifecycle_;
+
+  bool destroyed_ = false;
+  bool disposing_ = false;
+  gin_helper::SelfKeepAlive<WebContents> keep_alive_{nullptr};
+  gin::WeakCellFactory<WebContents> weak_factory_{this};
 };
 
 }  // namespace api

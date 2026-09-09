@@ -33,10 +33,9 @@
 namespace electron::api {
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
-                                 gin_helper::Handle<WebContents> web_contents)
+                                 WebContents* web_contents)
     : View(web_contents->inspectable_web_contents()->GetView()),
-      web_contents_(isolate, web_contents.ToV8()),
-      api_web_contents_(web_contents->GetWeakPtr()) {
+      api_web_contents_(web_contents) {
   set_delete_view(false);
   view()->SetProperty(
       views::kFlexBehaviorKey,
@@ -50,12 +49,8 @@ WebContentsView::~WebContentsView() {
     api_web_contents_->Destroy();
 }
 
-gin_helper::Handle<WebContents> WebContentsView::GetWebContents(
-    v8::Isolate* isolate) {
-  if (api_web_contents_)
-    return gin_helper::CreateHandle(isolate, api_web_contents_.get());
-  else
-    return {};
+WebContents* WebContentsView::GetWebContents() {
+  return api_web_contents_.Get();
 }
 
 void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
@@ -121,7 +116,6 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
 
 void WebContentsView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
-  web_contents_.Reset();
 }
 
 void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
@@ -201,7 +195,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
       }
 
       if (options.Get("webContents", &existing_web_contents_value)) {
-        gin_helper::Handle<WebContents> existing_web_contents;
+        WebContents* existing_web_contents = nullptr;
         if (!gin::ConvertFromV8(isolate, existing_web_contents_value,
                                 &existing_web_contents)) {
           args->ThrowTypeError("options.webContents must be a WebContents");
@@ -226,7 +220,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
     web_preferences.SetHidden("webContents", existing_web_contents_value);
   }
 
-  auto web_contents =
+  auto* web_contents =
       WebContents::CreateFromWebPreferences(isolate, web_preferences);
 
   // Constructor call.
