@@ -99,7 +99,7 @@ describe('chrome extensions', () => {
     let w: BrowserWindow;
 
     beforeEach(() => {
-      customSession = session.fromPartition(`webstore-${randomUUID()}`);
+      customSession = session.fromPartition(`webstore-${uuid.v4()}`);
       // Serve the origin locally so the test does not touch the network.
       customSession.protocol.handle(
         'https',
