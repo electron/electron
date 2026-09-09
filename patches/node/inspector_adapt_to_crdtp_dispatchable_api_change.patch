@@ -13,7 +13,7 @@ FallThrough method was also removed upstream; drop it here too.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7885632
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 5e1d9149dc755a9dc3eb1fcce4e4161c978ff859..a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b 100644
+index 1f86e4bfc2652c7526af1582ac05b8b7a224a47a..55fe49c1e3058c366ede37a7698aefae82ea3f75 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -321,21 +321,16 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,

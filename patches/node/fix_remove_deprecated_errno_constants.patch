@@ -45,7 +45,7 @@ index ac00778cfc59fb55e361b24fc81a965a5e8f97e7..f0c4d6dfc9f03bee59e656b2da9ac325
  # define UV__EUNATCH UV__ERR(EUNATCH)
  #else
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 6a1100194314f5d1ae91fcd79984e662ec74efcd..4a54e6b3e649b2d35962bc8589eefd96dcf4f942 100644
+index 9abb643cc955a5f45b1edcd9340d4c25b3103ef2..48c383655af62974be9604e3e7e7b085d040535e 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -292,10 +292,6 @@ void DefineErrnoConstants(Local<Object> target) {
@@ -86,10 +86,10 @@ index 6a1100194314f5d1ae91fcd79984e662ec74efcd..4a54e6b3e649b2d35962bc8589eefd96
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 34fa4758bfa595caf81fa7f6bb223923843203c7..dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b 100644
+index d79d8d0a1ed63731147007f264541545d724980e..6554e54a8c3ac04e474bbbb026ea454ddf0f8027 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -895,10 +895,6 @@ const char* errno_string(int errorno) {
+@@ -919,10 +919,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOBUFS);
  #endif
  
@@ -100,7 +100,7 @@ index 34fa4758bfa595caf81fa7f6bb223923843203c7..dc55d1c0d9fcbbbb99d6f459280e09e2
  #ifdef ENODEV
      ERRNO_CASE(ENODEV);
  #endif
-@@ -937,14 +933,6 @@ const char* errno_string(int errorno) {
+@@ -961,14 +957,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOSPC);
  #endif
  
@@ -115,7 +115,7 @@ index 34fa4758bfa595caf81fa7f6bb223923843203c7..dc55d1c0d9fcbbbb99d6f459280e09e2
  #ifdef ENOSYS
      ERRNO_CASE(ENOSYS);
  #endif
-@@ -1027,10 +1015,6 @@ const char* errno_string(int errorno) {
+@@ -1051,10 +1039,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ESTALE);
  #endif
  

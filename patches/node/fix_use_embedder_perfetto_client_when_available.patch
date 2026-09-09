@@ -49,10 +49,10 @@ index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a2
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index 0c535d19ac985fd62ec38de460dce4773d567f34..e1bdfa2f52df029e92e14ac3755904945157e29a 100644
+index 9bc7781d87e227f4cea82b710c5c3a85157e002b..ce6c2b2f9602e5e62a4c1a2c6d474ec83fded2e5 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -647,8 +647,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+@@ -685,8 +685,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
      return;
    }
  
@@ -63,7 +63,7 @@ index 0c535d19ac985fd62ec38de460dce4773d567f34..e1bdfa2f52df029e92e14ac375590494
  
    Isolate* isolate = env_->isolate();
    HandleScope handle_scope(isolate);
-@@ -889,8 +889,7 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -938,8 +938,7 @@ Environment::Environment(IsolateData* isolate_data,
        time_origin_timestamp_,
        MAYBE_FIELD_PTR(env_info, performance_state));
  
@@ -74,7 +74,7 @@ index 0c535d19ac985fd62ec38de460dce4773d567f34..e1bdfa2f52df029e92e14ac375590494
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
 diff --git a/src/node.cc b/src/node.cc
-index 0a2635c11f498cc0c8351de88d7a21ffa88f147e..787f21586025d76f6959b002a2fb2d2ce94533a5 100644
+index 185726f4e42e71988c95f5bf23a49f8f362ff2cf..7bc3b5e73b86fea8cda2fe48d3c702a2d2e32336 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -47,6 +47,10 @@
@@ -132,7 +132,7 @@ index 952161d9e2cf1c92c3600fc2da0af594cc3f53bd..17976d01e4f4f2bf87a38a4fdb36fc70
    if (GET_TRACE_ENABLED) {                                                     \
      TRACE_EVENT0(TRACING_CATEGORY_NODE2(fs_dir, sync), TRACE_NAME(syscall));   \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index d6efca6683781a199532b39b43a2810c3d4ecc3c..c1a80850adae96d84ca830fd6dd08e3189bb4630 100644
+index 2468bf030144da09f2f63e41f4fd65e128ee1a90..c5a8c0e530503bf2282af265eb9116c294a90b7d 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -147,8 +147,7 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {

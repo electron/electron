@@ -40,7 +40,7 @@ index 364928d344097a40032d81673ab243184bc45b9c..16a4e669c435d91eebe4ab2f6c58e5a1
          'defines': [
            'WIN32',
 diff --git a/configure.py b/configure.py
-index f7577d93244e4543db732f7e4c1f0db14f0565b2..86aea91a11eb9bf39247ccf90479542aa7558319 100755
+index 443818802df9bf62c17aa783617ec5b932cedf81..da70b199695921604b7522411403603422fd4689 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -762,6 +762,14 @@ parser.add_argument('--experimental-pointer-compression-shared-cage',

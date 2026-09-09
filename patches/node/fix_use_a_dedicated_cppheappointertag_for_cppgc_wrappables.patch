@@ -63,10 +63,10 @@ index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3
   * This is a helper mixin with a BaseObject-like interface to help
   * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
 diff --git a/src/env.cc b/src/env.cc
-index 05d0ea621f9683d9cd7fdb2cf9b8b8251670403e..0c535d19ac985fd62ec38de460dce4773d567f34 100644
+index 74d6dbb3a44e3b8db247dd7b1b1b0d5a7cf4afc5..9bc7781d87e227f4cea82b710c5c3a85157e002b 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -610,8 +610,7 @@ IsolateData::~IsolateData() {}
+@@ -643,8 +643,7 @@ IsolateData::~IsolateData() {}
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
                         v8::Object::Wrappable* wrappable) {

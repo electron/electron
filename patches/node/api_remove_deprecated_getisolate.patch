@@ -85,7 +85,7 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index e04a769b67505ee082d98cee8ccbf694e85507a8..b531f3649d44c700af92f454302c11d2d8660f2c 100644
+index 176c69dfe7a7d1f6dfe33fcc7ffc470e50df50d2..9fbca1812491c8a181ab791eeb33a18f906af66f 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -1173,7 +1173,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
@@ -133,10 +133,10 @@ index 31277621e92b4d3583a67140f4ab8a74a9c6df3b..caa109871b71926f3355491767b8064b
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index 52b971ecd8d5fed8a4348aebbec2b0138e906355..bfa419e0d57a610381cf9de4017e6f173b77c6d7 100644
+index c68bb8e4854a301b6899d2f7183b77dd9ff98c31..3f655793d1353619699d42b09b227c729946075f 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1763,10 +1763,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1818,10 +1818,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index 52b971ecd8d5fed8a4348aebbec2b0138e906355..bfa419e0d57a610381cf9de4017e6f17
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1806,7 +1806,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1861,7 +1861,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -283,10 +283,10 @@ index fbcf8f0f99ccaac583040e1ecebcbf65bd03cfa6..6934e3ca3751091e6ebc7802dabf8b50
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 9d42692040941f7ed2813a9fb329722f70939638..9ad4985f284255cf2d1fbab411dd5e0e11a78d7c 100644
+index 952d51946d9412c376dfe305a2c5fd564b60998c..b0ba5d00ff170a61ee85d4959b879f1515e28484 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1150,7 +1150,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1160,7 +1160,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_CONSTANT(target, constant)                                 \
    do {                                                                         \
@@ -295,7 +295,7 @@ index 9d42692040941f7ed2813a9fb329722f70939638..9ad4985f284255cf2d1fbab411dd5e0e
      v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
-@@ -1166,7 +1166,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1176,7 +1176,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
    do {                                                                         \
@@ -375,10 +375,10 @@ index ab9f14174e7a16b2da17a9d5a00aa82318aac9b6..a4c62510ad9f8c2c77986ead1e17afd3
        // This is used by the snapshot builder, so save the code cache
        // unconditionally.
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 4a54e6b3e649b2d35962bc8589eefd96dcf4f942..82999148a9ee740deb13ed4cc7968f2300299b1a 100644
+index 48c383655af62974be9604e3e7e7b085d040535e..2baaa3c719e46ae2bbdc586243d1f660af39ebc8 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1315,7 +1315,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1320,7 +1320,7 @@ void CreatePerContextProperties(Local<Object> target,
                                  Local<Value> unused,
                                  Local<Context> context,
                                  void* priv) {
@@ -432,10 +432,10 @@ index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..b38c2f75a92f2d6c1b9c6e7b7aca9246
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc78364172 100644
+index 6554e54a8c3ac04e474bbbb026ea454ddf0f8027..136cc31eb9fb75757ce88a8e2b14d2d04174d9ed 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -627,7 +627,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+@@ -651,7 +651,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
      v8::Local<v8::Context> context,
      v8::Local<v8::Value> source,
      bool is_code_like) {
@@ -444,7 +444,7 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
  
    if (context->GetNumberOfEmbedderDataFields() <=
        ContextEmbedderIndex::kAllowCodeGenerationFromStrings) {
-@@ -1033,7 +1033,7 @@ const char* errno_string(int errorno) {
+@@ -1057,7 +1057,7 @@ const char* errno_string(int errorno) {
  }
  
  void PerIsolateMessageListener(Local<Message> message, Local<Value> error) {
@@ -453,7 +453,7 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
    switch (message->ErrorLevel()) {
      case Isolate::MessageErrorLevel::kMessageWarning: {
        Environment* env = Environment::GetCurrent(isolate);
-@@ -1198,7 +1198,7 @@ void Initialize(Local<Object> target,
+@@ -1222,7 +1222,7 @@ void Initialize(Local<Object> target,
    SetMethod(
        context, target, "getErrorSourcePositions", GetErrorSourcePositions);
  
@@ -463,10 +463,10 @@ index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 5be1b553e29dbcc78c4bee1b778587ede6bc60f8..dec05abe58a969334ee4f13b4ed7b7dc0fd0b6ad 100644
+index c2bc9dfaa6a0d10624362d217fe591d8465a6c3a..15a433fc2c1fde03d1e875a88c238bc36fcc6c93 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -4128,7 +4128,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -4194,7 +4194,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -516,7 +516,7 @@ index be7bbc85add91e730e3edc3cf19b73b27715b4c7..ea379c5200ed4c8c6358efd184682a8f
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 5b3f55c8111b96d310b7cf3fb25cbaa5eba14500..5a90a937bf0893d35b95797a8e50f43b9fc58845 100644
+index fa5f5a7c0eed19a7d88bd9d0e7862dfe68303c5e..cc3880fc811f89dc97529be886df27809c7de85b 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
@@ -528,7 +528,7 @@ index 5b3f55c8111b96d310b7cf3fb25cbaa5eba14500..5a90a937bf0893d35b95797a8e50f43b
    Realm* realm = Realm::GetCurrent(context);
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
-@@ -758,7 +758,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -773,7 +773,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
    Realm* realm = Realm::GetCurrent(context);
    realm->AddBindingData<BindingData>(target);
  
@@ -538,10 +538,10 @@ index 5b3f55c8111b96d310b7cf3fb25cbaa5eba14500..5a90a937bf0893d35b95797a8e50f43b
  
  #define V(status)                                                              \
 diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
-index 4a258e5f140994536386492059d64c9cf94ea0a6..67278974199db46fed85b443e7cdd30accd7687f 100644
+index a33748d360c96368fa623b31ef0711eaaa04267f..d4dd93d084d5e58f0c18ef82a51d25be4643ba7a 100644
 --- a/src/node_process_methods.cc
 +++ b/src/node_process_methods.cc
-@@ -745,7 +745,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -746,7 +746,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -590,12 +590,12 @@ index 41b0773f4c37a016cfa55aff6bb03baf50905b32..c3e995adf437413fe956e45c2ccc704d
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index cf9db75a84f9d58f10d2b35e8ac6c8bb9bf1e5ba..784621a14fae6d20bd6c8b1584df8577180888a2 100644
+index ee6a2ece542610cb6e262cca29f9884da6bb2ae5..91ae8c9d31f5c8984c25c1030238fbe0db5c95a2 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2639,7 +2639,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
- 
-   if (args[0]->IsObject() && !args[0]->IsArrayBufferView()) {
+@@ -2676,7 +2676,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
+   if (args[0]->IsObject() && !args[0]->IsArrayBufferView() &&
+       !args[0]->IsArrayBuffer() && !args[0]->IsSharedArrayBuffer()) {
      Local<Object> obj = args[0].As<Object>();
 -    Local<Context> context = obj->GetIsolate()->GetCurrentContext();
 +    Local<Context> context = Isolate::GetCurrent()->GetCurrentContext();
@@ -616,10 +616,10 @@ index d33ee3c26c111e53edf27e6368ca8f64ff30a349..f1c53c44f201b295888e7932c5e3e2b1
  
    Environment* env = Environment::GetCurrent(isolate);
 diff --git a/src/node_url.cc b/src/node_url.cc
-index 5f5241f6c6741218024452202c4a17c7d0239e6b..75aaf468f508f2888daea2f77e98c7286f980f6e 100644
+index 7f32a83177f47af84edbdc981aea7445fe84958e..0c5c9e65136a9090ed4b2d817c81e2a900fe2958 100644
 --- a/src/node_url.cc
 +++ b/src/node_url.cc
-@@ -70,7 +70,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -107,7 +107,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -865,10 +865,10 @@ index 660cfff6b8a0c583be843e555e7a06cd09e0d279..c4b39450c5b7f91c46f7027db367c30d
        context, that, OneByteString(isolate, name), tmpl, flag);
  }
 diff --git a/src/util.h b/src/util.h
-index c9d787f68dfd90b9ea6cc58b9709c2d95a9bfc08..dc81d8f06e5deb5283285f9cfc446f7f40a2215d 100644
+index b61d98fd7669def0a378e2f7adc8d88428f18119..f59862fed6c02c209ad63f1a31bbae66ca9533dd 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -765,7 +765,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
+@@ -767,7 +767,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
  // Variation on NODE_DEFINE_CONSTANT that sets a String value.
  #define NODE_DEFINE_STRING_CONSTANT(target, name, constant)                    \
    do {                                                                         \
