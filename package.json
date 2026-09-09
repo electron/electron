@@ -123,8 +123,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix",
-      "git add filenames.auto.gni"
+      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
@@ -133,12 +132,10 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
       "node script/gen-libc++-filenames.js",
-      "node script/gen-siso-revision.js",
-      "git add build/siso_revision"
+      "node script/gen-siso-revision.js"
     ],
     ".github/workflows/pipeline-segment-electron-build.yml": [
-      "node script/copy-pipeline-segment-publish.js",
-      "git add .github/workflows/pipeline-segment-electron-publish.yml"
+      "node script/copy-pipeline-segment-publish.js"
     ]
   },
   "resolutions": {
