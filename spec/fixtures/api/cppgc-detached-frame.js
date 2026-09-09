@@ -33,9 +33,15 @@ module.exports = async (page, child, snapshotHelper, mode) => {
     })()
   `);
   const snapshot = async () => {
-    const probes = await collect();
+    await collect();
     await window.webContents.takeHeapSnapshot(snapshotPath);
     try {
+      // Snapshot generation collects garbage and completes cppgc sweeping.
+      // Read the destructor count afterwards to match the snapshot's state.
+      const probes = await evaluate(`
+        process._linkedBinding('electron_common_testing')
+          .getLiveCallbackHolderProbeCountForTesting()
+      `);
       const counts = {
         probes,
         ...countHeapSnapshotNodes(await readFile(snapshotPath), {
