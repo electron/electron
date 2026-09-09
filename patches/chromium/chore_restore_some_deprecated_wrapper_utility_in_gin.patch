@@ -24,76 +24,18 @@ index b07da3a191cd0424fe76ee762de091a9ec24d5a4..49ecd470ce29078418ccb490caa8cfde
  ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
                                               const char* type_name,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index ee5a798d22be4f471437f3c1ffb2a140c6d84a5f..9c0beb9b0a3b37699bcb3a1555bee3892b51b79c 100644
+index ee5a798d22be4f471437f3c1ffb2a140c6d84a5f..43172624092d413a9df793157a74221eeb82c026 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -75,12 +75,39 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
-   return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
- }
+@@ -17,7 +17,6 @@
  
-+void PerIsolateData::DeprecatedSetObjectTemplate(DeprecatedWrapperInfo* info,
-+                                                 Local<ObjectTemplate> templ) {
-+  deprecated_object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
-+}
-+
- void PerIsolateData::SetObjectTemplate(
-     const WrapperInfo* info,
-     Local<ObjectTemplate> templ) {
-   object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
- }
- 
-+void PerIsolateData::DeprecatedSetFunctionTemplate(
-+    DeprecatedWrapperInfo* info,
-+    Local<FunctionTemplate> templ) {
-+  deprecated_function_templates_[info] =
-+      Eternal<FunctionTemplate>(isolate_, templ);
-+}
-+
-+void PerIsolateData::SetFunctionTemplate(const WrapperInfo* info,
-+                                         Local<FunctionTemplate> templ) {
-+  function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
-+}
-+
-+v8::Local<v8::ObjectTemplate> PerIsolateData::DeprecatedGetObjectTemplate(
-+    DeprecatedWrapperInfo* info) {
-+  DeprecatedObjectTemplateMap::iterator it =
-+      deprecated_object_templates_.find(info);
-+  if (it == deprecated_object_templates_.end()) {
-+    return v8::Local<v8::ObjectTemplate>();
-+  }
-+  return it->second.Get(isolate_);
-+}
-+
- v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
-     const WrapperInfo* info) {
-   ObjectTemplateMap::iterator it = object_templates_.find(info);
-@@ -90,6 +117,25 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
-   return it->second.Get(isolate_);
- }
- 
-+v8::Local<v8::FunctionTemplate> PerIsolateData::DeprecatedGetFunctionTemplate(
-+    DeprecatedWrapperInfo* info) {
-+  DeprecatedFunctionTemplateMap::iterator it =
-+      deprecated_function_templates_.find(info);
-+  if (it == deprecated_function_templates_.end()) {
-+    return v8::Local<v8::FunctionTemplate>();
-+  }
-+  return it->second.Get(isolate_);
-+}
-+
-+v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
-+    const WrapperInfo* info) {
-+  FunctionTemplateMap::iterator it = function_templates_.find(info);
-+  if (it == function_templates_.end()) {
-+    return v8::Local<v8::FunctionTemplate>();
-+  }
-+  return it->second.Get(isolate_);
-+}
-+
- void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
-   dispose_observers_.AddObserver(observer);
- }
-@@ -104,6 +150,12 @@ void PerIsolateData::NotifyBeforeDispose() {
+ using v8::ArrayBuffer;
+ using v8::Eternal;
+-using v8::FunctionTemplate;
+ using v8::Isolate;
+ using v8::Local;
+ using v8::Object;
+@@ -104,6 +103,12 @@ void PerIsolateData::NotifyBeforeDispose() {
    }
  }
  
@@ -107,7 +49,7 @@ index ee5a798d22be4f471437f3c1ffb2a140c6d84a5f..9c0beb9b0a3b37699bcb3a1555bee389
    for (auto& observer : dispose_observers_) {
      observer.OnDisposed();
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5fc958f4a4 100644
+index d2b2ce62dc6244b969283c983032c1922ef83e79..e163a1d97ddbc9b762dd8a74ea79f1fc2cfac3fe 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
 @@ -34,6 +34,10 @@ class GIN_EXPORT PerIsolateData {
@@ -121,37 +63,7 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
      // Called just after the isolate has been disposed.
      virtual void OnDisposed() = 0;
    };
-@@ -51,14 +55,37 @@ class GIN_EXPORT PerIsolateData {
- 
-   static PerIsolateData* From(v8::Isolate* isolate);
- 
-+  // Each isolate is associated with a collection of v8::ObjectTemplates and
-+  // v8::FunctionTemplates. Typically these template objects are created
-+  // lazily.
-+  void DeprecatedSetObjectTemplate(
-+      DeprecatedWrapperInfo* info,
-+      v8::Local<v8::ObjectTemplate> object_template);
-+
-   void SetObjectTemplate(const WrapperInfo* info,
-                          v8::Local<v8::ObjectTemplate> object_template);
- 
-+  void DeprecatedSetFunctionTemplate(
-+      DeprecatedWrapperInfo* info,
-+      v8::Local<v8::FunctionTemplate> function_template);
-+
-+  void SetFunctionTemplate(const WrapperInfo* info,
-+                           v8::Local<v8::FunctionTemplate> function_template);
-+
-+  v8::Local<v8::ObjectTemplate> DeprecatedGetObjectTemplate(
-+      DeprecatedWrapperInfo* info);
-+
-   v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
- 
-+  v8::Local<v8::FunctionTemplate> DeprecatedGetFunctionTemplate(
-+      DeprecatedWrapperInfo* info);
-+
-+  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(const WrapperInfo* info);
-+
+@@ -59,6 +63,7 @@ class GIN_EXPORT PerIsolateData {
    void AddDisposeObserver(DisposeObserver* observer);
    void RemoveDisposeObserver(DisposeObserver* observer);
    void NotifyBeforeDispose();
@@ -159,30 +71,6 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
    void NotifyDisposed();
  
    void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
-@@ -74,14 +101,23 @@ class GIN_EXPORT PerIsolateData {
-   }
- 
-  private:
-+  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
-+      DeprecatedObjectTemplateMap;
-   typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
-       ObjectTemplateMap;
-+  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
-+      DeprecatedFunctionTemplateMap;
-+  typedef std::map<const WrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
-+      FunctionTemplateMap;
- 
-   // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
-   // owned by the IsolateHolder, which also owns the PerIsolateData.
-   raw_ptr<v8::Isolate, AcrossTasksDanglingUntriaged> isolate_;
-   raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
-+  DeprecatedObjectTemplateMap deprecated_object_templates_;
-   ObjectTemplateMap object_templates_;
-+  DeprecatedFunctionTemplateMap deprecated_function_templates_;
-+  FunctionTemplateMap function_templates_;
-   base::ObserverList<DisposeObserver> dispose_observers_;
-   std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
-   std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
 index 109e60f47987d306067f37363e0f9f58bffc11bc..f8774d369a37750e864f658e231cff13db401ff5 100644
 --- a/gin/public/gin_embedders.h
@@ -255,87 +143,3 @@ index 01d3606a5b50e3ff5b8a4869e1c0c3bd1878e495..f61b41a7275d227b60f663d40f1658e8
    AssociateWithWrapper(isolate, wrapper);
    return wrapper;
  }
-diff --git a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
-index dd47a7a65ed147411e06617ed04b9c47c8335129..50f4a01cfaeca29c29f3edf773c3c4297a0f51c4 100644
---- a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
-+++ b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
-@@ -74,6 +74,13 @@ bool V8DOMWrapper::IsWrapper(v8::Isolate* isolate,
-     return false;
-   }
- 
-+  // TODO(b/328117814): this works as long as other embedders within the
-+  // renderer process are not using new wrappers. We will need to come up
-+  // with a friend-or-foe identification when we switch gin to new wrappers.
-+  if (WrapperTypeInfo::HasLegacyInternalFieldsSet(object)) {
-+    return false;
-+  }
-+
-   const WrapperTypeInfo* untrusted_wrapper_type_info =
-       ToWrapperTypeInfo(object);
-   V8PerIsolateData* per_isolate_data = V8PerIsolateData::From(isolate);
-diff --git a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
-index f67162deea7f852c59e90fa47a24de454686ed5d..405a88ce9b7d761792b6e6344ae8310fec05dc43 100644
---- a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
-+++ b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
-@@ -105,6 +105,7 @@ inline void V8DOMWrapper::SetNativeInfo(
-     v8::Local<v8::Object> wrapper,
-     ScriptWrappable* wrappable) {
-   DCHECK(wrappable);
-+  DCHECK(!WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
-   v8::Object::Wrap(isolate, wrapper, wrappable,
-                    ToWrapperTypeInfo(wrappable)->this_tag);
- }
-@@ -121,6 +122,7 @@ inline void V8DOMWrapper::SetNativeInfoForGlobal(v8::Isolate* isolate,
-                                                  v8::Local<v8::Object> wrapper,
-                                                  ScriptWrappable* wrappable) {
-   DCHECK(wrappable);
-+  DCHECK(!WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
-   const WrapperTypeInfo* wrapper_type_info = ToWrapperTypeInfo(wrappable);
-   v8::Object::WrapGlobal(isolate, wrapper, wrappable,
-                          wrapper_type_info->this_tag);
-diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc b/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
-index 0cdc51cbe448a0027f2fa4404323ccd36199606e..913752216e8ce77e074a8bf91dca307d0bd77a4c 100644
---- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
-+++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
-@@ -12,9 +12,9 @@
- namespace blink {
- 
- static_assert(offsetof(struct WrapperTypeInfo, type_id) ==
--                  offsetof(struct gin::WrapperInfo, type_id),
--              "offset of WrapperTypeInfo.type_id must be the same as "
--              "gin::WrapperInfo.type_id");
-+                  offsetof(struct gin::DeprecatedWrapperInfo, embedder),
-+              "offset of WrapperTypeInfo.ginEmbedder must be the same as "
-+              "gin::DeprecatedWrapperInfo.embedder");
- 
- v8::Local<v8::Template> WrapperTypeInfo::GetV8ClassTemplate(
-     v8::Isolate* isolate,
-@@ -54,6 +54,8 @@ const WrapperTypeInfo* ToWrapperTypeInfo(const ScriptWrappable* wrappable) {
- const WrapperTypeInfo* ToWrapperTypeInfo(v8::Local<v8::Object> wrapper) {
-   const v8::Object::Wrappable* wrappable =
-       ToAnyWrappable(v8::Isolate::GetCurrent(), wrapper);
-+  // It's either us or legacy embedders
-+  DCHECK(!wrappable || !WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
-   if (!wrappable) {
-     return nullptr;
-   }
-diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-index 9149b4978966d6f909ce84b2dda58e53c0fa56ac..df61887798a166428ad22fb006432969c400016d 100644
---- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-+++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-@@ -194,6 +194,15 @@ struct PLATFORM_EXPORT WrapperTypeInfo final
-         interface_template, bindings::V8InterfaceBridgeBase::FeatureSelector());
-   }
- 
-+  static bool HasLegacyInternalFieldsSet(v8::Local<v8::Object> object) {
-+    for (int i = 0, n = object->InternalFieldCount(); i < n; ++i) {
-+      if (object->GetAlignedPointerFromInternalField(i, gin::kDeprecatedData)) {
-+        return true;
-+      }
-+    }
-+    return false;
-+  }
-+
-   bindings::V8InterfaceBridgeBase::InstallInterfaceTemplateFuncType
-       install_interface_template_func;
-   bindings::V8InterfaceBridgeBase::InstallContextDependentPropertiesFuncType

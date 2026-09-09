@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 7 Sep 2026 23:14:34 +0900
+Subject: [profiler] Rebuild merged native associations for each snapshot
+
+Native objects can be replaced while their JavaScript wrapper survives.
+For example, Blink reuses a JSGlobalProxy across navigation, clearing its
+association with the old DOMWindow and binding it to the new one.
+
+HeapObjectsMap retains merged_native_entries_map_ across snapshots.
+Adding the replacement native object therefore leaves two native
+addresses pointing to the same wrapper entry. RemoveDeadEntries() builds
+a reverse map keyed by entry index and assumes this mapping is unique,
+triggering DCHECK(result.second).
+
+This was observed when taking renderer heap snapshots before and after
+reloads in the same Electron renderer isolate. Diagnostic logging showed
+the following cppgc header addresses associated with one JSGlobalProxy:
+
+  Snapshot   Native Window     Wrapper address   Snapshot ID
+  Initial    0x1040203f028      0x3150102f434     90415
+  Reload 1   0x10402155840      0x3150102f434     90415
+  Reload 2   0x1040203b148      0x3150102f434     90415
+  Reload 3   0x1040215f610      0x3150102f434     90415
+
+All four associations were labeled:
+  cpp=Window js=global [JSGlobalProxy]
+
+The original failure was:
+  Debug check failed: result.second.
+    v8::internal::HeapObjectsMap::RemoveDeadEntries()
+    v8::internal::HeapProfiler::TakeSnapshot(...)
+    v8::HeapProfiler::TakeHeapSnapshot(...)
+
+Clear merged native associations before rebuilding the native graph for
+each snapshot. This removes stale native addresses while preserving the
+existing JavaScript object IDs. Rebuild both cppgc and embedder graph
+associations through their existing traversal paths.
+
+Upstreamed at https://chromium-review.googlesource.com/c/v8/v8/+/8369219.
+
+diff --git a/src/profiler/heap-snapshot-generator.cc b/src/profiler/heap-snapshot-generator.cc
+index 6681d711108a51e021e0ffa5ef22048f865c47be..7b2bcee6affcbfcba03939293862e272936efacc 100644
+--- a/src/profiler/heap-snapshot-generator.cc
++++ b/src/profiler/heap-snapshot-generator.cc
+@@ -787,6 +787,10 @@ void HeapObjectsMap::AddMergedNativeEntry(NativeObject addr,
+   }
+ }
+ 
++void HeapObjectsMap::ClearMergedNativeEntries() {
++  merged_native_entries_map_.clear();
++}
++
+ void HeapObjectsMap::StopHeapObjectsTracking() { time_intervals_.clear(); }
+ 
+ void HeapObjectsMap::UpdateHeapObjectsMap() {
+@@ -3575,6 +3579,11 @@ bool NativeObjectsExplorer::IterateAndExtractReferences(
+   DisallowGarbageCollection no_gc;
+   HandleScope scope(isolate_);
+ 
++  // Native objects can be replaced while their JS wrapper survives.
++  // Rebuild these associations each snapshot instead of retaining
++  // stale native addresses for live wrapper entries.
++  heap_object_map_->ClearMergedNativeEntries();
++
+   if (isolate_->heap()->cpp_heap()) {
+     CppGraphBuilder::Run(
+         v8::internal::CppHeap::From(isolate_->heap()->cpp_heap()), generator_,
+diff --git a/src/profiler/heap-snapshot-generator.h b/src/profiler/heap-snapshot-generator.h
+index d189d96056459daf06acc5aaa4544f329b6d828c..afb3175da3533b6ab47c615724cc9d118dd8c25e 100644
+--- a/src/profiler/heap-snapshot-generator.h
++++ b/src/profiler/heap-snapshot-generator.h
+@@ -366,6 +366,7 @@ class HeapObjectsMap {
+       IsNativeObject is_native_object = IsNativeObject::kNo);
+   SnapshotObjectId FindMergedNativeEntry(NativeObject addr);
+   void AddMergedNativeEntry(NativeObject addr, Address canonical_addr);
++  void ClearMergedNativeEntries();
+   V8_EXPORT_PRIVATE bool ContainsEntryWithIdForTesting(
+       SnapshotObjectId id) const;
+ 
+diff --git a/test/cctest/test-heap-profiler.cc b/test/cctest/test-heap-profiler.cc
+index c91999ce887e07ae767afc7937a67b675648ad4e..a5896ff849c800defd10b6784a4941a0edc149a1 100644
+--- a/test/cctest/test-heap-profiler.cc
++++ b/test/cctest/test-heap-profiler.cc
+@@ -2126,6 +2126,39 @@ TEST(NativeSnapshotObjectId) {
+            heap_profiler->GetObjectId(&native2));
+ }
+ 
++TEST(NativeSnapshotObjectIdReplaced) {
++  LocalContext env;
++  v8::Isolate* isolate = env.isolate();
++  v8::HandleScope scope(isolate);
++  v8::HeapProfiler* heap_profiler = isolate->GetHeapProfiler();
++  v8::Persistent<v8::String> wrapper(isolate, v8_str("wrapper"));
++  int native1;
++  int native2;
++  int replacement;
++  EmbedderGraphBuilderForNativeSnapshotObjectId::BuildParameter parameter{
++      &wrapper, &native1, &native2};
++  auto callback =
++      EmbedderGraphBuilderForNativeSnapshotObjectId::BuildEmbedderGraph;
++  heap_profiler->AddBuildEmbedderGraphCallback(callback, &parameter);
++
++  CHECK(ValidateSnapshot(heap_profiler->TakeHeapSnapshot()));
++  const auto wrapper_id = heap_profiler->GetObjectId(&native2);
++  CHECK_NE(v8::HeapProfiler::kUnknownObjectId, wrapper_id);
++  CHECK_EQ(wrapper_id, heap_profiler->GetObjectId(wrapper.Get(isolate)));
++
++  parameter.native2 = &replacement;
++  CHECK(ValidateSnapshot(heap_profiler->TakeHeapSnapshot()));
++  CHECK_EQ(wrapper_id, heap_profiler->GetObjectId(&replacement));
++  CHECK_EQ(wrapper_id, heap_profiler->GetObjectId(wrapper.Get(isolate)));
++  CHECK_EQ(v8::HeapProfiler::kUnknownObjectId,
++           heap_profiler->GetObjectId(&native2));
++
++  heap_profiler->RemoveBuildEmbedderGraphCallback(callback, &parameter);
++  CHECK(ValidateSnapshot(heap_profiler->TakeHeapSnapshot()));
++  CHECK_EQ(v8::HeapProfiler::kUnknownObjectId,
++           heap_profiler->GetObjectId(&replacement));
++}
++
+ TEST(NativeSnapshotObjectIdMoving) {
+   // Required to allow moving specific objects.
+   i::ManualGCScope manual_gc_scope;
