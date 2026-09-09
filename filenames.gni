@@ -726,7 +726,6 @@ filenames = {
     "shell/common/gin_helper/options_reader.h",
     "shell/common/gin_helper/persistent_dictionary.cc",
     "shell/common/gin_helper/persistent_dictionary.h",
-    "shell/common/gin_helper/pinnable.h",
     "shell/common/gin_helper/promise.cc",
     "shell/common/gin_helper/promise.h",
     "shell/common/gin_helper/reply_channel.cc",
