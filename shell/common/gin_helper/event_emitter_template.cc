@@ -12,11 +12,10 @@
 
 namespace gin_helper::internal {
 
-gin::DeprecatedWrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
-
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
+  static const char kTemplateKey = 0;
   auto* data =
-      PerContextTemplateData::From(isolate->GetCurrentContext(), &kWrapperInfo);
+      PerContextTemplateData::From(isolate->GetCurrentContext(), &kTemplateKey);
   v8::Local<v8::FunctionTemplate> tmpl;
   if (data)
     tmpl = data->function_template.Get(isolate);

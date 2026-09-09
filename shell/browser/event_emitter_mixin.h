@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
 #include <string_view>
-#include <type_traits>
 #include <utility>
 
 #include "gin/object_template_builder.h"
@@ -60,21 +59,11 @@ class EventEmitterMixin {
     auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
                                               wrapper_info);
 
-    // DeprecatedWrapperInfo support will be removed as part of
-    // https://github.com/electron/electron/issues/47922
-    constexpr bool is_deprecated_wrapper =
-        std::is_same_v<decltype(wrapper_info), gin::DeprecatedWrapperInfo*>;
-
     v8::Local<v8::FunctionTemplate> constructor;
     if (data)
       constructor = data->function_template.Get(isolate);
 
-    const char* class_name = "";
-    if constexpr (is_deprecated_wrapper) {
-      class_name = static_cast<T*>(this)->GetTypeName();
-    } else {
-      class_name = static_cast<T*>(this)->GetClassName();
-    }
+    const char* class_name = static_cast<T*>(this)->GetClassName();
 
     if (constructor.IsEmpty()) {
       constructor = v8::FunctionTemplate::New(isolate);
