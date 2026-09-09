@@ -1,0 +1,224 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Mon, 27 Jul 2026 11:46:22 -0400
+Subject: D3D11: Fix dynamic vertex buffer reservation
+
+Fix integer overflow in reservation checks, clear stale accumulated
+space on new draw calls, and add runtime boundary validation to prevent
+out-of-bounds writes in D3D11 dynamic vertex buffers.
+
+Test: angle_end2end_tests --gtest_filter="*StreamingBufferReservationWrap*"
+Bug: b/536444790
+Change-Id: I9ca8e6626edebb789af901f17bffedac5cdeb03b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8150967
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/VertexBuffer.cpp b/src/libANGLE/renderer/d3d/VertexBuffer.cpp
+index 1262e1447bd22764d03ed393e6d6064b98ffac27..f8d7ff730964774f61935dee69a7a6888e8b93f7 100644
+--- a/src/libANGLE/renderer/d3d/VertexBuffer.cpp
++++ b/src/libANGLE/renderer/d3d/VertexBuffer.cpp
+@@ -154,10 +154,15 @@ angle::Result StreamingVertexBufferInterface::reserveSpace(const gl::Context *co
+         ANGLE_TRY(setBufferSize(context, std::max(size, 3 * curBufferSize / 2)));
+         mWritePosition = 0;
+     }
+-    else if (mWritePosition + size > curBufferSize)
++    else
+     {
+-        ANGLE_TRY(discard(context));
+-        mWritePosition = 0;
++        angle::CheckedNumeric<unsigned int> checkedEnd(mWritePosition);
++        checkedEnd += size;
++        if (!checkedEnd.IsValid() || checkedEnd.ValueOrDie() > curBufferSize)
++        {
++            ANGLE_TRY(discard(context));
++            mWritePosition = 0;
++        }
+     }
+ 
+     mReservedSpace = size;
+@@ -183,7 +188,9 @@ angle::Result StreamingVertexBufferInterface::storeDynamicAttribute(
+     // Protect against integer overflow
+     angle::CheckedNumeric<unsigned int> checkedPosition(mWritePosition);
+     checkedPosition += spaceRequired;
+-    ANGLE_CHECK_GL_ALLOC(GetImplAs<ContextD3D>(context), checkedPosition.IsValid());
++    ANGLE_CHECK_GL_ALLOC(
++        GetImplAs<ContextD3D>(context),
++        checkedPosition.IsValid() && checkedPosition.ValueOrDie() <= getBufferSize());
+ 
+     mReservedSpace = 0;
+ 
+diff --git a/src/libANGLE/renderer/d3d/VertexBuffer.h b/src/libANGLE/renderer/d3d/VertexBuffer.h
+index 4d0038f03d3719b17c5fc32edbf27f762b66b6c4..8fd59d43a1157e874631c810be0eac1390cddd83 100644
+--- a/src/libANGLE/renderer/d3d/VertexBuffer.h
++++ b/src/libANGLE/renderer/d3d/VertexBuffer.h
+@@ -136,6 +136,8 @@ class StreamingVertexBufferInterface : public VertexBufferInterface
+                                      GLsizei instances,
+                                      uint64_t baseInstance);
+ 
++    void clearReservedSpace() { mReservedSpace = 0; }
++
+   private:
+     angle::Result reserveSpace(const gl::Context *context, unsigned int size);
+ 
+diff --git a/src/libANGLE/renderer/d3d/VertexDataManager.cpp b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+index a2181a7571acc117a0eb986baa7f2dfbce2418e7..3f46b73a22698109e639edf4ddb908d2a7691c9a 100644
+--- a/src/libANGLE/renderer/d3d/VertexDataManager.cpp
++++ b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+@@ -446,6 +446,10 @@ angle::Result VertexDataManager::storeDynamicAttribs(
+     // Will trigger unmapping on return.
+     StreamingBufferUnmapper localUnmapper(&mStreamingBuffer);
+ 
++    // Ensure the reservation accumulator starts fresh, discarding any state left
++    // behind by an earlier call that returned before the store loop consumed it.
++    mStreamingBuffer.clearReservedSpace();
++
+     // Reserve the required space for the dynamic buffers.
+     for (auto attribIndex : dynamicAttribsMask)
+     {
+diff --git a/src/libANGLE/renderer/d3d/d3d11/IndexBuffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/IndexBuffer11.cpp
+index eafba6ad6b6e7f071eea5e74d164df7916bada71..e639424f76e6b82a8fb5522f125400a63da6319e 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/IndexBuffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/IndexBuffer11.cpp
+@@ -36,6 +36,8 @@ angle::Result IndexBuffer11::initialize(const gl::Context *context,
+                                         bool dynamic)
+ {
+     mBuffer.reset();
++    mBufferSize = 0;
++    mIndexType  = gl::DrawElementsType::InvalidEnum;
+ 
+     updateSerial();
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/VertexBuffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/VertexBuffer11.cpp
+index 53c4dfb374ce461cef3d96b58b7ed6d7332a8608..c3adddf0a80be1521f6abc68b7144c6e064f17c7 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/VertexBuffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/VertexBuffer11.cpp
+@@ -46,6 +46,7 @@ angle::Result VertexBuffer11::initialize(const gl::Context *context,
+                                          bool dynamicUsage)
+ {
+     mBuffer.reset();
++    mBufferSize = 0;
+     updateSerial();
+ 
+     if (size > 0)
+@@ -145,7 +146,9 @@ angle::Result VertexBuffer11::storeVertexAttributes(const gl::Context *context,
+     angle::CheckedNumeric<size_t> checkedSpaceRequired = count;
+     checkedSpaceRequired *= elementSize;
+     checkedSpaceRequired += offset;
+-    ASSERT(checkedSpaceRequired.IsValid() && checkedSpaceRequired.ValueOrDie() <= mBufferSize);
++    ANGLE_CHECK_GL_ALLOC(
++        GetImplAs<Context11>(context),
++        checkedSpaceRequired.IsValid() && checkedSpaceRequired.ValueOrDie() <= mBufferSize);
+ 
+     vertexFormatInfo.copyFunction(input, inputStride, count, output);
+ 
+diff --git a/src/tests/gl_tests/BufferDataTest.cpp b/src/tests/gl_tests/BufferDataTest.cpp
+index 45a3fc6381546af27e5b8e393e8600da2405e0ef..62581feccf41240476ba5bc15ea192565cb0bd22 100644
+--- a/src/tests/gl_tests/BufferDataTest.cpp
++++ b/src/tests/gl_tests/BufferDataTest.cpp
+@@ -2619,6 +2619,104 @@ TEST_P(BufferDataOverflowTest, VertexBufferIntegerOverflow)
+     EXPECT_GL_ERROR(GL_NO_ERROR);
+ }
+ 
++// Tests a D3D11 streaming vertex buffer out-of-bounds write vulnerability.
++// It requires a buffer of at least 2GB to allow two sub-allocations
++// to sum to > 4 GB, wrapping a 32-bit unsigned integer addition
++// However, with current ANGLE impl, since we have a hard limit:
++// kMaximumBufferSizeHardLimit = std::numeric_limits<UINT>::max() >> 1
++// The first glDrawArrays will return GL_OUT_OF_MEMORY
++// This test could be useful in case we increase kMaximumBufferSizeHardLimit
++// in the future
++TEST_P(BufferDataOverflowTest, StreamingBufferReservationWrap)
++{
++    ANGLE_SKIP_TEST_IF(!IsD3D11());
++
++    constexpr char kVS[] = R"(#version 300 es
++layout(location = 0) in vec4 attrib0;
++layout(location = 1) in vec4 attrib1;
++out vec4 v;
++void main()
++{
++    v = attrib0 + attrib1;
++    gl_Position = vec4(0, 0, 0, 1);
++})";
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++in vec4 v;
++out vec4 color;
++void main()
++{
++    color = v;
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    // 4-byte packed input (GL_INT_2_10_10_10_REV) that converts to 16-byte
++    // DXGI_FORMAT_R32G32B32A32_FLOAT on the D3D11 CPU conversion path
++    // angle::FormatID::R10G10B10A2_SSCALED
++    constexpr GLenum kAttribType = GL_INT_2_10_10_10_REV;
++    constexpr GLsizei kSrcStride = 4;
++
++    // Count for Draw 1 to allocate the ~2.235 GB buffer (DstStride = 16)
++    constexpr GLsizei kGrowCount = 150000000;
++    // Count for Draw 2 to set up a ~1.863 GB stale reservation
++    constexpr GLsizei kPoisonCount = 125000000;
++    // Count for Draw 3 (~95.367 MB) to trigger the out-of-bounds write
++    constexpr GLsizei kSmallCount = 6250000;
++
++    // Size of source buffer for 150M vertices (150M * 4 bytes = ~572.205 MB)
++    constexpr GLsizeiptr kBigSrcBytes = static_cast<GLsizeiptr>(kGrowCount) * kSrcStride;
++    // A small 16-byte source buffer
++    constexpr GLsizeiptr kTinySrcBytes = 16;
++
++    GLBuffer bigBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, bigBuffer);
++    glBufferData(GL_ARRAY_BUFFER, kBigSrcBytes, nullptr, GL_DYNAMIC_DRAW);
++    ANGLE_SKIP_TEST_IF(glGetError() == GL_OUT_OF_MEMORY);
++
++    GLBuffer tinyBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, tinyBuffer);
++    glBufferData(GL_ARRAY_BUFFER, kTinySrcBytes, nullptr, GL_DYNAMIC_DRAW);
++    ASSERT_GL_NO_ERROR();
++
++    glBindBuffer(GL_ARRAY_BUFFER, bigBuffer);
++    glVertexAttribPointer(0, 4, kAttribType, GL_FALSE, kSrcStride, nullptr);
++    glEnableVertexAttribArray(0);
++    glDisableVertexAttribArray(1);
++
++    // Grow the streaming buffer and advance its write position to the end
++    // 150M vertices at 16 bytes allocates a ~2.235 GB backend buffer
++    glDrawArrays(GL_POINTS, 0, kGrowCount);
++    ANGLE_SKIP_TEST_IF(glGetError() == GL_OUT_OF_MEMORY);
++
++    // Request a draw for 125M vertices.
++    // - Attribute 0 requests ~1.863 GB. The addition mWritePosition (~2.235 GB) + size (~1.863 GB)
++    //   wraps 32-bit uint to ~100.16 MB, bypassing buffer discard. mReservedSpace becomes ~1.863 GB
++    // - Attribute 1 points to a tiny buffer, triggering GL_INVALID_OPERATION and aborting
++    //   the draw early, which leaves mReservedSpace stale at ~1.863 GB
++    glBindBuffer(GL_ARRAY_BUFFER, tinyBuffer);
++    glVertexAttribPointer(1, 4, kAttribType, GL_FALSE, kSrcStride, nullptr);
++    glEnableVertexAttribArray(1);
++
++    glDrawArrays(GL_POINTS, 0, kPoisonCount);
++    GLenum poisonError = glGetError();
++    ANGLE_SKIP_TEST_IF(poisonError == GL_OUT_OF_MEMORY);
++    EXPECT_EQ(static_cast<GLenum>(GL_INVALID_OPERATION), poisonError);
++
++    // Issue a valid small draw (~95.367 MB).
++    // The stale ~1.863 GB reservation is added to the ~95.367 MB, requesting ~1.956 GB
++    // The addition mWritePosition (~2.235 GB) + size (~1.956 GB) wraps again to ~195.53 MB,
++    // bypassing discard. The write occurs past the buffer end (offset ~2.235 GB)
++    glDisableVertexAttribArray(1);
++    glDrawArrays(GL_POINTS, 0, kSmallCount);
++    EXPECT_GL_NO_ERROR();
++
++    glDrawArrays(GL_POINTS, 0, 3);
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Tests a security bug in our CopyBufferSubData validation (integer overflow).
+ TEST_P(BufferDataOverflowTest, CopySubDataValidation)
+ {

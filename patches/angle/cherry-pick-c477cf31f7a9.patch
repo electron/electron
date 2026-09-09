@@ -1,0 +1,509 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Tue, 18 Aug 2026 15:46:46 -0400
+Subject: D3D: Reject out-of-storage mip levels in completeness check
+
+Check creationLevels in TextureD3D isLevelComplete to prevent
+out-of-storage mip levels from being treated as complete, which routes
+copyTexture to the staging fallback and avoids invalid GPU subresource
+access.
+
+Test: angle_end2end_tests --gtest_filter="*DestLevelPastStorageMips*"
+Bug: b/536664909
+Change-Id: I8e4bbbbd4cfd234df06b9fcc81c7eb689006da2e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8263283
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index eefe51f12dbea7d727819fa67a00f8161a02b1f4..b3c8396a90d404f6332d990007e36742a7ee7d5a 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -212,7 +212,7 @@ GLint TextureD3D::getLevelZeroHeight() const
+ 
+ GLint TextureD3D::getLevelZeroDepth() const
+ {
+-    return getBaseLevelDepth();
++    return 1;
+ }
+ 
+ GLint TextureD3D::getBaseLevelWidth() const
+@@ -506,6 +506,45 @@ GLint TextureD3D::creationLevels(GLsizei width, GLsizei height, GLsizei depth) c
+     }
+ }
+ 
++bool TextureD3D::isValidLevel(int level) const
++{
++    return mTexStorage && level >= 0 && level < mTexStorage->getLevelCount();
++}
++
++bool TextureD3D::isLevelComplete(int level) const
++{
++    if (isImmutable())
++    {
++        return isValidLevel(level);
++    }
++
++    GLsizei width  = getLevelZeroWidth();
++    GLsizei height = getLevelZeroHeight();
++    GLsizei depth  = getLevelZeroDepth();
++
++    if (width <= 0 || height <= 0 || depth <= 0)
++    {
++        return false;
++    }
++
++    if (level >= creationLevels(width, height, depth))
++    {
++        return false;
++    }
++
++    if (level == static_cast<int>(getBaseLevel()))
++    {
++        return true;
++    }
++
++    return isNonBaseLevelComplete(level);
++}
++
++bool TextureD3D::isNonBaseLevelComplete(int level) const
++{
++    return false;
++}
++
+ TextureStorage *TextureD3D::getStorage()
+ {
+     ASSERT(mTexStorage);
+@@ -1601,32 +1640,8 @@ angle::Result TextureD3D_2D::getRenderTarget(const gl::Context *context,
+     return mTexStorage->getRenderTarget(context, index, outRT);
+ }
+ 
+-bool TextureD3D_2D::isValidLevel(int level) const
++bool TextureD3D_2D::isNonBaseLevelComplete(int level) const
+ {
+-    return (mTexStorage ? (level >= 0 && level < mTexStorage->getLevelCount()) : false);
+-}
+-
+-bool TextureD3D_2D::isLevelComplete(int level) const
+-{
+-    if (isImmutable())
+-    {
+-        return true;
+-    }
+-
+-    GLsizei width  = getLevelZeroWidth();
+-    GLsizei height = getLevelZeroHeight();
+-
+-    if (width <= 0 || height <= 0)
+-    {
+-        return false;
+-    }
+-
+-    // The base image level is complete if the width and height are positive
+-    if (level == static_cast<int>(getBaseLevel()))
+-    {
+-        return true;
+-    }
+-
+     ASSERT(level >= 0 && level <= static_cast<int>(mImageArray.size()) &&
+            mImageArray[level] != nullptr);
+     ImageD3D *image = mImageArray[level].get();
+@@ -1636,12 +1651,12 @@ bool TextureD3D_2D::isLevelComplete(int level) const
+         return false;
+     }
+ 
+-    if (image->getWidth() != std::max(1, width >> level))
++    if (image->getWidth() != std::max(1, getLevelZeroWidth() >> level))
+     {
+         return false;
+     }
+ 
+-    if (image->getHeight() != std::max(1, height >> level))
++    if (image->getHeight() != std::max(1, getLevelZeroHeight() >> level))
+     {
+         return false;
+     }
+@@ -2062,7 +2077,7 @@ angle::Result TextureD3D_Cube::copyImage(const gl::Context *context,
+ 
+         ASSERT(size.width == size.height);
+ 
+-        if (size.width > 0 && isValidFaceLevel(faceIndex, index.getLevelIndex()))
++        if (size.width > 0 && isValidLevel(index.getLevelIndex()))
+         {
+             ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
+             ANGLE_TRY(mRenderer->copyImageCube(context, source, clippedArea, internalFormat,
+@@ -2104,7 +2119,7 @@ angle::Result TextureD3D_Cube::copySubImage(const gl::Context *context,
+     else
+     {
+         ANGLE_TRY(ensureRenderTarget(context));
+-        if (isValidFaceLevel(faceIndex, index.getLevelIndex()))
++        if (isValidLevel(index.getLevelIndex()))
+         {
+             ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
+             ANGLE_TRY(mRenderer->copyImageCube(
+@@ -2145,7 +2160,7 @@ angle::Result TextureD3D_Cube::copyTexture(const gl::Context *context,
+     {
+ 
+         ANGLE_TRY(ensureRenderTarget(context));
+-        ASSERT(isValidFaceLevel(faceIndex, index.getLevelIndex()));
++        ASSERT(isValidLevel(index.getLevelIndex()));
+         ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
+ 
+         ANGLE_TRY(mRenderer->copyTexture(context, source, sourceLevel, gl::TextureTarget::_2D,
+@@ -2193,7 +2208,7 @@ angle::Result TextureD3D_Cube::copySubTexture(const gl::Context *context,
+     if (!isSRGB(index.getLevelIndex(), faceIndex) && canCreateRenderTargetForImage(index))
+     {
+         ANGLE_TRY(ensureRenderTarget(context));
+-        ASSERT(isValidFaceLevel(faceIndex, index.getLevelIndex()));
++        ASSERT(isValidLevel(index.getLevelIndex()));
+         ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
+ 
+         const gl::InternalFormat &internalFormatInfo =
+@@ -2466,11 +2481,6 @@ angle::Result TextureD3D_Cube::updateStorage(const gl::Context *context)
+     return angle::Result::Continue;
+ }
+ 
+-bool TextureD3D_Cube::isValidFaceLevel(int faceIndex, int level) const
+-{
+-    return (mTexStorage ? (level >= 0 && level < mTexStorage->getLevelCount()) : 0);
+-}
+-
+ bool TextureD3D_Cube::isFaceLevelComplete(int faceIndex, int level) const
+ {
+     if (getBaseLevel() >= gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
+@@ -2483,12 +2493,11 @@ bool TextureD3D_Cube::isFaceLevelComplete(int faceIndex, int level) const
+ 
+     if (isImmutable())
+     {
+-        return true;
++        return isValidLevel(level);
+     }
+ 
+     int levelZeroSize = getLevelZeroWidth();
+-
+-    if (levelZeroSize <= 0)
++    if (levelZeroSize <= 0 || level >= creationLevels(levelZeroSize, levelZeroSize, 1))
+     {
+         return false;
+     }
+@@ -3144,35 +3153,11 @@ angle::Result TextureD3D_3D::updateStorage(const gl::Context *context)
+     return angle::Result::Continue;
+ }
+ 
+-bool TextureD3D_3D::isValidLevel(int level) const
+-{
+-    return (mTexStorage ? (level >= 0 && level < mTexStorage->getLevelCount()) : 0);
+-}
+-
+-bool TextureD3D_3D::isLevelComplete(int level) const
++bool TextureD3D_3D::isNonBaseLevelComplete(int level) const
+ {
+     ASSERT(level >= 0 && level < static_cast<int>(mImageArray.size()) &&
+            mImageArray[level] != nullptr);
+ 
+-    if (isImmutable())
+-    {
+-        return true;
+-    }
+-
+-    GLsizei width  = getLevelZeroWidth();
+-    GLsizei height = getLevelZeroHeight();
+-    GLsizei depth  = getLevelZeroDepth();
+-
+-    if (width <= 0 || height <= 0 || depth <= 0)
+-    {
+-        return false;
+-    }
+-
+-    if (level == static_cast<int>(getBaseLevel()))
+-    {
+-        return true;
+-    }
+-
+     ImageD3D *levelImage = mImageArray[level].get();
+ 
+     if (levelImage->getInternalFormat() != getBaseLevelInternalFormat())
+@@ -3180,17 +3165,17 @@ bool TextureD3D_3D::isLevelComplete(int level) const
+         return false;
+     }
+ 
+-    if (levelImage->getWidth() != std::max(1, width >> level))
++    if (levelImage->getWidth() != std::max(1, getLevelZeroWidth() >> level))
+     {
+         return false;
+     }
+ 
+-    if (levelImage->getHeight() != std::max(1, height >> level))
++    if (levelImage->getHeight() != std::max(1, getLevelZeroHeight() >> level))
+     {
+         return false;
+     }
+ 
+-    if (levelImage->getDepth() != std::max(1, depth >> level))
++    if (levelImage->getDepth() != std::max(1, getLevelZeroDepth() >> level))
+     {
+         return false;
+     }
+@@ -3886,30 +3871,12 @@ angle::Result TextureD3D_2DArray::updateStorage(const gl::Context *context)
+     return angle::Result::Continue;
+ }
+ 
+-bool TextureD3D_2DArray::isValidLevel(int level) const
+-{
+-    return (mTexStorage ? (level >= 0 && level < mTexStorage->getLevelCount()) : 0);
+-}
+-
+-bool TextureD3D_2DArray::isLevelComplete(int level) const
++bool TextureD3D_2DArray::isNonBaseLevelComplete(int level) const
+ {
+     ASSERT(level >= 0 && level < (int)ArraySize(mImageArray));
+ 
+-    if (isImmutable())
+-    {
+-        return true;
+-    }
+-
+-    GLsizei width  = getLevelZeroWidth();
+-    GLsizei height = getLevelZeroHeight();
+-
+-    if (width <= 0 || height <= 0)
+-    {
+-        return false;
+-    }
+-
+-    // Layers check needs to happen after the above checks, otherwise out-of-range base level may be
+-    // queried.
++    // Layers check needs to happen after the base checks in TextureD3D::isLevelComplete, otherwise
++    // an out-of-range base level may be queried.
+     GLsizei layers = getLayerCount(getBaseLevel());
+ 
+     if (layers <= 0)
+@@ -3917,22 +3884,17 @@ bool TextureD3D_2DArray::isLevelComplete(int level) const
+         return false;
+     }
+ 
+-    if (level == static_cast<int>(getBaseLevel()))
+-    {
+-        return true;
+-    }
+-
+     if (getInternalFormat(level) != getInternalFormat(getBaseLevel()))
+     {
+         return false;
+     }
+ 
+-    if (getWidth(level) != std::max(1, width >> level))
++    if (getWidth(level) != std::max(1, getLevelZeroWidth() >> level))
+     {
+         return false;
+     }
+ 
+-    if (getHeight(level) != std::max(1, height >> level))
++    if (getHeight(level) != std::max(1, getLevelZeroHeight() >> level))
+     {
+         return false;
+     }
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index 8e89c3e022a5c36a8a31f6e36ea07911585fb1b6..49c6fc0f0e919054e54988c104cae6967175612c 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -174,6 +174,9 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+     virtual GLint getLevelZeroDepth() const;
+ 
+     GLint creationLevels(GLsizei width, GLsizei height, GLsizei depth) const;
++    bool isLevelComplete(int level) const;
++    bool isValidLevel(int level) const;
++    virtual bool isNonBaseLevelComplete(int level) const;
+     virtual angle::Result initMipmapImages(const gl::Context *context) = 0;
+     bool isBaseImageZeroSize() const;
+     virtual bool isImageComplete(const gl::ImageIndex &index) const = 0;
+@@ -350,8 +353,7 @@ class TextureD3D_2D : public TextureD3D
+     angle::Result updateStorage(const gl::Context *context) override;
+     angle::Result initMipmapImages(const gl::Context *context) override;
+ 
+-    bool isValidLevel(int level) const;
+-    bool isLevelComplete(int level) const;
++    bool isNonBaseLevelComplete(int level) const override;
+     bool isImageComplete(const gl::ImageIndex &index) const override;
+ 
+     angle::Result updateStorageLevel(const gl::Context *context, int level);
+@@ -481,7 +483,6 @@ class TextureD3D_Cube : public TextureD3D
+     angle::Result updateStorage(const gl::Context *context) override;
+     angle::Result initMipmapImages(const gl::Context *context) override;
+ 
+-    bool isValidFaceLevel(int faceIndex, int level) const;
+     bool isFaceLevelComplete(int faceIndex, int level) const;
+     bool isCubeComplete() const;
+     bool isImageComplete(const gl::ImageIndex &index) const override;
+@@ -616,8 +617,7 @@ class TextureD3D_3D : public TextureD3D
+     angle::Result updateStorage(const gl::Context *context) override;
+     angle::Result initMipmapImages(const gl::Context *context) override;
+ 
+-    bool isValidLevel(int level) const;
+-    bool isLevelComplete(int level) const;
++    bool isNonBaseLevelComplete(int level) const override;
+     bool isImageComplete(const gl::ImageIndex &index) const override;
+     angle::Result updateStorageLevel(const gl::Context *context, int level);
+ 
+@@ -746,8 +746,7 @@ class TextureD3D_2DArray : public TextureD3D
+     angle::Result updateStorage(const gl::Context *context) override;
+     angle::Result initMipmapImages(const gl::Context *context) override;
+ 
+-    bool isValidLevel(int level) const;
+-    bool isLevelComplete(int level) const;
++    bool isNonBaseLevelComplete(int level) const override;
+     bool isImageComplete(const gl::ImageIndex &index) const override;
+     bool isSRGB(GLint level) const;
+     angle::Result updateStorageLevel(const gl::Context *context, int level);
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 2713214b25b1040f1443dd6e2fade7fe9d3269c8..0e0579ad7a77429564a44ef8dc4dad0ba9f840c9 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -37,6 +37,12 @@
+ 532617619 OPENGL : Texture2DTestES3RobustInit.MismatchedStaleLevel*/* = SKIP
+ 532617619 GLES : Texture2DTestES3RobustInit.MismatchedStaleLevel*/* = SKIP
+ 
++// Redefining base level on native OpenGL/GLES drivers drops existing higher mip levels.
++480069042 OPENGL : CopyTextureTest.CubeMapDestLevelPastStorageMips/* = SKIP
++480069042 OPENGL : CopyTextureTest.Texture2DDestLevelPastStorageMips/* = SKIP
++480069042 GLES : CopyTextureTest.CubeMapDestLevelPastStorageMips/* = SKIP
++480069042 GLES : CopyTextureTest.Texture2DDestLevelPastStorageMips/* = SKIP
++
+ 381742474 : ShaderStorageBufferTest31.ExceedMaxShaderStorageBlockSize/* = SKIP
+ 
+ // Vulkan color attachment incorrectly configured when GL_RASTERIZER_DISCARD is enabled and no glClear is issued.
+@@ -2675,6 +2681,8 @@
+ 438268609 WGPU : CopyTextureTest.InternalFormat/* = SKIP
+ // WGPU does not currently resize textures
+ 438268609 WGPU : CopyTextureTest.CopyOutsideMipmap/* = SKIP
++438268609 WGPU : CopyTextureTest.CubeMapDestLevelPastStorageMips/* = SKIP
++438268609 WGPU : CopyTextureTest.Texture2DDestLevelPastStorageMips/* = SKIP
+ // Unimplemented format conversions for texture copies
+ 438268609 WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__AToRGB* = SKIP
+ 438268609 WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__LToRGB* = SKIP
+diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
+index 219d1eb4059fefc4783b99578f04c5e810a1d11e..9fe5e89ee1b85a53d57695fd445553e7484e20ed 100644
+--- a/src/tests/gl_tests/CopyTextureTest.cpp
++++ b/src/tests/gl_tests/CopyTextureTest.cpp
+@@ -1341,6 +1341,110 @@ TEST_P(CopyTextureTest, IncompleteCubeMap)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Test copying to a cube map mip level beyond the current storage mip chain, then redefining base
++// level to promote the staged image.
++TEST_P(CopyTextureTest, CubeMapDestLevelPastStorageMips)
++{
++    if (!checkExtensions())
++    {
++        return;
++    }
++
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 &&
++                       !IsGLExtensionEnabled("GL_OES_fbo_render_mipmap"));
++
++    GLTexture src;
++    glBindTexture(GL_TEXTURE_2D, src);
++    GLColor srcPix = GLColor::red;
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &srcPix);
++    ASSERT_GL_NO_ERROR();
++
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    std::vector<GLubyte> base(1 * 1 * 4, 0x11);
++    for (GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
++         ++face)
++    {
++        glTexImage2D(face, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, base.data());
++    }
++    ASSERT_GL_NO_ERROR();
++
++    // Copy into level 1 of NEGATIVE_Z face (1x1), which lies beyond the 1-level mip chain of 1x1
++    // base.
++    glCopyTextureCHROMIUM(src, 0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, cube,
++                          /*destLevel=*/1, GL_RGBA, GL_UNSIGNED_BYTE,
++                          /*unpackFlipY=*/GL_FALSE, /*premultiply=*/GL_FALSE,
++                          /*unmultiply=*/GL_FALSE);
++    EXPECT_GL_NO_ERROR();
++
++    // Also define level 1 for the remaining 5 faces so the cube map is mipmap complete.
++    for (GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face < GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
++         ++face)
++    {
++        glTexImage2D(face, 1, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, base.data());
++    }
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine base level to 2x2 so level 1 (1x1) becomes part of the complete mip chain.
++    std::vector<GLubyte> bigBase(2 * 2 * 4, 0x22);
++    for (GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
++         ++face)
++    {
++        glTexImage2D(face, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, bigBase.data());
++    }
++    EXPECT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
++                           cube, 1);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
++// Test copying to a 2D texture mip level beyond the current storage mip chain, then redefining base
++// level to promote the staged image.
++TEST_P(CopyTextureTest, Texture2DDestLevelPastStorageMips)
++{
++    if (!checkExtensions())
++    {
++        return;
++    }
++
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 &&
++                       !IsGLExtensionEnabled("GL_OES_fbo_render_mipmap"));
++
++    GLTexture src;
++    glBindTexture(GL_TEXTURE_2D, src);
++    GLColor srcPix = GLColor::blue;
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &srcPix);
++    ASSERT_GL_NO_ERROR();
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    std::vector<GLubyte> base(1 * 1 * 4, 0x11);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, base.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Copy into level 1 (1x1), which lies beyond the 1-level mip chain of 1x1 base.
++    glCopyTextureCHROMIUM(src, 0, GL_TEXTURE_2D, tex,
++                          /*destLevel=*/1, GL_RGBA, GL_UNSIGNED_BYTE,
++                          /*unpackFlipY=*/GL_FALSE, /*premultiply=*/GL_FALSE,
++                          /*unmultiply=*/GL_FALSE);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine base level to 2x2 so level 1 (1x1) becomes part of the complete mip chain.
++    std::vector<GLubyte> bigBase(2 * 2 * 4, 0x22);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, bigBase.data());
++    EXPECT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
+ // Test BGRA to RGBA cube map copy
+ TEST_P(CopyTextureTest, CubeMapTargetBGRA)
+ {
+@@ -1542,9 +1646,6 @@ TEST_P(CopyTextureTest, CopyOutsideMipmap)
+         return;
+     }
+ 
+-    // http://anglebug.com/42263316
+-    ANGLE_SKIP_TEST_IF(IsD3D());
+-
+     // http://anglebug.com/42263799
+     ANGLE_SKIP_TEST_IF(IsWindows() && IsNVIDIA() && IsOpenGL());
+ 

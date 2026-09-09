@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Mon, 31 Aug 2026 19:44:38 -0700
+Subject: [HiC] Fix privacy leaks due to feature flag checks
+
+When a frame that does not enable HTML-in-Canvas embeds a same-origin
+iframe that does enable the origin trial (through headers in the
+subframe request) the sub-frame can use drawElementImage with
+cross-origin filter content and the checks in the main frame painting
+code will not remove the filter, because the main frame does not think
+HTML-in-Canvas is enabled.
+
+Fix the cross-origin filter removal code to check for canvas subtree
+instead of using the feature flag. While this will remove filters in
+canvas subtrees even if HTML-in-Canvas is not enabled, it doesn't matter
+because the filters are not exposed to a11y and there is otherwise no
+way to see them.
+
+Bug: 550141694
+Change-Id: I3dc8f8d9f157ee2a3f73851687a04d537b1dcef9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8310987
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689553}
+
+diff --git a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+index 109c843a7efc1697033e95cf038769570eeb86ae..d5e7e83e9af1b2c0044b8fc01e201654ac0068af 100644
+--- a/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
++++ b/third_party/blink/renderer/core/paint/paint_property_tree_builder.cc
+@@ -2444,8 +2444,6 @@ void FragmentPaintPropertyTreeBuilder::UpdateFilter() {
+       EffectPaintPropertyNode::FilterInfo filter_info;
+       UpdateFilterEffect(object_, properties_->Filter(), filter_info);
+       bool is_filter_disallowed =
+-          RuntimeEnabledFeatures::CanvasDrawElementEnabled(
+-              object_.GetDocument().GetExecutionContext()) &&
+           IsA<Element>(object_.GetNode()) &&
+           To<Element>(object_.GetNode())->IsInCanvasSubtree() &&
+           filter_info.operations.OriginTainted();
+@@ -4178,8 +4176,6 @@ void FragmentPaintPropertyTreeBuilder::PopulateBackdropFilterIfNeeded(
+   }
+   if (!operations.IsEmpty()) {
+     bool is_filter_disallowed =
+-        RuntimeEnabledFeatures::CanvasDrawElementEnabled(
+-            object_.GetDocument().GetExecutionContext()) &&
+         IsA<Element>(object_.GetNode()) &&
+         To<Element>(object_.GetNode())->IsInCanvasSubtree() &&
+         operations.OriginTainted();
