@@ -376,6 +376,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const blink::StorageKey& storage_key,
       base::OnceCallback<void(bool, const std::string&)> callback) override;
   base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
+#if BUILDFLAG(IS_WIN)
+  bool PreSpawnChild(sandbox::TargetConfig* config,
+                     sandbox::mojom::Sandbox sandbox_type,
+                     ChildSpawnFlags flags) override;
+#endif
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;

@@ -17,6 +17,7 @@
 #include "base/command_line.h"
 #include "base/debug/crash_logging.h"
 #include "base/environment.h"
+#include "base/feature_list.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/self_deleting.h"
@@ -153,6 +154,7 @@
 #include "shell/browser/electron_crypto_module_delegate_nss.h"
 #elif BUILDFLAG(IS_WIN)
 #include "net/ssl/client_cert_store_win.h"
+#include "sandbox/win/src/sandbox_policy.h"
 #elif BUILDFLAG(IS_MAC)
 #include "net/ssl/client_cert_store_mac.h"
 #elif defined(USE_OPENSSL)
@@ -940,6 +942,40 @@ void ElectronBrowserClient::GetMediaDeviceIDSalt(
   std::move(callback).Run(persistent_media_device_id_allowed,
                           persistent_media_device_id_salt);
 }
+
+#if BUILDFLAG(IS_WIN)
+namespace features {
+// Off by default: apps opt in with --enable-features=AudioServiceCodeIntegrity.
+BASE_FEATURE(kAudioServiceCodeIntegrity, base::FEATURE_DISABLED_BY_DEFAULT);
+}  // namespace features
+
+// Startup Code Integrity Guard for the audio utility: with
+// AudioServiceCodeIntegrity enabled, non-Microsoft-signed DLLs cannot be
+// mapped into the audio process at all (content only applies CIG to it after
+// startup), which keeps third-party injectors out of the sandboxed audio
+// service. The app's own ffmpeg.dll is allowed explicitly.
+bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetConfig* config,
+                                          sandbox::mojom::Sandbox sandbox_type,
+                                          ChildSpawnFlags flags) {
+  if (config->IsConfigured() ||
+      sandbox_type != sandbox::mojom::Sandbox::kAudio ||
+      !base::FeatureList::IsEnabled(features::kAudioServiceCodeIntegrity)) {
+    return true;
+  }
+  sandbox::MitigationFlags mitigations = config->GetProcessMitigations();
+  mitigations |= sandbox::MITIGATION_FORCE_MS_SIGNED_BINS;
+  if (config->SetProcessMitigations(mitigations) != sandbox::SBOX_ALL_OK) {
+    return false;
+  }
+  base::FilePath exe_dir;
+  if (!base::PathService::Get(base::DIR_EXE, &exe_dir)) {
+    return false;
+  }
+  return config->AllowExtraDll(
+             exe_dir.Append(FILE_PATH_LITERAL("ffmpeg.dll")).value()) ==
+         sandbox::SBOX_ALL_OK;
+}
+#endif
 
 base::FilePath ElectronBrowserClient::GetLoggingFileName(
     const base::CommandLine& cmd_line) {
