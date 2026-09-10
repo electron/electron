@@ -265,12 +265,12 @@ The `listener` will be called with `listener(details)` when an error occurs.
 
 #### `webRequest.setHeaderRules(rules)`
 
-* `rules` [HeaderRule[]](structures/header-rule.md) | null
+* `rules` [HeaderRule[]](structures/header-rule.md)
 
 Declares request and response header changes that Electron applies itself, per
 network transaction, without calling into JavaScript and without routing the
 request through the main process. Passing a new array replaces the previous
-rules; `null` removes them. Use this instead of an `onBeforeSendHeaders`
+rules; an empty array removes them. Use this instead of an `onBeforeSendHeaders`
 listener when the change does not depend on anything but the request's URL and
 resource type, for example attaching an authorization header to every request
 sent to a service the app owns.

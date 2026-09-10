@@ -1068,7 +1068,7 @@ describe('webRequest module', () => {
     });
     after(() => server.kill());
     afterEach(() => {
-      ses.webRequest.setHeaderRules(null);
+      ses.webRequest.setHeaderRules([]);
       ses.webRequest.onBeforeSendHeaders(null);
       ses.webRequest.onHeadersReceived(null);
     });
@@ -1161,7 +1161,7 @@ describe('webRequest module', () => {
         `${base}/r/${t}/0?to=${encodeURIComponent(`${base}/slow-hop?to=${encodeURIComponent(`${base}/r/${t}/1`)}`)}`
       );
       await delay(150);
-      ses.webRequest.setHeaderRules(null);
+      ses.webRequest.setHeaderRules([]);
       await done;
       expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}`)).to.deep.equal(['0:secret', '1:-']);
     });
@@ -1235,10 +1235,13 @@ describe('webRequest module', () => {
       expect((await received(t))[0].token).to.equal('secret');
     });
 
-    it('round-trips through getHeaderRules and clears with null', () => {
+    it('round-trips through getHeaderRules and clears with an empty array', () => {
       ses.webRequest.setHeaderRules([tokenRule]);
       expect(ses.webRequest.getHeaderRules()).to.deep.equal([tokenRule]);
-      ses.webRequest.setHeaderRules(null);
+      ses.webRequest.setHeaderRules([]);
+      expect(ses.webRequest.getHeaderRules()).to.deep.equal([]);
+      ses.webRequest.setHeaderRules([tokenRule]);
+      ses.webRequest.setHeaderRules(null as any);
       expect(ses.webRequest.getHeaderRules()).to.deep.equal([]);
     });
 

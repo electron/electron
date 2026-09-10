@@ -347,7 +347,7 @@ void WebRequest::SetHeaderRules(gin::Arguments* args) {
   base::ListValue list;
   if (!args->GetNext(&arg) ||
       !(arg->IsNull() || gin::ConvertFromV8(args->isolate(), arg, &list))) {
-    args->ThrowTypeError("setHeaderRules() takes an array of rules or null");
+    args->ThrowTypeError("setHeaderRules() takes an array of rules");
     return;
   }
   scoped_refptr<const HeaderRules> rules;
