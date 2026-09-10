@@ -141,15 +141,10 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
 }
 
 std::wstring ElectronCrashReporterClient::GetWerRuntimeExceptionModule() {
-  // Called once per process during crashpad initialization (before sandbox
-  // lockdown in child processes). Returning an empty path skips
-  // WerRegisterRuntimeExceptionModule(), so apps can opt out by not shipping
-  // the DLL.
-  electron::ScopedAllowBlockingForElectron allow_blocking;
-  base::FilePath path = GetWerHelperPath();
-  if (path.empty() || !base::PathExists(path))
-    return {};
-  return path.value();
+  // Called once per process during crashpad initialization, including in
+  // sandboxed children, so do not touch the disk here; registering a path
+  // that does not exist is harmless (WER only loads listed, existing DLLs).
+  return GetWerHelperPath().value();
 }
 
 // static
