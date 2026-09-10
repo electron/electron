@@ -7935,9 +7935,10 @@ describe('BrowserWindow module', () => {
     });
 
     it('captures the page at the device scale factor', async () => {
-      const paint = once(w.webContents, 'paint');
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-      await paint;
+      // Capture a frame painted after the navigation has committed; the first
+      // paint can precede the surface swap and fail to copy.
+      await w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(w.webContents, 'paint');
 
       const full = (await w.webContents.capturePage()).getSize();
       expect(full.width).to.be.closeTo(100 * scaleFactor, 2);
