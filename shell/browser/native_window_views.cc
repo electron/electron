@@ -1478,21 +1478,29 @@ bool NativeWindowViews::IsFocusable() const {
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if BUILDFLAG(IS_LINUX)
   // Remove global menu bar.
+  bool try_global_menu_bar = true;
   if (global_menu_bar_ && menu_model == nullptr) {
+    const bool used_global_menu_bar = global_menu_bar_->IsServerStarted();
     global_menu_bar_.reset();
     root_view_.UnregisterAcceleratorsWithFocusManager();
-    return;
+    if (used_global_menu_bar)
+      return;
+    // No global menu server: the menu went in-window; fall through to clear.
+    try_global_menu_bar = false;
   }
 
   // Use global application menu bar when possible.
   const bool can_use_global_menus = ui::OzonePlatform::GetInstance()
                                         ->GetPlatformRuntimeProperties()
                                         .supports_global_application_menus;
-  if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
+  if (try_global_menu_bar && can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ =
           std::make_unique<GlobalMenuBarX11>(GetAcceleratedWidget());
     if (global_menu_bar_->IsServerStarted()) {
+      // The registrar can appear between calls; drop any in-window bar.
+      if (root_view_.HasMenu())
+        SetRootViewMenu(nullptr);
       root_view_.RegisterAcceleratorsWithFocusManager(menu_model);
       global_menu_bar_->SetMenu(menu_model);
       return;
@@ -1500,6 +1508,10 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 #endif
 
+  SetRootViewMenu(menu_model);
+}
+
+void NativeWindowViews::SetRootViewMenu(ElectronMenuModel* menu_model) {
   // Should reset content size when setting menu.
   gfx::Size content_size = GetContentSize();
   bool should_reset_size = use_content_size_ && has_frame() &&

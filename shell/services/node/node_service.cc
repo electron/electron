@@ -14,7 +14,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
-#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
@@ -115,6 +114,9 @@ NodeService::NodeService(
 NodeService::~NodeService() {
 #if BUILDFLAG(ENABLE_PROMPT_API)
   electron::api::local_ai_handler::SetHandlerChangedCallback({});
+  // Tear down the AI receivers while the isolate is still alive; their
+  // destructors call into V8.
+  ai_managers_.Clear();
 #endif
   if (!node_env_stopped_) {
     node_env_->set_trace_sync_io(false);
@@ -289,17 +291,16 @@ void NodeService::BindAIManager(
     return;
   }
 
-  mojo::MakeSelfOwnedReceiver(
-      std::make_unique<UtilityAIManager>(
-          params->web_contents_id, params->security_origin, params->frame_token,
-          params->render_process_id),
-      std::move(ai_manager));
+  ai_managers_.Add(std::make_unique<UtilityAIManager>(
+                       params->web_contents_id, params->security_origin,
+                       params->frame_token, params->render_process_id),
+                   std::move(ai_manager));
 }
 
 void NodeService::FlushPendingAIManagerBindings() {
   auto pending = std::move(pending_ai_manager_bindings_);
   for (auto& binding : pending) {
-    mojo::MakeSelfOwnedReceiver(
+    ai_managers_.Add(
         std::make_unique<UtilityAIManager>(
             binding.params->web_contents_id, binding.params->security_origin,
             binding.params->frame_token, binding.params->render_process_id),

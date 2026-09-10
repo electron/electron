@@ -33,7 +33,12 @@ gin::WrapperInfo Debugger::kWrapperInfo =
 Debugger::Debugger(content::WebContents* web_contents)
     : content::WebContentsObserver{web_contents} {}
 
-Debugger::~Debugger() = default;
+Debugger::~Debugger() {
+  // The host holds a raw client pointer to us. Clear |agent_host_| first so
+  // messages dispatched during detach are dropped, not emitted from a dtor.
+  if (scoped_refptr<DevToolsAgentHost> agent_host = std::move(agent_host_))
+    agent_host->DetachClient(this);
+}
 
 void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
   DCHECK(agent_host == agent_host_);
@@ -44,7 +49,9 @@ void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
 
 void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        base::span<const uint8_t> message) {
-  DCHECK(agent_host == agent_host_);
+  // Null while detaching from the destructor; see ~Debugger().
+  if (agent_host != agent_host_)
+    return;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
