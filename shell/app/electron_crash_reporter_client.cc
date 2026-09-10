@@ -108,7 +108,8 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 #if BUILDFLAG(IS_WIN)
 namespace {
 
-// Built by //electron:electron_wer and shipped next to the executable as
+// Copied from crashpad's crashpad_wer.dll by //electron:electron_wer and
+// shipped in the assets directory (the executable's directory by default) as
 // <exe name>_wer.dll, so an app that renames electron.exe to myapp.exe must
 // rename the helper to myapp_wer.dll.
 constexpr base::FilePath::CharType kWerHelperSuffix[] =
@@ -121,10 +122,12 @@ constexpr wchar_t kWerHelperRegistryKey[] =
     L"\\RuntimeExceptionHelperModules";
 
 base::FilePath GetWerHelperPath() {
-  base::FilePath exe;
-  if (!base::PathService::Get(base::FILE_EXE, &exe))
+  base::FilePath exe, assets_dir;
+  if (!base::PathService::Get(base::FILE_EXE, &exe) ||
+      !base::PathService::Get(base::DIR_ASSETS, &assets_dir)) {
     return {};
-  return exe.DirName().Append(base::StrCat(
+  }
+  return assets_dir.Append(base::StrCat(
       {exe.BaseName().RemoveExtension().value(), kWerHelperSuffix}));
 }
 
