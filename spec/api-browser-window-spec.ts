@@ -3848,6 +3848,58 @@ describe('BrowserWindow module', () => {
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
     });
+
+    it('propagates the overlay to WebContentsViews in a BaseWindow', async () => {
+      const w = new BaseWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: { height: 40 }
+      });
+      const webPreferences = { nodeIntegration: true, contextIsolation: false };
+      const topView = new WebContentsView({ webPreferences });
+      const bottomView = new WebContentsView({ webPreferences });
+      topView.setBounds({ x: 0, y: 0, width: 400, height: 100 });
+      bottomView.setBounds({ x: 0, y: 200, width: 400, height: 200 });
+      w.contentView.addChildView(topView);
+      w.contentView.addChildView(bottomView);
+
+      // The overlay geometry reaches the renderer through visual properties,
+      // which aren't synchronised for an unsized (never shown) child view, and
+      // on Linux the frame isn't laid out until the window is shown either.
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      await topView.webContents.loadFile(overlayHTML);
+      await bottomView.webContents.loadFile(overlayHTML);
+
+      await waitUntil(() => topView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const overlayRect = await topView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(overlayRect.y).to.equal(0);
+      expect(overlayRect.width).to.be.greaterThan(0);
+      expect(overlayRect.height).to.equal(40);
+
+      // A view that doesn't intersect the titlebar area shouldn't see an overlay.
+      expect(await bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible')).to.be.false(
+        'bottom view overlay visible'
+      );
+
+      // The rect is clipped to the view and follows it when its bounds change.
+      // (Its x depends on which side the window controls are on, so check the
+      // right edge.)
+      topView.setBounds({ x: 0, y: 0, width: 150, height: 100 });
+      await waitUntil(async () => {
+        const r = await topView.webContents.executeJavaScript('getJSOverlayProperties()');
+        return r.x + r.width === 150;
+      });
+      bottomView.setBounds({ x: 0, y: 20, width: 400, height: 200 });
+      await waitUntil(() => bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const bottomRect = await bottomView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(bottomRect.y).to.equal(0);
+      expect(bottomRect.height).to.equal(20);
+    });
   });
 
   ifdescribe(process.platform !== 'darwin')('BrowserWindow.setTitlebarOverlay', () => {
