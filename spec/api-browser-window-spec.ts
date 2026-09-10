@@ -7784,6 +7784,26 @@ describe('BrowserWindow module', () => {
       expect(rect.height).to.be.closeTo(50 * scaleFactor, 2);
     });
 
+    it('captures the page at a device scale factor below 1', async () => {
+      const small = new BrowserWindow({
+        width: 100,
+        height: 100,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: {
+            deviceScaleFactor: 0.5
+          }
+        }
+      });
+      await small.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(small.webContents, 'paint');
+
+      const full = (await small.webContents.capturePage()).getSize();
+      expect(full.width).to.be.closeTo(50, 2);
+      expect(full.height).to.be.closeTo(50, 2);
+    });
+
     it('has correct screen and window sizes', async () => {
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       await once(w.webContents, 'dom-ready');

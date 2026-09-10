@@ -4060,14 +4060,10 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   const gfx::Size view_size =
       rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
 
-  // By default, the requested bitmap size is the view size in screen
-  // coordinates.  However, if the view renders with more pixel detail,
-  // increase the requested bitmap size to capture it all. Offscreen views
-  // render at their own scale factor, not the display's.
-  gfx::Size bitmap_size = view_size;
-  const float scale = view->GetDeviceScaleFactor();
-  if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+  // Capture at the view's own scale factor. Offscreen views render at
+  // |offscreen.deviceScaleFactor|, not the display's, and it may be below 1.
+  const gfx::Size bitmap_size =
+      gfx::ScaleToCeiledSize(view_size, view->GetDeviceScaleFactor());
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
                         base::TimeDelta(),
