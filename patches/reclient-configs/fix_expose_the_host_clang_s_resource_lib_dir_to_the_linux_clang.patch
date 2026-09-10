@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 10 Sep 2026 12:37:16 +0000
+Subject: fix: expose the host clang's resource lib dir to the linux clang
+
+clang_remote_wrapper already links the host package's resource include
+directory next to the linux clang it runs on the worker. Link the resource
+lib directory too, so runtime archives uploaded from the host package are
+found where clang looks for them. clang-cl in particular checks for
+lib/windows/clang_rt.profile-<arch>.lib to decide which profile runtime
+name to embed for -fprofile-generate, and without it emits
+/DEFAULTLIB:clang_rt.profile.lib, which the Windows package does not ship.
+
+diff --git a/chromium-browser-clang/clang_remote_wrapper.template b/chromium-browser-clang/clang_remote_wrapper.template
+index b0738610da8bcc2a2982ea1867171529039d3630..38ef8a65f03aaec2127cb5db2cfd31cb73704f8a 100644
+--- a/chromium-browser-clang/clang_remote_wrapper.template
++++ b/chromium-browser-clang/clang_remote_wrapper.template
+@@ -42,6 +42,17 @@ if [[ -d $clang_include_dir && ! -d $linux_clang_include_dir ]]; then
+   ln -sr "$clang_include_dir" "$linux_clang_include_dir"
+ fi
+ 
++# Do the same for the resource "lib" directory, so runtime libraries uploaded
++# from the host package (e.g. lib/windows/clang_rt.profile-<arch>.lib, which
++# clang-cl probes to choose the profile runtime name) are visible to the linux
++# clang.
++clang_lib_dir="${clang_include_dir%/include}/lib"
++linux_clang_lib_dir="${linux_clang_include_dir%/include}/lib"
++if [[ -d $clang_lib_dir && ! -d $linux_clang_lib_dir ]]; then
++  mkdir -p "$(dirname "${linux_clang_lib_dir}")"
++  ln -sr "$clang_lib_dir" "$linux_clang_lib_dir"
++fi
++
+ # Convert clang binary path to the linux version.
+ linux_clang_binary="$1"
+ linux_clang_binary="${linux_clang_binary//\\//}"
