@@ -1302,6 +1302,7 @@ class WebContents::NativeLifecycle final
       contents->DidFinishNavigation(navigation);
   }
   void WebContentsDestroyed() override {
+    DisposeWebFrames();
     DetachCallbacks();
     if (inspectable_web_contents_ && externally_owned_)
       inspectable_web_contents_->ReleaseWebContents();
@@ -1374,6 +1375,11 @@ class WebContents::NativeLifecycle final
  private:
   friend class WebContents;
 
+  void DisposeWebFrames() {
+    if (auto* contents = web_contents())
+      WebFrameMain::DestroyAllForWebContents(contents);
+  }
+
   void ReconcileCaretBrowsingCount(bool enabled) {
     if (caret_browsing_counted_ == enabled)
       return;
@@ -1426,8 +1432,10 @@ class WebContents::NativeLifecycle final
     devtools_context_menu_.reset();
     eye_dropper_.reset();
     // Attached guests and extension background pages have an external owner.
-    if (inspectable_web_contents_ && externally_owned_)
+    if (inspectable_web_contents_ && externally_owned_) {
+      DisposeWebFrames();
       inspectable_web_contents_->ReleaseWebContents();
+    }
     inspectable_web_contents_.reset();
     Observe(nullptr);
     fullscreen_frame_ = nullptr;
@@ -3457,11 +3465,6 @@ void WebContents::WebContentsDestroyed() {
   // Drop the native registrations, including this instance's contribution to
   // the process-wide caret browsing count.
   DetachNativeCallbacks();
-
-  // For a content::WebContents we do not own (guest, background page), frames
-  // outlive us but no longer get lifecycle notifications; dispose them now.
-  if (web_contents())
-    WebFrameMain::DestroyAllForWebContents(web_contents());
 
   // The underlying content::WebContents is gone, let the wrapper be collected.
   Unpin();
