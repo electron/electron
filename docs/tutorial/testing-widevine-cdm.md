@@ -38,52 +38,6 @@ applications. Application developers are responsible for obtaining any required
 CDM files, licenses, and VMP signing support from Widevine or an authorized
 integration provider.
 
-## Getting the library
-
-Widevine support is only available in Electron builds that enable the GN arg:
-
-```gn
-enable_widevine = true
-```
-
-At runtime, provide a directory that contains the Widevine CDM manifest and the
-platform-specific native library. Electron expects a layout compatible with
-Chromium's Widevine CDM package:
-
-```text
-WidevineCdm/
-  manifest.json
-  _platform_specific/
-    <platform>/
-      <widevine library>
-```
-
-For local testing, if you already have Chrome installed, open
-`chrome://components/` in Chrome browser, find
-`Widevine Content Decryption Module` and make sure it is up to date. You can
-then find the library files from the Chrome application directory.
-
-### On Windows
-
-The library file `widevinecdm.dll` will be under
-`Program Files(x86)/Google/Chrome/Application/CHROME_VERSION/WidevineCdm/_platform_specific/win_(x86|x64)/`
-directory.
-
-### On macOS
-
-The library file `libwidevinecdm.dylib` will be under
-`/Applications/Google Chrome.app/Contents/Versions/CHROME_VERSION/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_(x64|arm64)/`
-directory.
-
-### On Linux
-
-The library file `libwidevinecdm.so` will be under the
-`WidevineCdm/_platform_specific/linux_x64/` directory.
-
-**Note:** Make sure that the Chromium version used by Electron is greater than
-or equal to the `min_chrome_version` value of Chrome's Widevine CDM component.
-The value can be found in `manifest.json` under the `WidevineCdm` directory.
-
 ## Using the library
 
 When developing an unpackaged application, pass the path to the directory that
