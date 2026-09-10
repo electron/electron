@@ -257,6 +257,12 @@ class JSChunkedDataPipeGetter final
       // Drop the handle on the floor.
       return;
     }
+    if (data_producer_) {
+      // The network stack wants the body again (e.g. a 307/308 redirect or a
+      // retry) but a JS stream cannot be replayed; fail the upload instead.
+      Abort();
+      return;
+    }
     data_producer_ = std::make_unique<mojo::DataPipeProducer>(std::move(pipe));
 
     v8::HandleScope handle_scope(isolate_);

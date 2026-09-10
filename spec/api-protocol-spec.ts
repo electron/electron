@@ -960,6 +960,44 @@ describe('protocol module', () => {
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
+
+    it('throws for invalid scheme names', () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
+      const bootEval = `
+        const { protocol } = require('electron');
+        const results = {};
+        for (const scheme of ['foo,bar', '1foo', 'foo_bar', '', 'foo-bar.baz+qux']) {
+          try {
+            protocol.registerSchemesAsPrivileged([{ scheme, privileges: { standard: true } }]);
+            results[scheme] = null;
+          } catch (e) {
+            results[scheme] = e.message;
+          }
+        }
+        console.log(JSON.stringify(results));
+        process.exit(0);
+      `;
+      const result = ChildProcess.spawnSync(process.execPath, [appPath, `--boot-eval=${bootEval}`]);
+
+      const stdout = result.stdout.toString();
+      expect(result.status, `stdout: ${stdout}\nstderr: ${result.stderr.toString()}`).to.equal(0);
+
+      const line = stdout.split('\n').find((l) => l.startsWith('{'));
+      expect(line, `unexpected stdout: ${stdout}`).to.be.a('string');
+
+      const invalid = (scheme: string) =>
+        `Invalid scheme name '${scheme}'. Scheme names must ` +
+        "start with an ASCII letter and contain only ASCII letters, digits, '+', '-', or '.'.";
+
+      expect(JSON.parse(line!)).to.deep.equal({
+        'foo,bar': invalid('foo,bar'),
+        '1foo': invalid('1foo'),
+        foo_bar: invalid('foo_bar'),
+        '': invalid(''),
+        // A valid RFC 3986 scheme still registers.
+        'foo-bar.baz+qux': null
+      });
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
@@ -1492,6 +1530,29 @@ describe('protocol module', () => {
 
   describe('handle', () => {
     afterEach(closeAllWindows);
+
+    it('reports the origin that issued the request', async () => {
+      // http-like is registered as standard + fetch-enabled in spec/index.js.
+      const initiators: Record<string, string | undefined> = {};
+      protocol.handle('http-like', (req) => {
+        initiators[new URL(req.url).pathname] = (req as any).initiatorOrigin;
+        return new Response('<p>hi</p>', { headers: { 'content-type': 'text/html' } });
+      });
+      defer(() => {
+        protocol.unhandle('http-like');
+      });
+      const w = new BrowserWindow({ show: false });
+      // Browser-initiated navigation: no initiator.
+      await w.loadURL('http-like://page/');
+      expect(initiators).to.have.property('/');
+      expect(initiators['/']).to.equal(undefined);
+      // A fetch from that document carries the document's origin, even with
+      // no referrer.
+      await w.webContents.executeJavaScript(
+        "fetch('http-like://page/data', { referrerPolicy: 'no-referrer' }).then(r => r.text())"
+      );
+      expect(initiators['/data']).to.equal('http-like://page');
+    });
 
     it('receives requests to a custom scheme', async () => {
       protocol.handle('test-scheme', (req) => new Response('hello ' + req.url));

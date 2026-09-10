@@ -47,12 +47,8 @@ class MenuMac : public Menu {
   std::u16string GetAcceleratorTextAtForTesting(int index) const override;
 
  private:
-  friend class Menu;
-
   void ClosePopupOnUI(int32_t window_id);
   void OnClosed(int32_t window_id, base::OnceClosure callback);
-
-  ElectronMenuController* __strong menu_controller_;
 
   // window ID -> open context menu
   std::map<int32_t, ElectronMenuController*> popup_controllers_;

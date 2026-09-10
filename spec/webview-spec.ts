@@ -1557,6 +1557,50 @@ describe('<webview> tag', function () {
 
       generateSpecs('without sandbox');
       generateSpecs('with sandbox', 'sandbox=yes');
+
+      describe('links opened into a new window', () => {
+        // A modifier-clicked link is a popup like window.open() and is subject
+        // to allowpopups too. The click is synthesised by the guest itself, so
+        // no user gesture is involved.
+        const linkPage = (href: string) =>
+          'data:text/html,' +
+          encodeURIComponent(`<a id="a" href="${href}" target="_blank">link</a><script>
+            onload = () => {
+              document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+                ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+              }));
+              console.log('clicked');
+            };
+          </script>`);
+
+        const countNewWindows = async (attributes: Record<string, string>) => {
+          let created = 0;
+          const onCreated = (_e: unknown, bw: BrowserWindow) => {
+            created++;
+            // Not synchronously: this fires while the window is still being
+            // constructed.
+            setImmediate(() => {
+              if (!bw.isDestroyed()) bw.destroy();
+            });
+          };
+          app.on('browser-window-created', onCreated);
+          try {
+            await loadWebViewAndWaitForMessage(w, { ...attributes, src: linkPage('about:blank#popup') });
+            await setTimeout(1000);
+          } finally {
+            app.removeListener('browser-window-created', onCreated);
+          }
+          return created;
+        };
+
+        it('does not open a new window when allowpopups is not set', async () => {
+          expect(await countNewWindows({})).to.equal(0);
+        });
+
+        it('opens a new window when allowpopups is set', async () => {
+          expect(await countNewWindows({ allowpopups: 'on' })).to.equal(1);
+        });
+      });
     });
 
     describe('webpreferences attribute', () => {
@@ -1626,6 +1670,57 @@ describe('<webview> tag', function () {
         expect(frameId).to.be.an('array').that.has.lengthOf(2);
         expect(channel).to.equal('channel');
         expect(args).to.deep.equal(['arg1', 'arg2']);
+      });
+    });
+
+    describe('guest-view IPCs', () => {
+      let server: http.Server;
+      let crossOriginUrl: string;
+      before(async () => {
+        server = http.createServer((_req, res) => {
+          res.setHeader('content-type', 'text/html');
+          res.end('<!doctype html><body>frame</body>');
+        });
+        crossOriginUrl = (await listen(server)).url;
+      });
+      after(() => server.close());
+
+      it('are only honoured from the frame that created the <webview>', async () => {
+        const embedder = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            webviewTag: true,
+            nodeIntegration: true,
+            nodeIntegrationInSubFrames: true,
+            contextIsolation: false,
+            // A fresh partition so the cross-origin iframe below gets its own
+            // renderer rather than one an earlier test started without
+            // subframe node integration.
+            partition: 'guest-view-ipc-spec'
+          }
+        });
+        await embedder.loadURL(`file://${fixtures}/pages/blank.html`);
+        await loadWebView(embedder.webContents, { src: `file://${fixtures}/pages/a.html` });
+        const guestId = await embedder.webContents.executeJavaScript(
+          "document.querySelector('webview').getWebContentsId()"
+        );
+        await embedder.webContents.executeJavaScript(`new Promise((resolve) => {
+          const f = document.createElement('iframe');
+          f.src = ${JSON.stringify(crossOriginUrl)};
+          f.onload = resolve;
+          document.body.appendChild(f);
+        })`);
+        const iframe = embedder.webContents.mainFrame.frames.find((f) => f.url.startsWith('http'))!;
+        // The iframe shares the embedder WebContents but did not create the
+        // <webview>; it must not be able to drive it through the internal IPC.
+        const call = (frame: Electron.WebFrameMain) =>
+          frame.executeJavaScript(`(async () => {
+            const { ipc } = { ipc: process._linkedBinding('electron_renderer_ipc').createForRenderFrame() };
+            const { error, result } = await ipc.invoke(true, 'GUEST_VIEW_MANAGER_CALL', [${guestId}, 'executeJavaScript', ['6 * 7']]);
+            return error ? 'error:' + error : result;
+          })()`);
+        expect(await call(iframe)).to.match(/^error:.*Access denied/);
+        expect(await call(embedder.webContents.mainFrame)).to.equal(42);
       });
     });
 

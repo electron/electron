@@ -213,6 +213,35 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.sendToFrame(frameId, channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('only addresses frames that belong to this webContents', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-ipc-ping-pong.js');
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      await w1.loadURL('about:blank');
+      await w2.loadURL('about:blank');
+      const received: number[] = [];
+      ipcMain.on('pong', (e) => {
+        received.push(e.sender.id);
+      });
+      defer(() => ipcMain.removeAllListeners('pong'));
+      const other = w2.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([other.processId, other.routingId], 'ping')).to.equal(false);
+      const own = w1.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([own.processId, own.routingId], 'ping')).to.equal(true);
+      await waitUntil(() => received.length > 0);
+      await setTimeout(200);
+      expect(received).to.deep.equal([w1.webContents.id]);
+    });
+  });
+
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
@@ -3750,6 +3779,66 @@ describe('webContents module', () => {
       const childFrame = w.webContents.mainFrame.frames[0];
       await focusFrame(childFrame);
       await waitUntil(() => w.webContents.focusedFrame === childFrame);
+    });
+  });
+
+  describe('unresponsive event', () => {
+    afterEach(closeAllWindows);
+    const testing = () => process._linkedBinding('electron_common_testing');
+    // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
+    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
+      w.webContents
+        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
+        .catch(() => {});
+      await setTimeout(200);
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
+    };
+
+    ifit(isTestingBindingAvailable())('is not emitted within a hang delay of a system resume', async function () {
+      this.timeout(70000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      let unresponsiveAt = 0;
+      w.webContents.once('unresponsive', () => {
+        unresponsiveAt = Date.now();
+      });
+      await hangAndPoke(w);
+      // Sleep and wake while the timeout is pending; it would fire ~6 s after
+      // this resume, which says nothing about the renderer.
+      await setTimeout(10000);
+      testing().simulatePowerEvent('suspend');
+      testing().simulatePowerEvent('resume');
+      const resumedAt = Date.now();
+      await once(w.webContents, 'unresponsive');
+      expect(unresponsiveAt - resumedAt).to.be.greaterThan(15000);
+    });
+
+    it('is not followed by responsive just because the window is hidden', async function () {
+      this.timeout(90000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w, 40000);
+      await once(w.webContents, 'unresponsive');
+      const events: string[] = [];
+      w.webContents.on('responsive', () => events.push('responsive'));
+      w.webContents.on('unresponsive', () => events.push('unresponsive'));
+      w.hide();
+      await setTimeout(2000);
+      expect(events, 'after hide').to.deep.equal([]);
+      w.show();
+      // Still hung and visible again: reported again after one delay.
+      await once(w.webContents, 'unresponsive');
+      // The spin ends ~40 s in; the pending key event is then acked.
+      await once(w.webContents, 'responsive');
+      expect(events).to.deep.equal(['unresponsive', 'responsive']);
+    });
+
+    it('is emitted for a hang with no suspend involved', async function () {
+      this.timeout(40000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w);
+      await once(w.webContents, 'unresponsive');
     });
   });
 
