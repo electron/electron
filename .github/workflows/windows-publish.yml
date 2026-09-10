@@ -79,6 +79,7 @@ jobs:
 
   publish-x64-win:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    cache-mode: read
     permissions:
       artifact-metadata: write
       attestations: write
@@ -111,6 +112,7 @@ jobs:
 
   publish-arm64-win:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    cache-mode: read
     permissions:
       artifact-metadata: write
       attestations: write
