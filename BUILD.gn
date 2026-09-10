@@ -843,15 +843,27 @@ source_set("electron_lib") {
       "shell/browser/printing/print_view_manager_electron.h",
       "shell/browser/printing/printing_utils.cc",
       "shell/browser/printing/printing_utils.h",
+      "shell/common/printing/printer_capabilities.cc",
+      "shell/common/printing/printer_capabilities.h",
       "shell/renderer/printing/print_render_frame_helper_delegate.cc",
       "shell/renderer/printing/print_render_frame_helper_delegate.h",
     ]
     deps += [
       "//chrome/services/printing/public/mojom",
       "//components/printing/common:mojo_interfaces",
+      "//printing/backend",
     ]
     if (is_mac) {
       deps += [ "//chrome/services/mac_notifications/public/mojom" ]
+    }
+    if (is_win) {
+      sources += [
+        "shell/browser/printing/printer_capabilities_query.cc",
+        "shell/browser/printing/printer_capabilities_query.h",
+        "shell/services/printing/printer_capabilities_service.cc",
+        "shell/services/printing/printer_capabilities_service.h",
+      ]
+      deps += [ "shell/services/printing/public/mojom" ]
     }
   }
 

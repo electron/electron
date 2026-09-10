@@ -212,6 +212,7 @@
 #include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
+#include "shell/common/printing/printer_capabilities.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
@@ -3711,6 +3712,32 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set optional silent printing.
   settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
+
+  for (const auto* key :
+       {printing::kSettingInputTray, printing::kSettingMediaType}) {
+    v8::Local<v8::Value> value;
+    if (!options.Get(key, &value) || value->IsUndefined())
+      continue;
+    std::string id;
+    if (!value->IsString() || !options.Get(key, &id) ||
+        !IsPrinterMediaIdValid(id)) {
+      args->ThrowTypeError(std::string(key) +
+                           " must be a non-empty printer capability ID string "
+                           "of at most 255 bytes containing only letters, "
+                           "digits, '-', '_' or '.'");
+      return;
+    }
+#if BUILDFLAG(IS_WIN)
+    unsigned numeric_id = 0;
+    if (!base::StringToUint(id, &numeric_id) || numeric_id == 0 ||
+        (key == printing::kSettingInputTray && numeric_id > 65535)) {
+      args->ThrowTypeError(std::string(key) +
+                           " must be a valid printer capability ID string");
+      return;
+    }
+#endif
+    settings.Set(key, id);
+  }
 
   settings.Set(printing::kSettingShouldPrintBackgrounds,
                options.ValueOrDefault(

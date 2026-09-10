@@ -15,7 +15,8 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
-#include "printing/backend/print_backend.h"  // nogncheck
+#include "printing/backend/print_backend.h"
+#include "printing/buildflags/buildflags.h"
 #include "printing/units.h"
 #include "shell/common/thread_restrictions.h"
 
