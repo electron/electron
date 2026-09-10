@@ -6,15 +6,25 @@
 
 #include "base/check.h"
 #include "base/functional/callback_helpers.h"
-#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
+#include "content/browser/renderer_host/text_input_manager.h"       // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"         // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
+#include "ui/base/ime/ime_text_span.h"
 #include "ui/display/screen.h"
 #include "ui/display/screen_info.h"
 
 namespace electron {
+
+OffscreenTextInputCallbacks::OffscreenTextInputCallbacks() = default;
+OffscreenTextInputCallbacks::OffscreenTextInputCallbacks(
+    const OffscreenTextInputCallbacks&) = default;
+OffscreenTextInputCallbacks& OffscreenTextInputCallbacks::operator=(
+    const OffscreenTextInputCallbacks&) = default;
+OffscreenTextInputCallbacks::~OffscreenTextInputCallbacks() = default;
 
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
@@ -51,13 +61,140 @@ void OffScreenWebContentsView::SetWebContents(
 
 void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
   callback_ = callback;
+  if (auto* view = GetView())
+    view->SetPaintCallback(callback);
 }
 
 void OffScreenWebContentsView::SetTextInputCallbacks(
     const OffscreenTextInputCallbacks& callbacks) {
   text_input_callbacks_ = callbacks;
+}
+
+void OffScreenWebContentsView::Focus() {
   if (auto* view = GetView())
-    view->SetTextInputCallbacks(callbacks);
+    view->Focus();
+}
+
+content::RenderWidgetHostImpl* OffScreenWebContentsView::GetImeTargetWidget()
+    const {
+  auto* view = GetView();
+  if (!view)
+    return nullptr;
+  auto* manager = view->GetTextInputManager();
+  if (manager && manager->GetActiveWidget())
+    return manager->GetActiveWidget();
+  return view->render_widget_host();
+}
+
+void OffScreenWebContentsView::ImeSetComposition(
+    const std::u16string& text,
+    const std::vector<ui::ImeTextSpan>& spans,
+    const gfx::Range& replacement_range,
+    int selection_start,
+    int selection_end) {
+  auto* widget = GetImeTargetWidget();
+  // Empty text outside a composition would delete the selection instead.
+  if (!widget || (text.empty() && !has_ime_composition_))
+    return;
+  widget->ImeSetComposition(text, spans, replacement_range, selection_start,
+                            selection_end);
+  if (text.empty())
+    EndImeComposition();
+  else
+    has_ime_composition_ = true;
+}
+
+void OffScreenWebContentsView::ImeCommitText(
+    const std::u16string& text,
+    const gfx::Range& replacement_range,
+    int relative_cursor_position) {
+  auto* widget = GetImeTargetWidget();
+  if (!widget)
+    return;
+  widget->ImeCommitText(text, {}, replacement_range, relative_cursor_position);
+  // With a replacement range the renderer only replaces that text.
+  if (!replacement_range.IsValid())
+    EndImeComposition();
+}
+
+void OffScreenWebContentsView::ImeFinishComposingText(bool keep_selection) {
+  auto* widget = GetImeTargetWidget();
+  if (!widget || !has_ime_composition_)
+    return;
+  widget->ImeFinishComposingText(keep_selection);
+  EndImeComposition();
+}
+
+void OffScreenWebContentsView::ImeCancelComposition() {
+  auto* widget = GetImeTargetWidget();
+  // Without a composition this would delete the selection instead.
+  if (!widget || !has_ime_composition_)
+    return;
+  widget->ImeCancelComposition();
+  EndImeComposition();
+}
+
+void OffScreenWebContentsView::EndImeComposition() {
+  if (!has_ime_composition_)
+    return;
+  has_ime_composition_ = false;
+  if (text_input_callbacks_.composition_range_changed) {
+    text_input_callbacks_.composition_range_changed.Run(
+        gfx::Range::InvalidRange(), {});
+  }
+}
+
+void OffScreenWebContentsView::OnTextInputStateChanged(
+    const TextInputState& state) {
+  if (state == last_text_input_state_)
+    return;
+  const bool focus_changed = state.widget != last_text_input_state_.widget ||
+                             state.node_id != last_text_input_state_.node_id;
+  last_text_input_state_ = state;
+  // The renderer finishes a composition when the focused element changes.
+  if (focus_changed) {
+    EndImeComposition();
+    last_selection_bounds_.reset();
+  }
+  if (text_input_callbacks_.state_changed) {
+    text_input_callbacks_.state_changed.Run(state.type, state.mode,
+                                            state.can_compose_inline);
+  }
+}
+
+void OffScreenWebContentsView::OnImeCompositionCancelled() {
+  EndImeComposition();
+}
+
+void OffScreenWebContentsView::OnImeCompositionRangeChanged(
+    const gfx::Range& range,
+    const std::vector<gfx::Rect>& character_bounds) {
+  if (!range.IsValid()) {
+    EndImeComposition();
+    return;
+  }
+  has_ime_composition_ = true;
+  if (text_input_callbacks_.composition_range_changed)
+    text_input_callbacks_.composition_range_changed.Run(range,
+                                                        character_bounds);
+}
+
+void OffScreenWebContentsView::OnSelectionBoundsChanged(
+    const gfx::Rect& anchor,
+    const gfx::Rect& focus) {
+  if (last_text_input_state_.type == ui::TEXT_INPUT_TYPE_NONE)
+    return;
+  auto bounds = std::make_pair(anchor, focus);
+  if (last_selection_bounds_ == bounds)
+    return;
+  last_selection_bounds_ = bounds;
+  if (text_input_callbacks_.selection_bounds_changed)
+    text_input_callbacks_.selection_bounds_changed.Run(anchor, focus);
+}
+
+void OffScreenWebContentsView::ResetTextInputState() {
+  EndImeComposition();
+  OnTextInputStateChanged(TextInputState());
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -134,7 +271,7 @@ OffScreenWebContentsView::CreateViewForWidget(
       offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
       painting_, GetFrameRate(), callback_, render_widget_host, nullptr,
       GetSize());
-  view->SetTextInputCallbacks(text_input_callbacks_);
+  view->SetWebContentsView(weak_factory_.GetWeakPtr());
   return view;
 }
 

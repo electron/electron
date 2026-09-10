@@ -206,9 +206,11 @@ bool Converter<ui::ImeTextSpan>::FromV8(v8::Isolate* isolate,
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
-  uint32_t start = 0, end = 0;
-  if (!dict.Get("start", &start) || !dict.Get("end", &end))
+  int start = 0, end = 0;
+  if (!dict.Get("start", &start) || !dict.Get("end", &end) || start < 0 ||
+      end < start) {
     return false;
+  }
   ui::ImeTextSpan span(ui::ImeTextSpan::Type::kComposition, start, end);
   bool thick = false;
   if (dict.Get("thick", &thick) && thick)

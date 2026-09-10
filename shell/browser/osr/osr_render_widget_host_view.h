@@ -17,6 +17,7 @@
 
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
@@ -30,8 +31,6 @@
 #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
-#include "ui/base/ime/text_input_mode.h"
-#include "ui/base/ime/text_input_type.h"
 #include "ui/compositor/compositor.h"
 
 #include "components/viz/host/host_display_client.h"
@@ -40,7 +39,6 @@ class SkBitmap;
 
 namespace gfx {
 class PointF;
-class Range;
 class Rect;
 }  // namespace gfx
 
@@ -48,38 +46,14 @@ namespace input {
 class CursorManager;
 }
 
-namespace ui {
-struct ImeTextSpan;
-}
-
 namespace electron {
 
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
 class OffScreenVideoConsumer;
+class OffScreenWebContentsView;
 
 using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
-
-// Callbacks through which the root view reports text input state of the
-// focused widget to the embedder. Coordinates are DIPs in view space.
-struct OffscreenTextInputCallbacks {
-  using StateChanged = base::RepeatingCallback<
-      void(ui::TextInputType, ui::TextInputMode, bool can_compose_inline)>;
-  using CompositionRangeChanged = base::RepeatingCallback<
-      void(const gfx::Range&, const std::vector<gfx::Rect>& character_bounds)>;
-  using SelectionBoundsChanged =
-      base::RepeatingCallback<void(const gfx::Rect& anchor,
-                                   const gfx::Rect& focus)>;
-
-  OffscreenTextInputCallbacks();
-  OffscreenTextInputCallbacks(const OffscreenTextInputCallbacks&);
-  OffscreenTextInputCallbacks& operator=(const OffscreenTextInputCallbacks&);
-  ~OffscreenTextInputCallbacks();
-
-  StateChanged state_changed;
-  CompositionRangeChanged composition_range_changed;
-  SelectionBoundsChanged selection_bounds_changed;
-};
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
@@ -113,7 +87,7 @@ class OffScreenRenderWidgetHostView
   gfx::NativeView GetNativeView() override;
   gfx::NativeViewAccessible GetNativeViewAccessible() override;
   ui::TextInputClient* GetTextInputClient() override;
-  void Focus() override {}
+  void Focus() override;
   bool HasFocus() override;
   bool IsSurfaceAvailableForCopy() override;
   void Hide() override;
@@ -184,6 +158,7 @@ class OffScreenRenderWidgetHostView
   CreateSyntheticGestureTarget() override;
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
+  viz::FrameSinkId GetRootFrameSinkId() override;
   display::ScreenInfos GetNewScreenInfosForUpdate() override;
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
@@ -200,6 +175,8 @@ class OffScreenRenderWidgetHostView
   void OnUpdateTextInputStateCalled(content::TextInputManager* manager,
                                     RenderWidgetHostViewBase* updated_view,
                                     bool did_update_state) override;
+  void OnImeCancelComposition(content::TextInputManager* manager,
+                              RenderWidgetHostViewBase* updated_view) override;
   void OnSelectionBoundsChanged(
       content::TextInputManager* manager,
       RenderWidgetHostViewBase* updated_view) override;
@@ -253,19 +230,9 @@ class OffScreenRenderWidgetHostView
   void SendMouseEvent(const blink::WebMouseEvent& event);
   void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
 
-  // IME input from the embedder, routed to the widget with text input focus.
-  void SendImeSetComposition(const std::u16string& text,
-                             const std::vector<ui::ImeTextSpan>& spans,
-                             const gfx::Range& replacement_range,
-                             int selection_start,
-                             int selection_end);
-  void SendImeCommitText(const std::u16string& text,
-                         const gfx::Range& replacement_range,
-                         int relative_cursor_position);
-  void SendImeFinishComposingText(bool keep_selection);
-  void SendImeCancelComposition();
-
-  void SetTextInputCallbacks(const OffscreenTextInputCallbacks& callbacks);
+  // Root views report paint and text input state to |view|.
+  void SetWebContentsView(base::WeakPtr<OffScreenWebContentsView> view);
+  void SetPaintCallback(const OnPaintCallback& callback);
 
   void SetPainting(bool painting);
   bool is_painting() const { return painting_; }
@@ -315,10 +282,9 @@ class OffScreenRenderWidgetHostView
   // opaqueness changes.
   void UpdateBackgroundColorFromRenderer(SkColor color);
 
-  // The widget IME input should go to; null if there is none.
-  content::RenderWidgetHostImpl* GetImeTargetWidget();
   // Only the primary main frame's view reports text input state.
   bool ShouldReportTextInputState() const;
+  void ReportSelectionBounds(content::TextInputManager* manager);
 
   // Weak ptrs.
   raw_ptr<content::RenderWidgetHostImpl> render_widget_host_;
@@ -336,7 +302,7 @@ class OffScreenRenderWidgetHostView
 
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
-  OffscreenTextInputCallbacks text_input_callbacks_;
+  base::WeakPtr<OffScreenWebContentsView> web_contents_view_;
 
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;

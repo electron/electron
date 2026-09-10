@@ -1516,8 +1516,10 @@ content::WebContents* WebContents::AddNewContents(
 
   // The OffScreenWebContentsView created in
   // MaybeOverrideCreateParamsForNewWindow belongs to the child; bind it now.
-  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView())
+  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
+    osr_view->SetWebContents(api_web_contents->web_contents());
     api_web_contents->BindOffScreenCallbacks(osr_view);
+  }
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
@@ -4291,76 +4293,126 @@ void WebContents::BindOffScreenCallbacks(OffScreenWebContentsView* view) {
   view->SetTextInputCallbacks(callbacks);
 }
 
+namespace {
+
+bool HasValue(const gin_helper::Dictionary& dict, std::string_view key) {
+  v8::Local<v8::Value> value;
+  return dict.Get(key, &value) && !value->IsNullOrUndefined();
+}
+
+// Reads an optional [start, end) pair of UTF-16 offsets from |options|.
+// Returns false and throws if it is present but malformed.
+bool GetImeRange(gin_helper::ErrorThrower thrower,
+                 const gin_helper::Dictionary& options,
+                 std::string_view start_key,
+                 std::string_view end_key,
+                 gfx::Range* out) {
+  const bool has_start = HasValue(options, start_key);
+  const bool has_end = HasValue(options, end_key);
+  if (!has_start && !has_end)
+    return true;
+  int start = 0, end = 0;
+  if (!has_start || !has_end || !options.Get(start_key, &start) ||
+      !options.Get(end_key, &end)) {
+    thrower.ThrowTypeError(base::StrCat(
+        {"'", start_key, "' and '", end_key, "' must both be integers"}));
+    return false;
+  }
+  if (start < 0 || end < start) {
+    thrower.ThrowRangeError(
+        base::StrCat({"Invalid '", start_key, "'/'", end_key, "' range"}));
+    return false;
+  }
+  *out = gfx::Range(start, end);
+  return true;
+}
+
+}  // namespace
+
 void WebContents::ImeSetComposition(
     gin_helper::ErrorThrower thrower,
     const std::u16string& text,
     std::optional<gin_helper::Dictionary> options) {
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (!osr_rwhv) {
+  if (!IsOffScreen()) {
     thrower.ThrowError("imeSetComposition requires offscreen rendering");
     return;
   }
-  int selection_start = static_cast<int>(text.length());
-  int selection_end = selection_start;
+  const int length = static_cast<int>(text.length());
+  gfx::Range selection(length, length);
   gfx::Range replacement_range = gfx::Range::InvalidRange();
   std::vector<ui::ImeTextSpan> underlines;
   if (options) {
-    options->Get("selectionStart", &selection_start);
-    options->Get("selectionEnd", &selection_end);
-    uint32_t start = 0, end = 0;
-    if (options->Get("replacementStart", &start) &&
-        options->Get("replacementEnd", &end)) {
-      replacement_range = gfx::Range(start, end);
+    if (!GetImeRange(thrower, *options, "selectionStart", "selectionEnd",
+                     &selection) ||
+        !GetImeRange(thrower, *options, "replacementStart", "replacementEnd",
+                     &replacement_range)) {
+      return;
     }
-    if (options->Has("underlines") &&
+    if (selection.GetMax() > static_cast<uint32_t>(length)) {
+      thrower.ThrowRangeError(
+          "'selectionStart'/'selectionEnd' must be within 'text'");
+      return;
+    }
+    if (HasValue(*options, "underlines") &&
         !options->Get("underlines", &underlines)) {
       thrower.ThrowTypeError("Invalid 'underlines'");
       return;
     }
+    for (const auto& span : underlines) {
+      if (span.end_offset > text.length()) {
+        thrower.ThrowRangeError("'underlines' must be within 'text'");
+        return;
+      }
+    }
   }
-  osr_rwhv->SendImeSetComposition(text, underlines, replacement_range,
-                                  selection_start, selection_end);
+  if (auto* osr_wcv = GetOffScreenWebContentsView()) {
+    osr_wcv->ImeSetComposition(text, underlines, replacement_range,
+                               selection.start(), selection.end());
+  }
 }
 
 void WebContents::ImeCommitText(gin_helper::ErrorThrower thrower,
                                 const std::u16string& text,
                                 std::optional<gin_helper::Dictionary> options) {
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (!osr_rwhv) {
+  if (!IsOffScreen()) {
     thrower.ThrowError("imeCommitText requires offscreen rendering");
     return;
   }
   gfx::Range replacement_range = gfx::Range::InvalidRange();
   int relative_cursor_position = 0;
   if (options) {
-    uint32_t start = 0, end = 0;
-    if (options->Get("replacementStart", &start) &&
-        options->Get("replacementEnd", &end)) {
-      replacement_range = gfx::Range(start, end);
+    if (!GetImeRange(thrower, *options, "replacementStart", "replacementEnd",
+                     &replacement_range)) {
+      return;
     }
-    options->Get("relativeCursorPosition", &relative_cursor_position);
+    if (HasValue(*options, "relativeCursorPosition") &&
+        !options->Get("relativeCursorPosition", &relative_cursor_position)) {
+      thrower.ThrowTypeError("'relativeCursorPosition' must be an integer");
+      return;
+    }
   }
-  osr_rwhv->SendImeCommitText(text, replacement_range,
-                              relative_cursor_position);
+  if (auto* osr_wcv = GetOffScreenWebContentsView()) {
+    osr_wcv->ImeCommitText(text, replacement_range, relative_cursor_position);
+  }
 }
 
 void WebContents::ImeFinishComposingText(gin_helper::ErrorThrower thrower,
                                          std::optional<bool> keep_selection) {
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (!osr_rwhv) {
+  if (!IsOffScreen()) {
     thrower.ThrowError("imeFinishComposingText requires offscreen rendering");
     return;
   }
-  osr_rwhv->SendImeFinishComposingText(keep_selection.value_or(false));
+  if (auto* osr_wcv = GetOffScreenWebContentsView())
+    osr_wcv->ImeFinishComposingText(keep_selection.value_or(false));
 }
 
 void WebContents::ImeCancelComposition(gin_helper::ErrorThrower thrower) {
-  auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
-  if (!osr_rwhv) {
+  if (!IsOffScreen()) {
     thrower.ThrowError("imeCancelComposition requires offscreen rendering");
     return;
   }
-  osr_rwhv->SendImeCancelComposition();
+  if (auto* osr_wcv = GetOffScreenWebContentsView())
+    osr_wcv->ImeCancelComposition();
 }
 
 void WebContents::OnTextInputStateChanged(ui::TextInputType type,
@@ -4381,12 +4433,14 @@ void WebContents::OnImeCompositionRangeChanged(
     const std::vector<gfx::Rect>& character_bounds) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  Emit("ime-composition-range-changed",
-       gin::DataObjectBuilder(isolate)
-           .Set("start", range.start())
-           .Set("end", range.end())
-           .Build(),
-       character_bounds);
+  v8::Local<v8::Value> js_range = v8::Null(isolate);
+  if (range.IsValid()) {
+    js_range = gin::DataObjectBuilder(isolate)
+                   .Set("start", range.GetMin())
+                   .Set("end", range.GetMax())
+                   .Build();
+  }
+  Emit("ime-composition-range-changed", js_range, character_bounds);
 }
 
 void WebContents::OnSelectionBoundsChanged(const gfx::Rect& anchor,

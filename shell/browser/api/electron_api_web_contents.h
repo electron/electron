@@ -46,9 +46,10 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
 
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
 #include "ui/base/ime/text_input_mode.h"
 #include "ui/base/ime/text_input_type.h"
+
+#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
 #include "ui/base/models/image_model.h"
 #endif
 

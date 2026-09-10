@@ -32,9 +32,9 @@
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
+#include "shell/browser/osr/osr_web_contents_view.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
-#include "ui/base/ime/ime_text_span.h"
 #include "ui/base/ime/mojom/text_input_state.mojom.h"
 #include "ui/compositor/compositor.h"
 #include "ui/compositor/layer.h"
@@ -98,13 +98,6 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
 }
 
 }  // namespace
-
-OffscreenTextInputCallbacks::OffscreenTextInputCallbacks() = default;
-OffscreenTextInputCallbacks::OffscreenTextInputCallbacks(
-    const OffscreenTextInputCallbacks&) = default;
-OffscreenTextInputCallbacks& OffscreenTextInputCallbacks::operator=(
-    const OffscreenTextInputCallbacks&) = default;
-OffscreenTextInputCallbacks::~OffscreenTextInputCallbacks() = default;
 
 class ElectronDelegatedFrameHostClient
     : public content::DelegatedFrameHostClient {
@@ -316,8 +309,13 @@ ui::TextInputClient* OffScreenRenderWidgetHostView::GetTextInputClient() {
   return nullptr;
 }
 
+void OffScreenRenderWidgetHostView::Focus() {
+  if (render_widget_host_)
+    render_widget_host_->Focus();
+}
+
 bool OffScreenRenderWidgetHostView::HasFocus() {
-  return false;
+  return render_widget_host_ && render_widget_host_->is_focused();
 }
 
 bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
@@ -462,6 +460,16 @@ input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
 }
 
 void OffScreenRenderWidgetHostView::RenderProcessGone() {
+  // The "no focused element" update from unregistering this view is lost
+  // because the observer is removed first; report it, but not from inside the
+  // process-death notification.
+  if (web_contents_view_ && GetTextInputManager() &&
+      GetTextInputManager()->GetActiveWidget() == render_widget_host_) {
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&OffScreenWebContentsView::ResetTextInputState,
+                       web_contents_view_));
+  }
   Destroy();
 }
 
@@ -873,55 +881,29 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   render_widget_host_->ForwardWheelEvent(event);
 }
 
-content::RenderWidgetHostImpl*
-OffScreenRenderWidgetHostView::GetImeTargetWidget() {
-  if (GetTextInputManager() && GetTextInputManager()->GetActiveWidget())
-    return GetTextInputManager()->GetActiveWidget();
-  return render_widget_host_;
+void OffScreenRenderWidgetHostView::SetWebContentsView(
+    base::WeakPtr<OffScreenWebContentsView> view) {
+  web_contents_view_ = std::move(view);
 }
 
-void OffScreenRenderWidgetHostView::SendImeSetComposition(
-    const std::u16string& text,
-    const std::vector<ui::ImeTextSpan>& spans,
-    const gfx::Range& replacement_range,
-    int selection_start,
-    int selection_end) {
-  if (auto* widget = GetImeTargetWidget()) {
-    widget->ImeSetComposition(text, spans, replacement_range, selection_start,
-                              selection_end);
-  }
+void OffScreenRenderWidgetHostView::SetPaintCallback(
+    const OnPaintCallback& callback) {
+  callback_ = callback;
 }
 
-void OffScreenRenderWidgetHostView::SendImeCommitText(
-    const std::u16string& text,
-    const gfx::Range& replacement_range,
-    int relative_cursor_position) {
-  if (auto* widget = GetImeTargetWidget()) {
-    widget->ImeCommitText(text, {}, replacement_range,
-                          relative_cursor_position);
-  }
-}
-
-void OffScreenRenderWidgetHostView::SendImeFinishComposingText(
-    bool keep_selection) {
-  if (auto* widget = GetImeTargetWidget())
-    widget->ImeFinishComposingText(keep_selection);
-}
-
-void OffScreenRenderWidgetHostView::SendImeCancelComposition() {
-  if (auto* widget = GetImeTargetWidget())
-    widget->ImeCancelComposition();
-}
-
-void OffScreenRenderWidgetHostView::SetTextInputCallbacks(
-    const OffscreenTextInputCallbacks& callbacks) {
-  text_input_callbacks_ = callbacks;
+viz::FrameSinkId OffScreenRenderWidgetHostView::GetRootFrameSinkId() {
+  OffScreenRenderWidgetHostView* root = this;
+  while (root->parent_host_view_)
+    root = root->parent_host_view_;
+  return root->compositor_ ? root->compositor_->frame_sink_id()
+                           : viz::FrameSinkId();
 }
 
 bool OffScreenRenderWidgetHostView::ShouldReportTextInputState() const {
   // A speculative main-frame view observes the same TextInputManager; only
   // the committed one reports so the embedder sees each change once.
-  return render_widget_host_ && render_widget_host_->delegate() &&
+  return web_contents_view_ && render_widget_host_ &&
+         render_widget_host_->delegate() &&
          render_widget_host_->delegate()->IsWidgetForPrimaryMainFrame(
              render_widget_host_);
 }
@@ -938,27 +920,42 @@ void OffScreenRenderWidgetHostView::OnUpdateTextInputStateCalled(
   if (auto* widget = updated_view->host())
     widget->RequestCompositionUpdates(false, editable);
 
-  if (!did_update_state || !ShouldReportTextInputState() ||
-      !text_input_callbacks_.state_changed) {
+  if (!ShouldReportTextInputState())
     return;
+  OffScreenWebContentsView::TextInputState report;
+  if (editable) {
+    report.widget = manager->GetActiveWidget()->GetFrameSinkId();
+    report.node_id = state->node_id;
+    report.type = state->type;
+    report.mode = state->mode;
+    report.can_compose_inline = state->can_compose_inline;
   }
-  text_input_callbacks_.state_changed.Run(
-      editable ? state->type : ui::TEXT_INPUT_TYPE_NONE,
-      editable ? state->mode : ui::TEXT_INPUT_MODE_DEFAULT,
-      editable ? state->can_compose_inline : false);
+  web_contents_view_->OnTextInputStateChanged(report);
+  // Deliver the caret position at focus time, not only when it next moves.
+  if (editable)
+    ReportSelectionBounds(manager);
+}
+
+void OffScreenRenderWidgetHostView::OnImeCancelComposition(
+    content::TextInputManager* manager,
+    RenderWidgetHostViewBase* updated_view) {
+  if (ShouldReportTextInputState())
+    web_contents_view_->OnImeCompositionCancelled();
 }
 
 void OffScreenRenderWidgetHostView::OnSelectionBoundsChanged(
     content::TextInputManager* manager,
     RenderWidgetHostViewBase* updated_view) {
-  if (!ShouldReportTextInputState() ||
-      !text_input_callbacks_.selection_bounds_changed) {
-    return;
-  }
+  if (ShouldReportTextInputState())
+    ReportSelectionBounds(manager);
+}
+
+void OffScreenRenderWidgetHostView::ReportSelectionBounds(
+    content::TextInputManager* manager) {
   const auto* region = manager->GetSelectionRegion();
   if (!region)
     return;
-  text_input_callbacks_.selection_bounds_changed.Run(
+  web_contents_view_->OnSelectionBoundsChanged(
       gfx::RectBetweenSelectionBounds(region->anchor, region->anchor),
       gfx::RectBetweenSelectionBounds(region->focus, region->focus));
 }
@@ -967,15 +964,12 @@ void OffScreenRenderWidgetHostView::OnImeCompositionRangeChanged(
     content::TextInputManager* manager,
     RenderWidgetHostViewBase* updated_view,
     bool character_bounds_changed) {
-  if (!character_bounds_changed || !ShouldReportTextInputState() ||
-      !text_input_callbacks_.composition_range_changed) {
+  if (!ShouldReportTextInputState())
     return;
+  if (const auto* info = manager->GetCompositionRangeInfo()) {
+    web_contents_view_->OnImeCompositionRangeChanged(info->range,
+                                                     info->character_bounds);
   }
-  const auto* info = manager->GetCompositionRangeInfo();
-  if (!info || !info->range.IsValid())
-    return;
-  text_input_callbacks_.composition_range_changed.Run(info->range,
-                                                      info->character_bounds);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
