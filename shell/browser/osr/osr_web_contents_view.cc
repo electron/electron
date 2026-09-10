@@ -31,8 +31,9 @@ namespace electron {
 
 namespace {
 
-absl::flat_hash_set<OffScreenWebContentsView*>& LiveViews() {
-  static base::NoDestructor<absl::flat_hash_set<OffScreenWebContentsView*>>
+absl::flat_hash_set<const content::WebContentsView*>& LiveViews() {
+  static base::NoDestructor<
+      absl::flat_hash_set<const content::WebContentsView*>>
       views;
   return *views;
 }
@@ -77,9 +78,12 @@ OffScreenWebContentsView* OffScreenWebContentsView::FromWebContents(
     content::WebContents* web_contents) {
   if (!web_contents)
     return nullptr;
-  auto* view = static_cast<OffScreenWebContentsView*>(
-      static_cast<content::WebContentsImpl*>(web_contents)->GetView());
-  return LiveViews().contains(view) ? view : nullptr;
+  content::WebContentsView* view =
+      static_cast<content::WebContentsImpl*>(web_contents)->GetView();
+  // Only downcast once we know |view| really is one of ours.
+  if (!LiveViews().contains(view))
+    return nullptr;
+  return static_cast<OffScreenWebContentsView*>(view);
 }
 
 void OffScreenWebContentsView::SetWebContents(
