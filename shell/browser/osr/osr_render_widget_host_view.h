@@ -218,6 +218,7 @@ class OffScreenRenderWidgetHostView
   void SendMouseEvent(const blink::WebMouseEvent& event);
   void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
 
+  void SetCallback(const OnPaintCallback& callback);
   void SetPainting(bool painting);
   bool is_painting() const { return painting_; }
 

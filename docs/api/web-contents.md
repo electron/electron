@@ -987,6 +987,13 @@ win.loadURL('https://github.com')
 
 #### Event: 'offscreen-drag-start'
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -1000,7 +1007,8 @@ operation. The drag never reaches the operating system; instead it is driven by
 the mouse events the embedder passes to [`contents.sendInputEvent()`](#contentssendinputeventinputevent):
 `mouseMove` events update the drop target under the cursor, `mouseUp` drops,
 and a `keyDown` for `Escape` cancels the drag. The embedder can draw `image`
-next to its own cursor while the drag is in progress.
+next to its own cursor while the drag is in progress. Drags started inside a
+`<webview>` hosted in offscreen contents are not supported and end immediately.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -1020,6 +1028,13 @@ win.webContents.on('offscreen-drag-end', () => {
 
 #### Event: 'offscreen-drag-update'
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
+
 Returns:
 
 * `event` Event
@@ -1030,6 +1045,13 @@ Emitted during an offscreen drag and drop operation when the drop effect
 negotiated with the page changes, for example to update the cursor.
 
 #### Event: 'offscreen-drag-end'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
 
 Returns:
 

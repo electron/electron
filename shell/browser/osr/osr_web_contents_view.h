@@ -56,13 +56,18 @@ class OffScreenWebContentsView : public content::WebContentsView,
       const OnPaintCallback& callback);
   ~OffScreenWebContentsView() override;
 
+  // Returns the view of |web_contents| if it is an OffScreenWebContentsView.
+  static OffScreenWebContentsView* FromWebContents(
+      content::WebContents* web_contents);
+
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
   void SetCallback(const OnPaintCallback& callback);
   void SetDragDelegate(OffScreenDragDelegate* delegate);
 
-  // Renderer-initiated drag and drop, driven by embedder input events.
-  // These return true if |event| was consumed by an in-progress drag.
+  // Renderer-initiated drag and drop, driven by embedder input events. Every
+  // embedder mouse event must pass through HandleDragMouseEvent(); both return
+  // true if |event| was consumed by an in-progress drag.
   bool HandleDragMouseEvent(const blink::WebMouseEvent& event);
   bool HandleDragKeyEvent(const blink::WebKeyboardEvent& event);
   void CancelDrag();
@@ -141,20 +146,29 @@ class OffScreenWebContentsView : public content::WebContentsView,
     base::WeakPtr<content::RenderWidgetHostImpl> source_rwh;
     base::WeakPtr<content::RenderWidgetHostImpl> target_rwh;
     ui::mojom::DragOperation operation = ui::mojom::DragOperation::kNone;
-    gfx::PointF last_client_pt;
-    gfx::PointF last_screen_pt;
   };
 
+  void RefuseDrag(content::RenderWidgetHostImpl* source_rwh);
   content::RenderWidgetHostImpl* GetDragTargetWidget() const;
   void DragTargetUpdate(const blink::WebMouseEvent& event);
   void DragTargetLeave();
   void OnDragOperationNegotiated(ui::mojom::DragOperation operation,
                                  bool document_is_handling_drag);
   void SetDragOperation(ui::mojom::DragOperation operation);
-  void EndDrag(ui::mojom::DragOperation operation, bool cancelled);
+  // |release_mouse| tells Blink the button is up, since the drag swallowed
+  // the real release.
+  void EndDrag(ui::mojom::DragOperation operation,
+               bool cancelled,
+               bool release_mouse);
+  void SendMouseReleasedMove();
 
   raw_ptr<NativeWindow> native_window_ = nullptr;
   raw_ptr<OffScreenDragDelegate> drag_delegate_ = nullptr;
+
+  // Last embedder mouse state seen by HandleDragMouseEvent().
+  bool left_button_down_ = false;
+  gfx::PointF last_client_pt_;
+  gfx::PointF last_screen_pt_;
 
   std::optional<DragState> drag_;
   content::WebContentsViewDragSecurityInfo drag_security_info_;
