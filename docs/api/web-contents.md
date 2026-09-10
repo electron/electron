@@ -1875,11 +1875,13 @@ dialog does not offer printing the current selection, and on Windows its page
 range field is unavailable; pass `pageRanges` instead. Use `window.print()` in
 the page for a dialog with those controls.
 
-Some possible `failureReason`s for print failure include:
+`failureReason` is one of:
 
 * "Invalid printer settings"
 * "Print job canceled"
 * "Print job failed"
+* "Invalid deviceName provided"
+* "No printers available on the network"
 
 Use `page-break-before: always;` CSS style to force to print to a new page.
 
