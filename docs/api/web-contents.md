@@ -926,6 +926,15 @@ app.whenReady().then(() => {
 
 #### Event: 'paint'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "`image` now has the view's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 Returns:
 
 * `details` Event\<\>
@@ -1806,6 +1815,15 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -2178,6 +2196,15 @@ Sends an input `event` to the page.
 `sendInputEvent()` to work.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
 
 * `onlyDirty` boolean (optional) - Defaults to `false`.
 * `callback` Function

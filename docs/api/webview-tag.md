@@ -612,6 +612,15 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
 
 ### `<webview>.capturePage([rect])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)

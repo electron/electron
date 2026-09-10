@@ -1249,6 +1249,15 @@ Returns `boolean` - Whether the window's document has been edited.
 
 #### `win.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
