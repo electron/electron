@@ -834,8 +834,7 @@ class WebContents::NativeLifecycle final
  public:
   using content::WebContentsObserver::Observe;
 
-  explicit NativeLifecycle(WebContents* contents)
-      : contents_(contents->GetWeakPtr()) {}
+  explicit NativeLifecycle(WebContents* contents) : contents_(contents) {}
 
   ~NativeLifecycle() override { DisposeNative(); }
 
@@ -1437,10 +1436,10 @@ class WebContents::NativeLifecycle final
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
     script_executor_.reset();
 #endif
-    contents_.reset();
+    contents_ = nullptr;
   }
 
-  base::WeakPtr<WebContents> contents_;
+  raw_ptr<WebContents> contents_;
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
@@ -1892,13 +1891,13 @@ WebContents::~WebContents() {
   // being destroyed.
   Emit("will-destroy");
 
-  // Destroying the native resources releases the content::WebContents, which
-  // reports back through WebContentsDestroyed(). Externally owned contents are
-  // only released, so notify explicitly for them.
-  const bool externally_owned = native_lifecycle_->externally_owned_;
+  // Match the old member destruction order: external weak pointers become
+  // invalid before native teardown can emit events from partially destroyed
+  // contents. NativeLifecycle is synchronously owned and keeps forwarding
+  // teardown notifications until DisposeNative() completes.
+  BeginNativeTeardown();
   native_lifecycle_->DisposeNative();
-  if (externally_owned)
-    WebContentsDestroyed();
+  WebContentsDestroyed();
   native_lifecycle_.reset();
 }
 
@@ -1934,6 +1933,13 @@ void WebContents::Observe(content::WebContents* contents) {
 
 void WebContents::DetachNativeCallbacks() {
   native_lifecycle_->DetachCallbacks();
+}
+
+void WebContents::BeginNativeTeardown() {
+  if (lifecycle_state_ != LifecycleState::kAlive)
+    return;
+  lifecycle_state_ = LifecycleState::kTearingDown;
+  weak_factory_.InvalidateWeakPtrs();
 }
 
 void WebContents::DeleteThisIfAlive() {
@@ -2811,7 +2817,7 @@ void WebContents::HandleNewRenderFrame(
           [](base::WeakPtr<WebContents> self, const blink::WebMouseEvent& e) {
             return self && self->OnMouseEvent(e);
           },
-          weak_factory_.GetWeakPtr());
+          GetWeakPtr());
     }
     // Frames in one local root share a widget, so re-registering is expected.
     rwh_impl->RemoveMouseEventCallback(mouse_event_callback_);
@@ -2927,9 +2933,9 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
   // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
   // code is captured now because a navigation in the interim could reset it.
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
-                                weak_factory_.GetWeakPtr(), status,
-                                web_contents()->GetCrashedErrorCode()));
+      FROM_HERE,
+      base::BindOnce(&WebContents::EmitRenderProcessGone, GetWeakPtr(), status,
+                     web_contents()->GetCrashedErrorCode()));
 }
 
 void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
@@ -3444,6 +3450,10 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
 }
 
 void WebContents::WebContentsDestroyed() {
+  if (lifecycle_state_ == LifecycleState::kDestroyed)
+    return;
+  BeginNativeTeardown();
+
   // Drop the native registrations, including this instance's contribution to
   // the process-wide caret browsing count.
   DetachNativeCallbacks();
@@ -3459,6 +3469,9 @@ void WebContents::WebContentsDestroyed() {
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
+  Observe(nullptr);
+  lifecycle_state_ = LifecycleState::kDestroyed;
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> wrapper;
@@ -3467,7 +3480,6 @@ void WebContents::WebContentsDestroyed() {
   wrapper->SetAlignedPointerInInternalField(0, nullptr,
                                             v8::kEmbedderDataTypeTagDefault);
 
-  Observe(nullptr);
   Emit("destroyed");
 }
 
@@ -5522,14 +5534,11 @@ void WebContents::DevToolsIndexPath(
   indexing_job = devtools_file_system_indexer_->IndexPath(
       file_system_path, excluded_folders,
       base::BindRepeating(&WebContents::OnDevToolsIndexingWorkCalculated,
-                          weak_factory_.GetWeakPtr(), request_id,
-                          file_system_path),
-      base::BindRepeating(&WebContents::OnDevToolsIndexingWorked,
-                          weak_factory_.GetWeakPtr(), request_id,
-                          file_system_path),
-      base::BindRepeating(&WebContents::OnDevToolsIndexingDone,
-                          weak_factory_.GetWeakPtr(), request_id,
-                          file_system_path));
+                          GetWeakPtr(), request_id, file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingWorked, GetWeakPtr(),
+                          request_id, file_system_path),
+      base::BindRepeating(&WebContents::OnDevToolsIndexingDone, GetWeakPtr(),
+                          request_id, file_system_path));
 }
 
 void WebContents::DevToolsStopIndexing(int request_id) {
@@ -5558,9 +5567,8 @@ void WebContents::DevToolsSearchInPath(int request_id,
   }
   devtools_file_system_indexer_->SearchInPath(
       file_system_path, query,
-      base::BindRepeating(&WebContents::OnDevToolsSearchCompleted,
-                          weak_factory_.GetWeakPtr(), request_id,
-                          file_system_path));
+      base::BindRepeating(&WebContents::OnDevToolsSearchCompleted, GetWeakPtr(),
+                          request_id, file_system_path));
 }
 
 void WebContents::DevToolsSetEyeDropperActive(bool active) {

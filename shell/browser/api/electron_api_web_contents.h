@@ -193,7 +193,11 @@ class WebContents final : public ExclusiveAccessContext,
 
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
-  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+  base::WeakPtr<WebContents> GetWeakPtr() {
+    return lifecycle_state_ == LifecycleState::kAlive
+               ? weak_factory_.GetWeakPtr()
+               : base::WeakPtr<WebContents>();
+  }
   content::WebContents* web_contents() const;
 
   // BackgroundThrottlingSource
@@ -697,6 +701,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Detaches the native registrations that route callbacks back into this
   // wrapper.
   void DetachNativeCallbacks();
+  void BeginNativeTeardown();
 
   void OnElectronBrowserConnectionError();
 
@@ -834,6 +839,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  enum class LifecycleState { kAlive, kTearingDown, kDestroyed };
+  LifecycleState lifecycle_state_ = LifecycleState::kAlive;
 
   // Kept by JS while 'console-message' has listeners.
   bool console_message_observed_ = false;
