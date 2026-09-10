@@ -1815,6 +1815,7 @@ if (is_mac) {
     # it asks the crashpad handler to dump the crashed process. It is
     # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule.
     shared_library("electron_wer") {
+      output_name = "${electron_project_name}_wer"
       sources = [
         "shell/app/electron_wer.def",
         "shell/app/electron_wer_main.cc",
