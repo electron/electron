@@ -201,8 +201,8 @@ describe('cpp heap', () => {
             }
             return { rendererPid, rendererPids, initialized, liveCount, counts };
           } finally {
-            window.destroy();
             await rm(snapshotDir, { recursive: true, force: true });
+            window.destroy();
           }
         },
         path.join(__dirname, 'fixtures', 'pages', 'blank.html'),

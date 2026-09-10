@@ -184,7 +184,7 @@ module.exports = async (page, child, snapshotHelper, mode) => {
     return await Promise.race([run(), crashed]);
   } finally {
     window.webContents.removeListener('render-process-gone', onCrash);
-    window.destroy();
     await rm(snapshotDir, { recursive: true, force: true });
+    window.destroy();
   }
 };
