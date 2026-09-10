@@ -181,6 +181,7 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -629,12 +630,14 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
+                       float scale_factor,
                        const content::CopyFromSurfaceResult& result) {
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
   if (!ui_task_runner->RunsTasksInCurrentSequence()) {
     ui_task_runner->PostTask(
-        FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                  std::move(capture_handle), result));
+        FROM_HERE,
+        base::BindOnce(&OnCapturePageDone, std::move(promise),
+                       std::move(capture_handle), scale_factor, result));
     return;
   }
 
@@ -645,8 +648,8 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
     return;
   }
 
-  // Hack to enable transparency in captured image
-  promise.Resolve(gfx::Image::CreateFrom1xBitmap(result->bitmap));
+  promise.Resolve(gfx::Image(
+      gfx::ImageSkia::CreateFromBitmap(result->bitmap, scale_factor)));
   capture_handle.RunAndReset();
 }
 
@@ -4172,13 +4175,13 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
 
   // Capture at the view's own scale factor. Offscreen views render at
   // |offscreen.deviceScaleFactor|, not the display's, and it may be below 1.
-  const gfx::Size bitmap_size =
-      gfx::ScaleToCeiledSize(view_size, view->GetDeviceScaleFactor());
+  const float scale_factor = view->GetDeviceScaleFactor();
+  const gfx::Size bitmap_size = gfx::ScaleToCeiledSize(view_size, scale_factor);
 
-  view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::TimeDelta(),
-                        base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                       std::move(capture_handle)));
+  view->CopyFromSurface(
+      gfx::Rect(rect.origin(), view_size), bitmap_size, base::TimeDelta(),
+      base::BindOnce(&OnCapturePageDone, std::move(promise),
+                     std::move(capture_handle), scale_factor));
   return handle;
 }
 
@@ -4236,8 +4239,11 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
     dict.Set("texture", tex);
   }
 
-  EmitWithoutEvent("paint", event_object, dirty_rect,
-                   gfx::Image::CreateFrom1xBitmap(bitmap));
+  auto* const view = web_contents()->GetRenderWidgetHostView();
+  const float scale_factor = view ? view->GetDeviceScaleFactor() : 1.0f;
+  EmitWithoutEvent(
+      "paint", event_object, dirty_rect,
+      gfx::Image(gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor)));
 }
 
 void WebContents::StartPainting() {
