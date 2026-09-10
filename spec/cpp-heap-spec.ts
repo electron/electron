@@ -130,7 +130,7 @@ describe('cpp heap', () => {
         async (page: string, snapshotHelper: string) => {
           const { BrowserWindow } = require('electron');
           const { once } = require('node:events');
-          const { mkdtemp, readFile, unlink, rmdir } = require('node:fs/promises');
+          const { mkdtemp, readFile, rm, unlink } = require('node:fs/promises');
           const { tmpdir } = require('node:os');
           const { join } = require('node:path');
           const { countHeapSnapshotNodes } = require(snapshotHelper);
@@ -202,7 +202,7 @@ describe('cpp heap', () => {
             return { rendererPid, rendererPids, initialized, liveCount, counts };
           } finally {
             window.destroy();
-            await rmdir(snapshotDir);
+            await rm(snapshotDir, { recursive: true, force: true });
           }
         },
         path.join(__dirname, 'fixtures', 'pages', 'blank.html'),

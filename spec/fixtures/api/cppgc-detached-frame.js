@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { mkdtemp, readFile, unlink, rmdir } = require('node:fs/promises');
+const { mkdtemp, readFile, rm, unlink } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -186,6 +186,6 @@ module.exports = async (page, child, snapshotHelper, mode) => {
   } finally {
     window.webContents.removeListener('render-process-gone', onCrash);
     window.destroy();
-    await rmdir(snapshotDir);
+    await rm(snapshotDir, { recursive: true, force: true });
   }
 };
