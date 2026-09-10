@@ -22,6 +22,8 @@
 #include "chrome/grit/component_extension_resources_map.h"
 #include "chrome/grit/theme_resources.h"
 #include "content/public/browser/browser_thread.h"
+#include "extensions/browser/extension_config_map.h"
+#include "extensions/browser/extension_config_map_factory.h"
 #include "extensions/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension_id.h"
@@ -37,6 +39,18 @@
 static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
 
 namespace extensions {
+namespace {
+
+ExtensionConfigProvider* GetConfigProvider(const ExtensionId& extension_id,
+                                           content::BrowserContext* context) {
+  if (!context) {
+    return nullptr;
+  }
+  auto* config_map = ExtensionConfigMapFactory::GetForBrowserContext(context);
+  return config_map ? config_map->GetConfigProvider(extension_id) : nullptr;
+}
+
+}  // namespace
 
 class ElectronComponentExtensionResourceManager::Data {
  public:
@@ -142,21 +156,14 @@ bool ElectronComponentExtensionResourceManager::IsComponentExtensionResource(
 const ui::TemplateReplacements*
 ElectronComponentExtensionResourceManager::GetTemplateReplacementsForExtension(
     const ExtensionId& extension_id,
-    const content::BrowserContext* context) const {
+    content::BrowserContext* context) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   LazyInitData();
 
-  auto provider_it = template_data_providers_.find(
-      ExtensionIdAndContext(extension_id, context));
-  if (provider_it != template_data_providers_.end() &&
-      !provider_it->second.is_null()) {
-    base::DictValue dict = provider_it->second.Run();
-    ui::TemplateReplacements replacements;
-    ui::TemplateReplacementsFromDictionaryValue(dict, &replacements);
-    auto key = ExtensionIdAndContext(extension_id, context);
-    template_replacements_[key] = std::move(replacements);
-    return &template_replacements_[key];
+  if (auto* provider = GetConfigProvider(extension_id, context)) {
+    CHECK(context);
+    return provider->GetTemplateReplacements(*context);
   }
 
   auto it = data_->template_replacements().find(extension_id);
@@ -167,51 +174,27 @@ bool ElectronComponentExtensionResourceManager::
     IsDynamicComponentExtensionResource(
         const ExtensionId& extension_id,
         const std::string& path,
-        const content::BrowserContext* context) const {
+        content::BrowserContext* context) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (path != kDynamicStringsJsPath) {
-    return false;
-  }
-  auto it = template_data_providers_.find(
-      ExtensionIdAndContext(extension_id, context));
-  return it != template_data_providers_.end() && !it->second.is_null();
+  return path == kDynamicStringsJsPath &&
+         GetConfigProvider(extension_id, context) != nullptr;
 }
 
 std::string
 ElectronComponentExtensionResourceManager::GetDynamicResourceContent(
     const ExtensionId& extension_id,
     const std::string& path,
-    const content::BrowserContext* context) const {
+    content::BrowserContext* context) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   CHECK_EQ(path, kDynamicStringsJsPath);
+  CHECK(context);
 
-  auto it = template_data_providers_.find(
-      ExtensionIdAndContext(extension_id, context));
-  CHECK(it != template_data_providers_.end() && !it->second.is_null());
+  auto* provider = GetConfigProvider(extension_id, context);
+  CHECK(provider);
 
-  base::DictValue dict = it->second.Run();
+  base::DictValue dict = provider->GetLoadTimeData(*context);
   return base::StringPrintf(kDynamicStringsModuleTemplate,
                             base::WriteJson(dict).value_or("{}").c_str());
-}
-
-base::ScopedClosureRunner
-ElectronComponentExtensionResourceManager::RegisterTemplateDataProvider(
-    const ExtensionId& extension_id,
-    const content::BrowserContext* context,
-    TemplateDataProvider provider) const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  auto key = ExtensionIdAndContext(extension_id, context);
-  template_data_providers_[key] = std::move(provider);
-  return base::ScopedClosureRunner(base::BindOnce(
-      &ElectronComponentExtensionResourceManager::OnTemplateDataProviderRemoved,
-      weak_factory_.GetWeakPtr(), key));
-}
-
-void ElectronComponentExtensionResourceManager::OnTemplateDataProviderRemoved(
-    const ExtensionIdAndContext& key) const {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  template_data_providers_.erase(key);
-  template_replacements_.erase(key);
 }
 
 void ElectronComponentExtensionResourceManager::LazyInitData() const {

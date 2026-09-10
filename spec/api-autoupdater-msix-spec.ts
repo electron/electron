@@ -1,9 +1,9 @@
 import { expect } from 'chai';
-import express from 'express';
 
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
 
+import { createRoutedServer, RoutedRequest, RoutedServer } from './lib/http-server-helpers';
 import {
   getElectronExecutable,
   getMainJsFixturePath,
@@ -71,13 +71,13 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
 
   describe('with update server', () => {
     let port = 0;
-    let server: express.Application = null as any;
+    let server: RoutedServer = null as any;
     let httpServer: http.Server = null as any;
-    let requests: express.Request[] = [];
+    let requests: RoutedRequest[] = [];
 
     beforeEach((done) => {
       requests = [];
-      server = express();
+      server = createRoutedServer();
       server.use((req, res, next) => {
         requests.push(req);
         next();

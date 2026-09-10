@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/node.gyp b/node.gyp
-index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..ce50ee1c831a3d186b812bdd51feeb8bf65561d9 100644
+index 988838e85858ef1ca87662a024c278f811477179..5df80c48e7c747a49bd2e86ea7706de757fff32e 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -152,6 +152,7 @@
@@ -19,10 +19,10 @@ index bd66c9b4982e7f5238e966fe5cb9bd28dcc4d55d..ce50ee1c831a3d186b812bdd51feeb8b
        'src/node_snapshotable.cc',
        'src/node_sockaddr.cc',
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe266f828d1 100644
+index 3f5f70bf320040bafa479279c163d7c74d3decc6..2023f913eae6661768c09d80fffa9ce58396da9d 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -373,24 +373,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -403,24 +403,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -69,7 +69,7 @@ index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe2
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -763,19 +769,13 @@ namespace {
+@@ -793,19 +799,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -95,10 +95,10 @@ index 06c4aa87464de6065524c2d5da62f37c7edfe7e8..cf02733731a8f1f27e0f0abe87cf4fe2
  
    auto data = DataPointer::SecureAlloc(len);
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 711316f92918c7beeb067d0b3c356801dabde60c..49a022204773219f97bda25268f7e49c2a297da7 100644
+index be4067df0e226636cb6d876c41aa830343069f86..82da68d8eef06c57aae76f2b54eeb09db5b41ecf 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -142,19 +142,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
    if (!mem) [[unlikely]]
      return {};
  #ifdef V8_ENABLE_SANDBOX
@@ -129,10 +129,10 @@ index 711316f92918c7beeb067d0b3c356801dabde60c..49a022204773219f97bda25268f7e49c
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b8568ace6 100644
+index bc0f03fdc8f37e9564607edf2b4a7eb0ffef49a2..573e1da2c210bf67e813e21daa5a0a48001808e0 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1545,7 +1545,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1552,7 +1552,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -141,7 +141,7 @@ index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b
  #endif
    return size;
  }
-@@ -1568,6 +1568,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1575,6 +1575,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -168,7 +168,7 @@ index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1578,6 +1598,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1585,6 +1605,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }
@@ -177,7 +177,7 @@ index 0f0915d75ddfb742dd6db51cb7491cfd00b26b14..9d8d2005b7f40710470a2cce7763080b
      buf = ArrayBuffer::New(isolate, std::move(store));
    }
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
+index 259e6eeda3e476fb09d9f077a7d52c32e5ae4189..357be955469c879f0987c80a5a624b97ffc0bf77 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -105,7 +105,7 @@ namespace {
@@ -189,7 +189,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
      return {};
    }
  
-@@ -182,7 +182,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+@@ -185,7 +185,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
  
@@ -198,7 +198,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
-@@ -227,7 +227,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+@@ -230,7 +230,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
      return {};
    }
  
@@ -207,7 +207,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
-@@ -251,7 +251,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -254,7 +254,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
      return {};
    }
  

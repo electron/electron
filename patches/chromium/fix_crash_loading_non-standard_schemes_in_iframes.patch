@@ -16,7 +16,9 @@ This patch adjusts the origin calculation for subframe non-standard schemes in
 When top level frame navigates to non-standard scheme url, the origin is calculated
 as `null` without any derivation. It is only in cases where there is a `initiator_origin`
 then the origin is derived from it, which is usually the case for renderer initiated
-navigations and iframes are no exceptions from this rule.
+navigations and iframes are no exceptions from this rule. data: URLs are also
+non-standard but are left to the upstream paths, which keep a stable nonce for
+the navigation and the initiator as precursor.
 
 The patch should be removed in favor of either:
   - Remove support for non-standard custom schemes
@@ -28,23 +30,24 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index d0cce51f7903262676279442a69addcea60dc0f5..8600e89ffd8aa012117192bec10a1406657392b9 100644
+index 3d46f9e7d35332f594f46cb50c93a072bc5b8208..e4c94de4cda68267adf542a4c2a329733c22bffb 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -12558,6 +12558,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+@@ -12646,6 +12646,12 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
              target_rph_id);
    }
  
-+  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
-+    return url::Origin::Resolve(common_params().url,
-+                                url::Origin());
++  if (!common_params().url.IsStandard() &&
++      !common_params().url.IsAboutBlank() &&
++      !common_params().url.SchemeIs(url::kDataScheme)) {
++    return url::Origin::Resolve(common_params().url, url::Origin());
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 830302747f60ad1f503950c9da925ea2ad199644..21796a5f3fbc5920b71ee9b8703668a5ca23440e 100644
+index 22974735c7a2f25c962a5f2b4b8b3f12fe52df51..010af87938deea58a81e71afb2b9b4e396067668 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2460,6 +2460,7 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
@@ -59,8 +62,8 @@ index 830302747f60ad1f503950c9da925ea2ad199644..21796a5f3fbc5920b71ee9b8703668a5
      // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;
-+  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
-+             !is_standard) {
++  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) && !is_standard &&
++             !url_.ProtocolIsData()) {
 +    origin = SecurityOrigin::Create(url_);
    } else {
      // Otherwise, create an origin that propagates precursor information

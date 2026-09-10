@@ -34,7 +34,7 @@ index 2dad214a729c9c9794bc8d81348837a5f10d70a5..4144a70d233103666b85337af17ed0d5
  let kResistStopPropagation;
  
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index edcf2d8424f9b60d68ddd95b16da488feec2c41b..4d16947fa90066393672f511234702e5877c8ea7 100644
+index cfd8c8c9c7d8911be7b3a66f4695e54f1022a678..ab9f14174e7a16b2da17a9d5a00aa82318aac9b6 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -47,6 +47,7 @@ using v8::Value;
@@ -46,7 +46,7 @@ index edcf2d8424f9b60d68ddd95b16da488feec2c41b..4d16947fa90066393672f511234702e5
    AddExternalizedBuiltin("internal/deps/undici/undici",
                           STRINGIFY(NODE_SHARED_BUILTIN_UNDICI_UNDICI_PATH));
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 490f429986e43653e0dd2048d9e3bd2e99ae44b2..05b1c5bbc38f851b11383b7e3e48c1c92f47aba1 100644
+index 8cf93ffc86d5f186bf630aa95a304d5e457d9e97..65b49b3469b83639a8b37469f24cd9208c70f47a 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -150,6 +150,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {

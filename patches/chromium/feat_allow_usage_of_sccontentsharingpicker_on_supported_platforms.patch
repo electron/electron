@@ -20,7 +20,7 @@ index 120590a93bbc5a47e73c5d5515b7ad07b2364eb6..50a8b0dfe5400d1ab9da2893088583e4
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
      DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index 28393355d80c3cc25014fec1615b0c2e057ddce7..813c6cd4e99c38f9a840fd6c659cc262ce7c8211 100644
+index f5be4eb6cb660ad87253846e84ceb8628a907330..bb44271de5d43d34374056ac6d20808e8be6fef2 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
@@ -33,7 +33,7 @@ index 28393355d80c3cc25014fec1615b0c2e057ddce7..813c6cd4e99c38f9a840fd6c659cc262
  
  void IOSurfaceCaptureDeviceBase::StopAndDeAllocate() {
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.h b/content/browser/media/capture/io_surface_capture_device_base_mac.h
-index e2771b7b281274cdcb601a5bc78a948ad592087b..48d116823a28213e50775f378e6ce04ce3af5072 100644
+index 6d54c2bc01f32a0d987aadb8eb0684d0ec0444d4..40f64c7705427bbe3fa4e3c0565196766b758ce9 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.h
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.h
 @@ -25,7 +25,7 @@ class CONTENT_EXPORT IOSurfaceCaptureDeviceBase
@@ -326,7 +326,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index ae8fef5b0b3557480771783dabcc6dfa57deefeb..b7fbac21200c5d9120a28b7353a6c23381b91793 100644
+index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823c080ef2d 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -322,8 +322,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(

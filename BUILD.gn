@@ -34,8 +34,8 @@ import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
 declare_args() {
-  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
-  # false an empty stub is compiled and bundles compile from source.
+  # Emit a build-time V8 code cache for the internal/electron/js2c/* bundles.
+  # When false an empty stub is compiled and bundles compile from source.
   #
   # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
   # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
@@ -53,6 +53,16 @@ if (is_mac) {
   assert(
       mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
+
+  # shell/browser/feature_list_mac.mm enables this unexported content feature
+  # by name; fail here rather than silently if a Chromium roll removes it.
+  assert(
+      filter_include(
+              read_file(
+                  "//content/browser/renderer_host/render_widget_host_view_mac.mm",
+                  "list lines"),
+              [ "BASE_FEATURE(kThrottleResizeIpc,*" ]) != [],
+      "kThrottleResizeIpc is gone from render_widget_host_view_mac.mm; update shell/browser/feature_list_mac.mm")
 }
 
 if (is_linux) {
@@ -213,7 +223,7 @@ webpack_build("electron_browser_bundle") {
   inputs = auto_filenames.browser_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.browser.js"
-  out_file = "$target_gen_dir/js2c/browser_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
 webpack_build("electron_renderer_bundle") {
@@ -222,7 +232,7 @@ webpack_build("electron_renderer_bundle") {
   inputs = auto_filenames.renderer_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.renderer.js"
-  out_file = "$target_gen_dir/js2c/renderer_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
 webpack_build("electron_worker_bundle") {
@@ -231,7 +241,7 @@ webpack_build("electron_worker_bundle") {
   inputs = auto_filenames.worker_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.worker.js"
-  out_file = "$target_gen_dir/js2c/worker_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
 webpack_build("electron_sandboxed_renderer_bundle") {
@@ -240,7 +250,7 @@ webpack_build("electron_sandboxed_renderer_bundle") {
   inputs = auto_filenames.sandbox_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
 }
 
 webpack_build("electron_isolated_renderer_bundle") {
@@ -249,7 +259,7 @@ webpack_build("electron_isolated_renderer_bundle") {
   inputs = auto_filenames.isolated_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
-  out_file = "$target_gen_dir/js2c/isolated_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
 webpack_build("electron_node_bundle") {
@@ -258,7 +268,7 @@ webpack_build("electron_node_bundle") {
   inputs = auto_filenames.node_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.node.js"
-  out_file = "$target_gen_dir/js2c/node_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
 webpack_build("electron_utility_bundle") {
@@ -267,7 +277,7 @@ webpack_build("electron_utility_bundle") {
   inputs = auto_filenames.utility_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.utility.js"
-  out_file = "$target_gen_dir/js2c/utility_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
 webpack_build("electron_preload_realm_bundle") {
@@ -276,7 +286,7 @@ webpack_build("electron_preload_realm_bundle") {
   inputs = auto_filenames.preload_realm_bundle_deps
 
   config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
 }
 
 action("electron_js2c") {
@@ -293,14 +303,14 @@ action("electron_js2c") {
   ]
 
   sources = [
-    "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/isolated_bundle.js",
-    "$target_gen_dir/js2c/node_init.js",
-    "$target_gen_dir/js2c/preload_realm_bundle.js",
-    "$target_gen_dir/js2c/renderer_init.js",
-    "$target_gen_dir/js2c/sandbox_bundle.js",
-    "$target_gen_dir/js2c/utility_init.js",
-    "$target_gen_dir/js2c/worker_init.js",
+    "$root_gen_dir/internal/electron/js2c/browser_init.js",
+    "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/node_init.js",
+    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/renderer_init.js",
+    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
   inputs = sources
@@ -344,22 +354,15 @@ copy("default_app_static") {
   outputs = [ "$target_gen_default_app_js/{{source}}" ]
 }
 
-copy("default_app_octicon_deps") {
-  sources = filenames.default_app_octicon_sources
-  outputs = [ "$target_gen_default_app_js/electron/default_app/octicon/{{source_file_part}}" ]
-}
-
 asar("default_app_asar") {
   deps = [
     ":default_app_js",
-    ":default_app_octicon_deps",
     ":default_app_static",
   ]
 
   root = "$target_gen_default_app_js/electron/default_app"
   sources = get_target_outputs(":default_app_js") +
-            get_target_outputs(":default_app_static") +
-            get_target_outputs(":default_app_octicon_deps")
+            get_target_outputs(":default_app_static")
   outputs = [ "$root_out_dir/resources/default_app.asar" ]
 }
 
@@ -525,7 +528,6 @@ source_set("electron_lib") {
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
-    "//components/heap_profiling/multi_process",
     "//components/input",
     "//components/language/core/browser",
     "//components/memory_system",
@@ -805,7 +807,10 @@ source_set("electron_lib") {
     ]
   }
   if (is_win) {
-    libs += [ "dwmapi.lib" ]
+    libs += [
+      "cryptui.lib",
+      "dwmapi.lib",
+    ]
     sources += [ "shell/common/asar/archive_win.cc" ]
     deps += [
       "//components/app_launch_prefetch",
@@ -923,11 +928,11 @@ if (current_toolchain == default_toolchain) {
   }
 }
 
-# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
-# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
-# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
-# the cache it emits is keyed to the target's read-only checksum and flag hash.
-# Cross-OS stays off; see electron_generate_js2c_code_cache.
+# Build-time host tool emitting V8 code caches for the internal/electron/js2c/*
+# framework bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it
+# links V8 with V8_TARGET_ARCH set to the target and reads the target's snapshot
+# blob -- the cache it emits is keyed to the target's read-only checksum and
+# flag hash. Cross-OS stays off; see electron_generate_js2c_code_cache.
 if (electron_generate_js2c_code_cache) {
   if (current_toolchain == v8_snapshot_toolchain) {
     executable("electron_natives_codecache") {
@@ -1310,6 +1315,22 @@ if (is_mac) {
     }
   }
 
+  # Link against Electron Framework without mac_framework_bundle's "+link"
+  # group. Its public config lists the framework bundle in `inputs`, which GN
+  # applies to every compile step of the consuming target, so each executable's
+  # objects were rebuilt (and the whole bundle uploaded to RBE) whenever the
+  # framework relinked. GN already makes the link step depend on the bundle.
+  config("electron_framework_link_config") {
+    visibility = [ ":electron_framework_link" ]
+    framework_dirs = [ root_out_dir ]
+    frameworks = [ "$electron_framework_name.framework" ]
+  }
+
+  group("electron_framework_link") {
+    public_deps = [ ":electron_framework" ]
+    public_configs = [ ":electron_framework_link_config" ]
+  }
+
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
@@ -1380,7 +1401,7 @@ if (is_mac) {
 
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
-        ":electron_framework+link",
+        ":electron_framework_link",
         "//electron/build/config:generate_mas_config",
       ]
       if (!is_mas_build) {
@@ -1423,6 +1444,7 @@ if (is_mac) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
+
     electron_helper_app("electron_helper_app_${_helper_target}") {
       helper_name_suffix = _helper_suffix
     }
@@ -1466,7 +1488,7 @@ if (is_mac) {
     }
     outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
     public_deps = [
-      ":electron_framework+link",
+      ":electron_framework_link",
       ":stripped_mantle_framework",
       ":stripped_reactiveobjc_framework",
       ":stripped_squirrel_framework",
@@ -1513,6 +1535,7 @@ if (is_mac) {
       public_deps = [ ":electron_app_lproj_dirs" ]
     }
   }
+
   group("electron_app_strings_bundle_data") {
     public_deps = []
     foreach(locale, locales_as_apple_outputs) {
@@ -1580,6 +1603,7 @@ if (is_mac) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
+
       extract_symbols("electron_helper_syms_${_helper_target}") {
         binary = "$root_out_dir/$electron_helper_name${_helper_suffix}.app/Contents/MacOS/$electron_helper_name${_helper_suffix}"
         symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1678,6 +1702,7 @@ if (is_mac) {
     } else if (is_linux) {
       sources = [
         "shell/app/electron_main_linux.cc",
+        "shell/app/environ_linux.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
       ]
@@ -1845,6 +1870,7 @@ copy("electron_license") {
   sources = [ "LICENSE" ]
   outputs = [ "$root_build_dir/{{source_file_part}}" ]
 }
+
 copy("chromium_licenses") {
   deps = [ "//components/resources:about_credits" ]
   sources = [ "$root_gen_dir/components/resources/about_credits.html" ]

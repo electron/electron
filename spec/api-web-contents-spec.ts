@@ -213,6 +213,35 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.sendToFrame(frameId, channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('only addresses frames that belong to this webContents', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-ipc-ping-pong.js');
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      await w1.loadURL('about:blank');
+      await w2.loadURL('about:blank');
+      const received: number[] = [];
+      ipcMain.on('pong', (e) => {
+        received.push(e.sender.id);
+      });
+      defer(() => ipcMain.removeAllListeners('pong'));
+      const other = w2.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([other.processId, other.routingId], 'ping')).to.equal(false);
+      const own = w1.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([own.processId, own.routingId], 'ping')).to.equal(true);
+      await waitUntil(() => received.length > 0);
+      await setTimeout(200);
+      expect(received).to.deep.equal([w1.webContents.id]);
+    });
+  });
+
   describe('webContents.send(channel, args...)', () => {
     afterEach(closeAllWindows);
     it('throws an error when the channel is missing', () => {
@@ -1333,6 +1362,20 @@ describe('webContents module', () => {
       const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name');
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
+    });
+
+    it('falls back to the built-in devtools when the assigned webContents has been destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      devtools.webContents.destroy();
+      await once(devtools.webContents, 'destroyed');
+      await setTimeout(50);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.devToolsWebContents).to.not.be.null();
     });
   });
 
@@ -3739,6 +3782,66 @@ describe('webContents module', () => {
     });
   });
 
+  describe('unresponsive event', () => {
+    afterEach(closeAllWindows);
+    const testing = () => process._linkedBinding('electron_common_testing');
+    // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
+    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
+      w.webContents
+        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
+        .catch(() => {});
+      await setTimeout(200);
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
+    };
+
+    ifit(isTestingBindingAvailable())('is not emitted within a hang delay of a system resume', async function () {
+      this.timeout(70000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      let unresponsiveAt = 0;
+      w.webContents.once('unresponsive', () => {
+        unresponsiveAt = Date.now();
+      });
+      await hangAndPoke(w);
+      // Sleep and wake while the timeout is pending; it would fire ~6 s after
+      // this resume, which says nothing about the renderer.
+      await setTimeout(10000);
+      testing().simulatePowerEvent('suspend');
+      testing().simulatePowerEvent('resume');
+      const resumedAt = Date.now();
+      await once(w.webContents, 'unresponsive');
+      expect(unresponsiveAt - resumedAt).to.be.greaterThan(15000);
+    });
+
+    it('is not followed by responsive just because the window is hidden', async function () {
+      this.timeout(90000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w, 40000);
+      await once(w.webContents, 'unresponsive');
+      const events: string[] = [];
+      w.webContents.on('responsive', () => events.push('responsive'));
+      w.webContents.on('unresponsive', () => events.push('unresponsive'));
+      w.hide();
+      await setTimeout(2000);
+      expect(events, 'after hide').to.deep.equal([]);
+      w.show();
+      // Still hung and visible again: reported again after one delay.
+      await once(w.webContents, 'unresponsive');
+      // The spin ends ~40 s in; the pending key event is then acked.
+      await once(w.webContents, 'responsive');
+      expect(events).to.deep.equal(['unresponsive', 'responsive']);
+    });
+
+    it('is emitted for a hang with no suspend involved', async function () {
+      this.timeout(40000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w);
+      await once(w.webContents, 'unresponsive');
+    });
+  });
+
   describe('render view deleted events', () => {
     let server: http.Server;
     let serverUrl: string;
@@ -4022,6 +4125,40 @@ describe('webContents module', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+    });
+
+    describe('on a destroyed WebContents', () => {
+      const destroyedWebContents = async (handler?: (...args: any[]) => void) => {
+        const w = new BrowserWindow({ show: false });
+        const wc = w.webContents;
+        if (handler) wc.on('console-message', handler);
+        const destroyed = once(wc, 'destroyed');
+        w.destroy();
+        await destroyed;
+        expect(wc.isDestroyed()).to.be.true();
+        return wc;
+      };
+
+      it('does not throw when adding a listener', async () => {
+        const wc = await destroyedWebContents();
+        expect(() => wc.on('console-message', () => {})).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(1);
+      });
+
+      it('does not throw when removing a listener', async () => {
+        const handler = () => {};
+        const wc = await destroyedWebContents(handler);
+        expect(() => wc.removeListener('console-message', handler)).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+      });
+
+      it('does not throw when removing all listeners', async () => {
+        const wc = await destroyedWebContents(() => {});
+        expect(() => wc.removeAllListeners('console-message')).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+        wc.on('console-message', () => {});
+        expect(() => wc.removeAllListeners()).to.not.throw();
+      });
     });
   });
 
@@ -4805,6 +4942,36 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+
+    it('does not crash when the webContents is destroyed while an auth request is in flight', async () => {
+      const w = new BrowserWindow({ show: false });
+      const wc = w.webContents;
+      const dbg = wc.debugger;
+      dbg.attach('1.3');
+      const destroyed = once(wc, 'destroyed');
+      dbg.on('message', (_e, method, params) => {
+        if (method === 'Fetch.requestPaused') {
+          dbg.sendCommand('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {});
+        } else if (method === 'Fetch.authRequired') {
+          // Destroying here queues the WebContents deletion right before the
+          // task that emits 'login' for the resumed auth challenge.
+          wc.destroy();
+          dbg
+            .sendCommand('Fetch.continueWithAuth', {
+              requestId: params.requestId,
+              authChallengeResponse: { response: 'Default' }
+            })
+            .catch(() => {});
+        }
+      });
+      await dbg.sendCommand('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+        handleAuthRequests: true
+      });
+      wc.loadURL(serverUrl).catch(() => {});
+      await destroyed;
+      await setTimeout(100);
     });
   });
 

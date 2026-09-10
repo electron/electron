@@ -1,8 +1,8 @@
 import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
-import { resedit } from '@electron/packager/resedit';
 
 import { expect } from 'chai';
+import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -62,6 +62,35 @@ const expectToHaveCrashed = (res: SpawnResult) => {
     expect(res.signal).to.be.oneOf(['SIGABRT', 'SIGTRAP']);
   }
 };
+
+// Embeds the asar integrity config into a Windows executable's resources in
+// the same shape @electron/packager produces (and shell/common/asar/archive_win.cc
+// reads): an "Integrity"/"ElectronAsar" resource containing a JSON list of
+// { file, alg, value } entries.
+async function embedAsarIntegrity(exePath: string, integrity: Record<string, { algorithm: 'SHA256'; hash: string }>) {
+  const exe = NtExecutable.from(await fs.promises.readFile(exePath));
+  const resources = NtExecutableResource.from(exe);
+
+  // Attach the resource to the same language as the existing version info.
+  const [versionInfo] = Resource.VersionInfo.fromEntries(resources.entries);
+  const [{ lang, codepage }] = versionInfo.getAllLanguagesForStringValues();
+
+  const payload = Buffer.from(
+    JSON.stringify(
+      Object.entries(integrity).map(([file, { algorithm, hash }]) => ({ file, alg: algorithm, value: hash }))
+    )
+  );
+  resources.entries.push({
+    type: 'INTEGRITY',
+    id: 'ELECTRONASAR',
+    bin: payload.buffer.slice(payload.byteOffset, payload.byteOffset + payload.byteLength),
+    lang,
+    codepage
+  });
+
+  resources.outputResource(exe);
+  await fs.promises.writeFile(exePath, Buffer.from(exe.generate()));
+}
 
 describe('fuses', function () {
   this.timeout(120000);
@@ -159,16 +188,14 @@ describe('fuses', function () {
         // Register both archives in the app's integrity table.  This has to
         // happen before the fuses are flipped, which re-signs the app.
         if (process.platform === 'win32') {
-          await resedit(appPath, {
-            asarIntegrity: {
-              'resources\\default_app.asar': {
-                algorithm: 'SHA256',
-                hash: headerHash(pathToAsar)
-              },
-              'resources\\integrity-reads.asar': {
-                algorithm: 'SHA256',
-                hash: headerHash(pathToReadsAsar)
-              }
+          await embedAsarIntegrity(appPath, {
+            'resources\\default_app.asar': {
+              algorithm: 'SHA256',
+              hash: headerHash(pathToAsar)
+            },
+            'resources\\integrity-reads.asar': {
+              algorithm: 'SHA256',
+              hash: headerHash(pathToReadsAsar)
             }
           });
         } else {

@@ -275,8 +275,8 @@ class PromptResponder {
       responder_->OnStreaming(response);
       uint64_t token_count =
           GetContextUsage(isolate, language_model_.Get(isolate));
-      responder_->OnCompletion(
-          blink::mojom::ModelExecutionContextInfo::New(token_count));
+      responder_->OnCompletion(blink::mojom::ModelExecutionContextInfo::New(
+          token_count, /*response_tokens=*/0));
       completed_ = true;
       DeleteThis();
     } else if (IsReadableStream(isolate, val)) {
@@ -323,7 +323,8 @@ class PromptResponder {
               uint64_t token_count = GetContextUsage(
                   isolate, weak_ptr->language_model_.Get(isolate));
               weak_ptr->responder_->OnCompletion(
-                  blink::mojom::ModelExecutionContextInfo::New(token_count));
+                  blink::mojom::ModelExecutionContextInfo::New(
+                      token_count, /*response_tokens=*/0));
               weak_ptr->completed_ = true;
               weak_ptr->DeleteThis();
             } else {
@@ -577,8 +578,8 @@ void UtilityAILanguageModel::Append(
 
         uint64_t token_count =
             GetContextUsage(isolate, weak_ptr->language_model_.Get(isolate));
-        responder->OnCompletion(
-            blink::mojom::ModelExecutionContextInfo::New(token_count));
+        responder->OnCompletion(blink::mojom::ModelExecutionContextInfo::New(
+            token_count, /*response_tokens=*/0));
       };
 
   if (val->IsPromise()) {

@@ -2,9 +2,9 @@ import { app } from 'electron/main';
 
 import Busboy from 'busboy';
 import { expect } from 'chai';
-import * as uuid from 'uuid';
 
 import * as childProcess from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -672,7 +672,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
 
         it('respects an overridden crash dump directory', async () => {
           const { remotely } = await startRemoteControlApp();
-          const crashesDir = path.join(app.getPath('temp'), uuid.v4());
+          const crashesDir = path.join(app.getPath('temp'), randomUUID());
           const remoteCrashesDir = await remotely((crashesDir: string) => {
             const { crashReporter, app } = require('electron');
             app.setPath('crashDumps', crashesDir);

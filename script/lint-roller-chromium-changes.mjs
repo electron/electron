@@ -18,6 +18,8 @@ const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
 const PATCHES_UPDATE_MSG = 'chore: update patches';
 const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
 const LIBCXX_FILENAMES_FILE = 'filenames.libcxx.gni';
+const SISO_REVISION_UPDATE_MSG = 'chore: update siso revision';
+const SISO_REVISION_FILE = 'build/siso_revision';
 
 function getCLLabel(cl) {
   const [owner, repo] = cl.fullRepo.split('/');
@@ -369,15 +371,6 @@ async function main() {
     if (firstLine === PATCHES_UPDATE_MSG) {
       let commitValid = true;
 
-      // Must have no commit message body
-      const bodyLines = commit.message.trim().split('\n').slice(1);
-      const nonEmptyBodyLines = bodyLines.filter((line) => line.trim().length > 0);
-      if (nonEmptyBodyLines.length > 0) {
-        console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit must not have a commit message body`);
-        hasErrors = true;
-        commitValid = false;
-      }
-
       const changedFiles = getChangedFilesForCommit(commit.sha);
       if (!changedFiles || changedFiles.length === 0) {
         console.error(`  ❌ Could not determine changed files for "${PATCHES_UPDATE_MSG}" commit`);
@@ -441,6 +434,23 @@ async function main() {
       continue;
     }
 
+    // Validate "chore: update siso revision" commits
+    if (firstLine === SISO_REVISION_UPDATE_MSG) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== SISO_REVISION_FILE) {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(
+          `  ❌ "${SISO_REVISION_UPDATE_MSG}" commit must only modify ${SISO_REVISION_FILE}, but changes: ${filesDesc}`
+        );
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ "${SISO_REVISION_UPDATE_MSG}" commit is valid`);
+      }
+
+      continue;
+    }
+
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
       fullRepo: match[1],
@@ -451,7 +461,7 @@ async function main() {
     if (cls.length === 0) {
       console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
       console.error(
-        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", or a commit referencing one or more CLs`
+        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", "${SISO_REVISION_UPDATE_MSG}", or a commit referencing one or more CLs`
       );
       hasErrors = true;
       continue;

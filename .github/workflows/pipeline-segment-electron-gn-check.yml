@@ -27,8 +27,8 @@ on:
 permissions: {}
 
 concurrency:
-  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
@@ -187,6 +187,7 @@ jobs:
         node script/gen-hunspell-filenames.js --check
 
         node script/gen-libc++-filenames.js --check
+        node script/gen-siso-revision.js --check
         node script/yarn.js ts-node script/gen-filenames.ts -- --check
     - name: Wait for active SSH sessions
       if: always() && !cancelled()

@@ -9,8 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr_exclusion.h"
-#include "base/memory/weak_ptr.h"
 
 #if defined(__OBJC__)
 @class InAppTransactionObserver;
@@ -59,6 +59,9 @@ struct Transaction {
   ~Transaction();
 };
 
+using TransactionsUpdatedCallback =
+    base::RepeatingCallback<void(const std::vector<Transaction>&)>;
+
 // --------------------------- Classes ---------------------------
 
 class TransactionObserver {
@@ -70,13 +73,11 @@ class TransactionObserver {
   TransactionObserver(const TransactionObserver&) = delete;
   TransactionObserver& operator=(const TransactionObserver&) = delete;
 
-  virtual void OnTransactionsUpdated(
-      const std::vector<Transaction>& transactions) = 0;
+ protected:
+  void StartObserving(TransactionsUpdatedCallback callback);
 
  private:
-  RAW_PTR_EXCLUSION InAppTransactionObserver* observer_;
-
-  base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_{this};
+  RAW_PTR_EXCLUSION InAppTransactionObserver* observer_ = nullptr;
 };
 
 }  // namespace in_app_purchase

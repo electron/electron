@@ -12,6 +12,7 @@
 #include "base/callback_list.h"
 #include "base/environment.h"
 #include "base/process/process_handle.h"
+#include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/service_process_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
@@ -51,7 +52,8 @@ class UtilityProcessWrapper final
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
       private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
-      public content::ServiceProcessHost::Observer {
+      public content::ServiceProcessHost::Observer,
+      public content::BrowserChildProcessObserver {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
@@ -96,8 +98,10 @@ class UtilityProcessWrapper final
  private:
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+  void CloseStdioReadFds();
 
   void HandleTermination(uint32_t exit_code);
+  bool IsThisProcess(const content::ChildProcessData& data) const;
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
@@ -113,8 +117,14 @@ class UtilityProcessWrapper final
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
       const content::ServiceProcessInfo& info) override;
-  void OnServiceProcessCrashed(
-      const content::ServiceProcessInfo& info) override;
+
+  // content::BrowserChildProcessObserver
+  void BrowserChildProcessCrashed(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
+  void BrowserChildProcessKilled(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
 
   void OnServiceProcessDisconnected(uint32_t exit_code,
                                     const std::string& description);
@@ -146,7 +156,7 @@ class UtilityProcessWrapper final
       "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   cppgc::Member<Session> session_;
-  std::optional<electron::URLLoaderNetworkObserver>
+  std::unique_ptr<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
   base::CallbackListSubscription network_service_gone_subscription_;
   gin_helper::SelfKeepAlive<UtilityProcessWrapper> keep_alive_{this};

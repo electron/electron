@@ -16,6 +16,7 @@
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
+#include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
 #include "third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h"  // nogncheck
@@ -305,7 +306,8 @@ void OnCreatePreloadableV8Context(
 
   // Associate the Blink object with the v8::Context.
   blink::ScriptState* script_state =
-      blink::ScriptState::Create(context, world, shadow_realm_global_scope);
+      blink::MakeGarbageCollected<blink::ScriptStateImpl>(
+          context, world, *shadow_realm_global_scope);
 
   // Associate the Blink object with the v8::Objects.
   global_proxy = context->Global();

@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/functional/callback_helpers.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
@@ -24,6 +25,7 @@
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
 
 namespace gin {
@@ -88,7 +90,8 @@ Tray* Tray::New(gin_helper::ErrorThrower thrower,
   Tray* tray = cppgc::MakeGarbageCollected<Tray>(
       isolate->GetCppHeap()->GetAllocationHandle(), isolate, image, guid);
   if (try_catch.HasCaught()) {
-    tray->keep_alive_.Clear();
+    // Remove the already-created OS icon now, not at eventual collection.
+    tray->Destroy();
     try_catch.ReThrow();
     return {};
   }
@@ -327,6 +330,8 @@ void Tray::DisplayBalloon(gin_helper::ErrorThrower thrower,
 #endif
   }
 
+  if (!CheckAlive())
+    return;
   tray_icon_->DisplayBalloon(balloon_options);
 }
 
@@ -363,8 +368,18 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
     }
   }
 
+  // Converting the arguments can run JS that destroys the tray.
+  if (!CheckAlive())
+    return;
+  // Root |menu| until the platform is done with its model; JS may not hold it.
+  base::ScopedClosureRunner retain_menu;
+  if (menu) {
+    retain_menu.ReplaceClosure(base::BindOnce([](cppgc::Persistent<Menu>) {},
+                                              cppgc::Persistent<Menu>(menu)));
+  }
   tray_icon_->PopUpContextMenu(pos,
-                               menu ? menu->model()->GetWeakPtr() : nullptr);
+                               menu ? menu->model()->GetWeakPtr() : nullptr,
+                               std::move(retain_menu));
 }
 
 void Tray::CloseContextMenu() {

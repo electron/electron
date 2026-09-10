@@ -17,19 +17,27 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e2b9e46c1776b3b369442d3e9db3d5574db7e84f..6faeb8a07e7008e091f56dae440aeb3e24c787d7 100644
+index b7bbaccfc3a568b7ccfed97f01f2bc37a56b70dd..8c34bb9434284f4d25b4a472cb5496d22d47ce3e 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -16,6 +16,7 @@
- #include <array>
- #include <cstring>
- #include <string_view>
-+#include <vector>
- #if OPENSSL_VERSION_MAJOR >= 3
- #include <openssl/core_names.h>
- #include <openssl/params.h>
+@@ -3347,6 +3347,7 @@ constexpr bool IsASN1Sequence(const unsigned char* data,
+   return true;
+ }
+ 
++#if NCRYPTO_USE_OPENSSL3_PROVIDER
+ constexpr bool ReadASN1Element(const unsigned char* data,
+                                size_t size,
+                                unsigned char tag,
+@@ -3374,6 +3375,7 @@ constexpr bool ReadASN1Element(const unsigned char* data,
+   *total_size = offset + length;
+   return true;
+ }
++#endif  // NCRYPTO_USE_OPENSSL3_PROVIDER
+ 
+ constexpr bool IsEncryptedPrivateKeyInfo(
+     const Buffer<const unsigned char>& buffer) {
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 9d8d6b89b38d98141b713b70fafb84dd989d31ce..fdcffb13f0d96d279a36aa39bf44bdf6d9da048d 100644
+index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7dd53326f 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
@@ -51,10 +59,10 @@ index 9d8d6b89b38d98141b713b70fafb84dd989d31ce..fdcffb13f0d96d279a36aa39bf44bdf6
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cfefa7581c 100644
+index af8d52fbe699a1b8721f09ea53503edaa91ce60a..176c69dfe7a7d1f6dfe33fcc7ffc470e50df50d2 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -146,7 +146,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -169,7 +169,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -63,7 +71,7 @@ index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cf
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2262,7 +2262,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2345,7 +2345,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -73,10 +81,10 @@ index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cf
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 81ec6c8f928829fde54aaaacd5de72264b072e03..e5d75b3c27cabaa0c67e95afe56190c4f17c439b 100644
+index 6418283e7e4ef06a4cacb973255dd42ccbe246ab..678ae4ebde6e0f12e09a3e9c01f8b9a560186c1e 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -449,11 +449,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -458,11 +458,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!dh) return {};
  
      key_params = EVPKeyPointer::NewDH(std::move(dh));
@@ -93,10 +101,10 @@ index 81ec6c8f928829fde54aaaacd5de72264b072e03..e5d75b3c27cabaa0c67e95afe56190c4
      }
  
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
-index 946f6850d5e68f0c9197e05625e100b323889a35..bb7ed07f19593ce4c33e602b1881fea85b2a471b 100644
+index f1a7bab16967b0b6e94e859d9a0af65ad65fd008..d250ee36017449b5081890a3af686e4ad45a1e42 100644
 --- a/src/crypto/crypto_hash.cc
 +++ b/src/crypto/crypto_hash.cc
-@@ -271,7 +271,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
+@@ -282,7 +282,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
    enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
  
    bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
@@ -106,7 +114,7 @@ index 946f6850d5e68f0c9197e05625e100b323889a35..bb7ed07f19593ce4c33e602b1881fea8
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/env.h b/src/env.h
-index 639e3498bbb9fa5d8c848bd10c72f8f6f3d4b111..bccc76d4ab5832b0de951971e7a2bda62beca6a2 100644
+index c5501cd7914a7369c2b93f2b66127e6901852692..499dcb86728d83656b9283ef004b519f46cb2b24 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -53,7 +53,7 @@
@@ -132,7 +140,7 @@ index 8703e4315a999df505ff322aea05a268e017831e..18ddb44400f90f2fbea4ffad09cc1a8f
  #include <quic/guard.h>
  #ifndef OPENSSL_NO_QUIC
 diff --git a/src/node_options.h b/src/node_options.h
-index b1b5a1f6de78d88a6027884285e09a395c88e4ac..ea75cca72d8c4cf247828414dc08dd0082d3e93c 100644
+index 870a6babc770b35c93ac5528ab765bae81b1f40b..4ffcdb8c1f9e1d866960c419569f3410f8e50934 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

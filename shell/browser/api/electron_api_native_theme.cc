@@ -6,24 +6,31 @@
 
 #include <string>
 
+#include "base/no_destructor.h"
 #include "content/public/browser/browser_thread.h"
+#include "gin/persistent.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/native_theme/native_theme.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo NativeTheme::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo NativeTheme::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronNativeTheme);
 
 NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* ui_theme,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
 #if BUILDFLAG(IS_WIN)
   std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
                                          L"Software\\Microsoft\\Windows\\"
@@ -32,8 +39,12 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
 #endif
 }
 
-NativeTheme::~NativeTheme() {
+NativeTheme::~NativeTheme() = default;
+
+void NativeTheme::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
   ui_theme_->RemoveObserver(this);
+  weak_factory_.Invalidate();
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
@@ -51,9 +62,12 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
 }
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
-                                base::Unretained(this)));
+      FROM_HERE,
+      base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))));
 }
 
 void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
@@ -124,11 +138,15 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 }
 
 // static
-gin_helper::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
-  ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
-  return gin_helper::CreateHandle(
-      isolate, new NativeTheme(isolate, ui_theme, web_theme));
+NativeTheme* NativeTheme::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<NativeTheme>> instance([isolate] {
+    return cppgc::Persistent<NativeTheme>(
+        cppgc::MakeGarbageCollected<NativeTheme>(
+            isolate->GetCppHeap()->GetAllocationHandle(), isolate,
+            ui::NativeTheme::GetInstanceForNativeUi(),
+            ui::NativeTheme::GetInstanceForWeb()));
+  }());
+  return instance->Get();
 }
 
 gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
@@ -154,8 +172,17 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
       ;
 }
 
-const char* NativeTheme::GetTypeName() {
-  return "NativeTheme";
+const gin::WrapperInfo* NativeTheme::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* NativeTheme::GetHumanReadableName() const {
+  return "Electron / NativeTheme";
+}
+
+void NativeTheme::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<NativeTheme>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 }  // namespace electron::api

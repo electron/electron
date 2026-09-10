@@ -162,10 +162,10 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 5d375de1cdf8fa5a6a003a72c32e5b6c54f2a861..3dfe703403de9a35efa3eeeb5ef53559457fa523 100644
+index 1f59e4933b10067a7c7ad73339d9bbbea4f3217c..17e13398846104b80fac2f0cda9cd7f6b0753da0 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -114,8 +114,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
+@@ -115,8 +115,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
  
  constexpr int kOverlayBorderThickness = 10;
  
@@ -176,7 +176,7 @@ index 5d375de1cdf8fa5a6a003a72c32e5b6c54f2a861..3dfe703403de9a35efa3eeeb5ef53559
  
  // Size for action buttons.
  constexpr gfx::Size kActionButtonSize(28, 28);
-@@ -415,11 +417,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -416,11 +418,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

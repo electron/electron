@@ -5,6 +5,7 @@
 #include "shell/browser/native_window.h"
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -100,9 +101,10 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
       is_modal_{parent != nullptr &&
                 options.ValueOrDefault(options::kModal, false)},
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
-                 title_bar_style_ == TitleBarStyle::kNormal},
-      parent_{parent} {
+                 title_bar_style_ == TitleBarStyle::kNormal} {
   DCHECK_NE(base_window_id_, 0);
+  if (parent)
+    parent_ = parent->GetWeakPtr();
 
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
@@ -312,6 +314,10 @@ NativeWindow* NativeWindow::FromWidget(const views::Widget* widget) {
       widget->GetNativeWindowProperty(kNativeWindowKey.c_str()));
 }
 
+double NativeWindow::ClampOpacity(double opacity) {
+  return std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+}
+
 void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
@@ -484,7 +490,10 @@ bool NativeWindow::IsFocusable() const {
 }
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
-  parent_ = parent;
+  if (parent)
+    parent_ = parent->GetWeakPtr();
+  else
+    parent_.reset();
 }
 
 bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
@@ -884,6 +893,12 @@ void NativeWindow::DebouncedSaveWindowState() {
   save_window_state_timer_.Start(
       FROM_HERE, base::Milliseconds(200),
       base::BindOnce(&NativeWindow::SaveWindowState, base::Unretained(this)));
+}
+
+void NativeWindow::FlushPendingWindowStateSaveForTesting() {
+  if (save_window_state_timer_.IsRunning()) {
+    save_window_state_timer_.FireNow();
+  }
 }
 
 void NativeWindow::SaveWindowState() {

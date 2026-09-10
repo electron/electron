@@ -4,6 +4,6 @@
   "private": true,
   "description": "PGO profile collection tooling (see README.md)",
   "dependencies": {
-    "@electron/asar": "^4.0.1"
+    "@electron/asar": "^4.3.0"
   }
 }

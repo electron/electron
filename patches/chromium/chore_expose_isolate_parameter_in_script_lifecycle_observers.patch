@@ -34,10 +34,10 @@ index f6771b8b6c1db5f00cde78877a3c2bdf5a38d61a..800eb200f8a9e4b7b44a4d22c0cf169c
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 8238ff2ab588e2619fa21cabda9a4cccc4facc7a..751f651fafe5de0ccbee442f76ee9dc42e087e30 100644
+index c1afbad4d374ee3f71b65d1d5efb269f9d4952bb..e957a42245455303b2b710938d98927f92d792a6 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4988,10 +4988,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4998,10 +4998,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -52,10 +52,10 @@ index 8238ff2ab588e2619fa21cabda9a4cccc4facc7a..751f651fafe5de0ccbee442f76ee9dc4
  }
  
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 408d36d5cb04e611bb8fe5d36c95613467fc68fb..45fc33f389f8452a3cca3358f48394b16de13b6e 100644
+index cd82fe3fbba135c163998a1f7ac7267f795f764b..6e56065dfb96bb070fbcd12e373acd635f07b72f 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -623,7 +623,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -624,7 +624,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -167,10 +167,10 @@ index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545a
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 073e5665d8aa43b4c6d5337f25c2c5148e638d5b..facf77563630fd84fb4b61a64f86ecc558236bc1 100644
+index 2478fc89bc202501fc4ce81745c69ec55c4e10f7..b4f07120c50065e9413545399b359d6790b87b76 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -684,7 +684,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -685,7 +685,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.
@@ -181,10 +181,10 @@ index 073e5665d8aa43b4c6d5337f25c2c5148e638d5b..facf77563630fd84fb4b61a64f86ecc5
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 0e873a3cd1693ebf310b720ab954c482e922d5a6..fea09452ab756c2663722df38bfe337d314d0451 100644
+index 27586bd03af05294eb977a72052f2334c3d1aa61..fdceecae58237c48777b800ca218b2ade3e6bd44 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -193,11 +193,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -194,11 +194,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();
@@ -245,10 +245,10 @@ index 2381b103b6a77519eeacb0edd18465f9d79feba9..30c1da16453b564e19b4675e5e6f5aff
  
    bool HasWebView() const override;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index e174b694f33c4ac9e99ac37fe545a04debc3fc99..1712497a502653de69ceba1ee8eda9b765e2927e 100644
+index a93b96c076fa528fca8848cee46a06952acc4acb..a00c7e923e1aadd071b183103ee1e27806d4b3ff 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -431,7 +431,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -434,7 +434,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

@@ -120,6 +120,31 @@ function validateResponse(res: Response) {
   return true;
 }
 
+const notYet = Symbol('notYet');
+const later = () => new Promise<typeof notYet>((resolve) => setImmediate(resolve, notYet));
+
+// A Response that is still exactly what net.fetch produced (its body stream not
+// read, locked, cloned or replaced) is relayed natively: the fetch stops
+// handing chunks to JS, whatever JS had already pulled is collected as a
+// prefix, and the loader writes prefix + remainder straight to the client.
+async function relayUntouchedFetch(res: Response): Promise<{ loader?: unknown; data: Buffer } | null> {
+  const fetched = (res as any).__fetch;
+  if (!fetched || res.body !== fetched.body || res.bodyUsed || res.body!.locked) return null;
+  const urlLoader = fetched.request._urlLoader;
+  if (!urlLoader) return null;
+  urlLoader.hold();
+  const reader = (res.body as ReadableStream<Uint8Array>).getReader();
+  const prefix: Uint8Array[] = [];
+  for (;;) {
+    const next = await Promise.race([reader.read(), later()]);
+    if (next === notYet) break;
+    // The fetch finished before hold(); JS already has the whole body.
+    if (next.done) return { data: Buffer.concat(prefix) };
+    prefix.push(next.value);
+  }
+  return { loader: urlLoader, data: Buffer.concat(prefix) };
+}
+
 Protocol.prototype.handle = function (
   this: Electron.Protocol,
   scheme: string,
@@ -140,19 +165,27 @@ Protocol.prototype.handle = function (
         body,
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
+      // The origin that issued the request, if web content did; not something
+      // a standard Request can carry, so it is attached as an own property.
+      if (preq.initiatorOrigin !== undefined) (req as any).initiatorOrigin = preq.initiatorOrigin;
       const res = await handler(req);
       if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
-        cb({
-          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+        const head = {
           headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
-        });
+        };
+        const relay = await relayUntouchedFetch(res);
+        if (relay) {
+          cb({ ...relay, ...head });
+        } else {
+          cb({ data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null, ...head });
+        }
       }
     } catch (e) {
       console.error(e);

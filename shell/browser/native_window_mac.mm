@@ -1184,8 +1184,7 @@ void NativeWindowMac::InvalidateShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
-  [window_ setAlphaValue:boundedOpacity];
+  [window_ setAlphaValue:ClampOpacity(opacity)];
 }
 
 double NativeWindowMac::GetOpacity() const {

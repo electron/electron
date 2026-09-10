@@ -8,17 +8,15 @@ filenames = {
   default_app_static_sources = [
     "default_app/icon.png",
     "default_app/index.html",
+    "default_app/octicon/LICENSE",
+    "default_app/octicon/book-24.svg",
+    "default_app/octicon/build.css",
+    "default_app/octicon/code-square-24.svg",
+    "default_app/octicon/gift-24.svg",
+    "default_app/octicon/mark-github-16.svg",
+    "default_app/octicon/star-fill-24.svg",
     "default_app/package.json",
     "default_app/styles.css",
-  ]
-
-  default_app_octicon_sources = [
-    "node_modules/@primer/octicons/build/build.css",
-    "node_modules/@primer/octicons/build/svg/book-24.svg",
-    "node_modules/@primer/octicons/build/svg/code-square-24.svg",
-    "node_modules/@primer/octicons/build/svg/gift-24.svg",
-    "node_modules/@primer/octicons/build/svg/mark-github-16.svg",
-    "node_modules/@primer/octicons/build/svg/star-fill-24.svg",
   ]
 
   lib_sources_linux = [
@@ -90,6 +88,7 @@ filenames = {
     "shell/browser/notifications/win/windows_toast_activator.h",
     "shell/browser/relauncher_win.cc",
     "shell/browser/ui/certificate_trust_win.cc",
+    "shell/browser/ui/certificate_viewer_win.cc",
     "shell/browser/ui/file_dialog_win.cc",
     "shell/browser/ui/message_box_win.cc",
     "shell/browser/ui/tray_icon_win.cc",
@@ -172,6 +171,7 @@ filenames = {
     "shell/browser/osr/osr_web_contents_view_mac.mm",
     "shell/browser/relauncher_mac.cc",
     "shell/browser/ui/certificate_trust_mac.mm",
+    "shell/browser/ui/certificate_viewer_mac.mm",
     "shell/browser/ui/cocoa/electron_bundle_mover.h",
     "shell/browser/ui/cocoa/electron_bundle_mover.mm",
     "shell/browser/ui/cocoa/electron_menu_controller.h",
@@ -544,6 +544,7 @@ filenames = {
     "shell/browser/ui/autofill_popup.cc",
     "shell/browser/ui/autofill_popup.h",
     "shell/browser/ui/certificate_trust.h",
+    "shell/browser/ui/certificate_viewer.h",
     "shell/browser/ui/devtools_context_menu.cc",
     "shell/browser/ui/devtools_context_menu.h",
     "shell/browser/ui/devtools_manager_delegate.cc",
@@ -556,6 +557,8 @@ filenames = {
     "shell/browser/ui/devtools_ui_theme_data_source.h",
     "shell/browser/ui/drag_util.cc",
     "shell/browser/ui/drag_util.h",
+    "shell/browser/ui/draggable_region_debugger.cc",
+    "shell/browser/ui/draggable_region_debugger.h",
     "shell/browser/ui/electron_menu_model.cc",
     "shell/browser/ui/electron_menu_model.h",
     "shell/browser/ui/file_dialog.h",

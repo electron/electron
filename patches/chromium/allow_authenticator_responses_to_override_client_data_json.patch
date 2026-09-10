@@ -15,10 +15,10 @@ When present, authenticator_common_impl uses it in place of the request-
 level client_data_json.
 
 diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
-index 880bfb5066403cc0d9dd5baeb88266dd08d440f9..e5e9d55a51eaef7b8bdf822bab69e35388f06310 100644
+index 88ea0deac6864ad33ffff02f7091d68b83c4921f..851c668c990d571cafbd8709ea22dc14e34083fe 100644
 --- a/content/browser/webauth/authenticator_common_impl.cc
 +++ b/content/browser/webauth/authenticator_common_impl.cc
-@@ -2889,8 +2889,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
+@@ -3061,8 +3061,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
      AttestationErasureOption attestation_erasure) {
    auto response = blink::mojom::MakeCredentialAuthenticatorResponse::New();
    auto common_info = blink::mojom::CommonCredentialInfo::New();
@@ -33,7 +33,7 @@ index 880bfb5066403cc0d9dd5baeb88266dd08d440f9..e5e9d55a51eaef7b8bdf822bab69e353
    common_info->raw_id = response_data.attestation_object.GetCredentialId();
    common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
  
-@@ -3099,8 +3103,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
+@@ -3271,8 +3275,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
    auto common_info = blink::mojom::CommonCredentialInfo::New();
    auto response_extensions =
        blink::mojom::AuthenticationExtensionsClientOutputs::New();

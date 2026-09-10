@@ -108,6 +108,22 @@ struct Converter<v8::Local<v8::Array>> {
 };
 
 template <>
+struct Converter<v8::Local<v8::ArrayBufferView>> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   v8::Local<v8::ArrayBufferView> val) {
+    return val;
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     v8::Local<v8::ArrayBufferView>* out) {
+    if (!val->IsArrayBufferView())
+      return false;
+    *out = val.As<v8::ArrayBufferView>();
+    return true;
+  }
+};
+
+template <>
 struct Converter<v8::Local<v8::String>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    v8::Local<v8::String> val) {

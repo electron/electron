@@ -90,6 +90,7 @@ jobs:
                       !message.startsWith("The action 'Run Electron Tests' has timed out") &&
                       !message.startsWith("The operation was canceled") &&
                       !message.startsWith("Canceling since") &&
+                      !/Could not resolve host/.test(message) &&
                       !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )

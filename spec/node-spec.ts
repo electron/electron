@@ -593,6 +593,47 @@ describe('node feature', () => {
     });
   });
 
+  describe('native addons', () => {
+    // Regression test for https://github.com/electron/electron/issues/53387:
+    // Node.js 24.19.0 made node::ObjectWrap register an environment cleanup
+    // hook, and removing it from ~ObjectWrap() during garbage collection
+    // aborted the process until nodejs/node#63985 and nodejs/node#65630 were
+    // picked up. The addon is loaded in a child process because the failure
+    // mode is a CHECK abort.
+    //
+    // The fixture has to be compiled against Electron's headers, which
+    // script/spec-runner.js does after installing the spec modules. That does
+    // not happen on the Linux arm CI test jobs: linux-arm skips the spec
+    // install (--skipYarnInstall) and on linux-arm64 nothing can compile the
+    // headers, as the restored Chromium clang is an x64 binary and the image's
+    // GCC rejects the V8 headers
+    // (https://github.com/electron/electron/issues/53284). spec-runner sets
+    // this variable in those cases and the test is reported as skipped.
+    ifit(!process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS)(
+      'node::ObjectWrap instances survive garbage collection and teardown',
+      async () => {
+        const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'object-wrap-gc.js')], {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk;
+        });
+        const [code, signal] = await once(child, 'close');
+        expect(signal, stderr).to.be.null();
+        expect(code, stderr).to.equal(0);
+        expect(stdout.trim()).to.equal('ok');
+      }
+    );
+  });
+
   describe('message loop in renderer', () => {
     useRemoteContext();
 
@@ -1453,6 +1494,83 @@ describe('node feature', () => {
       ]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
+    });
+  });
+});
+
+describe('Node.js startup snapshot', () => {
+  afterEach(closeAllWindows);
+
+  // Everything here is captured into the embedded Node.js startup snapshot by
+  // node_mksnapshot, which runs on the build host. Renderer processes bootstrap
+  // Node.js from scratch, so they hold the values this binary was actually
+  // built for; anything the snapshot took from the host instead shows up as a
+  // difference. Serialized through JSON since the bindings have null
+  // prototypes.
+  const collect = `JSON.stringify({
+    arch: process.arch,
+    platform: process.platform,
+    endianness: require('node:os').endianness(),
+    features: process.features,
+    config: process.binding('config'),
+    constants: process.binding('constants'),
+    buffer: require('node:buffer').constants
+  })`;
+  // defaultCipherList is a CLI option value that only environments owning the
+  // process state define, so it never exists in a renderer.
+  const comparable = (json: string) => {
+    const values = JSON.parse(json);
+    delete values.constants.crypto.defaultCipherList;
+    return values;
+  };
+  // eslint-disable-next-line no-eval
+  const fromThisProcess = () => comparable(eval(collect));
+
+  const fromFreshEnvironment = async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: true, contextIsolation: false }
+    });
+    await w.loadURL('about:blank');
+    return comparable(await w.webContents.executeJavaScript(collect));
+  };
+
+  it('captures the same values as an environment bootstrapped from scratch', async () => {
+    expect(fromThisProcess()).to.deep.equal(await fromFreshEnvironment());
+  });
+
+  it('captures the same values for ELECTRON_RUN_AS_NODE', async () => {
+    const child = childProcess.spawn(process.execPath, ['-p', collect], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      stdio: ['ignore', 'pipe', 'inherit']
+    });
+    let stdout = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    const [code] = await once(child, 'close');
+    expect(code).to.equal(0);
+    expect(comparable(stdout)).to.deep.equal(await fromFreshEnvironment());
+  });
+
+  ifit(process.platform !== 'win32')('can open a directory with O_DIRECTORY', async () => {
+    await withTempDirectory(async (dir) => {
+      const { O_RDONLY, O_DIRECTORY } = fs.constants;
+      fs.closeSync(fs.openSync(dir, O_RDONLY | O_DIRECTORY));
+    });
+  });
+
+  ifit(process.platform !== 'win32')('refuses to follow a symlink with O_NOFOLLOW', async () => {
+    await withTempDirectory(async (dir) => {
+      const target = path.join(dir, 'target');
+      const link = path.join(dir, 'link');
+      fs.writeFileSync(target, '');
+      fs.symlinkSync(target, link);
+      const { O_RDONLY, O_NOFOLLOW } = fs.constants;
+      expect(() => fs.openSync(link, O_RDONLY | O_NOFOLLOW))
+        .to.throw()
+        .with.property('code', 'ELOOP');
     });
   });
 });

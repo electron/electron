@@ -50,8 +50,11 @@ class IpcDispatcher {
                  channel);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto wrapped_ports =
-        MessagePort::EntanglePorts(isolate, std::move(message.ports));
+    v8::LocalVector<v8::Value> wrapped_ports(isolate);
+    if (!MessagePort::EntanglePorts(isolate, std::move(message.ports),
+                                    &wrapped_ports)) {
+      return;
+    }
     v8::Local<v8::Value> message_value =
         electron::DeserializeV8Value(isolate, message);
     emitter()->EmitWithoutEvent("-ipc-ports", event, channel, message_value,

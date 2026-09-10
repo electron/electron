@@ -1,6 +1,11 @@
 /* global chrome */
 
-chrome.runtime.onMessage.addListener((_request, sender, sendResponse) => {
-  chrome.tabs.get(sender.tab.id).then(sendResponse);
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const { method } = request || {};
+  if (method === 'query') {
+    chrome.tabs.query({}).then(sendResponse);
+  } else {
+    chrome.tabs.get(sender.tab.id).then(sendResponse);
+  }
   return true;
 });

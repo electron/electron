@@ -160,7 +160,13 @@ The time is represented as number of milliseconds since epoch. It returns null i
 
 ### `process.getCPUUsage()`
 
-Returns [`CPUUsage`](structures/cpu-usage.md)
+Returns [`CPUUsage`](structures/cpu-usage.md) - CPU usage of the process this is called in.
+
+> [!NOTE]
+> `percentCPUUsage` and `idleWakeupsPerSecond` are averages over the time since the
+> previous call to `process.getCPUUsage()` in this process, and each call starts a new
+> measurement interval. Every caller in the process shares that interval. See
+> [`CPUUsage`](structures/cpu-usage.md) for details.
 
 ### `process.getHeapStatistics()`
 

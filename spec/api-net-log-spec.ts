@@ -3,6 +3,7 @@ import { session, net } from 'electron/main';
 import { expect } from 'chai';
 
 import * as ChildProcess from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -88,7 +89,7 @@ describe('netLog module', () => {
 
   it('should include cookies when requested', async () => {
     await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'includeSensitive' });
-    const unique = require('uuid').v4();
+    const unique = randomUUID();
     await new Promise<void>((resolve) => {
       const req = net.request(serverUrl);
       req.setHeader('Cookie', `foo=${unique}`);
@@ -106,7 +107,7 @@ describe('netLog module', () => {
 
   it('should include socket bytes when requested', async () => {
     await testNetLog().startLogging(dumpFileDynamic, { captureMode: 'everything' });
-    const unique = require('uuid').v4();
+    const unique = randomUUID();
     await new Promise<void>((resolve) => {
       const req = net.request({ method: 'POST', url: serverUrl });
       req.on('response', (response) => {

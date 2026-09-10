@@ -58,7 +58,7 @@ index 28a3cac3756c7dab50819987ab0a924678042a43..12852d59969c81b75c26f678ae13f5fc
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index 28af0f6c60bfd00a8667cf2071bd55bd76161390..de68c0f9de6ef5e8d8d75e4c249a80d2746f0abd 100644
+index 584b62da4957d43b334295dbaaa7091110f5d5d5..b3156dbe31b2f25555496b4f971f3137d9bb7b16 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
 @@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
@@ -89,7 +89,7 @@ index 28af0f6c60bfd00a8667cf2071bd55bd76161390..de68c0f9de6ef5e8d8d75e4c249a80d2
  }
  
 diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
-index 8a71102f2c040e32475221ef77a32231f3943ec3..0694c94d839c3b9e2356e7d3f1e81496aad89d89 100644
+index 0ceff6bf8d6968bbb3643e673e9ffd8886349297..411fb3b072bf584b2568a4c027d6232f9e42ebc7 100644
 --- a/extensions/common/url_pattern.h
 +++ b/extensions/common/url_pattern.h
 @@ -64,6 +64,9 @@ class URLPattern {
@@ -117,7 +117,7 @@ index 672b6fe2fd92c7f83272549a1f2b44c29c5dc674..a72d3d6790ddf89cec6016aeef0c309c
  
  // static
 diff --git a/url/url_util.cc b/url/url_util.cc
-index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc145a801ce 100644
+index ef9e22679b6f79eabe4f49ee724e3f6d19db168c..3dfd30a9d5c8755636c947614657632805b67e1d 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -135,6 +135,9 @@ struct SchemeRegistry {
@@ -130,8 +130,8 @@ index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc1
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -679,6 +682,15 @@ const std::vector<std::string>& GetCodeCacheSchemes() {
-   return GetSchemeRegistry().code_cache_schemes;
+@@ -683,6 +686,15 @@ bool IsCodeCacheScheme(std::string_view scheme) {
+   return std::ranges::contains(GetCodeCacheSchemes(), scheme);
  }
  
 +void AddExtensionScheme(std::string_view new_scheme) {
@@ -147,12 +147,12 @@ index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc1
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 2647d26b25b26f570b40666ad2da3553b97d6088..88ed86392eb4e10a5b99267027371f3a46fc1ae1 100644
+index d84426a386cfac4746cc79700201d93967569f2b..9c96156b4fe30462a898a22a1db32041a1d22460 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
-@@ -124,6 +124,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
- COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
+@@ -125,6 +125,11 @@ COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
  COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
+ COMPONENT_EXPORT(URL) bool IsCodeCacheScheme(std::string_view scheme);
  
 +// Adds an application-defined scheme to the list of schemes on which Chrome
 +// extensions can be used.

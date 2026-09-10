@@ -23,18 +23,18 @@ index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 8beaafd1c6cdcbaa2219662982252e91d8c02fc8..90c503d13692a9417deef60b76f3c298a3b79368 100644
+index 4c61cf88d1fc677805ab725154469c99a0ed9d5e..2d83b0aaac61a8070e0372c265d029818e65689f 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
-@@ -132,6 +132,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+@@ -144,6 +144,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  #endif  // BUILDFLAG(IS_CHROMEOS)
  
 +#if 0
-   // Treat other off the record profiles as Incognito (primary otr) Profiles.
-   // TODO(b/540249284): Temporarily Isolated mode is treated as Incognito. This
-   // should be revisited when deciding on the final integration of Isolated
-@@ -152,6 +153,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   // Isolated Mode uses the same ProfileSelection as Incognito,
+   // unless explicitly configured to behave differently.
+   if (profile->IsEnterpriseIsolatedModeProfile()) {
+@@ -167,6 +168,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  
    NOTREACHED();

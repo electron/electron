@@ -12,14 +12,11 @@
 #include "base/containers/extend.h"
 #include "base/files/file_util.h"
 #include "base/memory/ref_counted_memory.h"
-#include "base/no_destructor.h"
 #include "base/strings/string_split.h"
-#include "components/services/heap_profiling/public/cpp/profiling_client.h"
 #include "content/public/common/buildflags.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "extensions/common/constants.h"
-#include "mojo/public/cpp/bindings/binder_map.h"
 #include "pdf/buildflags.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -229,20 +226,6 @@ bool ElectronContentClient::IsFilePickerAllowedForCrossOriginSubframe(
 #else
   return false;
 #endif
-}
-
-void ElectronContentClient::ExposeInterfacesToBrowser(
-    scoped_refptr<base::SequencedTaskRunner> io_task_runner,
-    mojo::BinderMap* binders) {
-  // Sets up the client side of the multi-process heap profiler service.
-  binders->Add<heap_profiling::mojom::ProfilingClient>(
-      [](mojo::PendingReceiver<heap_profiling::mojom::ProfilingClient>
-             receiver) {
-        static base::NoDestructor<heap_profiling::ProfilingClient>
-            profiling_client;
-        profiling_client->BindToInterface(std::move(receiver));
-      },
-      io_task_runner);
 }
 
 }  // namespace electron
