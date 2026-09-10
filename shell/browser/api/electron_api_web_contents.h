@@ -199,7 +199,11 @@ class WebContents final : public ExclusiveAccessContext,
 
   void Destroy();
   void Close(std::optional<gin_helper::Dictionary> options);
-  base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
+  base::WeakPtr<WebContents> GetWeakPtr() {
+    return lifecycle_state_ == LifecycleState::kAlive
+               ? weak_factory_.GetWeakPtr()
+               : base::WeakPtr<WebContents>();
+  }
   content::WebContents* web_contents() const;
 
   // BackgroundThrottlingSource
@@ -738,6 +742,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Detaches the native registrations that route callbacks back into this
   // wrapper.
   void DetachNativeCallbacks();
+  void BeginNativeTeardown();
 
   void OnElectronBrowserConnectionError();
 
@@ -862,6 +867,9 @@ class WebContents final : public ExclusiveAccessContext,
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   cppgc::Persistent<api::Debugger> debugger_;
+
+  enum class LifecycleState { kAlive, kTearingDown, kDestroyed };
+  LifecycleState lifecycle_state_ = LifecycleState::kAlive;
 
   // The host webcontents that may contain this webcontents.
   RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
