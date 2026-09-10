@@ -5,7 +5,7 @@
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
 	"updateContentCommand": ".devcontainer/update-content-command.sh",
 	"workspaceFolder": "/workspaces/gclient/src/electron",
-	"forwardPorts": [80, 5901],
+	"forwardPorts": [5000, 3000],
 	"portsAttributes": {
 		"80": {
 			"label": "VNC web client (noVNC)",
