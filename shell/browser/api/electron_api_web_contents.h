@@ -886,6 +886,9 @@ class WebContents final : public ExclusiveAccessContext,
   // Use 1.0f for consistent behavior.
   float offscreen_device_scale_factor_ = 1.0f;
 
+  // Post 'offscreen-drag-end' instead of emitting it synchronously.
+  bool defer_offscreen_drag_end_ = false;
+
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
 

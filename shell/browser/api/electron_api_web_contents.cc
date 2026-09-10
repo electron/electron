@@ -1553,6 +1553,7 @@ content::WebContents* WebContents::AddNewContents(
   // in MaybeOverrideCreateParamsForNewWindow, but the paint data
   // belongs to the child.
   if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
+    osr_view->SetWebContents(api_web_contents->web_contents());
     osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
                                               api_web_contents->GetWeakPtr()));
     osr_view->SetDragDelegate(api_web_contents.get());
@@ -2306,8 +2307,12 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
-  if (auto* osr_wcv = GetOffScreenWebContentsView())
+  // End the drag now but emit 'offscreen-drag-end' from a posted task, for
+  // the reason below.
+  if (auto* osr_wcv = GetOffScreenWebContentsView()) {
+    base::AutoReset<bool> defer(&defer_offscreen_drag_end_, true);
     osr_wcv->CancelDrag();
+  }
 
   // This fires while RenderProcessHostImpl is still notifying observers of
   // the process death. Emit asynchronously so app code (e.g. a synchronous
@@ -4066,9 +4071,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
   if (blink::WebInputEvent::IsMouseEventType(type)) {
     blink::WebMouseEvent mouse_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
-      if (IsOffScreen()) {
-        auto* osr_wcv = GetOffScreenWebContentsView();
-        if (!osr_wcv || !osr_wcv->HandleDragMouseEvent(mouse_event))
+      if (auto* osr_wcv = GetOffScreenWebContentsView()) {
+        if (!osr_wcv->HandleDragMouseEvent(mouse_event))
           GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
       } else {
         rwh->ForwardMouseEvent(mouse_event);
@@ -4083,20 +4087,17 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
       // For backwards compatibility, convert `kKeyDown` to `kRawKeyDown`.
       if (keyboard_event.GetType() == blink::WebKeyboardEvent::Type::kKeyDown)
         keyboard_event.SetType(blink::WebKeyboardEvent::Type::kRawKeyDown);
-      if (IsOffScreen()) {
-        auto* osr_wcv = GetOffScreenWebContentsView();
-        if (osr_wcv && osr_wcv->HandleDragKeyEvent(keyboard_event))
-          return;
-      }
+      auto* osr_wcv = GetOffScreenWebContentsView();
+      if (osr_wcv && osr_wcv->HandleDragKeyEvent(keyboard_event))
+        return;
       rwh->ForwardKeyboardEvent(keyboard_event);
       return;
     }
   } else if (type == blink::WebInputEvent::Type::kMouseWheel) {
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
-      if (IsOffScreen()) {
-        GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
-            mouse_wheel_event);
+      if (auto* osr_rwhv = GetOffScreenRenderWidgetHostView()) {
+        osr_rwhv->SendMouseWheelEvent(mouse_wheel_event);
       } else {
         // Chromium expects phase info in wheel events (and applies a
         // DCHECK to verify it). See: https://crbug.com/756524.
@@ -4313,6 +4314,13 @@ void WebContents::OnOffScreenDragUpdate(ui::mojom::DragOperation operation) {
 
 void WebContents::OnOffScreenDragEnd(ui::mojom::DragOperation operation,
                                      bool cancelled) {
+  if (defer_offscreen_drag_end_) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&WebContents::OnOffScreenDragEnd,
+                       weak_factory_.GetWeakPtr(), operation, cancelled));
+    return;
+  }
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
