@@ -10,15 +10,19 @@
 
 #include <string>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/containers/to_vector.h"
 #include "base/task/single_thread_task_runner.h"
 #if BUILDFLAG(IS_LINUX)
 #include "base/strings/string_number_conversions.h"
 #endif
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "ui/base/ime/ime_text_span.h"
 
 namespace gin {
 
@@ -193,6 +197,80 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
       v8::WeakCallbackType::kParameter);
 
   return root_local;
+}
+
+// static
+bool Converter<ui::ImeTextSpan>::FromV8(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> val,
+                                        ui::ImeTextSpan* out) {
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  int start = 0, end = 0;
+  if (!dict.Get("start", &start) || !dict.Get("end", &end) || start < 0 ||
+      end < start) {
+    return false;
+  }
+  ui::ImeTextSpan span(ui::ImeTextSpan::Type::kComposition, start, end);
+  bool thick = false;
+  if (dict.Get("thick", &thick) && thick)
+    span.thickness = ui::ImeTextSpan::Thickness::kThick;
+  std::string color;
+  if (dict.Get("color", &color)) {
+    span.underline_color =
+        electron::ParseCSSColor(color).value_or(SK_ColorTRANSPARENT);
+  }
+  if (dict.Get("backgroundColor", &color)) {
+    span.background_color =
+        electron::ParseCSSColor(color).value_or(SK_ColorTRANSPARENT);
+  }
+  *out = span;
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<ui::TextInputType>::ToV8(v8::Isolate* isolate,
+                                                        ui::TextInputType val) {
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMap<ui::TextInputType, std::string_view>({
+          {ui::TEXT_INPUT_TYPE_NONE, "none"},
+          {ui::TEXT_INPUT_TYPE_TEXT, "text"},
+          {ui::TEXT_INPUT_TYPE_PASSWORD, "password"},
+          {ui::TEXT_INPUT_TYPE_SEARCH, "search"},
+          {ui::TEXT_INPUT_TYPE_EMAIL, "email"},
+          {ui::TEXT_INPUT_TYPE_NUMBER, "number"},
+          {ui::TEXT_INPUT_TYPE_TELEPHONE, "telephone"},
+          {ui::TEXT_INPUT_TYPE_URL, "url"},
+          {ui::TEXT_INPUT_TYPE_DATE, "date"},
+          {ui::TEXT_INPUT_TYPE_DATE_TIME, "dateTime"},
+          {ui::TEXT_INPUT_TYPE_DATE_TIME_LOCAL, "dateTimeLocal"},
+          {ui::TEXT_INPUT_TYPE_MONTH, "month"},
+          {ui::TEXT_INPUT_TYPE_TIME, "time"},
+          {ui::TEXT_INPUT_TYPE_WEEK, "week"},
+          {ui::TEXT_INPUT_TYPE_TEXT_AREA, "textArea"},
+          {ui::TEXT_INPUT_TYPE_CONTENT_EDITABLE, "contentEditable"},
+          {ui::TEXT_INPUT_TYPE_DATE_TIME_FIELD, "dateTimeField"},
+          {ui::TEXT_INPUT_TYPE_NULL, "null"},
+      });
+  return StringToV8(isolate, Lookup.at(val));
+}
+
+// static
+v8::Local<v8::Value> Converter<ui::TextInputMode>::ToV8(v8::Isolate* isolate,
+                                                        ui::TextInputMode val) {
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMap<ui::TextInputMode, std::string_view>({
+          {ui::TEXT_INPUT_MODE_DEFAULT, "default"},
+          {ui::TEXT_INPUT_MODE_NONE, "none"},
+          {ui::TEXT_INPUT_MODE_TEXT, "text"},
+          {ui::TEXT_INPUT_MODE_TEL, "tel"},
+          {ui::TEXT_INPUT_MODE_URL, "url"},
+          {ui::TEXT_INPUT_MODE_EMAIL, "email"},
+          {ui::TEXT_INPUT_MODE_NUMERIC, "numeric"},
+          {ui::TEXT_INPUT_MODE_DECIMAL, "decimal"},
+          {ui::TEXT_INPUT_MODE_SEARCH, "search"},
+      });
+  return StringToV8(isolate, Lookup.at(val));
 }
 
 }  // namespace gin

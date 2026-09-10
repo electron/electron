@@ -7915,6 +7915,303 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('IME', () => {
+      type LogEntry = { type: string; data: string | null };
+      const inputPage = `<html><body style="margin:0"><input id="i"><script>
+        window.log = []
+        const input = document.getElementById('i')
+        for (const type of ['compositionstart', 'compositionupdate', 'compositionend', 'input']) {
+          input.addEventListener(type, (e) => window.log.push({ type: e.type, data: e.data }))
+        }
+      </script></body></html>`;
+      let server: http.Server;
+      let serverUrl: string;
+      let crossSiteUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          if (req.url?.startsWith('/cross-site-iframe')) {
+            res.end(
+              `<html><body style="margin:0"><iframe style="position:absolute;left:100px;top:200px;border:0" src="${crossSiteUrl}/input"></iframe></body></html>`
+            );
+          } else {
+            res.end(inputPage);
+          }
+        });
+        const { port, url } = await listen(server);
+        serverUrl = url;
+        crossSiteUrl = `http://localhost:${port}`;
+      });
+      after(() => server.close());
+
+      const readLog = (wc: WebContents = w.webContents): Promise<LogEntry[]> => wc.executeJavaScript('window.log');
+      const hasLogEntry = async (type: string, data?: string, wc: WebContents = w.webContents) =>
+        (await readLog(wc)).some((e) => e.type === type && (data === undefined || e.data === data));
+      const inputValue = (wc: WebContents = w.webContents): Promise<string> =>
+        wc.executeJavaScript('document.getElementById("i").value');
+      const textFocused = (wc: WebContents) =>
+        emittedUntil(wc, 'text-input-state-changed', (_: Event, state: any) => state.type === 'text');
+      // Focuses the page's <input>; resolves with the text-input-state-changed
+      // payload and the selection-bounds-changed payload that follows it.
+      const focusInput = async (
+        wc: WebContents = w.webContents,
+        frame: { executeJavaScript: (code: string) => Promise<any> } = wc
+      ) => {
+        const focused = textFocused(wc);
+        const bounds = once(wc, 'selection-bounds-changed');
+        await frame.executeJavaScript('document.getElementById("i").focus()');
+        const [, state] = await focused;
+        const [, selectionBounds] = await bounds;
+        return { state, selectionBounds };
+      };
+
+      beforeEach(async () => {
+        await w.loadFile(path.join(fixtures, 'api', 'offscreen-ime.html'));
+        // The page only accepts IME input while it has keyboard focus.
+        w.webContents.focus();
+      });
+
+      it('throws for non-offscreen contents', () => {
+        const c = new BrowserWindow({ show: false });
+        expect(() => c.webContents.imeSetComposition('a')).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeCommitText('a')).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeFinishComposingText()).to.throw(/requires offscreen rendering/);
+        expect(() => c.webContents.imeCancelComposition()).to.throw(/requires offscreen rendering/);
+        c.destroy();
+      });
+
+      it('reports the input state and caret bounds when an element is focused', async () => {
+        const { state, selectionBounds } = await focusInput();
+        expect(state).to.deep.equal({ type: 'text', inputMode: 'default', canComposeInline: true });
+        expect(selectionBounds.anchor).to.include.all.keys('x', 'y', 'width', 'height');
+        expect(selectionBounds.focus).to.deep.equal(selectionBounds.anchor);
+
+        const numeric = emittedUntil(
+          w.webContents,
+          'text-input-state-changed',
+          (_: Event, s: any) => s.inputMode === 'numeric'
+        );
+        await w.webContents.executeJavaScript(`
+          const n = document.createElement('input'); n.inputMode = 'numeric'; n.id = 'n';
+          document.body.appendChild(n); n.focus()`);
+        const [, numericState] = await numeric;
+        expect(numericState.type).to.equal('text');
+
+        const blurred = emittedUntil(
+          w.webContents,
+          'text-input-state-changed',
+          (_: Event, s: any) => s.type === 'none'
+        );
+        await w.webContents.executeJavaScript('document.getElementById("n").blur()');
+        await blurred;
+      });
+
+      it('composes and commits text into the focused element', async () => {
+        await focusInput();
+        const rangeChanged = once(w.webContents, 'ime-composition-range-changed');
+        w.webContents.imeSetComposition('にほ');
+        const [, range, characterBounds] = await rangeChanged;
+        expect(range).to.deep.equal({ start: 0, end: 2 });
+        expect(characterBounds).to.be.an('array').with.lengthOf(2);
+        for (const rect of characterBounds) {
+          expect(rect).to.include.all.keys('x', 'y', 'width', 'height');
+        }
+        await waitUntil(() => hasLogEntry('compositionupdate', 'にほ'));
+        expect(await readLog()).to.deep.include({ type: 'compositionstart', data: '' });
+
+        const ended = emittedUntil(w.webContents, 'ime-composition-range-changed', (_: Event, r: any) => r === null);
+        w.webContents.imeCommitText('日本');
+        const [, , endedBounds] = await ended;
+        expect(endedBounds).to.deep.equal([]);
+        await waitUntil(() => hasLogEntry('compositionend', '日本'));
+        expect(await inputValue()).to.equal('日本');
+
+        w.webContents.imeSetComposition('ご');
+        await waitUntil(() => hasLogEntry('compositionupdate', 'ご'));
+        w.webContents.imeCancelComposition();
+        await waitUntil(async () => (await readLog()).filter((e) => e.type === 'compositionend').length === 2);
+        expect(await inputValue()).to.equal('日本');
+      });
+
+      it('finishes composing text with imeFinishComposingText()', async () => {
+        await focusInput();
+        w.webContents.imeSetComposition('한');
+        await waitUntil(() => hasLogEntry('compositionupdate', '한'));
+        w.webContents.imeFinishComposingText();
+        await waitUntil(() => hasLogEntry('compositionend'));
+        expect(await inputValue()).to.equal('한');
+      });
+
+      it('does not touch the selection when there is no composition to cancel or finish', async () => {
+        await focusInput();
+        await w.webContents.executeJavaScript(
+          '{ const i = document.getElementById("i"); i.value = "abcdef"; i.setSelectionRange(1, 4) }'
+        );
+        w.webContents.imeCancelComposition();
+        w.webContents.imeFinishComposingText();
+        w.webContents.imeSetComposition('');
+        // Round-trip through the renderer so any (unwanted) edit would have landed.
+        w.webContents.imeCommitText('X', { replacementStart: 6, replacementEnd: 6 });
+        await waitUntil(async () => (await inputValue()) === 'abcdefX');
+        expect(await w.webContents.executeJavaScript('[i.selectionStart, i.selectionEnd]')).to.deep.equal([1, 4]);
+      });
+
+      it('accepts composition options', async () => {
+        await focusInput();
+        w.webContents.imeSetComposition('abc', {
+          selectionStart: 1,
+          selectionEnd: 2,
+          underlines: [{ start: 0, end: 1, thick: true, color: '#ff0000', backgroundColor: 'rgba(0, 0, 255, 0.5)' }]
+        });
+        await waitUntil(() => hasLogEntry('compositionupdate', 'abc'));
+        w.webContents.imeCommitText('abc', { relativeCursorPosition: -1 });
+        await waitUntil(() => hasLogEntry('compositionend', 'abc'));
+        expect(await inputValue()).to.equal('abc');
+        expect(await w.webContents.executeJavaScript('document.getElementById("i").selectionStart')).to.equal(2);
+      });
+
+      it('validates ranges', async () => {
+        await focusInput();
+        const wc = w.webContents;
+        expect(() => wc.imeSetComposition('abc', { underlines: [{ start: -1, end: 1 }] })).to.throw(/underlines/);
+        expect(() => wc.imeSetComposition('abc', { underlines: [{ start: 2, end: 1 }] })).to.throw(/underlines/);
+        expect(() => wc.imeSetComposition('abc', { underlines: [{ start: 0, end: 4 }] })).to.throw(/underlines/);
+        expect(() => wc.imeSetComposition('abc', { selectionStart: 0, selectionEnd: 4 })).to.throw(RangeError);
+        expect(() => wc.imeSetComposition('abc', { selectionStart: 2, selectionEnd: 1 })).to.throw(RangeError);
+        expect(() => wc.imeSetComposition('abc', { selectionStart: 1 })).to.throw(TypeError);
+        expect(() => wc.imeSetComposition('abc', { replacementStart: 0 })).to.throw(TypeError);
+        expect(() => wc.imeCommitText('abc', { replacementStart: 0, replacementEnd: 4294967295 })).to.throw(TypeError);
+        expect(() => wc.imeCommitText('abc', { replacementStart: 3, replacementEnd: 1 })).to.throw(RangeError);
+        expect(() => wc.imeCommitText('abc', { relativeCursorPosition: 1.5 })).to.throw(TypeError);
+        expect(() =>
+          wc.imeCommitText('abc', { replacementStart: undefined, relativeCursorPosition: undefined })
+        ).to.not.throw();
+        await waitUntil(async () => (await inputValue()) === 'abc');
+      });
+
+      it('replaces a range of existing text with imeCommitText() and keeps the selection', async () => {
+        await focusInput();
+        await w.webContents.executeJavaScript(
+          '{ const i = document.getElementById("i"); i.value = "hello"; i.setSelectionRange(5, 5) }'
+        );
+        w.webContents.imeCommitText('J', { replacementStart: 0, replacementEnd: 1 });
+        await waitUntil(async () => (await inputValue()) === 'Jello');
+        expect(await w.webContents.executeJavaScript('[i.selectionStart, i.selectionEnd]')).to.deep.equal([5, 5]);
+        expect(await hasLogEntry('compositionend')).to.equal(false);
+      });
+
+      it('reports the end of a composition ended by the page', async () => {
+        await focusInput();
+        w.webContents.imeSetComposition('x');
+        await emittedUntil(w.webContents, 'ime-composition-range-changed', (_: Event, r: any) => r !== null);
+        const ended = emittedUntil(w.webContents, 'ime-composition-range-changed', (_: Event, r: any) => r === null);
+        const blurred = emittedUntil(
+          w.webContents,
+          'text-input-state-changed',
+          (_: Event, s: any) => s.type === 'none'
+        );
+        await w.webContents.executeJavaScript('document.getElementById("i").blur()');
+        await ended;
+        await blurred;
+        expect(await hasLogEntry('compositionend', 'x')).to.equal(true);
+      });
+
+      it('reports no focused element after the renderer crashes', async () => {
+        await focusInput();
+        const gone = emittedUntil(w.webContents, 'text-input-state-changed', (_: Event, s: any) => s.type === 'none');
+        w.webContents.forcefullyCrashRenderer();
+        await gone;
+        expect(() => w.webContents.imeSetComposition('a')).to.not.throw();
+      });
+
+      it('keeps working after a cross-site navigation', async () => {
+        await w.loadURL(`${serverUrl}/input`);
+        w.webContents.focus();
+        await w.loadURL(`${crossSiteUrl}/input`);
+        await focusInput();
+        w.webContents.imeSetComposition('か');
+        await waitUntil(() => hasLogEntry('compositionupdate', 'か'));
+        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+      });
+
+      it('reports bounds of an element in a cross-site iframe relative to the contents', async () => {
+        const ow = new BrowserWindow({
+          width: 500,
+          height: 400,
+          show: false,
+          webPreferences: { backgroundThrottling: false, offscreen: true }
+        });
+        await ow.loadURL(`${serverUrl}/cross-site-iframe`);
+        ow.webContents.focus();
+        await waitUntil(
+          () =>
+            ow.webContents.mainFrame.frames.length === 1 && ow.webContents.mainFrame.frames[0].url.endsWith('/input')
+        );
+        const frame = ow.webContents.mainFrame.frames[0];
+        expect(frame.osProcessId).to.not.equal(ow.webContents.mainFrame.osProcessId);
+        await waitUntil(async () => (await frame.executeJavaScript('!!document.getElementById("i")')) === true);
+        await focusInput(ow.webContents, frame);
+        // Child-frame coordinates map into the root view only once the frame's
+        // surface is composited; move the caret until that has happened.
+        let selectionBounds: any;
+        await waitUntil(async () => {
+          const bounds = once(ow.webContents, 'selection-bounds-changed');
+          await frame.executeJavaScript(
+            '{ const i = document.getElementById("i"); i.value += "a"; i.setSelectionRange(i.value.length, i.value.length) }'
+          );
+          [, selectionBounds] = await bounds;
+          return selectionBounds.focus.x >= 100;
+        });
+        expect(selectionBounds.focus.y).to.be.at.least(200);
+        const rangeChanged = once(ow.webContents, 'ime-composition-range-changed');
+        ow.webContents.imeSetComposition('に');
+        const [, range, characterBounds] = await rangeChanged;
+        expect(range.end - range.start).to.equal(1);
+        expect(characterBounds[0].x).to.be.at.least(100);
+        expect(characterBounds[0].y).to.be.at.least(200);
+        await waitUntil(() => hasLogEntry('compositionupdate', 'に', frame as unknown as WebContents));
+        ow.destroy();
+      });
+
+      it('works for offscreen window.open() children', async () => {
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            show: false,
+            width: 300,
+            height: 200,
+            webPreferences: { offscreen: true, backgroundThrottling: false }
+          }
+        }));
+        const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+        await w.webContents.executeJavaScript(`window.open(${JSON.stringify(`${serverUrl}/child`)}); void 0`, true);
+        const [child] = await created;
+        const painted = once(child.webContents, 'paint');
+        if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+        await painted;
+        child.webContents.focus();
+        await focusInput(child.webContents);
+        child.webContents.imeCommitText('popup');
+        await waitUntil(async () => (await inputValue(child.webContents)) === 'popup');
+        child.destroy();
+      });
+
+      it('works for an offscreen WebContentsView focused with webContents.focus()', async () => {
+        const bw = new BaseWindow({ show: false, width: 400, height: 300 });
+        const view = new WebContentsView({ webPreferences: { offscreen: true, backgroundThrottling: false } });
+        bw.contentView.addChildView(view);
+        view.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+        await view.webContents.loadURL(`${serverUrl}/view`);
+        view.webContents.focus();
+        await focusInput(view.webContents);
+        view.webContents.imeSetComposition('ε');
+        await waitUntil(() => hasLogEntry('compositionupdate', 'ε', view.webContents));
+        expect(await view.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+        bw.destroy();
+      });
+    });
+
     it('paints <select> popups into the frame', async () => {
       const ow = new BrowserWindow({
         width: 300,

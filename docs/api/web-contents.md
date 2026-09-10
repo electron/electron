@@ -974,6 +974,70 @@ win.webContents.on('paint', async (e, dirty, image) => {
 win.loadURL('https://github.com')
 ```
 
+#### Event: 'text-input-state-changed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+Returns:
+
+* `event` Event
+* `textInputState` Object
+  * `type` string - The type of the focused editable element. Can be `none`, `text`, `password`, `search`, `email`, `number`, `telephone`, `url`, `date`, `dateTime`, `dateTimeLocal`, `month`, `time`, `week`, `textArea`, `contentEditable`, `dateTimeField` or `null`. `none` means no editable element is focused.
+  * `inputMode` string - The [`inputmode`](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/inputmode) of the focused element. Can be `default`, `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal` or `search`.
+  * `canComposeInline` boolean - Whether the focused element can display IME composition text inline.
+
+Emitted when _offscreen rendering_ is enabled and the focused editable element,
+its input type or its input mode changes, including when the renderer process
+goes away. Use it to decide when to enable an input method for the page and
+which kind of input it expects. The page ends any IME composition when the
+focused element changes.
+
+#### Event: 'ime-composition-range-changed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+Returns:
+
+* `event` Event
+* `range` [TextRange](structures/text-range.md) | null - The range of the composition text in the focused element. `null` when the composition has ended.
+* `characterBounds` [Rectangle](structures/rectangle.md)[] - The bounds of each character of the composition text, in DIPs relative to the contents. Empty when the composition has ended.
+
+Emitted when _offscreen rendering_ is enabled and the IME composition text or
+its on-screen position changes, and with a `null` range when the composition
+ends, whether through `contents.imeCommitText()`,
+`contents.imeFinishComposingText()`, `contents.imeCancelComposition()` or by
+the page (for example because the focused element changed). Use it to position
+and hide an input method's candidate window.
+
+#### Event: 'selection-bounds-changed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+Returns:
+
+* `event` Event
+* `selectionBounds` Object
+  * `anchor` [Rectangle](structures/rectangle.md) - The caret rectangle at the start of the selection, in DIPs relative to the contents.
+  * `focus` [Rectangle](structures/rectangle.md) - The caret rectangle at the end of the selection (where the caret is), in DIPs relative to the contents.
+
+Emitted when _offscreen rendering_ is enabled and an editable element gets
+focus or the text selection or caret in it moves.
+
 #### Event: 'devtools-reload-page'
 
 Emitted when the DevTools window instructs the webContents to reload
@@ -1188,7 +1252,8 @@ will be emitted.
 
 #### `contents.focus()`
 
-Focuses the web page.
+Focuses the web page. For _offscreen rendering_ this gives the page keyboard
+focus without involving a native window.
 
 #### `contents.isFocused()`
 
@@ -2272,6 +2337,114 @@ Schedules a full repaint of the window this web contents is in.
 
 If _offscreen rendering_ is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
+
+#### `contents.imeSetComposition(text[, options])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+* `text` string - The composition (pre-edit) text. An empty string cancels the current composition.
+* `options` Object (optional)
+  * `selectionStart` Integer (optional) - Start of the selection within `text`. Defaults to the end of `text`.
+  * `selectionEnd` Integer (optional) - End of the selection within `text`. Defaults to the end of `text`.
+  * `replacementStart` Integer (optional) - Start of a range of existing text in the focused element to replace with the composition. Must be given together with `replacementEnd`.
+  * `replacementEnd` Integer (optional) - End of the range of existing text to replace.
+  * `underlines` Object[] (optional) - Spans of `text` to decorate. When omitted the whole composition gets the default underline.
+    * `start` Integer
+    * `end` Integer
+    * `thick` boolean (optional) - Draw a thick underline. Defaults to `false`.
+    * `color` string (optional) - Underline color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Defaults to the text color.
+    * `backgroundColor` string (optional) - Background color of the span in the same formats. Defaults to transparent.
+
+If _offscreen rendering_ is enabled, sets the current IME composition text in
+the focused editable element, replacing any existing composition. The page
+receives `compositionstart` / `compositionupdate` events. All offsets are in
+UTF-16 code units; ranges must satisfy `0 <= start <= end` and selection and
+underline ranges must lie within `text`, otherwise an error is thrown. Throws
+an error if _offscreen rendering_ is not enabled.
+
+Offscreen contents have no native widget, so the application is responsible
+for feeding input method (IME) events to the page with the `contents.ime*()`
+methods and for positioning the input method UI using the
+[`'text-input-state-changed'`](#event-text-input-state-changed),
+[`'ime-composition-range-changed'`](#event-ime-composition-range-changed) and
+[`'selection-bounds-changed'`](#event-selection-bounds-changed) events. The
+contents must have keyboard focus (see [`contents.focus()`](#contentsfocus))
+for the page to accept IME input.
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({ webPreferences: { offscreen: true } })
+win.webContents.on('text-input-state-changed', (event, state) => {
+  // Enable the platform IME when state.type !== 'none'.
+})
+win.webContents.on('ime-composition-range-changed', (event, range, bounds) => {
+  // Move the candidate window next to bounds[0].
+})
+win.loadURL('https://github.com')
+win.webContents.focus()
+
+// Forward the platform IME callbacks:
+win.webContents.imeSetComposition('にほん')
+win.webContents.imeCommitText('日本')
+```
+
+#### `contents.imeCommitText(text[, options])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+* `text` string - The text to insert.
+* `options` Object (optional)
+  * `replacementStart` Integer (optional) - Start of a range of existing text in the focused element to replace with `text`. Must be given together with `replacementEnd`.
+  * `replacementEnd` Integer (optional) - End of the range of existing text to replace.
+  * `relativeCursorPosition` Integer (optional) - Where to place the caret relative to the end of the inserted text. Defaults to `0`. Ignored when a replacement range is given.
+
+If _offscreen rendering_ is enabled, replaces the current IME composition (if
+any) with `text`, inserts it into the focused editable element and ends the
+composition; the page receives a `compositionend` event. When
+`replacementStart` and `replacementEnd` are given, `text` instead replaces that
+range of existing text and the current selection and any composition are kept,
+matching macOS `insertText:replacementRange:`. Offsets are in UTF-16 code units
+and must satisfy `0 <= start <= end`, otherwise an error is thrown. Throws an
+error if _offscreen rendering_ is not enabled.
+
+#### `contents.imeFinishComposingText([keepSelection])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+* `keepSelection` boolean (optional) - Whether to keep the current selection instead of moving the caret to the end of the committed text. Defaults to `false`.
+
+If _offscreen rendering_ is enabled, commits the current IME composition text
+as-is and ends the composition. Does nothing when there is no composition.
+Throws an error if _offscreen rendering_ is not enabled.
+
+#### `contents.imeCancelComposition()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53806
+```
+-->
+
+If _offscreen rendering_ is enabled, discards the current IME composition text
+and ends the composition. Does nothing when there is no composition. Throws an
+error if _offscreen rendering_ is not enabled.
 
 #### `contents.getWebRTCIPHandlingPolicy()`
 
