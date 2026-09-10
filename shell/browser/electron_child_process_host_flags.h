@@ -11,7 +11,7 @@
 namespace electron {
 
 // Flags for Electron-specific child processes to resolve the appropriate
-// helper executable via ElectronBrowserClient::GetChildProcessSuffix().
+// helper executable via ElectronBrowserClient::GetChildProcessPath().
 enum class ElectronChildProcessHostFlags {
 #if BUILDFLAG(IS_MAC)
   // Starts a child process with macOS entitlements that disable library

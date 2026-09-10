@@ -210,6 +210,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/apple/foundation_util.h"
 #include "content/browser/mac_helpers.h"
 #include "content/public/browser/child_process_host.h"
 #endif
@@ -2131,13 +2132,31 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
-  if (child_flags ==
+base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+  if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
-    return kElectronMacHelperSuffixPlugin;
+    return base::FilePath();
   }
-  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+  if (!base::apple::AmIBundled()) {
+    return base::FilePath();
+  }
+
+  base::FilePath child_path;
+  if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+    return base::FilePath();
+  }
+
+  std::string child_base_name =
+      child_path.BaseName().value() + kElectronMacHelperSuffixPlugin;
+  return child_path.DirName()
+      .DirName()
+      .DirName()
+      .DirName()
+      .Append(child_base_name + ".app")
+      .Append("Contents")
+      .Append("MacOS")
+      .Append(child_base_name);
 }
 
 device::GeolocationSystemPermissionManager*
