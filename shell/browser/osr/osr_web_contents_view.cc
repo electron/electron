@@ -63,6 +63,7 @@ OffScreenWebContentsView::OffScreenWebContentsView(
 }
 
 OffScreenWebContentsView::~OffScreenWebContentsView() {
+  drag_delegate_ = nullptr;
   CancelDrag();
   LiveViews().erase(this);
   if (native_window_)
@@ -103,9 +104,10 @@ void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
 
 void OffScreenWebContentsView::SetDragDelegate(
     OffScreenDragDelegate* delegate) {
+  // Clear first so a drag ended by teardown does not call out to JS.
+  drag_delegate_ = delegate;
   if (!delegate)
     CancelDrag();
-  drag_delegate_ = delegate;
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
