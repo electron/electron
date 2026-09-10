@@ -3848,6 +3848,45 @@ describe('BrowserWindow module', () => {
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
     });
+
+    it('propagates the overlay to WebContentsViews in a BaseWindow', async () => {
+      const w = new BaseWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: { height: 40 }
+      });
+      const webPreferences = { nodeIntegration: true, contextIsolation: false };
+      const topView = new WebContentsView({ webPreferences });
+      const bottomView = new WebContentsView({ webPreferences });
+      topView.setBounds({ x: 0, y: 0, width: 400, height: 100 });
+      bottomView.setBounds({ x: 0, y: 200, width: 400, height: 200 });
+      w.contentView.addChildView(topView);
+      w.contentView.addChildView(bottomView);
+
+      // On Linux the overlay geometry is only computed once the frame has
+      // been laid out, which for a BaseWindow doesn't happen until it's shown.
+      if (process.platform === 'linux') {
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+      }
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      await topView.webContents.loadFile(overlayHTML);
+      await bottomView.webContents.loadFile(overlayHTML);
+
+      await waitUntil(() => topView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const overlayRect = await topView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(overlayRect.y).to.equal(0);
+      expect(overlayRect.width).to.be.greaterThan(0);
+      expect(overlayRect.height).to.equal(40);
+
+      // A view that doesn't intersect the titlebar area shouldn't see an overlay.
+      expect(await bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible')).to.be.false(
+        'bottom view overlay visible'
+      );
+    });
   });
 
   ifdescribe(process.platform !== 'darwin')('BrowserWindow.setTitlebarOverlay', () => {
