@@ -3865,13 +3865,12 @@ describe('BrowserWindow module', () => {
       w.contentView.addChildView(topView);
       w.contentView.addChildView(bottomView);
 
-      // On Linux the overlay geometry is only computed once the frame has
-      // been laid out, which for a BaseWindow doesn't happen until it's shown.
-      if (process.platform === 'linux') {
-        const shown = once(w, 'show');
-        w.show();
-        await shown;
-      }
+      // The overlay geometry reaches the renderer through visual properties,
+      // which aren't synchronised for an unsized (never shown) child view, and
+      // on Linux the frame isn't laid out until the window is shown either.
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
       await topView.webContents.loadFile(overlayHTML);
       await bottomView.webContents.loadFile(overlayHTML);
