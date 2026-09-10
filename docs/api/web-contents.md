@@ -1051,7 +1051,9 @@ Returns:
 
 Emitted when an offscreen drag and drop operation ends, either because the
 embedder sent a `mouseUp` (dropping onto the page if it accepted the drag) or
-because the drag was cancelled.
+because the drag was cancelled. It is not emitted when the `webContents` is
+destroyed during a drag; treat [`'destroyed'`](#event-destroyed) as the end of
+any drag in progress.
 
 #### Event: 'devtools-reload-page'
 

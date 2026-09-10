@@ -8064,13 +8064,17 @@ describe('BrowserWindow module', () => {
         expect(end).to.deep.equal({ operation: 'none', cancelled: true });
       });
 
-      it('is cancelled when the contents is destroyed mid-drag', async () => {
+      it('ends silently when the contents is destroyed mid-drag', async () => {
         await beginDrag();
         await dragOntoTarget();
-        const ended = once(ow.webContents, 'offscreen-drag-end');
+        let ended = false;
+        ow.webContents.once('offscreen-drag-end' as any, () => {
+          ended = true;
+        });
+        const destroyed = once(ow.webContents, 'destroyed');
         ow.destroy();
-        const [, end] = await withTimeout(ended, 'offscreen-drag-end');
-        expect(end).to.deep.equal({ operation: 'none', cancelled: true });
+        await destroyed;
+        expect(ended).to.be.false('offscreen-drag-end emitted during destroy');
       });
     });
 
