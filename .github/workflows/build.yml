@@ -74,13 +74,14 @@ jobs:
             - 'docs/**'
             - '.claude/**'
             - README.md
+            - REVIEW.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           pgo:
             - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,REVIEW.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
