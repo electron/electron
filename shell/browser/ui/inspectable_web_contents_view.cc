@@ -300,6 +300,12 @@ void InspectableWebContentsView::SetContentsViewBounds(
   }
 }
 
+void InspectableWebContentsView::OnBoundsChanged(
+    const gfx::Rect& previous_bounds) {
+  if (bounds_changed_callback_)
+    bounds_changed_callback_.Run();
+}
+
 void InspectableWebContentsView::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
     SetContentsViewBounds(GetContentsBounds());

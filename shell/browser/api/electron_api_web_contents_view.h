@@ -61,7 +61,6 @@ class WebContentsView : public View,
   // views::ViewObserver
   void OnViewAddedToWidget(views::View* view) override;
   void OnViewRemovedFromWidget(views::View* view) override;
-  void OnViewBoundsChanged(views::View* view) override;
 
   // NativeWindowObserver
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
@@ -71,12 +70,18 @@ class WebContentsView : public View,
 
   void ApplyBorderRadius();
   void StopObservingWindow();
-  void MaybeUpdateWindowControlsOverlay();
+  void OnContentsBoundsChanging();
+  bool HasLivePage();
+  void ScheduleWindowControlsOverlayUpdate();
+  void SendWindowControlsOverlay();
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;
   base::WeakPtr<NativeWindow> observed_window_;
+  bool window_controls_overlay_update_pending_ = false;
+
+  base::WeakPtrFactory<WebContentsView> weak_factory_{this};
 };
 
 }  // namespace electron::api

@@ -3885,6 +3885,17 @@ describe('BrowserWindow module', () => {
       expect(await bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible')).to.be.false(
         'bottom view overlay visible'
       );
+
+      // The rect is clipped to the view and follows it when its bounds change.
+      topView.setBounds({ x: 0, y: 0, width: 150, height: 100 });
+      await waitUntil(
+        async () => (await topView.webContents.executeJavaScript('getJSOverlayProperties()')).width === 150
+      );
+      bottomView.setBounds({ x: 0, y: 20, width: 400, height: 200 });
+      await waitUntil(() => bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const bottomRect = await bottomView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(bottomRect.y).to.equal(0);
+      expect(bottomRect.height).to.equal(20);
     });
   });
 
