@@ -7966,6 +7966,20 @@ describe('BrowserWindow module', () => {
       expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
     });
 
+    it('captures the page at the device scale factor', async () => {
+      const paint = once(w.webContents, 'paint');
+      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await paint;
+
+      const full = (await w.webContents.capturePage()).getSize();
+      expect(full.width).to.be.closeTo(100 * scaleFactor, 2);
+      expect(full.height).to.be.closeTo(100 * scaleFactor, 2);
+
+      const rect = (await w.webContents.capturePage({ x: 0, y: 0, width: 50, height: 50 })).getSize();
+      expect(rect.width).to.be.closeTo(50 * scaleFactor, 2);
+      expect(rect.height).to.be.closeTo(50 * scaleFactor, 2);
+    });
+
     it('has correct screen and window sizes', async () => {
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       await once(w.webContents, 'dom-ready');
