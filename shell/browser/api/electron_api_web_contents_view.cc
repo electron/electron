@@ -4,8 +4,11 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include "base/functional/bind.h"
 #include "base/no_destructor.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
+#include "content/public/browser/render_frame_host.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
@@ -37,6 +40,10 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
       web_contents_(isolate, web_contents.ToV8()),
       api_web_contents_(web_contents->GetWeakPtr()) {
   set_delete_view(false);
+  // See OnContentsBoundsChanging().
+  web_contents->inspectable_web_contents()->GetView()->SetBoundsChangedCallback(
+      base::BindRepeating(&WebContentsView::OnContentsBoundsChanging,
+                          weak_factory_.GetWeakPtr()));
   view()->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
@@ -45,6 +52,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
+  StopObservingWindow();
   if (api_web_contents_)  // destroy() called without closing WebContents
     api_web_contents_->Destroy();
 }
@@ -134,17 +142,83 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   // because that's handled in the WebContents dtor called prior.
   api_web_contents_->SetOwnerWindow(native_window);
   native_window->AddDraggableRegionProvider(this);
+  StopObservingWindow();
+  observed_window_ = native_window->GetWeakPtr();
+  native_window->AddObserver(this);
   ApplyBorderRadius();
+  if (HasLivePage())
+    ScheduleWindowControlsOverlayUpdate();
 }
 
 void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
+
+  StopObservingWindow();
 
   NativeWindow* native_window = NativeWindow::FromWidget(view()->GetWidget());
   if (!native_window)
     return;
 
   native_window->RemoveDraggableRegionProvider(this);
+}
+
+// Our bounds changed and the RenderWidgetHostView is about to be resized to
+// match. Push the re-clipped overlay rect now so that it rides along with the
+// resize in a single VisualProperties update, rather than trailing it (where it
+// could sit behind the resize's pending ack).
+void WebContentsView::OnContentsBoundsChanging() {
+  if (HasLivePage())
+    SendWindowControlsOverlay();
+}
+
+bool WebContentsView::HasLivePage() {
+  // Before the first navigation there is nothing to update; the window
+  // notifies us again from WebContents::DidFinishNavigation.
+  return observed_window_ && web_contents() &&
+         web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive();
+}
+
+// NativeWindowObserver. This fires from inside the frame view's layout, before
+// the client area (and so this view) has been laid out, so defer until the
+// current layout pass has finished to avoid clipping against stale bounds.
+void WebContentsView::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
+  ScheduleWindowControlsOverlayUpdate();
+}
+
+void WebContentsView::ScheduleWindowControlsOverlayUpdate() {
+  if (window_controls_overlay_update_pending_)
+    return;
+  window_controls_overlay_update_pending_ = true;
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&WebContentsView::SendWindowControlsOverlay,
+                                weak_factory_.GetWeakPtr()));
+}
+
+// The overlay rect is relative to the window's content area. Translate it
+// into this view's coordinates so that views which only partially cover (or
+// don't cover) the titlebar report the right env(titlebar-area-*) values.
+void WebContentsView::SendWindowControlsOverlay() {
+  window_controls_overlay_update_pending_ = false;
+  if (!api_web_contents_ || !observed_window_)
+    return;
+  const auto bounding_rect = observed_window_->GetWindowControlsOverlayRect();
+  if (!bounding_rect)
+    return;
+  views::View* window_view = observed_window_->GetContentsView();
+  if (!window_view || !window_view->Contains(view()))
+    return;
+
+  gfx::Rect local_rect =
+      views::View::ConvertRectToTarget(window_view, view(), *bounding_rect);
+  local_rect.Intersect(view()->GetLocalBounds());
+  web_contents()->UpdateWindowControlsOverlay(local_rect);
+}
+
+void WebContentsView::StopObservingWindow() {
+  if (observed_window_)
+    observed_window_->RemoveObserver(this);
+  observed_window_ = nullptr;
 }
 
 // static
