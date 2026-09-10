@@ -3469,6 +3469,7 @@ void WebContents::WebContentsDestroyed() {
   // Clear the pointer stored in wrapper.
   if (GetAllWebContents().Lookup(id_))
     GetAllWebContents().Remove(id_);
+
   Observe(nullptr);
   lifecycle_state_ = LifecycleState::kDestroyed;
 
@@ -4881,14 +4882,14 @@ void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
     return;
   auto frame_token = blink::LocalFrameToken(unguessable_token.value());
 
-  attached_ = true;
+  if (!native_lifecycle_->guest_delegate_)
+    return;
+
   // For guest view based on OOPIF, the WebContents is released by the embedder
   // frame.
   native_lifecycle_->externally_owned_ = true;
-  if (native_lifecycle_->guest_delegate_) {
-    native_lifecycle_->guest_delegate_->AttachToIframe(embedder_web_contents,
-                                                       frame_token);
-  }
+  native_lifecycle_->guest_delegate_->AttachToIframe(embedder_web_contents,
+                                                     frame_token);
 }
 
 bool WebContents::IsOffScreen() const {

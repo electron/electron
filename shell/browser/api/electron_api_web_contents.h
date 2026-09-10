@@ -823,9 +823,6 @@ class WebContents final : public ExclusiveAccessContext,
   // The host webcontents that may contain this webcontents.
   RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
 
-  // Whether the guest view has been attached.
-  bool attached_ = false;
-
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
