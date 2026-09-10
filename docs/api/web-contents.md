@@ -934,6 +934,8 @@ Returns:
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
+`image` has the view's device scale factor, so `image.getSize()` is in DIPs, while
+`dirtyRect` is in the pixels of `image.toBitmap()`.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -1814,6 +1816,7 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 The page is considered visible when its browser window is hidden and the capturer count is non-zero.
 If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `contents.isBeingCaptured()`
 
@@ -2186,7 +2189,8 @@ will be called with `callback(image, dirtyRect)` when there is a presentation
 event.
 
 The `image` is an instance of [NativeImage](native-image.md) that stores the
-captured frame.
+captured frame. It has the page's device scale factor, so `image.getSize()` is
+in DIPs, while `dirtyRect` is in the pixels of `image.toBitmap()`.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
