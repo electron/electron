@@ -5,15 +5,27 @@
 #ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_WEB_CONTENTS_VIEW_H_
 
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "shell/browser/native_window_observer.h"
 
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
+#include "base/memory/weak_ptr.h"
+#include "components/viz/common/surfaces/frame_sink_id.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/blink/public/common/page/drag_operation.h"
 #include "third_party/blink/public/mojom/drag/drag.mojom-forward.h"
+#include "ui/base/ime/text_input_mode.h"
+#include "ui/base/ime/text_input_type.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/range/range.h"
 
 #if BUILDFLAG(IS_MAC)
 #ifdef __OBJC__
@@ -24,12 +36,39 @@ class OffScreenView;
 #endif
 
 namespace content {
+class RenderWidgetHostImpl;
 class WebContents;
+}  // namespace content
+
+namespace ui {
+struct ImeTextSpan;
 }
 
 namespace electron {
 
 class NativeWindow;
+
+// Callbacks through which offscreen contents report the text input state of
+// the focused element to the embedder. Coordinates are DIPs in view space.
+struct OffscreenTextInputCallbacks {
+  using StateChanged = base::RepeatingCallback<
+      void(ui::TextInputType, ui::TextInputMode, bool can_compose_inline)>;
+  // |range| is invalid when the composition has ended.
+  using CompositionRangeChanged = base::RepeatingCallback<
+      void(const gfx::Range&, const std::vector<gfx::Rect>& character_bounds)>;
+  using SelectionBoundsChanged =
+      base::RepeatingCallback<void(const gfx::Rect& anchor,
+                                   const gfx::Rect& focus)>;
+
+  OffscreenTextInputCallbacks();
+  OffscreenTextInputCallbacks(const OffscreenTextInputCallbacks&);
+  OffscreenTextInputCallbacks& operator=(const OffscreenTextInputCallbacks&);
+  ~OffscreenTextInputCallbacks();
+
+  StateChanged state_changed;
+  CompositionRangeChanged composition_range_changed;
+  SelectionBoundsChanged selection_bounds_changed;
+};
 
 class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,
@@ -42,10 +81,44 @@ class OffScreenWebContentsView : public content::WebContentsView,
       float offscreen_device_scale_factor);
   ~OffScreenWebContentsView() override;
 
+  // Identifies the focused editable element and its input type.
+  struct TextInputState {
+    viz::FrameSinkId widget;
+    int node_id = 0;
+    ui::TextInputType type = ui::TEXT_INPUT_TYPE_NONE;
+    ui::TextInputMode mode = ui::TEXT_INPUT_MODE_DEFAULT;
+    bool can_compose_inline = false;
+
+    bool operator==(const TextInputState&) const = default;
+  };
+
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
   void SetCallback(const OnPaintCallback& callback);
   void SetTextInputCallbacks(const OffscreenTextInputCallbacks& callbacks);
+
+  // IME input from the embedder, routed to the widget with text input focus.
+  void ImeSetComposition(const std::u16string& text,
+                         const std::vector<ui::ImeTextSpan>& spans,
+                         const gfx::Range& replacement_range,
+                         int selection_start,
+                         int selection_end);
+  void ImeCommitText(const std::u16string& text,
+                     const gfx::Range& replacement_range,
+                     int relative_cursor_position);
+  void ImeFinishComposingText(bool keep_selection);
+  void ImeCancelComposition();
+
+  // Reports from the root OffScreenRenderWidgetHostView.
+  void OnTextInputStateChanged(const TextInputState& state);
+  void OnImeCompositionCancelled();
+  void OnImeCompositionRangeChanged(
+      const gfx::Range& range,
+      const std::vector<gfx::Rect>& character_bounds);
+  void OnSelectionBoundsChanged(const gfx::Rect& anchor,
+                                const gfx::Rect& focus);
+  // Reports that no element is focused, e.g. after the renderer died.
+  void ResetTextInputState();
 
   // NativeWindowObserver:
   void OnWindowResize() override;
@@ -58,7 +131,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   gfx::NativeView GetContentNativeView() const override;
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
   gfx::Rect GetContainerBounds() const override;
-  void Focus() override {}
+  void Focus() override;
   void Resize(const gfx::Rect& new_bounds) override {}
   void SetInitialFocus() override {}
   void StoreFocus() override {}
@@ -110,6 +183,10 @@ class OffScreenWebContentsView : public content::WebContentsView,
 #endif
 
   OffScreenRenderWidgetHostView* GetView() const;
+  // The widget IME input should go to; null if there is none.
+  content::RenderWidgetHostImpl* GetImeTargetWidget() const;
+  // Reports the end of the current composition, if any.
+  void EndImeComposition();
 
   raw_ptr<NativeWindow> native_window_ = nullptr;
 
@@ -122,12 +199,19 @@ class OffScreenWebContentsView : public content::WebContentsView,
   OnPaintCallback callback_;
   OffscreenTextInputCallbacks text_input_callbacks_;
 
+  // Whether the page has an IME composition as far as the embedder knows.
+  bool has_ime_composition_ = false;
+  TextInputState last_text_input_state_;
+  std::optional<std::pair<gfx::Rect, gfx::Rect>> last_selection_bounds_;
+
   // Weak refs.
   raw_ptr<content::WebContents> web_contents_ = nullptr;
 
 #if BUILDFLAG(IS_MAC)
   RAW_PTR_EXCLUSION OffScreenView* offScreenView_ = nullptr;
 #endif
+
+  base::WeakPtrFactory<OffScreenWebContentsView> weak_factory_{this};
 };
 
 }  // namespace electron
