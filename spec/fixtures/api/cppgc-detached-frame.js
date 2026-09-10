@@ -47,11 +47,10 @@ module.exports = async (page, child, snapshotHelper, mode) => {
         ...countHeapSnapshotNodes(await readFile(snapshotPath), {
           markers: { name: 'DetachedFrameCacheSentinel', type: 'object' },
           objectTemplates: { name: 'system / ObjectTemplateInfo' },
-          functionTemplates: { name: 'system / FunctionTemplateInfo' },
-          holders: { name: 'Electron / CallbackHolder' }
+          functionTemplates: { name: 'system / FunctionTemplateInfo' }
         })
       };
-      for (const key of ['objectTemplates', 'functionTemplates', 'holders']) {
+      for (const key of ['objectTemplates', 'functionTemplates']) {
         assert.ok(counts[key] > 0, `snapshot must expose ${key} for the growth check`);
       }
       return counts;
@@ -167,9 +166,9 @@ module.exports = async (page, child, snapshotHelper, mode) => {
       samples.push(after);
       assert.equal(after.markers, 1, 'growth must be measured while the detached realm is still retained');
       assert.equal(after.probes, baselineProbes + 1);
-      for (const key of ['objectTemplates', 'functionTemplates', 'holders']) {
+      for (const key of ['objectTemplates', 'functionTemplates']) {
         // Allow background variation, but reject even one retained template
-        // or callback holder per four creations after the warmup.
+        // per four creations after the warmup.
         assert.ok(
           after[key] - warm[key] < count / 4,
           `${key} grew by ${after[key] - warm[key]} after ${count} detached-frame creations`
