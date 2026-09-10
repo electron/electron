@@ -111,9 +111,6 @@ scoped_refptr<printing::PrintBackend> CreateBackend() {
 }
 
 printing::PrinterList EnumeratePrintersBlocking() {
-#if BUILDFLAG(IS_WIN)
-  ScopedAllowBlockingForElectron allow_blocking;
-#endif
   printing::PrinterList printers;
   CreateBackend()->EnumeratePrinters(printers);
   return printers;

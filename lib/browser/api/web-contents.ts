@@ -122,10 +122,7 @@ WebContents.prototype.print = function (options = {}, callback) {
     this,
     () =>
       new Promise<void>((resolve) => {
-        let settled = false;
         const done = (success: boolean, failureReason: string) => {
-          if (settled) return;
-          settled = true;
           resolve();
           callback?.(success, failureReason);
         };

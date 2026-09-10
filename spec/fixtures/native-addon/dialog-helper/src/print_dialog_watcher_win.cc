@@ -1,4 +1,4 @@
-#include "print_handler.h"
+#include "print_dialog_watcher.h"
 
 #include <windows.h>
 
@@ -65,7 +65,7 @@ void WatcherThread(int timeout_ms) {
 
 }  // namespace
 
-namespace print_handler {
+namespace print_dialog_watcher {
 
 void StartWatching(bool should_print, int timeout_ms) {
   // Tear down any previous watcher.
@@ -88,4 +88,4 @@ bool StopWatching() {
   return result;
 }
 
-}  // namespace print_handler
+}  // namespace print_dialog_watcher

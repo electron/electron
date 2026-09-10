@@ -1,4 +1,4 @@
-#include "print_handler.h"
+#include "print_dialog_watcher.h"
 
 #import <Cocoa/Cocoa.h>
 
@@ -71,7 +71,7 @@
 
 static PrintDialogPoller* g_poller = nil;
 
-namespace print_handler {
+namespace print_dialog_watcher {
 
 void StartWatching(bool should_print, int timeout_ms) {
   // Stop any previously running poller.
@@ -94,4 +94,4 @@ bool StopWatching() {
   return result;
 }
 
-}  // namespace print_handler
+}  // namespace print_dialog_watcher

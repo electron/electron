@@ -75,10 +75,6 @@
 #include "third_party/blink/public/mojom/media/capture_handle_config.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
-#if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
-#include "chrome/browser/pdf/pdf_pref_names.h"  // nogncheck
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/browser_context_keyed_service_factories.h"
 #include "extensions/browser/extension_pref_store.h"
@@ -484,11 +480,6 @@ void ElectronBrowserContext::InitPrefs() {
   ElectronAccessibilityUIMessageHandler::RegisterPrefs(registry.get());
 #if BUILDFLAG(ENABLE_PRINTING)
   registry->RegisterBooleanPref(prefs::kPrintingEnabled, true);
-#if BUILDFLAG(IS_WIN)
-  registry->RegisterIntegerPref(prefs::kPrintPostScriptMode, 0);
-  registry->RegisterIntegerPref(prefs::kPrintRasterizationMode, 0);
-  registry->RegisterBooleanPref(prefs::kPdfUseSkiaRendererEnabled, true);
-#endif
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_)

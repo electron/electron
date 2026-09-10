@@ -471,8 +471,10 @@ describe('webContents module', () => {
         landscape: true,
         copies: 2,
         pageSize: 'Letter',
-        header: 'h',
-        footer: 'f'
+        duplexMode: 'longEdge',
+        printBackground: true,
+        header: 'header text',
+        footer: 'footer text'
       });
       expect(reason).to.equal('');
       expect(success).to.be.true();
@@ -480,17 +482,6 @@ describe('webContents module', () => {
 
     it('accepts a custom pageSize', async () => {
       const [success, reason] = await print({ pageSize: { width: 100000, height: 150000 } });
-      expect(reason).to.equal('');
-      expect(success).to.be.true();
-    });
-
-    it('accepts duplexMode, printBackground, header and footer', async () => {
-      const [success, reason] = await print({
-        duplexMode: 'longEdge',
-        printBackground: true,
-        header: 'header text',
-        footer: 'footer text'
-      });
       expect(reason).to.equal('');
       expect(success).to.be.true();
     });
@@ -507,46 +498,46 @@ describe('webContents module', () => {
     ifdescribe(process.platform !== 'linux' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       'through the system dialog',
       () => {
-        let printHandler: {
-          startWatching(action: 'print' | 'cancel', timeoutMs?: number): void;
-          stopWatching(): boolean;
+        let dialogHelper: {
+          startPrintDialogWatcher(action: 'print' | 'cancel', timeoutMs: number): void;
+          stopPrintDialogWatcher(): boolean;
         };
 
         before(function () {
-          printHandler = require('@electron-ci/print-handler');
+          dialogHelper = require('@electron-ci/dialog-helper');
         });
         beforeEach(() => w.show());
-        afterEach(() => printHandler.stopWatching());
+        afterEach(() => dialogHelper.stopPrintDialogWatcher());
 
         const printWithDialog = (options: Electron.WebContentsPrintOptions, action: 'print' | 'cancel') => {
-          printHandler.startWatching(action, 20000);
+          dialogHelper.startPrintDialogWatcher(action, 20000);
           return print({ ...options, silent: false });
         };
 
         it('reports cancellation when the dialog is cancelled', async () => {
           const [success, reason] = await printWithDialog({}, 'cancel');
-          expect(printHandler.stopWatching()).to.be.true();
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
           expect(success).to.be.false();
           expect(reason).to.equal('Print job canceled');
         });
 
         it('reports cancellation when the dialog for a print with options is cancelled', async () => {
           const [success, reason] = await printWithDialog({ copies: 2, landscape: true }, 'cancel');
-          expect(printHandler.stopWatching()).to.be.true();
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
           expect(success).to.be.false();
           expect(reason).to.equal('Print job canceled');
         });
 
         it('prints when the dialog is confirmed', async () => {
           const [success, reason] = await printWithDialog({}, 'print');
-          expect(printHandler.stopWatching()).to.be.true();
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
           expect(reason).to.equal('');
           expect(success).to.be.true();
         });
 
         ifit(canReadOutput())('keeps the requested settings when the dialog is confirmed', async () => {
           const [success, reason] = await printWithDialog({ pageRanges: [{ from: 2, to: 3 }] }, 'print');
-          expect(printHandler.stopWatching()).to.be.true();
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
           expect(reason).to.equal('');
           expect(success).to.be.true();
           const doc = await printedDocument();
@@ -555,9 +546,9 @@ describe('webContents module', () => {
         });
 
         it('lets window.print() be cancelled', async () => {
-          printHandler.startWatching('cancel', 20000);
+          dialogHelper.startPrintDialogWatcher('cancel', 20000);
           await w.webContents.executeJavaScript('window.print()', true);
-          expect(printHandler.stopWatching()).to.be.true();
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
         });
       }
     );

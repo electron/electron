@@ -424,7 +424,7 @@ declare namespace ElectronInternal {
     dpi: { horizontal: number; vertical: number } | null;
     header: string;
     footer: string;
-    mediaSize: MediaSize | null;
+    mediaSize: MediaSize;
     usePrinterDefaultPageSize: boolean;
   }
 
@@ -437,7 +437,6 @@ declare namespace ElectronInternal {
     imageable_area_bottom_microns?: number;
     imageable_area_right_microns?: number;
     imageable_area_top_microns?: number;
-    is_default?: 'true';
   };
 
   type PageSize = {

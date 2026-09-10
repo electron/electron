@@ -202,16 +202,14 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
 #include "printing/page_range.h"
+#include "printing/units.h"
 #include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
-
-#include "printing/units.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -3522,11 +3520,8 @@ void OnPrinterResolved(base::WeakPtr<content::WebContents> web_contents,
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
     print_settings.Set(printing::kSettingDpiVertical, dpi.height());
   }
-  if (use_printer_default_page_size) {
-    // A4 unless the printer reports a default paper size.
-    const gfx::Size um = printer->default_paper_um.IsEmpty()
-                             ? gfx::Size(210000, 297000)
-                             : printer->default_paper_um;
+  if (use_printer_default_page_size && !printer->default_paper_um.IsEmpty()) {
+    const gfx::Size& um = printer->default_paper_um;
     print_settings.Set(
         printing::kSettingMediaSize,
         base::DictValue()
@@ -3566,19 +3561,17 @@ void WebContents::Print(std::optional<base::DictValue> options,
     return static_cast<int>(dict.FindDouble(key).value_or(0));
   };
   base::DictValue settings;
-  auto boolean = [&o](std::string_view key, bool fallback) {
-    return o.FindBool(key).value_or(fallback);
-  };
+  auto boolean = [&o](std::string_view key) { return *o.FindBool(key); };
   settings.Set(printing::kSettingShouldPrintBackgrounds,
-               boolean("printBackground", false));
-  settings.Set(printing::kSettingColor,
-               static_cast<int>(boolean("color", true)
-                                    ? printing::mojom::ColorModel::kColor
-                                    : printing::mojom::ColorModel::kGray));
-  settings.Set(printing::kSettingLandscape, boolean("landscape", false));
+               boolean("printBackground"));
+  settings.Set(
+      printing::kSettingColor,
+      static_cast<int>(boolean("color") ? printing::mojom::ColorModel::kColor
+                                        : printing::mojom::ColorModel::kGray));
+  settings.Set(printing::kSettingLandscape, boolean("landscape"));
   settings.Set(printing::kSettingScaleFactor, integer(o, "scaleFactor"));
   settings.Set(printing::kSettingPagesPerSheet, integer(o, "pagesPerSheet"));
-  settings.Set(printing::kSettingCollate, boolean("collate", true));
+  settings.Set(printing::kSettingCollate, boolean("collate"));
   settings.Set(printing::kSettingCopies, integer(o, "copies"));
 
   static constexpr auto kMarginTypes =
@@ -3588,14 +3581,8 @@ void WebContents::Print(std::optional<base::DictValue> options,
            {"none", printing::mojom::MarginType::kNoMargins},
            {"printableArea",
             printing::mojom::MarginType::kPrintableAreaMargins}});
-  const std::string* margin_type = o.FindString("marginType");
-  const auto margin =
-      margin_type ? kMarginTypes.find(*margin_type) : kMarginTypes.end();
-  settings.Set(
-      printing::kSettingMarginsType,
-      static_cast<int>(margin == kMarginTypes.end()
-                           ? printing::mojom::MarginType::kDefaultMargins
-                           : margin->second));
+  settings.Set(printing::kSettingMarginsType,
+               static_cast<int>(kMarginTypes.at(*o.FindString("marginType"))));
   if (const base::DictValue* margins = o.FindDict("margins")) {
     settings.Set(
         printing::kSettingMarginsCustom,
@@ -3606,11 +3593,8 @@ void WebContents::Print(std::optional<base::DictValue> options,
             .Set(printing::kSettingMarginRight, integer(*margins, "right")));
   }
 
-  const std::string empty;
-  const std::string* found_header = o.FindString("header");
-  const std::string* found_footer = o.FindString("footer");
-  const std::string& header = found_header ? *found_header : empty;
-  const std::string& footer = found_footer ? *found_footer : empty;
+  const std::string& header = *o.FindString("header");
+  const std::string& footer = *o.FindString("footer");
   settings.Set(printing::kSettingHeaderFooterEnabled,
                !header.empty() || !footer.empty());
   if (!header.empty() || !footer.empty()) {
@@ -3619,9 +3603,7 @@ void WebContents::Print(std::optional<base::DictValue> options,
   }
 
   printing::PageRanges page_ranges;
-  const base::ListValue no_ranges;
-  const base::ListValue* ranges = o.FindList("pageRanges");
-  for (const base::Value& range : ranges ? *ranges : no_ranges) {
+  for (const base::Value& range : *o.FindList("pageRanges")) {
     page_ranges.push_back(
         {.from = static_cast<uint32_t>(integer(range.GetDict(), "from")),
          .to = static_cast<uint32_t>(integer(range.GetDict(), "to"))});
@@ -3645,10 +3627,7 @@ void WebContents::Print(std::optional<base::DictValue> options,
     settings.Set(printing::kSettingDpiHorizontal, integer(*dpi, "horizontal"));
     settings.Set(printing::kSettingDpiVertical, integer(*dpi, "vertical"));
   }
-  if (std::optional<base::Value> media_size = o.Extract("mediaSize");
-      media_size && media_size->is_dict()) {
-    settings.Set(printing::kSettingMediaSize, std::move(*media_size));
-  }
+  settings.Set(printing::kSettingMediaSize, std::move(*o.Extract("mediaSize")));
 
   // PrintSettingsFromJobSettings() requires these.
   settings.Set(printing::kSettingPrinterType,
@@ -3657,14 +3636,13 @@ void WebContents::Print(std::optional<base::DictValue> options,
   settings.Set(printing::kSettingRasterizePdf, false);
 
   const bool use_printer_default_page_size =
-      boolean("usePrinterDefaultPageSize", false);
-  const std::string* device_name = o.FindString("deviceName");
+      boolean("usePrinterDefaultPageSize");
   ResolvePrinter(
-      device_name ? *device_name : empty,
+      *o.FindString("deviceName"),
       /*want_caps=*/!o.FindDict("dpi") || use_printer_default_page_size,
       base::BindOnce(&OnPrinterResolved, web_contents()->GetWeakPtr(),
                      std::move(settings), std::move(page_ranges),
-                     boolean("silent", false), use_printer_default_page_size,
+                     boolean("silent"), use_printer_default_page_size,
                      std::move(callback)));
 }
 

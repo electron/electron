@@ -111,8 +111,8 @@ class PrintViewManagerElectron
   explicit PrintViewManagerElectron(content::WebContents* web_contents);
 
   bool IsCurrentJob(int id) const;
-  bool RegisterDialogClient(bool assign_to_query);
-  void UnregisterDialogClient();
+  bool RegisterDialogClient(printing::PrinterQuery* query_to_assign);
+  static void UnregisterDialogClient(Job& job);
   void OnSettingsResolved(int id,
                           std::unique_ptr<printing::PrinterQuery> query);
   void ShowDialog();

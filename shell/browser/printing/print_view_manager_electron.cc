@@ -117,10 +117,8 @@ void PrintViewManagerElectron::Print(content::RenderFrameHost* rfh,
                        weak_factory_.GetWeakPtr(), job_->id, std::move(query)));
     return;
   }
-  job_->query = std::move(query);
-  if (!RegisterDialogClient(/*assign_to_query=*/true))
+  if (!RegisterDialogClient(query_ptr))
     return;
-  query = std::move(job_->query);
   query_ptr->GetDefaultSettings(
       base::BindOnce(&PrintViewManagerElectron::OnSettingsResolved,
                      weak_factory_.GetWeakPtr(), job_->id, std::move(query)),
@@ -131,7 +129,8 @@ bool PrintViewManagerElectron::IsCurrentJob(int id) const {
   return job_ && job_->id == id;
 }
 
-bool PrintViewManagerElectron::RegisterDialogClient(bool assign_to_query) {
+bool PrintViewManagerElectron::RegisterDialogClient(
+    printing::PrinterQuery* query_to_assign) {
 #if BUILDFLAG(ENABLE_OOP_PRINTING)
   if (printing::ShouldPrintJobOop() && !job_->dialog_client_id) {
     job_->dialog_client_id = printing::PrintBackendServiceManager::GetInstance()
@@ -140,19 +139,20 @@ bool PrintViewManagerElectron::RegisterDialogClient(bool assign_to_query) {
       Finish(false, kFailed);
       return false;
     }
-    if (assign_to_query)
-      job_->query->SetClientId(*job_->dialog_client_id);
+    if (query_to_assign)
+      query_to_assign->SetClientId(*job_->dialog_client_id);
   }
 #endif
   return true;
 }
 
-void PrintViewManagerElectron::UnregisterDialogClient() {
+// static
+void PrintViewManagerElectron::UnregisterDialogClient(Job& job) {
 #if BUILDFLAG(ENABLE_OOP_PRINTING)
-  if (job_->dialog_client_id) {
+  if (job.dialog_client_id) {
     printing::PrintBackendServiceManager::GetInstance().UnregisterClient(
-        *job_->dialog_client_id);
-    job_->dialog_client_id.reset();
+        *job.dialog_client_id);
+    job.dialog_client_id.reset();
   }
 #endif
 }
@@ -169,7 +169,6 @@ void PrintViewManagerElectron::OnSettingsResolved(
     return;
   }
   if (job_->silent) {
-    UnregisterDialogClient();
     RenderDocument();
   } else {
     ShowDialog();
@@ -185,7 +184,7 @@ void PrintViewManagerElectron::ShowDialog() {
   // A query resolved through SetSettings() already holds its print document
   // client, so the UI client is registered (one dialog at a time) but not
   // assigned to it.
-  if (!RegisterDialogClient(/*assign_to_query=*/false))
+  if (!RegisterDialogClient(nullptr))
     return;
   std::unique_ptr<printing::PrinterQuery> query = std::move(job_->query);
   printing::PrinterQuery* const query_ptr = query.get();
@@ -211,7 +210,7 @@ void PrintViewManagerElectron::OnDialogDone(
   if (!IsCurrentJob(id))
     return;
   job_->query = std::move(query);
-  UnregisterDialogClient();
+  UnregisterDialogClient(*job_);
   switch (job_->query->last_status()) {
     case printing::mojom::ResultCode::kSuccess:
       RenderDocument();
@@ -395,12 +394,7 @@ void PrintViewManagerElectron::Finish(bool success, std::string_view reason) {
       }
     }
   }
-#if BUILDFLAG(ENABLE_OOP_PRINTING)
-  if (job.dialog_client_id) {
-    printing::PrintBackendServiceManager::GetInstance().UnregisterClient(
-        *job.dialog_client_id);
-  }
-#endif
+  UnregisterDialogClient(job);
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(job.callback), success,
                                 std::string(success ? "" : reason)));

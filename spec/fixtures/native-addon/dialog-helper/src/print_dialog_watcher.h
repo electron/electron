@@ -1,7 +1,7 @@
-#ifndef SRC_PRINT_HANDLER_H_
-#define SRC_PRINT_HANDLER_H_
+#ifndef SRC_PRINT_DIALOG_WATCHER_H_
+#define SRC_PRINT_DIALOG_WATCHER_H_
 
-namespace print_handler {
+namespace print_dialog_watcher {
 
 // Starts an NSTimer (in NSRunLoopCommonModes) that polls for a modal print
 // dialog. When one appears, it dismisses it via [NSApp stopModalWithCode:].
@@ -16,6 +16,6 @@ void StartWatching(bool should_print, int timeout_ms);
 // Stops the watcher timer and returns whether a modal dialog was dismissed.
 bool StopWatching();
 
-}  // namespace print_handler
+}  // namespace print_dialog_watcher
 
-#endif  // SRC_PRINT_HANDLER_H_
+#endif  // SRC_PRINT_DIALOG_WATCHER_H_

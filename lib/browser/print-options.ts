@@ -123,7 +123,7 @@ export function normalizePrintOptions(options: unknown): ElectronInternal.Normal
         : null,
     header: optional(o.header, 'string', ''),
     footer: optional(o.footer, 'string', ''),
-    mediaSize: parsePageSize(o.pageSize) ?? (usePrinterDefaultPageSize ? null : withImageableArea(pageSizes.A4)),
+    mediaSize: parsePageSize(o.pageSize) ?? withImageableArea(pageSizes.A4),
     usePrinterDefaultPageSize
   };
 }
