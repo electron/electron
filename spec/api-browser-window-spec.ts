@@ -7725,9 +7725,16 @@ describe('BrowserWindow module', () => {
       `)}`
       );
 
-      const firstPaint = once(w.webContents, 'paint');
-      w.webContents.invalidate();
-      await firstPaint;
+      // Let the renderer commit the page's input regions before sending input.
+      // An invalidated paint can precede the initial compositor commit.
+      await w.webContents.executeJavaScript(
+        'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
+      );
+
+      let wheelEventCount = 0;
+      w.webContents.on('input-event', (_event, input) => {
+        if (input.type === 'mouseWheel') wheelEventCount++;
+      });
 
       const event = {
         type: 'mouseWheel' as const,
@@ -7752,6 +7759,9 @@ describe('BrowserWindow module', () => {
       await w.webContents.executeJavaScript(
         'new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))'
       );
+      // A synthesized wheel-end here would let the test pass without the fix.
+      // Check synchronously with the reversal so the timer cannot fire between them.
+      expect(wheelEventCount, 'wheel sequence ended before the direction change').to.equal(1);
       w.webContents.sendInputEvent({ ...event, deltaY: -120, wheelTicksY: -1 });
 
       await waitUntil(async () => {

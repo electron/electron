@@ -852,7 +852,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   }
   if (!render_widget_host_)
     return;
-  render_widget_host_->ForwardWheelEvent(event);
+  render_widget_host_->ForwardWheelEvent(mouse_wheel_event);
 }
 
 void OffScreenRenderWidgetHostView::GestureEventAck(
