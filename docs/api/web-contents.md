@@ -974,6 +974,87 @@ win.webContents.on('paint', async (e, dirty, image) => {
 win.loadURL('https://github.com')
 ```
 
+#### Event: 'offscreen-drag-start'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `image` [NativeImage](native-image.md) | null - The drag image rendered by the page, if any.
+  * `imageOffset` [Point](structures/point.md) - The offset of the cursor within `image`.
+  * `operations` string[] - The operations allowed by the drag source. Can be `copy`, `link` or `move`.
+
+Emitted when a page using offscreen rendering starts an HTML drag and drop
+operation. The drag never reaches the operating system; instead it is driven by
+the mouse events the embedder passes to [`contents.sendInputEvent()`](#contentssendinputeventinputevent):
+`mouseMove` events update the drop target under the cursor, `mouseUp` drops,
+and a `keyDown` for `Escape` cancels the drag. The embedder can draw `image`
+next to its own cursor while the drag is in progress. Drags started inside a
+`<webview>` hosted in offscreen contents are not supported and end immediately.
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({ webPreferences: { offscreen: true } })
+win.webContents.on('offscreen-drag-start', (event, details) => {
+  // showDragImage(details.image, details.imageOffset)
+})
+win.webContents.on('offscreen-drag-end', () => {
+  // hideDragImage()
+})
+// Forward the host's mouse input as usual; while a drag is in progress these
+// events move the drag and the final mouseUp performs the drop.
+// win.webContents.sendInputEvent({ type: 'mouseMove', x, y, modifiers: ['leftbuttondown'] })
+// win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left' })
+```
+
+#### Event: 'offscreen-drag-update'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `operation` string - The operation the page will perform if dropped here. Can be `none`, `copy`, `link` or `move`.
+
+Emitted during an offscreen drag and drop operation when the drop effect
+negotiated with the page changes, for example to update the cursor.
+
+#### Event: 'offscreen-drag-end'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53807
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `operation` string - The operation performed by the drop. Can be `none`, `copy`, `link` or `move`.
+  * `cancelled` boolean - Whether the drag was cancelled rather than released.
+
+Emitted when an offscreen drag and drop operation ends, either because the
+embedder sent a `mouseUp` (dropping onto the page if it accepted the drag) or
+because the drag was cancelled. It is not emitted when the `webContents` is
+destroyed during a drag; treat [`'destroyed'`](#event-destroyed) as the end of
+any drag in progress.
+
 #### Event: 'devtools-reload-page'
 
 Emitted when the DevTools window instructs the webContents to reload
