@@ -184,7 +184,6 @@
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
-#include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/views/widget/widget.h"
 
@@ -4123,16 +4122,10 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   const gfx::Size view_size =
       rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
 
-  // By default, the requested bitmap size is the view size in screen
-  // coordinates.  However, if there's more pixel detail available on the
-  // current system, increase the requested bitmap size to capture it all.
-  gfx::Size bitmap_size = view_size;
-  const gfx::NativeView native_view = view->GetNativeView();
-  const float scale = display::Screen::Get()
-                          ->GetDisplayNearestView(native_view)
-                          .device_scale_factor();
-  if (scale > 1.0f)
-    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+  // Capture at the view's own scale factor. Offscreen views render at
+  // |offscreen.deviceScaleFactor|, not the display's, and it may be below 1.
+  const gfx::Size bitmap_size =
+      gfx::ScaleToCeiledSize(view_size, view->GetDeviceScaleFactor());
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
                         base::TimeDelta(),
