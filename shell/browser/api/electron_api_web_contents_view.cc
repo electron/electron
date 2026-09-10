@@ -6,6 +6,7 @@
 
 #include "base/no_destructor.h"
 #include "base/timer/elapsed_timer.h"
+#include "content/public/browser/render_frame_host.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
@@ -46,6 +47,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
+  StopObservingWindow();
   if (api_web_contents_)  // destroy() called without closing WebContents
     api_web_contents_->Destroy();
 }
@@ -135,17 +137,62 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   // because that's handled in the WebContents dtor called prior.
   api_web_contents_->SetOwnerWindow(native_window);
   native_window->AddDraggableRegionProvider(this);
+  StopObservingWindow();
+  observed_window_ = native_window->GetWeakPtr();
+  native_window->AddObserver(this);
   ApplyBorderRadius();
+  MaybeUpdateWindowControlsOverlay();
 }
 
 void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
+
+  StopObservingWindow();
 
   NativeWindow* native_window = NativeWindow::FromWidget(view()->GetWidget());
   if (!native_window)
     return;
 
   native_window->RemoveDraggableRegionProvider(this);
+}
+
+void WebContentsView::OnViewBoundsChanged(views::View* observed_view) {
+  View::OnViewBoundsChanged(observed_view);
+  MaybeUpdateWindowControlsOverlay();
+}
+
+// Re-sends the window's current overlay rect if a page is already live. Before
+// the first navigation there is nothing to update; the window notifies us again
+// from WebContents::DidFinishNavigation.
+void WebContentsView::MaybeUpdateWindowControlsOverlay() {
+  if (!observed_window_ || !web_contents() ||
+      !web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive())
+    return;
+  if (const auto overlay = observed_window_->GetWindowControlsOverlayRect())
+    UpdateWindowControlsOverlay(*overlay);
+}
+
+// The overlay rect is relative to the window's content area. Translate it
+// into this view's coordinates so that views which only partially cover (or
+// don't cover) the titlebar report the right env(titlebar-area-*) values.
+void WebContentsView::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
+  if (!api_web_contents_ || !observed_window_)
+    return;
+  views::View* window_view = observed_window_->GetContentsView();
+  if (!window_view || !window_view->Contains(view()))
+    return;
+
+  gfx::Rect local_rect =
+      views::View::ConvertRectToTarget(window_view, view(), bounding_rect);
+  local_rect.Intersect(view()->GetLocalBounds());
+  web_contents()->UpdateWindowControlsOverlay(local_rect);
+}
+
+void WebContentsView::StopObservingWindow() {
+  if (observed_window_)
+    observed_window_->RemoveObserver(this);
+  observed_window_ = nullptr;
 }
 
 // static
