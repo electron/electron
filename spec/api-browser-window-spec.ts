@@ -8093,9 +8093,11 @@ describe('BrowserWindow module', () => {
           webPreferences: { offscreen: true, backgroundThrottling: false }
         }
       }));
-      await w.loadURL('about:blank');
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
       const created = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
-      w.webContents.executeJavaScript("window.open('data:text/html,<body>child</body>'); void 0", true);
+      // Renderer-initiated top-frame navigations to data: URLs are blocked, so
+      // open a same-origin file instead.
+      w.webContents.executeJavaScript("window.open('a.html'); void 0", true);
       const [, child] = await created;
       expect(child.webContents.isOffscreen()).to.be.true('child is offscreen');
       await once(child.webContents, 'paint');
