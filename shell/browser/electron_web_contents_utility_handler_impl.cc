@@ -54,10 +54,15 @@ void ElectronWebContentsUtilityHandlerImpl::OnFirstNonEmptyLayout() {
 }
 
 void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
-    double level) {
+    double level,
+    SetTemporaryZoomLevelCallback callback) {
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
-    api_web_contents->SetTemporaryZoomLevel(level);
+    std::move(callback).Run(api_web_contents->SetTemporaryZoomLevel(level));
+  } else {
+    // Without a zoom controller nothing can reject the request, so the
+    // requested level is the effective one.
+    std::move(callback).Run(level);
   }
 }
 

@@ -4357,8 +4357,8 @@ std::string WebContents::GetZoomMode() const {
   }
 }
 
-void WebContents::SetTemporaryZoomLevel(double level) {
-  GetZoomController()->SetTemporaryZoomLevel(level);
+double WebContents::SetTemporaryZoomLevel(double level) {
+  return GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
