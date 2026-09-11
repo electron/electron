@@ -66,8 +66,8 @@ rather than the legacy JSON trace format.
 ```js
 await contentTracing.startRecording({
   heap_profiler_options: {
-    sampling_interval_bytes: 128 * 1024,
-    sampling_interval_ms: 50
+    dump_interval_ms: 50,
+    sampling_interval_bytes: 128 * 1024
   }
 })
 ```

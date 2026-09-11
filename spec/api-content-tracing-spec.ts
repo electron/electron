@@ -111,7 +111,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(() =>
         contentTracing.startRecording({
           heap_profiler_options: {
-            sampling_interval_ms: 1.5
+            dump_interval_ms: 1.5
           }
         })
       ).to.throw();
@@ -119,7 +119,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(() =>
         contentTracing.startRecording({
           heap_profiler_options: {
-            sampling_interval_bytes: 2 ** 32
+            dump_interval_ms: 2 ** 32
           }
         })
       ).to.throw();
@@ -252,8 +252,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       await app.whenReady();
       await contentTracing.startRecording({
         heap_profiler_options: {
-          sampling_interval_bytes: 1024,
-          sampling_interval_ms: 10
+          dump_interval_ms: 10,
+          sampling_interval_bytes: 1024
         }
       });
 
