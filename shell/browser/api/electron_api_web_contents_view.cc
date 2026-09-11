@@ -8,6 +8,7 @@
 #include <optional>
 #include <utility>
 
+#include "base/check.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
@@ -48,6 +49,10 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
+
+#if defined(USE_AURA)
+#include "ui/aura/window.h"
+#endif
 
 namespace electron::api {
 
@@ -283,6 +288,27 @@ void WebContentsViewHost::UnregisterDraggableRegionProvider() {
   draggable_region_window_ = nullptr;
 }
 
+void WebContentsView::SetInteractive(bool interactive) {
+  View::SetInteractive(interactive);
+  ApplyInteractive();
+}
+
+#if !BUILDFLAG(IS_MAC)
+void WebContentsView::ApplyInteractive() {
+  if (!api_web_contents_ || !api_web_contents_->web_contents())
+    return;
+
+#if defined(USE_AURA)
+  if (gfx::NativeView native_view =
+          api_web_contents_->web_contents()->GetNativeView()) {
+    native_view->SetEventTargetingPolicy(
+        GetInteractive() ? aura::EventTargetingPolicy::kTargetAndDescendants
+                         : aura::EventTargetingPolicy::kNone);
+  }
+#endif
+}
+#endif  // !BUILDFLAG(IS_MAC)
+
 void WebContentsViewHost::ApplyBorderRadius(std::optional<int> radius) {
   InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
   if (!radius.has_value() || !inspectable_view || !view()->GetWidget())
@@ -356,6 +382,7 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   native_window->AddObserver(this);
   if (auto api_view = wrapper())
     ApplyBorderRadius(api_view->border_radius());
+    ApplyInteractive();
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }
@@ -584,6 +611,7 @@ void WebContentsView::FillObjectTemplate(v8::Isolate* isolate,
   gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
+      .SetMethod<&WebContentsView::SetInteractive>("setInteractive")
       .SetProperty<&WebContentsView::GetWebContents>("webContents");
 }
 

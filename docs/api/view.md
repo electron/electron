@@ -124,6 +124,14 @@ Examples of valid `color` values:
 > [!NOTE]
 > You must set a background color with an alpha channel (e.g. `#80ffffff`) in order for the blur effect to be visible.
 
+#### `view.setInteractive(interactive)`
+
+* `interactive` boolean - If false, the view will not be able to react to mouse events.
+
+#### `view.getInteractive()`
+
+Returns `boolean` - Whether the view is interactive.
+
 #### `view.setVisible(visible)`
 
 * `visible` boolean - If false, the view will be hidden from display.
