@@ -207,12 +207,6 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     return crashpad_status;
   }
 
-  if (!process_type.empty()) {
-    // Have Windows shut child processes down after the browser at logoff and
-    // shutdown, as Chrome does, so the browser never watches them die.
-    ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
-  }
-
   // access ui native theme here to prevent blocking calls later
   base::win::AllowDarkModeForApp(true);
 
