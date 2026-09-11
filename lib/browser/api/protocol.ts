@@ -1,3 +1,5 @@
+import { toByteString } from '@electron/internal/common/api/net-client-request';
+
 import { ProtocolRequest, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
@@ -154,7 +156,18 @@ Protocol.prototype.handle = function (
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
-      const headers = new Headers(preq.headers);
+      const headers = new Headers();
+      if (preq.headers) {
+        for (const [k, v] of Object.entries(preq.headers)) {
+          if (Array.isArray(v)) {
+            for (const item of v) {
+              headers.append(k, toByteString(item));
+            }
+          } else if (typeof v === 'string') {
+            headers.set(k, toByteString(v));
+          }
+        }
+      }
       if (headers.get('origin') === 'null') {
         headers.delete('origin');
       }
@@ -174,8 +187,19 @@ Protocol.prototype.handle = function (
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
+        const headersObj: Record<string, string | string[]> = {};
+        if (res.headers) {
+          for (const [k, v] of res.headers) {
+            if (k === 'set-cookie') {
+              if (!headersObj[k]) headersObj[k] = [];
+              (headersObj[k] as string[]).push(v);
+            } else {
+              headersObj[k] = v;
+            }
+          }
+        }
         const head = {
-          headers: res.headers ? Object.fromEntries(res.headers) : {},
+          headers: headersObj,
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
