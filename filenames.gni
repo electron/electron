@@ -149,6 +149,7 @@ filenames = {
     "shell/browser/api/electron_api_push_notifications_mac.mm",
     "shell/browser/api/electron_api_system_preferences_mac.mm",
     "shell/browser/api/electron_api_web_contents_mac.mm",
+    "shell/browser/api/electron_api_web_contents_view_mac.mm",
     "shell/browser/app_shim/app_shim_listener.h",
     "shell/browser/app_shim/app_shim_listener.mm",
     "shell/browser/auto_updater_mac.mm",
