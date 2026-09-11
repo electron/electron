@@ -44,6 +44,8 @@ class View : public gin_helper::EventEmitter<View>,
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
   void SetBackgroundBlur(int blur_radius);
+  virtual void SetInteractive(bool interactive);
+  bool GetInteractive() const { return interactive_; }
   void SetVisible(bool visible);
   bool GetVisible() const;
 
@@ -79,6 +81,7 @@ class View : public gin_helper::EventEmitter<View>,
   std::optional<int> border_radius_;
 
   bool delete_view_ = true;
+  bool interactive_ = true;
   raw_ptr<views::View> view_ = nullptr;
 };
 
