@@ -137,6 +137,7 @@ export function fetchWithSession(
       if (body) (rResp as any).__fetch = { request: r, body: rResp.body };
       p.resolve(rResp);
     } catch (err: any) {
+      r.abort();
       p.reject(err);
     }
   });
