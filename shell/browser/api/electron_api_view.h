@@ -94,6 +94,8 @@ class View : public gin::Wrappable<View>,
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
   void SetBackgroundBlur(int blur_radius);
+  virtual void SetInteractive(bool interactive);
+  bool GetInteractive() const { return interactive_; }
   void SetVisible(bool visible);
   bool GetVisible() const;
 
@@ -181,6 +183,8 @@ class View::Host : public NativePeer<View>, public views::ViewObserver {
   std::unique_ptr<views::View> view_;
 
   base::WeakPtrFactory<Host> weak_factory_{this};
+
+  bool interactive_ = true;
 };
 
 }  // namespace electron::api
