@@ -187,8 +187,19 @@ Protocol.prototype.handle = function (
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
+        const headersObj: Record<string, string | string[]> = {};
+        if (res.headers) {
+          for (const [k, v] of res.headers) {
+            if (k === 'set-cookie') {
+              if (!headersObj[k]) headersObj[k] = [];
+              (headersObj[k] as string[]).push(v);
+            } else {
+              headersObj[k] = v;
+            }
+          }
+        }
         const head = {
-          headers: res.headers ? Object.fromEntries(res.headers) : {},
+          headers: headersObj,
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
