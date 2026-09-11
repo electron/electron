@@ -105,6 +105,10 @@ Trace data will be written into `resultFilePath`. If `resultFilePath` is empty
 or not provided, trace data will be written to a temporary file, and the path
 will be returned in the promise.
 
+Recordings started with `heap_profiler_options` use the
+[Perfetto protobuf format][perfetto trace format]. Other recordings use the
+legacy JSON trace format.
+
 ### `contentTracing.getTraceBufferUsage()`
 
 <!--
@@ -125,3 +129,4 @@ Get the maximum usage across processes of trace buffer as a percentage of the
 full state.
 
 [trace viewer]: https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
+[perfetto trace format]: https://perfetto.dev/docs/reference/trace-packet-proto
