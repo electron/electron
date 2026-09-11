@@ -290,6 +290,25 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   zoom_mode_ = ZOOM_MODE_DEFAULT;
 }
 
+void WebContentsZoomController::PinDisabledZoomModeOnNavigationIfNeeded() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (zoom_mode_ != ZOOM_MODE_DISABLED)
+    return;
+
+  // ZOOM_MODE_DISABLED pins the page to the default zoom level with a
+  // temporary zoom level. Temporary zoom levels are keyed by RenderFrameHost
+  // and dropped when that frame is deleted, so after a cross-site navigation
+  // replaces the primary main frame the new frame would fall back to the
+  // per-host zoom level stored for the new origin. Re-pin the default level
+  // directly rather than via SetTemporaryZoomLevel(), which rejects changes
+  // in this mode.
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
+  if (host_zoom_map_->UsesTemporaryZoomLevel(rfh_id))
+    return;
+  host_zoom_map_->SetTemporaryZoomLevel(rfh_id, GetDefaultZoomLevel());
+}
+
 void WebContentsZoomController::ProcessNavigationZoom(
     content::NavigationHandle* navigation_handle) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -307,6 +326,7 @@ void WebContentsZoomController::ProcessNavigationZoom(
 
   if (!navigation_handle->IsSameDocument()) {
     ResetZoomModeOnNavigationIfNeeded(navigation_handle->GetURL());
+    PinDisabledZoomModeOnNavigationIfNeeded();
     SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
 
     // If the main frame's content has changed, the new page may have a

@@ -547,6 +547,34 @@ describe('<webview> tag', function () {
       const waitForRenderedZoomFactor = (wc: WebContents, baseDpr: number, factor: number) =>
         waitUntil(async () => Math.abs((await getDevicePixelRatio(wc)) / baseDpr - factor) < 0.01);
 
+      // Serves a page on a site other than the guest's initial file: page, and
+      // stores per-host zoom level 2 for it in |ses| via a throwaway
+      // default-mode window. Navigating the guest there is cross-site, so the
+      // primary main frame's RenderFrameHost is replaced.
+      const serveZoomedOrigin = async (ses: Electron.Session) => {
+        const server = http.createServer((req, res) => {
+          res.end('hello');
+        });
+        const { url: serverUrl } = await listen(server);
+        defer(() => server.close());
+        const origin = serverUrl.replace('127.0.0.1', 'localhost');
+
+        const seed = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await seed.loadURL(origin);
+        seed.webContents.setZoomLevel(2);
+        expect(seed.webContents.getZoomLevel()).to.equal(2);
+        seed.close();
+
+        // Control: a fresh default-mode window in the same session picks the
+        // stored level up, so a guest that does not has really ignored it.
+        const control = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await control.loadURL(origin);
+        expect(control.webContents.getZoomLevel()).to.equal(2);
+        control.close();
+
+        return origin;
+      };
+
       for (const embedderMode of ['default', 'isolated'] as const) {
         // An embedder in isolated mode uses temporary (per-webContents) zoom
         // levels, which reach the guest through a different code path than
@@ -617,6 +645,25 @@ describe('<webview> tag', function () {
             expect(guest.getZoomLevel()).to.equal(0);
 
             await zoomEmbedder(embedder, embedderBaseDpr);
+            expect(guest.getZoomLevel()).to.equal(0);
+            expect((await getDevicePixelRatio(guest)) / guestBaseDpr).to.be.closeTo(1, 0.01);
+          });
+
+          it('a webview in disabled zoom mode stays at the default zoom level after navigating to an origin with a stored zoom level', async () => {
+            const { embedder, guest } = await loadEmbedderAndGuest();
+            embedder.setZoomMode(embedderMode);
+            const zoomedOrigin = await serveZoomedOrigin(guest.session);
+
+            guest.setZoomMode('disabled');
+            expect(guest.getZoomLevel()).to.equal(0);
+            const guestBaseDpr = await getDevicePixelRatio(guest);
+
+            // Temporary zoom levels are per RenderFrameHost, so the level
+            // pinned by disabled mode must be re-applied to the frame created
+            // for the cross-site navigation, or the stored per-host level for
+            // the new origin takes effect.
+            await guest.loadURL(zoomedOrigin);
+            expect(guest.getZoomMode()).to.equal('disabled');
             expect(guest.getZoomLevel()).to.equal(0);
             expect((await getDevicePixelRatio(guest)) / guestBaseDpr).to.be.closeTo(1, 0.01);
           });

@@ -135,6 +135,7 @@ class WebContentsZoomController
   friend class content::WebContentsUserData<WebContentsZoomController>;
 
   void ResetZoomModeOnNavigationIfNeeded(const GURL& url);
+  void PinDisabledZoomModeOnNavigationIfNeeded();
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
