@@ -3198,6 +3198,49 @@ describe('webContents module', () => {
       expect(w.webContents.getZoomLevel()).to.equal(beforeLevel);
     });
 
+    it('disabled mode rejects webFrame.setZoomLevel() and keeps the renderer in sync', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+
+      w.webContents.setZoomMode('disabled');
+      const baselineRatio = await w.webContents.executeJavaScript('window.devicePixelRatio');
+
+      // The renderer applies the zoom locally as well as sending it to the
+      // browser; both must agree that the request was rejected.
+      const rendererLevel = await w.webContents.executeJavaScript(`(() => {
+        const { webFrame } = require('electron');
+        webFrame.setZoomLevel(1);
+        return webFrame.getZoomLevel();
+      })()`);
+
+      expect(w.webContents.getZoomLevel()).to.equal(0);
+      expect(rendererLevel).to.equal(0);
+      expect(await w.webContents.executeJavaScript('window.devicePixelRatio')).to.equal(baselineRatio);
+    });
+
+    it('default mode applies webFrame.setZoomLevel() in both browser and renderer', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+
+      const baselineRatio = await w.webContents.executeJavaScript('window.devicePixelRatio');
+
+      const rendererLevel = await w.webContents.executeJavaScript(`(() => {
+        const { webFrame } = require('electron');
+        webFrame.setZoomLevel(1);
+        return webFrame.getZoomLevel();
+      })()`);
+
+      expect(w.webContents.getZoomLevel()).to.equal(1);
+      expect(rendererLevel).to.equal(1);
+      expect(await w.webContents.executeJavaScript('window.devicePixelRatio')).to.be.greaterThan(baselineRatio);
+    });
+
     it('persists isolated mode across cross-document navigation', async () => {
       const server = http.createServer((req, res) => {
         res.end('hello');

@@ -135,11 +135,12 @@ void WebContentsZoomController::SetDefaultZoomFactor(double factor) {
   default_zoom_factor_ = factor;
 }
 
-void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
+double WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  // Cannot zoom in disabled mode.
+  // Cannot zoom in disabled mode. Report the level still in effect so callers
+  // such as webFrame.setZoomLevel() stay in sync with the browser.
   if (zoom_mode_ == ZOOM_MODE_DISABLED)
-    return;
+    return content::HostZoomMap::GetZoomLevel(web_contents());
 
   content::GlobalRenderFrameHostId old_rfh_id_ =
       web_contents()->GetPrimaryMainFrame()->GetGlobalId();
@@ -149,6 +150,7 @@ void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   ZoomChangedEventData zoom_change_data(web_contents(), zoom_level_, level,
                                         true /* temporary */, zoom_mode_);
   observers_.Notify(&WebContentsZoomObserver::OnZoomChanged, zoom_change_data);
+  return level;
 }
 
 bool WebContentsZoomController::UsesTemporaryZoomLevel() {

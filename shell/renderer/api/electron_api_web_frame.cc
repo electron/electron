@@ -478,18 +478,24 @@ class WebFrameRenderer final
     if (!MaybeGetRenderFrame(isolate, "setZoomLevel", &render_frame))
       return;
 
-    // Update the zoom controller.
+    // Update the zoom controller. The browser replies with the level actually
+    // in effect, which differs from |level| when it rejected the request (e.g.
+    // the WebContents zoom mode is "disabled").
     mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
         web_contents_utility_remote;
     render_frame->GetRemoteAssociatedInterfaces()->GetInterface(
         &web_contents_utility_remote);
-    web_contents_utility_remote->SetTemporaryZoomLevel(level);
+    double effective_level = level;
+    if (!web_contents_utility_remote->SetTemporaryZoomLevel(level,
+                                                            &effective_level)) {
+      return;
+    }
 
     // Update the local web frame for coherence with synchronous calls to
     // |GetZoomLevel|.
     if (blink::WebFrameWidget* web_frame =
             render_frame->GetWebFrame()->LocalRoot()->FrameWidget()) {
-      web_frame->SetZoomLevel(level);
+      web_frame->SetZoomLevel(effective_level);
     }
   }
 

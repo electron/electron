@@ -85,8 +85,10 @@ class WebContentsZoomController
   void SetDefaultZoomFactor(double factor);
   double default_zoom_factor() { return default_zoom_factor_; }
 
-  // Sets the temporary zoom level through HostZoomMap.
-  void SetTemporaryZoomLevel(double level);
+  // Sets the temporary zoom level through HostZoomMap. Returns the zoom level
+  // in effect for the primary main frame afterwards, which differs from
+  // |level| when the request was rejected (e.g. in ZOOM_MODE_DISABLED).
+  double SetTemporaryZoomLevel(double level);
   bool UsesTemporaryZoomLevel();
 
   // Sets the zoom mode, which defines zoom behavior (see enum ZoomMode).
