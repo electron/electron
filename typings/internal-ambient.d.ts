@@ -42,6 +42,30 @@ declare namespace NodeJS {
     createForServiceWorker(): IpcRendererImpl;
   }
 
+  interface ApiBridgeMainBinding {
+    createEvent(): Electron.ApiBridgeEvent;
+    createStore(initialValue?: any): Electron.ApiBridgeStore;
+    markSync<T extends (...args: any[]) => any>(fn: T): T;
+    markWithCaller<T extends (...args: any[]) => any>(fn: T): T;
+    // |isolated| selects Electron's isolated world instead of the main world.
+    pass(
+      frame: Electron.WebFrameMain,
+      name: string,
+      api: Record<string, any>,
+      options: { origin?: string | string[] } | undefined,
+      isolated: boolean
+    ): void;
+    revoke(frame: Electron.WebFrameMain, name: string, isolated: boolean): boolean;
+    passToSession(
+      session: Electron.Session,
+      name: string,
+      api: Record<string, any>,
+      options: Electron.ApiBridgeSessionOptions,
+      isolated: boolean
+    ): void;
+    revokeFromSession(session: Electron.Session, name: string, isolated: boolean): boolean;
+  }
+
   interface V8UtilBinding {
     getHiddenValue<T>(obj: any, key: string): T;
     setHiddenValue<T>(obj: any, key: string, value: T): void;
@@ -313,6 +337,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
+    _linkedBinding(name: 'electron_browser_api_bridge'): ApiBridgeMainBinding;
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
     };

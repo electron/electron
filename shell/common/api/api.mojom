@@ -56,6 +56,87 @@ interface ElectronRenderer {
   TakeHeapSnapshot(handle file) => (bool success);
 };
 
+// apiBridge: APIs the main process passes to frames with
+// frame.apiBridge.pass() and session.apiBridge.pass().
+enum ApiBridgeMemberKind {
+  kMethod,
+  kSyncMethod,
+  kEvent,
+  kStore,
+};
+
+// The JavaScript world of a document that an API is installed in.
+enum ApiBridgeWorld {
+  // The world of the page.
+  kMain,
+  // Electron's isolated world, where preload scripts run with
+  // contextIsolation.
+  kIsolated,
+};
+
+struct ApiBridgeMember {
+  string name;
+  ApiBridgeMemberKind kind;
+  // The store's value when the grant was sent. Only set for kStore.
+  SerializedValue? store_value;
+};
+
+struct ApiBridgeGrant {
+  // Identifies the grant in every later message. Unique per browser process.
+  uint64 id;
+  string name;
+  ApiBridgeWorld world;
+  array<ApiBridgeMember> members;
+};
+
+struct ApiBridgeError {
+  // The name of the error, such as "TypeError".
+  string name;
+  string message;
+};
+
+union ApiBridgeResult {
+  SerializedValue value;
+  ApiBridgeError error;
+};
+
+// Browser -> renderer. Associated with content.mojom.Frame, so
+// SetPendingGrants() arrives before the CommitNavigation that follows it.
+interface ElectronApiBridgeClient {
+  // The grants for the document that the next cross-document commit in this
+  // frame creates. Replaces any earlier pending set.
+  SetPendingGrants(array<ApiBridgeGrant> grants);
+  // Changes the grants of the current document: removes |revoked| and adds
+  // |added|. A grant in |added| that the document has already is refreshed.
+  // Ignored unless the current document's origin serializes to |origin|, so
+  // a change meant for a document that has just been replaced never reaches
+  // the next one. A null |origin| means the current document, whatever its
+  // origin; the browser only sends that right after a commit.
+  UpdateGrants(string? origin,
+               array<uint64> revoked,
+               array<ApiBridgeGrant> added);
+  // Replaces the grants of the current document with |grants|. Sent when a
+  // page comes back from the back/forward cache or from prerendering, when
+  // the grants it holds can be out of date.
+  ResetGrants(array<ApiBridgeGrant> grants);
+  // |args| is a serialized array.
+  EmitEvent(uint64 grant_id, uint32 member, SerializedValue args);
+  UpdateStore(uint64 grant_id, uint32 member, SerializedValue value);
+};
+
+// Renderer -> browser. The browser resolves the calling frame from the
+// receiver, never from the message, and checks the grant and the frame's
+// committed origin on every call.
+interface ElectronApiBridgeHost {
+  // |args| is a serialized array.
+  Call(uint64 grant_id, uint32 member, SerializedValue args)
+      => (ApiBridgeResult result);
+
+  [Sync]
+  CallSync(uint64 grant_id, uint32 member, SerializedValue args)
+      => (ApiBridgeResult result);
+};
+
 interface ElectronAutofillAgent {
   AcceptDataListSuggestion(mojo_base.mojom.String16 value);
 };
