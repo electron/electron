@@ -36,8 +36,8 @@ using namespace std::literals;
 namespace {
 
 struct HeapProfilerOptions {
+  uint32_t dump_interval_ms = 50;
   uint32_t sampling_interval_bytes = 128 * 1024;
-  uint32_t sampling_interval_ms = 50;
 };
 
 struct ContentTracingConfig {
@@ -64,8 +64,8 @@ struct Converter<HeapProfilerOptions> {
          out->sampling_interval_bytes == 0)) {
       return false;
     }
-    return !options.Has("sampling_interval_ms") ||
-           options.Get("sampling_interval_ms", &out->sampling_interval_ms);
+    return !options.Has("dump_interval_ms") ||
+           options.Get("dump_interval_ms", &out->dump_interval_ms);
   }
 };
 
@@ -143,8 +143,7 @@ void AddHeapProfilingDataSource(
   perfetto::protos::gen::ChromiumSamplingHeapProfilerConfig heap_config;
   heap_config.set_sampling_interval_bytes(
       heap_profiler_options.sampling_interval_bytes);
-  heap_config.set_sampling_interval_ms(
-      heap_profiler_options.sampling_interval_ms);
+  heap_config.set_sampling_interval_ms(heap_profiler_options.dump_interval_ms);
   data_source->set_chromium_sampling_heap_profiler_raw(
       heap_config.SerializeAsString());
 }
@@ -180,8 +179,8 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
     // promise it owns must be destroyed on the thread that created it, so make
     // sure both running and destroying the closure happen back on this thread.
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindPostTaskToCurrentDefault(base::BindOnce(
-                        std::move(split_callback.first), ""sv)));
+        *file_path, base::BindPostTaskToCurrentDefault(
+                        base::BindOnce(std::move(split_callback.first), ""sv)));
     if (!instance->StopTracing(endpoint)) {
       std::move(split_callback.second).Run("Failed to stop tracing"sv);
     }
