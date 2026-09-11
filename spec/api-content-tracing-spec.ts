@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, waitUntil } from './lib/spec-helpers';
 
 // Test jobs do not include Chromium's source tree, so define the subset of the
 // Perfetto schema needed to identify native heap stack samples.
@@ -261,7 +261,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       for (let index = 0; index < 1000; index++) {
         allocations.push(Buffer.alloc(4096));
       }
-      await setTimeout(100);
+      await waitUntil(async () => (await contentTracing.getTraceBufferUsage()).percentage > 0);
 
       await contentTracing.stopRecording(outputFilePath);
       const trace = perfettoTraceType.toObject(perfettoTraceType.decode(fs.readFileSync(outputFilePath))) as {
