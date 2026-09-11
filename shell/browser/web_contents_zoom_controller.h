@@ -136,6 +136,7 @@ class WebContentsZoomController
 
   void ResetZoomModeOnNavigationIfNeeded(const GURL& url);
   void PinDisabledZoomModeOnNavigationIfNeeded();
+  void SendTemporaryZoomLevelToNewRenderWidget();
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
