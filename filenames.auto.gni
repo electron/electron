@@ -1,6 +1,11 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
+    "docs/api/api-bridge-event.md",
+    "docs/api/api-bridge-frame-main.md",
+    "docs/api/api-bridge-main.md",
+    "docs/api/api-bridge-session.md",
+    "docs/api/api-bridge-store.md",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
     "docs/api/base-window.md",
@@ -83,6 +88,8 @@ auto_filenames = {
     "docs/api/webview-tag.md",
     "docs/api/window-open.md",
     "docs/api/structures/activation-arguments.md",
+    "docs/api/structures/api-bridge-caller.md",
+    "docs/api/structures/api-bridge-session-options.md",
     "docs/api/structures/base-window-options.md",
     "docs/api/structures/bluetooth-device.md",
     "docs/api/structures/browser-window-options.md",
@@ -602,6 +609,7 @@ auto_filenames = {
   ]
 
   browser_bundle_deps = [
+    "lib/browser/api/api-bridge-main.ts",
     "lib/browser/api/app.ts",
     "lib/browser/api/auto-updater.ts",
     "lib/browser/api/auto-updater/auto-updater-msix.ts",

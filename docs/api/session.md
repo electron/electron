@@ -1892,6 +1892,11 @@ A [`Cookies`](cookies.md) object for this session.
 
 A [`Extensions`](extensions-api.md) object for this session.
 
+#### `ses.apiBridge` _Readonly_
+
+An [`ApiBridgeSession`](api-bridge-session.md) that passes APIs to every frame of this
+session. See [`apiBridgeMain`](api-bridge-main.md).
+
 #### `ses.serviceWorkers` _Readonly_
 
 A [`ServiceWorkers`](service-workers.md) object for this session.

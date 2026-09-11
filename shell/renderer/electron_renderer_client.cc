@@ -17,6 +17,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
+#include "shell/renderer/api/electron_api_api_bridge_renderer.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -78,6 +79,10 @@ void ElectronRendererClient::PostIOThreadCreated(
 
 void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  // Before ElectronRenderFrameObserver. For a popup's first page both act on
+  // DidClearWindowObject, and observers are notified in the order they were
+  // added, so apiBridge APIs are there before the preload's first line.
+  new api::ApiBridgeRenderFrame(render_frame);
   new ElectronRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }

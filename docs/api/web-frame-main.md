@@ -267,6 +267,11 @@ possible for child frames to send and receive IPC messages also. The
 [`WebContents.ipc`](web-contents.md#contentsipc-readonly) interface may be more
 convenient when `nodeIntegrationInSubFrames` is not enabled.
 
+#### `frame.apiBridge` _Readonly_
+
+An [`ApiBridgeFrameMain`](api-bridge-frame-main.md) that passes APIs to this frame. See
+[`apiBridgeMain`](api-bridge-main.md).
+
 #### `frame.url` _Readonly_
 
 A `string` representing the current URL of the frame.

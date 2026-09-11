@@ -99,6 +99,7 @@
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/browser/api/electron_api_api_bridge.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -1195,6 +1196,7 @@ void WebContents::InitWithWebContents(
   // adopted WebContents (including extension background pages) needs one.
   WebContentsPermissionHelper::CreateForWebContents(web_contents.get());
   FileSystemAccessWebContentsHelper::CreateForWebContents(web_contents.get());
+  api_bridge::ObserveWebContents(web_contents.get());
 
   // A <webview> guest is created with a copy of its embedder's renderer
   // preferences, so caret browsing may already be enabled. Every path that
@@ -1371,6 +1373,9 @@ void WebContents::WebContentsCreatedWithFullParams(
     const content::mojom::CreateNewWindowParams& params,
     content::WebContents* new_contents) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
+  // Here, so that apiBridge follows the popup from its first navigation
+  // whenever its api::WebContents is made.
+  api_bridge::ObserveWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
   tracker->url = params.target_url;
   tracker->frame_name = params.frame_name;
