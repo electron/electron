@@ -242,21 +242,18 @@ index d9e6d854c024239a12cafc1171280255ffd80d36..ea30f2d7a51ec159153914f1a1eaa116
            << "Failed to open " << file_path_.value();
      }
 diff --git a/content/public/browser/tracing_controller.h b/content/public/browser/tracing_controller.h
-index c25f0fc7b76265f93be3c652d510019ca43754de..1a7d33b5b8177cc4243f4d9e5347368d6ecf96b3 100644
+index c25f0fc7b76265f93be3c652d510019ca43754de..10c55de26b27052afb73e04d5a4df25e966a2f5e 100644
 --- a/content/public/browser/tracing_controller.h
 +++ b/content/public/browser/tracing_controller.h
-@@ -17,6 +17,10 @@
+@@ -16,6 +16,7 @@
+ #include "base/task/task_traits.h"
  #include "content/common/content_export.h"
  #include "content/public/browser/tracing_delegate.h"
++#include "third_party/perfetto/include/perfetto/tracing/core/forward_decls.h"
  
-+namespace perfetto {
-+class TraceConfig;
-+}
-+
  namespace base {
  namespace trace_event {
- class TraceConfig;
-@@ -34,6 +38,20 @@ class TracingController;
+@@ -34,6 +35,20 @@ class TracingController;
  // the UI thread.
  class TracingController {
   public:
@@ -277,7 +274,7 @@ index c25f0fc7b76265f93be3c652d510019ca43754de..1a7d33b5b8177cc4243f4d9e5347368d
    CONTENT_EXPORT static TracingController* GetInstance();
  
    // An interface for trace data consumer. An implementation of this interface
-@@ -106,8 +124,17 @@ class TracingController {
+@@ -106,8 +121,17 @@ class TracingController {
    bool StartTracing(const base::trace_event::TraceConfig& trace_config,
                      StartTracingDoneCallback callback,
                      bool privacy_filtering_enabled = false) {
@@ -296,7 +293,7 @@ index c25f0fc7b76265f93be3c652d510019ca43754de..1a7d33b5b8177cc4243f4d9e5347368d
    }
  
    // Stop tracing (recording traces) on all processes.
-@@ -123,8 +150,8 @@ class TracingController {
+@@ -123,8 +147,8 @@ class TracingController {
    // the traced data.
    //
    // If |trace_data_endpoint| is not null, it will receive chunks of trace data
@@ -307,7 +304,7 @@ index c25f0fc7b76265f93be3c652d510019ca43754de..1a7d33b5b8177cc4243f4d9e5347368d
    //
    virtual bool StopTracing(
        const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint) = 0;
-@@ -147,7 +174,7 @@ class TracingController {
+@@ -147,7 +171,7 @@ class TracingController {
    virtual bool StartTracingImpl(
        const base::trace_event::TraceConfig& trace_config,
        StartTracingDoneCallback callback,
