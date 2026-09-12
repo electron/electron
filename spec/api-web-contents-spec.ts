@@ -4031,6 +4031,90 @@ describe('webContents module', () => {
     });
   }
 
+  describe('discard()', () => {
+    afterEach(closeAllWindows);
+
+    it('honors an explicit WebContentsDiscard feature disable', async () => {
+      const rc = await startRemoteControlApp(['--disable-features=WebContentsDiscard']);
+      const result = await rc.remotely(async () => {
+        const { BrowserWindow } = require('electron');
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('data:text/html,<title>not-discardable</title>');
+        const result = {
+          discardAccepted: w.webContents.discard(),
+          isDiscarded: w.webContents.isDiscarded()
+        };
+        w.destroy();
+        return result;
+      });
+
+      expect(result).to.deep.equal({
+        discardAccepted: false,
+        isDiscarded: false
+      });
+    });
+
+    it('discards a hidden webContents only once', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('data:text/html,<title>discardable</title>');
+
+      expect(w.webContents.isDiscarded()).to.equal(false);
+      expect(w.webContents.discard()).to.equal(true);
+      expect(w.webContents.isDiscarded()).to.equal(true);
+      expect(w.webContents.discard()).to.equal(false);
+    });
+
+    it('does not discard a visible webContents', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('data:text/html,<title>visible</title>');
+
+      expect(w.webContents.discard()).to.equal(false);
+      expect(w.webContents.isDiscarded()).to.equal(false);
+    });
+
+    it('reloads a discarded webContents when it becomes visible', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('data:text/html,<title>restorable</title>');
+      expect(w.webContents.discard()).to.equal(true);
+
+      const loaded = once(w.webContents, 'did-finish-load');
+      w.show();
+      await loaded;
+
+      const wasDiscarded = await w.webContents.executeJavaScript('document.wasDiscarded');
+      expect(wasDiscarded).to.equal(true);
+      expect(w.webContents.isDiscarded()).to.equal(false);
+      expect(w.webContents.getTitle()).to.equal('restorable');
+    });
+
+    it('discards a hidden WebContentsView in a visible BaseWindow', async () => {
+      const w = new BaseWindow({ show: true, width: 400, height: 300 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      await view.webContents.loadURL('data:text/html,<title>view-restorable</title>');
+
+      expect(w.isVisible()).to.equal(true);
+      expect(view.getVisible()).to.equal(true);
+      expect(view.webContents.discard()).to.equal(false);
+
+      view.setVisible(false);
+      await setTimeout(0);
+      expect(view.getVisible()).to.equal(false);
+      expect(view.webContents.discard()).to.equal(true);
+      expect(view.webContents.isDiscarded()).to.equal(true);
+
+      const loaded = once(view.webContents, 'did-finish-load');
+      view.webContents.reload();
+      await loaded;
+
+      const wasDiscarded = await view.webContents.executeJavaScript('document.wasDiscarded');
+      expect(wasDiscarded).to.equal(true);
+      expect(view.webContents.isDiscarded()).to.equal(false);
+      expect(view.webContents.getTitle()).to.equal('view-restorable');
+    });
+  });
+
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
   describe('destroy()', () => {

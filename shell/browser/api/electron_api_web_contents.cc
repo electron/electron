@@ -21,6 +21,7 @@
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
 #include "base/containers/map_util.h"
+#include "base/feature_list.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -79,6 +80,7 @@
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
+#include "content/public/common/content_features.h"
 #include "content/public/common/page_visibility_state.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
@@ -3337,6 +3339,29 @@ bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
 
+bool WebContents::Discard() {
+  bool is_visible =
+      web_contents()->GetVisibility() == content::Visibility::VISIBLE;
+  if (auto* window = owner_window()) {
+    is_visible = window->IsVisible() && !window->IsMinimized() &&
+                 inspectable_web_contents()->GetView()->IsDrawn();
+  }
+
+  if (!base::FeatureList::IsEnabled(features::kWebContentsDiscard) ||
+      is_visible || web_contents()->WasDiscarded()) {
+    return false;
+  }
+
+  web_contents()->Discard(base::OnceClosure());
+  // Chromium sets WasDiscarded synchronously when the request is accepted;
+  // renderer teardown may finish later.
+  return web_contents()->WasDiscarded();
+}
+
+bool WebContents::IsDiscarded() const {
+  return web_contents()->WasDiscarded();
+}
+
 void WebContents::ForcefullyCrashRenderer() {
   content::RenderWidgetHostView* view =
       web_contents()->GetRenderWidgetHostView();
@@ -5099,6 +5124,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_clearHistory", &WebContents::ClearHistory)
       .SetMethod("_restoreHistory", &WebContents::RestoreHistory)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
+      .SetMethod("discard", &WebContents::Discard)
+      .SetMethod("isDiscarded", &WebContents::IsDiscarded)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)

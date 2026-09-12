@@ -1353,6 +1353,42 @@ Navigates to the specified offset from the "current entry".
 
 Returns `boolean` - Whether the renderer process has crashed.
 
+#### `contents.discard()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53741
+```
+-->
+
+Returns `boolean` - Whether the page was accepted for discard.
+
+Discards the page hosted by this `webContents`, terminating its renderer when
+the process is no longer needed by another page. The page must not be visible.
+Calling this method on a visible or already discarded page returns `false` and
+does nothing. A `true` return value means the page was synchronously marked as
+discarded; renderer teardown may complete asynchronously.
+
+Discarding preserves the page's URL and navigation history, but destroys its
+in-memory document and JavaScript state. Making an owning `BrowserWindow`
+visible reloads the page, and [`document.wasDiscarded`](https://developer.mozilla.org/en-US/docs/Web/API/Document/wasDiscarded)
+is `true` in the newly loaded document. Other owners, including a
+`WebContentsView` in a `BaseWindow`, must call `reload()` or navigate explicitly
+to restore discarded contents.
+
+#### `contents.isDiscarded()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53741
+```
+-->
+
+Returns `boolean` - Whether the page has been discarded and is waiting to be
+reloaded.
+
 #### `contents.forcefullyCrashRenderer()`
 
 Forcefully terminates the renderer process that is currently hosting this
