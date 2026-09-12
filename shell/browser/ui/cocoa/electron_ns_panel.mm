@@ -7,11 +7,13 @@
 @implementation ElectronNSPanel
 
 @synthesize originalStyleMask;
+@synthesize canActivate;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
   if (self = [super initWithShell:shell styleMask:styleMask]) {
     originalStyleMask = styleMask;
+    canActivate = NO;
   }
   return self;
 }
@@ -34,6 +36,10 @@
       (NSWindowCollectionBehaviorCanJoinAllSpaces |
        NSWindowCollectionBehaviorFullScreenAuxiliary);
   [super setCollectionBehavior:collectionBehavior | panelBehavior];
+}
+
+- (BOOL)canBecomeMainWindow {
+  return self.canActivate && [super canBecomeMainWindow];
 }
 
 @end
