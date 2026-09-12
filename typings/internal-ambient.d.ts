@@ -26,6 +26,7 @@ declare namespace NodeJS {
     isPrintingEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererImpl {

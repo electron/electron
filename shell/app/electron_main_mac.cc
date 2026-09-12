@@ -2,11 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <sysexits.h>
+
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 
+#include "base/compiler_specific.h"
 #include "base/strings/cstring_view.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
@@ -36,6 +40,22 @@ namespace {
   return indicator && *indicator;
 }
 
+#if defined(HELPER_EXECUTABLE)
+// Helper apps only ever host child processes, which are always launched with
+// --type. Started bare (for example by child_process.fork() while the
+// runAsNode fuse is disabled) a helper would otherwise boot a second browser
+// process out of the helper bundle, whose own children then fail to launch.
+[[nodiscard]] bool HasProcessType(int argc, char* argv[]) {
+  constexpr std::string_view kProcessType = "--type=";
+  for (int i = 1; i < argc; ++i) {
+    // SAFETY: the OS guarantees that argv holds argc entries.
+    if (std::string_view(UNSAFE_BUFFERS(argv[i])).starts_with(kProcessType))
+      return true;
+  }
+  return false;
+}
+#endif
+
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 [[noreturn]] void FatalError(const std::string errmsg) {
   if (!errmsg.empty()) {
@@ -54,6 +74,15 @@ int main(int argc, char* argv[]) {
   if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
+
+#if defined(HELPER_EXECUTABLE)
+  if (!HasProcessType(argc, argv)) {
+    std::cerr << "This is a helper executable and cannot be launched directly; "
+                 "it requires a --type argument from the browser process."
+              << std::endl;
+    return EX_USAGE;
+  }
+#endif
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
   uint32_t exec_path_size = 0;
