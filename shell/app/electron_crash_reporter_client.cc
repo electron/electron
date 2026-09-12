@@ -25,7 +25,14 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
+#include <vector>
+
+#include "base/base_paths.h"
+#include "base/strings/strcat_win.h"
 #include "base/strings/string_util_win.h"
+#include "base/win/registry.h"
 #endif
 
 namespace {
@@ -99,6 +106,33 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 #endif
 
 #if BUILDFLAG(IS_WIN)
+namespace {
+
+// Copied from crashpad's crashpad_wer.dll by //electron:electron_wer and
+// shipped in the assets directory (the executable's directory by default) as
+// <exe name>_wer.dll, so an app that renames electron.exe to myapp.exe must
+// rename the helper to myapp_wer.dll.
+constexpr base::FilePath::CharType kWerHelperSuffix[] =
+    FILE_PATH_LITERAL("_wer.dll");
+
+// Windows Error Reporting only loads runtime exception helper modules that
+// are listed (by full path, as a value name) under this key in HKCU or HKLM.
+constexpr wchar_t kWerHelperRegistryKey[] =
+    L"Software\\Microsoft\\Windows\\Windows Error Reporting"
+    L"\\RuntimeExceptionHelperModules";
+
+base::FilePath GetWerHelperPath() {
+  base::FilePath exe, assets_dir;
+  if (!base::PathService::Get(base::FILE_EXE, &exe) ||
+      !base::PathService::Get(base::DIR_ASSETS, &assets_dir)) {
+    return {};
+  }
+  return assets_dir.Append(base::StrCat(
+      {exe.BaseName().RemoveExtension().value(), kWerHelperSuffix}));
+}
+
+}  // namespace
+
 void ElectronCrashReporterClient::GetProductNameAndVersion(
     const std::wstring& exe_path,
     std::wstring* product_name,
@@ -107,6 +141,54 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
     std::wstring* channel_name) {
   *product_name = base::UTF8ToWide(ELECTRON_PRODUCT_NAME);
   *version = base::UTF8ToWide(ELECTRON_VERSION_STRING);
+}
+
+std::wstring ElectronCrashReporterClient::GetWerRuntimeExceptionModule() {
+  // Called once per process during crashpad initialization, including in
+  // sandboxed children, so do not touch the disk here; registering a path
+  // that does not exist is harmless (WER only loads listed, existing DLLs).
+  return GetWerHelperPath().value();
+}
+
+// static
+void ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser() {
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  const base::FilePath path = GetWerHelperPath();
+  if (path.empty() || !base::PathExists(path))
+    return;
+
+  base::win::RegKey key;
+  if (key.Create(HKEY_CURRENT_USER, kWerHelperRegistryKey,
+                 KEY_QUERY_VALUE | KEY_SET_VALUE) != ERROR_SUCCESS) {
+    return;
+  }
+
+  // Installers that version the install directory (e.g. Squirrel's
+  // app-x.y.z folders) leave one value behind per update. Prune entries for
+  // sibling copies of the helper under this app's install root that no longer
+  // exist on disk; other apps' entries are left alone.
+  const base::FilePath install_root = path.DirName().DirName();
+  std::vector<std::wstring> stale;
+  for (base::win::RegistryValueIterator it(HKEY_CURRENT_USER,
+                                           kWerHelperRegistryKey);
+       it.Valid(); ++it) {
+    base::FilePath registered(it.Name());
+    if (registered != path &&
+        base::FilePath::CompareEqualIgnoreCase(registered.BaseName().value(),
+                                               path.BaseName().value()) &&
+        base::FilePath::CompareEqualIgnoreCase(
+            registered.DirName().DirName().value(), install_root.value()) &&
+        !base::PathExists(registered)) {
+      stale.emplace_back(it.Name());
+    }
+  }
+  for (const std::wstring& name : stale)
+    key.DeleteValue(name.c_str());
+
+  if (!key.HasValue(path.value().c_str())) {
+    // The value's data is ignored by WER; only the name matters.
+    key.WriteValue(path.value().c_str(), DWORD{0});
+  }
 }
 #endif
 

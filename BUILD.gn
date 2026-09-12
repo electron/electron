@@ -1752,6 +1752,10 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
+
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
@@ -1807,6 +1811,20 @@ if (is_mac) {
       if (is_linux) {
         deps += [ "//sandbox/linux:chrome_sandbox" ]
       }
+    }
+  }
+
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
     }
   }
 
