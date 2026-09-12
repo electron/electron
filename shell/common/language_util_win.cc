@@ -55,7 +55,7 @@ std::vector<std::string> GetPreferredLanguages() {
   // Attempt to use API available on Windows 10 or later, which
   // returns the full list of language preferences.
   if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
-    base::win::i18n::GetThreadPreferredUILanguageList(&languages16);
+    base::i18n::GetThreadPreferredUILanguageList(&languages16);
   }
 
   std::vector<std::string> languages;
