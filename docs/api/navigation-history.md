@@ -97,6 +97,7 @@ This API allows you to create common flows that aim to restore, recreate, or clo
 * `options` Object
   * `entries` [NavigationEntry[]](structures/navigation-entry.md) - Result of a prior `getAllEntries()` call
   * `index` Integer (optional) - Index of the stack that should be loaded. If you set it to `0`, the webContents will load the first (oldest) entry. If you leave it undefined, Electron will automatically load the last (newest) entry.
+  * `bypassCache` boolean (optional) - When `true`, the restored entry is loaded directly from the network instead of the cache. By default a restored navigation is served from the cache without contacting the server, so any condition that depends on a live network request is not re-evaluated. Bypassing the cache forces a fresh load, so errors such as an invalid certificate (for example one that has expired or changed since the page was cached, surfaced through the [`certificate-error`](web-contents.md#event-certificate-error) event) or other network failures are reported. Note that this requires network connectivity to restore the navigation. Defaults to `false`.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading the selected navigation entry
 (see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
