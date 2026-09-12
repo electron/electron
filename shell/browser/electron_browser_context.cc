@@ -29,6 +29,7 @@
 #include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/user_prefs/user_prefs.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
@@ -41,6 +42,7 @@
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -91,7 +93,6 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/pref_registry/pref_registry_syncable.h"
-#include "components/user_prefs/user_prefs.h"
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -477,6 +478,9 @@ void ElectronBrowserContext::InitPrefs() {
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
   ElectronAccessibilityUIMessageHandler::RegisterPrefs(registry.get());
+#if BUILDFLAG(ENABLE_PRINTING)
+  registry->RegisterBooleanPref(prefs::kPrintingEnabled, true);
+#endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_)
     extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
@@ -491,10 +495,7 @@ void ElectronBrowserContext::InitPrefs() {
 #endif
 
   prefs_ = prefs_factory.Create(registry.get());
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
-    BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
-#endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // No configured dictionaries, the default will be en-US

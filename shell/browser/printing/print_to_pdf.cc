@@ -83,6 +83,11 @@ v8::Local<v8::Promise> PrintFrameToPDF(content::RenderFrameHost* rfh,
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!rfh || !rfh->IsRenderFrameLive()) {
+    promise.RejectWithErrorMessage("Failed to generate PDF: frame is gone");
+    return handle;
+  }
+
   const base::DictValue& dict = settings.GetDict();
 
   // This allows us to track headless printing calls.
