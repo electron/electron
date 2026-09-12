@@ -569,7 +569,8 @@ async function findFiles(args, linter) {
 
   for (const ignoreRoot of linter.ignoreRoots || []) {
     const ignorePath = path.join(ELECTRON_ROOT, ignoreRoot);
-    if (!fs.existsSync(ignorePath)) continue;
+    // In a git worktree `.git` is a file, not a directory.
+    if (!fs.statSync(ignorePath, { throwIfNoEntry: false })?.isDirectory()) continue;
 
     const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test));
     filenames = filenames.filter((fileName) => !ignoreFiles.has(fileName));
