@@ -30,6 +30,12 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   ElectronDesktopWindowTreeHostWin& operator=(
       const ElectronDesktopWindowTreeHostWin&) = delete;
 
+  // views::DesktopWindowTreeHostWin::SetAspectRatio() is protected, but
+  // NativeWindowViews needs to call it directly: views::Widget only derives
+  // the excluded margin from the window frame, whereas Electron also has to
+  // exclude the extra size passed to win.setAspectRatio().
+  using views::DesktopWindowTreeHostWin::SetAspectRatio;
+
  protected:
   // views::DesktopWindowTreeHostWin:
   void OnWidgetInitDone() override;

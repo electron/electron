@@ -682,7 +682,7 @@ Returns `boolean` - Whether the window is in normal state (not maximized, not mi
 
 * `aspectRatio` Float - The aspect ratio to maintain for some portion of the
 content view.
-* `extraSize` [Size](structures/size.md) (optional) _macOS_ - The extra size not to be included while
+* `extraSize` [Size](structures/size.md) (optional) _macOS_ _Windows_ - The extra size not to be included while
 maintaining the aspect ratio.
 
 This will make a window maintain an aspect ratio. The extra size allows a
@@ -701,6 +701,9 @@ height areas you have within the overall content view.
 
 The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
+
+On Linux the aspect ratio is enforced by the window manager, which has no way
+to express `extraSize`, so it is ignored there.
 
 To reset an aspect ratio, pass 0 as the `aspectRatio` value: `win.setAspectRatio(0)`.
 
