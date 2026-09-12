@@ -157,7 +157,9 @@ class Archive : public node::ObjectWrap {
       return;
     }
 
-    v8::MaybeLocal<v8::Value> integrity_value;
+    // Every slot gets a value (undefined when there is no integrity data):
+    // DictionaryTemplate only reuses its cached map when all are present.
+    v8::MaybeLocal<v8::Value> integrity_value = v8::Undefined(isolate);
     if (info.integrity.has_value()) {
       const asar::IntegrityPayload& payload = info.integrity.value();
       gin_helper::Dictionary integrity(isolate, v8::Object::New(isolate));
@@ -360,6 +362,13 @@ static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   const bool require_normalized = args[1]->IsTrue();
   int result = asar::kNotInArchive;
   WithUtf8Path(isolate, args[0], [&](std::string_view path, bool is_ascii) {
+    // The FilePath converter that Archive::New() goes through refuses paths
+    // with control characters; agree with it so such a path stays "not an
+    // archive" instead of becoming an archive that can never be opened.
+    for (const char c : path) {
+      if (static_cast<unsigned char>(c) < 0x20)
+        return;
+    }
     result = asar::FindArchivePrefixLength(path, require_normalized);
     // The caller slices a JS string with this, so report UTF-16 code units.
     if (result > 0 && !is_ascii)

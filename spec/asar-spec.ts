@@ -277,9 +277,9 @@ describe('asar package', () => {
 
     before(function () {
       tmp = importedFs.realpathSync(importedFs.mkdtempSync(path.join(os.tmpdir(), 'electron-asar-internals-')));
-      importedFs.mkdirSync(j(tmp, 'plain'));
-      importedFs.mkdirSync(j(tmp, unicodeDir));
-      importedFs.mkdirSync(j(tmp, 'looks.asar'));
+      originalFs.mkdirSync(j(tmp, 'plain'));
+      originalFs.mkdirSync(j(tmp, unicodeDir));
+      originalFs.mkdirSync(j(tmp, 'looks.asar'));
       archive = j(tmp, 'plain', 'app.asar');
       unicodeArchive = j(tmp, unicodeDir, 'app.asar');
       upperArchive = j(tmp, 'plain', 'APP.ASAR');
@@ -332,6 +332,21 @@ describe('asar package', () => {
         ]) {
           expect(splitPath(input, true), JSON.stringify(input)).to.equal(-1);
         }
+      });
+
+      it('leaves paths with control characters to the real filesystem, like Archive::New', function () {
+        if (process.platform !== 'win32') {
+          const odd = j(tmp, 'tab\there');
+          originalFs.mkdirSync(odd);
+          originalFs.copyFileSync(archive, j(odd, 'app.asar'));
+          expect(splitPath(j(odd, 'app.asar', 'a.txt'), true)).to.equal(-1);
+          expect(fs.statSync(j(odd, 'app.asar')).isFile()).to.equal(true);
+          expect(fs.readFileSync(j(odd, 'app.asar')).length).to.be.greaterThan(8);
+        }
+        expect(splitPath(j(archive, 'a\u0000b'), true)).to.equal(-1);
+        expect(() => fs.readFileSync(j(archive, 'a\u0000b'))).to.throw(
+          /must be .* without null bytes|ERR_INVALID_ARG_VALUE/
+        );
       });
 
       it('ignores non-string arguments', function () {
@@ -400,6 +415,23 @@ describe('asar package', () => {
         } finally {
           process.chdir(cwd);
         }
+      });
+
+      it('re-evaluates a *.asar path once something exists there', function () {
+        const laterDir = j(tmp, 'later-dir.asar');
+        const laterFile = j(tmp, 'later-file.asar');
+        // Nothing there yet: not a directory, so provisionally an archive path.
+        expect(splitPath(j(laterDir, 'x'), true)).to.equal(laterDir.length);
+        expect(splitPath(j(laterFile, 'a.txt'), true)).to.equal(laterFile.length);
+        expect(fs.existsSync(j(laterFile, 'a.txt'))).to.equal(false);
+        // The wrapped mkdir (win32) probes before creating; it must not poison later lookups.
+        fs.mkdirSync(laterDir);
+        fs.writeFileSync(j(laterDir, 'x'), 'plain file');
+        expect(splitPath(j(laterDir, 'x'), true)).to.equal(-1);
+        expect(fs.readFileSync(j(laterDir, 'x'), 'utf8')).to.equal('plain file');
+        writeAsar(laterFile, tree);
+        expect(splitPath(j(laterFile, 'a.txt'), true)).to.equal(laterFile.length);
+        expect(fs.readFileSync(j(laterFile, 'a.txt'), 'utf8')).to.equal('alpha');
       });
 
       it('gives stable answers under repetition and across many distinct prefixes', function () {
@@ -505,7 +537,7 @@ describe('asar package', () => {
         expect(a.getFileInfo('run.sh')).to.include({ executable: true });
         const second = a.getFileInfo('run.sh');
         expect(first && second && second.offset - first.offset).to.equal(5);
-        expect(first && Object.prototype.hasOwnProperty.call(first, 'integrity')).to.equal(false);
+        expect(first && (first as any).integrity).to.equal(undefined);
       });
 
       it('realpath resolves only the final component when it is a link', function () {
@@ -547,7 +579,8 @@ describe('asar package', () => {
           'size',
           'unpacked',
           'offset',
-          'executable'
+          'executable',
+          'integrity'
         ]);
         (s1 as any).size = 123;
         expect(a.stat('a.txt')).to.include({ size: 5 });
@@ -673,7 +706,10 @@ describe('asar package', () => {
         importedFs.symlinkSync(j(tmp, 'plain'), linkDir, 'dir');
         const viaLink = j(linkDir, 'app.asar');
         expect(fs.realpathSync(j(viaLink, 'file.lnk'))).to.equal(j(archive, 'a.txt'));
-        expect(fs.realpathSync.native(j(viaLink, 'dir', 'b.txt'))).to.equal(j(archive, 'dir', 'b.txt'));
+        // The native flavour may spell the directory differently (8.3 names
+        // on Windows runners), so derive its expectation the same way.
+        const nativeArchive = j(originalFs.realpathSync.native(j(tmp, 'plain')), 'app.asar');
+        expect(fs.realpathSync.native(j(viaLink, 'dir', 'b.txt'))).to.equal(j(nativeArchive, 'dir', 'b.txt'));
         expect(fs.realpathSync(j(viaLink, 'a.txt'), 'buffer')).to.deep.equal(Buffer.from(j(archive, 'a.txt')));
         expect(fs.realpathSync(j(viaLink, 'a.txt'), { encoding: 'hex' })).to.equal(
           Buffer.from(j(archive, 'a.txt')).toString('hex')
