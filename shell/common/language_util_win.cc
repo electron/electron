@@ -28,7 +28,9 @@ bool GetPreferredLanguagesUsingGlobalization(
   if (FAILED(hr))
     return false;
 
-  ABI::Windows::Foundation::Collections::IVectorView<HSTRING>* langs;
+  Microsoft::WRL::ComPtr<
+      ABI::Windows::Foundation::Collections::IVectorView<HSTRING>>
+      langs;
   hr = prefs->get_Languages(&langs);
   if (FAILED(hr))
     return false;
