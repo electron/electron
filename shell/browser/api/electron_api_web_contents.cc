@@ -2789,6 +2789,10 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
   return inspectable_web_contents_->GetDevToolsWebContents();
 }
 
+content::WebContents* WebContents::GetOpenDevToolsWebContents() const {
+  return devtools_web_contents_.IsEmpty() ? nullptr : GetDevToolsWebContents();
+}
+
 void WebContents::WebContentsDestroyed() {
   // Drop this instance's contribution to the process-wide caret browsing count.
   ReconcileCaretBrowsingCount(false);
