@@ -215,7 +215,9 @@ Sample output:
 
 When Electron reads from an ASAR file, log the read offset and file path to
 the system `tmpdir`. The resulting file can be provided to the ASAR module
-to optimize file ordering.
+to optimize file ordering. This variable is read once when each process
+starts, so it must be set in the environment that launches Electron rather
+than from the app's own code.
 
 ### `ELECTRON_ENABLE_STACK_DUMPING`
 

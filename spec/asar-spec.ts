@@ -197,6 +197,537 @@ describe('asar package', () => {
       });
     });
   });
+
+  describe('internals', function () {
+    const asarBinding: NodeJS.AsarBinding = process._linkedBinding('electron_common_asar');
+    const { splitPath } = asarBinding;
+    const fs = importedFs;
+    // The wrapped fs refuses to create files named *.asar; the fixtures are
+    // written through the unwrapped module.
+    const originalFs = require('original-fs') as typeof importedFs;
+    const sep = path.sep;
+    const j = (...parts: string[]) => parts.join(sep);
+
+    // Writes a minimal asar archive: |tree| maps names to file contents
+    // (string/Buffer), nested trees (directories) or { link } entries.
+    const writeAsar = (file: string, tree: Record<string, any>) => {
+      const chunks: Buffer[] = [];
+      let offset = 0;
+      const build = (node: Record<string, any>): any => {
+        const files: Record<string, any> = {};
+        for (const [name, value] of Object.entries(node)) {
+          if (typeof value === 'string' || Buffer.isBuffer(value)) {
+            const data = Buffer.from(value);
+            files[name] = { size: data.length, offset: String(offset) };
+            if (name.endsWith('.sh')) files[name].executable = true;
+            offset += data.length;
+            chunks.push(data);
+          } else if (typeof value.link === 'string') {
+            files[name] = { link: value.link };
+          } else {
+            files[name] = { files: build(value) };
+          }
+        }
+        return files;
+      };
+      const json = Buffer.from(JSON.stringify({ files: build(tree) }));
+      const padded = (json.length + 3) & ~3;
+      const headerPickle = Buffer.alloc(8 + padded);
+      headerPickle.writeUInt32LE(4 + padded, 0);
+      headerPickle.writeUInt32LE(json.length, 4);
+      json.copy(headerPickle, 8);
+      const sizePickle = Buffer.alloc(8);
+      sizePickle.writeUInt32LE(4, 0);
+      sizePickle.writeUInt32LE(headerPickle.length, 4);
+      originalFs.writeFileSync(file, Buffer.concat([sizePickle, headerPickle, ...chunks]));
+    };
+
+    const unicodeDir = 'ünï\u{1F642}'; // "ünï🙂"
+    const unicodeName = 'ファイル.txt'; // "ファイル.txt"
+    const astralName = '\u{1F642}.txt'; // "🙂.txt"
+    const tree = {
+      'a.txt': 'alpha',
+      'run.sh': '#!/bin/sh\n',
+      empty: '',
+      dir: {
+        'b.txt': 'bravo',
+        sub: { 'c.txt': 'charlie', deeper: { 'd.txt': 'delta' } },
+        'up.lnk': { link: 'a.txt' },
+        'self.lnk': { link: 'dir' }
+      },
+      'file.lnk': { link: 'a.txt' },
+      'dir.lnk': { link: 'dir' },
+      'chain.lnk': { link: 'file.lnk' },
+      'dangling.lnk': { link: 'missing' },
+      'loop1.lnk': { link: 'loop2.lnk' },
+      'loop2.lnk': { link: 'loop1.lnk' },
+      'inner.asar': 'not really an archive',
+      [unicodeDir]: { [unicodeName]: 'unicode-content', [astralName]: 'astral' },
+      '.hidden': 'dot',
+      'a.txt.bak': 'backup'
+    };
+
+    let tmp: string;
+    let archive: string; // <tmp>/plain/app.asar
+    let unicodeArchive: string; // <tmp>/<unicodeDir>/app.asar
+    let upperArchive: string; // <tmp>/plain/APP.ASAR
+    let dirNamedAsar: string; // <tmp>/looks.asar (a real directory)
+    let archiveInDirNamedAsar: string; // <tmp>/looks.asar/real.asar
+    let bogusArchive: string; // <tmp>/plain/bogus.asar (a file that is not an archive)
+
+    before(function () {
+      tmp = importedFs.realpathSync(importedFs.mkdtempSync(path.join(os.tmpdir(), 'electron-asar-internals-')));
+      originalFs.mkdirSync(j(tmp, 'plain'));
+      originalFs.mkdirSync(j(tmp, unicodeDir));
+      originalFs.mkdirSync(j(tmp, 'looks.asar'));
+      archive = j(tmp, 'plain', 'app.asar');
+      unicodeArchive = j(tmp, unicodeDir, 'app.asar');
+      upperArchive = j(tmp, 'plain', 'APP.ASAR');
+      dirNamedAsar = j(tmp, 'looks.asar');
+      archiveInDirNamedAsar = j(tmp, 'looks.asar', 'real.asar');
+      bogusArchive = j(tmp, 'plain', 'bogus.asar');
+      for (const file of [archive, unicodeArchive, upperArchive, archiveInDirNamedAsar]) writeAsar(file, tree);
+      originalFs.writeFileSync(bogusArchive, 'just some bytes');
+      importedFs.writeFileSync(j(dirNamedAsar, 'plain.txt'), 'plain');
+    });
+
+    after(function () {
+      originalFs.rmSync(tmp, { recursive: true, force: true });
+    });
+
+    describe('splitPath (native archive prefix detection)', function () {
+      it('finds the archive component and returns its length in JS string units', function () {
+        const cases: [string, number][] = [
+          [j(archive, 'a.txt'), archive.length],
+          [j(archive, 'dir', 'sub', 'deeper', 'd.txt'), archive.length],
+          [archive, archive.length],
+          [archive + sep, archive.length],
+          [archive + sep + sep, archive.length],
+          [j(unicodeArchive, unicodeDir, astralName), unicodeArchive.length],
+          [unicodeArchive, unicodeArchive.length],
+          [j(upperArchive, 'a.txt'), upperArchive.length],
+          [j(archiveInDirNamedAsar, 'dir', 'b.txt'), archiveInDirNamedAsar.length]
+        ];
+        for (const [input, expected] of cases) {
+          expect(splitPath(input, true), input).to.equal(expected);
+          expect(splitPath(input, false), input).to.equal(expected);
+        }
+      });
+
+      it('returns -1 for paths that are not inside an archive', function () {
+        for (const input of [
+          j(tmp, 'plain'),
+          j(tmp, 'plain', 'nope.txt'),
+          j(dirNamedAsar, 'plain.txt'), // a real directory named *.asar
+          dirNamedAsar,
+          dirNamedAsar + sep,
+          archive + '.unpacked' + sep + 'a.txt',
+          archive + 'x' + sep + 'a.txt', // "app.asarx"
+          j(tmp, 'plain', 'app.asar.gz', 'a.txt'),
+          j(tmp, 'plain', 'asar', 'a.txt'),
+          j(tmp, 'plain', 'xasar'),
+          '',
+          sep,
+          'asar'
+        ]) {
+          expect(splitPath(input, true), JSON.stringify(input)).to.equal(-1);
+        }
+      });
+
+      it('leaves paths with control characters to the real filesystem, like Archive::New', function () {
+        if (process.platform !== 'win32') {
+          const odd = j(tmp, 'tab\there');
+          originalFs.mkdirSync(odd);
+          originalFs.copyFileSync(archive, j(odd, 'app.asar'));
+          expect(splitPath(j(odd, 'app.asar', 'a.txt'), true)).to.equal(-1);
+          expect(fs.statSync(j(odd, 'app.asar')).isFile()).to.equal(true);
+          expect(fs.readFileSync(j(odd, 'app.asar')).length).to.be.greaterThan(8);
+        }
+        expect(splitPath(j(archive, 'a\u0000b'), true)).to.equal(-1);
+        expect(() => fs.readFileSync(j(archive, 'a\u0000b'))).to.throw(
+          /must be .* without null bytes|ERR_INVALID_ARG_VALUE/
+        );
+      });
+
+      it('ignores non-string arguments', function () {
+        for (const input of [undefined, null, 42, {}, Buffer.from(archive), [archive]]) {
+          expect(splitPath(input as any, true)).to.equal(-1);
+        }
+      });
+
+      it('picks the deepest *.asar component that is not a directory on disk', function () {
+        // An entry named *.asar inside an archive cannot be a directory on
+        // disk, so it becomes the archive path (and later fails to open):
+        // nested archives are not supported, matching GetAsarArchivePath().
+        const nested = j(archive, 'inner.asar', 'x');
+        expect(splitPath(nested, true)).to.equal(j(archive, 'inner.asar').length);
+        // A *.asar that does not exist at all is still "not a directory".
+        const ghost = j(tmp, 'plain', 'ghost.asar', 'x');
+        expect(splitPath(ghost, true)).to.equal(j(tmp, 'plain', 'ghost.asar').length);
+        // A plain file named *.asar is accepted here; opening it is what fails.
+        expect(splitPath(j(bogusArchive, 'x'), true)).to.equal(bogusArchive.length);
+        expect(() => fs.readFileSync(j(bogusArchive, 'x'))).to.throw(/Invalid package/);
+      });
+
+      it('matches the extension case-insensitively, like base::FilePath', function () {
+        const dir = j(tmp, 'plain');
+        for (const name of ['x.ASAR', 'x.Asar', 'x.aSaR', '.asar', 'x.y.asar', '..asar']) {
+          expect(splitPath(j(dir, name, 'f'), true), name).to.equal(j(dir, name).length);
+        }
+        for (const name of ['x.asar.', 'x.asar ', 'x.asa', 'x.tasar', 'asar.x']) {
+          expect(splitPath(j(dir, name, 'f'), true), name).to.equal(-1);
+        }
+      });
+
+      it('reports paths that need lexical normalization instead of guessing', function () {
+        const needs = [
+          archive + sep + sep + 'a.txt',
+          j(archive, '.', 'a.txt'),
+          j(archive, 'dir', '..', 'a.txt'),
+          archive + sep + '.',
+          archive + sep + '..',
+          j(tmp, 'plain', '.', 'app.asar', 'a.txt'),
+          j(tmp, 'plain', '..', 'plain', 'app.asar'),
+          '.' + sep + 'x.asar' + sep + 'f',
+          '..' + sep + 'x.asar'
+        ];
+        for (const input of needs) {
+          expect(splitPath(input, true), input).to.equal(-2);
+          expect(splitPath(input, false), input).to.be.greaterThan(0);
+        }
+        // No archive component at all: never -2, whatever the shape.
+        expect(splitPath(j(tmp, '.', 'plain', '..', 'x'), true)).to.equal(-1);
+        // Dots inside names are not dot components.
+        expect(splitPath(j(archive, '.hidden'), true)).to.equal(archive.length);
+        expect(splitPath(j(archive, 'a.txt.bak'), true)).to.equal(archive.length);
+        expect(splitPath(j(archive, '...'), true)).to.equal(archive.length);
+      });
+
+      it('handles relative paths against the current directory', function () {
+        const cwd = process.cwd();
+        try {
+          process.chdir(j(tmp, 'plain'));
+          expect(splitPath(j('app.asar', 'a.txt'), true)).to.equal('app.asar'.length);
+          expect(fs.readFileSync(j('app.asar', 'a.txt'), 'utf8')).to.equal('alpha');
+          process.chdir(tmp);
+          expect(splitPath(j('looks.asar', 'plain.txt'), true)).to.equal(-1);
+          expect(fs.readFileSync(j('looks.asar', 'plain.txt'), 'utf8')).to.equal('plain');
+        } finally {
+          process.chdir(cwd);
+        }
+      });
+
+      it('re-evaluates a *.asar path once something exists there', function () {
+        const laterDir = j(tmp, 'later-dir.asar');
+        const laterFile = j(tmp, 'later-file.asar');
+        // Nothing there yet: not a directory, so provisionally an archive path.
+        expect(splitPath(j(laterDir, 'x'), true)).to.equal(laterDir.length);
+        expect(splitPath(j(laterFile, 'a.txt'), true)).to.equal(laterFile.length);
+        expect(fs.existsSync(j(laterFile, 'a.txt'))).to.equal(false);
+        // The wrapped mkdir (win32) probes before creating; it must not poison later lookups.
+        fs.mkdirSync(laterDir);
+        fs.writeFileSync(j(laterDir, 'x'), 'plain file');
+        expect(splitPath(j(laterDir, 'x'), true)).to.equal(-1);
+        expect(fs.readFileSync(j(laterDir, 'x'), 'utf8')).to.equal('plain file');
+        writeAsar(laterFile, tree);
+        expect(splitPath(j(laterFile, 'a.txt'), true)).to.equal(laterFile.length);
+        expect(fs.readFileSync(j(laterFile, 'a.txt'), 'utf8')).to.equal('alpha');
+      });
+
+      it('gives stable answers under repetition and across many distinct prefixes', function () {
+        for (let i = 0; i < 1000; i++) {
+          expect(splitPath(j(archive, 'dir', `f${i}`), true)).to.equal(archive.length);
+        }
+        // Distinct ghost archives exercise the prefix memo without touching disk state.
+        for (let i = 0; i < 5000; i++) {
+          const ghost = j(tmp, 'plain', `g${i}.asar`);
+          expect(splitPath(j(ghost, 'x'), true)).to.equal(ghost.length);
+        }
+        expect(splitPath(j(dirNamedAsar, 'plain.txt'), true)).to.equal(-1);
+        expect(splitPath(j(archive, 'a.txt'), true)).to.equal(archive.length);
+      });
+
+      if (process.platform === 'win32') {
+        it('accepts either separator on Windows', function () {
+          expect(splitPath(archive.replace(/\\/g, '/') + '/a.txt', false)).to.equal(archive.length);
+          expect(splitPath(archive + '/dir\\b.txt', false)).to.equal(archive.length);
+        });
+      } else {
+        it('treats a backslash as an ordinary file name character on POSIX', function () {
+          expect(splitPath(archive + '\\a.txt', true)).to.equal(-1);
+          expect(splitPath(j(tmp, 'plain', 'app.asar\\x', 'y'), true)).to.equal(-1);
+        });
+      }
+    });
+
+    describe('Archive lookups', function () {
+      let a: NodeJS.AsarArchive;
+      const kFile = 1;
+      const kDir = 2;
+      const kLink = 3;
+      before(function () {
+        a = new asarBinding.Archive(archive);
+      });
+
+      it('stats files, directories and links without following the final link', function () {
+        expect(a.stat('')).to.include({ type: kDir });
+        expect(a.stat('a.txt')).to.include({ type: kFile, size: 5, executable: false });
+        expect(a.stat('run.sh')).to.include({ type: kFile, executable: true });
+        expect(a.stat('empty')).to.include({ type: kFile, size: 0 });
+        expect(a.stat('dir')).to.include({ type: kDir });
+        expect(a.stat(j('dir', 'sub', 'deeper'))).to.include({ type: kDir });
+        expect(a.stat(j('dir', 'sub', 'deeper', 'd.txt'))).to.include({ type: kFile, size: 5 });
+        expect(a.stat('file.lnk')).to.include({ type: kLink });
+        expect(a.stat('dir.lnk')).to.include({ type: kLink });
+        expect(a.stat('dangling.lnk')).to.include({ type: kLink });
+        expect(a.stat(j(unicodeDir, unicodeName))).to.include({
+          type: kFile,
+          size: Buffer.byteLength('unicode-content')
+        });
+        expect(a.stat(j(unicodeDir, astralName))).to.include({ type: kFile, size: 6 });
+      });
+
+      it('returns false for anything that does not resolve', function () {
+        for (const p of [
+          'missing',
+          j('dir', 'missing'),
+          j('a.txt', 'child'), // through a file
+          j('empty', 'x'),
+          j('dangling.lnk', 'x'), // through a dangling link
+          j('loop1.lnk', 'x'), // through a link cycle
+          j('dir', 'sub', 'c.txt', 'deeper'),
+          'A.TXT', // entry names are case-sensitive
+          j('dir', '.'), // no lexical normalization at this layer
+          j('dir', '..', 'a.txt'),
+          '.',
+          '..'
+        ]) {
+          expect(a.stat(p), p).to.equal(false);
+          expect(a.getFileInfo(p), p).to.equal(false);
+          expect(a.readdir(p), p).to.equal(false);
+          expect(a.readdirWithTypes(p), p).to.equal(false);
+        }
+        expect(a.realpath('missing')).to.equal(false);
+      });
+
+      it('walks through directory links in the middle of a path', function () {
+        expect(a.stat(j('dir.lnk', 'b.txt'))).to.include({ type: kFile, size: 5 });
+        expect(a.stat(j('dir.lnk', 'sub', 'c.txt'))).to.include({ type: kFile });
+        expect(a.stat(j('dir', 'self.lnk', 'self.lnk', 'b.txt'))).to.include({ type: kFile });
+        expect(a.stat(j('dir.lnk', 'up.lnk'))).to.include({ type: kLink });
+        expect(a.readdir(j('dir', 'self.lnk'))).to.deep.equal(a.readdir('dir'));
+      });
+
+      it('tolerates leading, trailing and doubled separators', function () {
+        expect(a.stat(sep + 'a.txt')).to.include({ type: kFile, size: 5 });
+        expect(a.stat('dir' + sep)).to.include({ type: kDir });
+        expect(a.stat('dir' + sep + sep + 'b.txt')).to.include({ type: kFile });
+        expect(a.readdir('dir' + sep)).to.deep.equal(a.readdir('dir'));
+        expect(a.stat(sep)).to.include({ type: kDir });
+      });
+
+      it('getFileInfo follows links to files and reports offsets in file order', function () {
+        const first = a.getFileInfo('a.txt');
+        expect(first).to.include({ size: 5, unpacked: false, executable: false });
+        expect(a.getFileInfo('file.lnk')).to.deep.equal(first);
+        expect(a.getFileInfo('chain.lnk')).to.deep.equal(first);
+        expect(a.getFileInfo(j('dir', 'up.lnk'))).to.deep.equal(first);
+        expect(a.getFileInfo('dangling.lnk')).to.equal(false);
+        expect(a.getFileInfo('loop1.lnk')).to.equal(false);
+        expect(a.getFileInfo('run.sh')).to.include({ executable: true });
+        const second = a.getFileInfo('run.sh');
+        expect(first && second && second.offset - first.offset).to.equal(5);
+        expect(first && (first as any).integrity).to.equal(undefined);
+      });
+
+      it('realpath resolves only the final component when it is a link', function () {
+        expect(a.realpath('a.txt')).to.equal('a.txt');
+        expect(a.realpath('file.lnk')).to.equal('a.txt');
+        expect(a.realpath('chain.lnk')).to.equal('file.lnk');
+        expect(a.realpath('dir.lnk')).to.equal('dir');
+        expect(a.realpath(j('dir.lnk', 'b.txt'))).to.equal(j('dir.lnk', 'b.txt'));
+        expect(a.realpath('dangling.lnk')).to.equal('missing');
+        expect(a.realpath('')).to.equal('');
+      });
+
+      it('readdir lists entry names and readdirWithTypes agrees with stat', function () {
+        const rootNames = a.readdir('');
+        expect(rootNames).to.be.an('array').that.includes.members(['a.txt', 'dir', 'file.lnk', unicodeDir, '.hidden']);
+        expect(rootNames).to.have.lengthOf(Object.keys(tree).length);
+        expect(a.readdir('a.txt')).to.equal(false);
+        for (const dir of ['', 'dir', j('dir', 'sub'), 'dir.lnk', unicodeDir]) {
+          const listing = a.readdirWithTypes(dir);
+          expect(listing, dir).to.not.equal(false);
+          const [names, types] = listing as [string[], number[]];
+          expect(names).to.deep.equal(a.readdir(dir));
+          expect(types).to.have.lengthOf(names.length);
+          names.forEach((name, i) => {
+            const stats = a.stat(dir ? j(dir, name) : name);
+            expect(stats && stats.type, j(dir, name)).to.equal(types[i]);
+          });
+        }
+        expect(a.readdirWithTypes(unicodeDir)).to.deep.equal([[unicodeName, astralName].sort(), [kFile, kFile]]);
+      });
+
+      it('returns objects of a stable shape and fresh identity', function () {
+        const s1 = a.stat('a.txt');
+        const s2 = a.stat('a.txt');
+        expect(s1).to.deep.equal(s2);
+        expect(s1).to.not.equal(s2);
+        expect(Object.keys(s1 as object)).to.deep.equal(['size', 'offset', 'type', 'executable']);
+        expect(Object.keys(a.getFileInfo('a.txt') as object)).to.deep.equal([
+          'size',
+          'unpacked',
+          'offset',
+          'executable',
+          'integrity'
+        ]);
+        (s1 as any).size = 123;
+        expect(a.stat('a.txt')).to.include({ size: 5 });
+      });
+
+      it('keeps answering correctly past the lookup memo limit', function () {
+        for (let i = 0; i < 33 * 1024; i++) {
+          if (a.stat(`missing-${i}`) !== false) throw new Error(`missing-${i} resolved`);
+        }
+        expect(a.stat('a.txt')).to.include({ type: kFile, size: 5 });
+        expect(a.stat(j('dir', 'sub', 'c.txt'))).to.include({ type: kFile });
+        expect(a.stat('missing-0')).to.equal(false);
+      });
+
+      it('serves concurrent lookups from worker threads', async function () {
+        const workerSource = `
+          const { parentPort, workerData } = require('node:worker_threads');
+          const fs = require('node:fs');
+          const path = require('node:path');
+          let ok = 0;
+          for (let i = 0; i < 2000; i++) {
+            const st = fs.statSync(path.join(workerData, 'dir', 'sub', 'c.txt'));
+            if (st.isFile() && st.size === 7) ok++;
+            if (fs.existsSync(path.join(workerData, 'nope-' + i))) ok = -1e9;
+            if (fs.readdirSync(path.join(workerData, 'dir')).length === 4) ok++;
+          }
+          parentPort.postMessage(ok);
+        `;
+        const workers = Array.from({ length: 4 }, () => new Worker(workerSource, { eval: true, workerData: archive }));
+        const results = workers.map((w) => once(w, 'message').then(([n]) => n));
+        let mainOk = 0;
+        for (let i = 0; i < 2000; i++) {
+          if (fs.statSync(j(archive, 'a.txt')).size === 5) mainOk++;
+        }
+        expect(mainOk).to.equal(2000);
+        expect(await Promise.all(results)).to.deep.equal([4000, 4000, 4000, 4000]);
+        await Promise.all(workers.map((w) => w.terminate()));
+      });
+    });
+
+    describe('fs on archives in unusual locations', function () {
+      it('works under a non-ASCII directory and with non-ASCII entry names', function () {
+        expect(fs.readFileSync(j(unicodeArchive, 'a.txt'), 'utf8')).to.equal('alpha');
+        expect(fs.readFileSync(j(unicodeArchive, unicodeDir, unicodeName), 'utf8')).to.equal('unicode-content');
+        expect(fs.readFileSync(j(unicodeArchive, unicodeDir, astralName), 'utf8')).to.equal('astral');
+        expect(fs.statSync(j(unicodeArchive, unicodeDir)).isDirectory()).to.equal(true);
+        expect(fs.readdirSync(j(unicodeArchive, unicodeDir))).to.have.members([unicodeName, astralName]);
+        expect(fs.realpathSync(j(unicodeArchive, 'file.lnk'))).to.equal(j(unicodeArchive, 'a.txt'));
+        expect(fs.existsSync(j(unicodeArchive, unicodeDir, 'nope'))).to.equal(false);
+      });
+
+      it('works when the archive extension is upper case', function () {
+        expect(fs.readFileSync(j(upperArchive, 'dir', 'b.txt'), 'utf8')).to.equal('bravo');
+        expect(fs.statSync(upperArchive).isDirectory()).to.equal(true);
+      });
+
+      it('works for an archive inside a real directory named *.asar', function () {
+        expect(fs.readFileSync(j(archiveInDirNamedAsar, 'a.txt'), 'utf8')).to.equal('alpha');
+        expect(fs.readFileSync(j(dirNamedAsar, 'plain.txt'), 'utf8')).to.equal('plain');
+        expect(fs.readdirSync(dirNamedAsar)).to.have.members(['plain.txt', 'real.asar']);
+      });
+
+      it('accepts Buffer and file: URL paths', function () {
+        expect(fs.readFileSync(Buffer.from(j(archive, 'a.txt')), 'utf8')).to.equal('alpha');
+        expect(fs.readFileSync(url.pathToFileURL(j(archive, 'dir', 'b.txt')), 'utf8')).to.equal('bravo');
+        expect(fs.existsSync(url.pathToFileURL(j(unicodeArchive, unicodeDir, astralName)) as any)).to.equal(true);
+      });
+
+      it('accepts un-normalized paths into an archive', function () {
+        expect(fs.readFileSync([archive, 'dir', '.', '..', 'dir', 'b.txt'].join(sep), 'utf8')).to.equal('bravo');
+        expect(fs.statSync(archive + sep + sep + 'dir' + sep + sep + 'b.txt' + sep).isFile()).to.equal(true);
+        expect(fs.existsSync([archive, '..', 'app.asar', 'dir'].join(sep))).to.equal(true);
+        expect(fs.existsSync([archive, 'dir', '..', '..', 'app.asar'].join(sep))).to.equal(true);
+        expect(fs.existsSync([archive, 'dir', '..', '..', 'nope.asar'].join(sep))).to.equal(false);
+        expect(fs.readdirSync([tmp, 'plain', '.', 'app.asar', 'dir', ''].join(sep))).to.have.members([
+          'b.txt',
+          'sub',
+          'up.lnk',
+          'self.lnk'
+        ]);
+      });
+
+      it('module resolution accepts un-normalized lookup paths', function () {
+        const sloppyDir = archive + sep + '.' + sep + 'dir' + sep;
+        expect(require.resolve('./b.txt', { paths: [sloppyDir] })).to.equal(j(archive, 'dir', 'b.txt'));
+        expect(require.resolve('./c.txt', { paths: [j(archive, 'dir', '..', 'dir', 'sub')] })).to.equal(
+          j(archive, 'dir', 'sub', 'c.txt')
+        );
+        expect(() => require.resolve('./nope.txt', { paths: [sloppyDir] })).to.throw(/Cannot find module/);
+      });
+
+      it('presents the archive root like a directory, with or without a trailing separator', function () {
+        expect(fs.statSync(archive).isDirectory()).to.equal(true);
+        expect(fs.statSync(archive + sep).isDirectory()).to.equal(true);
+        expect(fs.readdirSync(archive + sep)).to.deep.equal(fs.readdirSync(archive));
+        const inParent = fs.readdirSync(j(tmp, 'plain'), { withFileTypes: true });
+        expect(inParent.find((d) => d.name === 'app.asar')!.isFile()).to.equal(true);
+      });
+
+      it('produces Stats consistent with the entry', function () {
+        const st = fs.statSync(j(archive, 'run.sh'));
+        expect(st.isFile()).to.equal(true);
+        expect(st.mode & 0o111).to.not.equal(0);
+        expect(fs.statSync(j(archive, 'a.txt')).mode & 0o111).to.equal(0);
+        expect(fs.lstatSync(j(archive, 'file.lnk')).isSymbolicLink()).to.equal(true);
+        expect(fs.statSync(j(archive, 'file.lnk')).isFile()).to.equal(true);
+        const big = fs.statSync(j(archive, 'a.txt'), { bigint: true });
+        expect(big.size).to.equal(5n);
+        expect(typeof big.mtimeNs).to.equal('bigint');
+        // Two stats in a row must not alias each other (shared scratch buffer).
+        const s1 = fs.statSync(j(archive, 'a.txt'));
+        const s2 = fs.statSync(j(archive, 'dir', 'sub', 'c.txt'));
+        const d = fs.statSync(j(archive, 'dir'));
+        expect(s1.size).to.equal(5);
+        expect(s2.size).to.equal(7);
+        expect(s1.isFile() && s2.isFile()).to.equal(true);
+        expect(d.isDirectory()).to.equal(true);
+        expect(s1.isDirectory()).to.equal(false);
+      });
+
+      it('realpath resolves the archive location once and reuses it', function () {
+        const linkDir = j(tmp, 'via-link');
+        importedFs.symlinkSync(j(tmp, 'plain'), linkDir, 'dir');
+        const viaLink = j(linkDir, 'app.asar');
+        expect(fs.realpathSync(j(viaLink, 'file.lnk'))).to.equal(j(archive, 'a.txt'));
+        // The native flavour may spell the directory differently (8.3 names
+        // on Windows runners), so derive its expectation the same way.
+        const nativeArchive = j(originalFs.realpathSync.native(j(tmp, 'plain')), 'app.asar');
+        expect(fs.realpathSync.native(j(viaLink, 'dir', 'b.txt'))).to.equal(j(nativeArchive, 'dir', 'b.txt'));
+        expect(fs.realpathSync(j(viaLink, 'a.txt'), 'buffer')).to.deep.equal(Buffer.from(j(archive, 'a.txt')));
+        expect(fs.realpathSync(j(viaLink, 'a.txt'), { encoding: 'hex' })).to.equal(
+          Buffer.from(j(archive, 'a.txt')).toString('hex')
+        );
+        return new Promise<void>((resolve, reject) => {
+          fs.realpath(j(viaLink, 'chain.lnk'), (err, resolved) => {
+            if (err) return reject(err);
+            try {
+              expect(resolved).to.equal(j(archive, 'file.lnk'));
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          });
+        });
+      });
+    });
+  });
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -3330,44 +3861,6 @@ describe('asar package', function () {
             expect(fs).to.have.own.property(propertyName).that.has.own.property(util.promisify.custom);
           }
         }
-      });
-    });
-
-    describe('splitPath', function () {
-      itremote('splits at the deepest .asar file component and normalizes the relative part', function () {
-        const { splitPath } = process._linkedBinding('electron_common_asar');
-        const archive = path.join(asarDir, 'a.asar');
-        expect(splitPath(path.join(archive, 'dir1', 'file1'))).to.deep.equal({
-          isAsar: true,
-          asarPath: archive,
-          filePath: ['dir1', 'file1'].join(path.sep)
-        });
-        expect(
-          splitPath(archive + path.sep + path.sep + 'dir1' + path.sep + path.sep + 'file1' + path.sep)
-        ).to.deep.equal({ isAsar: true, asarPath: archive, filePath: ['dir1', 'file1'].join(path.sep) });
-        expect(splitPath(path.join(archive, 'nested.asar', 'x'))).to.deep.equal({
-          isAsar: true,
-          asarPath: path.join(archive, 'nested.asar'),
-          filePath: 'x'
-        });
-        expect(splitPath(archive)).to.deep.equal({ isAsar: true, asarPath: archive, filePath: '' });
-      });
-
-      itremote('does not treat a real directory named like an archive as an archive', function () {
-        const { splitPath } = process._linkedBinding('electron_common_asar');
-        expect(splitPath(path.join(asarDir, 'file'))).to.deep.equal({ isAsar: false });
-        expect(splitPath(asarDir)).to.deep.equal({ isAsar: false });
-        expect(splitPath(path.join(fixtures, 'module', 'noop.js'))).to.deep.equal({ isAsar: false });
-      });
-
-      itremote('matches the archive extension the same way base::FilePath does', function () {
-        const { splitPath } = process._linkedBinding('electron_common_asar');
-        const dir = path.join(fixtures, 'module');
-        expect(splitPath(path.join(dir, 'X.ASAR', 'y')).isAsar).to.equal(true);
-        expect(splitPath(path.join(dir, '.asar', 'y')).isAsar).to.equal(true);
-        expect(splitPath(path.join(dir, 'x.asar.gz', 'y')).isAsar).to.equal(false);
-        expect(splitPath(path.join(dir, 'x.asarx', 'y')).isAsar).to.equal(false);
-        expect(splitPath(path.join(dir, 'asar', 'y')).isAsar).to.equal(false);
       });
     });
 

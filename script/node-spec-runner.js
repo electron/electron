@@ -141,8 +141,7 @@ async function main() {
   const testChild = cp.spawn('python3', options, {
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: 'true',
-      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true'
+      ELECTRON_RUN_AS_NODE: 'true'
     },
     cwd: NODE_DIR,
     stdio: 'inherit'
