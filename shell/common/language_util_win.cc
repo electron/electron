@@ -50,18 +50,21 @@ bool GetPreferredLanguagesUsingGlobalization(
 }
 
 std::vector<std::string> GetPreferredLanguages() {
+  std::vector<std::string> languages;
   std::vector<std::wstring> languages16;
 
   // Attempt to use API available on Windows 10 or later, which
   // returns the full list of language preferences.
-  if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
-    base::i18n::GetThreadPreferredUILanguageList(&languages16);
+  if (GetPreferredLanguagesUsingGlobalization(&languages16)) {
+    for (const auto& language : languages16) {
+      languages.push_back(base::SysWideToUTF8(language));
+    }
+  } else {
+    for (const auto& tag : base::i18n::GetThreadPreferredUILanguageList()) {
+      languages.emplace_back(tag.tag_string());
+    }
   }
 
-  std::vector<std::string> languages;
-  for (const auto& language : languages16) {
-    languages.push_back(base::SysWideToUTF8(language));
-  }
   return languages;
 }
 
