@@ -19,7 +19,7 @@
     "@types/node": "^24.9.0",
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
-    "@xmldom/xmldom": "^0.9.10",
+    "@xmldom/xmldom": "^0.9.12",
     "buffer": "^6.0.3",
     "events": "^3.2.0",
     "folder-hash": "^4.1.2",
@@ -29,7 +29,7 @@
     "minimist": "^1.2.8",
     "node-gyp": "^12.3.0",
     "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "semver": "^7.6.3",
@@ -115,8 +115,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix",
-      "git add filenames.auto.gni"
+      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
@@ -124,11 +123,11 @@
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
-      "node script/gen-libc++-filenames.js"
+      "node script/gen-libc++-filenames.js",
+      "node script/gen-siso-revision.js"
     ],
     ".github/workflows/pipeline-segment-electron-build.yml": [
-      "node script/copy-pipeline-segment-publish.js",
-      "git add .github/workflows/pipeline-segment-electron-publish.yml"
+      "node script/copy-pipeline-segment-publish.js"
     ]
   },
   "resolutions": {

@@ -13,7 +13,8 @@ let children: cp.ChildProcessWithoutNullStreams[] = [];
 
 const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
-  const child = cp.spawn(process.execPath, args, {
+  const spawnArgs = process.platform === 'darwin' ? [...args, '--use-mock-keychain'] : args;
+  const child = cp.spawn(process.execPath, spawnArgs, {
     env: {
       ...process.env,
       ...customEnv

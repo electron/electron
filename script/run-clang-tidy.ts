@@ -62,7 +62,8 @@ async function runClangTidy(
   fix: boolean = false
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
-  const args = [`-p=${outDir}`, "-header-filter=''"];
+  // The header filter is HeaderFilterRegex in .clang-tidy.
+  const args = [`-p=${outDir}`];
 
   if (!process.env.CI) args.push('--use-color');
   if (fix) args.push('--fix');

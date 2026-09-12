@@ -202,6 +202,12 @@ jobs:
     # node_modules, ./depot_tools, ./generated_artifacts_*, ./src_artifacts_*,
     # system CUPS state) and none reads another's output; the env/PATH changes
     # they make are only consumed after the group's implicit wait.
+    # The download steps use a fork of actions/download-artifact: the runner
+    # rewrites $GITHUB_EVENT_PATH as each step in this group starts, and the
+    # upstream action parses that file at import, so it intermittently died
+    # with "JSON at position 8192" before downloading anything. The fork reads
+    # the payload lazily (it is never needed here). Drop it once actions/runner
+    # stops rewriting the file per step.
     - parallel:
         - name: Install Dependencies
           uses: ./src/electron/.github/actions/install-dependencies
@@ -215,19 +221,24 @@ jobs:
             git config --global core.longpaths true
             git config --global core.preloadindex true
             git config --global core.longpaths true
-            git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+            # googlesource.com sometimes cuts a clone off mid-pack; retry it. A
+            # clone that fails during checkout leaves ./depot_tools behind, so
+            # have the retry remove it first.
+            RETRY_CLEAN_PATH=depot_tools bash src/electron/script/actions/retry.sh git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
             # Ensure depot_tools does not update.
             test -d depot_tools && cd depot_tools
             touch .disable_auto_update
         - name: Download Generated Artifacts
-          uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+          uses: MarshallOfSound/download-artifact@bbfa5717ecb46c82dc6248b7d261d45f77a7c71a # v8.0.1 + lazy event payload read
           with:
             name: generated_artifacts_${{ env.ARTIFACT_KEY }}
             path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
+        # The build job uploads one set of src artifacts for both macOS
+        # variants (they hold no variant-specific files), under the darwin key.
         - name: Download Src Artifacts
-          uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+          uses: MarshallOfSound/download-artifact@bbfa5717ecb46c82dc6248b7d261d45f77a7c71a # v8.0.1 + lazy event payload read
           with:
-            name: src_artifacts_${{ env.ARTIFACT_KEY }}
+            name: src_artifacts_${{ matrix.build-type == 'mas' && format('darwin_{0}', inputs.target-arch) || env.ARTIFACT_KEY }}
             path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
         - name: Setup CUPS virtual printer (linux)
           if: ${{ inputs.target-platform == 'linux' }}

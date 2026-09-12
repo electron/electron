@@ -600,6 +600,10 @@ describe('ipc module', () => {
         const { port1 } = new MessageChannelMain();
 
         expect(() => {
+          port1.postMessage(null, {} as any);
+        }).to.throw(/transferables must be an array of MessagePorts/);
+
+        expect(() => {
           const buffer = new ArrayBuffer(10) as any;
           port1.postMessage(null, [buffer]);
         }).to.throw(/Port at index 0 is not a valid port/);
@@ -819,7 +823,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               (postMessage(w.webContents) as any)('channel', '', [123]);
-            }).to.throw(/Invalid value for transfer/);
+            }).to.throw(/Port at index 0 is not a valid port/);
           });
 
           it('throws when passing null ports', async () => {
@@ -827,7 +831,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)('foo', null, [null] as any);
-            }).to.throw(/Invalid value for transfer/);
+            }).to.throw(/Port at index 0 is not a valid port/);
           });
 
           it('throws when passing duplicate ports', async () => {

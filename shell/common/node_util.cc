@@ -14,7 +14,6 @@
 #include "base/threading/thread_local.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_natives_code_cache.h"
@@ -23,14 +22,10 @@
 
 namespace electron::util {
 
-v8::MaybeLocal<v8::Value> CompileAndCall(
-    v8::Isolate* const isolate,
+v8::MaybeLocal<v8::Function> CompileBundle(
     v8::Local<v8::Context> context,
     const char* id,
-    v8::LocalVector<v8::String>* parameters,
-    v8::LocalVector<v8::Value>* arguments) {
-  v8::TryCatch try_catch{isolate};
-
+    v8::LocalVector<v8::String>* parameters) {
   static base::NoDestructor<
       base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
       builtin_loader;
@@ -49,15 +44,22 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   v8::MaybeLocal<v8::Function> compiled =
       builtin_loader->Get()->LookupAndCompileFunction(
           context, id, parameters, node::Realm::GetCurrent(context));
+  // TODO(samuelmaddock): how can we get the compilation error message?
+  if (compiled.IsEmpty())
+    LOG(ERROR) << "Failed to compile electron script (" << id << ")";
+  return compiled;
+}
 
-  if (compiled.IsEmpty()) {
-    // TODO(samuelmaddock): how can we get the compilation error message?
-    LOG(ERROR) << "CompileAndCall failed to compile electron script (" << id
-               << ")";
+v8::MaybeLocal<v8::Value> CompileAndCall(
+    v8::Isolate* const isolate,
+    v8::Local<v8::Context> context,
+    const char* id,
+    v8::LocalVector<v8::String>* parameters,
+    v8::LocalVector<v8::Value>* arguments) {
+  v8::TryCatch try_catch{isolate};
+  v8::Local<v8::Function> fn;
+  if (!CompileBundle(context, id, parameters).ToLocal(&fn))
     return {};
-  }
-
-  v8::Local<v8::Function> fn = compiled.ToLocalChecked().As<v8::Function>();
   v8::MaybeLocal<v8::Value> ret = fn->Call(
       context, v8::Null(isolate), arguments->size(), arguments->data());
 
@@ -94,13 +96,15 @@ void InstallProcessCodeCache() {
 
 void EmitWarning(const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  EmitWarning(JavascriptEnvironment::GetIsolate(), warning_msg, warning_type);
+  // Reachable from renderers, where there is no JavascriptEnvironment.
+  EmitWarning(v8::Isolate::TryGetCurrent(), warning_msg, warning_type);
 }
 
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[" << warning_type << "] " << warning_msg;
@@ -111,14 +115,15 @@ void EmitWarning(v8::Isolate* isolate,
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+  EmitDeprecationWarning(v8::Isolate::TryGetCurrent(), warning_msg,
                          deprecation_code);
 }
 
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[DeprecationWarning] " << warning_msg

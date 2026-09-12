@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/node.gyp b/node.gyp
-index c58f4812e2e1c0f9ba5c3b285e9d73c1501d2361..72dd7525473c96293374019dc1626ec8798b2e09 100644
+index 988838e85858ef1ca87662a024c278f811477179..5df80c48e7c747a49bd2e86ea7706de757fff32e 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -152,6 +152,7 @@
@@ -19,10 +19,10 @@ index c58f4812e2e1c0f9ba5c3b285e9d73c1501d2361..72dd7525473c96293374019dc1626ec8
        'src/node_snapshotable.cc',
        'src/node_sockaddr.cc',
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 17248bef7d9675bbb3cf76dc90103530d216ab16..77e8cc3f6786790d31c8db21450ddf4a97e32dc5 100644
+index 3f5f70bf320040bafa479279c163d7c74d3decc6..2023f913eae6661768c09d80fffa9ce58396da9d 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -387,24 +387,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -403,24 +403,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -69,7 +69,7 @@ index 17248bef7d9675bbb3cf76dc90103530d216ab16..77e8cc3f6786790d31c8db21450ddf4a
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -781,19 +787,13 @@ namespace {
+@@ -793,19 +799,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -129,10 +129,10 @@ index be4067df0e226636cb6d876c41aa830343069f86..82da68d8eef06c57aae76f2b54eeb09d
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index ebf5dd91750018664c86c4b643ecd782a018c62d..01dd7df798def1a8f780ef8d7d7dc74a33a1f3e5 100644
+index bc0f03fdc8f37e9564607edf2b4a7eb0ffef49a2..573e1da2c210bf67e813e21daa5a0a48001808e0 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1590,7 +1590,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1552,7 +1552,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -141,7 +141,7 @@ index ebf5dd91750018664c86c4b643ecd782a018c62d..01dd7df798def1a8f780ef8d7d7dc74a
  #endif
    return size;
  }
-@@ -1613,6 +1613,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1575,6 +1575,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -168,7 +168,7 @@ index ebf5dd91750018664c86c4b643ecd782a018c62d..01dd7df798def1a8f780ef8d7d7dc74a
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1623,6 +1643,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1585,6 +1605,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }
@@ -177,7 +177,7 @@ index ebf5dd91750018664c86c4b643ecd782a018c62d..01dd7df798def1a8f780ef8d7d7dc74a
      buf = ArrayBuffer::New(isolate, std::move(store));
    }
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
+index 259e6eeda3e476fb09d9f077a7d52c32e5ae4189..357be955469c879f0987c80a5a624b97ffc0bf77 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -105,7 +105,7 @@ namespace {
@@ -189,7 +189,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
      return {};
    }
  
-@@ -182,7 +182,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
+@@ -185,7 +185,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
  
@@ -198,7 +198,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  MaybeLocal<Object> TranscodeFromUcs2(Environment* env,
-@@ -227,7 +227,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
+@@ -230,7 +230,7 @@ MaybeLocal<Object> TranscodeUcs2FromUtf8(Environment* env,
      return {};
    }
  
@@ -207,7 +207,7 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
-@@ -251,7 +251,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
+@@ -254,7 +254,7 @@ MaybeLocal<Object> TranscodeUtf8FromUcs2(Environment* env,
      return {};
    }
  

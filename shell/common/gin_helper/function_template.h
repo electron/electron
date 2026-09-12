@@ -68,6 +68,13 @@ class CallbackHolderBase {
 
   v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
 
+  // Frees the holders created in `isolate` when it has no gin::PerIsolateData,
+  // as a Node.js worker's isolate does. gin never reports the disposal of such
+  // an isolate, and V8 does not run weak callbacks when it disposes one, so
+  // without this the holders leak. Call it on the isolate's thread once no
+  // more JavaScript will run there.
+  static void DisposeAllInIsolateWithoutGin(v8::Isolate* isolate);
+
  protected:
   explicit CallbackHolderBase(v8::Isolate* isolate);
   virtual ~CallbackHolderBase();
@@ -99,6 +106,9 @@ class CallbackHolderBase {
 
   v8::Global<v8::External> v8_ref_;
   DisposeObserver dispose_observer_;
+
+  // Set while this holder is registered for DisposeAllInIsolateWithoutGin().
+  raw_ptr<v8::Isolate> isolate_without_gin_ = nullptr;
 };
 
 template <typename Sig>

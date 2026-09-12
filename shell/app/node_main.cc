@@ -4,6 +4,7 @@
 
 #include "shell/app/node_main.h"
 
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -37,6 +38,8 @@
 #include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
@@ -197,6 +200,12 @@ int NodeMain() {
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
+    // Match the other process types (see NodeBindings::ParseNodeCliFlags); an
+    // explicit --js-source-phase-imports later on the command line still wins.
+    // Kept out of process.execArgv below so fork() does not accumulate it.
+    constexpr std::string_view kNoSourcePhaseImports =
+        "--no-js-source-phase-imports";
+    args.insert(args.begin() + 1, std::string(kNoSourcePhaseImports));
 
     uint64_t process_flags =
         node::ProcessInitializationFlags::kNoInitializeV8 |
@@ -247,6 +256,11 @@ int NodeMain() {
     crash_keys::SetCrashKeysFromCommandLine(
         *base::CommandLine::ForCurrentProcess());
     crash_keys::SetPlatformCrashKey();
+#if BUILDFLAG(IS_WIN)
+    // libuv sets SEM_NOGPFAULTERRORBOX; clear it so Windows Error Reporting
+    // (and electron_wer.dll) still sees crashes crashpad cannot catch.
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+#endif
 #endif
 
     gin::V8Initializer::LoadV8Snapshot(
@@ -297,10 +311,15 @@ int NodeMain() {
 
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
+      std::vector<std::string> exec_args = result->exec_args();
+      if (auto it = std::ranges::find(exec_args, kNoSourcePhaseImports);
+          it != exec_args.end()) {
+        exec_args.erase(it);
+      }
       env = electron::util::CreateEnvironment(
           isolate, isolate_data,
           snapshot ? v8::Local<v8::Context>() : isolate->GetCurrentContext(),
-          result->args(), result->exec_args(),
+          result->args(), exec_args,
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 

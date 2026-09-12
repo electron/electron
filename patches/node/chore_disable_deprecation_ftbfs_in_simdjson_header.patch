@@ -14,7 +14,7 @@ and
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index 89175e6d6f70c35658566349eefaa79554ffa6c7..97280334abbff01495ac7dc95df3683abc6b9caf 100644
+index afcca85ad6bf7835f8f914d9d417f8347ad3db5c..a836ca8cfdb2fa7348ef7c2cf9c21f18ade5707b 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
 @@ -4408,12 +4408,17 @@ private:

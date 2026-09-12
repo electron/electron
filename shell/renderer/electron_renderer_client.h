@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_CLIENT_H_
 
 #include <memory>
+#include <optional>
 
 #include "base/containers/flat_map.h"
 #include "shell/renderer/renderer_client_base.h"
@@ -32,6 +33,10 @@ class ElectronRendererClient : public RendererClientBase {
   void DidCreateScriptContext(v8::Isolate* isolate,
                               v8::Local<v8::Context> context,
                               content::RenderFrame* render_frame) override;
+  v8::Local<v8::Context> GetEnvironmentContext(
+      content::RenderFrame* render_frame) const override;
+  std::optional<int> GetEnvironmentWorldId(
+      content::RenderFrame* render_frame) const override;
   void WillReleaseScriptContext(v8::Isolate* isolate,
                                 v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;

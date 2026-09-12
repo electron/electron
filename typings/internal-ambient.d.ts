@@ -27,6 +27,7 @@ declare namespace NodeJS {
     isPromptAPIEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererImpl {
@@ -286,10 +287,13 @@ declare namespace NodeJS {
   }
 
   interface Process {
-    internalBinding?(name: string): any;
     _linkedBinding(name: string): any;
     _linkedBinding(name: 'electron_common_asar'): AsarBinding;
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
+    _linkedBinding(name: 'electron_common_crashpad_support'): {
+      getCrashdumpSignalFD(): number;
+      getCrashpadHandlerPID(): number;
+    };
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };

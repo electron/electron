@@ -18,7 +18,7 @@ class ElectronGpuClient : public content::ContentGpuClient {
   ElectronGpuClient& operator=(const ElectronGpuClient&) = delete;
 
   // content::ContentGpuClient:
-  void PreCreateMessageLoop() override;
+  void PostSandboxInitialized() override;
 };
 
 }  // namespace electron

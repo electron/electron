@@ -190,6 +190,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
   virtual double GetOpacity() const = 0;
+  // NaN is treated as fully opaque, then the value is clamped to [0, 1].
+  static double ClampOpacity(double opacity);
   virtual void SetRepresentedFilename(const std::string& filename) {}
   virtual std::string GetRepresentedFilename() const;
   virtual void SetDocumentEdited(bool edited) {}
@@ -449,6 +451,11 @@ class NativeWindow : public views::WidgetDelegate {
   // Flushes save_window_state_timer_ that was queued by
   // DebouncedSaveWindowState. This does NOT flush the actual disk write.
   void FlushWindowState();
+  // Fires save_window_state_timer_ now if DebouncedSaveWindowState started it,
+  // so the electron_common_testing binding can make the debounced save
+  // deterministic in specs. Unlike FlushWindowState this has no other side
+  // effects, and it does NOT flush the actual disk write either.
+  void FlushPendingWindowStateSaveForTesting();
 
   // Restores window state - bounds first and then display mode.
   void RestoreWindowState(const gin_helper::Dictionary& options);
