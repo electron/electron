@@ -8,6 +8,7 @@
 
 #include "base/command_line.h"
 #include "base/process/process_metrics.h"
+#include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -234,6 +235,15 @@ void ElectronSandboxedRendererClient::
   RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
       context, service_worker_version_id, service_worker_scope, script_url,
       service_worker_token);
+}
+
+std::unique_ptr<media::KeySystemSupportRegistration>
+ElectronSandboxedRendererClient::GetSupportedKeySystems(
+    content::RenderFrame* render_frame,
+    media::GetSupportedKeySystemsCB cb) {
+  return cdm::GetSupportedKeySystemsUpdates(render_frame,
+                                            /*can_persist_data=*/true,
+                                            std::move(cb));
 }
 
 }  // namespace electron
