@@ -1,5 +1,4 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
-import { defaultDesktopName } from '@electron/internal/browser/desktop-name';
 
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -133,7 +132,11 @@ if (packageJson.productName != null) {
   app.name = `${packageJson.name}`.trim();
 }
 
-app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
+if (process.platform === 'linux') {
+  const { defaultDesktopName } =
+    require('@electron/internal/browser/desktop-name') as typeof import('@electron/internal/browser/desktop-name');
+  app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
+}
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
