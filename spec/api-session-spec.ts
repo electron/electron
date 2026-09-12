@@ -557,8 +557,16 @@ describe('session module', () => {
     // Shared dictionaries can only be created from real https websites, which we
     // lack the APIs to fake in CI. If you're working on this code, you can run
     // the real-internet tests below by uncommenting the `skip` below.
-    // In CI, we'll run simple tests here that ensure that the code in question doesn't
-    // crash, even if we expect it to not return any real dictionaries.
+    // In CI, we'll run simple tests here that ensure that the code in question
+    // doesn't crash. We clear the default session's shared-dictionary cache in a
+    // beforeEach so the emptiness assertions start from a known-clean state.
+    beforeEach(async () => {
+      // A Chromium background service can register a real shared dictionary
+      // (e.g. from www.google.com) on the default session during the run, which
+      // would make the emptiness assertions below flaky. Start from a clean state.
+      await session.defaultSession.clearSharedDictionaryCache();
+    });
+
     it('can get shared dictionary usage info', async () => {
       expect(await session.defaultSession.getSharedDictionaryUsageInfo()).to.deep.equal([]);
     });
