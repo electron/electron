@@ -164,6 +164,8 @@ class WebContents final : public ExclusiveAccessContext,
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
   static std::list<WebContents*> GetWebContentsList();
+  // Prefers a focused <webview> guest over its embedder.
+  static WebContents* GetFocusedWebContents();
 
   // Whether to disable draggable regions globally. This can be used to allow
   // events to skip client region hit tests.
@@ -398,6 +400,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Properties.
   int32_t ID() const { return id_; }
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  api::Session* session() const { return session_.Get(); }
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
