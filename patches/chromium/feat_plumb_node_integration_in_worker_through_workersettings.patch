@@ -12,7 +12,7 @@ would themselves get Node integration (the main frame, or any frame with
 node_integration_in_sub_frames) hand it to their workers.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..939c57c79f5d97c9e5c00ead9df97af0d95443a3 100644
+index 15b3286b6410ccd28fabc6d0a27c0d10a2ebef5e..4619c1bea29f0d0fc2182f51a559c3d92f3f5256 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -23,7 +23,7 @@ index 44536a1cac397bc9fb18670096c7efdbfe3f3ce4..939c57c79f5d97c9e5c00ead9df97af0
  #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
  #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
  #include "third_party/blink/renderer/core/loader/document_loader.h"
-@@ -530,6 +531,17 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
+@@ -529,6 +530,17 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
      auto* frame = window->GetFrame();
      parent_devtools_token = frame->GetDevToolsFrameToken();
      settings = std::make_unique<WorkerSettings>(frame->GetSettings());

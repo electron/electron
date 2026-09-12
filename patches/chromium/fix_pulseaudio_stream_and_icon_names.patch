@@ -19,7 +19,7 @@ This patch can be removed when upstream starts using AudioManager::SetGlobalAppN
 for all pa_context names (and when actually works with AudioServiceOutOfProcess).
 
 diff --git a/content/browser/audio/audio_service.cc b/content/browser/audio/audio_service.cc
-index 39ce7660ab13be4137e40a28fad0bfc4dd933a2e..c3071c9461d8d0a52a1873cd8e3d6f287a890bd6 100644
+index 6586285f77f26056ae91da2c8d4e854134404ef9..c1f4740cec2981678084d8882e05960dd995b7bb 100644
 --- a/content/browser/audio/audio_service.cc
 +++ b/content/browser/audio/audio_service.cc
 @@ -33,6 +33,9 @@

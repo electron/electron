@@ -9,10 +9,10 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 7552a9b98da5e897c04f4ea7279ab87bf4ab9ef5..7b75496e3da07aeda29a0c46bc49de8aca94ec7b 100644
+index 652e9e22e0de52565d5bbd26c3b4e2e297158e06..1e7962f09bae456fa81e4eb32ed62de207e62012 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -117,6 +117,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -114,6 +114,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  
@@ -31,7 +31,7 @@ index 7552a9b98da5e897c04f4ea7279ab87bf4ab9ef5..7b75496e3da07aeda29a0c46bc49de8a
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index ceda11ed43d222ae46ec9c6a82351fd79d0c0aff..d487fed0181f138bde26b9385c6f44d5b4a831d2 100644
+index 2b5dc2f17ecc4d3d8a7cd5e427221592d2cb1810..54e79beea2507434cc1d53d2e3dcf5fb0eb491ab 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -7,6 +7,7 @@
@@ -40,9 +40,9 @@ index ceda11ed43d222ae46ec9c6a82351fd79d0c0aff..d487fed0181f138bde26b9385c6f44d5
  
 +#include <map>
  #include <string>
- #include <vector>
- 
-@@ -143,6 +144,19 @@ class CrashReporterClient {
+ #include <string_view>
+ #include <type_traits>
+@@ -162,6 +163,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
@@ -63,10 +63,10 @@ index ceda11ed43d222ae46ec9c6a82351fd79d0c0aff..d487fed0181f138bde26b9385c6f44d5
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index d4d3555891b19d61676465c856055fb04e0168bc..3228888f5449df723f4385a0f2c9b456caa472f0 100644
+index ce5c8a721fb1e4f10a5ffaa8cfdddb74ed60da86..317a6887d5b3a6f74a1ff49477b615627207c460 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
-@@ -219,6 +219,7 @@ bool PlatformCrashpadInitialization(
+@@ -221,6 +221,7 @@ bool PlatformCrashpadInitialization(
      // where crash_reporter provides it's own values for lsb-release.
      annotations["lsb-release"] = base::GetLinuxDistro();
  #endif
@@ -74,7 +74,7 @@ index d4d3555891b19d61676465c856055fb04e0168bc..3228888f5449df723f4385a0f2c9b456
  
      std::vector<std::string> arguments;
      if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
-@@ -240,6 +241,13 @@ bool PlatformCrashpadInitialization(
+@@ -242,6 +243,13 @@ bool PlatformCrashpadInitialization(
      }
  #endif
  

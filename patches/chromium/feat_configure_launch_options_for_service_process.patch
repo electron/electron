@@ -61,10 +61,10 @@ index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd7
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 040af949c4a11827bb63748ce25778c3fc978bd5..40a1157726193a079c826493e4a0600599834cce 100644
+index 2671df7809d547af8bd4b6a734592d14aeed322b..f9fc84b9daf1f13ebb74e92147d541ddf778971c 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -65,6 +65,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -66,6 +66,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
      }
  
@@ -76,7 +76,7 @@ index 040af949c4a11827bb63748ce25778c3fc978bd5..40a1157726193a079c826493e4a06005
      // (For Electron), if we're launching without zygote, that means we're
      // launching an unsandboxed process (since all sandboxed processes are
      // forked from the zygote). Relax the allow_new_privs option to permit
-@@ -74,7 +79,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -75,7 +80,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->allow_new_privs = true;
      }
  
@@ -84,7 +84,7 @@ index 040af949c4a11827bb63748ce25778c3fc978bd5..40a1157726193a079c826493e4a06005
      options->environment = delegate_->GetEnvironment();
 +    options->clear_environment = !delegate_->ShouldInheritEnvironment();
    } else {
-     DCHECK(GetZygoteForLaunch());
+     CHECK(GetZygoteForLaunch(), base::NotFatalUntil::M159);
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
 index 72fb33d264e8fb0872be8cace5a4ca19ada53372..1991c78680c9a735153f71ed6962346892a91c7c 100644
@@ -113,7 +113,7 @@ index 72fb33d264e8fb0872be8cace5a4ca19ada53372..1991c78680c9a735153f71ed69623468
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index a8221428815c0a1c5268d7c598b8d54a5b0d5010..f61772869063ae3223c651e37d16c93a7cb0e005 100644
+index 91ac69cda199e119c094ae6a12e21349e72d38be..a0f24d19622b1f92882a219b9089fa22e10ecbbd 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -26,6 +26,8 @@
@@ -125,7 +125,7 @@ index a8221428815c0a1c5268d7c598b8d54a5b0d5010..f61772869063ae3223c651e37d16c93a
  namespace {
  
  // Helper to avoid marking the log file as non-executable every time we launch a
-@@ -134,6 +136,31 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -136,6 +138,31 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
      mojo_channel_->PrepareToPassRemoteEndpoint(&options->handles_to_inherit,
                                                 command_line());
    }
@@ -157,7 +157,7 @@ index a8221428815c0a1c5268d7c598b8d54a5b0d5010..f61772869063ae3223c651e37d16c93a
    return true;
  }
  
-@@ -166,7 +193,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
+@@ -168,7 +195,7 @@ ChildProcessLauncherHelper::LaunchProcessOnLauncherThread(
                   "tag", delegate_->GetSandboxTag());
  
      *launch_result = sandbox::policy::SandboxWin::StartSandboxedProcess(
@@ -231,7 +231,7 @@ index a92c1795611d0d1e9271444f7517c6460a9e4b48..1b54db8249cb6968cdcc2af7c7d87899
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index 84d75f122a8207df452770e371e107a4fdf21933..fe074df053cfe701a087d141e29d53b85235216c 100644
+index de03ca6ba7c35f73669b5e605721b7d743798a25..4ee1bb15aaa40064869d42deb8cfb2c8f97a423f 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
 @@ -80,6 +80,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
@@ -257,7 +257,7 @@ index 84d75f122a8207df452770e371e107a4fdf21933..fe074df053cfe701a087d141e29d53b8
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 0ea6fa7b923555eb913eb5abd6db16dd3dd76052..85b27b672841b3a9ec1358d0ea65ce70abb16717 100644
+index 1be5471d947897570094d752c14b33a9cb755c74..4234bc84ef6cf2dfc3abf923e0ec8b457c1d9c65 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -255,13 +255,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
@@ -323,7 +323,7 @@ index 0ea6fa7b923555eb913eb5abd6db16dd3dd76052..85b27b672841b3a9ec1358d0ea65ce70
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -573,9 +612,30 @@ bool UtilityProcessHost::StartProcess() {
+@@ -574,9 +613,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -441,7 +441,7 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index b4715c2612b736ee7bcf74c4da3f90c85ed350f0..149164851887e2c5b2047c985c7c877a0e2b2dc2 100644
+index 0b7288746d4a625d96983233bcde1d9fced36461..2899b548ee683fe5195123e84b1bfc96b975a2d1 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::

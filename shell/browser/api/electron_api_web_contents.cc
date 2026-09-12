@@ -3352,7 +3352,7 @@ void WebContents::ForcefullyCrashRenderer() {
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     // A generic |CrashDumpHungChildProcess()| is not implemented for Linux.
     // Instead we send an explicit IPC to crash on the renderer's IO thread.
-    rph->ForceCrash();
+    rph->CrashHungProcess();
 #else
     // Try to generate a crash report for the hung process.
 #if !IS_MAS_BUILD()
