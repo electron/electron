@@ -51,6 +51,15 @@ when it is a top-level frame or is hosted inside the DevTools front-end (a
 `devtools_page` or panel); an extension frame embedded in an ordinary page is
 treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
+### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods, deprecated in Electron 45, have been
+removed along with Chromium's synchronous OSCrypt backend. Use
+`safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync()`
+and `safeStorage.decryptStringAsync()` instead. They use the same per-platform
+key stores, so data encrypted with `safeStorage.encryptString()` by earlier
+versions of Electron decrypts with `safeStorage.decryptStringAsync()`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`

@@ -9,7 +9,6 @@
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
-#include "components/os_crypt/sync/os_crypt.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "shell/browser/browser.h"
@@ -23,13 +22,6 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
-
-namespace {
-
-const char* kEncryptionVersionPrefixV10 = "v10";
-const char* kEncryptionVersionPrefixV11 = "v11";
-
-}  // namespace
 
 namespace electron::api {
 
@@ -80,12 +72,9 @@ void SafeStorage::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
 gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::ObjectTemplateBuilder(isolate, GetClassName())
-      .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
       .SetMethod("isAsyncEncryptionAvailable",
                  &SafeStorage::IsAsyncEncryptionAvailable)
       .SetMethod("setUsePlainTextEncryption", &SafeStorage::SetUsePasswordV10)
-      .SetMethod("encryptString", &SafeStorage::EncryptString)
-      .SetMethod("decryptString", &SafeStorage::DecryptString)
       .SetMethod("encryptStringAsync", &SafeStorage::encryptStringAsync)
       .SetMethod("decryptStringAsync", &SafeStorage::decryptStringAsync)
 #if BUILDFLAG(IS_LINUX)
@@ -110,7 +99,6 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
 void SafeStorage::OnOsCryptReady(
     scoped_refptr<os_crypt_async::Encryptor> encryptor) {
   encryptor_ = std::move(encryptor);
-  is_available_ = true;
 
   // This callback may fire from a posted task without an active V8 scope.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -174,19 +162,6 @@ void SafeStorage::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(weak_factory_);
 }
 
-bool SafeStorage::IsEncryptionAvailable() {
-  if (!electron::Browser::Get()->is_ready())
-    return false;
-#if BUILDFLAG(IS_LINUX)
-  return OSCrypt::IsEncryptionAvailable() ||
-         (use_password_v10_ &&
-          static_cast<BrowserProcessImpl*>(g_browser_process)
-                  ->linux_storage_backend() == "basic_text");
-#else
-  return OSCrypt::IsEncryptionAvailable();
-#endif
-}
-
 v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
     v8::Isolate* isolate) {
   gin_helper::Promise<bool> promise(isolate);
@@ -207,7 +182,7 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     promise.Resolve(true);
     return handle;
   }
@@ -229,84 +204,6 @@ std::string SafeStorage::GetSelectedLinuxBackend() {
 }
 #endif
 
-v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
-                                                const std::string& plaintext) {
-  if (!IsEncryptionAvailable()) {
-    if (!electron::Browser::Get()->is_ready()) {
-      gin_helper::ErrorThrower(isolate).ThrowError(
-          "safeStorage cannot be used before app is ready");
-      return {};
-    }
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while encrypting the text provided to "
-        "safeStorage.encryptString. "
-        "Encryption is not available.");
-    return {};
-  }
-
-  std::string ciphertext;
-  bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
-
-  if (!encrypted) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while encrypting the text provided to "
-        "safeStorage.encryptString.");
-    return {};
-  }
-
-  return electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked();
-}
-
-std::string SafeStorage::DecryptString(v8::Isolate* isolate,
-                                       v8::Local<v8::Value> buffer) {
-  if (!IsEncryptionAvailable()) {
-    if (!electron::Browser::Get()->is_ready()) {
-      gin_helper::ErrorThrower(isolate).ThrowError(
-          "safeStorage cannot be used before app is ready");
-      return "";
-    }
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.decryptString. "
-        "Decryption is not available.");
-    return "";
-  }
-
-  if (!node::Buffer::HasInstance(buffer)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Expected the first argument of decryptString() to be a buffer");
-    return "";
-  }
-
-  // ensures an error is thrown in Mac or Linux on
-  // decryption failure, rather than failing silently
-  const char* data = node::Buffer::Data(buffer);
-  auto size = node::Buffer::Length(buffer);
-  std::string ciphertext(data, size);
-  if (ciphertext.empty()) {
-    return "";
-  }
-
-  if (ciphertext.find(kEncryptionVersionPrefixV10) != 0 &&
-      ciphertext.find(kEncryptionVersionPrefixV11) != 0) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.decryptString. "
-        "Ciphertext does not appear to be encrypted.");
-    return "";
-  }
-
-  std::string plaintext;
-  bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
-  if (!decrypted) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.decryptString.");
-    return "";
-  }
-  return plaintext;
-}
-
 v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
     v8::Isolate* isolate,
     const std::string& plaintext) {
@@ -321,7 +218,7 @@ v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     std::string ciphertext;
     bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
     if (encrypted) {
@@ -371,7 +268,7 @@ v8::Local<v8::Promise> SafeStorage::decryptStringAsync(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     std::string plaintext;
     os_crypt_async::Encryptor::DecryptFlags flags;
     bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext, &flags);

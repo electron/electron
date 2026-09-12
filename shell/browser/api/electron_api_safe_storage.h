@@ -67,16 +67,9 @@ class SafeStorage final : public gin::Wrappable<SafeStorage>,
 
   void OnOsCryptReady(scoped_refptr<os_crypt_async::Encryptor> encryptor);
 
-  bool IsEncryptionAvailable();
-
   v8::Local<v8::Promise> IsAsyncEncryptionAvailable(v8::Isolate* isolate);
 
   void SetUsePasswordV10(bool use);
-
-  v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
-                                     const std::string& plaintext);
-
-  std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer);
 
   v8::Local<v8::Promise> encryptStringAsync(v8::Isolate* isolate,
                                             const std::string& plaintext);
@@ -91,8 +84,6 @@ class SafeStorage final : public gin::Wrappable<SafeStorage>,
   bool use_password_v10_ = false;
 
   bool encryptor_requested_ = false;
-  bool is_available_ = false;
-
   scoped_refptr<os_crypt_async::Encryptor> encryptor_;
 
   // Pending encrypt operations waiting for encryptor to be ready.

@@ -129,15 +129,15 @@ describe('cpp heap', () => {
       const [usedBefore, usedAfter] = await remotely(async () => {
         const { safeStorage } = require('electron');
         const { getCppHeapStatistics } = require('node:v8');
-        console.log(typeof safeStorage.isEncryptionAvailable);
+        console.log(typeof safeStorage.isAsyncEncryptionAvailable);
         const heapStatsBefore = getCppHeapStatistics('brief');
         {
           const { safeStorage } = require('electron');
-          console.log(typeof safeStorage.encryptString);
+          console.log(typeof safeStorage.encryptStringAsync);
         }
         {
           const { safeStorage } = require('electron');
-          console.log(typeof safeStorage.decryptString);
+          console.log(typeof safeStorage.decryptStringAsync);
         }
         const heapStatsAfter = getCppHeapStatistics('brief');
         return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
@@ -152,7 +152,7 @@ describe('cpp heap', () => {
           const { safeStorage } = require('electron');
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
-          console.log(typeof safeStorage.isEncryptionAvailable);
+          console.log(typeof safeStorage.isAsyncEncryptionAvailable);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
         },
         path.join(__dirname, '../../third_party/electron_node/test/common/heap'),

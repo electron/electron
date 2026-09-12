@@ -10,7 +10,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
-import { expectWarningMessages } from './lib/warning-helpers';
 
 chai.use(chaiAsPromised);
 
@@ -28,68 +27,9 @@ describe('safeStorage module', () => {
     }
   });
 
-  it('emits deprecation warnings for the synchronous methods', async () => {
-    await expectWarningMessages(
-      () => {
-        safeStorage.isEncryptionAvailable();
-        safeStorage.decryptString(safeStorage.encryptString('plaintext'));
-      },
-      "(electron) 'safeStorage.isEncryptionAvailable' is deprecated and will be removed. Please use 'safeStorage.isAsyncEncryptionAvailable' instead.",
-      "(electron) 'safeStorage.encryptString' is deprecated and will be removed. Please use 'safeStorage.encryptStringAsync' instead.",
-      "(electron) 'safeStorage.decryptString' is deprecated and will be removed. Please use 'safeStorage.decryptStringAsync' instead."
-    );
-  });
-
-  describe('SafeStorage.isEncryptionAvailable()', () => {
-    it('should return true when encryption key is available (macOS, Windows)', () => {
-      expect(safeStorage.isEncryptionAvailable()).to.equal(true);
-    });
-  });
-
   ifdescribe(process.platform === 'linux')('SafeStorage.getSelectedStorageBackend()', () => {
     it('should return a valid backend', () => {
       expect(safeStorage.getSelectedStorageBackend()).to.equal('basic_text');
-    });
-  });
-
-  describe('SafeStorage.encryptString()', () => {
-    it('valid input should correctly encrypt string', () => {
-      const plaintext = 'plaintext';
-      const encrypted = safeStorage.encryptString(plaintext);
-      expect(Buffer.isBuffer(encrypted)).to.equal(true);
-    });
-
-    it('UTF-16 characters can be encrypted', () => {
-      const plaintext = '€ - utf symbol';
-      const encrypted = safeStorage.encryptString(plaintext);
-      expect(Buffer.isBuffer(encrypted)).to.equal(true);
-    });
-  });
-
-  describe('SafeStorage.decryptString()', () => {
-    it('valid input should correctly decrypt string', () => {
-      const encrypted = safeStorage.encryptString('plaintext');
-      expect(safeStorage.decryptString(encrypted)).to.equal('plaintext');
-    });
-
-    it('UTF-16 characters can be decrypted', () => {
-      const plaintext = '€ - utf symbol';
-      const encrypted = safeStorage.encryptString(plaintext);
-      expect(safeStorage.decryptString(encrypted)).to.equal(plaintext);
-    });
-
-    it('unencrypted input should throw', () => {
-      const plaintextBuffer = Buffer.from('I am unencoded!', 'utf-8');
-      expect(() => {
-        safeStorage.decryptString(plaintextBuffer);
-      }).to.throw(Error);
-    });
-
-    it('non-buffer input should throw', () => {
-      const notABuffer = {} as any;
-      expect(() => {
-        safeStorage.decryptString(notABuffer);
-      }).to.throw(Error);
     });
   });
 
@@ -137,8 +77,8 @@ describe('safeStorage module', () => {
   });
 
   describe('SafeStorage.decryptStringAsync()', () => {
-    it('should return a promise', () => {
-      const encrypted = safeStorage.encryptString('plaintext');
+    it('should return a promise', async () => {
+      const encrypted = await safeStorage.encryptStringAsync('plaintext');
       const result = safeStorage.decryptStringAsync(encrypted);
       expect(result).to.be.a('promise');
     });
@@ -189,23 +129,9 @@ describe('safeStorage module', () => {
       const notABuffer = {} as any;
       await expect(safeStorage.decryptStringAsync(notABuffer)).to.be.rejectedWith(Error);
     });
-
-    it('can decrypt data encrypted with sync method', async () => {
-      const plaintext = 'sync-to-async test';
-      const encrypted = safeStorage.encryptString(plaintext);
-      const decryptResult = await safeStorage.decryptStringAsync(encrypted);
-      expect(decryptResult.result).to.equal(plaintext);
-    });
   });
 
-  describe('SafeStorage sync and async interoperability', () => {
-    it('sync decrypt can handle async encrypted data', async () => {
-      const plaintext = 'async-to-sync test';
-      const encrypted = await safeStorage.encryptStringAsync(plaintext);
-      const decrypted = safeStorage.decryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
-    });
-
+  describe('SafeStorage concurrency', () => {
     it('multiple concurrent async operations work correctly', async () => {
       const plaintexts = ['text1', 'text2', 'text3', 'text4', 'text5'];
 
