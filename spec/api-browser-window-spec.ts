@@ -4681,6 +4681,31 @@ describe('BrowserWindow module', () => {
         expect(test).to.equal('preload');
       });
 
+      for (const contextIsolation of [true, false]) {
+        it(`provides Buffer to the preload but not the page (contextIsolation: ${contextIsolation})`, async () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox: true,
+              preload: path.join(fixtures, 'module', 'preload-sandbox-buffer.js'),
+              contextIsolation
+            }
+          });
+          const answer = once(ipcMain, 'answer');
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          const [, result] = await answer;
+          expect(result).to.deep.equal({
+            before: 'function',
+            roundTrip: Buffer.from('héllo', 'utf8').toString('base64'),
+            replaced: 'replaced',
+            restored: 'function',
+            isBuffer: true,
+            contextIsolated: contextIsolation
+          });
+          expect(await w.webContents.executeJavaScript('typeof Buffer')).to.equal('undefined');
+        });
+      }
+
       it('exposes ipcRenderer to preload script (path has special chars)', async () => {
         const preloadSpecialChars = path.join(fixtures, 'module', 'preload-sandboxæø åü.js');
         const w = new BrowserWindow({

@@ -1,6 +1,7 @@
 import '@electron/internal/sandboxed_renderer/pre-init';
 import {
   createPreloadProcessObject,
+  defineLazyBufferGlobal,
   executeSandboxedPreloadScripts
 } from '@electron/internal/sandboxed_renderer/preload';
 
@@ -45,6 +46,10 @@ Object.assign(process, processProps);
 
 require('@electron/internal/renderer/ipc-native-setup');
 
+// The preload realm's global is private to preloads; `Buffer` is materialised
+// there on first use.
+defineLazyBufferGlobal(globalThis);
+
 executeSandboxedPreloadScripts(
   {
     loadedModules,
@@ -52,7 +57,6 @@ executeSandboxedPreloadScripts(
     process: preloadProcess,
     createPreloadScript: binding.createPreloadScript,
     exposeGlobals: {
-      Buffer,
       // FIXME(samuelmaddock): workaround webpack bug replacing this with just
       // `__webpack_require__.g,` which causes script error
       global: globalThis

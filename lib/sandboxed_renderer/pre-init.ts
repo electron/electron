@@ -11,14 +11,9 @@ declare const binding: {
 process._linkedBinding = binding.get;
 
 const { EventEmitter } = events;
-const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // Include properties from script 'binding' parameter.
 Object.assign(process, binding.process);
-
-// Expose Buffer shim as a hidden value. This is used by C++ code to
-// deserialize Buffer instances sent from browser process.
-v8Util.setHiddenValue(global, 'Buffer', Buffer);
 
 // The process object created by webpack is not an event emitter, fix it so
 // the API is more compatible with non-sandboxed renderers.
