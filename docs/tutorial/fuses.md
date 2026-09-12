@@ -177,6 +177,46 @@ than they ideally should be.
 * This extra code, particularly the compare and branch before every memory reference,
 incurs a significant runtime cost.
 
+### `deviceBoundSessions`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.EnableDeviceBoundSessions`
+
+The `deviceBoundSessions` fuse toggles whether generic net-layer Device Bound Session Credentials (DBSC)
+are enabled in the network service. DBSC binds session cookies to hardware-backed cryptographic keys so
+that a stolen cookie cannot be replayed from another device.
+
+When this fuse is enabled, Electron configures the network service to support DBSC session registration
+and persists session state across restarts on-disk. DevTools inspection is available under
+_Application > Background Services > Device Bound Sessions_.
+
+> [!IMPORTANT]
+>
+> * **Windows only.** This fuse currently has no effect on macOS or Linux. Windows keys are managed
+>   automatically through CNG (`NCrypt`) and require a device with TPM 2.0; on a machine without one,
+>   no key provider is available and DBSC is a no-op.
+> * **macOS** needs a key service running in the browser process, configured with a keychain access
+>   group derived from the app's own code signature, because the network service's built-in provider
+>   hardcodes Chromium's access group. **Linux** has no desktop hardware key provider upstream yet.
+>   Both are tracked as follow-up work.
+> * **Software key flag rejection.** When this fuse is enabled, Electron rejects the
+>   `EnableBoundSessionCredentialsSoftwareKeysForManualTesting` feature so that a packaged app cannot
+>   have its hardware-backed protection downgraded to mock software keys at runtime.
+
+#### Testing DBSC in development
+
+Hardware-backed keys are unavailable in most development setups, and on macOS and Linux the fuse does
+nothing at all. To exercise DBSC anywhere, leave the fuse disabled and run with mock software keys:
+
+```sh
+electron . --enable-features=EnableBoundSessionCredentialsSoftwareKeysForManualTesting
+```
+
+With the fuse off, that flag also turns DBSC on in the network service. Software keys offer no hardware
+protection and exist only for local testing -- a packaged app with the fuse enabled rejects the flag, so
+this cannot be used to weaken a production app.
+
 ## How do I flip fuses?
 
 ### The easy way

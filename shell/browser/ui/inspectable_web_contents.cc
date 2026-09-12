@@ -31,6 +31,7 @@
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
+#include "content/common/features.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/file_select_listener.h"
@@ -1062,6 +1063,13 @@ void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
     extension_schemes.Append(scheme + ":");
   response_dict.Set("devToolsExtensionSchemes",
                     base::Value(std::move(extension_schemes)));
+
+  base::DictValue device_bound_sessions_debugging;
+  device_bound_sessions_debugging.Set(
+      "enabled",
+      base::FeatureList::IsEnabled(features::kDeviceBoundSessionsDevTools));
+  response_dict.Set("deviceBoundSessionsDebugging",
+                    std::move(device_bound_sessions_debugging));
 
   base::Value response = base::Value(std::move(response_dict));
   std::move(callback).Run(&response);
