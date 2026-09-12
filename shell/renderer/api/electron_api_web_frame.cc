@@ -574,6 +574,10 @@ class WebFrameRenderer final
       return;
     }
 
+    // Reading |provider| may run script that detaches the frame; do it first.
+    auto spell_check_client =
+        std::make_unique<SpellCheckClient>(language, isolate, provider);
+
     // Remove the old client.
     content::RenderFrame* render_frame;
     if (!MaybeGetRenderFrame(isolate, "setSpellCheckProvider", &render_frame))
@@ -585,8 +589,6 @@ class WebFrameRenderer final
 
     // Set spellchecker for all live frames in the same process or
     // in the sandbox mode for all live sub frames to this WebFrame.
-    auto spell_check_client =
-        std::make_unique<SpellCheckClient>(language, isolate, provider);
     FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
 
     // Attach the spell checker to RenderFrame.
@@ -719,14 +721,6 @@ class WebFrameRenderer final
     }
     const int world_id = world_id_value.As<v8::Int32>()->Value();
 
-    content::RenderFrame* render_frame;
-    std::string error_msg;
-    if (!MaybeGetRenderFrame(&error_msg, "executeJavaScriptInIsolatedWorld",
-                             &render_frame)) {
-      promise.RejectWithErrorMessage(error_msg);
-      return handle;
-    }
-
     bool has_user_gesture = false;
     if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
       args->GetNext(&has_user_gesture);
@@ -759,6 +753,15 @@ class WebFrameRenderer final
 
       sources.emplace_back(blink::WebString::FromUtf16(code),
                            blink::WebURL(GURL(url)));
+    }
+
+    // Only now: the |scripts| getters above may have detached the frame.
+    content::RenderFrame* render_frame;
+    std::string error_msg;
+    if (!MaybeGetRenderFrame(&error_msg, "executeJavaScriptInIsolatedWorld",
+                             &render_frame)) {
+      promise.RejectWithErrorMessage(error_msg);
+      return handle;
     }
 
     // Deletes itself.

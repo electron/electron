@@ -9,7 +9,9 @@
 
 #include "base/containers/map_util.h"
 #include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
 #include "electron/shell/browser/electron_browser_context.h"
@@ -19,6 +21,7 @@
 #include "gin/persistent.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/ui/accelerator_util.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -49,6 +52,34 @@ bool MapHasMediaKeys(
 }
 #endif
 
+// xdg GlobalShortcuts portal session key; persisted so a later session can
+// pick up shortcuts already registered with the portal.
+std::string GetPortalProfileId() {
+  auto* context = electron::ElectronBrowserContext::GetDefaultBrowserContext();
+  PrefService* prefs = context->prefs();
+  std::string profile_id =
+      prefs->GetString(electron::kElectronGlobalShortcutsUuid);
+  if (profile_id.empty()) {
+    profile_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
+    prefs->SetString(electron::kElectronGlobalShortcutsUuid, profile_id);
+  }
+  return profile_id;
+}
+
+// See the fake extension id note in GlobalShortcut::Register().
+std::string GetPortalExtensionId(const std::string& command_str,
+                                 const std::string& profile_id) {
+  return command_str + "+" + profile_id;
+}
+
+void ClearPortalCommand(ui::GlobalAcceleratorListener* instance,
+                        const std::string& command_str,
+                        const std::string& profile_id) {
+  instance->OnCommandsChanged(GetPortalExtensionId(command_str, profile_id),
+                              profile_id, ui::CommandMap(),
+                              gfx::kNullAcceleratedWidget, base::DoNothing());
+}
+
 }  // namespace
 
 namespace electron::api {
@@ -71,6 +102,8 @@ void GlobalShortcut::Dispose() {
     // Eagerly cancel callbacks so PruneStaleCommands() can clear them before
     // the WeakPtrFactory destructor runs.
     weak_factory_.Invalidate();
+    instance->SetRegistrationResolvedCallback({});
+    registration_resolved_callback_set_ = false;
     instance->PruneStaleCommands();
   }
 
@@ -89,22 +122,41 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   }
 }
 
+void GlobalShortcut::OnRegistrationResolved(
+    const std::string& accelerator_group_id,
+    bool bound) {
+  // Ignore groups not registered through this module (e.g. extensions).
+  auto* accelerator =
+      base::FindOrNull(registered_accelerators_, accelerator_group_id);
+  if (!accelerator) {
+    return;
+  }
+  // The listener may resolve synchronously from inside register(); defer so
+  // the event is always emitted asynchronously.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&GlobalShortcut::EmitRegistrationResolved,
+                                gin::WrapPersistent(weak_factory_.GetWeakCell(
+                                    JavascriptEnvironment::GetIsolate()
+                                        ->GetCppHeap()
+                                        ->GetAllocationHandle())),
+                                *accelerator, bound));
+}
+
+void GlobalShortcut::EmitRegistrationResolved(const std::string& accelerator,
+                                              bool bound) {
+  EmitWithoutEvent("registration-resolved", accelerator, bound);
+}
+
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
+  // May arrive after the command was unregistered; ignore it then.
   if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
     cb->Run();
-  } else {
-    // This should never occur, because if it does, GlobalAcceleratorListener
-    // notifies us with wrong command.
-    if (!is_disposed_) {
-      NOTREACHED();
-    }
   }
 }
 
-bool GlobalShortcut::RegisterAll(
-    const std::vector<ui::Accelerator>& accelerators,
-    const base::RepeatingClosure& callback) {
+bool GlobalShortcut::RegisterAll(const std::vector<std::string>& accelerators,
+                                 const base::RepeatingClosure& callback) {
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
         .ThrowError("globalShortcut cannot be used before the app is ready");
@@ -112,25 +164,34 @@ bool GlobalShortcut::RegisterAll(
   }
   std::vector<ui::Accelerator> registered;
 
-  for (auto& accelerator : accelerators) {
-    if (!Register(accelerator, callback)) {
+  for (const auto& accelerator_str : accelerators) {
+    if (!Register(accelerator_str, callback)) {
       // Unregister all shortcuts if any failed.
       UnregisterSome(registered);
       return false;
     }
 
+    ui::Accelerator accelerator;
+    accelerator_util::StringToAccelerator(accelerator_str, &accelerator);
     registered.push_back(accelerator);
   }
   return true;
 }
 
-bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
+bool GlobalShortcut::Register(const std::string& accelerator_str,
                               const base::RepeatingClosure& callback) {
   v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
 
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "globalShortcut cannot be used before the app is ready");
+    return false;
+  }
+
+  ui::Accelerator accelerator;
+  if (!accelerator_util::StringToAccelerator(accelerator_str, &accelerator)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError("Invalid accelerator: " +
+                                                     accelerator_str);
     return false;
   }
 
@@ -149,18 +210,15 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   }
 
   if (instance->IsRegistrationHandledExternally()) {
-    auto* context = ElectronBrowserContext::GetDefaultBrowserContext();
-    PrefService* prefs = context->prefs();
-
-    // Need a unique profile id. Set one if not generated yet, otherwise re-use
-    // the same so that the session for the globalShortcuts is able to get
-    // already registered shortcuts from the previous session. This will be used
-    // by GlobalAcceleratorListenerLinux as a session key.
-    std::string profile_id = prefs->GetString(kElectronGlobalShortcutsUuid);
-    if (profile_id.empty()) {
-      profile_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
-      prefs->SetString(kElectronGlobalShortcutsUuid, profile_id);
+    if (!registration_resolved_callback_set_) {
+      registration_resolved_callback_set_ = true;
+      instance->SetRegistrationResolvedCallback(base::BindRepeating(
+          &GlobalShortcut::OnRegistrationResolved,
+          gin::WrapPersistent(weak_factory_.GetWeakCell(
+              isolate->GetCppHeap()->GetAllocationHandle()))));
     }
+
+    const std::string profile_id = GetPortalProfileId();
 
     // There is no way to get command id for the accelerator as it's extensions'
     // thing. Instead, we can convert it to string in a following example form
@@ -184,9 +242,11 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // Alt+Shift+M will trigger global shortcuts, but the command id that is
     // received by GlobalShortcut will correspond to Alt+Shift+K as our command
     // id is basically a stringified accelerator.
-    const std::string fake_extension_id = command_str + "+" + profile_id;
+    const std::string extension_id =
+        GetPortalExtensionId(command_str, profile_id);
+    registered_accelerators_[extension_id] = accelerator_str;
     instance->OnCommandsChanged(
-        fake_extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
+        extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
         base::BindRepeating(
             &GlobalShortcut::ExecuteCommand,
             gin::WrapPersistent(weak_factory_.GetWeakCell(
@@ -208,12 +268,27 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
         .ThrowError("globalShortcut cannot be used before the app is ready");
     return;
   }
+  auto* instance = ui::GlobalAcceleratorListener::GetInstance();
+  if (instance && instance->IsRegistrationHandledExternally()) {
+    const std::string command_str =
+        extensions::Command::AcceleratorToString(accelerator);
+    if (!command_callback_map_.contains(command_str))
+      return;
+    const std::string profile_id = GetPortalProfileId();
+    // Drop the group first so that a resolution triggered by clearing it is
+    // not reported for a shortcut the app just unregistered.
+    registered_accelerators_.erase(
+        GetPortalExtensionId(command_str, profile_id));
+    ClearPortalCommand(instance, command_str, profile_id);
+    command_callback_map_.erase(command_str);
+    return;
+  }
+
   if (!accelerator_callback_map_.contains(accelerator))
     return;
 
-  if (ui::GlobalAcceleratorListener::GetInstance()) {
-    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerator(
-        accelerator, this);
+  if (instance) {
+    instance->UnregisterAccelerator(accelerator, this);
   }
 
   // Remove from local callback map after unregistering from UI listener to
@@ -254,8 +329,19 @@ void GlobalShortcut::UnregisterAll() {
 }
 
 void GlobalShortcut::UnregisterAllInternal() {
-  if (ui::GlobalAcceleratorListener::GetInstance()) {
-    ui::GlobalAcceleratorListener::GetInstance()->UnregisterAccelerators(this);
+  // Cleared first so that resolutions triggered by clearing the portal
+  // commands below are not reported for shortcuts that are going away.
+  registered_accelerators_.clear();
+  if (auto* instance = ui::GlobalAcceleratorListener::GetInstance()) {
+    instance->UnregisterAccelerators(this);
+    // Portal commands are not in the listener's accelerator map; Dispose()
+    // has already pruned them via the invalidated WeakCell.
+    if (!is_disposed_ && instance->IsRegistrationHandledExternally() &&
+        !command_callback_map_.empty()) {
+      const std::string profile_id = GetPortalProfileId();
+      for (const auto& [command_str, _] : command_callback_map_)
+        ClearPortalCommand(instance, command_str, profile_id);
+    }
   }
   accelerator_callback_map_.clear();
   command_callback_map_.clear();
@@ -291,10 +377,10 @@ GlobalShortcut* GlobalShortcut::Create(v8::Isolate* isolate) {
       isolate->GetCppHeap()->GetAllocationHandle(), isolate);
 }
 
-// static
 gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<GlobalShortcut>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::EventEmitterMixin<
+             GlobalShortcut>::GetObjectTemplateBuilder(isolate)
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)

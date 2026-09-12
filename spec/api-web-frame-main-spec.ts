@@ -351,6 +351,40 @@ describe('webFrameMain module', () => {
       expect(mainFrame.url).to.equal(server.crossOriginUrl);
     });
 
+    it('keeps a single instance when mainFrame is touched from focus/blur during a cross-origin swap', async () => {
+      // The swap re-focuses the view before RenderFrameHostChanged, so these
+      // handlers see the new RFH first; they must get the existing object.
+      const win = new BrowserWindow({ show: true });
+      await win.loadURL(server.url);
+      win.focus();
+      win.webContents.focus();
+      const { mainFrame } = win.webContents;
+      let navigating = false;
+      const seen: { event: string; navigating: boolean; frame: Electron.WebFrameMain }[] = [];
+      win.webContents.on('did-start-navigation', (e) => {
+        if (e.isMainFrame) navigating = true;
+      });
+      win.webContents.on('did-navigate', () => {
+        navigating = false;
+      });
+      const record = (event: 'focus' | 'blur') => () => {
+        seen.push({ event, navigating, frame: win.webContents.mainFrame });
+      };
+      win.webContents.on('focus', record('focus'));
+      win.webContents.on('blur', record('blur'));
+      await win.loadURL(server.crossOriginUrl);
+      win.webContents.removeAllListeners('focus');
+      win.webContents.removeAllListeners('blur');
+      const duringSwap = seen.filter((s) => s.navigating);
+      expect(duringSwap, 'expected focus/blur to fire during the swap').to.not.be.empty();
+      for (const s of duringSwap) {
+        expect(s.frame).to.equal(mainFrame);
+      }
+      expect(win.webContents.mainFrame).to.equal(mainFrame);
+      expect(mainFrame.url).to.equal(server.crossOriginUrl);
+      expect(mainFrame.framesInSubtree).to.have.lengthOf(1);
+    });
+
     it('recovers from renderer crash on same-origin', async () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;

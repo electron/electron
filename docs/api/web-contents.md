@@ -926,6 +926,15 @@ app.whenReady().then(() => {
 
 #### Event: 'paint'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "`image` now has the view's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 Returns:
 
 * `details` Event\<\>
@@ -934,6 +943,8 @@ Returns:
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
+`image` has the view's device scale factor, so `image.getSize()` is in DIPs, while
+`dirtyRect` is in the pixels of `image.toBitmap()`.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -1804,6 +1815,15 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -1814,6 +1834,7 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 The page is considered visible when its browser window is hidden and the capturer count is non-zero.
 If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `contents.isBeingCaptured()`
 
@@ -2176,6 +2197,15 @@ Sends an input `event` to the page.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `onlyDirty` boolean (optional) - Defaults to `false`.
 * `callback` Function
   * `image` [NativeImage](native-image.md)
@@ -2186,7 +2216,8 @@ will be called with `callback(image, dirtyRect)` when there is a presentation
 event.
 
 The `image` is an instance of [NativeImage](native-image.md) that stores the
-captured frame.
+captured frame. It has the page's device scale factor, so `image.getSize()` is
+in DIPs, while `dirtyRect` is in the pixels of `image.toBitmap()`.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to

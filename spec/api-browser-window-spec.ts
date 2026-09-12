@@ -1,3 +1,4 @@
+import { nativeImage } from 'electron/common';
 import {
   app,
   BrowserWindow,
@@ -3853,6 +3854,58 @@ describe('BrowserWindow module', () => {
 
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
+    });
+
+    it('propagates the overlay to WebContentsViews in a BaseWindow', async () => {
+      const w = new BaseWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: { height: 40 }
+      });
+      const webPreferences = { nodeIntegration: true, contextIsolation: false };
+      const topView = new WebContentsView({ webPreferences });
+      const bottomView = new WebContentsView({ webPreferences });
+      topView.setBounds({ x: 0, y: 0, width: 400, height: 100 });
+      bottomView.setBounds({ x: 0, y: 200, width: 400, height: 200 });
+      w.contentView.addChildView(topView);
+      w.contentView.addChildView(bottomView);
+
+      // The overlay geometry reaches the renderer through visual properties,
+      // which aren't synchronised for an unsized (never shown) child view, and
+      // on Linux the frame isn't laid out until the window is shown either.
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      await topView.webContents.loadFile(overlayHTML);
+      await bottomView.webContents.loadFile(overlayHTML);
+
+      await waitUntil(() => topView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const overlayRect = await topView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(overlayRect.y).to.equal(0);
+      expect(overlayRect.width).to.be.greaterThan(0);
+      expect(overlayRect.height).to.equal(40);
+
+      // A view that doesn't intersect the titlebar area shouldn't see an overlay.
+      expect(await bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible')).to.be.false(
+        'bottom view overlay visible'
+      );
+
+      // The rect is clipped to the view and follows it when its bounds change.
+      // (Its x depends on which side the window controls are on, so check the
+      // right edge.)
+      topView.setBounds({ x: 0, y: 0, width: 150, height: 100 });
+      await waitUntil(async () => {
+        const r = await topView.webContents.executeJavaScript('getJSOverlayProperties()');
+        return r.x + r.width === 150;
+      });
+      bottomView.setBounds({ x: 0, y: 20, width: 400, height: 200 });
+      await waitUntil(() => bottomView.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+      const bottomRect = await bottomView.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(bottomRect.y).to.equal(0);
+      expect(bottomRect.height).to.equal(20);
     });
   });
 
@@ -7915,9 +7968,60 @@ describe('BrowserWindow module', () => {
       const [, , data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
+      expect(data.getScaleFactors()).to.deep.equal([scaleFactor]);
       const size = data.getSize();
-      expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
-      expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(size.width).to.be.closeTo(100, 2);
+      expect(size.height).to.be.closeTo(100, 2);
+      const pixels = nativeImage.createFromBuffer(data.toPNG()).getSize();
+      expect(pixels.width).to.be.closeTo(100 * scaleFactor, 2);
+      expect(pixels.height).to.be.closeTo(100 * scaleFactor, 2);
+    });
+
+    it('captures the page at the device scale factor', async () => {
+      // Capture a frame painted after the navigation has committed; the first
+      // paint can precede the surface swap and fail to copy.
+      await w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(w.webContents, 'paint');
+
+      const full = await w.webContents.capturePage();
+      expect(full.getScaleFactors()).to.deep.equal([scaleFactor]);
+      expect(full.getSize().width).to.be.closeTo(100, 2);
+      expect(full.getSize().height).to.be.closeTo(100, 2);
+      const fullPixels = nativeImage.createFromBuffer(full.toPNG()).getSize();
+      expect(fullPixels.width).to.be.closeTo(100 * scaleFactor, 2);
+      expect(fullPixels.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(full.toJPEG(90)).to.not.be.empty();
+
+      const rect = await w.webContents.capturePage({ x: 0, y: 0, width: 50, height: 50 });
+      expect(rect.getSize().width).to.be.closeTo(50, 2);
+      expect(rect.getSize().height).to.be.closeTo(50, 2);
+      const rectPixels = nativeImage.createFromBuffer(rect.toPNG()).getSize();
+      expect(rectPixels.width).to.be.closeTo(50 * scaleFactor, 2);
+      expect(rectPixels.height).to.be.closeTo(50 * scaleFactor, 2);
+    });
+
+    it('captures the page at a device scale factor below 1', async () => {
+      const small = new BrowserWindow({
+        width: 100,
+        height: 100,
+        show: false,
+        webPreferences: {
+          backgroundThrottling: false,
+          offscreen: {
+            deviceScaleFactor: 0.5
+          }
+        }
+      });
+      await small.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      await once(small.webContents, 'paint');
+
+      const full = await small.webContents.capturePage();
+      expect(full.getScaleFactors()).to.deep.equal([0.5]);
+      expect(full.getSize().width).to.be.closeTo(100, 2);
+      expect(full.getSize().height).to.be.closeTo(100, 2);
+      const pixels = nativeImage.createFromBuffer(full.toPNG()).getSize();
+      expect(pixels.width).to.be.closeTo(50, 2);
+      expect(pixels.height).to.be.closeTo(50, 2);
     });
 
     it('has correct screen and window sizes', async () => {
