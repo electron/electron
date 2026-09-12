@@ -38,6 +38,8 @@
 #include "third_party/electron_node/src/tracing/agent.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
@@ -254,6 +256,11 @@ int NodeMain() {
     crash_keys::SetCrashKeysFromCommandLine(
         *base::CommandLine::ForCurrentProcess());
     crash_keys::SetPlatformCrashKey();
+#if BUILDFLAG(IS_WIN)
+    // libuv sets SEM_NOGPFAULTERRORBOX; clear it so Windows Error Reporting
+    // (and electron_wer.dll) still sees crashes crashpad cannot catch.
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+#endif
 #endif
 
     gin::V8Initializer::LoadV8Snapshot(

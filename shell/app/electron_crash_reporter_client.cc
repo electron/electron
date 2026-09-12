@@ -165,8 +165,9 @@ void ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser() {
 
   // Installers that version the install directory (e.g. Squirrel's
   // app-x.y.z folders) leave one value behind per update. Prune entries for
-  // copies of the helper that no longer exist on disk; they are inert but
-  // accumulate otherwise.
+  // sibling copies of the helper under this app's install root that no longer
+  // exist on disk; other apps' entries are left alone.
+  const base::FilePath install_root = path.DirName().DirName();
   std::vector<std::wstring> stale;
   for (base::win::RegistryValueIterator it(HKEY_CURRENT_USER,
                                            kWerHelperRegistryKey);
@@ -175,6 +176,8 @@ void ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser() {
     if (registered != path &&
         base::FilePath::CompareEqualIgnoreCase(registered.BaseName().value(),
                                                kWerHelperDll) &&
+        base::FilePath::CompareEqualIgnoreCase(
+            registered.DirName().DirName().value(), install_root.value()) &&
         !base::PathExists(registered)) {
       stale.emplace_back(it.Name());
     }
