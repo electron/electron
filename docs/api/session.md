@@ -333,6 +333,10 @@ app.whenReady().then(() => {
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.selected) {
+      // The user (or the select-*-device handler below) picked this device for this origin in this session
+      return true
+    }
     if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'hid') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
         // Always allow this type of device (this allows skipping the call to `navigator.hid.requestDevice` first)
@@ -393,18 +397,37 @@ specified device.
 
 #### Event: 'hid-device-revoked'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `details` Object
   * `device` [HIDDevice](structures/hid-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `forget()`. `null` if it has gone away or the call came from a service worker.
 
 Emitted after `HIDDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
 #### Event: 'select-serial-port'
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
 
 Returns:
 
@@ -413,6 +436,7 @@ Returns:
 * `webContents` [WebContents](web-contents.md)
 * `callback` Function
   * `portId` string
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame requesting a port. `null` if the frame has gone away.
 
 Emitted when a serial port needs to be selected when a call to
 `navigator.serial.requestPort` is made. `callback` should be called with
@@ -476,11 +500,21 @@ app.whenReady().then(() => {
 
 #### Event: 'serial-port-added'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `port` [SerialPort](structures/serial-port.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this port list belongs to.
 
 Emitted after `navigator.serial.requestPort` has been called and
 `select-serial-port` has fired if a new serial port becomes available before
@@ -490,11 +524,21 @@ with the newly added port.
 
 #### Event: 'serial-port-removed'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `port` [SerialPort](structures/serial-port.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this port list belongs to.
 
 Emitted after `navigator.serial.requestPort` has been called and
 `select-serial-port` has fired if a serial port has been removed before the
@@ -619,11 +663,21 @@ app.whenReady().then(() => {
 
 #### Event: 'usb-device-added'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `device` [USBDevice](structures/usb-device.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this device list belongs to.
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a new device becomes available before
@@ -633,11 +687,21 @@ with the newly added device.
 
 #### Event: 'usb-device-removed'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added the trailing `frame` argument."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `device` [USBDevice](structures/usb-device.md)
 * `webContents` [WebContents](web-contents.md)
+* `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose chooser this device list belongs to.
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a device has been removed before the callback
@@ -647,12 +711,22 @@ specified device.
 
 #### Event: 'usb-device-revoked'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 Returns:
 
 * `event` Event
 * `details` Object
   * `device` [USBDevice](structures/usb-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `forget()`. `null` if it has gone away or the call came from a service worker.
 
 Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
@@ -1109,8 +1183,17 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
 
 #### `ses.setPermissionCheckHandler(handler)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Added `details.frame` and `details.embeddingOrigin`; denying `hid`/`usb`/`serial` also blocks granted devices."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 * `handler` Function\<boolean> | null
-  * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents that contains the frame checking the permission. This is `null` when the check is not made on behalf of a document, for example for a service worker or for a `notifications` check. If the check comes from a subframe, `webContents` is the top-level WebContents; use `requestingOrigin`, `requestingUrl` and `isMainFrame` to identify the frame that is asking, and `embeddingOrigin` for the top-level document.
   * `permission` string - Type of permission check. Electron forwards every permission type that Chromium checks, so this list mirrors Chromium's permission types and includes some that have no effect on desktop or are only used by specific platforms or features.
     * `ar` - Access to augmented reality sessions via the [WebXR Device API](https://developer.mozilla.org/en-US/docs/Web/API/WebXR_Device_API).
     * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
@@ -1165,6 +1248,7 @@ session.defaultSession.setPermissionRequestHandler((webContents, permission, cal
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame making the check. `null` when the check is not made on behalf of a document. For a document with an opaque origin (for example a sandboxed iframe without `allow-same-origin`) `requestingOrigin` is empty and `frame.origin` is `'null'`; use `frame.url`, `frame.parent` or `frame.top` to decide.
     * `isMainFrame` boolean - Whether the frame making the request is the main frame.
     * `filePath` string (optional) - The path of a `fileSystem` request.
     * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
@@ -1272,11 +1356,22 @@ Passing `null` instead of a function resets the handler to its default state.
 
 #### `ses.setDevicePermissionHandler(handler)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "Consulted for chooser-selected devices too; added `details.frame` and `details.selected`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 * `handler` Function\<boolean> | null
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
-    * `origin` string - The origin URL of the device permission check.
+    * `origin` string - The origin of the document (or service worker) the device permission check is made for.
     * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame the check is made for. `null` when the check is not made on behalf of a document, for example for a service worker.
+    * `selected` boolean - Whether this origin picked this device in a `select-hid-device` / `select-usb-device` / `select-serial-port` handler during this session. For `hid` the `device` also carries the `deviceId`, and for `serial` the `portId`, that the chooser reported.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -1284,6 +1379,10 @@ To clear the handler, call `setDevicePermissionHandler(null)`.
 This handler can be used to provide default permissioning to devices without first calling for permission
 to devices (eg via `navigator.hid.requestDevice`).  If this handler is not defined, the default device
 permissions as granted through device selection (eg via `navigator.hid.requestDevice`) will be used.
+When this handler is defined it is consulted for every `hid`, `usb` and `serial` device permission check, including for
+devices the user picked in a chooser; return `details.selected` (or `true`) to honour those selections.
+A document must also pass the `hid` / `usb` / `serial` check in [`setPermissionCheckHandler`](#sessetpermissioncheckhandlerhandler)
+to see or open devices this handler allows.
 Additionally, the default behavior of Electron is to store granted device permission in memory.
 If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
@@ -1312,6 +1411,10 @@ app.whenReady().then(() => {
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {
+    if (details.selected) {
+      // The user (or the select-*-device handler below) picked this device for this origin in this session
+      return true
+    }
     if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'hid') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
         // Always allow this type of device (this allows skipping the call to `navigator.hid.requestDevice` first)
@@ -1345,8 +1448,19 @@ app.whenReady().then(() => {
 
 #### `ses.setUSBProtectedClassesHandler(handler)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53657
+    description: "The handler receives `details.origin` and `details.frame`."
+    breaking-changes-header: behavior-changed-hid-usb-and-serial-device-permissions-are-attributed-to-the-requesting-frame
+```
+-->
+
 * `handler` Function\<string[]> | null
   * `details` Object
+    * `origin` string - The origin of the document asking to claim an interface.
+    * `frame` [WebFrameMain](web-frame-main.md) | null - The frame asking to claim an interface. `null` when the request is not made on behalf of a document, for example for a service worker.
     * `protectedClasses` string[] - The current list of protected USB classes. Possible class values include:
       * `audio`
       * `audio-video`

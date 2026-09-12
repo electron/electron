@@ -23,6 +23,7 @@ class Dictionary;
 
 namespace v8 {
 class Object;
+class Value;
 template <typename T>
 class Local;
 }  // namespace v8
@@ -55,7 +56,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::RepeatingCallback<bool(content::WebContents*,
                                    blink::PermissionType,
                                    const GURL& requesting_origin,
-                                   const base::Value&)>;
+                                   v8::Local<v8::Value> details)>;
 
   using DeviceCheckHandler =
       base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;
@@ -96,10 +97,24 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                   const GURL& requesting_origin,
                                   base::DictValue details) const;
 
-  bool CheckDevicePermission(blink::PermissionType permission,
-                             const url::Origin& origin,
-                             const base::Value& object,
-                             ElectronBrowserContext* browser_context) const;
+  // Whether ses.setDevicePermissionHandler() is installed. When it is, it is
+  // the only source of device grants: the chooser contexts must not consult or
+  // populate their own stores.
+  bool HasDevicePermissionHandler() const {
+    return !device_permission_handler_.is_null();
+  }
+
+  // |render_frame_host| is the document the check is made for, or null when
+  // there is none (a service worker). |selected| says whether |origin| picked
+  // this device in a chooser during this session; without a handler that is a
+  // grant by itself, with a handler it is reported as details.selected.
+  bool CheckDevicePermission(
+      blink::PermissionType permission,
+      const url::Origin& origin,
+      const base::Value& object,
+      ElectronBrowserContext* browser_context,
+      content::RenderFrameHost* render_frame_host = nullptr,
+      bool selected = false) const;
 
   void GrantDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
@@ -112,7 +127,9 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                               ElectronBrowserContext* browser_context) const;
 
   USBProtectedClasses CheckProtectedUSBClasses(
-      const USBProtectedClasses& classes) const;
+      const USBProtectedClasses& classes,
+      const url::Origin& origin,
+      content::RenderFrameHost* render_frame_host) const;
 
  protected:
   void OnPermissionResponse(int request_id,

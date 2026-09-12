@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Mon, 7 Sep 2026 06:09:36 +0000
-Subject: [WebHID][WebUSB] Key document services on the requesting frame's
- origin
+Subject: [WebHID][WebUSB][Serial] Key document services on the requesting
+ frame's origin
 
 HidService and WebUsbServiceImpl are constructed with the primary main
 frame's origin, which is the principal Chrome grants device permissions
@@ -13,11 +13,39 @@ frame's origin so that every delegate call content makes for a document
 (CanRequestDevicePermission, HasDevicePermission,
 RevokeDevicePermission[WebInitiated], IsFidoAllowedForOrigin,
 AdjustProtectedInterfaceClasses) and the OnPermissionRevoked comparison
-use the same origin the grant was stored under.
+use the same origin the grant was stored under. SerialService already asks
+its delegate per frame; only its OnPermissionRevoked comparison used the
+main frame's origin, so align that too. Also hand the frame to
+UsbDelegate::RevokeDevicePermissionWebInitiated(), like every sibling
+method, so the embedder can attribute USBDevice.forget().
 
 This is specific to Electron's permission model and is not intended for
 upstream.
 
+diff --git a/chrome/browser/usb/chrome_usb_delegate.cc b/chrome/browser/usb/chrome_usb_delegate.cc
+index f0c2b7398cbec947acb3869b5e8d05e0c921c389..8823d692d2a30a46aa8ebbc4403b4f65c956a6f1 100644
+--- a/chrome/browser/usb/chrome_usb_delegate.cc
++++ b/chrome/browser/usb/chrome_usb_delegate.cc
+@@ -302,6 +302,7 @@ bool ChromeUsbDelegate::CanRequestDevicePermission(
+ 
+ void ChromeUsbDelegate::RevokeDevicePermissionWebInitiated(
+     content::BrowserContext* browser_context,
++    content::RenderFrameHost* frame,
+     const url::Origin& origin,
+     const device::mojom::UsbDeviceInfo& device) {
+   auto* chooser_context = GetChooserContext(browser_context);
+diff --git a/chrome/browser/usb/chrome_usb_delegate.h b/chrome/browser/usb/chrome_usb_delegate.h
+index 190c8ad7733aa90dede09551f4ecf18e4cd18466..d2f705be4d5b423c106f1882175d7b08d8f594a4 100644
+--- a/chrome/browser/usb/chrome_usb_delegate.h
++++ b/chrome/browser/usb/chrome_usb_delegate.h
+@@ -43,6 +43,7 @@ class ChromeUsbDelegate : public content::UsbDelegate {
+                                   const url::Origin& origin) override;
+   void RevokeDevicePermissionWebInitiated(
+       content::BrowserContext* browser_context,
++      content::RenderFrameHost* frame,
+       const url::Origin& origin,
+       const device::mojom::UsbDeviceInfo& device) override;
+   const device::mojom::UsbDeviceInfo* GetDeviceInfo(
 diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
 index 2497764e77ff1413170aefd57729f5829f8f8d4a..7c729656f0494e077049434afacaf1217d03b4a7 100644
 --- a/content/browser/hid/hid_service.cc
@@ -31,8 +59,36 @@ index 2497764e77ff1413170aefd57729f5829f8f8d4a..7c729656f0494e077049434afacaf121
  
  HidService::HidService(
      base::WeakPtr<ServiceWorkerVersion> service_worker_version,
+diff --git a/content/browser/serial/serial_service.cc b/content/browser/serial/serial_service.cc
+index d16b6bfb69ff2022caab712a82c463edf152f7d8..1a8441f41de716691a3030405c8a3ce45e9c5694 100644
+--- a/content/browser/serial/serial_service.cc
++++ b/content/browser/serial/serial_service.cc
+@@ -216,7 +216,7 @@ void SerialService::OnPortManagerConnectionError() {
+ }
+ 
+ void SerialService::OnPermissionRevoked(const url::Origin& origin) {
+-  if (origin != render_frame_host().GetMainFrame()->GetLastCommittedOrigin())
++  if (origin != render_frame_host().GetLastCommittedOrigin())
+     return;
+ 
+   SerialDelegate* delegate = GetContentClient()->browser()->GetSerialDelegate();
+diff --git a/content/browser/usb/usb_test_utils.h b/content/browser/usb/usb_test_utils.h
+index f93b6402c1366d8a34da5e5d5e5268a94d99a98c..3f401915bb4919a31f2c6ea9fae24309631b04fb 100644
+--- a/content/browser/usb/usb_test_utils.h
++++ b/content/browser/usb/usb_test_utils.h
+@@ -101,8 +101,9 @@ class MockUsbDelegate : public UsbDelegate {
+   MOCK_METHOD1(PageMayUseUsb, bool(Page&));
+   MOCK_METHOD3(CanRequestDevicePermission,
+                bool(BrowserContext*, RenderFrameHost*, const url::Origin&));
+-  MOCK_METHOD3(RevokeDevicePermissionWebInitiated,
++  MOCK_METHOD4(RevokeDevicePermissionWebInitiated,
+                void(BrowserContext*,
++                    RenderFrameHost*,
+                     const url::Origin&,
+                     const device::mojom::UsbDeviceInfo&));
+   MOCK_METHOD2(GetDeviceInfo,
 diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
-index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..0403a237756bbdc4cdd6b6a9992a65d191782771 100644
+index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..3aa71304c896ae6c5461f2f5518cdf64c01c813a 100644
 --- a/content/browser/usb/web_usb_service_impl.cc
 +++ b/content/browser/usb/web_usb_service_impl.cc
 @@ -206,7 +206,7 @@ void WebUsbServiceImpl::Create(
@@ -43,4 +99,30 @@ index e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed..0403a237756bbdc4cdd6b6a9992a65d1
 +          render_frame_host.GetLastCommittedOrigin()),
        render_frame_host, std::move(pending_receiver));
  }
+ 
+@@ -385,7 +385,8 @@ void WebUsbServiceImpl::ForgetDevice(const std::string& guid,
+     if (device_info &&
+         delegate->HasDevicePermission(browser_context, render_frame_host_,
+                                       origin_, *device_info)) {
+-      delegate->RevokeDevicePermissionWebInitiated(browser_context, origin_,
++      delegate->RevokeDevicePermissionWebInitiated(browser_context,
++                                                   render_frame_host_, origin_,
+                                                    *device_info);
+     }
+   }
+diff --git a/content/public/browser/usb_delegate.h b/content/public/browser/usb_delegate.h
+index 7621fdcf0b52caaa0b9388826a2c12c018977bca..feb9f9b54798fcf2dc9ea8fd974083d6dd908797 100644
+--- a/content/public/browser/usb_delegate.h
++++ b/content/public/browser/usb_delegate.h
+@@ -76,8 +76,11 @@ class CONTENT_EXPORT UsbDelegate {
+ 
+   // Attempts to revoke the permission for `origin` in `browser_context` to
+   // access the USB device described by `device`.
++  // |frame| is the document calling USBDevice.forget(), or null for a
++  // service worker.
+   virtual void RevokeDevicePermissionWebInitiated(
+       BrowserContext* browser_context,
++      RenderFrameHost* frame,
+       const url::Origin& origin,
+       const device::mojom::UsbDeviceInfo& device) = 0;
  

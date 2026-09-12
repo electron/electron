@@ -376,6 +376,14 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
   if (render_frame_host) {
     details.Set("requestingUrl",
                 render_frame_host->GetLastCommittedURL().spec());
+    // Callers that already know the embedder (permissions.query) set it;
+    // otherwise it is the requesting frame's top-level document.
+    if (!details.Find("embeddingOrigin")) {
+      details.Set("embeddingOrigin",
+                  content::PermissionUtil::GetLastCommittedOriginAsURL(
+                      render_frame_host->GetMainFrame())
+                      .spec());
+    }
   }
   details.Set("isMainFrame",
               render_frame_host && render_frame_host->GetParent() == nullptr);
@@ -389,21 +397,33 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
     default:
       break;
   }
+  // The frame is handed over as a live object rather than serialised into
+  // |details| so the handler can inspect it (parent, top, origin) directly.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> v8_details =
+      gin::ConvertToV8(isolate, base::Value(std::move(details)));
+  gin_helper::Dictionary(isolate, v8_details.As<v8::Object>())
+      .Set("frame", render_frame_host);
   return check_handler_.Run(web_contents, permission, requesting_origin,
-                            base::Value(std::move(details)));
+                            v8_details);
 }
 
 bool ElectronPermissionManager::CheckDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
     const base::Value& device,
-    ElectronBrowserContext* browser_context) const {
+    ElectronBrowserContext* browser_context,
+    content::RenderFrameHost* render_frame_host,
+    bool selected) const {
   if (permission == blink::PermissionType::GEOLOCATION &&
       IsGeolocationDisabledViaCommandLine())
     return false;
 
-  if (device_permission_handler_.is_null())
-    return browser_context->CheckDevicePermission(origin, device, permission);
+  if (device_permission_handler_.is_null()) {
+    return selected ||
+           browser_context->CheckDevicePermission(origin, device, permission);
+  }
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -411,6 +431,8 @@ bool ElectronPermissionManager::CheckDevicePermission(
                                       .Set("deviceType", permission)
                                       .Set("origin", origin.Serialize())
                                       .Set("device", device.Clone())
+                                      .Set("frame", render_frame_host)
+                                      .Set("selected", selected)
                                       .Build();
   return device_permission_handler_.Run(details);
 }
@@ -435,14 +457,19 @@ void ElectronPermissionManager::RevokeDevicePermission(
 
 ElectronPermissionManager::USBProtectedClasses
 ElectronPermissionManager::CheckProtectedUSBClasses(
-    const USBProtectedClasses& classes) const {
+    const USBProtectedClasses& classes,
+    const url::Origin& origin,
+    content::RenderFrameHost* render_frame_host) const {
   if (protected_usb_handler_.is_null())
     return classes;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> details =
-      gin::DataObjectBuilder(isolate).Set("protectedClasses", classes).Build();
+  v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                      .Set("protectedClasses", classes)
+                                      .Set("origin", origin.Serialize())
+                                      .Set("frame", render_frame_host)
+                                      .Build();
   return protected_usb_handler_.Run(details);
 }
 

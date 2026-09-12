@@ -13,6 +13,7 @@
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
 #include "content/public/browser/weak_document_ptr.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "device/bluetooth/bluetooth_adapter.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 #include "shell/browser/serial/serial_chooser_context.h"
@@ -40,7 +41,8 @@ class ElectronSerialDelegate;
 
 // SerialChooserController provides data for the Serial API permission prompt.
 class SerialChooserController final
-    : private SerialChooserContext::PortObserver,
+    : private content::WebContentsObserver,
+      private SerialChooserContext::PortObserver,
       private device::BluetoothAdapter::Observer {
  public:
   SerialChooserController(
@@ -68,6 +70,9 @@ class SerialChooserController final
   // BluetoothAdapter::Observer
   void AdapterPoweredChanged(device::BluetoothAdapter* adapter,
                              bool powered) override;
+
+  // content::WebContentsObserver:
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
   gin::WeakCell<api::Session>* GetSession();

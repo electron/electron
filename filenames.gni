@@ -533,6 +533,8 @@ filenames = {
     "shell/browser/session_preferences.h",
     "shell/browser/special_storage_policy.cc",
     "shell/browser/special_storage_policy.h",
+    "shell/browser/testing/fake_device_managers.cc",
+    "shell/browser/testing/fake_device_managers.h",
     "shell/browser/tracing/electron_background_tracing_metrics_provider.cc",
     "shell/browser/tracing/electron_background_tracing_metrics_provider.h",
     "shell/browser/tracing/electron_tracing_delegate.cc",
