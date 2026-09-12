@@ -169,12 +169,15 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
     return v8::MaybeLocal<v8::Object>();
   }
 
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  v8::Local<v8::ObjectTemplate> templ = data->DeprecatedGetObjectTemplate(info);
+  auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(), info);
+  v8::Local<v8::ObjectTemplate> templ;
+  if (data)
+    templ = data->object_template.Get(isolate);
   if (templ.IsEmpty()) {
     templ = GetObjectTemplateBuilder(isolate).Build();
     CHECK(!templ.IsEmpty());
-    data->DeprecatedSetObjectTemplate(info, templ);
+    if (data)
+      data->object_template.Reset(isolate, templ);
   }
   CHECK_EQ(gin::kNumberOfInternalFields, templ->InternalFieldCount());
   v8::Local<v8::Object> wrapper;
@@ -253,6 +256,8 @@ DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
   DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
       object->GetAlignedPointerFromInternalField(
           kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
+  if (!info)
+    return nullptr;
   return info->embedder == kEmbedderNativeGin ? info : nullptr;
 }
 

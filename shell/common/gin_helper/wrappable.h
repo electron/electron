@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
 
 #include "base/functional/bind.h"
-#include "gin/per_isolate_data.h"
 #include "gin/public/wrapper_info.h"
 #include "shell/common/gin_helper/constructor.h"
+#include "shell/common/gin_helper/per_context_template_data.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 
 namespace gin_helper {
@@ -31,25 +31,33 @@ class Wrappable : public WrappableBase {
   Wrappable() = default;
 
   template <typename Sig>
-  static void SetConstructor(v8::Isolate* isolate,
-                             const base::RepeatingCallback<Sig>& constructor) {
+  static v8::Local<v8::FunctionTemplate> CreateConstructorTemplate(
+      v8::Isolate* isolate,
+      const base::RepeatingCallback<Sig>& constructor) {
     v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
         isolate, base::BindRepeating(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);
     T::BuildPrototype(isolate, templ);
-    gin::PerIsolateData::From(isolate)->DeprecatedSetFunctionTemplate(
-        &kWrapperInfo, templ);
+    auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
+                                              &kWrapperInfo);
+    if (data)
+      data->function_template.Reset(isolate, templ);
+    return templ;
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate) {
     // Fill the object template.
-    auto* data = gin::PerIsolateData::From(isolate);
-    auto templ = data->DeprecatedGetFunctionTemplate(&kWrapperInfo);
+    auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
+                                              &kWrapperInfo);
+    v8::Local<v8::FunctionTemplate> templ;
+    if (data)
+      templ = data->function_template.Get(isolate);
     if (templ.IsEmpty()) {
       templ = v8::FunctionTemplate::New(isolate);
       templ->InstanceTemplate()->SetInternalFieldCount(1);
       T::BuildPrototype(isolate, templ);
-      data->DeprecatedSetFunctionTemplate(&kWrapperInfo, templ);
+      if (data)
+        data->function_template.Reset(isolate, templ);
     }
     return templ;
   }

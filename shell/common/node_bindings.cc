@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -32,7 +33,7 @@
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "gin/per_context_data.h"
-#include "gin/per_isolate_data.h"
+#include "gin/public/context_holder.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -41,7 +42,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/function_template.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
@@ -1248,16 +1248,18 @@ void OnNodePreload(node::Environment* env,
       env->principal_realm()) {
     return;
   }
-  // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
-  // the callback holders created in it. Free them when the environment is torn
-  // down, which happens on the worker's thread after its JavaScript has ended.
-  if (!gin::PerIsolateData::From(env->isolate())) {
-    env->AddCleanupHook(
-        [](void* isolate) {
-          gin_helper::CallbackHolderBase::DisposeAllInIsolateWithoutGin(
-              static_cast<v8::Isolate*>(isolate));
+
+  if (!gin::PerContextData::From(env->context())) {
+    auto holder = std::make_unique<gin::ContextHolder>(env->isolate());
+    holder->SetContext(env->context());
+    node::AddEnvironmentCleanupHook(
+        env->isolate(),
+        [](void* data) {
+          auto* holder = static_cast<gin::ContextHolder*>(data);
+          v8::HandleScope handle_scope(holder->isolate());
+          delete holder;
         },
-        env->isolate());
+        holder.release());
   }
 
   // Set custom process properties.

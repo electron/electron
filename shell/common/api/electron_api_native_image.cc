@@ -17,7 +17,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_isolate_data.h"
 #include "net/base/data_url.h"
 #include "shell/browser/browser.h"
 #include "shell/common/asar/asar_util.h"
@@ -609,15 +608,9 @@ NativeImage* NativeImage::CreateMenuSymbol(gin::Arguments* args,
 // static
 gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  auto* wrapper_info = &kWrapperInfo;
-  v8::Local<v8::FunctionTemplate> constructor =
-      data->GetFunctionTemplate(wrapper_info);
-  if (constructor.IsEmpty()) {
-    constructor = v8::FunctionTemplate::New(isolate);
-    constructor->SetClassName(gin::StringToV8(isolate, GetClassName()));
-    data->SetFunctionTemplate(wrapper_info, constructor);
-  }
+  // gin::WrappableBase caches the completed object template for this context.
+  auto constructor = v8::FunctionTemplate::New(isolate);
+  constructor->SetClassName(gin::StringToV8(isolate, GetClassName()));
   return gin::ObjectTemplateBuilder(isolate, GetClassName(),
                                     constructor->InstanceTemplate())
       .SetMethod("toPNG", &NativeImage::ToPNG)
