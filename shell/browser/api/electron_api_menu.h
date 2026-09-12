@@ -8,12 +8,14 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "ui/base/models/image_model.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "v8/include/cppgc/member.h"
 
@@ -70,6 +72,17 @@ class Menu : public gin::Wrappable<Menu>,
   // Returns a new callback which keeps references of the JS wrapper until the
   // passed |callback| is called.
   base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
+
+  // The MenuItem for |command_id| (this.commandsMap[commandId]), if any. The
+  // menu model's questions about an item are answered by reading properties
+  // off it directly rather than calling back into JS.
+  v8::MaybeLocal<v8::Object> GetItem(v8::Isolate* isolate,
+                                     int command_id) const;
+  v8::Local<v8::Value> GetItemProperty(v8::Isolate* isolate,
+                                       int command_id,
+                                       std::string_view key) const;
+  bool GetItemFlag(int command_id, std::string_view key) const;
+  std::u16string GetItemText(int command_id, std::string_view key) const;
 
   // ui::SimpleMenuModel::Delegate:
   bool IsCommandIdChecked(int command_id) const override;

@@ -90,6 +90,11 @@ const MenuItem = function (this: any, options: any) {
   }
 
   this.overrideReadOnlyProperty('commandId', ++nextCommandId);
+  // Read by the native menu model: whether `checked` has to be computed by
+  // the role at show time rather than read off the item.
+  if (roles.shouldOverrideCheckStatus(this.role)) {
+    Object.defineProperty(this, '_dynamicChecked', { value: true, enumerable: false });
+  }
 
   Object.defineProperty(this, 'userAccelerator', {
     get: () => {
