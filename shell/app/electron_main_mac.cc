@@ -10,6 +10,7 @@
 #include <string>
 #include <string_view>
 
+#include "base/compiler_specific.h"
 #include "base/strings/cstring_view.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
@@ -47,7 +48,8 @@ namespace {
 [[nodiscard]] bool HasProcessType(int argc, char* argv[]) {
   constexpr std::string_view kProcessType = "--type=";
   for (int i = 1; i < argc; ++i) {
-    if (std::string_view(argv[i]).starts_with(kProcessType))
+    // SAFETY: the OS guarantees that argv holds argc entries.
+    if (std::string_view(UNSAFE_BUFFERS(argv[i])).starts_with(kProcessType))
       return true;
   }
   return false;
@@ -75,8 +77,7 @@ int main(int argc, char* argv[]) {
 
 #if defined(HELPER_EXECUTABLE)
   if (!HasProcessType(argc, argv)) {
-    std::cerr << argv[0]
-              << " is a helper executable and cannot be launched directly; "
+    std::cerr << "This is a helper executable and cannot be launched directly; "
                  "it requires a --type argument from the browser process."
               << std::endl;
     return EX_USAGE;
