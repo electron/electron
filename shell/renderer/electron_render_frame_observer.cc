@@ -9,10 +9,12 @@
 #include <vector>
 
 #include "base/memory/ref_counted_memory.h"
+#include "base/memory/stack_allocated.h"
 #include "content/public/renderer/render_frame.h"
 #include "net/base/module/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/node_util.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/renderer_client_base.h"
@@ -24,6 +26,8 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/frame/local_dom_window.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/local_frame.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "ui/base/resource/resource_bundle.h"
 
@@ -46,6 +50,27 @@ scoped_refptr<base::RefCountedMemory> NetResourceProvider(int key) {
 [[nodiscard]] constexpr bool is_isolated_world(int world_id) {
   return world_id == WorldIDs::ISOLATED_WORLD_ID;
 }
+
+// Preload scripts run from DidClearWindowObject() and
+// DidInstallConditionalFeatures(), which Blink and content call while they are
+// still setting up the frame's script contexts. A microtask checkpoint there
+// runs whatever the preload queued underneath them, and one that removes this
+// frame frees the RenderFrame and window proxy they return to. Hold off every
+// checkpoint, Node.js's explicit ones included, until the outermost of these
+// callbacks returns; the queue drains at the next checkpoint after that.
+class DeferMicrotasksScope {
+  STACK_ALLOCATED();
+
+ public:
+  DeferMicrotasksScope(v8::Isolate* isolate, v8::MicrotaskQueue* queue)
+      : explicit_policy_(queue),
+        depth_(isolate, queue, v8::MicrotasksScope::kRunMicrotasks) {}
+
+ private:
+  // Outlives |depth_|, so leaving that scope does not checkpoint either.
+  util::ExplicitMicrotasksScope explicit_policy_;
+  v8::MicrotasksScope depth_;
+};
 
 }  // namespace
 
@@ -73,13 +98,16 @@ void ElectronRenderFrameObserver::SetIsolatedWorldCreatedCallback(
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
-  // Do a delayed Node.js initialization for child window.
-  // Check DidInstallConditionalFeatures below for the background.
   auto* web_frame =
       static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
+  v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
+  DeferMicrotasksScope defer_microtasks(
+      isolate, web_frame->GetFrame()->DomWindow()->GetMicrotaskQueue());
+
+  // Do a delayed Node.js initialization for child window.
+  // Check DidInstallConditionalFeatures below for the background.
   if (has_delayed_node_initialization_ &&
       !web_frame->IsOnInitialEmptyDocument()) {
-    v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Context> context = web_frame->MainWorldScriptContext();
     v8::MicrotasksScope microtasks_scope(
@@ -95,6 +123,9 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Local<v8::Context> context,
     int world_id) {
+  DeferMicrotasksScope defer_microtasks(v8::Isolate::GetCurrent(),
+                                        context->GetMicrotaskQueue());
+
   if (electron::is_main_world(world_id)) {
     // Start each document with a clean slate before preload has a chance to
     // subscribe for current-document isolated world creation.

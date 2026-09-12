@@ -618,6 +618,56 @@ describe('node feature', () => {
       const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
       expect(result).to.equal(10);
     });
+
+    // A preload that removes its own frame asynchronously must not have that
+    // run underneath Blink's context creation or one of the frame's own Node.js
+    // callbacks.
+    for (const via of ['queueMicrotask', 'nextTick', 'setImmediate', 'fs-callback']) {
+      it(`does not crash when a preload removes its own iframe from ${via}`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: false,
+            nodeIntegrationInSubFrames: true,
+            preload: path.join(fixtures, 'module', 'preload-remove-own-frame.js'),
+            additionalArguments: [`--remove-own-frame-via=${via}`]
+          }
+        });
+        const gone = once(w.webContents, 'render-process-gone') as Promise<
+          [Electron.Event, Electron.RenderProcessGoneDetails]
+        >;
+        await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+        const removed = w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const frames = Array.from({ length: 10 }, () => {
+            const frame = document.createElement('iframe');
+            frame.src = 'base-page.html';
+            return document.body.appendChild(frame);
+          });
+          const check = () => frames.some((frame) => frame.isConnected) ? setTimeout(check, 10) : resolve(frames.length);
+          check();
+        })`);
+        const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
+        expect(result).to.equal(10);
+      });
+    }
+
+    it('runs preload promise reactions and nextTick callbacks before page scripts', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          contextIsolation: false,
+          preload: path.join(fixtures, 'module', 'preload-task-order.js')
+        }
+      });
+      await w.loadFile(path.join(fixtures, 'pages', 'task-order.html'));
+      expect(await w.webContents.executeJavaScript('window.taskOrder')).to.deep.equal([
+        'preload',
+        'microtask',
+        'nextTick',
+        'page'
+      ]);
+    });
   });
 
   describe('native addons', () => {
