@@ -25,7 +25,13 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
+#include <vector>
+
+#include "base/base_paths.h"
 #include "base/strings/string_util_win.h"
+#include "base/win/registry.h"
 #endif
 
 namespace {
@@ -99,6 +105,29 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 #endif
 
 #if BUILDFLAG(IS_WIN)
+namespace {
+
+// Built by //electron:electron_wer and shipped next to the executable. The
+// name is fixed (it is not renamed along with electron.exe) so that packagers
+// do not need to know about it.
+constexpr base::FilePath::CharType kWerHelperDll[] =
+    FILE_PATH_LITERAL("electron_wer.dll");
+
+// Windows Error Reporting only loads runtime exception helper modules that
+// are listed (by full path, as a value name) under this key in HKCU or HKLM.
+constexpr wchar_t kWerHelperRegistryKey[] =
+    L"Software\\Microsoft\\Windows\\Windows Error Reporting"
+    L"\\RuntimeExceptionHelperModules";
+
+base::FilePath GetWerHelperPath() {
+  base::FilePath exe_dir;
+  if (!base::PathService::Get(base::DIR_EXE, &exe_dir))
+    return {};
+  return exe_dir.Append(kWerHelperDll);
+}
+
+}  // namespace
+
 void ElectronCrashReporterClient::GetProductNameAndVersion(
     const std::wstring& exe_path,
     std::wstring* product_name,
@@ -107,6 +136,56 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
     std::wstring* channel_name) {
   *product_name = base::UTF8ToWide(ELECTRON_PRODUCT_NAME);
   *version = base::UTF8ToWide(ELECTRON_VERSION_STRING);
+}
+
+std::wstring ElectronCrashReporterClient::GetWerRuntimeExceptionModule() {
+  // Called once per process during crashpad initialization (before sandbox
+  // lockdown in child processes). Returning an empty path skips
+  // WerRegisterRuntimeExceptionModule(), so apps can opt out by not shipping
+  // the DLL.
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  base::FilePath path = GetWerHelperPath();
+  if (path.empty() || !base::PathExists(path))
+    return {};
+  return path.value();
+}
+
+// static
+void ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser() {
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  const base::FilePath path = GetWerHelperPath();
+  if (path.empty() || !base::PathExists(path))
+    return;
+
+  base::win::RegKey key;
+  if (key.Create(HKEY_CURRENT_USER, kWerHelperRegistryKey,
+                 KEY_QUERY_VALUE | KEY_SET_VALUE) != ERROR_SUCCESS) {
+    return;
+  }
+
+  // Installers that version the install directory (e.g. Squirrel's
+  // app-x.y.z folders) leave one value behind per update. Prune entries for
+  // copies of the helper that no longer exist on disk; they are inert but
+  // accumulate otherwise.
+  std::vector<std::wstring> stale;
+  for (base::win::RegistryValueIterator it(HKEY_CURRENT_USER,
+                                           kWerHelperRegistryKey);
+       it.Valid(); ++it) {
+    base::FilePath registered(it.Name());
+    if (registered != path &&
+        base::FilePath::CompareEqualIgnoreCase(registered.BaseName().value(),
+                                               kWerHelperDll) &&
+        !base::PathExists(registered)) {
+      stale.emplace_back(it.Name());
+    }
+  }
+  for (const std::wstring& name : stale)
+    key.DeleteValue(name.c_str());
+
+  if (!key.HasValue(path.value().c_str())) {
+    // The value's data is ignored by WER; only the name matters.
+    key.WriteValue(path.value().c_str(), DWORD{0});
+  }
 }
 #endif
 

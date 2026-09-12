@@ -111,6 +111,16 @@ app.whenReady().then(() => {
       `);
     });
     w.loadURL('about:blank');
+  } else if (crashType === 'renderer-fastfail') {
+    // Windows: chrome://crash/cfg makes the renderer terminate via a Control
+    // Flow Guard violation (__fastfail / STATUS_STACK_BUFFER_OVERRUN), which
+    // bypasses crashpad's in-process handler and is only captured through the
+    // electron_wer.dll WER runtime exception helper.
+    const w = new BrowserWindow({ show: false });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.loadURL('about:blank').then(() => {
+      w.loadURL('chrome://crash/cfg').catch(() => {});
+    });
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, { silent: true });
