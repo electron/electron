@@ -23,9 +23,15 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class WeakCell;
+}  // namespace gin
 
 namespace electron {
+
+namespace api {
+class Session;
+}
 
 class ElectronAuthenticatorRequestClientDelegate
     : public content::AuthenticatorRequestClientDelegate {
@@ -66,6 +72,11 @@ class ElectronAuthenticatorRequestClientDelegate
       const device::FidoAuthenticator& authenticator) override;
   void OnTransportAvailabilityEnumerated(
       device::FidoRequestHandlerBase::TransportAvailabilityInfo data) override;
+  bool SupportsPIN() const override;
+  void CollectPIN(
+      CollectPINOptions options,
+      base::OnceCallback<void(std::u16string)> provide_pin_cb) override;
+  void StartBioEnrollment(base::OnceClosure next_callback) override;
 #if BUILDFLAG(IS_MAC)
   std::vector<std::unique_ptr<device::FidoDiscoveryBase>>
   CreatePlatformDiscoveries() override;
@@ -77,11 +88,15 @@ class ElectronAuthenticatorRequestClientDelegate
     std::string display_name;
   };
 
+  gin::WeakCell<api::Session>* GetSession() const;
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
   void MaybeEmitSelectAuthenticatorEvent();
   void DispatchDefaultAuthenticator();
   void OnAuthenticatorSelected(gin::Arguments* args);
+  void EmitCollectPinEvent();
+  void OnPinProvided(gin::Arguments* args);
+  void CancelPendingPinCollection();
 
   const content::GlobalRenderFrameHostId render_frame_host_id_;
   std::string relying_party_id_;
@@ -98,6 +113,12 @@ class ElectronAuthenticatorRequestClientDelegate
 
   std::vector<PendingAuthenticator> pending_authenticators_;
   bool controls_dispatch_ = false;
+
+  // CollectPINOptions has no default for |reason|; the value here is
+  // meaningless and always overwritten in CollectPIN() before use.
+  CollectPINOptions pending_pin_options_{
+      .reason = device::pin::PINEntryReason::kChallenge};
+  base::OnceCallback<void(std::u16string)> provide_pin_callback_;
 
   base::WeakPtrFactory<ElectronAuthenticatorRequestClientDelegate>
       weak_factory_{this};
