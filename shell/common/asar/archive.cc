@@ -44,7 +44,7 @@ const char kSeparators[] = "/";
 // cycle from recursing until the stack is exhausted.
 constexpr int kMaxLinkDepth = 40;
 
-const base::DictValue* GetNodeFromPath(std::string path,
+const base::DictValue* GetNodeFromPath(std::string_view path,
                                        const base::DictValue& root,
                                        int depth);
 
@@ -69,7 +69,7 @@ const base::DictValue* GetFilesNode(const base::DictValue& root,
 
 // Gets sub-file "name" from "dir".
 const base::DictValue* GetChildNode(const base::DictValue& root,
-                                    const std::string& name,
+                                    std::string_view name,
                                     const base::DictValue& dir,
                                     int depth) {
   if (name.empty())
@@ -79,32 +79,33 @@ const base::DictValue* GetChildNode(const base::DictValue& root,
   return files ? files->FindDict(name) : nullptr;
 }
 
-// Gets the node of "path" from "root".
-const base::DictValue* GetNodeFromPath(std::string path,
+// Gets the node of "path" from "root". Walks |path| one component at a time
+// as views into the caller's string; nothing is copied.
+const base::DictValue* GetNodeFromPath(std::string_view path,
                                        const base::DictValue& root,
                                        int depth) {
-  if (path.empty())
-    return &root;
-
   const base::DictValue* dir = &root;
-  for (size_t delimiter_position = path.find_first_of(kSeparators);
-       delimiter_position != std::string::npos;
-       delimiter_position = path.find_first_of(kSeparators)) {
+  while (!path.empty()) {
+    const size_t delimiter_position = path.find_first_of(kSeparators);
+    if (delimiter_position == std::string_view::npos)
+      break;
     const base::DictValue* child =
         GetChildNode(root, path.substr(0, delimiter_position), *dir, depth);
     if (!child)
       return nullptr;
 
     dir = child;
-    path.erase(0, delimiter_position + 1);
+    path.remove_prefix(delimiter_position + 1);
   }
 
+  if (path.empty())
+    return dir;
   return GetChildNode(root, path, *dir, depth);
 }
 
-const base::DictValue* GetNodeFromPath(std::string path,
+const base::DictValue* GetNodeFromPath(std::string_view path,
                                        const base::DictValue& root) {
-  return GetNodeFromPath(std::move(path), root, 0);
+  return GetNodeFromPath(path, root, 0);
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
@@ -297,17 +298,41 @@ std::optional<base::FilePath> Archive::RelativePath() const {
 }
 #endif
 
+// Enough for every distinct path a large app probes during startup; past
+// this the memo is simply started over rather than evicted entry by entry.
+constexpr size_t kMaxNodeCacheEntries = 32 * 1024;
+
+const base::DictValue* Archive::LookupNode(std::string_view path) const {
+  DCHECK(header_);
+  {
+    base::AutoLock auto_lock(node_cache_lock_);
+    auto it = node_cache_.find(path);
+    if (it != node_cache_.end())
+      return it->second;
+  }
+  const base::DictValue* node = GetNodeFromPath(path, *header_);
+  base::AutoLock auto_lock(node_cache_lock_);
+  if (node_cache_.size() >= kMaxNodeCacheEntries)
+    node_cache_.clear();
+  node_cache_.emplace(std::string(path), node);
+  return node;
+}
+
 bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
+  return GetFileInfo(path.AsUTF8Unsafe(), info, 0);
+}
+
+bool Archive::GetFileInfo(std::string_view path, FileInfo* info) const {
   return GetFileInfo(path, info, 0);
 }
 
-bool Archive::GetFileInfo(const base::FilePath& path,
+bool Archive::GetFileInfo(std::string_view path,
                           FileInfo* info,
                           int depth) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
@@ -315,17 +340,17 @@ bool Archive::GetFileInfo(const base::FilePath& path,
   if (link) {
     if (depth >= kMaxLinkDepth)
       return false;
-    return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info, depth + 1);
+    return GetFileInfo(*link, info, depth + 1);
   }
 
   return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
 
-bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
+bool Archive::Stat(std::string_view path, Stats* stats) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
@@ -342,12 +367,13 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
 }
 
-bool Archive::Readdir(const base::FilePath& path,
-                      std::vector<base::FilePath>* files) const {
+bool Archive::Readdir(std::string_view path,
+                      std::vector<std::string>* names,
+                      std::vector<FileType>* types) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
@@ -355,27 +381,39 @@ bool Archive::Readdir(const base::FilePath& path,
   if (!files_node)
     return false;
 
-  for (const auto iter : *files_node)
-    files->push_back(base::FilePath::FromUTF8Unsafe(iter.first));
+  names->reserve(files_node->size());
+  if (types)
+    types->reserve(files_node->size());
+  for (const auto iter : *files_node) {
+    names->push_back(iter.first);
+    if (types) {
+      const base::DictValue* child = iter.second.GetIfDict();
+      if (child && child->Find("link"))
+        types->push_back(FileType::kLink);
+      else if (child && child->Find("files"))
+        types->push_back(FileType::kDirectory);
+      else
+        types->push_back(FileType::kFile);
+    }
+  }
   return true;
 }
 
-bool Archive::Realpath(const base::FilePath& path,
-                       base::FilePath* realpath) const {
+bool Archive::Realpath(std::string_view path, std::string* realpath) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
   const std::string* link = node->FindString("link");
   if (link) {
-    *realpath = base::FilePath::FromUTF8Unsafe(*link);
+    *realpath = *link;
     return true;
   }
 
-  *realpath = path;
+  realpath->assign(path);
   return true;
 }
 
