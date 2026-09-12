@@ -415,7 +415,7 @@ __metadata:
     pre-flight: "npm:^2.0.0"
     process: "npm:^0.11.10"
     semver: "npm:^7.6.3"
-    stream-json: "npm:^1.9.1"
+    stream-json: "npm:^3.5.0"
     tap-xunit: "npm:^2.4.1"
     ts-loader: "npm:^8.0.2"
     ts-node: "npm:6.2.0"
@@ -4010,9 +4010,9 @@ __metadata:
   linkType: hard
 
 "fast-uri@npm:^3.0.1":
-  version: 3.1.5
-  resolution: "fast-uri@npm:3.1.5"
-  checksum: 10c0/2bf60eb800dd610c65e17be436425dcb21c92aff3a87d442a8bccab0b7b071e88cf1a5d7d1ea946370b937e6fc0375c405c0296c10587e57de4f78be4646d1d0
+  version: 3.1.7
+  resolution: "fast-uri@npm:3.1.7"
+  checksum: 10c0/ca2baa4bde48fc7322bdc692c6636975943ebe4f6dd97e07d70b14e0ab85af2ff30de90f550f5ec2956684fe208e150d85d6cb5f3c74438c8ac1bf86bd435c13
   languageName: node
   linkType: hard
 
@@ -5225,14 +5225,14 @@ __metadata:
   linkType: hard
 
 "js-yaml@npm:^3.2.7":
-  version: 3.15.1
-  resolution: "js-yaml@npm:3.15.1"
+  version: 3.15.2
+  resolution: "js-yaml@npm:3.15.2"
   dependencies:
     argparse: "npm:^1.0.7"
     esprima: "npm:^4.0.0"
   bin:
     js-yaml: bin/js-yaml.js
-  checksum: 10c0/6c693b8c59ffe12021df3b36994b090df19d920826dd810baab81652b40861e1974509dd11fe92225ab4c00cc14de053300c94db015c2c0e211edea39b118737
+  checksum: 10c0/e341df211dece9d4b784849647ad7568b5b6a58a9ee58ead750482316d83276387343649fe4b71522705dc6c76acf97718588f23dc19443833ef3e75033af967
   languageName: node
   linkType: hard
 
@@ -7771,10 +7771,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stream-chain@npm:^2.2.5":
-  version: 2.2.5
-  resolution: "stream-chain@npm:2.2.5"
-  checksum: 10c0/c512f50190d7c92d688fa64e7af540c51b661f9c2b775fc72bca38ea9bca515c64c22c2197b1be463741daacbaaa2dde8a8ea24ebda46f08391224f15249121a
+"stream-chain@npm:^4.2.5":
+  version: 4.2.5
+  resolution: "stream-chain@npm:4.2.5"
+  checksum: 10c0/c47e3895344e356d0aa641b08735c9f4cc7486a12275cef9549a114ea0e8348f75443f31f75053eefef0eee620a13bf6e9841479c64954b8d4dcc1a41a5511b8
   languageName: node
   linkType: hard
 
@@ -7788,12 +7788,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stream-json@npm:^1.9.1":
-  version: 1.9.1
-  resolution: "stream-json@npm:1.9.1"
+"stream-json@npm:^3.5.0":
+  version: 3.5.0
+  resolution: "stream-json@npm:3.5.0"
   dependencies:
-    stream-chain: "npm:^2.2.5"
-  checksum: 10c0/0521e5cb3fb6b0e2561d715975e891bd81fa77d0239c8d0b1756846392bc3c7cdd7f1ddb0fe7ed77e6fdef58daab9e665d3b39f7d677bd0859e65a2bff59b92c
+    stream-chain: "npm:^4.2.5"
+  checksum: 10c0/208302af64f110b58bab68fa7a90439e5f7e7afe96cf2979b45b8259c738570aeee42affe2280cdcab1870c45db063ed0e93e71353bfdfe393157da71ca7ef14
   languageName: node
   linkType: hard
 

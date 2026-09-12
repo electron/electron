@@ -33,7 +33,7 @@
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "semver": "^7.6.3",
-    "stream-json": "^1.9.1",
+    "stream-json": "^3.5.0",
     "tap-xunit": "^2.4.1",
     "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
