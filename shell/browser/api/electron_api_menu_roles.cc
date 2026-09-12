@@ -17,6 +17,8 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_base_window.h"
+#include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/api/electron_api_menu_item.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -103,41 +105,33 @@ constexpr Role kRoles[] = {
     {"sharemenu", "Share", ""},
 };
 
-// A submenu template as Menu.buildFromTemplate() takes it.
-class TemplateBuilder {
+class SubmenuBuilder {
   STACK_ALLOCATED();
 
  public:
-  explicit TemplateBuilder(v8::Isolate* isolate)
-      : isolate_(isolate), items_(isolate) {}
+  explicit SubmenuBuilder(v8::Isolate* isolate)
+      : isolate_(isolate), menu_(Menu::Create(isolate)) {}
 
-  TemplateBuilder& Role(std::string_view id) {
-    gin::Dictionary item = gin::Dictionary::CreateEmpty(isolate_);
-    item.Set("role", id);
-    items_.push_back(gin::ConvertToV8(isolate_, item));
-    return *this;
+  SubmenuBuilder& Role(std::string_view id) {
+    return Append(MenuItem::NewWithRole(isolate_, *Find(id)));
   }
-  TemplateBuilder& Separator() {
-    gin::Dictionary item = gin::Dictionary::CreateEmpty(isolate_);
-    item.Set("type", std::string_view("separator"));
-    items_.push_back(gin::ConvertToV8(isolate_, item));
-    return *this;
+  SubmenuBuilder& Separator() {
+    return Append(MenuItem::NewSeparator(isolate_));
   }
-  TemplateBuilder& Submenu(std::string_view label,
-                           v8::Local<v8::Value> submenu) {
-    gin::Dictionary item = gin::Dictionary::CreateEmpty(isolate_);
-    item.Set("label", label);
-    item.Set("submenu", submenu);
-    items_.push_back(gin::ConvertToV8(isolate_, item));
-    return *this;
+  SubmenuBuilder& Submenu(std::u16string label, Menu* submenu) {
+    return Append(MenuItem::NewSubmenu(isolate_, std::move(label), submenu));
   }
-  v8::Local<v8::Value> Build() {
-    return v8::Array::New(isolate_, items_.data(), items_.size());
-  }
+  Menu* Build() { return menu_; }
 
  private:
+  SubmenuBuilder& Append(MenuItem* item) {
+    if (menu_ && item)
+      menu_->AppendItem(isolate_, item);
+    return *this;
+  }
+
   v8::Isolate* isolate_;
-  v8::LocalVector<v8::Value> items_;
+  Menu* menu_;
 };
 
 // The webContents whose open DevTools |web_contents| is, else |web_contents|.
@@ -208,10 +202,10 @@ v8::Local<v8::Value> Defaults(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, all);
 }
 
-v8::Local<v8::Value> DefaultSubmenu(v8::Isolate* isolate, const Role& role) {
+Menu* DefaultSubmenu(v8::Isolate* isolate, const Role& role) {
   const std::string_view id(role.id);
   if (id == "appmenu") {
-    return TemplateBuilder(isolate)
+    return SubmenuBuilder(isolate)
         .Role("about")
         .Separator()
         .Role("services")
@@ -224,32 +218,32 @@ v8::Local<v8::Value> DefaultSubmenu(v8::Isolate* isolate, const Role& role) {
         .Build();
   }
   if (id == "filemenu")
-    return TemplateBuilder(isolate).Role(kIsMac ? "close" : "quit").Build();
+    return SubmenuBuilder(isolate).Role(kIsMac ? "close" : "quit").Build();
   if (id == "editmenu") {
-    TemplateBuilder edit(isolate);
+    SubmenuBuilder edit(isolate);
     edit.Role("undo").Role("redo").Separator().Role("cut").Role("copy").Role(
         "paste");
     if (kIsMac) {
       edit.Role("pasteandmatchstyle").Role("delete").Role("selectall");
       edit.Separator();
-      edit.Submenu("Substitutions", TemplateBuilder(isolate)
-                                        .Role("showsubstitutions")
-                                        .Separator()
-                                        .Role("togglesmartquotes")
-                                        .Role("togglesmartdashes")
-                                        .Role("toggletextreplacement")
-                                        .Build());
-      edit.Submenu("Speech", TemplateBuilder(isolate)
-                                 .Role("startspeaking")
-                                 .Role("stopspeaking")
-                                 .Build());
+      edit.Submenu(u"Substitutions", SubmenuBuilder(isolate)
+                                         .Role("showsubstitutions")
+                                         .Separator()
+                                         .Role("togglesmartquotes")
+                                         .Role("togglesmartdashes")
+                                         .Role("toggletextreplacement")
+                                         .Build());
+      edit.Submenu(u"Speech", SubmenuBuilder(isolate)
+                                  .Role("startspeaking")
+                                  .Role("stopspeaking")
+                                  .Build());
     } else {
       edit.Role("delete").Separator().Role("selectall");
     }
     return edit.Build();
   }
   if (id == "viewmenu") {
-    return TemplateBuilder(isolate)
+    return SubmenuBuilder(isolate)
         .Role("reload")
         .Role("forcereload")
         .Role("toggledevtools")
@@ -262,7 +256,7 @@ v8::Local<v8::Value> DefaultSubmenu(v8::Isolate* isolate, const Role& role) {
         .Build();
   }
   if (id == "windowmenu") {
-    TemplateBuilder window(isolate);
+    SubmenuBuilder window(isolate);
     window.Role("minimize").Role("zoom");
     if (kIsMac)
       window.Separator().Role("front");
@@ -271,8 +265,8 @@ v8::Local<v8::Value> DefaultSubmenu(v8::Isolate* isolate, const Role& role) {
     return window.Build();
   }
   if (id == "sharemenu")
-    return v8::Array::New(isolate);
-  return {};
+    return SubmenuBuilder(isolate).Build();
+  return nullptr;
 }
 
 bool IsChecked(const Role& role) {

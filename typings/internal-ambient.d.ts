@@ -316,20 +316,8 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
     _linkedBinding(name: 'electron_browser_menu'): {
       Menu: typeof Electron.Menu;
+      MenuItem: typeof Electron.MenuItem;
       setApplicationMenu(menu: Electron.Menu | null): void;
-      sendActionToFirstResponder(action: string): void;
-      sortTemplate(
-        template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]
-      ): (Electron.MenuItemConstructorOptions | Electron.MenuItem)[];
-      getRoleDefaults(role: string): {
-        label: string;
-        accelerator?: string;
-        registerAccelerator: boolean;
-        computesChecked: boolean;
-        submenu?: Electron.MenuItemConstructorOptions[];
-      } | null;
-      getRoleChecked(role: string): boolean;
-      executeRole(role: unknown, focusedWindow: unknown, focusedWebContents: unknown): boolean;
     };
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };

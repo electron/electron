@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-// The ordering part of Menu.buildFromTemplate().
+// Menu.buildFromTemplate().
 
 #include <map>
 #include <optional>
@@ -10,20 +10,23 @@
 #include <utility>
 #include <vector>
 
+#include "base/auto_reset.h"
 #include "base/functional/function_ref.h"
 #include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
-#include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/api/electron_api_menu_item.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "v8/include/v8.h"
 
 namespace electron::api {
 
 namespace {
 
-// Every V8 value read from the template lives in one v8::LocalVector; the
-// sorting data refers to values and entries by index.
+// Every V8 value read from the template (the MenuItem wrappers included)
+// lives in one v8::LocalVector; the sorting data refers to values and entries
+// by index.
 using ValueIndex = size_t;
 using EntryIndex = size_t;
 
@@ -91,13 +94,14 @@ class TemplateSorter {
   explicit TemplateSorter(v8::Isolate* isolate)
       : isolate_(isolate), values_(isolate) {}
 
-  // Adds a template object, reading its ordering fields.
-  void Add(v8::Local<v8::Object> object, bool separator, bool hidden) {
-    gin_helper::Dictionary dict(isolate_, object);
+  // Adds an item; the ordering constraints are read off its wrapper, where
+  // the template's extra fields were copied to.
+  void Add(MenuItem* item, v8::Local<v8::Object> wrapper) {
+    gin_helper::Dictionary dict(isolate_, wrapper);
     TemplateEntry e;
-    e.value = Push(object);
-    e.separator = separator;
-    e.hidden = hidden;
+    e.value = Push(wrapper);
+    e.separator = item->type() == MenuItem::Type::kSeparator;
+    e.hidden = !item->visible();
     v8::Local<v8::Value> id;
     if (dict.Get("id", &id) && !id->IsUndefined())
       e.id = Push(id);
@@ -109,7 +113,7 @@ class TemplateSorter {
   }
 
   // Applies the before/after/beforeGroupContaining/afterGroupContaining
-  // constraints and folds separators; returns the values in display order.
+  // constraints and folds separators; returns the wrappers in display order.
   // |make_separator| supplies separators needed between groups beyond those
   // in the template.
   v8::LocalVector<v8::Value> Sort(
@@ -316,34 +320,88 @@ class TemplateSorter {
 }  // namespace
 
 // static
-v8::Local<v8::Value> Menu::SortTemplate(v8::Isolate* isolate,
-                                        v8::Local<v8::Value> tmpl) {
+v8::Local<v8::Value> Menu::BuildFromTemplate(gin_helper::ErrorThrower thrower,
+                                             v8::Local<v8::Value> tmpl) {
+  // Submenu templates recurse through here natively; bound the depth so a
+  // cyclic template throws instead of exhausting the stack.
+  static int depth = 0;
+  constexpr int kMaxDepth = 100;
+  if (depth >= kMaxDepth) {
+    thrower.ThrowRangeError("Menu template is nested too deeply");
+    return {};
+  }
+  base::AutoReset<int> depth_scope(&depth, depth + 1);
+
+  v8::Isolate* isolate = thrower.isolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  if (!IsArray(tmpl))
-    return tmpl;
+  if (tmpl.IsEmpty() || !IsArray(tmpl)) {
+    thrower.ThrowTypeError(
+        "Invalid template for Menu: Menu template must be an array");
+    return {};
+  }
   v8::Local<v8::Object> array = tmpl.As<v8::Object>();
   const uint32_t length = ArrayLength(isolate, array);
 
   TemplateSorter sorter(isolate);
   for (uint32_t i = 0; i < length; ++i) {
+    if (!array->HasOwnProperty(context, i).FromMaybe(false))
+      continue;
     v8::Local<v8::Value> value;
-    if (array->HasOwnProperty(context, i).FromMaybe(false) &&
-        array->Get(context, i).ToLocal(&value) && value->IsObject()) {
-      gin_helper::Dictionary dict(isolate, value.As<v8::Object>());
-      std::string type;
-      bool separator = dict.Get("type", &type) && type == "separator";
-      v8::Local<v8::Value> visible;
-      bool hidden = dict.Get("visible", &visible) && visible->IsFalse();
-      sorter.Add(value.As<v8::Object>(), separator, hidden);
+    if (!array->Get(context, i).ToLocal(&value) || !value->IsObject() ||
+        value->IsNull()) {
+      thrower.ThrowTypeError(
+          "Invalid template for MenuItem: must have at least one of label, "
+          "role or type");
+      return {};
     }
+    v8::Local<v8::Object> object = value.As<v8::Object>();
+    MenuItem* item = MenuItem::FromV8(isolate, object);
+    if (!item) {
+      std::string type;
+      if (!object
+               ->HasOwnProperty(context, gin::StringToSymbol(isolate, "label"))
+               .FromMaybe(false) &&
+          !object->HasOwnProperty(context, gin::StringToSymbol(isolate, "role"))
+               .FromMaybe(false) &&
+          !(gin_helper::Dictionary(isolate, object).Get("type", &type) &&
+            type == "separator")) {
+        thrower.ThrowTypeError(
+            "Invalid template for MenuItem: must have at least one of label, "
+            "role or type");
+        return {};
+      }
+      v8::TryCatch try_catch(isolate);
+      v8::Local<v8::Value> created = MenuItem::New(thrower, object);
+      if (try_catch.HasCaught()) {
+        try_catch.ReThrow();
+        return {};
+      }
+      item = MenuItem::FromV8(isolate, created);
+      object = created.As<v8::Object>();
+    }
+    sorter.Add(item, object);
   }
 
   v8::LocalVector<v8::Value> sorted = sorter.Sort([&] {
-    gin_helper::Dictionary separator = gin::Dictionary::CreateEmpty(isolate);
-    separator.Set("type", std::string_view("separator"));
-    return gin::ConvertToV8(isolate, separator).As<v8::Object>();
+    return MenuItem::NewSeparator(isolate)
+        ->GetWrapper(isolate)
+        .ToLocalChecked();
   });
-  return v8::Array::New(isolate, sorted.data(), sorted.size());
+
+  Menu* menu = Menu::Create(isolate);
+  v8::Local<v8::Object> menu_object;
+  if (!menu || !menu->GetWrapper(isolate).ToLocal(&menu_object))
+    return {};
+  for (v8::Local<v8::Value> wrapper : sorted) {
+    v8::TryCatch try_catch(isolate);
+    menu->InsertItem(isolate, menu->GetItemCount(),
+                     MenuItem::FromV8(isolate, wrapper), &thrower);
+    if (try_catch.HasCaught()) {
+      try_catch.ReThrow();
+      return {};
+    }
+  }
+  return menu_object;
 }
 
 }  // namespace electron::api
