@@ -44,7 +44,7 @@ bool WithUtf8Path(v8::Isolate* isolate, v8::Local<v8::Value> value, Fn&& fn) {
       const std::string_view latin1 = UNSAFE_BUFFERS(std::string_view(
           reinterpret_cast<const char*>(view.data8()), view.length()));
       if (base::IsStringASCII(latin1)) {
-        fn(latin1);
+        fn(latin1, /*is_ascii=*/true);
         return true;
       }
     }
@@ -52,8 +52,21 @@ bool WithUtf8Path(v8::Isolate* isolate, v8::Local<v8::Value> value, Fn&& fn) {
   std::string utf8;
   if (!gin::ConvertFromV8(isolate, value, &utf8))
     return false;
-  fn(std::string_view(utf8));
+  fn(std::string_view(utf8), /*is_ascii=*/false);
   return true;
+}
+
+// Number of UTF-16 code units (what JS string offsets count) that the first
+// |byte_length| bytes of the UTF-8 |utf8| decode to.
+int Utf16LengthOfUtf8Prefix(std::string_view utf8, size_t byte_length) {
+  int units = 0;
+  for (unsigned char c : utf8.substr(0, byte_length)) {
+    if ((c & 0xC0) == 0x80)
+      continue;  // continuation byte
+    units +=
+        (c & 0xF8) == 0xF0 ? 2 : 1;  // 4-byte sequences are surrogate pairs
+  }
+  return units;
 }
 
 // Archive offsets and sizes are nearly always Smi-sized; avoid a HeapNumber.
@@ -136,7 +149,7 @@ class Archive : public node::ObjectWrap {
     bool found = false;
     if (!wrap->archive_ ||
         !WithUtf8Path(isolate, args[0],
-                      [&](std::string_view path) {
+                      [&](std::string_view path, bool) {
                         found = wrap->archive_->GetFileInfo(path, &info);
                       }) ||
         !found) {
@@ -177,7 +190,7 @@ class Archive : public node::ObjectWrap {
     bool found = false;
     if (!wrap->archive_ ||
         !WithUtf8Path(isolate, args[0],
-                      [&](std::string_view path) {
+                      [&](std::string_view path, bool) {
                         found = wrap->archive_->Stat(path, &stats);
                       }) ||
         !found) {
@@ -214,7 +227,7 @@ class Archive : public node::ObjectWrap {
     bool found = false;
     if (!wrap->archive_ ||
         !WithUtf8Path(isolate, args[0],
-                      [&](std::string_view path) {
+                      [&](std::string_view path, bool) {
                         found = wrap->archive_->Readdir(path, &names, nullptr);
                       }) ||
         !found) {
@@ -235,7 +248,7 @@ class Archive : public node::ObjectWrap {
     bool found = false;
     if (!wrap->archive_ ||
         !WithUtf8Path(isolate, args[0],
-                      [&](std::string_view path) {
+                      [&](std::string_view path, bool) {
                         found = wrap->archive_->Readdir(path, &names, &types);
                       }) ||
         !found) {
@@ -261,7 +274,7 @@ class Archive : public node::ObjectWrap {
     bool found = false;
     if (!wrap->archive_ ||
         !WithUtf8Path(isolate, args[0],
-                      [&](std::string_view path) {
+                      [&](std::string_view path, bool) {
                         found = wrap->archive_->Realpath(path, &realpath);
                       }) ||
         !found) {
@@ -346,8 +359,11 @@ static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
   const bool require_normalized = args[1]->IsTrue();
   int result = asar::kNotInArchive;
-  WithUtf8Path(isolate, args[0], [&](std::string_view path) {
+  WithUtf8Path(isolate, args[0], [&](std::string_view path, bool is_ascii) {
     result = asar::FindArchivePrefixLength(path, require_normalized);
+    // The caller slices a JS string with this, so report UTF-16 code units.
+    if (result > 0 && !is_ascii)
+      result = Utf16LengthOfUtf8Prefix(path, result);
   });
   args.GetReturnValue().Set(result);
 }
