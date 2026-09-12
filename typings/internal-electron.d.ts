@@ -176,6 +176,7 @@ declare namespace Electron {
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   namespace Menu {
+    function _applicationMenuWasSet(): boolean;
     function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
   }
 
@@ -184,16 +185,6 @@ declare namespace Electron {
     _menuWillShow(): void;
     getItemCount(): number;
     getIndexOfCommandId(commandId: number): number;
-    popupAt(
-      window: BaseWindow,
-      frame: WebFrameMain | undefined,
-      x: number,
-      y: number,
-      positioning: number,
-      sourceType: Required<Electron.PopupOptions>['sourceType'],
-      callback: () => void
-    ): void;
-    closePopupAt(id: number): void;
     _getAcceleratorTextAt(index: number): string;
   }
 

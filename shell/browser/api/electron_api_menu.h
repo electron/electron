@@ -120,10 +120,18 @@ class Menu : public gin::Wrappable<Menu>,
               v8::Local<v8::Value> item);
   void Append(gin_helper::ErrorThrower thrower, v8::Local<v8::Value> item);
   v8::Local<v8::Value> Items(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetMenuItemById(gin::Arguments* args);
+  v8::Local<v8::Value> FindItemById(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> id);
+  v8::Local<v8::Value> Popup(gin::Arguments* args);
+  void ClosePopup(gin::Arguments* args);
   int GetItemCount() const;
   int GetIndexOfCommandId(int command_id) const;
   void ActivateForTesting(int command_id);
   void MenuWillShowForTesting();
+  static void SetApplicationMenuFromJS(gin::Arguments* args);
+  static v8::Local<v8::Value> GetApplicationMenu(v8::Isolate* isolate);
+  static bool ApplicationMenuWasSet();
 
  protected:
   // Remove this instance as an observer from the model. Called by derived
