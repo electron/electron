@@ -849,4 +849,47 @@ describe('MenuItems', () => {
       expect(item.badge).to.be.undefined();
     });
   });
+
+  describe('MenuItem.fontType', () => {
+    it('should be undefined when not set', () => {
+      const item = new MenuItem({ label: 'test' });
+      expect(item.fontType).to.be.undefined();
+    });
+
+    it('should set fontType from constructor options', () => {
+      const monospaced = new MenuItem({ label: '09:45', fontType: 'monospaced' });
+      const monospacedDigit = new MenuItem({ label: '11:15', fontType: 'monospacedDigit' });
+      expect(monospaced.fontType).to.equal('monospaced');
+      expect(monospacedDigit.fontType).to.equal('monospacedDigit');
+    });
+
+    it('should set fontType on items added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: '09:45', fontType: 'monospacedDigit' }]);
+      expect(menu.items[0].fontType).to.equal('monospacedDigit');
+    });
+
+    it('should allow dynamic fontType updates', () => {
+      const item = new MenuItem({ label: '09:45', fontType: 'monospaced' });
+      item.fontType = 'monospacedDigit';
+      expect(item.fontType).to.equal('monospacedDigit');
+
+      const menu = Menu.buildFromTemplate([{ label: '11:15' }]);
+      menu.items[0].fontType = 'monospacedDigit';
+      expect(menu.items[0].fontType).to.equal('monospacedDigit');
+      menu.items[0].fontType = undefined;
+      expect(menu.items[0].fontType).to.be.undefined();
+    });
+
+    it('should throw on an invalid fontType', () => {
+      expect(() => new MenuItem({ label: '09:45', fontType: 'bold' as any })).to.throw(/Invalid fontType 'bold'/);
+      expect(() => new MenuItem({ label: '09:45', fontType: 0 as any })).to.throw(/Invalid fontType/);
+      expect(() => new MenuItem({ label: '09:45', fontType: false as any })).to.throw(/Invalid fontType/);
+
+      const menu = Menu.buildFromTemplate([{ label: '11:15', fontType: 'monospaced' }]);
+      expect(() => {
+        menu.items[0].fontType = 'bold' as any;
+      }).to.throw(/Invalid fontType 'bold'/);
+      expect(menu.items[0].fontType).to.equal('monospaced');
+    });
+  });
 });
