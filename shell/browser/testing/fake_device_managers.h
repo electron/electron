@@ -20,6 +20,14 @@
 #include "services/device/public/mojom/usb_manager.mojom.h"
 #include "services/device/public/mojom/usb_manager_client.mojom.h"
 
+namespace bluetooth {
+class FakeCentral;
+}
+
+namespace device {
+class BluetoothAdapterFactory;
+}
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -149,6 +157,18 @@ class FakeSerialPortManager : public device::mojom::SerialPortManager {
   std::vector<std::unique_ptr<Port>> open_ports_;
   mojo::RemoteSet<device::mojom::SerialPortManagerClient> clients_;
   mojo::ReceiverSet<device::mojom::SerialPortManager> receivers_;
+};
+
+// Process-wide fake Bluetooth adapter (the same bluetooth::FakeCentral the
+// DevTools BluetoothEmulation domain uses). Web Bluetooth has one adapter per
+// process, so this is not per session.
+class FakeBluetooth {
+ public:
+  // |state| is "absent", "powered-off" or "powered-on".
+  static void Enable(const std::string& state);
+  static void Disable();
+  static bool AddPeripheral(const std::string& address,
+                            const std::string& name);
 };
 
 // Owns one set of fakes per browser context and wires them into that

@@ -4,6 +4,9 @@
 
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 
+#include "base/feature_list.h"
+#include "content/public/common/content_features.h"
+
 #include <memory>
 #include <utility>
 
@@ -18,6 +21,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
+#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/common/bluetooth/web_bluetooth_device_id.h"
@@ -52,7 +56,21 @@ struct Converter<content::BluetoothDelegate::PairingKind> {
 
 namespace electron {
 
-ElectronBluetoothDelegate::ElectronBluetoothDelegate() = default;
+ElectronBluetoothDelegate::ElectronBluetoothDelegate() {
+  // Electron relies on content's per-document allowed-devices map for Web
+  // Bluetooth device and GATT-service access control. The delegate-backed
+  // backend (kWebBluetoothNewPermissionsBackend) instead asks
+  // HasDevicePermission() / IsAllowedToAccessService() /
+  // GrantServiceAccessPermission() / GetPermittedDevices() below, which are
+  // not implemented here and answer "allowed". If Chromium enables that
+  // backend by default, those must be implemented (a per-origin device grant
+  // store wired to session.setDevicePermissionHandler, like hid/usb/serial)
+  // before this check is removed.
+  DCHECK(!base::FeatureList::IsEnabled(
+      features::kWebBluetoothNewPermissionsBackend))
+      << "Web Bluetooth permissions backend changed; implement "
+         "ElectronBluetoothDelegate device permissions before shipping.";
+}
 
 ElectronBluetoothDelegate::~ElectronBluetoothDelegate() = default;
 
@@ -60,9 +78,7 @@ std::unique_ptr<content::BluetoothChooser>
 ElectronBluetoothDelegate::RunBluetoothChooser(
     content::RenderFrameHost* frame,
     const content::BluetoothChooser::EventHandler& event_handler) {
-  auto* api_web_contents =
-      api::WebContents::From(content::WebContents::FromRenderFrameHost(frame));
-  return std::make_unique<BluetoothChooser>(api_web_contents, event_handler);
+  return std::make_unique<BluetoothChooser>(frame, event_handler);
 }
 
 // The following methods are not currently called in Electron.
@@ -117,7 +133,12 @@ void ElectronBluetoothDelegate::RevokeDevicePermissionWebInitiated(
 }
 
 bool ElectronBluetoothDelegate::MayUseBluetooth(RenderFrameHost* frame) {
-  return true;
+  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
+  auto* permission_helper =
+      web_contents ? WebContentsPermissionHelper::FromWebContents(web_contents)
+                   : nullptr;
+  return permission_helper &&
+         permission_helper->CheckBluetoothAccessPermission(frame);
 }
 
 bool ElectronBluetoothDelegate::IsAllowedToAccessService(

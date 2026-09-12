@@ -15,8 +15,12 @@ pick a device via a developer created interface.
 
 The [Web Bluetooth API](https://web.dev/bluetooth/) can be used to communicate
 with bluetooth devices. In order to use this API in Electron, developers will
-need to handle the [`select-bluetooth-device` event on the webContents](../api/web-contents.md#event-select-bluetooth-device)
-associated with the device request.
+need to handle the [`select-bluetooth-device` event on the session](../api/session.md#event-select-bluetooth-device)
+(and optionally [`bluetooth-device-added`](../api/session.md#event-bluetooth-device-added)
+for devices discovered later); if no handler calls `event.preventDefault()` the
+request is cancelled. [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+can be used to disable Web Bluetooth for specific origins or frames with the
+`bluetooth` permission.
 
 Additionally, [`ses.setBluetoothPairingHandler(handler)`](../api/session.md#sessetbluetoothpairinghandlerhandler-windows-linux)
 can be used to handle pairing to bluetooth devices on Windows or Linux when
@@ -24,9 +28,9 @@ additional validation such as a pin is needed.
 
 ### Example
 
-This example demonstrates an Electron application that automatically selects
-the first available bluetooth device when the `Test Bluetooth` button is
-clicked.
+This example demonstrates an Electron application that selects a bluetooth
+device named `test` when the `Test Bluetooth` button is clicked, and lets the
+user cancel the request while it waits for that device to appear.
 
 ```fiddle docs/fiddles/features/web-bluetooth
 
