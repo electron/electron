@@ -1,6 +1,5 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 import * as path from 'path';
 import { pathToFileURL } from 'url';
@@ -46,8 +45,6 @@ require('@electron/internal/common/init');
 
 const { ipcRendererInternal } =
   require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRendererUtils =
-  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -55,6 +52,7 @@ process.getProcessMemoryInfo = () => {
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
@@ -145,7 +143,9 @@ const onPreloadsLoaded = () => {
   appCodeLoaded!();
 };
 
-const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+// Pushed by the browser ahead of this navigation; see
+// ElectronRendererClient::DidCreateScriptContext.
+const preloadPaths: string[] = v8Util.getHiddenValue(process, 'preloadPaths') ?? [];
 const cjsPreloads = preloadPaths.filter((p) => path.extname(p) !== '.mjs');
 const esmPreloads = preloadPaths.filter((p) => path.extname(p) === '.mjs');
 if (cjsPreloads.length) {

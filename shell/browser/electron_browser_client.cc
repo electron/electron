@@ -813,8 +813,6 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       content::WebContents::FromRenderFrameHost(new_window_main_frame);
   if (!web_contents)
     return std::nullopt;
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
-    return std::nullopt;
 
   mojom::RendererStartupDataPtr data;
   {
