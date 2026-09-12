@@ -84,7 +84,41 @@ describe('BaseWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('macOS events', () => {
-    eventSubscriptionTests(['swipe', 'rotate-gesture', 'new-window-for-tab']);
+    eventSubscriptionTests([
+      'swipe',
+      'swipe-gesture',
+      'rotate-gesture',
+      'new-window-for-tab'
+    ]);
+
+    it('observes swipe gestures only while listeners are registered', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const first = () => {};
+      const second = () => {};
+
+      w.on('swipe-gesture', first);
+      w.on('swipe-gesture', second);
+      w.off('swipe-gesture', first);
+      w.off('swipe-gesture', second);
+
+      expect(calls).to.deep.equal([true, false]);
+    });
+
+    it('continues observing after removing all swipe gesture listeners', () => {
+      const w = new BaseWindow({ show: false });
+      const calls: boolean[] = [];
+      w._setSwipeGestureEnabled = (enabled) => calls.push(enabled);
+      const listener = () => {};
+
+      w.on('swipe-gesture', listener);
+      w.removeAllListeners('swipe-gesture');
+      w.on('swipe-gesture', listener);
+      w.off('swipe-gesture', listener);
+
+      expect(calls).to.deep.equal([true, false, true, false]);
+    });
   });
 
   describe('BaseWindow.close()', () => {

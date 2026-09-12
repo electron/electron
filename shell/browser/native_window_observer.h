@@ -87,6 +87,9 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowMove() {}
   virtual void OnWindowMoved() {}
   virtual void OnWindowSwipe(const std::string& direction) {}
+  virtual void OnWindowSwipeGesture(const std::string& direction,
+                                    const std::string& phase,
+                                    double progress) {}
   virtual void OnWindowRotateGesture(float rotation) {}
   virtual void OnWindowSheetBegin() {}
   virtual void OnWindowSheetEnd() {}

@@ -4,6 +4,9 @@
 
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "base/strings/sys_string_conversions.h"
 #include "electron/mas.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -147,9 +150,31 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 #endif
 
+const char* SwipeGesturePhaseName(NSEventPhase phase) {
+  switch (phase) {
+    case NSEventPhaseBegan:
+      return "began";
+    case NSEventPhaseChanged:
+      return "changed";
+    case NSEventPhaseEnded:
+      return "ended";
+    case NSEventPhaseCancelled:
+      return "cancelled";
+    default:
+      return nullptr;
+  }
+}
+
+// Chromium's HistorySwiper also uses renderer overscroll state and owns Chrome
+// navigation UI. This window-level event instead treats listener registration
+// as the explicit opt-in to AppKit swipe tracking.
+
 }  // namespace
 
-@implementation ElectronNSWindow
+@implementation ElectronNSWindow {
+  NSSize _swipeGestureDelta;
+  BOOL _trackingSwipeGesture;
+}
 
 @synthesize acceptsFirstMouse;
 @synthesize enableLargerThanScreen;
@@ -193,11 +218,14 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+    _swipeGestureDelta = NSZeroSize;
+    _trackingSwipeGesture = NO;
   }
   return self;
 }
 
 - (void)cleanup {
+  _trackingSwipeGesture = NO;
   shell_ = nullptr;
 }
 
@@ -221,9 +249,75 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return nil;
 }
 
+- (BOOL)handleSwipeGestureEvent:(NSEvent*)event {
+  if (!shell_ || !shell_->swipe_gesture_enabled() ||
+      event.type != NSEventTypeScrollWheel) {
+    return NO;
+  }
+
+  if (_trackingSwipeGesture)
+    return YES;
+
+  if (event.phase == NSEventPhaseBegan) {
+    _swipeGestureDelta = NSZeroSize;
+    return NO;
+  }
+
+  if (event.phase != NSEventPhaseChanged ||
+      event.momentumPhase != NSEventPhaseNone ||
+      !NSEvent.swipeTrackingFromScrollEventsEnabled) {
+    return NO;
+  }
+
+  _swipeGestureDelta.width += event.scrollingDeltaX;
+  _swipeGestureDelta.height += event.scrollingDeltaY;
+  if (std::abs(_swipeGestureDelta.width) <=
+      std::abs(_swipeGestureDelta.height)) {
+    return NO;
+  }
+
+  const std::string direction =
+      _swipeGestureDelta.width < 0 ? "right" : "left";
+  _trackingSwipeGesture = YES;
+  __weak ElectronNSWindow* weakSelf = self;
+  [event
+      trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection
+        dampenAmountThresholdMin:-1
+                             max:1
+                    usingHandler:^(CGFloat gestureAmount, NSEventPhase phase,
+                                   BOOL isComplete, BOOL* stop) {
+                      ElectronNSWindow* strongSelf = weakSelf;
+                      if (!strongSelf || !strongSelf->shell_ ||
+                          !strongSelf->shell_->swipe_gesture_enabled()) {
+                        if (strongSelf) {
+                          strongSelf->_trackingSwipeGesture = NO;
+                          strongSelf->_swipeGestureDelta = NSZeroSize;
+                        }
+                        *stop = YES;
+                        return;
+                      }
+
+                      const char* phaseName = SwipeGesturePhaseName(phase);
+                      if (phaseName) {
+                        strongSelf->shell_->NotifyWindowSwipeGesture(
+                            direction, phaseName,
+                            std::clamp(std::abs(gestureAmount), 0.0, 1.0));
+                      }
+
+                      if (isComplete) {
+                        strongSelf->_trackingSwipeGesture = NO;
+                        strongSelf->_swipeGestureDelta = NSZeroSize;
+                      }
+                    }];
+  return YES;
+}
+
 // NSWindow overrides.
 
 - (void)sendEvent:(NSEvent*)event {
+  if ([self handleSwipeGestureEvent:event])
+    return;
+
   // Draggable regions only respond to left-click dragging, but the system will
   // still suppress right-clicks in a draggable region. Temporarily disabling
   // draggable regions allows the underlying views to respond to right-click

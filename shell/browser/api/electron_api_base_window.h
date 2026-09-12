@@ -95,6 +95,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMove() override;
   void OnWindowMoved() override;
   void OnWindowSwipe(const std::string& direction) override;
+  void OnWindowSwipeGesture(const std::string& direction,
+                            const std::string& phase,
+                            double progress) override;
   void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;
@@ -226,6 +229,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);
+  void SetSwipeGestureEnabled(bool enabled);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
