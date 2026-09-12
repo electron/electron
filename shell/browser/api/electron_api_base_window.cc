@@ -406,11 +406,20 @@ void BaseWindow::Show() {
   window_->Show();
 }
 
-void BaseWindow::ShowInactive() {
+void BaseWindow::ShowInactive(gin::Arguments* args) {
   // This method doesn't make sense for modal window.
   if (IsModal())
     return;
-  window_->ShowInactive();
+  gin_helper::Dictionary options;
+  std::string order = "front";
+  if (args->GetNext(&options)) {
+    options.Get("order", &order);
+  }
+  if (order != "front" && order != "automatic") {
+    args->ThrowTypeError("'order' must be 'front' or 'automatic'");
+    return;
+  }
+  window_->ShowInactive(order == "front");
 }
 
 void BaseWindow::Hide() {
