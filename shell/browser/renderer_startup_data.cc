@@ -15,9 +15,11 @@
 #include "base/path_service.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/content_paths.h"
 #include "crypto/hash.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/preload_code_cache.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/web_contents_preferences.h"
@@ -59,14 +61,34 @@ base::FilePath GetHelperExecPath() {
 // appended to |served| so it can be recorded as the trust anchor that
 // SetPreloadCodeCache writes from the frame are validated against. Service
 // worker realms pass null — they have no code-cache producer.
+}  // namespace
+
+// Which renderer client will consume the data is a property of the process,
+// not of the WebContents: a subframe or DevTools extension frame of a
+// sandbox: false WebContents can be placed in a sandboxed process.
+bool IsFrameInSandboxedRenderer(content::RenderFrameHost* rfh) {
+  return ElectronBrowserClient::Get()
+      ->IsRendererProcessSandboxed(rfh->GetProcess()->GetID())
+      .value_or(WebContentsPreferences::ShouldUseSandbox(
+          content::WebContents::FromRenderFrameHost(rfh)));
+}
+
+namespace {
+
 mojom::PreloadScriptDataPtr ReadPreloadScript(
     const std::string& id,
     const base::FilePath& path,
     const preload_code_cache::Scope& scope,
-    std::vector<preload_code_cache::ServedPreload>* served) {
+    std::vector<preload_code_cache::ServedPreload>* served,
+    bool read_contents) {
   auto ps = mojom::PreloadScriptData::New();
   ps->id = id;
   ps->file_path = path.AsUTF8Unsafe();
+  // A frame with Node.js integration loads its preloads through Node's own
+  // module loader and only needs to be told which files; reading them (and
+  // consulting the code cache) here would be wasted work.
+  if (!read_contents)
+    return ps;
   std::string contents;
   if (!asar::ReadFileToString(path, &contents)) {
     ps->error =
@@ -90,7 +112,8 @@ mojom::RendererStartupDataPtr BuildInternal(
     content::BrowserContext* browser_context,
     PreloadScript::ScriptType type,
     const preload_code_cache::Scope& scope,
-    std::vector<preload_code_cache::ServedPreload>* served) {
+    std::vector<preload_code_cache::ServedPreload>* served,
+    bool sandboxed) {
   auto data = mojom::RendererStartupData::New();
 
   auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
@@ -100,13 +123,17 @@ mojom::RendererStartupDataPtr BuildInternal(
         continue;
       if (!script.file_path.IsAbsolute())
         continue;
-      data->preload_scripts.push_back(
-          ReadPreloadScript(script.id, script.file_path, scope, served));
+      data->preload_scripts.push_back(ReadPreloadScript(
+          script.id, script.file_path, scope, served, sandboxed));
     }
   }
 
-  data->environment = CaptureBrowserEnvironment();
-  data->helper_exec_path = GetHelperExecPath().AsUTF8Unsafe();
+  // A Node.js renderer has the real process.env and computes helperExecPath
+  // itself; only the sandboxed process shim needs these.
+  if (sandboxed) {
+    data->environment = CaptureBrowserEnvironment();
+    data->helper_exec_path = GetHelperExecPath().AsUTF8Unsafe();
+  }
   return data;
 }
 
@@ -115,22 +142,23 @@ mojom::RendererStartupDataPtr BuildInternal(
 mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
                                     PreloadScript::ScriptType type) {
   return BuildInternal(browser_context, type, preload_code_cache::Scope(),
-                       nullptr);
+                       nullptr, /*sandboxed=*/true);
 }
 
 mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
   const preload_code_cache::Scope scope =
       preload_code_cache::ScopeForFrame(rfh);
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  const bool sandboxed = IsFrameInSandboxedRenderer(rfh);
   std::vector<preload_code_cache::ServedPreload> served;
-  auto data =
-      BuildInternal(rfh->GetBrowserContext(),
-                    PreloadScript::ScriptType::kWebFrame, scope, &served);
+  auto data = BuildInternal(rfh->GetBrowserContext(),
+                            PreloadScript::ScriptType::kWebFrame, scope,
+                            sandboxed ? &served : nullptr, sandboxed);
 
   // The per-WebContents webPreferences.preload runs last. May be absent for a
   // WebContents that never went through a BrowserWindow/webContents
   // constructor (extension pages, devtools); such a WebContents has no per-WC
   // preload but still gets session preloads + env.
-  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* web_prefs = WebContentsPreferences::From(web_contents);
   std::optional<base::FilePath> preload;
   if (web_prefs)
@@ -138,13 +166,14 @@ mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
   if (preload && preload->IsAbsolute()) {
     data->preload_scripts.push_back(ReadPreloadScript(
         preload_code_cache::IdForWebPreferencesPreload(*preload), *preload,
-        scope, &served));
+        scope, sandboxed ? &served : nullptr, sandboxed));
   }
 
   // Remember exactly what was served to this frame; SetPreloadCodeCache()
   // only accepts cache writes that match this record, so the renderer never
   // gets to pick the source a cache entry is validated against.
-  preload_code_cache::RecordServedPreloads(rfh, std::move(served));
+  if (sandboxed)
+    preload_code_cache::RecordServedPreloads(rfh, std::move(served));
   return data;
 }
 
