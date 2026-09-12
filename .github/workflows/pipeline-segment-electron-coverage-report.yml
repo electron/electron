@@ -1,0 +1,138 @@
+name: Pipeline Segment - Electron Coverage Report
+
+# Indexes the .profraw counters produced by a coverage test run and renders an
+# llvm-cov HTML report for Electron's own C++ sources. Chromium sources are
+# deliberately out of scope: only src/electron is checked out here, so there is
+# nothing on disk for llvm-cov to render for them. See
+# //docs/testing/code_coverage.md in the Chromium tree.
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Platform the coverage build targeted, can be macos or linux'
+        required: true
+      target-arch:
+        type: string
+        description: 'Arch the coverage build targeted, can be x64 or arm64'
+        required: true
+      report-runs-on:
+        type: string
+        description: 'What host to render the report on'
+        required: true
+      report-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+
+concurrency:
+  group: electron-coverage-report-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+permissions: {}
+
+jobs:
+  report:
+    runs-on: ${{ inputs.report-runs-on }}
+    permissions:
+      contents: read
+    container: ${{ fromJSON(inputs.report-container) }}
+    # Callers' defaults do not propagate into reusable workflows.
+    defaults:
+      run:
+        shell: bash
+    env:
+      ELECTRON_OUT_DIR: Default
+      BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || 'linux' }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
+      ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || 'linux' }}_${{ inputs.target-arch }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+    # dist.zip holds the instrumented binaries; src_artifacts.tar carries the
+    # llvm-profdata/llvm-cov the build job staged into third_party/llvm-build.
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: generated_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./generated_artifacts_${{ env.ARTIFACT_KEY }}
+    - name: Download Src Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: src_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src_artifacts_${{ env.ARTIFACT_KEY }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+    - name: Download Coverage Profiles
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: coverage_profraw_${{ env.ARTIFACT_KEY }}
+        path: profraw
+    - name: Generate Coverage Report
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+      run: |
+        LLVM_BIN="$PWD/src/third_party/llvm-build/Release+Asserts/bin"
+        chmod +x "$LLVM_BIN/llvm-profdata" "$LLVM_BIN/llvm-cov"
+
+        # --failure-mode=all tolerates profiles truncated by processes the
+        # suite kills, as long as at least one input is readable.
+        "$LLVM_BIN/llvm-profdata" merge -sparse --failure-mode=all \
+          -o coverage.profdata profraw/*.profraw
+
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
+          # Almost all of Electron's code lives in the framework; the app
+          # executable is a thin launcher.
+          objects=(
+            "src/out/Default/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework"
+            -object "src/out/Default/Electron.app/Contents/MacOS/Electron"
+          )
+        else
+          objects=("src/out/Default/electron")
+        fi
+
+        # Coverage mapping records source paths relative to the build dir, so
+        # -compilation-dir is what makes ../../electron/... resolve to the
+        # checkout here. The trailing paths restrict the report to Electron's
+        # own C++.
+        sources=("$PWD/src/electron/shell" "$PWD/src/electron/chromium_src")
+
+        "$LLVM_BIN/llvm-cov" show \
+          -format=html \
+          -output-dir=coverage-report \
+          -instr-profile=coverage.profdata \
+          -compilation-dir="$PWD/src/out/Default" \
+          "${objects[@]}" \
+          "${sources[@]}"
+
+        "$LLVM_BIN/llvm-cov" report \
+          -instr-profile=coverage.profdata \
+          -compilation-dir="$PWD/src/out/Default" \
+          "${objects[@]}" \
+          "${sources[@]}" > coverage-report/summary.txt
+    - name: Write Coverage Summary
+      run: |
+        {
+          echo "## Coverage - ${ARTIFACT_KEY}"
+          echo
+          echo '```'
+          # Column headers plus the TOTAL row; the per-file rows are in the
+          # uploaded report.
+          head -n 2 coverage-report/summary.txt
+          tail -n 2 coverage-report/summary.txt
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Upload Coverage Report
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: coverage_report_${{ env.ARTIFACT_KEY }}
+        path: coverage-report
+        if-no-files-found: error
