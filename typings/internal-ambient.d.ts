@@ -95,6 +95,7 @@ declare namespace NodeJS {
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
+    readdirWithTypes(path: string): [names: string[], types: number[]] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
