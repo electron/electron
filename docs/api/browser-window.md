@@ -509,8 +509,8 @@ win.loadURL('https://github.com')
 
 #### `win.webContents` _Readonly_
 
-A `WebContents` object this window owns. All web page related events and
-operations will be done via it.
+A `WebContents` object this window owns, or `null` once the window has been
+destroyed. All web page related events and operations will be done via it.
 
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
