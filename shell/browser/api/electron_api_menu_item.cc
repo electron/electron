@@ -9,9 +9,9 @@
 #include <string_view>
 #include <utility>
 
-#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
@@ -26,9 +26,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
-#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "v8/include/cppgc/allocation.h"
-#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8.h"
 
 namespace electron::api {
@@ -63,14 +61,6 @@ std::u16string ToText(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     gin::ConvertFromV8(isolate, string, &text);
   }
   return text;
-}
-
-// Live items by command id; the menu model delegate is handed command ids.
-absl::flat_hash_map<int, cppgc::WeakPersistent<MenuItem>>& Registry() {
-  static base::NoDestructor<
-      absl::flat_hash_map<int, cppgc::WeakPersistent<MenuItem>>>
-      registry;
-  return *registry;
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -147,19 +137,8 @@ bool SetIcon(v8::Isolate* isolate,
 const gin::WrapperInfo MenuItem::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronMenuItem);
 
-MenuItem::MenuItem() : command_id_(++g_next_command_id) {
-  Registry().emplace(command_id_, this);
-}
-
-MenuItem::~MenuItem() {
-  Registry().erase(command_id_);
-}
-
-// static
-MenuItem* MenuItem::FromCommandId(int command_id) {
-  auto it = Registry().find(command_id);
-  return it == Registry().end() ? nullptr : it->second.Get();
-}
+MenuItem::MenuItem() : command_id_(++g_next_command_id) {}
+MenuItem::~MenuItem() = default;
 
 // static
 MenuItem* MenuItem::FromV8(v8::Isolate* isolate, v8::Local<v8::Value> value) {
@@ -389,9 +368,87 @@ const char* MenuItem::GetHumanReadableName() const {
   return "Electron / MenuItem";
 }
 
-ui::ImageModel MenuItem::icon() const {
+ui::MenuModel::ItemType MenuItem::GetType() const {
+  switch (type_) {
+    case Type::kNormal:
+    case Type::kHeader:
+      return ui::MenuModel::TYPE_COMMAND;
+    case Type::kSeparator:
+      return ui::MenuModel::TYPE_SEPARATOR;
+    case Type::kCheckbox:
+      return ui::MenuModel::TYPE_CHECK;
+    case Type::kRadio:
+      return ui::MenuModel::TYPE_RADIO;
+    case Type::kSubmenu:
+    case Type::kPalette:
+      return ui::MenuModel::TYPE_SUBMENU;
+  }
+}
+
+int MenuItem::GetCommandId() const {
+  return command_id_;
+}
+
+std::u16string MenuItem::GetLabel() const {
+  return label_;
+}
+
+std::u16string MenuItem::GetSecondaryLabel() const {
+  return sublabel_;
+}
+
+std::u16string MenuItem::GetToolTip() const {
+  return tool_tip_;
+}
+
+std::u16string MenuItem::GetAccessibilityLabel() const {
+  return accessibility_label_;
+}
+
+std::u16string MenuItem::GetRole() const {
+  return base::UTF8ToUTF16(role_name_);
+}
+
+std::u16string MenuItem::GetCustomType() const {
+  if (type_ == Type::kPalette)
+    return u"palette";
+  if (type_ == Type::kHeader)
+    return u"header";
+  return {};
+}
+
+ui::ImageModel MenuItem::GetIcon() const {
   const gfx::Image* image = icon_.Get();
   return image ? ui::ImageModel::FromImage(*image) : ui::ImageModel();
+}
+
+bool MenuItem::GetAccelerator(ui::Accelerator* accelerator) const {
+  if (!accelerator_)
+    return false;
+  *accelerator = *accelerator_;
+  return true;
+}
+
+bool MenuItem::ShouldRegisterAccelerator() const {
+  return register_accelerator_;
+}
+
+bool MenuItem::WorksWhenHidden() const {
+  return works_when_hidden_;
+}
+
+bool MenuItem::IsVisible() const {
+  return visible_;
+}
+
+int MenuItem::GetGroupId() const {
+  return type_ == Type::kRadio ? group_id_ : -1;
+}
+
+ElectronMenuModel* MenuItem::GetSubmenuModel() const {
+  if ((type_ == Type::kSubmenu || type_ == Type::kPalette) && submenu_)
+    return submenu_->model();
+  return nullptr;
 }
 
 bool MenuItem::IsChecked() const {
@@ -409,9 +466,14 @@ bool MenuItem::IsEnabled() const {
 }
 
 #if BUILDFLAG(IS_MAC)
-const ElectronMenuModel::SharingItem* MenuItem::GetSharingItem(
-    v8::Isolate* isolate) {
-  return sharing_item_.Refresh(isolate);
+std::optional<ElectronMenuModel::SharingItem> MenuItem::GetSharingItem() {
+  const ElectronMenuModel::SharingItem* item =
+      sharing_item_.Refresh(JavascriptEnvironment::GetIsolate());
+  return item ? std::make_optional(*item) : std::nullopt;
+}
+
+const ElectronMenuModel::Badge* MenuItem::GetBadge() const {
+  return badge_.Get();
 }
 #endif
 
@@ -716,8 +778,6 @@ void MenuItem::FillInstanceTemplate(v8::Isolate* isolate,
         if (!ValidateBadge(isolate, v))
           return;
         self->badge_.Set(isolate, v);
-        if (self->menu_)
-          self->menu_->UpdateBadge(self);
       }>(isolate, templ, "badge");
 #endif
 }
