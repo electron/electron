@@ -360,7 +360,13 @@ app
         fs.writeFileSync(
           path.join(artifactsDir, 'spec-timings.json'),
           JSON.stringify(
-            { platform: process.platform, arch: process.arch, mas: !!process.mas, files: timings },
+            {
+              platform: process.platform,
+              arch: process.arch,
+              mas: !!process.mas,
+              sanitizer: process.env.IS_ASAN === 'true' ? 'asan' : process.env.IS_UBSAN === 'true' ? 'ubsan' : null,
+              files: timings
+            },
             null,
             2
           )
