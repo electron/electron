@@ -70,6 +70,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   void OnConnectionError();
 
   content::RenderFrameHost* GetRenderFrameHost();
+  int FrameTreeNodeId();
   gin::WeakCell<api::Session>* GetSession();
 
   gin_helper::internal::Event* MakeIPCEvent(

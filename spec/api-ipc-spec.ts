@@ -79,6 +79,14 @@ describe('ipc module', () => {
       await done;
     });
 
+    it('receives an error when the handler result cannot be cloned', async () => {
+      ipcMain.handleOnce('test', () => ({ notCloneable() {} }));
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg.error).to.match(/could not be cloned/);
+    });
+
     it('receives an error from an asynchronous handler', async () => {
       ipcMain.handleOnce('test', async () => {
         await new Promise(setImmediate);
