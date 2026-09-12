@@ -186,7 +186,6 @@ static bool ShowOpenDialogSyncWithParent(const DialogSettings& settings,
   if (FAILED(hr))
     return false;
 
-  ATL::CComPtr<IShellItem> item;
   DWORD count = 0;
   hr = items->GetCount(&count);
   if (FAILED(hr))
@@ -194,6 +193,7 @@ static bool ShowOpenDialogSyncWithParent(const DialogSettings& settings,
 
   paths->reserve(count);
   for (DWORD i = 0; i < count; ++i) {
+    ATL::CComPtr<IShellItem> item;
     hr = items->GetItemAt(i, &item);
     if (FAILED(hr))
       return false;

@@ -189,7 +189,7 @@ bool WindowsToastNotification::Initialize() {
   }
 
   if (FAILED(Windows::Foundation::GetActivationFactory(
-          toast_manager_str, toast_manager_->GetAddressOf())))
+          toast_manager_str, toast_manager_->ReleaseAndGetAddressOf())))
     return false;
 
   if (!toast_notifier_) {
@@ -202,15 +202,16 @@ bool WindowsToastNotification::Initialize() {
     // requires us to not give Windows an appUserModelId.
     return SUCCEEDED(
         (*toast_manager_)
-            ->CreateToastNotifier(toast_notifier_->GetAddressOf()));
+            ->CreateToastNotifier(toast_notifier_->ReleaseAndGetAddressOf()));
   } else {
     ScopedHString app_id;
     if (!GetAppUserModelID(&app_id))
       return false;
 
-    return SUCCEEDED((*toast_manager_)
-                         ->CreateToastNotifierWithId(
-                             app_id, toast_notifier_->GetAddressOf()));
+    return SUCCEEDED(
+        (*toast_manager_)
+            ->CreateToastNotifierWithId(
+                app_id, toast_notifier_->ReleaseAndGetAddressOf()));
   }
 }
 
