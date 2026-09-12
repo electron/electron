@@ -51,13 +51,11 @@ For beginners, we recommend following through Electron's [tutorial][] to develop
 package and publish your first Electron app. If you have already developed an app on your machine
 and want to start on packaging and distribution, start from [step 5][] of the tutorial.
 
-## Getting help
+## Found a bug in Forge?
 
-- If you need help with developing your app, our [community Discord server][discord] is a great place
-  to get advice from other Electron app developers.
-- If you suspect you're running into a bug with Forge, please check the [GitHub issue tracker][]
-  to see if any existing issues match your problem. If not, feel free to fill out our bug report
-  template and submit a new issue.
+If you suspect you're running into a bug with Forge, please check the [GitHub issue tracker][]
+to see if any existing issues match your problem. If not, feel free to fill out our bug report
+template and submit a new issue.
 
 [Electron Forge Docs]: https://www.electronforge.io/
 [step 5]: ./tutorial-5-packaging.md
@@ -65,5 +63,4 @@ and want to start on packaging and distribution, start from [step 5][] of the tu
 [(make)]: https://www.electronforge.io/cli#make
 [(publish)]: https://www.electronforge.io/cli#publish
 [GitHub issue tracker]: https://github.com/electron/forge/issues
-[discord]: https://discord.gg/APGC3k5yaH
 [tutorial]: ./tutorial-1-prerequisites.md
