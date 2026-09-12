@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "base/base_paths.h"
+#include "base/strings/strcat_win.h"
 #include "base/strings/string_util_win.h"
 #include "base/win/registry.h"
 #endif
@@ -107,11 +108,11 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 #if BUILDFLAG(IS_WIN)
 namespace {
 
-// Built by //electron:electron_wer and shipped next to the executable. The
-// name is fixed (it is not renamed along with electron.exe) so that packagers
-// do not need to know about it.
-constexpr base::FilePath::CharType kWerHelperDll[] =
-    FILE_PATH_LITERAL("electron_wer.dll");
+// Built by //electron:electron_wer and shipped next to the executable as
+// <exe name>_wer.dll, so an app that renames electron.exe to myapp.exe must
+// rename the helper to myapp_wer.dll.
+constexpr base::FilePath::CharType kWerHelperSuffix[] =
+    FILE_PATH_LITERAL("_wer.dll");
 
 // Windows Error Reporting only loads runtime exception helper modules that
 // are listed (by full path, as a value name) under this key in HKCU or HKLM.
@@ -120,10 +121,11 @@ constexpr wchar_t kWerHelperRegistryKey[] =
     L"\\RuntimeExceptionHelperModules";
 
 base::FilePath GetWerHelperPath() {
-  base::FilePath exe_dir;
-  if (!base::PathService::Get(base::DIR_EXE, &exe_dir))
+  base::FilePath exe;
+  if (!base::PathService::Get(base::FILE_EXE, &exe))
     return {};
-  return exe_dir.Append(kWerHelperDll);
+  return exe.DirName().Append(base::StrCat(
+      {exe.BaseName().RemoveExtension().value(), kWerHelperSuffix}));
 }
 
 }  // namespace
@@ -175,7 +177,7 @@ void ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser() {
     base::FilePath registered(it.Name());
     if (registered != path &&
         base::FilePath::CompareEqualIgnoreCase(registered.BaseName().value(),
-                                               kWerHelperDll) &&
+                                               path.BaseName().value()) &&
         base::FilePath::CompareEqualIgnoreCase(
             registered.DirName().DirName().value(), install_root.value()) &&
         !base::PathExists(registered)) {

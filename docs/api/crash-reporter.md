@@ -53,10 +53,11 @@ out-of-process after such a crash and that asks the crashpad handler to write a
 minidump. When `crashReporter.start()` is called, Electron lists the DLL under
 `HKEY_CURRENT_USER\Software\Microsoft\Windows\Windows Error Reporting\RuntimeExceptionHelperModules`,
 which Windows requires before it will load a helper, and registers it for every
-Electron process. No configuration is needed: keep `electron_wer.dll` next to
-your executable when packaging (it is not renamed along with the executable).
-Installers that write to `HKEY_LOCAL_MACHINE` may list it there instead. To
-opt out, do not ship `electron_wer.dll`.
+Electron process. The helper is looked up as `<executable name>_wer.dll` next
+to the executable, so if you rename `electron.exe` to `myapp.exe` when
+packaging, rename `electron_wer.dll` to `myapp_wer.dll` as well. Installers
+that write to `HKEY_LOCAL_MACHINE` may list it there instead. To opt out, do
+not ship the DLL.
 
 ## Methods
 
