@@ -1847,6 +1847,34 @@ Get the system printer list.
 
 Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/printer-info.md)
 
+#### `contents.getPrinterCapabilitiesAsync(deviceName)`
+
+* `deviceName` string - OS printer name returned by `getPrintersAsync()`.
+
+Returns `Promise<PrinterCapabilities>` - Resolves with the printer's
+[input trays and media types](structures/printer-capabilities.md). Rejects if
+the printer cannot be opened or its settings cannot be read.
+
+This queries the printer without displaying a dialog or changing its
+defaults. `getPrintersAsync()` continues to return basic printer information.
+The returned IDs can be used with `print({ deviceName, inputTray, mediaType })`.
+On Windows, choices come from the printer driver. On macOS, they come from the
+CUPS IPP backend and describe supported `media-col` members. On Linux, they are
+the CUPS driver's PPD `InputSlot` and `MediaType` choices, including PPDs generated
+by CUPS for driverless printers. Linux requires a queue with a readable PPD so
+the returned IDs can be submitted through GTK's native print backend. Drivers
+that do not expose these settings may return empty lists. Custom builds require
+CUPS on Linux and CUPS IPP on macOS to query these capabilities.
+
+Capability lookup is separate from printer listing and is never performed by
+`getPrintersAsync()`. On Windows, each capability query runs in its own utility
+process and rejects after 30 seconds if it has not completed. Electron's main
+thread remains responsive while the driver runs, and queries do not share a
+helper process. Windows spooler or driver contention can still delay separate
+requests. The existing `getPrintersAsync()` enumeration may still wait for
+Windows to read printer metadata, including metadata for unavailable network
+printers.
+
 #### `contents.print([options], [callback])`
 
 * `options` Object (optional)
@@ -1854,6 +1882,8 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
   * `printBackground` boolean (optional) - Prints the background color and image of
     the web page. Default is `false`.
   * `deviceName` string (optional) - Set the printer device name to use. Must be the system-defined name and not the 'friendly' name, e.g 'Brother_QL_820NWB' and not 'Brother QL-820NWB'.
+  * `inputTray` string (optional) - ID of an entry in the `inputTrays` array returned by `getPrinterCapabilitiesAsync()`. Omit to preserve the driver's paper source. This is an input tray, not an output bin.
+  * `mediaType` string (optional) - ID of an entry in the `mediaTypes` array returned by `getPrinterCapabilitiesAsync()`, for example for labels or glossy paper. Omit to preserve the driver's media type. Paper dimensions are selected separately with `pageSize`.
   * `color` boolean (optional) - Set whether the printed web page will be in color or grayscale. Default is `true`.
   * `margins` Object (optional)
     * `marginType` string (optional) - Can be `default`, `none`, `printableArea`, or `custom`. If `custom` is chosen, you will also need to specify `top`, `bottom`, `left`, and `right`.
@@ -1892,6 +1922,19 @@ Some possible `failureReason`s for print failure include:
 * "Invalid printer settings"
 * "Print job canceled"
 * "Print job failed"
+
+`inputTray` and `mediaType` apply to the individual print job and do not modify
+printer-wide defaults. They are supported for silent printing, including PDFs
+loaded in the built-in viewer. Use the same `deviceName` that was used to query
+the IDs. IDs are scoped to the printer, driver and operating system; do not
+reuse them across platforms. On Windows, the print fails if an ID is not
+advertised by the driver or the driver changes either requested ID while
+validating the job. On macOS, the selections are sent as an IPP media collection.
+On Linux, they are sent as native driver options through GTK, preserving its
+printer authentication and credential handling.
+The printer or print server may apply its own tray-switching or stock
+substitution policies.
+When a system print dialog is shown, the user's choices take precedence.
 
 Use `page-break-before: always;` CSS style to force to print to a new page.
 

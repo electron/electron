@@ -15,8 +15,14 @@
 #include "base/task/task_traits.h"
 #include "base/task/thread_pool.h"
 #include "printing/backend/print_backend.h"
+#include "shell/browser/printing/printing_utils.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/printing/printer_capabilities.h"
 #include "shell/common/process_util.h"
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/printing/printer_capabilities_query.h"
+#endif
 #endif
 
 namespace gin {
@@ -66,6 +72,31 @@ v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
 
   return handle;
 }
+
+v8::Local<v8::Promise> GetPrinterCapabilitiesAsync(
+    v8::Isolate* isolate,
+    const std::string& printer_name) {
+  gin_helper::Promise<base::Value> promise(isolate);
+  auto handle = promise.GetHandle();
+  auto reply = base::BindOnce(
+      [](gin_helper::Promise<base::Value> promise,
+         std::pair<std::string, base::DictValue> result) {
+        if (!result.first.empty()) {
+          promise.RejectWithErrorMessage(result.first);
+        } else {
+          promise.Resolve(base::Value(std::move(result.second)));
+        }
+      },
+      std::move(promise));
+#if BUILDFLAG(IS_WIN)
+  QueryPrinterCapabilities(printer_name, std::move(reply));
+#else
+  CreatePrinterHandlerTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&GetPrinterCapabilities, printer_name),
+      std::move(reply));
+#endif
+  return handle;
+}
 #endif
 
 }  // namespace electron::api
@@ -85,6 +116,9 @@ void Initialize(v8::Local<v8::Object> exports,
 #if BUILDFLAG(ENABLE_PRINTING)
   dict.SetMethod("getPrinterListAsync",
                  base::BindRepeating(&GetPrinterListAsync));
+  dict.SetMethod(
+      "getPrinterCapabilitiesAsync",
+      base::BindRepeating(&electron::api::GetPrinterCapabilitiesAsync));
 #endif
 }
 

@@ -37,6 +37,84 @@ To run only specific tests matching a pattern, run `npm run test --
 you would like to run. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
 
+## Printer tray and media tests
+
+Run the captured-job regressions with:
+
+```sh
+node script/spec-runner.js --runners=main --files=spec/api-web-contents-spec.ts --grep='webContents.print.. settings'
+```
+
+On macOS and Linux the runner can provision an `ippeveprinter` and a CUPS queue
+when `ippeveprinter`, `lpadmin`, Python 3 and permission to administer CUPS are
+available. It uses [a fixed printer fixture](../../spec/fixtures/printing/ipp-printer.conf)
+and [a capture command](../../spec/fixtures/printing/capture-job.py). Automatic
+provisioning is best-effort. The capture regressions skip when
+`ELECTRON_TEST_PRINT_CAPTURE` is unset; a configured capture fixture must work.
+
+For CI runners without permission to administer CUPS, provision the fixture
+before starting the test runner and export the variables below. Require the
+fixture only in shards whose final file selection includes
+`spec/api-web-contents-spec.ts`, after applying any display-server filter.
+
+The HTML and PDF tests inspect the received PDF and IPP job attributes for a
+baseline, a non-default tray, a non-default media type, both selections, and a
+subsequent job with neither selection. They also check paper dimensions and
+unchanged reported printer defaults. Callback success alone does not pass.
+
+To use an existing **dedicated virtual queue**, set `ELECTRON_TEST_PRINTER_NAME`
+and `ELECTRON_TEST_PRINT_CAPTURE`. The latter is a JSON object, for example:
+
+```json
+{
+  "deviceName": "electron-print-test",
+  "jobsDirectory": "/tmp/electron-print-capture",
+  "inputTray": { "id": "Manual", "ipp": "manual" },
+  "mediaType": { "id": "Labels", "ipp": "labels" }
+}
+```
+
+Use IDs returned by `getPrinterCapabilitiesAsync()` for the selected queue.
+The fixture's Linux PPD choices are `Manual` and `Labels`; on macOS the IPP IDs
+are `manual` and `labels`. Both must differ from the queue's effective defaults.
+Configured fixtures must be available and expose these choices; the tests fail
+instead of skipping when a configured fixture is missing or incompatible.
+
+For Windows, register the fixture's IPP endpoint using `Add-Printer -IppURL` on a
+Windows version supporting that command, and obtain that driver's decimal tray
+and media IDs. For example, Microsoft's IPP Class Driver may report `258` for
+manual feed and `259` for labels; verify these IDs on the test machine. Serve
+the capture directory with
+`python3 spec/fixtures/printing/capture-server.py DIRECTORY --host TEST_HOST`.
+Replace `jobsDirectory` in the configuration with
+`"jobsUrl": "http://TEST_HOST:8633/jobs"`. This also supports other remote runners.
+The default Windows Print-to-PDF smoke fixture has no tray/media capture; these
+regressions require the IPP capture fixture.
+
+### Linux printer credentials
+
+In an isolated Linux test container, configure a second virtual IPP printer with
+`ippeveprinter -A --pam-service TEST_PAM_SERVICE -a spec/fixtures/printing/ipp-printer.conf`,
+the capture command and spool directory. Use a disposable PAM service/account,
+and register its CUPS queue with `auth-info-required=username,password`.
+The test credential below is `electron-print-fixture` / `fixture-only`.
+
+Install `dbus-run-session`, `python3-dbus` and `python3-gi`. Add
+`"authenticationReport": "/tmp/printing-auth.json"` to the capture configuration,
+then run:
+
+```sh
+python3 spec/fixtures/printing/secret-service.py \
+  --printer electron-print-test --report /tmp/printing-auth.json -- \
+  node script/spec-runner.js --runners=main --files=spec/api-web-contents-spec.ts \
+  --grep='webContents.print.. settings'
+```
+
+This starts a private session bus with a disposable Secret Service. The tests
+require a credential lookup and successful captured jobs with non-default
+tray/media settings. The report records counts, and the capture command records
+only selected print attributes; neither records credentials.
+
 ## Node.js Smoke Tests
 
 If you've made changes that might affect the way Node.js is embedded into Electron,
