@@ -4,19 +4,17 @@ vars = {
   'chromium_version':
     '155.0.8038.2',
   'node_version':
-    'v24.20.0',
+    'v24.21.0',
   'nan_version':
     '5e974e042d7ad72e359e86d29148a7c04ab533df',
   'squirrel.mac_version':
-    'fffea30e4a339a7f7d69a3391314b72548d209bd',
+    'eb13da304858c9c48ba970a55ee4afec38a55863',
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
     '2a8e2123a3931038179ee06105c9e6ec336b12ea',
   'sparkle_version':
     '79bc9e872948e47877e76f194cb0c8e0412b0b90',
-  'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
 
   'pyyaml_version': '3.12',
 
@@ -28,7 +26,6 @@ vars = {
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
   'sparkle_git': 'https://github.com/sparkle-project',
-  'engflow_git': 'https://github.com/EngFlow',
   
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
@@ -99,22 +96,18 @@ deps = {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/vendor/ReactiveObjC': {
+  'src/third_party/squirrel.mac/Carthage/Checkouts/ReactiveObjC': {
     'url': Var("reactiveobjc_git") + '/ReactiveObjC.git@' + Var("reactiveobjc_version"),
     'condition': 'process_deps'
   },
-  'src/third_party/squirrel.mac/vendor/Mantle': {
+  'src/third_party/squirrel.mac/Carthage/Checkouts/Mantle': {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/vendor/Sparkle': {
+  'src/third_party/squirrel.mac/Carthage/Checkouts/Sparkle': {
     'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/engflow-reclient-configs': {
-    'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
-    'condition': 'process_deps'
-  }
 }
 
 pre_deps_hooks = [

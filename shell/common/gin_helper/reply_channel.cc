@@ -36,19 +36,23 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
   if (isolate->GetCurrentContext().IsEmpty())
     return;
 
-  SendReplyImpl(isolate, std::move(callback),
+  SendReplyImpl(isolate, callback,
                 gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
 }
 
 // static
 bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
-                                 InvokeCallback callback,
+                                 InvokeCallback& callback,
                                  v8::Local<v8::Value> arg) {
   if (!callback)
     return false;
 
+  // Serialize first so a failed conversion leaves |callback| usable.
   electron::SerializedValue msg;
   if (!gin::ConvertFromV8(isolate, arg, &msg))
+    return false;
+  // Serialization can run JS that replied re-entrantly.
+  if (!callback)
     return false;
 
   std::move(callback).Run(std::move(msg));
@@ -78,7 +82,7 @@ gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
 }
 
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
-  return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
+  return SendReplyImpl(isolate, callback_, std::move(arg));
 }
 
 void ReplyChannel::EnsureReplySent() {

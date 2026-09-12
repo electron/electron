@@ -297,8 +297,13 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
-  const std::optional<std::vector<uint8_t>> encoded_image =
+  std::optional<std::vector<uint8_t>> encoded_image =
       gfx::JPEG1xEncodedDataFromImage(image_, quality);
+  // Images without a 1x representation are encoded from the closest one.
+  if (!encoded_image && !image_.IsEmpty()) {
+    encoded_image = gfx::JPEGCodec::Encode(
+        image_.AsImageSkia().GetRepresentation(1.0f).GetBitmap(), quality);
+  }
   if (!encoded_image)
     return NewEmptyBuffer(isolate);
   return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();

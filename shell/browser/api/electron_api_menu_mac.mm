@@ -22,9 +22,17 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
+// Roots the Menu whose NSMenu is (or is about to become) [NSApp mainMenu];
+// ElectronMenuController only holds a weak reference to the model.
+@interface ElectronApplicationMenuHolder : NSObject
+- (instancetype)initWithMenu:(electron::api::Menu*)menu;
+- (void)install;
+@end
+
 namespace {
 
-static NSMenu* __strong applicationMenu_;
+ElectronApplicationMenuHolder* __strong g_pending_application_menu = nil;
+ElectronApplicationMenuHolder* __strong g_installed_application_menu = nil;
 
 ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
     NSString* key_equivalent,
@@ -46,13 +54,35 @@ ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
 
 }  // namespace
 
+@implementation ElectronApplicationMenuHolder {
+  cppgc::Persistent<electron::api::Menu> _menu;
+  ElectronMenuController* __strong _controller;
+}
+
+- (instancetype)initWithMenu:(electron::api::Menu*)menu {
+  if ((self = [super init])) {
+    _menu = menu;
+    _controller = [[ElectronMenuController alloc] initWithModel:menu->model()
+                                          useDefaultAccelerator:YES];
+  }
+  return self;
+}
+
+- (void)install {
+  [NSApp setMainMenu:[_controller menu]];
+  // Drops the previous holder and its reference to the old Menu.
+  g_installed_application_menu = self;
+}
+
+@end
+
 namespace electron::api {
 
 MenuMac::MenuMac(gin::Arguments* args) : Menu{args} {}
 
 MenuMac::~MenuMac() {
-  // Must remove observer before destroying menu_controller_, which holds
-  // a weak reference to model_
+  // Must remove observer before destroying popup_controllers_, which hold
+  // weak references to model_
   RemoveModelObserver();
 }
 
@@ -294,25 +324,24 @@ void MenuMac::OnClosed(int32_t window_id, base::OnceClosure callback) {
 }
 
 // static
-void Menu::SetApplicationMenu(Menu* base_menu) {
-  MenuMac* menu = static_cast<MenuMac*>(base_menu);
-  ElectronMenuController* menu_controller =
-      [[ElectronMenuController alloc] initWithModel:menu->model_.get()
-                              useDefaultAccelerator:YES];
+void Menu::SetApplicationMenu(Menu* menu) {
+  ElectronApplicationMenuHolder* holder =
+      [[ElectronApplicationMenuHolder alloc] initWithMenu:menu];
 
+  // Install in the default run loop mode so the main menu is not swapped
+  // while a menu is open; the installed holder keeps its Menu alive till then.
   NSRunLoop* currentRunLoop = [NSRunLoop currentRunLoop];
-  [currentRunLoop cancelPerformSelector:@selector(setMainMenu:)
-                                 target:NSApp
-                               argument:applicationMenu_];
-  applicationMenu_ = [menu_controller menu];
-  [[NSRunLoop currentRunLoop]
-      performSelector:@selector(setMainMenu:)
-               target:NSApp
-             argument:applicationMenu_
+  if (g_pending_application_menu) {
+    [currentRunLoop
+        cancelPerformSelectorsWithTarget:g_pending_application_menu];
+  }
+  g_pending_application_menu = holder;
+  [currentRunLoop
+      performSelector:@selector(install)
+               target:holder
+             argument:nil
                 order:0
                 modes:[NSArray arrayWithObject:NSDefaultRunLoopMode]];
-
-  menu->menu_controller_ = menu_controller;
 }
 
 // static

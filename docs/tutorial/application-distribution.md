@@ -83,6 +83,9 @@ before distributing it to users.
 
 - **Windows:** You can rename `electron.exe` to any name you like, and edit
   its icon and other information with tools like [rcedit](https://github.com/electron/rcedit).
+  Rename `electron_wer.dll` to match (for example `myapp_wer.dll` next to
+  `myapp.exe`) so the [crash reporter](../api/crash-reporter.md) can still
+  capture fail-fast crashes.
 - **Linux:** You can rename the `electron` executable to any name you like.
 - **macOS:** You can rename `Electron.app` to any name you want, and you also have to rename
   the `CFBundleDisplayName`, `CFBundleIdentifier` and `CFBundleName` fields in the

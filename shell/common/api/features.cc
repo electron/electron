@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -33,6 +34,10 @@ bool IsExtensionsEnabled() {
   return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
 }
 
+bool IsRunAsNodeEnabled() {
+  return electron::fuses::IsRunAsNodeEnabled();
+}
+
 bool IsComponentBuild() {
 #if defined(COMPONENT_BUILD)
   return true;
@@ -54,6 +59,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isPromptAPIEnabled", &IsPromptAPIEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
+  dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }
 

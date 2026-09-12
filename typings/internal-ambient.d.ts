@@ -27,6 +27,7 @@ declare namespace NodeJS {
     isPromptAPIEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererImpl {

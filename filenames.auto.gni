@@ -378,6 +378,7 @@ auto_filenames = {
     "../third_party/electron_node/src/permission/child_process_permission.h",
     "../third_party/electron_node/src/permission/fs_permission.h",
     "../third_party/electron_node/src/permission/inspector_permission.h",
+    "../third_party/electron_node/src/permission/openssl_store_permission.h",
     "../third_party/electron_node/src/permission/permission.h",
     "../third_party/electron_node/src/permission/permission_base.h",
     "../third_party/electron_node/src/permission/wasi_permission.h",

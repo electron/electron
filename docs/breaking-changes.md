@@ -16,6 +16,25 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: captured page images have the page's scale factor
+
+The [`NativeImage`](api/native-image.md) returned by `webContents.capturePage()`
+(and `win.capturePage()` / `<webview>.capturePage()`), passed to the offscreen
+`paint` event, and passed to the `webContents.beginFrameSubscription()`
+callback now has the page's device scale factor. These images used to always
+be marked as 1x, so on a HiDPI display, or with
+`webPreferences.offscreen.deviceScaleFactor`, `image.getSize()` returned pixels.
+It now returns DIPs, and `image.crop()` and `image.resize()` take DIPs. The
+pixel data returned by `toBitmap()`, `toPNG()`, `toJPEG()` and `toDataURL()` is
+unchanged.
+
+```js
+const image = await win.webContents.capturePage()
+const [scaleFactor] = image.getScaleFactors()
+const { width, height } = image.getSize() // DIPs
+console.log(width * scaleFactor, height * scaleFactor) // pixels, as before
+```
+
 ### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
 
 With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
