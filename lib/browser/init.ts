@@ -81,6 +81,9 @@ process.exit = ((code: number | string | undefined | null) => {
   app.exit(process.exitCode || 0);
 }) as typeof process.exit;
 
+// Deliver IPC from renderers to ipcMain and friends.
+require('@electron/internal/browser/ipc-dispatch');
+
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
 

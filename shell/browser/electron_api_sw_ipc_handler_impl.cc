@@ -12,10 +12,16 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "shell/browser/api/electron_api_ipc_dispatch.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/message_port.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/reply_channel.h"
+#include "shell/common/v8_util.h"
 
 namespace electron {
 
@@ -81,7 +87,12 @@ void ElectronApiSWIPCHandlerImpl::Message(bool internal,
       return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->Message(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::ServiceWorkerMessage(isolate, session->Get(), version_id_,
+                                       event_object, internal, channel,
+                                       gin::ConvertToV8(isolate, arguments),
+                                       /*sync=*/false);
   }
 }
 
@@ -99,7 +110,11 @@ void ElectronApiSWIPCHandlerImpl::Invoke(bool internal,
       return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->Invoke(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::ServiceWorkerInvoke(isolate, session->Get(), version_id_,
+                                      event_object, internal, channel,
+                                      gin::ConvertToV8(isolate, arguments));
   }
 }
 
@@ -115,8 +130,16 @@ void ElectronApiSWIPCHandlerImpl::ReceivePostMessage(
       return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->ReceivePostMessage(event_object, channel,
-                                       std::move(message));
+    if (!ipc_dispatch::IsReady())
+      return;
+    v8::LocalVector<v8::Value> ports(isolate);
+    if (!MessagePort::EntanglePorts(isolate, std::move(message.ports),
+                                    &ports)) {
+      return;
+    }
+    ipc_dispatch::ServiceWorkerPostMessage(
+        isolate, session->Get(), version_id_, event_object, channel,
+        DeserializeV8Value(isolate, message), std::move(ports));
   }
 }
 
@@ -135,7 +158,12 @@ void ElectronApiSWIPCHandlerImpl::MessageSync(
       return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->MessageSync(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::ServiceWorkerMessage(isolate, session->Get(), version_id_,
+                                       event_object, internal, channel,
+                                       gin::ConvertToV8(isolate, arguments),
+                                       /*sync=*/true);
   }
 }
 
@@ -183,9 +211,6 @@ gin_helper::internal::Event* ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
   if (callback)
     dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
                                   isolate, std::move(callback)));
-
-  if (internal)
-    dict.SetHidden("internal", internal);
 
   return event;
 }
