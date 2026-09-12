@@ -1,5 +1,4 @@
 import("//build/config/locales.gni")
-import("//build/config/profiling/profiling.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
 import("//components/os_crypt/sync/features.gni")
@@ -1820,25 +1819,12 @@ if (is_mac) {
     # loads this DLL out-of-process for crashes that bypass crashpad's
     # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
     # it asks the crashpad handler to dump the crashed process. It is
-    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule.
-    shared_library("electron_wer") {
-      output_name = "${electron_project_name}_wer"
-      sources = [
-        "shell/app/electron_wer.def",
-        "shell/app/electron_wer_main.cc",
-      ]
-      deps = [
-        "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer_handler",
-      ]
-
-      # Keep this a tiny DLL; it is loaded into WerFault.exe, not Electron.
-      if (!is_asan && !use_clang_profiling) {
-        no_default_deps = true
-      }
-      assert_no_deps = [
-        "//third_party/abseil-cpp:absl",
-        "//third_party/perfetto:libperfetto",
-      ]
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
     }
   }
 
