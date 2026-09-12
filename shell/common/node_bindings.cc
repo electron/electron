@@ -738,7 +738,8 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
 
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kNoStdioInit)) {
+  if (command_line->HasSwitch(switches::kNoStdioInit) ||
+      !fuses::IsNodeStdioInitializationEnabled()) {
     process_flags |= node::ProcessInitializationFlags::kNoStdioInitialization;
   } else {
 #if BUILDFLAG(IS_WIN)
