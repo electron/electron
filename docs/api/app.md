@@ -1548,7 +1548,7 @@ changes:
 -->
 
 * `options` Object (optional)
-  * `type` string (optional) _macOS_ - Can be `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
+  * `type` string (optional) _macOS_ - Can be `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows-linux) for more information about each type.
   * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default.
   * `path` string (optional) _Windows_ - The executable path to compare against. Defaults to `process.execPath`.
   * `args` string[] (optional) _Windows_ - The command-line arguments to compare against. Defaults to an empty array.
@@ -1569,11 +1569,13 @@ Returns `Object`:
   * `scope` string _Windows_ - can be `user` or `machine`. Indicates whether the registry entry is under `HKEY_CURRENT USER` or `HKEY_LOCAL_MACHINE`.
   * `enabled` boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
-### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+### `app.setLoginItemSettings(settings)` _macOS_ _Windows_ _Linux_
 
 <!--
 ```YAML history
 changes:
+  - pr-url: https://github.com/electron/electron/pull/53052
+    description: "This method now returns a Promise."
   - pr-url: https://github.com/electron/electron/pull/52351
     description: "Removed `openAsHidden` option."
 ```
@@ -1593,16 +1595,19 @@ changes:
     * `daemonService` string (optional) _macOS_ - The property list name for a launch agent. The property list name must correspond to a property list in the app’s `Contents/Library/LaunchDaemons` directory.
     * `loginItemService` string (optional) _macOS_ - The property list name for a login item service. The property list name must correspond to a property list in the app’s `Contents/Library/LoginItems` directory.
   * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default.
-  * `path` string (optional) _Windows_ - The executable to launch at login.
+  * `path` string (optional) _Windows_ _Linux_ - The executable to launch at login.
     Defaults to `process.execPath`.
-  * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
-    the executable. Defaults to an empty array. Take care to wrap paths in
-    quotes.
+  * `args` string[] (optional) _Windows_ _Linux_ - The command-line arguments to
+    pass to the executable. Defaults to an empty array. On Windows, take care to
+    wrap paths in quotes.
   * `enabled` boolean (optional) _Windows_ - `true` will change the startup approved registry key and `enable / disable` the App in Task Manager and Windows Settings.
     Defaults to `true`.
   * `name` string (optional) _Windows_ - value name to write into registry. Defaults to the app's AppUserModelId().
 
 Set the app's login item settings.
+
+Returns `Promise<void>` - Resolves when the operating system has handled the
+request.
 
 To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel-Windows],
 you'll want to set the launch path to your executable's name but a directory up, which is
@@ -1629,6 +1634,13 @@ app.setLoginItemSettings({
 ```
 
 For more information about setting different services as login items on macOS, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
+
+On Linux, this API uses the [Background XDG desktop portal][background-portal]
+to request autostart changes. Apps should set `desktopName` in `package.json` or
+call `app.setDesktopName(name)` before the `ready` event, using the base filename
+of their installed `.desktop` file. The `.desktop` suffix is optional.
+`app.getLoginItemSettings()` is not available on Linux because the portal does
+not expose a way to read the persisted autostart state.
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
@@ -1951,6 +1963,7 @@ A `string` property that returns the app's [Toast Activator CLSID][toast-activat
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/documentation/coreservices/1441725-lscopydefaulthandlerforurlscheme?language=objc
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
+[background-portal]: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Background.html
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc

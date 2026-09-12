@@ -394,15 +394,18 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   return gin::ConvertToV8(isolate, settings);
 }
 
-void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+v8::Local<v8::Promise> Browser::SetLoginItemSettings(
+    v8::Isolate* isolate,
+    LoginItemSettings settings) {
   if (settings.type != "mainAppService" && settings.service_name.empty()) {
-    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
-        .ThrowTypeError("'name' is required when type is not mainAppService");
-    return;
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "'name' is required when type is not mainAppService");
+    return {};
   }
 
   platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                      settings.open_at_login);
+  return gin_helper::Promise<void>::ResolvedPromise(isolate);
 }
 
 std::string Browser::GetExecutableFileVersion() const {
