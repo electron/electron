@@ -4,6 +4,8 @@
 
 #include "shell/renderer/electron_renderer_client.h"
 
+#include <utility>
+
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/task/sequenced_task_runner.h"
@@ -56,6 +58,9 @@ struct ElectronRendererClient::FrameEnvironment {
   // The world of |environment|'s context, recorded while Blink can still map
   // the context to its frame.
   int world_id = 0;
+  // Set once the frame's context is released; the environment may outlive
+  // that briefly (see WillReleaseScriptContext) but must not run again.
+  bool released = false;
   base::WeakPtrFactory<FrameEnvironment> weak_factory{this};
 };
 
@@ -182,14 +187,31 @@ void ElectronRendererClient::DidCreateScriptContext(
       frame_env->weak_factory.GetWeakPtr();
   environments_[render_frame] = std::move(frame_env);
 
-  node_bindings->LoadEnvironment(env.get());
+  {
+    // Node.js runs the process.nextTick() callbacks queued during bootstrap,
+    // the preload's included, when bootstrap's callback scope closes. That is
+    // still inside Blink's context setup, where one that removes this frame
+    // frees it underneath Blink, so keep them queued here instead.
+    v8::Context::Scope context_scope(renderer_context);
+    node::InternalCallbackScope keep_ticks_queued(
+        env.get(), v8::Object::New(isolate), {0, 0},
+        node::InternalCallbackScope::kSkipAsyncHooks |
+            node::InternalCallbackScope::kSkipTaskQueues);
+    node_bindings->LoadEnvironment(env.get());
+  }
+  // Run them from a microtask, which the frame observer holds until that setup
+  // has returned. Queued behind the preload's own promise reactions, which
+  // have always run first.
+  renderer_context->GetMicrotaskQueue()->EnqueueMicrotask(
+      isolate, &ElectronRendererClient::RunTicksQueuedDuringSetup,
+      new base::WeakPtr<FrameEnvironment>(weak_frame_env));
 
   // This context may have been created from inside a script (e.g. the opener's
   // window.open() call), so give the loop its first run from a fresh task.
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(
                      [](base::WeakPtr<FrameEnvironment> frame_env) {
-                       if (!frame_env)
+                       if (!frame_env || frame_env->released)
                          return;
                        frame_env->node_bindings->PrepareEmbedThread();
                        frame_env->node_bindings->StartPolling();
@@ -209,14 +231,60 @@ void ElectronRendererClient::WillReleaseScriptContext(
   auto iter = environments_.find(render_frame);
   std::unique_ptr<FrameEnvironment> frame_env = std::move(iter->second);
   environments_.erase(iter);
-
-  // Park the embed thread so FreeEnvironment's uv_run is the loop's only user.
+  frame_env->released = true;
   frame_env->node_bindings->set_uv_env(nullptr);
+
+  // The frame can go away from inside one of its own Node.js callbacks, e.g.
+  // an iframe removing itself from a setImmediate(). Freeing the environment
+  // and its loop there frees them underneath that callback, so stop the
+  // environment calling back into JS and free it from a fresh task. A main
+  // frame on the process-wide loop is still freed here: another environment
+  // may take that loop over before the task runs.
+  if (frame_env->own_node_bindings && env->async_callback_scope_depth() > 0) {
+    env->set_can_call_into_js(false);
+    released_environments_.push_back(std::move(frame_env));
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&ElectronRendererClient::FreeReleasedEnvironments,
+                       base::Unretained(this)));
+    return;
+  }
+  FreeFrameEnvironment(std::move(frame_env));
+}
+
+void ElectronRendererClient::FreeReleasedEnvironments() {
+  for (auto& frame_env : std::exchange(released_environments_, {}))
+    FreeFrameEnvironment(std::move(frame_env));
+}
+
+// static
+void ElectronRendererClient::FreeFrameEnvironment(
+    std::unique_ptr<FrameEnvironment> frame_env) {
+  node::Environment* const env = frame_env->environment.get();
+  // Park the embed thread so FreeEnvironment's uv_run is the loop's only user.
   frame_env->node_bindings->StopPolling();
   frame_env->electron_bindings->EnvironmentDestroyed(env);
+  v8::Isolate* const isolate = env->isolate();
+  v8::HandleScope handle_scope{isolate};
   // Freeing the environment runs its loop, i.e. enters Node.js.
-  util::ExplicitMicrotasksScope microtasks_scope(context->GetMicrotaskQueue());
+  util::ExplicitMicrotasksScope microtasks_scope(
+      env->context()->GetMicrotaskQueue());
   frame_env->environment.reset();
+}
+
+// static
+void ElectronRendererClient::RunTicksQueuedDuringSetup(void* data) {
+  const std::unique_ptr<base::WeakPtr<FrameEnvironment>> weak_frame_env{
+      static_cast<base::WeakPtr<FrameEnvironment>*>(data)};
+  FrameEnvironment* const frame_env = weak_frame_env->get();
+  if (!frame_env || frame_env->released)
+    return;
+  node::Environment* const env = frame_env->environment.get();
+  v8::Isolate* const isolate = env->isolate();
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{env->context()};
+  // Closing the scope runs them.
+  node::CallbackScope callback_scope{isolate, v8::Object::New(isolate), {0, 0}};
 }
 
 namespace {
