@@ -885,8 +885,12 @@ function openAsarEntry(
 // Override fs APIs.
 export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const logFDs = new Map<string, number>();
+  // Read once at startup (set it in the environment that launches the app):
+  // process.env goes through node's env interceptor and this is consulted on
+  // every read of a packed file.
+  const logAsarReads = Boolean(process.env.ELECTRON_LOG_ASAR_READS);
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
-    if (!process.env.ELECTRON_LOG_ASAR_READS) return;
+    if (!logAsarReads) return;
     if (!logFDs.has(asarPath)) {
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join((require('os') as typeof os).tmpdir(), logFilename);
