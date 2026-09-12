@@ -131,12 +131,14 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       );
     }
 
-    const production = env.mode === 'production';
+    // GN passes mode=production for official builds; that only decides
+    // whether the output is minified. webpack itself always runs in
+    // production mode (deterministic module ids, scope hoisting, unused-export
+    // removal) so testing builds exercise the same module graph as releases.
+    const minimize = env.mode === 'production';
 
     return {
-      // Production mode gives deterministic numeric module ids, scope hoisting
-      // and dead-export elimination on top of minification.
-      mode: production ? 'production' : 'development',
+      mode: 'production',
       devtool: false,
       entry,
       target: alwaysHasNode ? 'node' : 'web',
@@ -185,7 +187,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       },
       performance: { hints: false },
       optimization: {
-        minimize: production,
+        minimize,
         // These bundles are Electron's own runtime; leave the app's
         // process.env.NODE_ENV alone.
         nodeEnv: false,
