@@ -8,9 +8,9 @@
 #include <windows.system.userprofile.h>
 #include <wrl.h>
 
+#include "base/i18n/win/preferred_languages.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/core_winrt_util.h"
-#include "base/win/i18n.h"
 
 namespace electron {
 
