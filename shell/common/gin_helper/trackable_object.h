@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/no_destructor.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/event_emitter.h"
 #include "shell/common/key_weak_map.h"
@@ -88,10 +89,13 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
       return {};
   }
 
+  static const std::vector<T*>& GetAllNative() { return instances(); }
+
   // Removes this instance from the weak map.
   void RemoveFromWeakMap() {
     if (weak_map_)
       weak_map_->Remove(weak_map_id());
+    std::erase(instances(), static_cast<T*>(this));
   }
 
  protected:
@@ -103,10 +107,16 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
       weak_map_ = new electron::KeyWeakMap<int32_t>;
     }
     weak_map_->Set(isolate, weak_map_id(), wrapper);
+    instances().push_back(static_cast<T*>(this));
     gin_helper::WrappableBase::InitWith(isolate, wrapper);
   }
 
  private:
+  static std::vector<T*>& instances() {
+    static base::NoDestructor<std::vector<T*>> instances;
+    return *instances;
+  }
+
   static electron::KeyWeakMap<int32_t>* weak_map_;  // leaked on purpose
 };
 

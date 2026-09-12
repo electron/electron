@@ -5348,6 +5348,20 @@ std::list<WebContents*> WebContents::GetWebContentsList() {
 }
 
 // static
+WebContents* WebContents::GetFocusedWebContents() {
+  WebContents* focused = nullptr;
+  for (WebContents* contents : GetWebContentsList()) {
+    if (!contents->IsFocused())
+      continue;
+    if (!focused)
+      focused = contents;
+    if (contents->type() == Type::kWebView)
+      return contents;
+  }
+  return focused;
+}
+
+// static
 void WebContents::SetDisableDraggableRegions(bool disable) {
   g_disable_draggable_regions = disable;
 }
