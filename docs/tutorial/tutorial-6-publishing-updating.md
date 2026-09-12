@@ -213,14 +213,12 @@ own update server and configure the autoUpdater module yourself.
 :::info 🌟 You're done!
 
 From here, you have officially completed our tutorial to Electron. Feel free to explore the
-rest of our docs and happy developing! If you have questions, please stop by our community
-[Discord server][].
+rest of our docs and happy developing!
 
 :::
 
 [autoupdater]: ../api/auto-updater.md
 [code-signed]: ./code-signing.md
-[discord server]: https://discord.gg/electronjs
 [electron fiddle]: https://www.electronjs.org/fiddle
 [fiddle-build]: https://github.com/electron/fiddle/blob/main/.circleci/config.yml
 [fiddle-forge-config]: https://github.com/electron/fiddle/blob/main/forge.config.ts
