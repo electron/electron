@@ -18,73 +18,15 @@ Menu.prototype._init = function () {
   this.items = [];
 };
 
+// The native menu model reads item state (label, enabled, visible, checked,
+// accelerator, icon, ...) directly off the MenuItem objects in `commandsMap`;
+// see api::Menu::GetItemProperty. Only a role whose checked state is
+// computed (toggleSpellChecker) needs to run JS for it.
 Menu.prototype._isCommandIdChecked = function (id) {
   const item = this.commandsMap[id];
   if (!item) return false;
   return item.getCheckStatus();
 };
-
-Menu.prototype._isCommandIdEnabled = function (id) {
-  const item = this.commandsMap[id];
-  if (!item) return false;
-
-  const focusedWindow = BaseWindow.getFocusedWindow();
-
-  if (item.role === 'minimize' && focusedWindow) {
-    return focusedWindow.isMinimizable();
-  }
-
-  if (item.role === 'togglefullscreen' && focusedWindow) {
-    return focusedWindow.isFullScreenable();
-  }
-
-  if (item.role === 'close' && focusedWindow) {
-    return focusedWindow.isClosable();
-  }
-
-  return item.enabled;
-};
-
-Menu.prototype._shouldCommandIdWorkWhenHidden = function (id) {
-  return this.commandsMap[id]?.acceleratorWorksWhenHidden ?? false;
-};
-
-Menu.prototype._isCommandIdVisible = function (id) {
-  return this.commandsMap[id]?.visible ?? false;
-};
-
-Menu.prototype._getLabelForCommandId = function (id) {
-  return this.commandsMap[id]?.label ?? '';
-};
-
-Menu.prototype._getAccessibilityLabelForCommandId = function (id) {
-  return this.commandsMap[id]?.accessibilityLabel ?? '';
-};
-
-Menu.prototype._getSecondaryLabelForCommandId = function (id) {
-  return this.commandsMap[id]?.sublabel ?? '';
-};
-
-Menu.prototype._getIconForCommandId = function (id) {
-  return this.commandsMap[id]?.icon ?? null;
-};
-
-Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator) {
-  const command = this.commandsMap[id];
-  if (!command) return;
-  if (command.accelerator != null) return command.accelerator;
-  if (useDefaultAccelerator) return command.getDefaultRoleAccelerator();
-};
-
-Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
-  return this.commandsMap[id]?.registerAccelerator ?? false;
-};
-
-if (process.platform === 'darwin') {
-  Menu.prototype._getSharingItemForCommandId = function (id) {
-    return this.commandsMap[id]?.sharingItem ?? null;
-  };
-}
 
 Menu.prototype._executeCommand = function (event, id) {
   const command = this.commandsMap[id];
@@ -192,13 +134,6 @@ Menu.prototype.insert = function (pos, item) {
   }
 };
 
-Menu.prototype._callMenuWillShow = function () {
-  if (this.delegate) this.delegate.menuWillShow(this);
-  for (const item of this.items) {
-    if (item.submenu) item.submenu._callMenuWillShow();
-  }
-};
-
 /* Static Methods */
 
 Menu.getApplicationMenu = () => applicationMenu;
@@ -216,7 +151,6 @@ Menu.setApplicationMenu = function (menu: MenuType) {
 
   if (process.platform === 'darwin') {
     if (!menu) return;
-    menu._callMenuWillShow();
     bindings.setApplicationMenu(menu);
   } else {
     const windows = BaseWindow.getAllWindows();
