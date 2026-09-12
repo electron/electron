@@ -131,8 +131,14 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       );
     }
 
+    // GN passes mode=production for official builds; that only decides
+    // whether the output is minified. webpack itself always runs in
+    // production mode (deterministic module ids, scope hoisting, unused-export
+    // removal) so testing builds exercise the same module graph as releases.
+    const minimize = env.mode === 'production';
+
     return {
-      mode: 'development',
+      mode: 'production',
       devtool: false,
       entry,
       target: alwaysHasNode ? 'node' : 'web',
@@ -179,8 +185,12 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         __dirname: false,
         __filename: false
       },
+      performance: { hints: false },
       optimization: {
-        minimize: env.mode === 'production',
+        minimize,
+        // These bundles are Electron's own runtime; leave the app's
+        // process.env.NODE_ENV alone.
+        nodeEnv: false,
         minimizer: [
           new TerserPlugin({
             terserOptions: {
