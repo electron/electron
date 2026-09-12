@@ -51,8 +51,6 @@ const getOrCreateArchive = (archivePath: string) => {
 
 process._getOrCreateArchive = getOrCreateArchive;
 
-const asarRe = /\.asar/i;
-
 const { getValidatedPath, getOptions, getDirent, getStatsFromBinding } = __non_webpack_require__(
   'internal/fs/utils'
 ) as typeof import('@node/lib/internal/fs/utils');
@@ -73,85 +71,40 @@ type SplitPathResult = { isAsar: false } | { isAsar: true; asarPath: string; fil
 
 const NOT_ASAR: SplitPathResult = Object.freeze({ isAsar: <const>false });
 
-const isSeparatorCode = process.platform === 'win32' ? (c: number) => c === 47 || c === 92 : (c: number) => c === 47;
+const kNeedsNormalization = -2;
+const isWindows = process.platform === 'win32';
+const isSeparatorCode = isWindows ? (c: number) => c === 47 || c === 92 : (c: number) => c === 47;
 
-// End offset of the last path component that ends in ".asar" (any case), i.e.
-// the deepest candidate for being the archive file, or -1. Native
-// GetAsarArchivePath() only ever treats a component as an archive if it ends
-// this way, so nothing after this point can change its answer.
-const findArchivePrefixEnd = (p: string): number => {
-  const length = p.length;
-  // The extension is nearly always spelled in lower case; look for that
-  // literally first and only fall back to a case-folding scan when it is not.
-  for (let i = p.lastIndexOf('.asar'); i >= 0; i = p.lastIndexOf('.asar', i - 1)) {
-    const end = i + 5;
-    if (end === length || isSeparatorCode(p.charCodeAt(end))) return end;
-    if (i === 0) break;
+// Cheap pre-check so the many paths that cannot involve an archive never
+// leave JS.
+const asarRe = /\.asar/i;
+
+const splitStringPath = (archivePath: string, requireNormalized: boolean): SplitPathResult => {
+  if (!asarRe.test(archivePath)) return NOT_ASAR;
+
+  // Windows paths are always run through path.normalize() first (drive
+  // letters, mixed separators); POSIX paths only when the native side reports
+  // ".", ".." or empty components, which user code rarely passes and the
+  // module loader never does.
+  if (isWindows) archivePath = path.normalize(archivePath);
+  let prefixLength = asar.splitPath(archivePath, requireNormalized && !isWindows);
+  if (prefixLength === kNeedsNormalization) {
+    archivePath = path.normalize(archivePath);
+    prefixLength = asar.splitPath(archivePath, false);
   }
-  for (let dot = p.lastIndexOf('.'); dot >= 0; dot = p.lastIndexOf('.', dot - 1)) {
-    const end = dot + 5;
-    if (
-      end <= length &&
-      (end === length || isSeparatorCode(p.charCodeAt(end))) &&
-      (p.charCodeAt(dot + 1) | 0x20) === 0x61 /* a */ &&
-      (p.charCodeAt(dot + 2) | 0x20) === 0x73 /* s */ &&
-      (p.charCodeAt(dot + 3) | 0x20) === 0x61 /* a */ &&
-      (p.charCodeAt(dot + 4) | 0x20) === 0x72 /* r */
-    ) {
-      return end;
-    }
-    if (dot === 0) break;
-  }
-  return -1;
-};
+  if (prefixLength < 0) return NOT_ASAR;
 
-// Already-normalized POSIX absolute path: no empty, "." or ".." components.
-// Anything else (and everything on Windows) still goes through
-// path.normalize() so the strings handed to the native side and used as cache
-// keys are the same ones the old implementation produced.
-const needsNormalizeRe = process.platform === 'win32' ? null : /\/\/|(?:^|\/)\.\.?(?:\/|$)/;
-
-// For every distinct "<...>/x.asar" prefix seen, what native splitPath() made
-// of it: either not an archive at all (false), or the archive path plus the
-// part of the prefix that lies inside the archive (normally ""). The native
-// walk inspects every component of the prefix and caches its own directory
-// probes forever, so remembering its verdict per prefix loses nothing and
-// turns the common call into a Map lookup and two slices.
-type ArchivePrefixEntry = false | { asarPath: string; innerPrefix: string };
-const archivePrefixCache = new Map<string, ArchivePrefixEntry>();
-const kArchivePrefixCacheLimit = 4096;
-// Nearly every app has exactly one archive, so the previous answer is checked
-// with a startsWith() before paying for a slice and a Map hash of the prefix.
-let lastPrefix = '';
-let lastPrefixEntry: ArchivePrefixEntry = false;
-
-const splitPathSlow = (archivePath: string, prefixEnd: number): SplitPathResult => {
-  let entry: ArchivePrefixEntry | undefined;
-  if (prefixEnd === lastPrefix.length && archivePath.startsWith(lastPrefix)) {
-    entry = lastPrefixEntry;
-  } else {
-    const prefix = archivePath.slice(0, prefixEnd);
-    entry = archivePrefixCache.get(prefix);
-    if (entry === undefined) {
-      const native = asar.splitPath(prefix);
-      entry = native.isAsar ? { asarPath: native.asarPath, innerPrefix: native.filePath } : false;
-      if (archivePrefixCache.size >= kArchivePrefixCacheLimit) archivePrefixCache.clear();
-      archivePrefixCache.set(prefix, entry);
-    }
-    lastPrefix = prefix;
-    lastPrefixEntry = entry;
-  }
-  if (entry === false) return NOT_ASAR;
-
-  // Skip the separator(s) after the prefix and drop trailing ones, as the
-  // native tail builder does.
-  let start = prefixEnd;
+  // The entry path is whatever follows the archive, without the separators
+  // around it.
+  let start = prefixLength;
   let end = archivePath.length;
   while (start < end && isSeparatorCode(archivePath.charCodeAt(start))) start++;
   while (end > start && isSeparatorCode(archivePath.charCodeAt(end - 1))) end--;
-  const tail = start < end ? archivePath.slice(start, end) : '';
-  const filePath = entry.innerPrefix ? (tail ? entry.innerPrefix + path.sep + tail : entry.innerPrefix) : tail;
-  return { isAsar: true, asarPath: entry.asarPath, filePath };
+  return {
+    isAsar: true,
+    asarPath: archivePath.slice(0, prefixLength),
+    filePath: start < end ? archivePath.slice(start, end) : ''
+  };
 };
 
 // Separate asar package's path from full path.
@@ -169,26 +122,13 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL): SplitPathResult 
     }
     if (typeof archivePath !== 'string') return NOT_ASAR;
   }
-  if (!asarRe.test(archivePath)) return NOT_ASAR;
-
-  if (needsNormalizeRe === null || archivePath.charCodeAt(0) !== 47 || needsNormalizeRe.test(archivePath)) {
-    archivePath = path.normalize(archivePath);
-  }
-  const prefixEnd = findArchivePrefixEnd(archivePath);
-  if (prefixEnd < 0) return NOT_ASAR;
-  return splitPathSlow(archivePath, prefixEnd);
+  return splitStringPath(archivePath, true);
 };
 
-// splitPath() for a string the module loader produced: already a string,
-// already absolute and normalized (path.resolve() output), so the type checks
-// and the normalization probe are skipped.
-const splitResolvedPath = (archivePath: string): SplitPathResult => {
-  if (isAsarDisabled() || !asarRe.test(archivePath)) return NOT_ASAR;
-  if (needsNormalizeRe === null) archivePath = path.normalize(archivePath);
-  const prefixEnd = findArchivePrefixEnd(archivePath);
-  if (prefixEnd < 0) return NOT_ASAR;
-  return splitPathSlow(archivePath, prefixEnd);
-};
+// splitPath() for a string the module loader produced: already a string and
+// already lexically normalized (path.resolve() output).
+const splitResolvedPath = (archivePath: string): SplitPathResult =>
+  isAsarDisabled() ? NOT_ASAR : splitStringPath(archivePath, false);
 
 // readdir(withFileTypes) for a directory inside an archive: one native call
 // that returns every child's name and type, turned into node Dirents whose

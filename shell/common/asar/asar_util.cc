@@ -21,6 +21,7 @@
 #include "crypto/hash.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {
 
@@ -138,6 +139,78 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
     if (component_end == 0)
       return false;
   }
+}
+
+namespace {
+
+constexpr std::string_view kAsarSuffix = ".asar";
+
+bool IsPathSeparator(char c) {
+#if BUILDFLAG(IS_WIN)
+  return c == '/' || c == '\\';
+#else
+  return c == '/';
+#endif
+}
+
+// Whether the path prefix |prefix| (which ends in a "*.asar" component) is an
+// archive file rather than a directory that happens to be named that way.
+// Memoised by string so the steady state is one hash lookup; the underlying
+// directory probe is IsDirectoryCached(), shared with GetAsarArchivePath().
+bool IsArchivePrefix(std::string_view prefix) {
+  static base::NoDestructor<absl::flat_hash_map<std::string, bool>> cache;
+  static base::NoDestructor<base::Lock> lock;
+  {
+    base::AutoLock auto_lock(*lock);
+    auto it = cache->find(prefix);
+    if (it != cache->end())
+      return it->second;
+  }
+  const base::FilePath as_path = base::FilePath::FromUTF8Unsafe(prefix);
+  // Same test GetAsarArchivePath() applies to each candidate component.
+  const bool is_archive = as_path.BaseName().MatchesExtension(kAsarExtension) &&
+                          !IsDirectoryCached(as_path);
+  base::AutoLock auto_lock(*lock);
+  cache->emplace(std::string(prefix), is_archive);
+  return is_archive;
+}
+
+}  // namespace
+
+int FindArchivePrefixLength(std::string_view path, bool require_normalized) {
+  // Walk components from the end; the deepest qualifying one wins, exactly
+  // as in GetAsarArchivePath(). Note empty/"."/".." components on the way and
+  // in the part already passed over.
+  bool needs_normalization = false;
+  int result = kNotInArchive;
+  size_t end = path.size();
+  while (end > 0) {
+    size_t start = end;
+    while (start > 0 && !IsPathSeparator(path[start - 1]))
+      --start;
+    const std::string_view component = path.substr(start, end - start);
+    if (component.empty()) {
+      // A trailing separator is fine; an interior empty component is "//".
+      if (end != path.size())
+        needs_normalization = true;
+    } else if (component == "." || component == "..") {
+      needs_normalization = true;
+    } else if (result == kNotInArchive &&
+               component.size() >= kAsarSuffix.size() &&
+               base::EndsWith(component, kAsarSuffix,
+                              base::CompareCase::INSENSITIVE_ASCII) &&
+               IsArchivePrefix(path.substr(0, end))) {
+      result = static_cast<int>(end);
+      if (!require_normalized)
+        return result;
+    }
+    if (start == 0)
+      break;
+    end = start - 1;
+  }
+  if (result != kNotInArchive && require_normalized && needs_normalization)
+    return kNeedsNormalization;
+  return result;
 }
 
 bool ReadFileToString(const base::FilePath& path, std::string* contents) {

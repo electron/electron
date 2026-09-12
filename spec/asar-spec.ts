@@ -3334,40 +3334,55 @@ describe('asar package', function () {
     });
 
     describe('splitPath', function () {
-      itremote('splits at the deepest .asar file component and normalizes the relative part', function () {
+      itremote('returns the length of the deepest .asar file component prefix', function () {
         const { splitPath } = process._linkedBinding('electron_common_asar');
         const archive = path.join(asarDir, 'a.asar');
-        expect(splitPath(path.join(archive, 'dir1', 'file1'))).to.deep.equal({
-          isAsar: true,
-          asarPath: archive,
-          filePath: ['dir1', 'file1'].join(path.sep)
-        });
-        expect(
-          splitPath(archive + path.sep + path.sep + 'dir1' + path.sep + path.sep + 'file1' + path.sep)
-        ).to.deep.equal({ isAsar: true, asarPath: archive, filePath: ['dir1', 'file1'].join(path.sep) });
-        expect(splitPath(path.join(archive, 'nested.asar', 'x'))).to.deep.equal({
-          isAsar: true,
-          asarPath: path.join(archive, 'nested.asar'),
-          filePath: 'x'
-        });
-        expect(splitPath(archive)).to.deep.equal({ isAsar: true, asarPath: archive, filePath: '' });
+        expect(splitPath(path.join(archive, 'dir1', 'file1'), true)).to.equal(archive.length);
+        expect(splitPath(archive, true)).to.equal(archive.length);
+        expect(splitPath(archive + path.sep, true)).to.equal(archive.length);
+        // A ".asar" entry inside an archive is not a directory on disk, so it
+        // is taken as the archive, exactly as GetAsarArchivePath() does.
+        expect(splitPath(path.join(archive, 'nested.asar', 'x'), true)).to.equal(
+          path.join(archive, 'nested.asar').length
+        );
+      });
+
+      itremote('asks for normalization only when it is needed and wanted', function () {
+        const { splitPath } = process._linkedBinding('electron_common_asar');
+        const archive = path.join(asarDir, 'a.asar');
+        const sloppy = archive + path.sep + path.sep + 'dir1' + path.sep + '.' + path.sep + 'file1';
+        expect(splitPath(sloppy, true)).to.equal(-2);
+        expect(splitPath(sloppy, false)).to.equal(archive.length);
+        const viaParent = [asarDir, '..', path.basename(asarDir), 'a.asar', 'x'].join(path.sep);
+        expect(splitPath(viaParent, true)).to.equal(-2);
+        expect(splitPath([fixtures, 'module', '..', 'noop.js'].join(path.sep), true)).to.equal(-1);
       });
 
       itremote('does not treat a real directory named like an archive as an archive', function () {
         const { splitPath } = process._linkedBinding('electron_common_asar');
-        expect(splitPath(path.join(asarDir, 'file'))).to.deep.equal({ isAsar: false });
-        expect(splitPath(asarDir)).to.deep.equal({ isAsar: false });
-        expect(splitPath(path.join(fixtures, 'module', 'noop.js'))).to.deep.equal({ isAsar: false });
+        expect(splitPath(path.join(asarDir, 'file'), true)).to.equal(-1);
+        expect(splitPath(asarDir, true)).to.equal(-1);
+        expect(splitPath(path.join(fixtures, 'module', 'noop.js'), true)).to.equal(-1);
       });
 
       itremote('matches the archive extension the same way base::FilePath does', function () {
         const { splitPath } = process._linkedBinding('electron_common_asar');
         const dir = path.join(fixtures, 'module');
-        expect(splitPath(path.join(dir, 'X.ASAR', 'y')).isAsar).to.equal(true);
-        expect(splitPath(path.join(dir, '.asar', 'y')).isAsar).to.equal(true);
-        expect(splitPath(path.join(dir, 'x.asar.gz', 'y')).isAsar).to.equal(false);
-        expect(splitPath(path.join(dir, 'x.asarx', 'y')).isAsar).to.equal(false);
-        expect(splitPath(path.join(dir, 'asar', 'y')).isAsar).to.equal(false);
+        expect(splitPath(path.join(dir, 'X.ASAR', 'y'), true)).to.be.greaterThan(0);
+        expect(splitPath(path.join(dir, '.asar', 'y'), true)).to.be.greaterThan(0);
+        expect(splitPath(path.join(dir, 'x.asar.gz', 'y'), true)).to.equal(-1);
+        expect(splitPath(path.join(dir, 'x.asarx', 'y'), true)).to.equal(-1);
+        expect(splitPath(path.join(dir, 'asar', 'y'), true)).to.equal(-1);
+      });
+
+      itremote('lets fs calls accept un-normalized paths into an archive', function () {
+        const archive = path.join(asarDir, 'a.asar');
+        const viaDots = [archive, 'dir1', '.', '..', 'dir1', 'file1'].join(path.sep);
+        const viaDoubles = archive + path.sep + path.sep + 'dir1' + path.sep + path.sep + 'file1' + path.sep;
+        const expected = fs.readFileSync(path.join(archive, 'dir1', 'file1'));
+        expect(fs.readFileSync(viaDots)).to.deep.equal(expected);
+        expect(fs.statSync(viaDoubles).isFile()).to.equal(true);
+        expect(fs.existsSync([archive, '..', 'a.asar', 'dir1'].join(path.sep))).to.equal(true);
       });
     });
 
