@@ -131,8 +131,12 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       );
     }
 
+    const production = env.mode === 'production';
+
     return {
-      mode: 'development',
+      // Production mode gives deterministic numeric module ids, scope hoisting
+      // and dead-export elimination on top of minification.
+      mode: production ? 'production' : 'development',
       devtool: false,
       entry,
       target: alwaysHasNode ? 'node' : 'web',
@@ -179,8 +183,12 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         __dirname: false,
         __filename: false
       },
+      performance: { hints: false },
       optimization: {
-        minimize: env.mode === 'production',
+        minimize: production,
+        // These bundles are Electron's own runtime; leave the app's
+        // process.env.NODE_ENV alone.
+        nodeEnv: false,
         minimizer: [
           new TerserPlugin({
             terserOptions: {
