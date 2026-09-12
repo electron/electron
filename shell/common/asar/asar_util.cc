@@ -178,39 +178,60 @@ bool IsArchivePrefix(std::string_view prefix) {
 }  // namespace
 
 int FindArchivePrefixLength(std::string_view path, bool require_normalized) {
-  // Walk components from the end; the deepest qualifying one wins, exactly
-  // as in GetAsarArchivePath(). Note empty/"."/".." components on the way and
-  // in the part already passed over.
-  bool needs_normalization = false;
-  int result = kNotInArchive;
+  // Trailing separators never change the answer.
   size_t end = path.size();
+  while (end > 0 && IsPathSeparator(path[end - 1]))
+    --end;
+  path = path.substr(0, end);
+
+  // Pass 1 (purely lexical): if the path both looks like it goes through an
+  // archive and has "."/".."/empty components, hand it back for normalization
+  // before anything touches the disk or the memo with this spelling.
+  if (require_normalized) {
+    bool has_candidate = false;
+    bool needs_normalization = false;
+    size_t component_start = 0;
+    for (size_t i = 0; i <= path.size(); ++i) {
+      if (i != path.size() && !IsPathSeparator(path[i]))
+        continue;
+      const std::string_view component =
+          path.substr(component_start, i - component_start);
+      if (component.empty() ? component_start != 0
+                            : (component == "." || component == ".."))
+        needs_normalization = true;
+      else if (component.size() >= kAsarSuffix.size() &&
+               base::EndsWith(component, kAsarSuffix,
+                              base::CompareCase::INSENSITIVE_ASCII))
+        has_candidate = true;
+      component_start = i + 1;
+    }
+    if (!has_candidate)
+      return kNotInArchive;
+    if (needs_normalization)
+      return kNeedsNormalization;
+  }
+
+  // Pass 2: walk components from the end; the deepest "*.asar" component
+  // that is an archive file (not a directory) wins, as in
+  // GetAsarArchivePath().
   while (end > 0) {
     size_t start = end;
     while (start > 0 && !IsPathSeparator(path[start - 1]))
       --start;
     const std::string_view component = path.substr(start, end - start);
-    if (component.empty()) {
-      // A trailing separator is fine; an interior empty component is "//".
-      if (end != path.size())
-        needs_normalization = true;
-    } else if (component == "." || component == "..") {
-      needs_normalization = true;
-    } else if (result == kNotInArchive &&
-               component.size() >= kAsarSuffix.size() &&
-               base::EndsWith(component, kAsarSuffix,
-                              base::CompareCase::INSENSITIVE_ASCII) &&
-               IsArchivePrefix(path.substr(0, end))) {
-      result = static_cast<int>(end);
-      if (!require_normalized)
-        return result;
+    if (component.size() >= kAsarSuffix.size() &&
+        base::EndsWith(component, kAsarSuffix,
+                       base::CompareCase::INSENSITIVE_ASCII) &&
+        IsArchivePrefix(path.substr(0, end))) {
+      return static_cast<int>(end);
     }
     if (start == 0)
       break;
     end = start - 1;
+    while (end > 0 && IsPathSeparator(path[end - 1]))
+      --end;
   }
-  if (result != kNotInArchive && require_normalized && needs_normalization)
-    return kNeedsNormalization;
-  return result;
+  return kNotInArchive;
 }
 
 bool ReadFileToString(const base::FilePath& path, std::string* contents) {

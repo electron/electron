@@ -79,7 +79,7 @@ const isSeparatorCode = isWindows ? (c: number) => c === 47 || c === 92 : (c: nu
 // leave JS.
 const asarRe = /\.asar/i;
 
-const splitStringPath = (archivePath: string, requireNormalized: boolean): SplitPathResult => {
+const splitStringPath = (archivePath: string): SplitPathResult => {
   if (!asarRe.test(archivePath)) return NOT_ASAR;
 
   // Windows paths are always run through path.normalize() first (drive
@@ -87,7 +87,7 @@ const splitStringPath = (archivePath: string, requireNormalized: boolean): Split
   // ".", ".." or empty components, which user code rarely passes and the
   // module loader never does.
   if (isWindows) archivePath = path.normalize(archivePath);
-  let prefixLength = asar.splitPath(archivePath, requireNormalized && !isWindows);
+  let prefixLength = asar.splitPath(archivePath, !isWindows);
   if (prefixLength === kNeedsNormalization) {
     archivePath = path.normalize(archivePath);
     prefixLength = asar.splitPath(archivePath, false);
@@ -122,13 +122,8 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL): SplitPathResult 
     }
     if (typeof archivePath !== 'string') return NOT_ASAR;
   }
-  return splitStringPath(archivePath, true);
+  return splitStringPath(archivePath);
 };
-
-// splitPath() for a string the module loader produced: already a string and
-// already lexically normalized (path.resolve() output).
-const splitResolvedPath = (archivePath: string): SplitPathResult =>
-  isAsarDisabled() ? NOT_ASAR : splitStringPath(archivePath, false);
 
 // readdir(withFileTypes) for a directory inside an archive: one native call
 // that returns every child's name and type, turned into node Dirents whose
@@ -890,11 +885,8 @@ function openAsarEntry(
 // Override fs APIs.
 export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const logFDs = new Map<string, number>();
-  // Read once: process.env goes through node's env interceptor (getenv under
-  // a lock) and this is consulted on every read of a packed file.
-  const logAsarReads = Boolean(process.env.ELECTRON_LOG_ASAR_READS);
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
-    if (!logAsarReads) return;
+    if (!process.env.ELECTRON_LOG_ASAR_READS) return;
     if (!logFDs.has(asarPath)) {
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join((require('os') as typeof os).tmpdir(), logFilename);
@@ -1040,7 +1032,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // equally fixed instead of being re-resolved through the real filesystem on
   // every realpath() of an entry inside it -- the module loader does one per
   // file it loads. Only successful lookups of archives that opened are kept.
-  const archiveRealPaths = new Map<string, string>();
+  // realpath() and realpath.native() can disagree (case-insensitive volumes,
+  // substituted drives), so each variant keeps its own answers.
+  const archiveRealPaths = { js: new Map<string, string>(), native: new Map<string, string>() };
   const encodeRealpathResult = (result: string, options: any) => {
     const encoding = !options ? null : typeof options === 'string' ? options : options.encoding;
     if (!encoding || encoding === 'utf8' || encoding === 'utf-8') return result;
@@ -1048,7 +1042,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return encoding === 'buffer' ? buffer : buffer.toString(encoding);
   };
 
-  const wrapRealpathSync = function (realpathSync: Function) {
+  const wrapRealpathSync = function (realpathSync: Function, resolvedArchives: Map<string, string>) {
     return function (this: any, pathArgument: string, options: any) {
       const pathInfo = splitPath(pathArgument);
       if (!pathInfo.isAsar) return realpathSync.apply(this, arguments);
@@ -1064,20 +1058,20 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
       }
 
-      let archiveRealPath = archiveRealPaths.get(asarPath);
+      let archiveRealPath = resolvedArchives.get(asarPath);
       if (archiveRealPath === undefined) {
         archiveRealPath = String(realpathSync(asarPath));
-        archiveRealPaths.set(asarPath, archiveRealPath);
+        resolvedArchives.set(asarPath, archiveRealPath);
       }
       return encodeRealpathResult(path.join(archiveRealPath, fileRealPath), options);
     };
   };
 
   const { realpathSync } = fs;
-  fs.realpathSync = wrapRealpathSync(realpathSync);
-  fs.realpathSync.native = wrapRealpathSync(realpathSync.native);
+  fs.realpathSync = wrapRealpathSync(realpathSync, archiveRealPaths.js);
+  fs.realpathSync.native = wrapRealpathSync(realpathSync.native, archiveRealPaths.native);
 
-  const wrapRealpath = function (realpath: Function) {
+  const wrapRealpath = function (realpath: Function, resolvedArchives: Map<string, string>) {
     return function (this: any, pathArgument: string, options: any, callback: any) {
       const pathInfo = splitPath(pathArgument);
       if (!pathInfo.isAsar) return realpath.apply(this, arguments);
@@ -1102,7 +1096,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         return;
       }
 
-      const cachedRealPath = archiveRealPaths.get(asarPath);
+      const cachedRealPath = resolvedArchives.get(asarPath);
       if (cachedRealPath !== undefined) {
         nextTick(callback, [null, encodeRealpathResult(path.join(cachedRealPath, fileRealPath), options)]);
         return;
@@ -1110,7 +1104,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
       realpath(asarPath, (error: Error | null, archiveRealPath: string) => {
         if (error === null) {
-          archiveRealPaths.set(asarPath, archiveRealPath);
+          resolvedArchives.set(asarPath, archiveRealPath);
           callback(null, encodeRealpathResult(path.join(archiveRealPath, fileRealPath), options));
         } else {
           callback(error);
@@ -1120,8 +1114,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { realpath } = fs;
-  fs.realpath = wrapRealpath(realpath);
-  fs.realpath.native = wrapRealpath(realpath.native);
+  fs.realpath = wrapRealpath(realpath, archiveRealPaths.js);
+  fs.realpath.native = wrapRealpath(realpath.native, archiveRealPaths.native);
 
   fs.promises.realpath = util.promisify(fs.realpath.native);
 
@@ -1642,7 +1636,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // Only archive paths are ever cached, so a hit needs no splitPath().
     const cached = moduleStatCache.get(pathArgument);
     if (cached !== undefined && !isAsarDisabled()) return cached;
-    const pathInfo = splitResolvedPath(pathArgument);
+    const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
     const { asarPath, filePath } = pathInfo;
 

@@ -72,35 +72,31 @@ const base::DictValue* GetChildNode(const base::DictValue& root,
                                     std::string_view name,
                                     const base::DictValue& dir,
                                     int depth) {
-  if (name.empty())
-    return &root;
-
   const base::DictValue* files = GetFilesNode(root, dir, depth);
   return files ? files->FindDict(name) : nullptr;
 }
 
 // Gets the node of "path" from "root". Walks |path| one component at a time
-// as views into the caller's string; nothing is copied.
+// as views into the caller's string; nothing is copied. Empty components
+// (leading, trailing or doubled separators) are skipped; "." and ".." are
+// ordinary names here -- callers pass lexically normalized paths.
 const base::DictValue* GetNodeFromPath(std::string_view path,
                                        const base::DictValue& root,
                                        int depth) {
-  const base::DictValue* dir = &root;
+  const base::DictValue* node = &root;
   while (!path.empty()) {
     const size_t delimiter_position = path.find_first_of(kSeparators);
+    const std::string_view component = path.substr(0, delimiter_position);
+    if (!component.empty()) {
+      node = GetChildNode(root, component, *node, depth);
+      if (!node)
+        return nullptr;
+    }
     if (delimiter_position == std::string_view::npos)
       break;
-    const base::DictValue* child =
-        GetChildNode(root, path.substr(0, delimiter_position), *dir, depth);
-    if (!child)
-      return nullptr;
-
-    dir = child;
     path.remove_prefix(delimiter_position + 1);
   }
-
-  if (path.empty())
-    return dir;
-  return GetChildNode(root, path, *dir, depth);
+  return node;
 }
 
 const base::DictValue* GetNodeFromPath(std::string_view path,
