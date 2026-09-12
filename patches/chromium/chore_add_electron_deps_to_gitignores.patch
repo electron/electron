@@ -18,20 +18,18 @@ index 63b0d3675470991a21eaac11e6d127e986edf279..69fb120b9a37eb0f15268a7f992c9c86
  /google_apis/gcm/gcm.xml
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 33637b2b240bffad50cd60fa1d993a6a6f2a327c..2ab22963db8dff01e4651e042f3f759545650ae4 100644
+index 33637b2b240bffad50cd60fa1d993a6a6f2a327c..1df3d81793e998a3f9f239494cb25f8e77c7ce08 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -48,7 +48,9 @@
+@@ -48,6 +48,7 @@
  /dragonbox/src
  /disarm/src
  /edk2
 +/electron_node
  /elfutils/src
-+/engflow-reclient-configs/
  /espresso/lib/
  /eyesfree/src
- /fast_float/src
-@@ -100,6 +102,7 @@
+@@ -100,6 +101,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,7 +37,7 @@ index 33637b2b240bffad50cd60fa1d993a6a6f2a327c..2ab22963db8dff01e4651e042f3f7595
  /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -145,7 +148,7 @@
+@@ -145,7 +147,7 @@
  /spirv-cross/src
  /spirv-headers/src
  /spirv-tools/src
