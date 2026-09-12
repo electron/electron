@@ -46,6 +46,7 @@ class WebContentsView : public View,
   gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
+  void SetInteractive(bool interactive) override;
 
   int NonClientHitTest(const gfx::Point& point) override;
 
@@ -57,6 +58,8 @@ class WebContentsView : public View,
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
 
   // views::ViewObserver
   void OnViewAddedToWidget(views::View* view) override;
@@ -69,6 +72,7 @@ class WebContentsView : public View,
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   void ApplyBorderRadius();
+  void ApplyInteractive();
   void StopObservingWindow();
   void OnContentsBoundsChanging();
   bool HasLivePage();

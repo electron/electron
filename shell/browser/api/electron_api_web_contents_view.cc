@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include "base/check.h"
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/task/sequenced_task_runner.h"
@@ -32,6 +33,10 @@
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
+
+#if defined(USE_AURA)
+#include "ui/aura/window.h"
+#endif
 
 namespace electron::api {
 
@@ -79,6 +84,33 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
     }
   }
 }
+
+void WebContentsView::SetInteractive(bool interactive) {
+  View::SetInteractive(interactive);
+  ApplyInteractive();
+}
+
+void WebContentsView::RenderFrameHostChanged(
+    content::RenderFrameHost* old_host,
+    content::RenderFrameHost* new_host) {
+  ApplyInteractive();
+}
+
+#if !BUILDFLAG(IS_MAC)
+void WebContentsView::ApplyInteractive() {
+  if (!api_web_contents_ || !api_web_contents_->web_contents())
+    return;
+
+#if defined(USE_AURA)
+  if (gfx::NativeView native_view =
+          api_web_contents_->web_contents()->GetNativeView()) {
+    native_view->SetEventTargetingPolicy(
+        GetInteractive() ? aura::EventTargetingPolicy::kTargetAndDescendants
+                         : aura::EventTargetingPolicy::kNone);
+  }
+#endif
+}
+#endif  // !BUILDFLAG(IS_MAC)
 
 void WebContentsView::SetBorderRadius(int radius) {
   View::SetBorderRadius(radius);
@@ -147,6 +179,7 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   observed_window_ = native_window->GetWeakPtr();
   native_window->AddObserver(this);
   ApplyBorderRadius();
+  ApplyInteractive();
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }
@@ -317,6 +350,7 @@ void WebContentsView::BuildPrototype(
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
       .SetMethod("setBorderRadius", &WebContentsView::SetBorderRadius)
+      .SetMethod("setInteractive", &WebContentsView::SetInteractive)
       .SetProperty("webContents", &WebContentsView::GetWebContents);
 }
 

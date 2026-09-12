@@ -585,4 +585,32 @@ describe('WebContentsView', () => {
       expect(v.webContents.isFocused()).to.be.false();
     });
   });
+
+  // this does not actually try to perform hit-testing, as we would need robotjs to affect an os-level click, but it does verify that the method can be called without throwing, and that it does not affect rendering or visibility
+  describe('setInteractive', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw for a plain View', () => {
+      const v = new View();
+      expect(() => v.setInteractive(false)).to.not.throw();
+      expect(() => v.setInteractive(true)).to.not.throw();
+    });
+
+    it('does not throw for a WebContentsView, before and after attach', async () => {
+      const w = new BaseWindow({ show: false });
+      const view = new WebContentsView();
+      expect(() => view.setInteractive(false)).to.not.throw(); // before attach
+      w.contentView.addChildView(view);
+      expect(() => view.setInteractive(true)).to.not.throw(); // after attach
+    });
+
+    it('survives destroy/toggle churn', () => {
+      const view = new WebContentsView();
+      view.setInteractive(false);
+      view.setInteractive(true);
+      view.setInteractive(false);
+      view.webContents.destroy();
+      expect(() => view.setInteractive(true)).to.not.throw();
+    });
+  });
 });
