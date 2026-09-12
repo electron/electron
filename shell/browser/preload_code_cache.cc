@@ -26,6 +26,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 
 namespace electron::preload_code_cache {
 
@@ -117,7 +118,8 @@ WEB_CONTENTS_USER_DATA_KEY_IMPL(ServedPreloadTracker);
 // One slot per (scope, id): different principals consuming the same preload
 // keep separate entries instead of evicting each other's.
 std::string CacheKey(const Scope& scope, const std::string& id) {
-  return scope.context_id + '\n' + scope.process_lock + '\n' + id;
+  return scope.context_id + '\n' + scope.process_lock + '\n' + scope.wrapper +
+         '\n' + id;
 }
 
 // sha256(id)-sha256(process lock) keeps the filename filesystem-safe and
@@ -126,9 +128,9 @@ std::string CacheKey(const Scope& scope, const std::string& id) {
 base::FilePath PathForEntry(const Scope& scope, const std::string& id) {
   if (scope.dir.empty())
     return {};
-  std::string digest =
-      base::HexEncode(crypto::hash::Sha256(id)) + "-" +
-      base::HexEncode(crypto::hash::Sha256(scope.process_lock));
+  std::string digest = base::HexEncode(crypto::hash::Sha256(id)) + "-" +
+                       base::HexEncode(crypto::hash::Sha256(
+                           scope.process_lock + '\n' + scope.wrapper));
   return scope.dir.AppendASCII(digest + ".cache");
 }
 
@@ -177,6 +179,11 @@ Scope ScopeForFrame(content::RenderFrameHost* rfh) {
   auto* browser_context = rfh->GetBrowserContext();
   scope.context_id = browser_context->UniqueId();
   scope.process_lock = rfh->GetProcess()->GetProcessLock().ToString();
+  if (auto* web_contents = content::WebContents::FromRenderFrameHost(rfh)) {
+    scope.wrapper = web_contents->GetOrCreateWebPreferences().context_isolation
+                        ? "ci"
+                        : "no-ci";
+  }
   if (!browser_context->IsOffTheRecord()) {
     scope.dir = browser_context->GetPath()
                     .AppendASCII("Code Cache")
