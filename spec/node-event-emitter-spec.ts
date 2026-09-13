@@ -189,6 +189,37 @@ describe('native EventEmitter (electron_common_events)', () => {
       });
     });
 
+    it('when a listener throws (later listeners are skipped, emit rethrows)', () => {
+      sameAsNode((EventEmitter, log) => {
+        const e = new EventEmitter();
+        const boom = new Error('boom');
+        e.on('one', () => {
+          log('one:first');
+          throw boom;
+        });
+        try {
+          e.emit('one', 1);
+        } catch (error) {
+          log('caught', error === boom);
+        }
+        e.on('x', () => log('first'));
+        e.on('x', () => {
+          log('second');
+          throw boom;
+        });
+        e.on('x', () => log('third'));
+        try {
+          e.emit('x');
+        } catch (error) {
+          log('caught', error === boom);
+        }
+        log(e.listenerCount('x'), e.listenerCount('one'));
+        e.removeAllListeners('x');
+        e.on('x', () => log('again'));
+        log(e.emit('x'));
+      });
+    });
+
     it('for an unhandled error event with an Error', () => {
       sameAsNode((EventEmitter, log) => {
         const e = new EventEmitter();

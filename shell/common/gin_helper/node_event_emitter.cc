@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 #include "base/containers/span.h"
 #include "base/memory/stack_allocated.h"
@@ -22,6 +23,7 @@
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-object.h"
 #include "v8/include/v8-primitive.h"
+#include "v8/include/v8-script.h"
 #include "v8/include/v8-template.h"
 
 // A C++ port of the `EventEmitter` class from Node.js's lib/events.js,
@@ -60,6 +62,7 @@ enum Slot {
   kOnceStateTemplate,    // ObjectTemplate for once() wrapper state
   kOnceWrapper,          // the shared onceWrapper function
   kFunctionBind,         // Function.prototype.bind
+  kDispatch,             // JS loop that calls an array of listeners
   // Our own prototype methods, to detect that they are not overridden.
   kFnEmit,
   kFnAddListener,
@@ -439,8 +442,7 @@ void InstanceFieldSetter(v8::Local<v8::Name> name,
 [[nodiscard]] bool EmitCore(const State& s,
                             const Receiver& self,
                             v8::Local<v8::Value> type,
-                            int argc,
-                            v8::Local<v8::Value>* argv,
+                            base::span<v8::Local<v8::Value>> args,
                             bool* result);
 [[nodiscard]] bool AddListenerCore(const State& s,
                                    const Receiver& self,
@@ -489,8 +491,7 @@ void InstanceFieldSetter(v8::Local<v8::Name> name,
     return false;
   if (fn.IsEmpty()) {
     bool unused;
-    return EmitCore(s, self, argv[0], static_cast<int>(argv.size()) - 1,
-                    argv.subspan<1>().data(), &unused);
+    return EmitCore(s, self, argv[0], argv.subspan<1>(), &unused);
   }
   return !fn->Call(s.context(), self.self(), static_cast<int>(argv.size()),
                    argv.data())
@@ -681,9 +682,10 @@ void GetMaxListeners(const v8::FunctionCallbackInfo<v8::Value>& info) {
 bool EmitCore(const State& s,
               const Receiver& self,
               v8::Local<v8::Value> type,
-              int argc,
-              v8::Local<v8::Value>* argv,
+              base::span<v8::Local<v8::Value>> args,
               bool* result) {
+  int argc = static_cast<int>(args.size());
+  v8::Local<v8::Value>* argv = args.data();
   *result = false;
   bool do_error = type->IsString() && type->StrictEquals(s.Key(kKeyError));
 
@@ -704,7 +706,7 @@ bool EmitCore(const State& s,
   // If there is no 'error' event listener then throw.
   if (do_error) {
     v8::Local<v8::Value> er =
-        argc > 0 ? *argv : v8::Undefined(s.isolate()).As<v8::Value>();
+        args.empty() ? v8::Undefined(s.isolate()).As<v8::Value>() : args[0];
     v8::Local<v8::Value> error_ctor = s.Get(kErrorConstructor);
     if (er->IsObject() && error_ctor->IsFunction()) {
       bool is_error;
@@ -748,17 +750,20 @@ bool EmitCore(const State& s,
       return false;
     }
   } else if (handler->IsArray()) {
-    // Iterate over a copy so listeners added or removed by a listener do not
-    // affect this emit.
-    v8::LocalVector<v8::Value> listeners(s.isolate());
-    if (!ReadArray(s, handler.As<v8::Array>(), &listeners))
+    // Several listeners: hand the array to the JS dispatch loop (see
+    // kDispatchSource) so the listeners are called from JIT-compiled code
+    // rather than through one C++ -> JS transition each.
+    v8::LocalVector<v8::Value> dispatch_argv(s.isolate());
+    dispatch_argv.reserve(argc + 2);
+    dispatch_argv.push_back(handler);
+    dispatch_argv.push_back(self.self());
+    dispatch_argv.insert(dispatch_argv.end(), args.begin(), args.end());
+    if (s.Get(kDispatch)
+            .As<v8::Function>()
+            ->Call(s.context(), v8::Undefined(s.isolate()),
+                   static_cast<int>(dispatch_argv.size()), dispatch_argv.data())
+            .IsEmpty()) {
       return false;
-    for (auto& fn : listeners) {
-      if (fn->IsFunction() && fn.As<v8::Function>()
-                                  ->Call(s.context(), self.self(), argc, argv)
-                                  .IsEmpty()) {
-        return false;
-      }
     }
   }
 
@@ -773,23 +778,24 @@ void Emit(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
 
   // Arguments after `type`, on the stack for the common small counts.
-  int argc = info.Length() > 1 ? info.Length() - 1 : 0;
+  int length = info.Length();
+  size_t argc = length > 1 ? length - 1 : 0;
   std::array<v8::Local<v8::Value>, 8> stack;
-  v8::LocalVector<v8::Value> heap(s.isolate());
-  v8::Local<v8::Value>* argv;
-  if (argc <= static_cast<int>(stack.size())) {
-    for (int i = 0; i < argc; ++i)
-      stack[i] = info[i + 1];
-    argv = stack.data();
+  std::vector<v8::Local<v8::Value>> heap;
+  base::span<v8::Local<v8::Value>> args;
+  if (argc <= stack.size()) {
+    for (int i = 1; i < length; ++i)
+      stack[i - 1] = info[i];
+    args = base::span(stack).first(argc);
   } else {
     heap.reserve(argc);
-    for (int i = 0; i < argc; ++i)
-      heap.push_back(info[i + 1]);
-    argv = heap.data();
+    for (int i = 1; i < length; ++i)
+      heap.push_back(info[i]);
+    args = heap;
   }
 
   bool result;
-  if (EmitCore(s, self, info[0], argc, argv, &result))
+  if (EmitCore(s, self, info[0], args, &result))
     info.GetReturnValue().Set(result);
 }
 
@@ -1288,6 +1294,33 @@ void DefaultMaxListenersSetter(
 
 // -- Template assembly -------------------------------------------------------
 
+// The one piece of JavaScript in here: calling N listeners from a JS loop
+// costs a fraction of N v8::Function::Call() entries from C++, because the
+// calls get inlined into the loop. Iterates over a copy, like lib/events.js,
+// so listeners added or removed by a listener do not affect this emit, and
+// captures Reflect.apply before any page script can replace it.
+constexpr char kDispatchSource[] =
+    "(() => {"
+    "  const apply = Reflect.apply;"
+    "  return function emitMany(list, self, ...args) {"
+    "    const n = list.length;"
+    "    const listeners = new Array(n);"
+    "    for (let i = 0; i < n; i++) listeners[i] = list[i];"
+    "    for (let i = 0; i < n; i++) apply(listeners[i], self, args);"
+    "  };"
+    "})()";
+
+v8::Local<v8::Function> CompileDispatch(v8::Local<v8::Context> context) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::ScriptOrigin origin(
+      gin::StringToV8(isolate, "electron/js2c/event_emitter_dispatch"));
+  v8::Local<v8::Script> script =
+      v8::Script::Compile(context, gin::StringToV8(isolate, kDispatchSource),
+                          &origin)
+          .ToLocalChecked();
+  return script->Run(context).ToLocalChecked().As<v8::Function>();
+}
+
 v8::Local<v8::FunctionTemplate> Method(v8::Isolate* isolate,
                                        v8::FunctionCallback callback,
                                        v8::Local<v8::Value> data,
@@ -1335,6 +1368,7 @@ v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
         bind->IsFunction());
   data->SetInternalField(kErrorConstructor, error_ctor);
   data->SetInternalField(kFunctionBind, bind);
+  data->SetInternalField(kDispatch, CompileDispatch(context));
 
   v8::Local<v8::ObjectTemplate> once_state_template =
       v8::ObjectTemplate::New(isolate);
@@ -1461,8 +1495,7 @@ bool EmitEvent(v8::Isolate* isolate,
     if (IsStateData(tag)) {
       State s(isolate, tag);
       bool unused;
-      return EmitCore(s, Receiver(s, emitter), type,
-                      static_cast<int>(args.size()), args.data(), &unused);
+      return EmitCore(s, Receiver(s, emitter), type, args, &unused);
     }
   }
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
