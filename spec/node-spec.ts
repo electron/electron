@@ -591,6 +591,33 @@ describe('node feature', () => {
       }
       expect(errors).to.deep.equal([]);
     });
+
+    // Regression test for https://github.com/electron/electron/issues/53789.
+    it('does not crash when a node-integrated iframe is removed before its loop first runs', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegrationInSubFrames: true,
+          preload: path.join(fixtures, 'module', 'preload-remove-own-frame.js')
+        }
+      });
+      const gone = once(w.webContents, 'render-process-gone') as Promise<
+        [Electron.Event, Electron.RenderProcessGoneDetails]
+      >;
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      const removed = w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const frames = Array.from({ length: 10 }, () => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          return document.body.appendChild(frame);
+        });
+        const check = () => frames.some((frame) => frame.isConnected) ? setTimeout(check, 10) : resolve(frames.length);
+        check();
+      })`);
+      const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
+      expect(result).to.equal(10);
+    });
   });
 
   describe('native addons', () => {
