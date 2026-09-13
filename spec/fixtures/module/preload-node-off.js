@@ -1,4 +1,4 @@
-setImmediate(function () {
+setTimeout(function () {
   try {
     const types = {
       process: typeof process,

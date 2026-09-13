@@ -2687,7 +2687,7 @@ describe('chromium features', () => {
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal(
-        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}'
+        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"undefined"}'
       );
     });
 

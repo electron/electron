@@ -5,7 +5,6 @@ import { EventEmitter } from 'events';
 
 interface PreloadContext {
   loadedModules: Map<string, any>;
-  loadableModules: Map<string, any>;
 
   /** Process object to pass into preloads. */
   process: NodeJS.Process;
@@ -57,11 +56,6 @@ function preloadRequire(context: PreloadContext, module: string) {
   if (context.loadedModules.has(module)) {
     return context.loadedModules.get(module);
   }
-  if (context.loadableModules.has(module)) {
-    const loadedModule = context.loadableModules.get(module)!();
-    context.loadedModules.set(module, loadedModule);
-    return loadedModule;
-  }
   throw new Error(`module not found: ${module}`);
 }
 
@@ -70,9 +64,7 @@ function preloadRequire(context: PreloadContext, module: string) {
 //
 // - `require`: The `preloadRequire` function
 // - `process`: The `preloadProcess` object
-// - `Buffer`: Shim of `Buffer` implementation (only without context isolation;
-//   otherwise it is a lazy global, see defineLazyBufferGlobal)
-// - `global`: The window object, which is aliased to `global` by webpack.
+// - `global`: The context's global object
 function runPreloadScript(context: PreloadContext, script: ElectronInternal.PreloadScript) {
   const globalVariables = [];
   const fnParameters = [];
@@ -91,25 +83,6 @@ function runPreloadScript(context: PreloadContext, script: ElectronInternal.Prel
   const exports = {};
 
   preloadFn(preloadRequire.bind(null, context), context.process, exports, { exports }, ...fnParameters);
-}
-
-// The documented `Buffer` preload global, materialised on first use so that
-// preloads which never touch it do not pay for evaluating the polyfill.
-export function defineLazyBufferGlobal(target: object) {
-  const install = (value: unknown) =>
-    Object.defineProperty(target, 'Buffer', { value, writable: true, configurable: true, enumerable: false });
-  Object.defineProperty(target, 'Buffer', {
-    configurable: true,
-    enumerable: false,
-    get() {
-      const { Buffer } = require('buffer');
-      install(Buffer);
-      return Buffer;
-    },
-    set(value) {
-      install(value);
-    }
-  });
 }
 
 /**

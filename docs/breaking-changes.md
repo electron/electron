@@ -16,6 +16,36 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
+
+Sandboxed preload scripts (the default since Electron 20) and service worker preload
+scripts no longer have access to the `events`, `timers` and `url` Node.js module
+shims through `require`, and are no longer run with `Buffer`, `setImmediate` and
+`clearImmediate` in scope. These were browser polyfills bundled into every sandboxed
+renderer rather than the Node.js implementations. `require` in a sandboxed preload
+now only loads `electron` (and `electron/renderer`, `electron/common`); `process`
+and `global` are still provided.
+
+```js
+// Removed in a sandboxed preload
+const { EventEmitter } = require('node:events')
+const { setImmediate } = require('node:timers')
+const { parse } = require('node:url')
+const encoded = Buffer.from(data).toString('base64')
+setImmediate(callback)
+
+// Replace with Web APIs (or bundle your own polyfill into the preload)
+class Emitter extends EventTarget {}
+const parsed = new URL(input)
+const decoded = new TextDecoder().decode(data) // or btoa() / Uint8Array.prototype.toBase64()
+setTimeout(callback) // or queueMicrotask(callback)
+```
+
+`ipcRenderer` and the preload's `process` object keep their `EventEmitter` methods
+(`on`, `once`, `off`, `emit`, `removeListener`, `removeAllListeners`, ...).
+Preload scripts for renderers with `sandbox: false` are unaffected and continue to
+have the full Node.js environment.
+
 ### Behavior Changed: captured page images have the page's scale factor
 
 The [`NativeImage`](api/native-image.md) returned by `webContents.capturePage()`
