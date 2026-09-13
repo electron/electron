@@ -402,7 +402,6 @@ __metadata:
     "@types/semver": "npm:^7.5.8"
     "@types/stream-json": "npm:^1.7.8"
     "@xmldom/xmldom": "npm:^0.9.12"
-    events: "npm:^3.2.0"
     folder-hash: "npm:^4.1.2"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^17.3.0"

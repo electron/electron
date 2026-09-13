@@ -78,6 +78,19 @@ preload script:
 Preload scripts for renderers with `sandbox: false` are unaffected and continue to
 have the full Node.js environment.
 
+### Behavior Changed: `ipcRenderer` and `process` in sandboxed preload scripts use a native `EventEmitter`
+
+In sandboxed preload scripts and service worker preload scripts, `ipcRenderer`,
+`webFrame` and the preload's `process` object now inherit from an `EventEmitter`
+implemented natively by Electron instead of one from a bundled copy of the `events`
+npm package. It provides the same instance API as before (`on`, `once`, `off`,
+`emit`, `addListener`, `removeListener`, `removeAllListeners`, `prependListener`,
+`prependOnceListener`, `listeners`, `rawListeners`, `listenerCount`, `eventNames`,
+`setMaxListeners`, `getMaxListeners`, the `newListener` / `removeListener` events and
+the max-listener warning) with the same behavior. The static helpers that were only
+reachable through `require('events')` (`once`, `listenerCount`, `init`) are not
+provided.
+
 ### Removed: `contentTracing.enableHeapProfiling()`
 
 The experimental `contentTracing.enableHeapProfiling()` API has been removed.
