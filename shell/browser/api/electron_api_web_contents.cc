@@ -42,6 +42,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/input/input_constants.h"
+#include "components/input/input_router.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -4035,6 +4036,12 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     return;
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
+  // Input is held back until the first frame after a navigation arrives;
+  // an explicitly sent event should not be dropped on that account.
+  input::InputRouter* input_router =
+      content::RenderWidgetHostImpl::From(rwh)->input_router();
+  if (!input_router->IsActive())
+    input_router->MakeActive();
   blink::WebInputEvent::Type type =
       gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
