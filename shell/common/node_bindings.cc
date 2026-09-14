@@ -109,6 +109,7 @@
   V(electron_common_command_line)     \
   V(electron_common_crashpad_support) \
   V(electron_common_environment)      \
+  V(electron_common_events)           \
   V(electron_common_features)         \
   V(electron_common_native_image)     \
   V(electron_common_shared_texture)   \

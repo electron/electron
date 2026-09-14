@@ -85,6 +85,8 @@ module.exports = ({
       );
     }
 
+    const alias = {};
+
     // Webpack 5 no longer polyfills process.
     if (!alwaysHasNode) {
       plugins.push(
@@ -92,6 +94,9 @@ module.exports = ({
           process: 'process/browser'
         })
       );
+      // No Node.js `events` in these bundles; EventEmitter is implemented
+      // natively instead.
+      alias.events$ = path.resolve(electronRoot, 'lib', 'common', 'node-events.ts');
     }
 
     plugins.push(
@@ -140,6 +145,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       },
       resolve: {
         alias: {
+          ...alias,
           '@electron/internal': path.resolve(electronRoot, 'lib'),
           electron$: electronAPIFile,
           'electron/main$': electronAPIFile,
