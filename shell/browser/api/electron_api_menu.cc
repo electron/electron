@@ -97,18 +97,46 @@ void Menu::Entry::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(next);
 }
 
-MenuItem* Menu::GetItem(int command_id) const {
-  return MenuItem::FromCommandId(command_id);
-}
-
 void Menu::ForEachInRadioGroup(int group_id,
                                base::FunctionRef<void(MenuItem*)> fn) const {
-  auto it = radio_groups_.find(group_id);
-  if (it == radio_groups_.end())
-    return;
-  for (int command_id : it->second) {
-    if (MenuItem* item = GetItem(command_id))
+  for (size_t i = 0; i < GetItemCount(); ++i) {
+    MenuItem* item = ItemAt(i);
+    if (item->type() == MenuItem::Type::kRadio && item->group_id() == group_id)
       fn(item);
+  }
+}
+
+size_t Menu::GetItemCount() const {
+  return model_->GetItemCount();
+}
+
+MenuItem* Menu::ItemAt(size_t index) const {
+  return static_cast<MenuItem*>(model_->item_at(index));
+}
+
+void Menu::ActivatedAt(size_t index, int flags) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  node::CallbackScope callback_scope(isolate, wrapper, {0, 0});
+  ItemAt(index)->Activate(BaseWindow::GetFocusedWindow(),
+                          WebContents::GetFocusedWebContents(), flags);
+}
+
+void Menu::MenuWillShow() {
+  // Ensure radio groups have at least one item selected.
+  for (size_t i = 0; i < GetItemCount(); ++i) {
+    MenuItem* item = ItemAt(i);
+    if (item->type() != MenuItem::Type::kRadio)
+      continue;
+    bool any_checked = false;
+    ForEachInRadioGroup(item->group_id(), [&](MenuItem* other) {
+      any_checked = any_checked || other->checked_flag();
+    });
+    if (!any_checked)
+      item->SetCheckedForRadioGroup();
   }
 }
 
@@ -118,23 +146,18 @@ int Menu::GenerateGroupId(int pos) {
   static int next_group_id = 0;
   if (pos > 0) {
     // The nearest radio item before |pos| with no separator in between.
-    int found = 0;
-    int index = 0;
-    for (Entry* e = first_entry(); e && index < pos;
-         e = e->next.Get(), ++index) {
-      if (e->item->type() == MenuItem::Type::kRadio)
-        found = e->item->group_id();
-      else if (e->item->type() == MenuItem::Type::kSeparator)
-        found = 0;
+    for (int i = pos - 1; i >= 0; --i) {
+      if (ItemAt(i)->type() == MenuItem::Type::kRadio)
+        return ItemAt(i)->group_id();
+      if (ItemAt(i)->type() == MenuItem::Type::kSeparator)
+        break;
     }
-    if (found)
-      return found;
   } else {
     // The first radio item from |pos| on, before any separator.
-    for (Entry* e = first_entry(); e; e = e->next.Get()) {
-      if (e->item->type() == MenuItem::Type::kRadio)
-        return e->item->group_id();
-      if (e->item->type() == MenuItem::Type::kSeparator)
+    for (size_t i = 0; i < GetItemCount(); ++i) {
+      if (ItemAt(i)->type() == MenuItem::Type::kRadio)
+        return ItemAt(i)->group_id();
+      if (ItemAt(i)->type() == MenuItem::Type::kSeparator)
         break;
     }
   }
@@ -155,7 +178,7 @@ void Menu::Insert(gin_helper::ErrorThrower thrower,
         {"Position ", base::NumberToString(pos), " cannot be less than 0"}));
     return;
   }
-  if (pos > GetItemCount()) {
+  if (pos > static_cast<int>(GetItemCount())) {
     thrower.ThrowRangeError(
         base::StrCat({"Position ", base::NumberToString(pos),
                       " cannot be greater than the total MenuItem count"}));
@@ -176,7 +199,7 @@ void Menu::InsertItem(v8::Isolate* isolate,
                       int pos,
                       MenuItem* item,
                       gin_helper::ErrorThrower* thrower) {
-  const int count = GetItemCount();
+  const int count = static_cast<int>(GetItemCount());
   CHECK_GE(pos, 0);
   CHECK_LE(pos, count);
   if ((item->type() == MenuItem::Type::kSubmenu ||
@@ -186,32 +209,13 @@ void Menu::InsertItem(v8::Isolate* isolate,
       thrower->ThrowTypeError("Invalid submenu");
     return;
   }
-  const int id = item->command_id();
+  if (item->GetSubmenuModel())
+    item->submenu()->parent_ = this;
   int group_id = 0;
-  switch (item->type()) {
-    case MenuItem::Type::kNormal:
-    case MenuItem::Type::kHeader:
-      model_->InsertItemAt(pos, id, item->label());
-      break;
-    case MenuItem::Type::kCheckbox:
-      model_->InsertCheckItemAt(pos, id, item->label());
-      break;
-    case MenuItem::Type::kSeparator:
-      model_->InsertSeparatorAt(pos, ui::NORMAL_SEPARATOR);
-      break;
-    case MenuItem::Type::kSubmenu:
-    case MenuItem::Type::kPalette:
-      item->submenu()->parent_ = this;
-      model_->InsertSubMenuAt(pos, id, item->label(), item->submenu()->model());
-      break;
-    case MenuItem::Type::kRadio:
-      group_id = item->group_id() ? item->group_id() : GenerateGroupId(pos);
-      radio_groups_[group_id].push_back(id);
-      model_->InsertRadioItemAt(pos, id, item->label(), group_id);
-      break;
-  }
-
+  if (item->type() == MenuItem::Type::kRadio)
+    group_id = item->group_id() ? item->group_id() : GenerateGroupId(pos);
   item->AttachToMenu(this, group_id);
+
   cppgc::AllocationHandle& heap = isolate->GetCppHeap()->GetAllocationHandle();
   if (pos == count) {
     Entry* entry = cppgc::MakeGarbageCollected<Entry>(heap, item, nullptr);
@@ -222,49 +226,26 @@ void Menu::InsertItem(v8::Isolate* isolate,
     last_entry_ = entry;
   } else if (pos == 0) {
     first_entry_ =
-        cppgc::MakeGarbageCollected<Entry>(heap, item, first_entry());
+        cppgc::MakeGarbageCollected<Entry>(heap, item, first_entry_.Get());
   } else {
-    Entry* before = first_entry();
+    Entry* before = first_entry_.Get();
     for (int i = 1; i < pos; ++i)
       before = before->next.Get();
     before->next =
         cppgc::MakeGarbageCollected<Entry>(heap, item, before->next.Get());
   }
-
+  model_->InsertItemAt(pos, item);
   items_.Reset();
-
-  if (!item->tool_tip().empty())
-    model_->SetToolTip(pos, item->tool_tip());
-  if (!item->role_name().empty())
-    model_->SetRole(pos, base::UTF8ToUTF16(item->role_name()));
-  if (item->type() == MenuItem::Type::kPalette)
-    model_->SetCustomType(pos, u"palette");
-  else if (item->type() == MenuItem::Type::kHeader)
-    model_->SetCustomType(pos, u"header");
-#if BUILDFLAG(IS_MAC)
-  if (const auto* badge = item->badge())
-    model_->SetBadge(pos, *badge);
-#endif
 }
-
-#if BUILDFLAG(IS_MAC)
-void Menu::UpdateBadge(MenuItem* item) {
-  const int index = GetIndexOfCommandId(item->command_id());
-  if (index != -1)
-    model_->SetBadge(index, item->badge() ? std::make_optional(*item->badge())
-                                          : std::nullopt);
-}
-#endif
 
 v8::Local<v8::Value> Menu::Items(v8::Isolate* isolate) {
   if (items_.IsEmpty()) {
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Array> items = v8::Array::New(isolate);
-    uint32_t i = 0;
-    for (Entry* e = first_entry(); e; e = e->next.Get()) {
+    for (uint32_t i = 0; i < GetItemCount(); ++i) {
       v8::Local<v8::Object> wrapper;
-      if (e->item->GetWrapper(isolate).ToLocal(&wrapper))
-        items->Set(context, i++, wrapper).Check();
+      if (ItemAt(i)->GetWrapper(isolate).ToLocal(&wrapper))
+        items->Set(context, i, wrapper).Check();
     }
     items_.Reset(isolate, items);
   }
@@ -280,9 +261,9 @@ v8::Local<v8::Value> Menu::GetMenuItemById(gin::Arguments* args) {
 
 v8::Local<v8::Value> Menu::FindItemById(v8::Isolate* isolate,
                                         v8::Local<v8::Value> id) {
-  for (Entry* e = first_entry(); e; e = e->next.Get()) {
+  for (size_t i = 0; i < GetItemCount(); ++i) {
     v8::Local<v8::Object> wrapper;
-    if (!e->item->GetWrapper(isolate).ToLocal(&wrapper))
+    if (!ItemAt(i)->GetWrapper(isolate).ToLocal(&wrapper))
       continue;
     v8::Local<v8::Value> item_id;
     if (!gin_helper::Dictionary(isolate, wrapper).Get("id", &item_id))
@@ -290,10 +271,9 @@ v8::Local<v8::Value> Menu::FindItemById(v8::Isolate* isolate,
     if (item_id->StrictEquals(id))
       return wrapper;
   }
-  for (Entry* e = first_entry(); e; e = e->next.Get()) {
-    if (e->item->submenu()) {
-      v8::Local<v8::Value> found =
-          e->item->submenu()->FindItemById(isolate, id);
+  for (size_t i = 0; i < GetItemCount(); ++i) {
+    if (Menu* submenu = ItemAt(i)->submenu()) {
+      v8::Local<v8::Value> found = submenu->FindItemById(isolate, id);
       if (!found->IsNull())
         return found;
     }
@@ -446,115 +426,15 @@ bool Menu::ApplicationMenuWasSet() {
   return g_application_menu_was_set;
 }
 
-bool Menu::IsCommandIdChecked(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item && item->IsChecked();
-}
-
-bool Menu::IsCommandIdEnabled(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item && item->IsEnabled();
-}
-
-std::u16string Menu::GetLabelForCommandId(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item ? item->label() : std::u16string();
-}
-
-std::u16string Menu::GetAccessibilityLabelForCommandId(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item ? item->accessibility_label() : std::u16string();
-}
-
-std::u16string Menu::GetSecondaryLabelForCommandId(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item ? item->sublabel() : std::u16string();
-}
-
-ui::ImageModel Menu::GetIconForCommandId(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item ? item->icon() : ui::ImageModel();
-}
-
-bool Menu::IsCommandIdVisible(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item && item->visible();
-}
-
-bool Menu::ShouldCommandIdWorkWhenHidden(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item && item->works_when_hidden();
-}
-
-bool Menu::GetAcceleratorForCommandIdWithParams(
-    int command_id,
-    bool use_default_accelerator,
-    ui::Accelerator* accelerator) const {
-  MenuItem* item = GetItem(command_id);
-  if (!item || !item->accelerator())
-    return false;
-  *accelerator = *item->accelerator();
-  return true;
-}
-
-bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
-  MenuItem* item = GetItem(command_id);
-  return item && item->register_accelerator();
-}
-
-#if BUILDFLAG(IS_MAC)
-bool Menu::GetSharingItemForCommandId(
-    int command_id,
-    ElectronMenuModel::SharingItem* out) const {
-  MenuItem* item = GetItem(command_id);
-  const ElectronMenuModel::SharingItem* sharing_item =
-      item ? item->GetSharingItem(JavascriptEnvironment::GetIsolate())
-           : nullptr;
-  if (!sharing_item)
-    return false;
-  *out = *sharing_item;
-  return true;
-}
-#endif
-
-void Menu::ExecuteCommand(int command_id, int flags) {
-  MenuItem* item = GetItem(command_id);
-  if (!item)
-    return;
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Object> wrapper;
-  if (!GetWrapper(isolate).ToLocal(&wrapper))
-    return;
-  node::CallbackScope callback_scope(isolate, wrapper, {0, 0});
-  item->Activate(BaseWindow::GetFocusedWindow(),
-                 WebContents::GetFocusedWebContents(), flags);
-}
-
 void Menu::ActivateForTesting(int command_id) {
-  if (MenuItem* item = GetItem(command_id)) {
-    item->Activate(BaseWindow::GetFocusedWindow(),
-                   WebContents::GetFocusedWebContents(), 0);
+  if (std::optional<size_t> index = model_->GetIndexOfCommandId(command_id)) {
+    ItemAt(*index)->Activate(BaseWindow::GetFocusedWindow(),
+                             WebContents::GetFocusedWebContents(), 0);
   }
 }
 
 void Menu::MenuWillShowForTesting() {
-  OnMenuWillShow(model_.get());
-}
-
-void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
-  // Ensure radio groups have at least one item selected.
-  for (const auto& [group_id, command_ids] : radio_groups_) {
-    bool any_checked = false;
-    MenuItem* first = nullptr;
-    ForEachInRadioGroup(group_id, [&](MenuItem* item) {
-      if (!first)
-        first = item;
-      any_checked = any_checked || item->checked_flag();
-    });
-    if (!any_checked && first)
-      first->SetCheckedForRadioGroup();
-  }
+  MenuWillShow();
 }
 
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
@@ -567,10 +447,6 @@ base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
 
 int Menu::GetIndexOfCommandId(int command_id) const {
   return model_->GetIndexOfCommandId(command_id).value_or(-1);
-}
-
-int Menu::GetItemCount() const {
-  return model_->GetItemCount();
 }
 
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {

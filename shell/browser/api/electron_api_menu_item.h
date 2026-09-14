@@ -35,7 +35,8 @@ struct Role;
 }
 
 class MenuItem final : public gin::Wrappable<MenuItem>,
-                       public gin_helper::Constructible<MenuItem> {
+                       public gin_helper::Constructible<MenuItem>,
+                       public ElectronMenuModel::Item {
  public:
   enum class Type {
     kNormal,
@@ -57,7 +58,6 @@ class MenuItem final : public gin::Wrappable<MenuItem>,
                               std::u16string label,
                               Menu* submenu);
   static MenuItem* FromV8(v8::Isolate* isolate, v8::Local<v8::Value> value);
-  static MenuItem* FromCommandId(int command_id);
 
   MenuItem();
   ~MenuItem() override;
@@ -88,17 +88,33 @@ class MenuItem final : public gin::Wrappable<MenuItem>,
   const std::optional<ui::Accelerator>& accelerator() const {
     return accelerator_;
   }
-  ui::ImageModel icon() const;
   int group_id() const { return group_id_; }
   Menu* submenu() const { return submenu_.Get(); }
   Menu* menu() const { return menu_.Get(); }
   bool checked_flag() const { return checked_; }
-  bool IsChecked() const;
-  bool IsEnabled() const;
+
+  // ElectronMenuModel::Item:
+  ui::MenuModel::ItemType GetType() const override;
+  int GetCommandId() const override;
+  std::u16string GetLabel() const override;
+  std::u16string GetSecondaryLabel() const override;
+  std::u16string GetToolTip() const override;
+  std::u16string GetAccessibilityLabel() const override;
+  std::u16string GetRole() const override;
+  std::u16string GetCustomType() const override;
+  ui::ImageModel GetIcon() const override;
+  bool GetAccelerator(ui::Accelerator* accelerator) const override;
+  bool ShouldRegisterAccelerator() const override;
+  bool WorksWhenHidden() const override;
+  bool IsChecked() const override;
+  bool IsEnabled() const override;
+  bool IsVisible() const override;
+  int GetGroupId() const override;
+  ElectronMenuModel* GetSubmenuModel() const override;
 #if BUILDFLAG(IS_MAC)
   // Re-read on each call: apps update the object in place.
-  const ElectronMenuModel::SharingItem* GetSharingItem(v8::Isolate* isolate);
-  const ElectronMenuModel::Badge* badge() const { return badge_.Get(); }
+  std::optional<ElectronMenuModel::SharingItem> GetSharingItem() override;
+  const ElectronMenuModel::Badge* GetBadge() const override;
 #endif
 
   void AttachToMenu(Menu* menu, int group_id);

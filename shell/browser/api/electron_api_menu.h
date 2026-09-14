@@ -18,7 +18,6 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
-#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "ui/base/models/image_model.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "v8/include/cppgc/garbage-collected.h"
@@ -99,10 +98,14 @@ class Menu : public gin::Wrappable<Menu>,
     cppgc::Member<MenuItem> item;
     cppgc::Member<Entry> next;
   };
-  Entry* first_entry() const { return first_entry_.Get(); }
-  MenuItem* GetItem(int command_id) const;
+  size_t GetItemCount() const;
+  MenuItem* ItemAt(size_t index) const;
   void ForEachInRadioGroup(int group_id,
                            base::FunctionRef<void(MenuItem*)> fn) const;
+
+  // ElectronMenuModel::Delegate:
+  void ActivatedAt(size_t index, int event_flags) override;
+  void MenuWillShow() override;
   // 0 <= pos <= count. Throws on |thrower|, if given, for an invalid item.
   void InsertItem(v8::Isolate* isolate,
                   int pos,
@@ -110,7 +113,6 @@ class Menu : public gin::Wrappable<Menu>,
                   gin_helper::ErrorThrower* thrower = nullptr);
   void AppendItem(v8::Isolate* isolate, MenuItem* item);
 #if BUILDFLAG(IS_MAC)
-  void UpdateBadge(MenuItem* item);
   v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
 #endif
 
@@ -125,7 +127,6 @@ class Menu : public gin::Wrappable<Menu>,
                                     v8::Local<v8::Value> id);
   v8::Local<v8::Value> Popup(gin::Arguments* args);
   void ClosePopup(gin::Arguments* args);
-  int GetItemCount() const;
   int GetIndexOfCommandId(int command_id) const;
   void ActivateForTesting(int command_id);
   void MenuWillShowForTesting();
@@ -142,29 +143,9 @@ class Menu : public gin::Wrappable<Menu>,
   // passed |callback| is called.
   base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
 
-  // ui::SimpleMenuModel::Delegate:
-  bool IsCommandIdChecked(int command_id) const override;
-  bool IsCommandIdEnabled(int command_id) const override;
-  bool IsCommandIdVisible(int command_id) const override;
-  std::u16string GetLabelForCommandId(int command_id) const override;
-  std::u16string GetAccessibilityLabelForCommandId(
-      int command_id) const override;
-  std::u16string GetSecondaryLabelForCommandId(int command_id) const override;
-  ui::ImageModel GetIconForCommandId(int command_id) const override;
-  bool ShouldCommandIdWorkWhenHidden(int command_id) const override;
-  bool GetAcceleratorForCommandIdWithParams(
-      int command_id,
-      bool use_default_accelerator,
-      ui::Accelerator* accelerator) const override;
-  bool ShouldRegisterAcceleratorForCommandId(int command_id) const override;
 #if BUILDFLAG(IS_MAC)
-  bool GetSharingItemForCommandId(
-      int command_id,
-      ElectronMenuModel::SharingItem* item) const override;
   virtual void SimulateSubmenuCloseSequenceForTesting();
 #endif
-  void ExecuteCommand(int command_id, int event_flags) override;
-  void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void PopupAt(BaseWindow* window,
                        std::optional<WebFrameMain*> frame,
@@ -185,10 +166,9 @@ class Menu : public gin::Wrappable<Menu>,
 
   std::unique_ptr<ElectronMenuModel> model_;
   cppgc::Member<Menu> parent_;
+  // Owns the items model_ refers to.
   cppgc::Member<Entry> first_entry_;
   cppgc::Member<Entry> last_entry_;
-  // Radio group id -> command ids of its items.
-  absl::flat_hash_map<int, std::vector<int>> radio_groups_;
   // menu.items, rebuilt after the item list changes.
   v8::TracedReference<v8::Array> items_;
 
