@@ -59,6 +59,8 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include "base/win/win_util.h"
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
@@ -286,6 +288,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, process_type);
+#if BUILDFLAG(IS_WIN)
+    // The sandbox job (JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION) starts
+    // children with SEM_NOGPFAULTERRORBOX, which keeps Windows Error Reporting
+    // from running the registered helper for crashes crashpad cannot catch
+    // in-process. Crashpad is installed now, so let WER see those.
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+#endif
   }
 #endif
 
