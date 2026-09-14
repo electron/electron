@@ -24,10 +24,10 @@ not corrupted on Windows.
 This should be upstreamed.
 
 diff --git a/content/browser/tracing/tracing_controller_impl.cc b/content/browser/tracing/tracing_controller_impl.cc
-index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d1c88cd06 100644
+index c5f2beca9cd20ce2f9e41eb2a32fbf74b1cc63f3..73de24675c3cb5c85c7f314a3c6e580a48d98ef4 100644
 --- a/content/browser/tracing/tracing_controller_impl.cc
 +++ b/content/browser/tracing/tracing_controller_impl.cc
-@@ -234,11 +234,15 @@ bool TracingControllerImpl::GetTrackEventDescriptor(
+@@ -230,11 +230,15 @@ bool TracingControllerImpl::GetTrackEventDescriptor(
  bool TracingControllerImpl::StartTracingImpl(
      const base::trace_event::TraceConfig& trace_config,
      StartTracingDoneCallback callback,
@@ -44,7 +44,7 @@ index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d
      // Do not allow updating trace config when process filter is not used.
      if (trace_config.process_filter_config().empty() ||
          trace_config_->process_filter_config().empty()) {
-@@ -262,9 +266,21 @@ bool TracingControllerImpl::StartTracingImpl(
+@@ -258,9 +262,21 @@ bool TracingControllerImpl::StartTracingImpl(
    ConnectToServiceIfNeeded();
  
    perfetto::TraceConfig perfetto_config =
@@ -68,7 +68,7 @@ index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d
    consumer_host_->EnableTracing(
        tracing_session_host_.BindNewPipeAndPassReceiver(),
        receiver_.BindNewPipeAndPassRemote(), std::move(perfetto_config),
-@@ -289,30 +305,40 @@ bool TracingControllerImpl::StopTracing(
+@@ -285,30 +301,40 @@ bool TracingControllerImpl::StopTracing(
  bool TracingControllerImpl::StopTracing(
      const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint,
      const std::string& agent_label) {
@@ -125,7 +125,7 @@ index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d
  
    // TODO(chiniforooshan): Is the return value used anywhere?
    return true;
-@@ -345,7 +371,21 @@ void TracingControllerImpl::OnTracingEnabled() {
+@@ -341,7 +367,21 @@ void TracingControllerImpl::OnTracingEnabled() {
      std::move(start_tracing_callback_).Run();
  }
  
@@ -148,7 +148,7 @@ index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d
  
  void TracingControllerImpl::OnTracingFailed() {
    CompleteFlush();
-@@ -360,6 +400,9 @@ void TracingControllerImpl::OnDataAvailable(base::span<const uint8_t> data) {
+@@ -356,6 +396,9 @@ void TracingControllerImpl::OnDataAvailable(base::span<const uint8_t> data) {
  }
  
  void TracingControllerImpl::CompleteFlush() {
@@ -158,7 +158,7 @@ index f12ba736a6ed96ab950bddb6d6dfe8c70fc26187..8d8b5b0a836af12b282fe0284ae35f2d
    if (trace_data_endpoint_)
      trace_data_endpoint_->ReceivedTraceFinalContents();
  
-@@ -368,6 +411,31 @@ void TracingControllerImpl::CompleteFlush() {
+@@ -364,6 +407,31 @@ void TracingControllerImpl::CompleteFlush() {
    drainer_ = nullptr;
    tracing_session_host_.reset();
    receiver_.reset();
