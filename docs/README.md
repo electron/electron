@@ -116,6 +116,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [inAppPurchase](api/in-app-purchase.md)
 * [ImageView](api/image-view.md)
 * [ipcMain](api/ipc-main.md)
+* [apiBridgeMain](api/api-bridge-main.md)
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)
 * [MessageChannelMain](api/message-channel-main.md)

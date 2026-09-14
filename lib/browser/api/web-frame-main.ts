@@ -3,12 +3,27 @@ import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { printToPDF } from '@electron/internal/browser/print-to-pdf';
 
 const { WebFrameMain, fromId, fromFrameToken } = process._linkedBinding('electron_browser_web_frame_main');
+const apiBridgeBinding = process._linkedBinding('electron_browser_api_bridge');
 
 Object.defineProperty(WebFrameMain.prototype, 'ipc', {
   get() {
     const ipc = new IpcMainImpl();
     Object.defineProperty(this, 'ipc', { value: ipc });
     return ipc;
+  }
+});
+
+Object.defineProperty(WebFrameMain.prototype, 'apiBridge', {
+  get() {
+    const frame = this as Electron.WebFrameMain;
+    const apiBridge: Electron.ApiBridgeFrameMain = {
+      pass: (name, api, options) => apiBridgeBinding.pass(frame, name, api, options, false),
+      passToIsolatedWorld: (name, api, options) => apiBridgeBinding.pass(frame, name, api, options, true),
+      revoke: (name) => apiBridgeBinding.revoke(frame, name, false),
+      revokeFromIsolatedWorld: (name) => apiBridgeBinding.revoke(frame, name, true)
+    };
+    Object.defineProperty(this, 'apiBridge', { value: apiBridge });
+    return apiBridge;
   }
 });
 

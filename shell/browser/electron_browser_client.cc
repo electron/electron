@@ -82,6 +82,7 @@
 #include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "shell/app/electron_crash_reporter_client.h"
+#include "shell/browser/api/electron_api_api_bridge.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -1720,6 +1721,17 @@ void ElectronBrowserClient::
               &render_frame_host));
     }
   }
+
+  // Any frame may be passed an apiBridge API; without one it has nothing to
+  // call.
+  associated_registry.AddInterface<mojom::ElectronApiBridgeHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<mojom::ElectronApiBridgeHost>
+                 receiver) {
+            api::api_bridge::BindHost(render_frame_host, std::move(receiver));
+          },
+          &render_frame_host));
 
   associated_registry.AddInterface<mojom::ElectronWebContentsUtility>(
       base::BindRepeating(

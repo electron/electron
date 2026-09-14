@@ -15,6 +15,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/api/electron_api_api_bridge_renderer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/preload_realm_context.h"
@@ -111,6 +112,10 @@ void ElectronSandboxedRendererClient::InitializeBindings(
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  // Before ElectronRenderFrameObserver. For a popup's first page both act on
+  // DidClearWindowObject, and observers are notified in the order they were
+  // added, so apiBridge APIs are there before the preload's first line.
+  new api::ApiBridgeRenderFrame(render_frame);
   new ElectronRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
 }

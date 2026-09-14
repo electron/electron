@@ -5,6 +5,7 @@ import * as deprecate from '@electron/internal/common/deprecate';
 import { net, type UtilityProcess } from 'electron/main';
 
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
+const apiBridgeBinding = process._linkedBinding('electron_browser_api_bridge');
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
 // Fake video window that activates the native system picker
@@ -121,6 +122,20 @@ Session.prototype.registerLocalAIHandler = function (handler: UtilityProcess | n
   // `ElectronInternal.UtilityProcessWrapper` before we call the C++ function
   return this._registerLocalAIHandler(handler !== null ? (handler as any)._unwrapHandle() : null);
 };
+
+Object.defineProperty(Session.prototype, 'apiBridge', {
+  get() {
+    const session = this as Electron.Session;
+    const apiBridge: Electron.ApiBridgeSession = {
+      pass: (name, api, options) => apiBridgeBinding.passToSession(session, name, api, options, false),
+      passToIsolatedWorld: (name, api, options) => apiBridgeBinding.passToSession(session, name, api, options, true),
+      revoke: (name) => apiBridgeBinding.revokeFromSession(session, name, false),
+      revokeFromIsolatedWorld: (name) => apiBridgeBinding.revokeFromSession(session, name, true)
+    };
+    Object.defineProperty(this, 'apiBridge', { value: apiBridge });
+    return apiBridge;
+  }
+});
 
 export default {
   fromPartition,
