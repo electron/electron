@@ -26,7 +26,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   struct SharingItem {
     SharingItem();
     SharingItem(SharingItem&&);
-    SharingItem(const SharingItem&) = delete;
+    SharingItem(const SharingItem&);
+    SharingItem& operator=(const SharingItem&);
+    SharingItem& operator=(SharingItem&&);
     ~SharingItem();
 
     std::optional<std::vector<std::string>> texts;
