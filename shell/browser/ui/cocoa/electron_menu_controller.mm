@@ -347,6 +347,37 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   return item;
 }
 
+// Renders the item's label with the requested system font variant, if any,
+// by setting attributedTitle from the item's current title. attributedTitle
+// takes display precedence over title, so it is explicitly cleared when no
+// variant is requested; that restores plain title rendering (and, on
+// macOS 14, the subtitle, which AppKit hides while attributedTitle is set).
+// Section headers are excluded since they carry their own system styling.
+- (void)applyFontTypeToMenuItem:(NSMenuItem*)item
+                      fromModel:(electron::ElectronMenuModel*)model
+                        atIndex:(NSInteger)index {
+  NSFont* font = nil;
+  if (model->GetCustomTypeAt(index) != u"header") {
+    const std::u16string fontType = model->GetFontTypeAt(index);
+    const CGFloat font_size = [NSFont menuFontOfSize:0].pointSize;
+    if (fontType == u"monospaced") {
+      font = [NSFont monospacedSystemFontOfSize:font_size
+                                         weight:NSFontWeightRegular];
+    } else if (fontType == u"monospacedDigit") {
+      font = [NSFont monospacedDigitSystemFontOfSize:font_size
+                                              weight:NSFontWeightRegular];
+    }
+  }
+
+  if (font) {
+    item.attributedTitle = [[NSAttributedString alloc]
+        initWithString:item.title
+            attributes:@{NSFontAttributeName : font}];
+  } else {
+    item.attributedTitle = nil;
+  }
+}
+
 - (NSMenuItem*)makeMenuItemForIndex:(NSInteger)index
                           fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
@@ -395,6 +426,8 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     if (model->GetBadgeAt(index, &badge))
       item.badge = CreateBadge(badge);
   }
+
+  [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -542,6 +575,9 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   item.title = label;
+  // Re-apply (or clear) the font variant so attributedTitle tracks both the
+  // updated label and any change to the item's fontType.
+  [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
   if (!accessibility_label16.empty()) {
     NSString* accessibility_label =
         base::SysUTF16ToNSString(accessibility_label16);

@@ -271,6 +271,10 @@ void Menu::SetToolTip(int index, const std::u16string& toolTip) {
   model_->SetToolTip(index, toolTip);
 }
 
+void Menu::SetFontType(int index, const std::u16string& fontType) {
+  model_->SetFontType(index, fontType);
+}
+
 void Menu::SetRole(int index, const std::u16string& role) {
   model_->SetRole(index, role);
 }
@@ -324,6 +328,7 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
       .SetMethod("setToolTip", &Menu::SetToolTip)
+      .SetMethod("setFontType", &Menu::SetFontType)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
 #if BUILDFLAG(IS_MAC)
