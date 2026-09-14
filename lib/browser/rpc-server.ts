@@ -4,8 +4,6 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import { webFrameMain } from 'electron/main';
 
-import * as path from 'path';
-
 // Implements window.close(). Only the top-level document may close its
 // window, as in the HTML spec; the renderer override is installed for the main
 // frame only, and the request is ignored here if it comes from anywhere else.
@@ -38,20 +36,6 @@ ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (e
 // electron_api_web_contents.cc and electron_browser_client.cc), not over
 // sync IPC. This handler is only used by non-sandboxed renderers, which read
 // their own preload files from disk and only need the path list.
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
-  if (event.type !== 'frame') {
-    throw new Error(`BROWSER_NONSANDBOX_LOAD: invalid event.type (${(event as any).type})`);
-  }
-  const session: Electron.Session = event.sender.session;
-  let preloadScripts = session.getPreloadScripts().filter((script) => script.type === 'frame');
-  const webPrefPreload = event.sender._getPreloadScript();
-  if (webPrefPreload) preloadScripts.push(webPrefPreload);
-  // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
-  // deprecated. The new API will prevent relative paths from being registered.
-  preloadScripts = preloadScripts.filter((script) => path.isAbsolute(script.filePath));
-  return { preloadPaths: preloadScripts.map((script) => script.filePath) };
-});
-
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
   if (event.type !== 'frame') return;
   event.sender?.emit('preload-error', event, preloadPath, error);
