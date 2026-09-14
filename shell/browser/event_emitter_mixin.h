@@ -13,6 +13,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/per_context_template_data.h"
 
 namespace gin_helper {
 
@@ -55,8 +56,9 @@ class EventEmitterMixin {
   EventEmitterMixin() = default;
 
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
-    gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &(static_cast<T*>(this)->kWrapperInfo);
+    auto* data = PerContextTemplateData::From(isolate->GetCurrentContext(),
+                                              wrapper_info);
 
     // DeprecatedWrapperInfo support will be removed as part of
     // https://github.com/electron/electron/issues/47922
@@ -64,11 +66,8 @@ class EventEmitterMixin {
         std::is_same_v<decltype(wrapper_info), gin::DeprecatedWrapperInfo*>;
 
     v8::Local<v8::FunctionTemplate> constructor;
-    if constexpr (is_deprecated_wrapper) {
-      constructor = data->DeprecatedGetFunctionTemplate(wrapper_info);
-    } else {
-      constructor = data->GetFunctionTemplate(wrapper_info);
-    }
+    if (data)
+      constructor = data->function_template.Get(isolate);
 
     const char* class_name = "";
     if constexpr (is_deprecated_wrapper) {
@@ -81,11 +80,8 @@ class EventEmitterMixin {
       constructor = v8::FunctionTemplate::New(isolate);
       constructor->SetClassName(gin::StringToV8(isolate, class_name));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
-      if constexpr (is_deprecated_wrapper) {
-        data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
-      } else {
-        data->SetFunctionTemplate(wrapper_info, constructor);
-      }
+      if (data)
+        data->function_template.Reset(isolate, constructor);
     }
     return gin::ObjectTemplateBuilder(isolate, class_name,
                                       constructor->InstanceTemplate());

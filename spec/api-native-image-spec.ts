@@ -86,6 +86,15 @@ describe('nativeImage module', () => {
   });
 
   describe('createEmpty()', () => {
+    it('reuses the named constructor and prototype across images', () => {
+      const first = nativeImage.createEmpty();
+      const second = nativeImage.createEmpty();
+
+      expect(first.constructor.name).to.equal('NativeImage');
+      expect(first.constructor).to.equal(second.constructor);
+      expect(Object.getPrototypeOf(first)).to.equal(Object.getPrototypeOf(second));
+    });
+
     it('returns an empty image', async () => {
       const empty = nativeImage.createEmpty();
       expect(empty.isEmpty()).to.be.true();
