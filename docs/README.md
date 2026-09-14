@@ -63,6 +63,7 @@ an issue:
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
   * [Automated Testing](tutorial/automated-testing.md)
+  * [Testing Widevine CDM](tutorial/testing-widevine-cdm.md)
   * [REPL](tutorial/repl.md)
 * [Distribution](tutorial/application-distribution.md)
   * [Code Signing](tutorial/code-signing.md)
