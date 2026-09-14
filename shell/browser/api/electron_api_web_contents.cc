@@ -29,6 +29,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/timer/elapsed_timer.h"
 #include "base/unguessable_token.h"
@@ -41,6 +42,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/input/input_constants.h"
+#include "components/input/input_router.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -3412,8 +3414,13 @@ v8::Local<v8::Promise> WebContents::SavePage(
     return handle;
   }
 
+  // SavePackage creates its download item synchronously; run it as its own
+  // task for the same reason as Session::CreateInterruptedDownload().
   auto* handler = new SavePageHandler{std::move(promise)};
-  handler->Handle(full_file_path, save_type, web_contents());
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&SavePageHandler::Handle, base::Unretained(handler),
+                     full_file_path, save_type, web_contents()->GetWeakPtr()));
 
   return handle;
 }
@@ -4053,6 +4060,12 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     return;
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
+  // Input is held back until the first frame after a navigation arrives;
+  // an explicitly sent event should not be dropped on that account.
+  input::InputRouter* input_router =
+      content::RenderWidgetHostImpl::From(rwh)->input_router();
+  if (!input_router->IsActive())
+    input_router->MakeActive();
   blink::WebInputEvent::Type type =
       gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
