@@ -292,7 +292,15 @@ describe('asar package', () => {
     });
 
     after(function () {
-      originalFs.rmSync(tmp, { recursive: true, force: true });
+      try {
+        originalFs.rmSync(tmp, { recursive: true, force: true });
+      } catch (error: any) {
+        // Every archive this suite has touched stays open for the rest of the
+        // process: the asar layer caches its Archive objects, and Archive opens
+        // the file without FILE_SHARE_DELETE. Windows will not delete an open
+        // file, so the directory can only go once this process has exited.
+        if (process.platform !== 'win32' || !['EBUSY', 'EPERM'].includes(error.code)) throw error;
+      }
     });
 
     describe('splitPath (native archive prefix detection)', function () {
