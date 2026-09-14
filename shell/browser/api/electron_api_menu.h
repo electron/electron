@@ -62,6 +62,11 @@ class Menu : public gin::Wrappable<Menu>,
 
   ElectronMenuModel* model() const { return model_.get(); }
 
+  // The template with the before/after/beforeGroupContaining/
+  // afterGroupContaining constraints applied and stray separators removed.
+  static v8::Local<v8::Value> SortTemplate(v8::Isolate* isolate,
+                                           v8::Local<v8::Value> tmpl);
+
  protected:
   // Remove this instance as an observer from the model. Called by derived
   // class destructors to ensure observer is removed before platform-specific

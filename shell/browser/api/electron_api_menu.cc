@@ -415,6 +415,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set("Menu", menu);
   gin_helper::Dictionary(isolate, menu)
       .SetMethod("_roleDefaults", &menu_roles::Defaults);
+  dict.SetMethod("sortTemplate", &Menu::SortTemplate);
   dict.SetMethod("getRoleDefaults", &GetRoleDefaults);
   dict.SetMethod("getRoleChecked", &GetRoleChecked);
   dict.SetMethod("executeRole", &ExecuteRole);
