@@ -450,6 +450,10 @@ const loggingEnabled = () => {
 };
 // Deprecation warnings for navigation related APIs.
 const canGoBackDeprecated = deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
+const selectBluetoothDeviceDeprecated = deprecate.warnOnce(
+  "webContents.on('select-bluetooth-device')",
+  "session.on('select-bluetooth-device')"
+);
 WebContents.prototype.canGoBack = function () {
   canGoBackDeprecated();
   return this._canGoBack();
@@ -772,8 +776,13 @@ WebContents.prototype._init = function () {
   });
 
   this.on('select-bluetooth-device', (event, devices, callback) => {
-    if (this.listenerCount('select-bluetooth-device') === 1) {
-      // Cancel it if there are no handlers
+    // Cancel straight away if the app has no chooser handler on either the
+    // session or this webContents (this built-in listener is the only one),
+    // rather than waiting for discovery to finish.
+    if (
+      this.listenerCount('select-bluetooth-device') === 1 &&
+      this.session.listenerCount('select-bluetooth-device') === 0
+    ) {
       event.preventDefault();
       callback('');
     }
@@ -839,6 +848,10 @@ WebContents.prototype._init = function () {
   this.on('newListener' as any, (eventName: string | symbol) => {
     if (eventName === 'console-message' && !this.isDestroyed()) {
       this._setConsoleMessageObserved(true);
+    }
+    // The first listener is the built-in canceller above; warn for app listeners.
+    if (eventName === 'select-bluetooth-device' && this.listenerCount('select-bluetooth-device') >= 1) {
+      selectBluetoothDeviceDeprecated();
     }
   });
   this.on('removeListener' as any, (eventName: string | symbol) => {

@@ -82,6 +82,43 @@ Observable changes for existing apps:
   `usb-device-revoked` receive the requesting frame as an additional argument
   or `details.frame`. These are additive.
 
+### Deprecated: `select-bluetooth-device` on `webContents`
+
+The `select-bluetooth-device` event on `webContents` is deprecated in favour of
+the [`select-bluetooth-device`](api/session.md#event-select-bluetooth-device) and
+[`bluetooth-device-added`](api/session.md#event-bluetooth-device-added) events on
+`session`, which match the other device choosers (`details.deviceList`,
+`details.frame`, `callback`). The `webContents` event still fires.
+
+```js
+// Deprecated
+win.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  event.preventDefault()
+  callback(deviceList[0]?.deviceId ?? '')
+})
+// Replace with
+win.webContents.session.on('select-bluetooth-device', (event, details, callback) => {
+  event.preventDefault()
+  callback(details.deviceList[0]?.deviceId ?? '')
+})
+```
+
+### Behavior Changed: `select-bluetooth-device` no longer auto-selects a device
+
+If an app has a `select-bluetooth-device` listener that does not call
+`event.preventDefault()`, a `navigator.bluetooth.requestDevice()` call is now
+cancelled once discovery finishes. Previously Electron selected the first
+discovered device on the app's behalf in that case. Apps with no listener at
+all are unaffected (the request was, and still is, cancelled immediately).
+The `webContents` event also receives the requesting `frame` as a trailing
+argument.
+
+`session.setPermissionCheckHandler` is now consulted with the new `bluetooth`
+permission for the requesting frame on every Web Bluetooth call. A check
+handler that denies permissions it does not recognise will therefore turn Web
+Bluetooth off (`navigator.bluetooth.getAvailability()` resolves `false` and
+`requestDevice()` rejects) until it allows `bluetooth`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
