@@ -444,6 +444,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
+  // As above but null unless DevTools (managed or external) are open, i.e.
+  // what `devToolsWebContents` is non-null for.
+  content::WebContents* GetOpenDevToolsWebContents() const;
 
   InspectableWebContents* inspectable_web_contents() const {
     return inspectable_web_contents_.get();

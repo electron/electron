@@ -314,6 +314,20 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
+    _linkedBinding(name: 'electron_browser_menu'): {
+      Menu: typeof Electron.Menu;
+      setApplicationMenu(menu: Electron.Menu | null): void;
+      sendActionToFirstResponder(action: string): void;
+      getRoleDefaults(role: string): {
+        label: string;
+        accelerator?: string;
+        registerAccelerator: boolean;
+        computesChecked: boolean;
+        submenu?: Electron.MenuItemConstructorOptions[];
+      } | null;
+      getRoleChecked(role: string): boolean;
+      executeRole(role: unknown, focusedWindow: unknown, focusedWebContents: unknown): boolean;
+    };
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
     };

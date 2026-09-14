@@ -13,9 +13,10 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 
 /* oxlint-disable-next-line no-restricted-imports */
-import { roleList } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+
+const roleList: Record<string, { label: string; accelerator?: string }> = Menu._roleDefaults();
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];

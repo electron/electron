@@ -7,6 +7,8 @@
 #include <utility>
 
 #include "shell/browser/api/electron_api_base_window.h"
+#include "shell/browser/api/electron_api_menu_roles.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/javascript_environment.h"
@@ -357,13 +359,65 @@ namespace {
 
 using electron::api::Menu;
 
+namespace menu_roles = electron::api::menu_roles;
+
+// For lib/browser/api/menu-item.ts.
+v8::Local<v8::Value> GetRoleDefaults(v8::Isolate* isolate,
+                                     const std::string& id) {
+  const menu_roles::Role* role = menu_roles::Find(id);
+  if (!role)
+    return v8::Null(isolate);
+  gin_helper::Dictionary defaults = gin::Dictionary::CreateEmpty(isolate);
+  defaults.Set("label", role->Label());
+  if (*role->accelerator)
+    defaults.Set("accelerator", std::string_view(role->accelerator));
+  defaults.Set("registerAccelerator", role->register_accelerator);
+  defaults.Set("computesChecked", role->computes_checked());
+  v8::Local<v8::Value> submenu = menu_roles::DefaultSubmenu(isolate, *role);
+  if (!submenu.IsEmpty())
+    defaults.Set("submenu", submenu);
+  return gin::ConvertToV8(isolate, defaults);
+}
+
+bool GetRoleChecked(const std::string& id) {
+  const menu_roles::Role* role = menu_roles::Find(id);
+  return role && menu_roles::IsChecked(*role);
+}
+
+bool ExecuteRole(v8::Isolate* isolate,
+                 v8::Local<v8::Value> id,
+                 v8::Local<v8::Value> focused_window,
+                 v8::Local<v8::Value> focused_web_contents) {
+  std::string role_id;
+  if (!id->IsString() || !gin::ConvertFromV8(isolate, id, &role_id))
+    return false;
+  const menu_roles::Role* role = menu_roles::Find(role_id);
+  if (!role)
+    return false;
+  electron::api::WebContents* web_contents = nullptr;
+  if (gin_helper::IsValidWrappable(focused_web_contents,
+                                   &electron::api::WebContents::kWrapperInfo)) {
+    gin::ConvertFromV8(isolate, focused_web_contents, &web_contents);
+  }
+  return menu_roles::Execute(
+      *role, electron::api::BaseWindow::FromValue(isolate, focused_window),
+      web_contents);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("Menu", Menu::GetConstructor(isolate, context, &Menu::kWrapperInfo));
+  v8::Local<v8::Function> menu =
+      Menu::GetConstructor(isolate, context, &Menu::kWrapperInfo);
+  dict.Set("Menu", menu);
+  gin_helper::Dictionary(isolate, menu)
+      .SetMethod("_roleDefaults", &menu_roles::Defaults);
+  dict.SetMethod("getRoleDefaults", &GetRoleDefaults);
+  dict.SetMethod("getRoleChecked", &GetRoleChecked);
+  dict.SetMethod("executeRole", &ExecuteRole);
 #if BUILDFLAG(IS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

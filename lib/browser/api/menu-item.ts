@@ -1,6 +1,6 @@
-import * as roles from '@electron/internal/browser/api/menu-item-roles';
-
 import { Menu, BaseWindow, WebContents, KeyboardEvent } from 'electron/main';
+
+const { getRoleDefaults, getRoleChecked, executeRole } = process._linkedBinding('electron_browser_menu');
 
 let nextCommandId = 0;
 
@@ -40,7 +40,8 @@ const MenuItem = function (this: any, options: any) {
   if (typeof this.role === 'string' || this.role instanceof String) {
     this.role = this.role.toLowerCase();
   }
-  this.submenu = this.submenu || roles.getDefaultSubmenu(this.role);
+  const role = typeof this.role === 'string' ? getRoleDefaults(this.role) : null;
+  this.submenu = this.submenu || role?.submenu;
   if (this.submenu != null && this.submenu.constructor !== Menu) {
     this.submenu = Menu.buildFromTemplate(this.submenu);
   }
@@ -51,13 +52,13 @@ const MenuItem = function (this: any, options: any) {
     throw new Error('Invalid submenu');
   }
 
-  this.overrideReadOnlyProperty('type', roles.getDefaultType(this.role));
+  this.overrideReadOnlyProperty('type', role?.computesChecked ? 'checkbox' : 'normal');
   this.overrideReadOnlyProperty('role');
-  this.overrideReadOnlyProperty('accelerator', roles.getDefaultAccelerator(this.role));
+  this.overrideReadOnlyProperty('accelerator', role?.accelerator);
   this.overrideReadOnlyProperty('submenu');
 
   this.overrideProperty('icon');
-  this.overrideProperty('label', roles.getDefaultLabel(this.role));
+  this.overrideProperty('label', role?.label ?? '');
   this.overrideProperty('accessibilityLabel', '');
   this.overrideProperty('sublabel', '');
   this.overrideProperty('toolTip', '');
@@ -65,7 +66,7 @@ const MenuItem = function (this: any, options: any) {
   this.overrideProperty('visible', true);
   this.overrideProperty('checked', false);
   this.overrideProperty('acceleratorWorksWhenHidden', true);
-  this.overrideProperty('registerAccelerator', roles.shouldRegisterAccelerator(this.role));
+  this.overrideProperty('registerAccelerator', role ? role.registerAccelerator : true);
 
   if (process.platform === 'darwin') {
     validateBadge(options.badge);
@@ -103,11 +104,11 @@ const MenuItem = function (this: any, options: any) {
   const click = options.click;
   this.click = (event: KeyboardEvent, focusedWindow: BaseWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.
-    if (!roles.shouldOverrideCheckStatus(this.role) && (this.type === 'checkbox' || this.type === 'radio')) {
+    if (!role?.computesChecked && (this.type === 'checkbox' || this.type === 'radio')) {
       this.checked = !this.checked;
     }
 
-    if (!roles.execute(this.role, focusedWindow, focusedWebContents)) {
+    if (!executeRole(this.role, focusedWindow, focusedWebContents)) {
       if (typeof click === 'function') {
         click(this, focusedWindow, event);
       } else if (typeof this.selector === 'string' && process.platform === 'darwin') {
@@ -120,12 +121,12 @@ const MenuItem = function (this: any, options: any) {
 MenuItem.types = ['normal', 'separator', 'submenu', 'checkbox', 'radio', 'header', 'palette'];
 
 MenuItem.prototype.getDefaultRoleAccelerator = function () {
-  return roles.getDefaultAccelerator(this.role);
+  return typeof this.role === 'string' ? getRoleDefaults(this.role)?.accelerator : undefined;
 };
 
 MenuItem.prototype.getCheckStatus = function () {
-  if (!roles.shouldOverrideCheckStatus(this.role)) return this.checked;
-  return roles.getCheckStatus(this.role);
+  if (typeof this.role === 'string' && getRoleDefaults(this.role)?.computesChecked) return getRoleChecked(this.role);
+  return this.checked;
 };
 
 MenuItem.prototype.overrideProperty = function (name: string, defaultValue: any = null) {
