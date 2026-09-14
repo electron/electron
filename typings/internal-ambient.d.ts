@@ -318,6 +318,9 @@ declare namespace NodeJS {
       Menu: typeof Electron.Menu;
       setApplicationMenu(menu: Electron.Menu | null): void;
       sendActionToFirstResponder(action: string): void;
+      sortTemplate(
+        template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]
+      ): (Electron.MenuItemConstructorOptions | Electron.MenuItem)[];
       getRoleDefaults(role: string): {
         label: string;
         accelerator?: string;

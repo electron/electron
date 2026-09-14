@@ -623,7 +623,6 @@ auto_filenames = {
     "lib/browser/api/in-app-purchase.ts",
     "lib/browser/api/ipc-main.ts",
     "lib/browser/api/menu-item.ts",
-    "lib/browser/api/menu-utils.ts",
     "lib/browser/api/menu.ts",
     "lib/browser/api/message-channel.ts",
     "lib/browser/api/module-list.ts",

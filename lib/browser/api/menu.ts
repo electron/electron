@@ -1,4 +1,3 @@
-import { sortMenuItems } from '@electron/internal/browser/api/menu-utils';
 import { setApplicationMenuWasSet } from '@electron/internal/browser/default-menu';
 
 import { BaseWindow, MenuItem, webContents, Menu as MenuType, MenuItemConstructorOptions } from 'electron/main';
@@ -233,15 +232,12 @@ Menu.buildFromTemplate = function (template) {
     throw new TypeError('Invalid template for MenuItem: must have at least one of label, role or type');
   }
 
-  const sorted = sortTemplate(template);
-  const filtered = removeExtraSeparators(sorted);
-
   const menu = new Menu();
-  for (const item of filtered) {
+  for (const item of bindings.sortTemplate(template)) {
     if (item instanceof MenuItem) {
       menu.append(item);
     } else {
-      menu.append(new MenuItem(item));
+      menu.append(new MenuItem(item as MenuItemConstructorOptions));
     }
   }
 
@@ -260,16 +256,6 @@ function areValidTemplateItems(template: (MenuItemConstructorOptions | MenuItem)
   );
 }
 
-function sortTemplate(template: (MenuItemConstructorOptions | MenuItem)[]) {
-  const sorted = sortMenuItems(template);
-  for (const item of sorted) {
-    if (Array.isArray(item.submenu)) {
-      item.submenu = sortTemplate(item.submenu);
-    }
-  }
-  return sorted;
-}
-
 // Search between separators to find a radio menu item and return its group id
 function generateGroupId(items: (MenuItemConstructorOptions | MenuItem)[], pos: number) {
   if (pos > 0) {
@@ -285,22 +271,6 @@ function generateGroupId(items: (MenuItemConstructorOptions | MenuItem)[], pos: 
   }
   groupIdIndex += 1;
   return groupIdIndex;
-}
-
-function removeExtraSeparators(items: (MenuItemConstructorOptions | MenuItem)[]) {
-  // fold adjacent separators together
-  let ret = items.filter((e, idx, arr) => {
-    if (e.visible === false) return true;
-    return e.type !== 'separator' || idx === 0 || arr[idx - 1].type !== 'separator';
-  });
-
-  // remove edge separators
-  ret = ret.filter((e, idx, arr) => {
-    if (e.visible === false) return true;
-    return e.type !== 'separator' || (idx !== 0 && idx !== arr.length - 1);
-  });
-
-  return ret;
 }
 
 function insertItemByType(this: MenuType, item: MenuItem, pos: number) {
