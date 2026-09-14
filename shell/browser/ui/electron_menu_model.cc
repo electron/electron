@@ -11,6 +11,11 @@ namespace electron {
 #if BUILDFLAG(IS_MAC)
 ElectronMenuModel::SharingItem::SharingItem() = default;
 ElectronMenuModel::SharingItem::SharingItem(SharingItem&&) = default;
+ElectronMenuModel::SharingItem::SharingItem(const SharingItem&) = default;
+ElectronMenuModel::SharingItem& ElectronMenuModel::SharingItem::operator=(
+    const SharingItem&) = default;
+ElectronMenuModel::SharingItem& ElectronMenuModel::SharingItem::operator=(
+    SharingItem&&) = default;
 ElectronMenuModel::SharingItem::~SharingItem() = default;
 
 ElectronMenuModel::Badge::Badge() = default;

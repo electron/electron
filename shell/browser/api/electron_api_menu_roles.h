@@ -14,6 +14,7 @@
 
 namespace electron::api {
 class BaseWindow;
+class Menu;
 class WebContents;
 }  // namespace electron::api
 
@@ -67,9 +68,8 @@ const Role* Find(std::string_view id);
 // { [role]: { label, accelerator? } }, for tests.
 v8::Local<v8::Value> Defaults(v8::Isolate* isolate);
 
-// A template for appMenu, fileMenu, editMenu, viewMenu, windowMenu,
-// shareMenu; empty otherwise.
-v8::Local<v8::Value> DefaultSubmenu(v8::Isolate* isolate, const Role& role);
+// appMenu, fileMenu, editMenu, viewMenu, windowMenu, shareMenu.
+Menu* DefaultSubmenu(v8::Isolate* isolate, const Role& role);
 
 bool IsChecked(const Role& role);
 // The enabled state for roles that follow the focused window's abilities.

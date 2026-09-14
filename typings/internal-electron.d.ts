@@ -180,23 +180,8 @@ declare namespace Electron {
   }
 
   interface Menu {
-    _init(): void;
-    _isCommandIdChecked(id: string): boolean;
-    _isCommandIdEnabled(id: string): boolean;
-    _shouldCommandIdWorkWhenHidden(id: string): boolean;
-    _isCommandIdVisible(id: string): boolean;
-    _getLabelForCommandId(id: string): string;
-    _getAccessibilityLabelForCommandId(id: string): string;
-    _getSecondaryLabelForCommandId(id: string): string;
-    _getIconForCommandId(id: string): string | Electron.NativeImage | null;
-    _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
-    _shouldRegisterAcceleratorForCommandId(id: string): boolean;
-    _getSharingItemForCommandId(id: string): SharingItem | null;
-    _callMenuWillShow(): void;
-    _executeCommand(event: KeyboardEvent, id: number): void;
+    _activate(commandId: number): void;
     _menuWillShow(): void;
-    commandsMap: Record<string, MenuItem>;
-    groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
     getIndexOfCommandId(commandId: number): number;
     popupAt(
@@ -209,27 +194,12 @@ declare namespace Electron {
       callback: () => void
     ): void;
     closePopupAt(id: number): void;
-    setSublabel(index: number, label: string): void;
-    setToolTip(index: number, tooltip: string): void;
-    setIcon(index: number, image: string | NativeImage): void;
-    setRole(index: number, role: string): void;
-    setCustomType(index: number, customType: string): void;
-    setBadge(index: number, badge: MenuItemBadge | null): void;
-    insertItem(index: number, commandId: number, label: string): void;
-    insertCheckItem(index: number, commandId: number, label: string): void;
-    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
-    insertSeparator(index: number): void;
-    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
-    delegate?: any;
     _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {
-    overrideReadOnlyProperty(property: string, value: any): void;
-    groupId: number;
-    getDefaultRoleAccelerator(): Accelerator | undefined;
-    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
+    getDefaultRoleAccelerator(): Accelerator | undefined;
   }
 
   interface ReplyChannel {
