@@ -765,21 +765,54 @@ bool BaseWindow::IsFocusable() const {
   return window_->IsFocusable();
 }
 
+// static
+BaseWindow* BaseWindow::GetFocusedWindow() {
+  for (BaseWindow* window : GetAllNative()) {
+    if (window->window() && window->IsFocused())
+      return window;
+  }
+  return nullptr;
+}
+
+// static
+BaseWindow* BaseWindow::FromValue(v8::Isolate* isolate,
+                                  v8::Local<v8::Value> value) {
+  if (value.IsEmpty() || !value->IsObject())
+    return nullptr;
+  for (BaseWindow* window : GetAllNative()) {
+    if (window->window() && window->GetWrapper() == value)
+      return window;
+  }
+  return nullptr;
+}
+
+// static
+bool BaseWindow::IsLive(const BaseWindow* window) {
+  for (BaseWindow* live : GetAllNative()) {
+    if (live == window)
+      return live->window() != nullptr;
+  }
+  return false;
+}
+
+void BaseWindow::SetMenuNatively(Menu* menu) {
+  // We only want to update the menu if the menu has a non-zero item count,
+  // or we risk crashes.
+  if (menu->model()->GetItemCount() == 0) {
+    RemoveMenu();
+  } else {
+    window_->SetMenu(menu->model());
+  }
+  menu_ = menu;
+}
+
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   Menu* menu = nullptr;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && menu) {
-    // We only want to update the menu if the menu has a non-zero item count,
-    // or we risk crashes.
-    if (menu->model()->GetItemCount() == 0) {
-      RemoveMenu();
-    } else {
-      window_->SetMenu(menu->model());
-    }
-
-    menu_ = menu;
+    SetMenuNatively(menu);
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -1436,6 +1469,7 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
+  constructor.SetMethod("getFocusedWindow", &BaseWindow::GetFocusedWindow);
   constructor.SetMethod("clearPersistedState",
                         &BaseWindow::ClearPersistedState);
 
