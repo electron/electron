@@ -37,10 +37,8 @@ const { kUsePromises } = binding;
 const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 
 const getOrCreateArchive = (archivePath: string) => {
-  const isCached = cachedArchives.has(archivePath);
-  if (isCached) {
-    return cachedArchives.get(archivePath)!;
-  }
+  const cached = cachedArchives.get(archivePath);
+  if (cached !== undefined) return cached;
 
   try {
     const newArchive = new asar.Archive(archivePath);
@@ -71,23 +69,137 @@ const { codes: errorCodes } = __non_webpack_require__('internal/errors') as type
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
 const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
 
+type SplitPathResult = { isAsar: false } | { isAsar: true; asarPath: string; filePath: string };
+
+const NOT_ASAR: SplitPathResult = Object.freeze({ isAsar: <const>false });
+
+const isSeparatorCode = process.platform === 'win32' ? (c: number) => c === 47 || c === 92 : (c: number) => c === 47;
+
+// End offset of the last path component that ends in ".asar" (any case), i.e.
+// the deepest candidate for being the archive file, or -1. Native
+// GetAsarArchivePath() only ever treats a component as an archive if it ends
+// this way, so nothing after this point can change its answer.
+const findArchivePrefixEnd = (p: string): number => {
+  const length = p.length;
+  // The extension is nearly always spelled in lower case; look for that
+  // literally first and only fall back to a case-folding scan when it is not.
+  for (let i = p.lastIndexOf('.asar'); i >= 0; i = p.lastIndexOf('.asar', i - 1)) {
+    const end = i + 5;
+    if (end === length || isSeparatorCode(p.charCodeAt(end))) return end;
+    if (i === 0) break;
+  }
+  for (let dot = p.lastIndexOf('.'); dot >= 0; dot = p.lastIndexOf('.', dot - 1)) {
+    const end = dot + 5;
+    if (
+      end <= length &&
+      (end === length || isSeparatorCode(p.charCodeAt(end))) &&
+      (p.charCodeAt(dot + 1) | 0x20) === 0x61 /* a */ &&
+      (p.charCodeAt(dot + 2) | 0x20) === 0x73 /* s */ &&
+      (p.charCodeAt(dot + 3) | 0x20) === 0x61 /* a */ &&
+      (p.charCodeAt(dot + 4) | 0x20) === 0x72 /* r */
+    ) {
+      return end;
+    }
+    if (dot === 0) break;
+  }
+  return -1;
+};
+
+// Already-normalized POSIX absolute path: no empty, "." or ".." components.
+// Anything else (and everything on Windows) still goes through
+// path.normalize() so the strings handed to the native side and used as cache
+// keys are the same ones the old implementation produced.
+const needsNormalizeRe = process.platform === 'win32' ? null : /\/\/|(?:^|\/)\.\.?(?:\/|$)/;
+
+// For every distinct "<...>/x.asar" prefix seen, what native splitPath() made
+// of it: either not an archive at all (false), or the archive path plus the
+// part of the prefix that lies inside the archive (normally ""). The native
+// walk inspects every component of the prefix and caches its own directory
+// probes forever, so remembering its verdict per prefix loses nothing and
+// turns the common call into a Map lookup and two slices.
+type ArchivePrefixEntry = false | { asarPath: string; innerPrefix: string };
+const archivePrefixCache = new Map<string, ArchivePrefixEntry>();
+const kArchivePrefixCacheLimit = 4096;
+// Nearly every app has exactly one archive, so the previous answer is checked
+// with a startsWith() before paying for a slice and a Map hash of the prefix.
+let lastPrefix = '';
+let lastPrefixEntry: ArchivePrefixEntry = false;
+
+const splitPathSlow = (archivePath: string, prefixEnd: number): SplitPathResult => {
+  let entry: ArchivePrefixEntry | undefined;
+  if (prefixEnd === lastPrefix.length && archivePath.startsWith(lastPrefix)) {
+    entry = lastPrefixEntry;
+  } else {
+    const prefix = archivePath.slice(0, prefixEnd);
+    entry = archivePrefixCache.get(prefix);
+    if (entry === undefined) {
+      const native = asar.splitPath(prefix);
+      entry = native.isAsar ? { asarPath: native.asarPath, innerPrefix: native.filePath } : false;
+      if (archivePrefixCache.size >= kArchivePrefixCacheLimit) archivePrefixCache.clear();
+      archivePrefixCache.set(prefix, entry);
+    }
+    lastPrefix = prefix;
+    lastPrefixEntry = entry;
+  }
+  if (entry === false) return NOT_ASAR;
+
+  // Skip the separator(s) after the prefix and drop trailing ones, as the
+  // native tail builder does.
+  let start = prefixEnd;
+  let end = archivePath.length;
+  while (start < end && isSeparatorCode(archivePath.charCodeAt(start))) start++;
+  while (end > start && isSeparatorCode(archivePath.charCodeAt(end - 1))) end--;
+  const tail = start < end ? archivePath.slice(start, end) : '';
+  const filePath = entry.innerPrefix ? (tail ? entry.innerPrefix + path.sep + tail : entry.innerPrefix) : tail;
+  return { isAsar: true, asarPath: entry.asarPath, filePath };
+};
+
 // Separate asar package's path from full path.
-const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
+const splitPath = (archivePathOrBuffer: string | Buffer | URL): SplitPathResult => {
   // Shortcut for disabled asar.
-  if (isAsarDisabled()) return { isAsar: <const>false };
+  if (isAsarDisabled()) return NOT_ASAR;
 
-  // Check for a bad argument type.
   let archivePath = archivePathOrBuffer;
-  if (Buffer.isBuffer(archivePathOrBuffer)) {
-    archivePath = archivePathOrBuffer.toString();
+  if (typeof archivePath !== 'string') {
+    // Check for a bad argument type.
+    if (Buffer.isBuffer(archivePathOrBuffer)) {
+      archivePath = archivePathOrBuffer.toString();
+    } else if (archivePath instanceof NodeURL) {
+      archivePath = getValidatedPath(archivePath);
+    }
+    if (typeof archivePath !== 'string') return NOT_ASAR;
   }
-  if (archivePath instanceof NodeURL) {
-    archivePath = getValidatedPath(archivePath);
-  }
-  if (typeof archivePath !== 'string') return { isAsar: <const>false };
-  if (!asarRe.test(archivePath)) return { isAsar: <const>false };
+  if (!asarRe.test(archivePath)) return NOT_ASAR;
 
-  return asar.splitPath(path.normalize(archivePath));
+  if (needsNormalizeRe === null || archivePath.charCodeAt(0) !== 47 || needsNormalizeRe.test(archivePath)) {
+    archivePath = path.normalize(archivePath);
+  }
+  const prefixEnd = findArchivePrefixEnd(archivePath);
+  if (prefixEnd < 0) return NOT_ASAR;
+  return splitPathSlow(archivePath, prefixEnd);
+};
+
+// splitPath() for a string the module loader produced: already a string,
+// already absolute and normalized (path.resolve() output), so the type checks
+// and the normalization probe are skipped.
+const splitResolvedPath = (archivePath: string): SplitPathResult => {
+  if (isAsarDisabled() || !asarRe.test(archivePath)) return NOT_ASAR;
+  if (needsNormalizeRe === null) archivePath = path.normalize(archivePath);
+  const prefixEnd = findArchivePrefixEnd(archivePath);
+  if (prefixEnd < 0) return NOT_ASAR;
+  return splitPathSlow(archivePath, prefixEnd);
+};
+
+// readdir(withFileTypes) for a directory inside an archive: one native call
+// that returns every child's name and type, turned into node Dirents whose
+// parentPath is the path the caller passed.
+const readAsarDirents = (archive: NodeJS.AsarArchive, filePath: string, parentPath: string): Dirent[] | false => {
+  const listing = archive.readdirWithTypes(filePath);
+  if (!listing) return false;
+  const { 0: names, 1: types } = listing;
+  const dirents: Dirent[] = new Array(names.length);
+  for (let i = 0; i < names.length; i++) dirents[i] = getDirent(parentPath, names[i], types[i])!;
+  return dirents;
 };
 
 // The on-disk location of an entry that was left outside of the archive
@@ -147,36 +259,58 @@ const kExecuteMode = 0o111;
 // Permissions follow the usual defaults (0644 files, 0755 directories and
 // executables, 0777 symlinks) so that copies of these entries made with the
 // reported mode remain usable.
-function makeStatArray(type: AsarFileType, size: number, ino: number, useBigint: boolean, executable = false) {
+//
+// The constant fields are written once into module-level scratch arrays (the
+// same trick node's own binding uses with `statValues`); a call only stores
+// the four that vary. `fillStatArray` hands back the shared scratch array, so
+// its result must be consumed synchronously (getStatsFromBinding copies the
+// values out); `makeStatArray` returns a private copy for results that are
+// delivered later through a request object.
+const kStatFields = 18;
+const statScratch = new Float64Array(kStatFields);
+const bigintStatScratch = new BigInt64Array(kStatFields);
+statScratch[0] = 1; // dev
+statScratch[2] = 1; // nlink
+statScratch[3] = uid;
+statScratch[4] = gid;
+statScratch[6] = 4096; // blksize
+for (let i = 10; i < kStatFields; i += 2) {
+  statScratch[i] = fakeTimeSec; // a/m/c/birthtime
+  statScratch[i + 1] = fakeTimeNsec;
+}
+for (let i = 0; i < kStatFields; i++) bigintStatScratch[i] = BigInt(statScratch[i]);
+
+function statMode(type: AsarFileType, executable: boolean) {
   let mode = kReadOnlyMode | fileTypeToMode.get(type)!;
   if (executable || type !== AsarFileType.kFile) mode |= kExecuteMode;
   if (type === AsarFileType.kLink) mode |= 0o022;
-  const values = [
-    1, // dev
-    mode,
-    1, // nlink
-    uid,
-    gid,
-    0, // rdev
-    4096, // blksize
-    ino,
-    size,
-    Math.ceil(size / 512), // blocks (512-byte units)
-    fakeTimeSec,
-    fakeTimeNsec, // atime
-    fakeTimeSec,
-    fakeTimeNsec, // mtime
-    fakeTimeSec,
-    fakeTimeNsec, // ctime
-    fakeTimeSec,
-    fakeTimeNsec // birthtime
-  ];
-  return useBigint ? new BigInt64Array(values.map(BigInt)) : new Float64Array(values);
+  return mode;
+}
+
+function fillStatArray(type: AsarFileType, size: number, ino: number, useBigint: boolean, executable = false) {
+  const mode = statMode(type, executable);
+  const blocks = Math.ceil(size / 512); // 512-byte units
+  if (useBigint) {
+    bigintStatScratch[1] = BigInt(mode);
+    bigintStatScratch[7] = BigInt(ino);
+    bigintStatScratch[8] = BigInt(size);
+    bigintStatScratch[9] = BigInt(blocks);
+    return bigintStatScratch;
+  }
+  statScratch[1] = mode;
+  statScratch[7] = ino;
+  statScratch[8] = size;
+  statScratch[9] = blocks;
+  return statScratch;
+}
+
+function makeStatArray(type: AsarFileType, size: number, ino: number, useBigint: boolean, executable = false) {
+  return fillStatArray(type, size, ino, useBigint, executable).slice();
 }
 
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat, options?: any) {
   const useBigint = Boolean(options && typeof options === 'object' && options.bigint);
-  return getStatsFromBinding(makeStatArray(stats.type, stats.size, ++nextInode, useBigint, stats.executable));
+  return getStatsFromBinding(fillStatArray(stats.type, stats.size, ++nextInode, useBigint, stats.executable));
 };
 
 const enum AsarError {
@@ -816,8 +950,11 @@ function openAsarEntry(
 // Override fs APIs.
 export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const logFDs = new Map<string, number>();
+  // Read once: process.env goes through node's env interceptor (getenv under
+  // a lock) and this is consulted on every read of a packed file.
+  const logAsarReads = Boolean(process.env.ELECTRON_LOG_ASAR_READS);
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
-    if (!process.env.ELECTRON_LOG_ASAR_READS) return;
+    if (!logAsarReads) return;
     if (!logFDs.has(asarPath)) {
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
       const logPath = path.join((require('os') as typeof os).tmpdir(), logFilename);
@@ -957,6 +1094,20 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   fs.promises.stat = util.promisify(fs.stat);
 
+  // The on-disk real path of an archive file, per archive path. An archive is
+  // held open (and its parsed header reused) for the life of the process once
+  // it is in `cachedArchives`, so where its own path resolves to is treated as
+  // equally fixed instead of being re-resolved through the real filesystem on
+  // every realpath() of an entry inside it -- the module loader does one per
+  // file it loads. Only successful lookups of archives that opened are kept.
+  const archiveRealPaths = new Map<string, string>();
+  const encodeRealpathResult = (result: string, options: any) => {
+    const encoding = !options ? null : typeof options === 'string' ? options : options.encoding;
+    if (!encoding || encoding === 'utf8' || encoding === 'utf-8') return result;
+    const buffer = Buffer.from(result);
+    return encoding === 'buffer' ? buffer : buffer.toString(encoding);
+  };
+
   const wrapRealpathSync = function (realpathSync: Function) {
     return function (this: any, pathArgument: string, options: any) {
       const pathInfo = splitPath(pathArgument);
@@ -973,7 +1124,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
       }
 
-      return path.join(realpathSync(asarPath, options), fileRealPath);
+      let archiveRealPath = archiveRealPaths.get(asarPath);
+      if (archiveRealPath === undefined) {
+        archiveRealPath = String(realpathSync(asarPath));
+        archiveRealPaths.set(asarPath, archiveRealPath);
+      }
+      return encodeRealpathResult(path.join(archiveRealPath, fileRealPath), options);
     };
   };
 
@@ -1006,10 +1162,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         return;
       }
 
-      realpath(asarPath, options, (error: Error | null, archiveRealPath: string) => {
+      const cachedRealPath = archiveRealPaths.get(asarPath);
+      if (cachedRealPath !== undefined) {
+        nextTick(callback, [null, encodeRealpathResult(path.join(cachedRealPath, fileRealPath), options)]);
+        return;
+      }
+
+      realpath(asarPath, (error: Error | null, archiveRealPath: string) => {
         if (error === null) {
-          const fullPath = path.join(archiveRealPath, fileRealPath);
-          callback(null, fullPath);
+          archiveRealPaths.set(asarPath, archiveRealPath);
+          callback(null, encodeRealpathResult(path.join(archiveRealPath, fileRealPath), options));
         } else {
           callback(error);
         }
@@ -1382,7 +1544,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
       const pathInfo = splitPath(pathArg);
       if (pathInfo.isAsar) {
-        let readdirResult;
         const { asarPath, filePath } = pathInfo;
 
         const archive = getOrCreateArchive(asarPath);
@@ -1392,22 +1553,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           return;
         }
 
-        readdirResult = archive.readdir(filePath);
+        // Same shape as the native binding: names, or [names, types].
+        const readdirResult = context.withFileTypes ? archive.readdirWithTypes(filePath) : archive.readdir(filePath);
         if (!readdirResult) {
           const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
           nextTick(callback, [error]);
           return;
-        }
-
-        // If we're in an asar dir, we need to ensure the result is in the same format as the
-        // native call to readdir withFileTypes i.e. an array of arrays.
-        if (context.withFileTypes) {
-          readdirResult = [
-            [...readdirResult],
-            readdirResult.map((p: string) => {
-              return statTypeForReaddir(path.join(pathArg, p));
-            })
-          ];
         }
 
         processReaddirResult({
@@ -1457,26 +1608,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    const files = archive.readdir(filePath);
+    const files = options?.withFileTypes ? readAsarDirents(archive, filePath, pathArgument) : archive.readdir(filePath);
     if (!files) {
       const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
       nextTick(callback!, [error]);
-      return;
-    }
-
-    if (options?.withFileTypes) {
-      const dirents = [];
-      for (const file of files) {
-        const childPath = path.join(filePath, file);
-        const stats = archive.stat(childPath);
-        if (!stats) {
-          const error = createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
-          nextTick(callback!, [error]);
-          return;
-        }
-        dirents.push(getDirent(pathArgument, file, stats.type));
-      }
-      nextTick(callback!, [null, dirents]);
       return;
     }
 
@@ -1505,22 +1640,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return Promise.reject(createError(AsarError.INVALID_ARCHIVE, { asarPath }));
     }
 
-    const files = archive.readdir(filePath);
+    const files = options?.withFileTypes ? readAsarDirents(archive, filePath, pathArgument) : archive.readdir(filePath);
     if (!files) {
       return Promise.reject(createError(AsarError.NOT_FOUND, { asarPath, filePath }));
-    }
-
-    if (options?.withFileTypes) {
-      const dirents = [];
-      for (const file of files) {
-        const childPath = path.join(filePath, file);
-        const stats = archive.stat(childPath);
-        if (!stats) {
-          throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
-        }
-        dirents.push(getDirent(pathArgument, file, stats.type));
-      }
-      return Promise.resolve(dirents);
     }
 
     return Promise.resolve(files);
@@ -1548,22 +1670,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
     }
 
-    const files = archive.readdir(filePath);
+    const files = options?.withFileTypes ? readAsarDirents(archive, filePath, pathArgument) : archive.readdir(filePath);
     if (!files) {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
-    }
-
-    if (options?.withFileTypes) {
-      const dirents = [];
-      for (const file of files) {
-        const childPath = path.join(filePath, file);
-        const stats = archive.stat(childPath);
-        if (!stats) {
-          throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
-        }
-        dirents.push(getDirent(pathArgument, file, stats.type));
-      }
-      return dirents;
     }
 
     return files;
@@ -1590,10 +1699,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const kModuleStatCacheLimit = 16 * 1024;
   const { internalModuleStat } = binding;
   internalBinding('fs').internalModuleStat = (pathArgument: string) => {
-    const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
+    // Only archive paths are ever cached, so a hit needs no splitPath().
     const cached = moduleStatCache.get(pathArgument);
-    if (cached !== undefined) return cached;
+    if (cached !== undefined && !isAsarDisabled()) return cached;
+    const pathInfo = splitResolvedPath(pathArgument);
+    if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
     const { asarPath, filePath } = pathInfo;
 
     // -ENOENT; not cached, the archive may appear later.
@@ -1619,20 +1729,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (pathInfo.isAsar) {
       const archive = getOrCreateArchive(pathInfo.asarPath);
       if (!archive) return result;
-      const files = archive.readdir(pathInfo.filePath);
+      // Same shape as the native binding: names, or [names, types].
+      const files = withFileTypes ? archive.readdirWithTypes(pathInfo.filePath) : archive.readdir(pathInfo.filePath);
       if (!files) return result;
-
-      // If we're in an asar dir, we need to ensure the result is in the same format as the
-      // native call to readdir withFileTypes i.e. an array of arrays.
       initialItem = files;
-      if (withFileTypes) {
-        initialItem = [
-          [...initialItem],
-          initialItem.map((p: string) => {
-            return statTypeForReaddir(path.join(originalPath, p));
-          })
-        ];
-      }
     } else {
       initialItem = await binding.readdir(
         path.toNamespacedPath(originalPath),
@@ -1657,15 +1757,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
             if (info.isAsar) {
               const archive = getOrCreateArchive(info.asarPath);
               if (!archive) continue;
-              const files = archive.readdir(info.filePath);
-              if (!files) continue;
-
-              readdirResult = [
-                [...files],
-                files.map((p: string) => {
-                  return statTypeForReaddir(path.join(direntPath, p));
-                })
-              ];
+              readdirResult = archive.readdirWithTypes(info.filePath);
+              if (!readdirResult) continue;
             } else {
               readdirResult = await binding.readdir(direntPath, options!.encoding, true, kUsePromises);
             }
@@ -1687,7 +1780,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
             let item = [];
             if (subPathInfo.isAsar) {
               const archive = getOrCreateArchive(subPathInfo.asarPath);
-              if (!archive) return;
+              if (!archive) return result;
               const files = archive.readdir(subPathInfo.filePath);
               if (!files) return result;
               item = files;
@@ -1721,18 +1814,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         const archive = getOrCreateArchive(asarPath);
         if (!archive) return;
 
-        readdirResult = archive.readdir(filePath);
+        // Same shape as the native binding: names, or [names, types].
+        readdirResult = context.withFileTypes ? archive.readdirWithTypes(filePath) : archive.readdir(filePath);
         if (!readdirResult) return;
-        // If we're in an asar dir, we need to ensure the result is in the same format as the
-        // native call to readdir withFileTypes i.e. an array of arrays.
-        if (context.withFileTypes) {
-          readdirResult = [
-            [...readdirResult],
-            readdirResult.map((p: string) => {
-              return statTypeForReaddir(path.join(pathArg, p));
-            })
-          ];
-        }
       } else {
         readdirResult = binding.readdir(path.toNamespacedPath(pathArg), context.encoding, context.withFileTypes);
       }
@@ -2258,17 +2342,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return completeRequest(req, createError(AsarError.NOT_DIR, { asarPath, filePath, syscall: 'opendir' }));
     }
 
-    const names = archive.readdir(filePath);
-    if (!names) {
+    const listing = archive.readdirWithTypes(filePath);
+    if (!listing) {
       return completeRequest(req, createError(AsarError.NOT_FOUND, { asarPath, filePath, syscall: 'opendir' }));
     }
 
-    const entries: [string, number][] = [];
-    for (const name of names) {
-      const childStats = archive.stat(path.join(filePath, name));
-      if (!childStats) continue;
-      entries.push([name, childStats.type]);
-    }
+    const { 0: names, 1: types } = listing;
+    const entries: [string, number][] = new Array(names.length);
+    for (let i = 0; i < names.length; i++) entries[i] = [names[i], types[i]];
     return completeRequest(req, null, new AsarDirHandle(entries));
   }
 
@@ -2453,31 +2534,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     overrideAPISync(childProcess, 'execFileSync');
   };
 
-  const asarReady = new WeakSet();
-
-  // Lazily override the child_process APIs only when child_process is
-  // fetched the first time.  We will eagerly override the child_process APIs
-  // when this env var is set so that stack traces generated inside node unit
-  // tests will match. This env var will only slow things down in users apps
-  // and should not be used.
-  if (process.env.ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING) {
-    overrideChildProcess(require('child_process'));
-  } else {
-    const originalModuleLoad = Module._load;
-    Module._load = function (this: any, request: string) {
-      const loadResult = originalModuleLoad.apply(this, arguments as any);
-      if (request === 'child_process' || request === 'node:child_process') {
-        if (!asarReady.has(loadResult)) {
-          asarReady.add(loadResult);
-          // Just to make it obvious what we are dealing with here
-          const childProcess = loadResult;
-
-          overrideChildProcess(childProcess);
-        }
-      }
-      return loadResult;
-    };
-  }
+  // `lib/node/init.ts` requires child_process straight after this runs (to
+  // hook `fork`), so there is nothing to gain from deferring this behind a
+  // Module._load hook -- and such a hook taxes every require() and is never
+  // reached by `import ... from 'node:child_process'`.
+  overrideChildProcess(require('child_process'));
 };
 
 function getDirents(p: string, { 0: names, 1: types }: any[][]): Dirent[] {
