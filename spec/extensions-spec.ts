@@ -684,15 +684,14 @@ describe('chrome extensions', () => {
             return;
           }
 
-          const showLastPanel = () => {
-            // this is executed in the devtools context, where UI is a global
-            const { EUI } = window as any;
-            const instance = EUI.InspectorView.InspectorView.instance();
+          // Executed in the DevTools page.
+          const showLastPanel = `(async () => {
+            const { InspectorView } = await import('./ui/legacy/legacy.js');
+            const instance = InspectorView.InspectorView.instance();
             const tabs = instance.tabbedPane.tabs;
-            const lastPanelId = tabs[tabs.length - 1].id;
-            instance.showPanel(lastPanelId);
-          };
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
+            instance.showPanel(tabs[tabs.length - 1].id);
+          })()`;
+          devToolsWebContents.executeJavaScript(showLastPanel, false).then(() => {
             showPanelTimeoutId = setTimeout(show, 100);
           });
         };

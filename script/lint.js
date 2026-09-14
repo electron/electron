@@ -569,7 +569,7 @@ async function findFiles(args, linter) {
 
   for (const ignoreRoot of linter.ignoreRoots || []) {
     const ignorePath = path.join(ELECTRON_ROOT, ignoreRoot);
-    if (!fs.existsSync(ignorePath)) continue;
+    if (!fs.existsSync(ignorePath) || !fs.statSync(ignorePath).isDirectory()) continue;
 
     const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test));
     filenames = filenames.filter((fileName) => !ignoreFiles.has(fileName));

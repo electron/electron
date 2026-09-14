@@ -20,7 +20,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "sandbox/policy/features.h"
 #include "services/network/public/cpp/features.h"
-#include "third_party/blink/public/common/features.h"
 #include "ui/accessibility/ax_features.mojom-features.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -70,13 +69,7 @@ void InitializeFeatureList() {
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
       // Needed until we rework some of our logic and checks to enable this
       // properly.
-      std::string(",") + network::features::kLocalNetworkAccessChecks.name +
-      // See 4803165: Enable suppressing input event dispatch while
-      // paint-holding. Needed to prevent spurious input event handling
-      // failures.
-      // TODO(codebytere): Figure out how to properly wait for paint-hold.
-      std::string(",") +
-      blink::features::kDropInputEventsWhilePaintHolding.name;
+      std::string(",") + network::features::kLocalNetworkAccessChecks.name;
 
 #if BUILDFLAG(IS_WIN)
   // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
