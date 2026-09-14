@@ -31,20 +31,37 @@ using ArchiveMap = std::map<base::FilePath, std::shared_ptr<Archive>>;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
-bool IsDirectoryCached(const base::FilePath& path) {
+// Whether |path| is an existing directory. The answer is memoised only for
+// paths that exist: a "*.asar" path probed before anything is created there
+// (the win32 mkdir wrapper does exactly that) must not be pinned as "not a
+// directory" for the rest of the process.
+bool IsDirectoryCached(const base::FilePath& path, bool* exists = nullptr) {
   static base::NoDestructor<std::map<base::FilePath, bool>>
       s_is_directory_cache;
   static base::NoDestructor<base::Lock> lock;
 
-  base::AutoLock auto_lock(*lock);
-  auto& is_directory_cache = *s_is_directory_cache;
-
-  auto it = is_directory_cache.find(path);
-  if (it != is_directory_cache.end()) {
-    return it->second;
+  {
+    base::AutoLock auto_lock(*lock);
+    auto it = s_is_directory_cache->find(path);
+    if (it != s_is_directory_cache->end()) {
+      if (exists)
+        *exists = true;
+      return it->second;
+    }
   }
-  electron::ScopedAllowBlockingForElectron allow_blocking;
-  return is_directory_cache[path] = base::DirectoryExists(path);
+  base::File::Info info;
+  bool found;
+  {
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    found = base::GetFileInfo(path, &info);
+  }
+  if (exists)
+    *exists = found;
+  if (!found)
+    return false;
+  base::AutoLock auto_lock(*lock);
+  s_is_directory_cache->emplace(path, info.is_directory);
+  return info.is_directory;
 }
 
 ArchiveMap& GetArchiveCache() {
@@ -168,10 +185,18 @@ bool IsArchivePrefix(std::string_view prefix) {
   }
   const base::FilePath as_path = base::FilePath::FromUTF8Unsafe(prefix);
   // Same test GetAsarArchivePath() applies to each candidate component.
-  const bool is_archive = as_path.BaseName().MatchesExtension(kAsarExtension) &&
-                          !IsDirectoryCached(as_path);
-  base::AutoLock auto_lock(*lock);
-  cache->emplace(std::string(prefix), is_archive);
+  if (!as_path.BaseName().MatchesExtension(kAsarExtension)) {
+    base::AutoLock auto_lock(*lock);
+    cache->emplace(std::string(prefix), false);
+    return false;
+  }
+  bool exists = false;
+  const bool is_archive = !IsDirectoryCached(as_path, &exists);
+  // Only remember answers backed by something on disk (see IsDirectoryCached).
+  if (exists) {
+    base::AutoLock auto_lock(*lock);
+    cache->emplace(std::string(prefix), is_archive);
+  }
   return is_archive;
 }
 
