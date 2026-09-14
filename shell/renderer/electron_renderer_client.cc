@@ -19,13 +19,13 @@
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/web_content_settings_client.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
-#include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
-#include "third_party/blink/renderer/core/workers/worklet_global_scope.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worker_or_worklet_global_scope.h"  // nogncheck
 
 namespace electron {
 
@@ -221,6 +221,28 @@ void ElectronRendererClient::WillReleaseScriptContext(
 
 namespace {
 
+// Carries the creating frame's nodeIntegrationInWorker decision to the
+// worker thread. Blink hands the client from CreateWorkerContentSettingsClient
+// to dedicated workers and off-main-thread worklets, and Clone()s it for
+// nested workers, so in-process windows with different webPreferences each
+// pass their own value down.
+class WorkerContentSettingsClient final
+    : public blink::WebContentSettingsClient {
+ public:
+  explicit WorkerContentSettingsClient(bool node_integration)
+      : node_integration_(node_integration) {}
+
+  bool node_integration() const { return node_integration_; }
+
+  // blink::WebContentSettingsClient
+  std::unique_ptr<blink::WebContentSettingsClient> Clone() override {
+    return std::make_unique<WorkerContentSettingsClient>(node_integration_);
+  }
+
+ private:
+  const bool node_integration_;
+};
+
 bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
   // We do not create a Node.js environment in service or shared workers
   // owing to an inability to customize sandbox policies in these workers
@@ -232,28 +254,30 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
       ec->IsMainThreadWorkletGlobalScope())
     return false;
 
-  // Off-main-thread worklets (AudioWorklet, PaintWorklet, AnimationWorklet,
-  // SharedStorageWorklet) have their own dedicated worker thread but do not
-  // derive from WorkerGlobalScope, so check for them separately and read the
-  // flag from WorkletGlobalScope, which copies it out of the same
-  // WorkerSettings as dedicated workers do.
-  if (auto* wlgs = blink::DynamicTo<blink::WorkletGlobalScope>(ec))
-    return wlgs->NodeIntegrationInWorker();
-
-  auto* wgs = blink::DynamicTo<blink::WorkerGlobalScope>(ec);
-  if (!wgs)
+  auto* scope = blink::DynamicTo<blink::WorkerOrWorkletGlobalScope>(ec);
+  if (!scope)
     return false;
 
-  // Read the nodeIntegrationInWorker preference from the worker's settings,
-  // which were copied from the initiating frame's WebPreferences at worker
-  // creation time. This ensures that in-process child windows with different
-  // webPreferences get the correct per-frame value rather than a process-wide
-  // value.
-  auto* worker_settings = wgs->GetWorkerSettings();
-  return worker_settings && worker_settings->NodeIntegrationInWorker();
+  // Dedicated workers and worklets only ever get their content settings
+  // client from CreateWorkerContentSettingsClient() below or its Clone().
+  auto* client =
+      static_cast<WorkerContentSettingsClient*>(scope->ContentSettingsClient());
+  return client && client->node_integration();
 }
 
 }  // namespace
+
+std::unique_ptr<blink::WebContentSettingsClient>
+ElectronRendererClient::CreateWorkerContentSettingsClient(
+    content::RenderFrame* render_frame) {
+  // Only frames that themselves get Node integration (the main frame, or any
+  // frame when nodeIntegrationInSubFrames is on) pass it on to their workers.
+  const blink::web_pref::WebPreferences& prefs =
+      render_frame->GetBlinkPreferences();
+  return std::make_unique<WorkerContentSettingsClient>(
+      prefs.node_integration_in_worker &&
+      (render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames));
+}
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
