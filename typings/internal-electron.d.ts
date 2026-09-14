@@ -175,6 +175,10 @@ declare namespace Electron {
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
+  namespace Menu {
+    function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
+  }
+
   interface Menu {
     _init(): void;
     _isCommandIdChecked(id: string): boolean;
