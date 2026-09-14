@@ -2,9 +2,13 @@ import { ProtocolRequest, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
 
-import type { ReadableStreamDefaultReader } from 'stream/web';
+import type { ReadableStream as ReadableStreamType, ReadableStreamDefaultReader } from 'stream/web';
+
+// `stream/web` evaluates all of Node's WHATWG streams; requiring it lazily
+// keeps that off the startup path of apps that never call protocol.handle().
+type ReadableStream<R = any> = ReadableStreamType<R>;
+const webStreams = () => require('stream/web') as typeof import('stream/web');
 
 // Global protocol APIs.
 const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } =
@@ -17,7 +21,7 @@ const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(s
 
 function makeStreamFromPipe(pipe: any): ReadableStream<Uint8Array> {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
-  return new ReadableStream({
+  return new (webStreams().ReadableStream)({
     async pull(controller) {
       try {
         const rv = await pipe.read(buf);
@@ -62,7 +66,7 @@ function convertToRequestBody(uploadData: ProtocolRequest['uploadData']): Reques
   // Use Node's web stream types explicitly to avoid DOM lib vs Node lib structural mismatches.
   // Generic <Uint8Array> ensures reader.read() returns value?: Uint8Array consistent with enqueue.
   let current: ReadableStreamDefaultReader<Uint8Array> | null = null;
-  return new ReadableStream<Uint8Array>({
+  return new (webStreams().ReadableStream)<Uint8Array>({
     async pull(controller) {
       if (current) {
         const { done, value } = await current.read();
@@ -114,7 +118,7 @@ function validateResponse(res: Response) {
 
   if (exists('body')) {
     if (typeof res.body !== 'object') return false;
-    if (res.body !== null && !(res.body instanceof ReadableStream)) return false;
+    if (res.body !== null && !(res.body instanceof webStreams().ReadableStream)) return false;
   }
 
   return true;
@@ -163,7 +167,7 @@ Protocol.prototype.handle = function (
         method: preq.method,
         referrer: preq.referrer,
         body,
-        duplex: body instanceof ReadableStream ? 'half' : undefined
+        duplex: body instanceof webStreams().ReadableStream ? 'half' : undefined
       } as any);
       // The origin that issued the request, if web content did; not something
       // a standard Request can carry, so it is attached as an own property.
