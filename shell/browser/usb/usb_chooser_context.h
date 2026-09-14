@@ -29,6 +29,10 @@ template <typename T>
 class PendingRemote;
 }  // namespace mojo
 
+namespace content {
+class RenderFrameHost;
+}  // namespace content
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -52,6 +56,9 @@ class UsbChooserContext : public KeyedService,
     virtual void OnDeviceAdded(const device::mojom::UsbDeviceInfo&) {}
     virtual void OnDeviceRemoved(const device::mojom::UsbDeviceInfo&) {}
     virtual void OnDeviceManagerConnectionError() {}
+    // Called after |origin| lost permission to a device, so that open
+    // connections held by documents of that origin can be re-validated.
+    virtual void OnPermissionRevoked(const url::Origin& origin) {}
 
     // Called when the BrowserContext is shutting down. Observers must remove
     // themselves before returning.
@@ -66,19 +73,25 @@ class UsbChooserContext : public KeyedService,
                              const device::mojom::UsbDeviceInfo& device_info);
 
   // Checks if |origin| has access to a device with |device_info|.
-  bool HasDevicePermission(const url::Origin& origin,
-                           const device::mojom::UsbDeviceInfo& device_info);
+  bool HasDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::UsbDeviceInfo& device_info,
+      content::RenderFrameHost* render_frame_host = nullptr);
 
   // Revokes |origin| access to the USB device ordered by website.
   void RevokeDevicePermissionWebInitiated(
       const url::Origin& origin,
-      const device::mojom::UsbDeviceInfo& device);
+      const device::mojom::UsbDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
 
   void AddObserver(DeviceObserver* observer);
   void RemoveObserver(DeviceObserver* observer);
 
   // Forward UsbDeviceManager methods.
   void GetDevices(device::mojom::UsbDeviceManager::GetDevicesCallback callback);
+
+  void SetDeviceManagerForTesting(
+      mojo::PendingRemote<device::mojom::UsbDeviceManager> manager);
   void GetDevice(
       const std::string& guid,
       base::span<const uint8_t> blocked_interface_classes,
@@ -98,9 +111,11 @@ class UsbChooserContext : public KeyedService,
   void OnDeviceAdded(device::mojom::UsbDeviceInfoPtr device_info) override;
   void OnDeviceRemoved(device::mojom::UsbDeviceInfoPtr device_info) override;
 
-  void RevokeObjectPermissionInternal(const url::Origin& origin,
-                                      const base::Value& object,
-                                      bool revoked_by_website);
+  void RevokeObjectPermissionInternal(
+      const url::Origin& origin,
+      const base::Value& object,
+      content::RenderFrameHost* render_frame_host,
+      bool revoked_by_website);
 
   void OnDeviceManagerConnectionError();
   void EnsureConnectionWithDeviceManager();
@@ -110,6 +125,10 @@ class UsbChooserContext : public KeyedService,
   base::queue<device::mojom::UsbDeviceManager::GetDevicesCallback>
       pending_get_devices_requests_;
 
+  void NotifyPermissionRevoked(const url::Origin& origin);
+
+  // Devices (by guid) each origin picked in a chooser during this session; see
+  // HidChooserContext::ephemeral_devices_.
   std::map<url::Origin, absl::flat_hash_set<std::string>> ephemeral_devices_;
   std::map<std::string, device::mojom::UsbDeviceInfoPtr> devices_;
 

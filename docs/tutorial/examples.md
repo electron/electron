@@ -29,6 +29,7 @@ guide!).
 | :-------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | [Message ports][]       | This guide provides some examples of how you might use MessagePorts in your app to communicate different processes. |
 | [Device access][]       | Learn how to access the device hardware (Bluetooth, USB, Serial).                                                   |
+| [Web permissions][]     | How permission and device requests are attributed to frames, and how that differs from Chrome.                       |
 | [Keyboard shortcuts][]  | Configure local and global keyboard shortcuts for your Electron application.                                        |
 | [Multithreading][]      | With Web Workers, it is possible to run JavaScript in OS-level threads                                              |
 | [Offscreen rendering][] | Offscreen rendering lets you obtain the content of a BrowserWindow in a bitmap, so it can be rendered anywhere.     |
@@ -45,6 +46,7 @@ You can find the full list of "How to?" in the sidebar.
 [fiddle]: https://www.electronjs.org/fiddle
 [Message ports]: ./message-ports.md
 [Device access]: ./devices.md
+[Web permissions]: ./permissions.md
 [Keyboard shortcuts]: ./keyboard-shortcuts.md
 [Multithreading]: ./multithreading.md
 [Offscreen rendering]: ./offscreen-rendering.md

@@ -25,6 +25,7 @@
 #include "shell/browser/serial/serial_chooser_context_factory.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -118,13 +119,15 @@ SerialChooserController::SerialChooserController(
     content::SerialChooser::Callback callback,
     content::WebContents* web_contents,
     base::WeakPtr<ElectronSerialDelegate> serial_delegate)
-    : web_contents_{web_contents ? web_contents->GetWeakPtr()
+    : WebContentsObserver(web_contents),
+      web_contents_{web_contents ? web_contents->GetWeakPtr()
                                  : base::WeakPtr<content::WebContents>()},
       filters_(std::move(filters)),
       allowed_bluetooth_service_class_ids_(
           std::move(allowed_bluetooth_service_class_ids)),
       callback_(std::move(callback)),
-      initiator_document_(render_frame_host->GetWeakDocumentPtr()) {
+      initiator_document_(render_frame_host->GetWeakDocumentPtr()),
+      render_frame_host_id_(render_frame_host->GetGlobalId()) {
   origin_ = render_frame_host->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
@@ -184,8 +187,8 @@ void SerialChooserController::OnPortAdded(
 
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
-    session->Get()->Emit("serial-port-added", port.Clone(),
-                         web_contents_.get());
+    session->Get()->Emit("serial-port-added", port.Clone(), web_contents_.get(),
+                         initiator_document_.AsRenderFrameHostIfValid());
   }
 }
 
@@ -197,7 +200,8 @@ void SerialChooserController::OnPortRemoved(
     gin::WeakCell<api::Session>* session = GetSession();
     if (session && session->Get()) {
       session->Get()->Emit("serial-port-removed", port.Clone(),
-                           web_contents_.get());
+                           web_contents_.get(),
+                           initiator_document_.AsRenderFrameHostIfValid());
     }
     ports_.erase(it);
   }
@@ -205,6 +209,16 @@ void SerialChooserController::OnPortRemoved(
 
 void SerialChooserController::OnPortManagerConnectionError() {
   observation_.Reset();
+}
+
+void SerialChooserController::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  if (render_frame_host->GetGlobalId() != render_frame_host_id_)
+    return;
+  if (serial_delegate_) {
+    serial_delegate_->DeleteControllerForFrame(render_frame_host);
+    // |this| is now deleted.
+  }
 }
 
 void SerialChooserController::OnSerialChooserContextShutdown() {
@@ -244,10 +258,15 @@ void SerialChooserController::OnGetDevices(
   bool prevent_default = false;
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
+    auto weak_this = weak_factory_.GetWeakPtr();
     prevent_default = session->Get()->Emit(
         "select-serial-port", ports_, web_contents_.get(),
         base::BindRepeating(&SerialChooserController::OnDeviceChosen,
-                            weak_factory_.GetWeakPtr()));
+                            weak_factory_.GetWeakPtr()),
+        initiator_document_.AsRenderFrameHostIfValid());
+    // The handler may destroy the requesting frame, which deletes |this|.
+    if (!weak_this)
+      return;
   }
   if (!prevent_default) {
     RunCallback(/*port=*/nullptr);
