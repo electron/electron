@@ -2165,6 +2165,19 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->MaybeSetupMojoConnection();
+
+  // A Node.js renderer used to fetch its preload list with a sync IPC, which
+  // also worked for a script context created on the frame's initial empty
+  // document (first navigation still pending or cancelled, then e.g.
+  // webFrameMain.executeJavaScript()). Push the list at frame creation so
+  // that case still sees it; the payload is only the paths, so the extra
+  // message per frame is cheap. ReadyToCommitNavigation refreshes it.
+  if (!renderer_startup_data::IsFrameInSandboxedRenderer(render_frame_host)) {
+    const bool allow_subframes =
+        web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
+    if (!render_frame_host->GetParent() || allow_subframes)
+      SendRendererStartupData(render_frame_host);
+  }
 }
 
 void WebContents::OnBackgroundColorChanged() {
@@ -2497,19 +2510,18 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
-// Pushes preload contents + process.env + helperExecPath over an associated
-// channel ordered before CommitNavigation, so the renderer never has to ask.
+// Pushes the preload list (plus, for sandboxed frames, preload contents,
+// process.env and helperExecPath) over an associated channel ordered before
+// CommitNavigation, so the renderer never has to ask.
 void WebContents::MaybeSendRendererStartupData(
     content::NavigationHandle* navigation_handle) {
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
-    return;
   // May be null for a WebContents that never went through a
   // BrowserWindow/webContents constructor (extension pages, devtools); such a
   // WebContents has no per-WC preload but still gets session preloads + env.
   auto* web_prefs = WebContentsPreferences::From(web_contents());
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
-  // that will actually compile the sandbox bundle.
+  // that will actually run preloads / create a Node.js environment.
   content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
@@ -2528,6 +2540,13 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
+  SendRendererStartupData(rfh);
+}
+
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2539,11 +2558,12 @@ void WebContents::MaybeSendRendererStartupData(
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
-  // content.mojom.Frame (the navigation channel), so this message is ordered
-  // before the CommitNavigation that the browser sends right after
-  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
-  // created in RenderFrameCreated, before any navigation — will have cached it
-  // by the time DidCreateScriptContext fires.
+  // content.mojom.Frame (the navigation channel), so a push from
+  // ReadyToCommitNavigation is ordered before the CommitNavigation that the
+  // browser sends right after it returns, and a push from HandleNewRenderFrame
+  // is ordered before anything else on the frame. The renderer's
+  // ElectronApiServiceImpl — created in RenderFrameCreated, before any
+  // navigation — will have cached it by the time DidCreateScriptContext fires.
   mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));

@@ -4118,6 +4118,67 @@ describe('BrowserWindow module', () => {
         sandbox: true,
         contextIsolation: true
       });
+      describe('delivery of the preload list', () => {
+        for (const sandbox of [false, true]) {
+          it(`runs session and window preloads in order for every navigation (sandbox: ${sandbox})`, async () => {
+            const tag = (name: string) => path.join(fixtures, 'module', `preload-order-${name}.js`);
+            for (const name of ['a', 'b']) {
+              fs.writeFileSync(tag(name), `require('electron').ipcRenderer.send('preload-order', '${name}');`);
+              defer(() => fs.rmSync(tag(name), { force: true }));
+            }
+            const ses = session.fromPartition(`preload-order-${sandbox}`);
+            ses.registerPreloadScript({ type: 'frame', id: 'order-a', filePath: tag('a') });
+            ses.registerPreloadScript({ type: 'frame', id: 'order-b', filePath: tag('b') });
+            defer(() => {
+              ses.unregisterPreloadScript('order-a');
+              ses.unregisterPreloadScript('order-b');
+            });
+            const order: string[] = [];
+            ipcMain.on('preload-order', (_e, name: string) => order.push(name));
+            ipcMain.on('preload-location', () => order.push('window'));
+            defer(() => {
+              ipcMain.removeAllListeners('preload-order');
+              ipcMain.removeAllListeners('preload-location');
+            });
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, session: ses, preload: path.join(fixtures, 'module', 'preload-location.js') }
+            });
+            await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+            await w.loadURL('about:blank');
+            expect(order).to.deep.equal(['a', 'b', 'window', 'a', 'b', 'window']);
+          });
+
+          it(`runs preloads in a context created on the initial empty document (sandbox: ${sandbox})`, async function () {
+            // Only the Node.js renderer receives its preload list at frame
+            // creation so far; the sandboxed one still needs a committed
+            // navigation.
+            if (sandbox) return this.skip();
+            const server = http.createServer((request, response) => {
+              response.writeHead(302, { Location: '/elsewhere' });
+              response.end();
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, preload: path.join(fixtures, 'module', 'preload-location.js') }
+            });
+            // Strand the frame on its initial empty document...
+            w.webContents.once('will-redirect', (event) => event.preventDefault());
+            await expect(w.loadURL(`${url}/redirect`)).to.eventually.be.rejected();
+            expect(locations).to.be.empty();
+            // ...then force a script context onto it.
+            await w.webContents.mainFrame.executeJavaScript('void 0');
+            await waitUntil(() => locations.length > 0);
+            expect(locations).to.deep.equal(['about:blank']);
+          });
+        }
+      });
+
       it('does not leak any node globals on the window object with nodeIntegration is disabled', async () => {
         let w = new BrowserWindow({
           webPreferences: {
