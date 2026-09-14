@@ -92,6 +92,12 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
+  // Whether this bundle runs in an isolated world whose global only preloads
+  // can see. Usually equivalent to contextIsolation, but DevTools extension
+  // subframes run it in the main world regardless, and a window.open() popup's
+  // initial document uses its opener's preferences.
+  b.Set("isolatedWorld",
+        context != render_frame->GetWebFrame()->MainWorldScriptContext());
 
   // The browser pushed the preload script set + process info via
   // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered

@@ -45,6 +45,11 @@ struct Scope {
   base::FilePath dir;
   std::string context_id;
   std::string process_lock;
+  // Distinguishes compilations of the same source whose wrapper differs:
+  // the sandboxed preload function takes different parameters with and
+  // without context isolation, and V8's cached-data check does not notice a
+  // changed parameter list.
+  std::string wrapper;
 };
 Scope ScopeForFrame(content::RenderFrameHost* rfh);
 
