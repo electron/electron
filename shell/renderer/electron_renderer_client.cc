@@ -17,6 +17,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
+#include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -177,6 +178,22 @@ void ElectronRendererClient::DidCreateScriptContext(
   frame_env->electron_bindings->BindTo(env->isolate(), env->process_object());
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
   BindProcess(env->isolate(), &process_dict, render_frame);
+
+  // The preload scripts to run, pushed by the browser ahead of the navigation
+  // (see WebContents::MaybeSendRendererStartupData) so renderer init does not
+  // have to ask for them with a synchronous IPC.
+  {
+    v8::LocalVector<v8::Value> preload_paths(isolate);
+    if (auto* api_service = ElectronApiServiceImpl::Get(render_frame)) {
+      if (const auto& data = api_service->startup_data()) {
+        for (const auto& script : data->preload_scripts)
+          preload_paths.push_back(gin::StringToV8(isolate, script->file_path));
+      }
+    }
+    process_dict.SetHidden(
+        "preloadPaths",
+        v8::Array::New(isolate, preload_paths.data(), preload_paths.size()));
+  }
 
   base::WeakPtr<FrameEnvironment> weak_frame_env =
       frame_env->weak_factory.GetWeakPtr();
