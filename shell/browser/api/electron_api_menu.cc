@@ -79,7 +79,15 @@ void Menu::RemoveModelObserver() {
   }
 }
 
-namespace {}  // namespace
+namespace {
+
+cppgc::Persistent<Menu>& ApplicationMenu() {
+  static base::NoDestructor<cppgc::Persistent<Menu>> menu;
+  return *menu;
+}
+bool g_application_menu_was_set = false;
+
+}  // namespace
 
 Menu::Entry::Entry(MenuItem* item, Entry* next) : item(item), next(next) {}
 Menu::Entry::~Entry() = default;
@@ -263,6 +271,181 @@ v8::Local<v8::Value> Menu::Items(v8::Isolate* isolate) {
   return items_.Get(isolate);
 }
 
+v8::Local<v8::Value> Menu::GetMenuItemById(gin::Arguments* args) {
+  v8::Local<v8::Value> id;
+  if (!args->GetNext(&id))
+    id = v8::Undefined(args->isolate());
+  return FindItemById(args->isolate(), id);
+}
+
+v8::Local<v8::Value> Menu::FindItemById(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> id) {
+  for (Entry* e = first_entry(); e; e = e->next.Get()) {
+    v8::Local<v8::Object> wrapper;
+    if (!e->item->GetWrapper(isolate).ToLocal(&wrapper))
+      continue;
+    v8::Local<v8::Value> item_id;
+    if (!gin_helper::Dictionary(isolate, wrapper).Get("id", &item_id))
+      item_id = v8::Undefined(isolate);
+    if (item_id->StrictEquals(id))
+      return wrapper;
+  }
+  for (Entry* e = first_entry(); e; e = e->next.Get()) {
+    if (e->item->submenu()) {
+      v8::Local<v8::Value> found =
+          e->item->submenu()->FindItemById(isolate, id);
+      if (!found->IsNull())
+        return found;
+    }
+  }
+  return v8::Null(isolate);
+}
+
+v8::Local<v8::Value> Menu::Popup(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+  v8::Local<v8::Value> options_value;
+  if (!args->GetNext(&options_value) || options_value->IsUndefined())
+    options_value = v8::Object::New(isolate);
+  if (!options_value->IsObject() || options_value->IsNull()) {
+    thrower.ThrowTypeError("Options must be an object");
+    return v8::Undefined(isolate);
+  }
+  v8::Local<v8::Object> options = options_value.As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, options);
+  v8::Local<v8::Value> window_value;
+  int x = -1;
+  int y = -1;
+  int positioning_item = -1;
+  ui::mojom::MenuSourceType source_type = ui::mojom::MenuSourceType::kMouse;
+  WebFrameMain* frame_ptr = nullptr;
+  dict.Get("window", &window_value);
+  // A number must be an int32; anything else takes the default.
+  bool bad_number = false;
+  auto get_int = [&](std::string_view key, int* out) {
+    v8::Local<v8::Value> value;
+    if (!dict.Get(key, &value) || !value->IsNumber())
+      return;
+    if (value->IsInt32())
+      *out = value.As<v8::Int32>()->Value();
+    else
+      bad_number = true;
+  };
+  get_int("x", &x);
+  get_int("y", &y);
+  get_int("positioningItem", &positioning_item);
+  if (bad_number) {
+    thrower.ThrowTypeError("x, y and positioningItem must be integers");
+    return v8::Undefined(isolate);
+  }
+  std::string source_type_name;
+  if (dict.Get("sourceType", &source_type_name) && !source_type_name.empty() &&
+      !gin::ConvertFromV8(isolate, gin::StringToV8(isolate, source_type_name),
+                          &source_type)) {
+    thrower.ThrowTypeError("Invalid sourceType: " + source_type_name);
+    return v8::Undefined(isolate);
+  }
+  dict.Get("frame", &frame_ptr);
+
+  BaseWindow* window = nullptr;
+  if (!window_value.IsEmpty())
+    window = BaseWindow::FromValue(isolate, window_value);
+  if (!window) {
+    window = BaseWindow::GetFocusedWindow();
+    if (!window && !BaseWindow::GetAllNative().empty())
+      window = BaseWindow::GetAllNative().front();
+    if (!window) {
+      thrower.ThrowError("Cannot open Menu without a BaseWindow present");
+      return v8::Undefined(isolate);
+    }
+    window_value = window->GetWrapper();
+  }
+  std::optional<WebFrameMain*> frame;
+  if (frame_ptr)
+    frame = frame_ptr;
+  // Anything but a function means no callback.
+  base::OnceClosure callback;
+  if (!dict.Get("callback", &callback))
+    callback = base::DoNothing();
+  PopupAt(window, frame, x, y, positioning_item, source_type,
+          std::move(callback));
+
+  gin::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
+  result.Set("browserWindow", window_value);
+  result.Set("x", x);
+  result.Set("y", y);
+  result.Set("position", positioning_item);
+  return gin::ConvertToV8(isolate, result);
+}
+
+void Menu::ClosePopup(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  v8::Local<v8::Value> window_value;
+  BaseWindow* window = nullptr;
+  if (args->GetNext(&window_value))
+    window = BaseWindow::FromValue(isolate, window_value);
+  if (window) {
+    ClosePopupAt(window->weak_map_id());
+  } else {
+    // Passing -1 (invalid) would make closePopupAt close all menu runners
+    // belonging to this menu.
+    ClosePopupAt(-1);
+  }
+}
+
+// static
+void Menu::SetApplicationMenuFromJS(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::ErrorThrower thrower(isolate);
+  v8::Local<v8::Value> value;
+  args->GetNext(&value);
+  Menu* menu = nullptr;
+  if (!value.IsEmpty() && value->BooleanValue(isolate)) {
+    if (!value->IsObject() || !gin::ConvertFromV8(isolate, value, &menu) ||
+        !menu) {
+      thrower.ThrowTypeError("Invalid menu");
+      return;
+    }
+  }
+  g_application_menu_was_set = true;
+  if (menu)
+    ApplicationMenu() = cppgc::Persistent<Menu>(menu);
+  else
+    ApplicationMenu().Clear();
+#if BUILDFLAG(IS_MAC)
+  if (!menu)
+    return;
+  SetApplicationMenu(menu);
+#else
+  // Setting a menu can run app JS (e.g. 'resize'), which can open or close
+  // windows; iterate a copy.
+  std::vector<BaseWindow*> windows = BaseWindow::GetAllNative();
+  for (BaseWindow* window : windows) {
+    if (!BaseWindow::IsLive(window))
+      continue;
+    if (menu)
+      window->SetMenuNatively(menu);
+    else
+      window->RemoveMenu();
+  }
+#endif
+}
+
+// static
+v8::Local<v8::Value> Menu::GetApplicationMenu(v8::Isolate* isolate) {
+  Menu* menu = ApplicationMenu().Get();
+  v8::Local<v8::Object> wrapper;
+  if (menu && menu->GetWrapper(isolate).ToLocal(&wrapper))
+    return wrapper;
+  return v8::Null(isolate);
+}
+
+// static
+bool Menu::ApplicationMenuWasSet() {
+  return g_application_menu_was_set;
+}
+
 bool Menu::IsCommandIdChecked(int command_id) const {
   MenuItem* item = GetItem(command_id);
   return item && item->IsChecked();
@@ -412,8 +595,9 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
   gin::ObjectTemplateBuilder(isolate, "Menu", templ)
       .SetMethod("insert", &Menu::Insert)
       .SetMethod("append", &Menu::Append)
-      .SetMethod("popupAt", &Menu::PopupAt)
-      .SetMethod("closePopupAt", &Menu::ClosePopupAt)
+      .SetMethod("getMenuItemById", &Menu::GetMenuItemById)
+      .SetMethod("popup", &Menu::Popup)
+      .SetMethod("closePopup", &Menu::ClosePopup)
       .SetMethod("getItemCount", &Menu::GetItemCount)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("_activate", &Menu::ActivateForTesting)
@@ -470,9 +654,11 @@ void Initialize(v8::Local<v8::Object> exports,
                isolate, context, &electron::api::MenuItem::kWrapperInfo));
   gin_helper::Dictionary statics(isolate, menu);
   statics.SetMethod("buildFromTemplate", &Menu::BuildFromTemplate);
+  statics.SetMethod("setApplicationMenu", &Menu::SetApplicationMenuFromJS);
+  statics.SetMethod("getApplicationMenu", &Menu::GetApplicationMenu);
+  statics.SetMethod("_applicationMenuWasSet", &Menu::ApplicationMenuWasSet);
   statics.SetMethod("_roleDefaults", &electron::api::menu_roles::Defaults);
 #if BUILDFLAG(IS_MAC)
-  dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   statics.SetMethod("sendActionToFirstResponder",
                     &Menu::SendActionToFirstResponder);
 #endif
