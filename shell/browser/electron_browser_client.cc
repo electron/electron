@@ -70,6 +70,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
@@ -443,6 +444,14 @@ bool ElectronBrowserClient::IsRendererSubFrame(
   return renderer_is_subframe_.contains(process_id);
 }
 
+std::optional<bool> ElectronBrowserClient::IsRendererProcessSandboxed(
+    content::ChildProcessId process_id) const {
+  const auto iter = renderer_process_sandboxed_.find(process_id);
+  if (iter == std::end(renderer_process_sandboxed_))
+    return std::nullopt;
+  return iter->second;
+}
+
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // Remove in case the host is reused after a crash, otherwise noop.
@@ -672,6 +681,9 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       // ShouldUseSpareRenderProcessHost() hands it to.
       command_line->AppendSwitch(switches::kEnableSandbox);
     }
+
+    renderer_process_sandboxed_[unsafe_process_id] =
+        !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
   }
 }
 
@@ -997,6 +1009,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
+  renderer_process_sandboxed_.erase(process_id);
   host->RemoveObserver(this);
 }
 
