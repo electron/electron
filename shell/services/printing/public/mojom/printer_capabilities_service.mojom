@@ -1,0 +1,16 @@
+// Copyright (c) 2026 Electron contributors.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+module electron.mojom;
+
+import "mojo/public/mojom/base/values.mojom";
+import "sandbox/policy/mojom/sandbox.mojom";
+
+// Windows printer drivers may require UI access, like Chromium's unsandboxed
+// print backend. Each query gets a separate process with no elevated privileges.
+[ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
+interface PrinterCapabilitiesService {
+  GetCapabilities(string printer_name)
+      => (string error, mojo_base.mojom.DictionaryValue capabilities);
+};

@@ -208,9 +208,11 @@ function locateBinary(bin) {
 // Provisions a silent virtual printer used by the webContents.print() specs
 // "Microsoft Print To PDF" on a file port on Windows, an ippeveprinter-backed
 // driverless CUPS queue on Linux/macOS. Exposes it to the test process via
-// ELECTRON_TEST_PRINTER_NAME and returns a synchronous teardown function (safe
-// to register on 'exit'). Best-effort: on any failure the spec self-skips, so
-// this never blocks the test run.
+// ELECTRON_TEST_PRINTER_NAME, plus ELECTRON_TEST_PRINT_CAPTURE for IPP job
+// capture. Returns a synchronous teardown function (safe to register on 'exit').
+// Automatic provisioning is best-effort: if setup fails, unconfigured printing
+// specs skip. Once a capture fixture is configured, its tests fail if it is
+// unavailable or cannot receive jobs.
 async function setupVirtualPrinter() {
   const noop = () => {};
 
@@ -266,16 +268,35 @@ async function setupVirtualPrinter() {
       console.log('Skipping virtual printer setup: ippeveprinter/lpadmin unavailable.');
       return noop;
     }
+    if ((await spawnCapture('python3', ['--version'])).code !== 0) {
+      console.log('Skipping virtual printer setup: Python 3 unavailable for job capture.');
+      return noop;
+    }
 
-    const printerName = 'electron-ipp-test';
-    // Remove any queue left behind by a previous interrupted run.
-    await spawnCapture(lpadmin, ['-x', printerName]);
-
+    // Keep concurrent runners' queues separate; teardown removes only this one.
+    const printerName = `electron-ipp-test-${process.pid}`;
     const port = await getFreePort();
     const spoolDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-ippeve-'));
+    const fixtureDir = path.join(__dirname, '../spec/fixtures/printing');
+    const captureCommand = path.join(spoolDir, 'capture-job.py');
+    fs.copyFileSync(path.join(fixtureDir, 'capture-job.py'), captureCommand);
+    fs.chmodSync(captureCommand, 0o755);
     const ippServer = childProcess.spawn(
       ippeve,
-      ['-f', 'application/pdf', '-p', String(port), '-d', spoolDir, '-k', 'Electron Test Printer'],
+      [
+        '-a',
+        path.join(fixtureDir, 'ipp-printer.conf'),
+        '-r',
+        'off',
+        '-p',
+        String(port),
+        '-d',
+        spoolDir,
+        '-c',
+        captureCommand,
+        '-k',
+        'Electron Test Printer'
+      ],
       { stdio: 'ignore' }
     );
     let serverExited = false;
@@ -312,9 +333,14 @@ async function setupVirtualPrinter() {
       console.log(`Skipping virtual printer setup: lpadmin failed (${add.stderr.trim()}).`);
       return noop;
     }
-    await spawnCapture(lpadmin, ['-d', printerName]);
-
+    // Tests select this queue explicitly, so leave the system default alone.
     process.env.ELECTRON_TEST_PRINTER_NAME = printerName;
+    process.env.ELECTRON_TEST_PRINT_CAPTURE = JSON.stringify({
+      deviceName: printerName,
+      jobsDirectory: spoolDir,
+      inputTray: { id: process.platform === 'linux' ? 'Manual' : 'manual', ipp: 'manual' },
+      mediaType: { id: process.platform === 'linux' ? 'Labels' : 'labels', ipp: 'labels' }
+    });
     console.log(`${pass} Provisioned virtual printer: ${printerName}`);
     return teardown;
   } catch (err) {
@@ -554,7 +580,9 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
     );
   }
   const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
-  if (process.platform === 'linux') {
+  // The printing credential fixture provides its own private Secret Service.
+  // Replacing that session bus would bypass the authentication regression.
+  if (process.platform === 'linux' && process.env.ELECTRON_PRIVATE_PRINT_TEST_BUS !== '1') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python3';
   }

@@ -38,6 +38,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
+#include "shell/services/printing/printer_capabilities_service.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \
@@ -59,6 +60,12 @@ auto RunPrintingService(
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(ENABLE_PRINTING)
+auto RunPrinterCapabilitiesService(
+    mojo::PendingReceiver<mojom::PrinterCapabilitiesService> receiver) {
+  return std::make_unique<PrinterCapabilitiesService>(std::move(receiver));
+}
+#endif
 auto RunWindowsIconReader(
     mojo::PendingReceiver<chrome::mojom::UtilReadIcon> receiver) {
   return std::make_unique<UtilReadIcon>(std::move(receiver));
@@ -136,6 +143,9 @@ void ElectronContentUtilityClient::RegisterMainThreadServices(
 #if BUILDFLAG(IS_WIN)
   services.Add(RunWindowsIconReader);
   services.Add(RunWindowsUtility);
+#if BUILDFLAG(ENABLE_PRINTING)
+  services.Add(RunPrinterCapabilitiesService);
+#endif
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)

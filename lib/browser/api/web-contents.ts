@@ -259,6 +259,16 @@ WebContents.prototype.getPrintersAsync = async function () {
   }
 };
 
+WebContents.prototype.getPrinterCapabilitiesAsync = async function (deviceName: string) {
+  if (typeof deviceName !== 'string' || deviceName.length === 0 || deviceName.includes('\0')) {
+    throw new TypeError('deviceName must be a non-empty printer name without null characters');
+  }
+  if (!printing.getPrinterCapabilitiesAsync) {
+    throw new Error('Printing feature is disabled');
+  }
+  return printing.getPrinterCapabilitiesAsync(deviceName);
+};
+
 WebContents.prototype.loadFile = function (filePath, options = {}) {
   if (typeof filePath !== 'string') {
     throw new TypeError('Must pass filePath as a string');

@@ -1,0 +1,870 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lennart Kurth <hi@le2ni.de>
+Date: Sat, 05 Sep 2026 09:47:23 +0000
+Subject: feat: carry per-job input tray and media selections to native printing
+
+Electron exposes printer input tray and media IDs through webContents.print().
+Chromium already has a media_type setting, but its desktop backends do not
+consistently apply it, and there is no input tray setting. Carry the tray ID
+through PrintSettings, dictionary conversion and printing service Mojo IPC.
+
+On Windows, set DM_DEFAULTSOURCE and DM_MEDIATYPE in the job's DEVMODE before
+DocumentProperties validates it. Verify explicit IDs against the driver's
+advertised capabilities, because DocumentProperties can retain unknown media
+IDs unchanged. Reject driver substitution of an explicitly requested ID. This
+does not modify printer-wide defaults.
+
+On macOS, encode the selected IPP media-source and media-type values
+in a CUPS media-col collection, retaining an explicit paper size and quoting
+values with CUPS option syntax and attach the collection to Core Printing.
+
+On Linux, pass native PPD InputSlot/MediaType choices through GtkPrintJob,
+including choices from CUPS-generated driverless PPDs. Preserve GTK's CUPS
+submission, authentication and credential cache. GTK 3 cannot encode IPP
+media-col collections. Keep explicit choices out of GTK's saved settings so
+they do not leak into later jobs. Chromium still renders the PDF.
+
+
+This should be proposed upstream as native printer media selection support.
+Remove this patch once Chromium carries an input tray through settings and
+IPC, applies both selections in its Windows, macOS and GTK print backends,
+and has equivalent regression coverage for per-job settings and encoding.
+Recheck the platform backends and printing_context Mojo traits on each roll.
+
+diff --git a/printing/backend/win_helper.cc b/printing/backend/win_helper.cc
+index f0ff2c88a80688e8e048d7499eabb5677d6ba0a9..42b5d6013b002ce2822ce2ed0449457537bfba1b 100644
+--- a/printing/backend/win_helper.cc
++++ b/printing/backend/win_helper.cc
+@@ -8,6 +8,8 @@
+ #include <wrl/client.h>
+ 
+ #include <algorithm>
++#include <bit>
++#include <limits>
+ #include <memory>
+ #include <string_view>
+ 
+@@ -22,6 +24,7 @@
+ #include "base/numerics/checked_math.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "base/strings/strcat.h"
++#include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -101,6 +104,37 @@ StartXpsPrintJobProc g_start_xps_print_job_proc = nullptr;
+ typedef std::string (*GetDisplayNameFunc)(std::string_view printer_name);
+ GetDisplayNameFunc g_get_display_name_func = nullptr;
+ 
++template <typename Id>
++bool IsPrinterMediaIdSupported(const wchar_t* printer,
++                               const wchar_t* port,
++                               WORD capability,
++                               std::string_view requested_id,
++                               const DEVMODE* dev_mode) {
++  if (requested_id.empty()) {
++    return true;
++  }
++  unsigned id = 0;
++  if (!base::StringToUint(requested_id, &id) || id == 0 ||
++      id > std::numeric_limits<Id>::max()) {
++    return false;
++  }
++  const int count =
++      DeviceCapabilitiesW(printer, port, capability, nullptr, dev_mode);
++  if (count <= 0 || count > 65536) {
++    return false;
++  }
++  // Match the capability enumeration's padding for drivers whose counts change
++  // between the size and data queries. Reject an inconsistent result.
++  std::vector<Id> ids(count * 2);
++  if (DeviceCapabilitiesW(printer, port, capability,
++                          reinterpret_cast<wchar_t*>(ids.data()),
++                          dev_mode) != count) {
++    return false;
++  }
++  ids.resize(count);
++  return std::ranges::contains(ids, static_cast<Id>(id));
++}
++
+ PrinterBasicInfo InitializePrinterInfo(LPTSTR name, LPTSTR comment) {
+   PrinterBasicInfo printer_info;
+ 
+@@ -576,6 +610,64 @@ bool PrinterHasValidPaperSize(const wchar_t* name, const wchar_t* port) {
+   return DeviceCapabilities(name, port, DC_PAPERSIZE, nullptr, nullptr) > 0;
+ }
+ 
++bool PrinterSupportsMediaSettings(HANDLE printer,
++                                  std::string_view input_tray,
++                                  std::string_view media_type,
++                                  const DEVMODE* dev_mode) {
++  if (input_tray.empty() && media_type.empty()) {
++    return true;
++  }
++  PrinterInfo5 info;
++  if (!info.Init(printer)) {
++    return false;
++  }
++  return IsPrinterMediaIdSupported<WORD>(info.get()->pPrinterName,
++                                         info.get()->pPortName, DC_BINS,
++                                         input_tray, dev_mode) &&
++         IsPrinterMediaIdSupported<DWORD>(info.get()->pPrinterName,
++                                          info.get()->pPortName, DC_MEDIATYPES,
++                                          media_type, dev_mode);
++}
++
++bool ApplyPrinterMediaSettings(std::string_view input_tray,
++                               std::string_view media_type,
++                               DEVMODE& dev_mode) {
++  unsigned tray_id = 0;
++  unsigned media_id = 0;
++  if ((!input_tray.empty() &&
++       (!base::StringToUint(input_tray, &tray_id) || tray_id == 0 ||
++        tray_id > std::numeric_limits<WORD>::max())) ||
++      (!media_type.empty() &&
++       (!base::StringToUint(media_type, &media_id) || media_id == 0))) {
++    return false;
++  }
++  if (!input_tray.empty()) {
++    dev_mode.dmFields |= DM_DEFAULTSOURCE;
++    // DC_BINS returns WORD IDs, while DEVMODE stores the same bits in a short.
++    dev_mode.dmDefaultSource = std::bit_cast<short>(static_cast<WORD>(tray_id));
++  }
++  if (!media_type.empty()) {
++    dev_mode.dmFields |= DM_MEDIATYPE;
++    dev_mode.dmMediaType = media_id;
++  }
++  return true;
++}
++
++bool PrinterMediaSettingsMatch(std::string_view input_tray,
++                               std::string_view media_type,
++                               const DEVMODE& dev_mode) {
++  DEVMODE requested = dev_mode;
++  if (!ApplyPrinterMediaSettings(input_tray, media_type, requested)) {
++    return false;
++  }
++  return (input_tray.empty() ||
++          ((dev_mode.dmFields & DM_DEFAULTSOURCE) &&
++           dev_mode.dmDefaultSource == requested.dmDefaultSource)) &&
++         (media_type.empty() ||
++          ((dev_mode.dmFields & DM_MEDIATYPE) &&
++           dev_mode.dmMediaType == requested.dmMediaType));
++}
++
+ std::unique_ptr<DEVMODE, base::FreeDeleter> CreateDevMode(HANDLE printer,
+                                                           DEVMODE* in) {
+   wchar_t* device_name_ptr = const_cast<wchar_t*>(L"");
+diff --git a/printing/backend/win_helper.h b/printing/backend/win_helper.h
+index da09b2bbe925b62b7232aa6608267b457a021ad5..f4c4ab9c4355a592858c4c2c9c8cf39e0cdc1928 100644
+--- a/printing/backend/win_helper.h
++++ b/printing/backend/win_helper.h
+@@ -181,6 +181,30 @@ std::unique_ptr<DEVMODE, base::FreeDeleter> CreateDevModeWithColor(
+     const std::wstring& printer_name,
+     bool color);
+ 
++// Checks that explicit IDs are advertised by the driver. DocumentProperties
++// can retain unsupported IDs unchanged, so its validation alone is
++// insufficient. Empty identifiers do not require the driver to expose the
++// capability.
++COMPONENT_EXPORT(PRINT_BACKEND)
++bool PrinterSupportsMediaSettings(HANDLE printer,
++                                  std::string_view input_tray,
++                                  std::string_view media_type,
++                                  const DEVMODE* dev_mode);
++
++// Applies decimal driver IDs without changing printer-wide defaults. Empty
++// identifiers leave the corresponding setting unchanged. Rejects malformed IDs
++// before modifying either field.
++COMPONENT_EXPORT(PRINT_BACKEND)
++bool ApplyPrinterMediaSettings(std::string_view input_tray,
++                               std::string_view media_type,
++                               DEVMODE& dev_mode);
++
++// Checks that the driver preserved explicitly requested media settings.
++COMPONENT_EXPORT(PRINT_BACKEND)
++bool PrinterMediaSettingsMatch(std::string_view input_tray,
++                               std::string_view media_type,
++                               const DEVMODE& dev_mode);
++
+ // Creates new DEVMODE. If `in` is not NULL copy settings from there.
+ COMPONENT_EXPORT(PRINT_BACKEND)
+ std::unique_ptr<DEVMODE, base::FreeDeleter> CreateDevMode(HANDLE printer,
+diff --git a/printing/backend/win_helper_unittest.cc b/printing/backend/win_helper_unittest.cc
+index 055bf2e28fb63a154bf397528218df8401e5a192..12e61bff14c26d89b7bf78d293784a2866173ac2 100644
+--- a/printing/backend/win_helper_unittest.cc
++++ b/printing/backend/win_helper_unittest.cc
+@@ -21,4 +21,51 @@ TEST(WinHelperTest, GetDriverVersionString) {
+             "4660.22136.4951.9320");
+ }
+ 
++TEST(WinHelperTest, PrinterMediaPreservesUnspecifiedDefaults) {
++  DEVMODE dev_mode = {};
++  dev_mode.dmFields = DM_DEFAULTSOURCE | DM_MEDIATYPE | DM_COPIES;
++  dev_mode.dmDefaultSource = 258;
++  dev_mode.dmMediaType = 257;
++  dev_mode.dmCopies = 3;
++  ASSERT_TRUE(ApplyPrinterMediaSettings("", "", dev_mode));
++  EXPECT_EQ(dev_mode.dmDefaultSource, 258);
++  EXPECT_EQ(dev_mode.dmMediaType, 257u);
++  EXPECT_EQ(dev_mode.dmCopies, 3);
++  EXPECT_EQ(dev_mode.dmFields,
++            DWORD{DM_DEFAULTSOURCE | DM_MEDIATYPE | DM_COPIES});
++
++  ASSERT_TRUE(ApplyPrinterMediaSettings("259", "", dev_mode));
++  EXPECT_EQ(dev_mode.dmDefaultSource, 259);
++  EXPECT_EQ(dev_mode.dmMediaType, 257u);
++  ASSERT_TRUE(ApplyPrinterMediaSettings("", "258", dev_mode));
++  EXPECT_EQ(dev_mode.dmDefaultSource, 259);
++  EXPECT_EQ(dev_mode.dmMediaType, 258u);
++}
++
++TEST(WinHelperTest, PrinterMediaRejectsInvalidIdentifiersAtomically) {
++  for (const auto* invalid : {"0", "-1", "65536", "tray2", "4294967296"}) {
++    DEVMODE dev_mode = {};
++    EXPECT_FALSE(ApplyPrinterMediaSettings(invalid, "257", dev_mode));
++    EXPECT_EQ(dev_mode.dmFields, 0u);
++  }
++  for (const auto* invalid : {"0", "-1", "glossy", "4294967296"}) {
++    DEVMODE dev_mode = {};
++    EXPECT_FALSE(ApplyPrinterMediaSettings("258", invalid, dev_mode));
++    EXPECT_EQ(dev_mode.dmFields, 0u);
++  }
++}
++
++TEST(WinHelperTest, PrinterMediaDetectsDriverSubstitution) {
++  DEVMODE dev_mode = {};
++  ASSERT_TRUE(ApplyPrinterMediaSettings("65535", "4294967295", dev_mode));
++  EXPECT_EQ(static_cast<WORD>(dev_mode.dmDefaultSource), 65535);
++  EXPECT_EQ(dev_mode.dmMediaType, 4294967295u);
++  EXPECT_TRUE(PrinterMediaSettingsMatch("65535", "4294967295", dev_mode));
++  EXPECT_FALSE(PrinterMediaSettingsMatch("258", "4294967295", dev_mode));
++  EXPECT_FALSE(PrinterMediaSettingsMatch("65535", "257", dev_mode));
++  dev_mode.dmFields &= ~DM_DEFAULTSOURCE;
++  EXPECT_FALSE(PrinterMediaSettingsMatch("65535", "4294967295", dev_mode));
++  EXPECT_TRUE(PrinterMediaSettingsMatch("", "", dev_mode));
++}
++
+ }  // namespace printing
+diff --git a/printing/mojom/printing_context.mojom b/printing/mojom/printing_context.mojom
+index d76cc806103a0ad906ca534779d973eed01b3ffd..3ae830f943194865c30a63b7c1c2d0f0dac10db8 100644
+--- a/printing/mojom/printing_context.mojom
++++ b/printing/mojom/printing_context.mojom
+@@ -56,6 +56,7 @@ struct PrintSettings {
+   PageSetup page_setup_device_units;
+   bool borderless;
+   string media_type;
++  string input_tray;
+   gfx.mojom.Size dpi;
+   double scale_factor;
+   bool rasterize_pdf;
+diff --git a/printing/mojom/printing_context_mojom_traits.cc b/printing/mojom/printing_context_mojom_traits.cc
+index b269ed16f83d3bab99066858c37707c9159da949..86ee40d122e31aaef257c129e11ac15c002a1c30 100644
+--- a/printing/mojom/printing_context_mojom_traits.cc
++++ b/printing/mojom/printing_context_mojom_traits.cc
+@@ -177,6 +177,12 @@ bool StructTraits<
+   }
+   out->set_media_type(media_type);
+ 
++  std::string input_tray;
++  if (!data.ReadInputTray(&input_tray)) {
++    return false;
++  }
++  out->set_input_tray(input_tray);
++
+   out->set_borderless(data.borderless());
+ 
+   gfx::Size dpi;
+diff --git a/printing/mojom/printing_context_mojom_traits.h b/printing/mojom/printing_context_mojom_traits.h
+index 15fa43fe5378466f0570dc15bd2ab1dbfd5515fc..70afd553894ae52f2d509602a1260a2fd6a41b38 100644
+--- a/printing/mojom/printing_context_mojom_traits.h
++++ b/printing/mojom/printing_context_mojom_traits.h
+@@ -132,6 +132,9 @@ struct StructTraits<printing::mojom::PrintSettingsDataView,
+   static const std::string& media_type(const printing::PrintSettings& s) {
+     return s.media_type();
+   }
++  static const std::string& input_tray(const printing::PrintSettings& s) {
++    return s.input_tray();
++  }
+   static bool borderless(const printing::PrintSettings& s) {
+     return s.borderless();
+   }
+diff --git a/printing/mojom/printing_context_mojom_traits_unittest.cc b/printing/mojom/printing_context_mojom_traits_unittest.cc
+index b31452028368e251fe58c60bc3bfd65edcfa5a7b..69af15ef1e653e0cc135c3517a04d47e08f0e136 100644
+--- a/printing/mojom/printing_context_mojom_traits_unittest.cc
++++ b/printing/mojom/printing_context_mojom_traits_unittest.cc
+@@ -952,4 +952,15 @@ TEST(
+ 
+ #endif  // BUILDFLAG(ENABLE_OOP_PRINTING_NO_OOP_BASIC_PRINT_DIALOG)
+ 
++TEST(PrintingContextMojomTraitsTest, PrinterMediaRoundTrip) {
++  auto input = GenerateSamplePrintSettingsDefaultMargins();
++  input.set_input_tray("258");
++  input.set_media_type("257");
++  PrintSettings output;
++  ASSERT_TRUE(
++      mojo::test::SerializeAndDeserialize<mojom::PrintSettings>(input, output));
++  EXPECT_EQ(output.input_tray(), "258");
++  EXPECT_EQ(output.media_type(), "257");
++}
++
+ }  // namespace printing
+diff --git a/printing/print_job_constants.cc b/printing/print_job_constants.cc
+index 6dca17e8a305bd254257061b16058f95571500f6..05e6a61905e0fbaed660ab818961ef45e93b226e 100644
+--- a/printing/print_job_constants.cc
++++ b/printing/print_job_constants.cc
+@@ -119,6 +119,9 @@ const char kSettingMediaSizeIsDefault[] = "is_default";
+ // Key that specifies the requested media type (plain, photo paper, etc.)
+ const char kSettingMediaType[] = "mediaType";
+ 
++// Key that specifies the requested input tray (paper source).
++const char kSettingInputTray[] = "inputTray";
++
+ // Key that specifies the bottom margin of the page.
+ const char kSettingMarginBottom[] = "marginBottom";
+ 
+diff --git a/printing/print_job_constants.h b/printing/print_job_constants.h
+index c3541e160b027367ce7183325d81a98921ba30a9..0bb148411eb1d5e53870da3201f15278ed506558 100644
+--- a/printing/print_job_constants.h
++++ b/printing/print_job_constants.h
+@@ -74,6 +74,8 @@ extern const char kSettingMediaSizeIsDefault[];
+ COMPONENT_EXPORT(PRINTING_BASE)
+ extern const char kSettingMediaType[];
+ COMPONENT_EXPORT(PRINTING_BASE)
++extern const char kSettingInputTray[];
++COMPONENT_EXPORT(PRINTING_BASE)
+ extern const char kSettingMarginBottom[];
+ COMPONENT_EXPORT(PRINTING_BASE)
+ extern const char kSettingMarginLeft[];
+diff --git a/printing/print_settings.cc b/printing/print_settings.cc
+index b5bfd389fb6c60fa36f621b848bedd978f053ca1..a7aec7a9c032497ffe162912e5252af37ccd9b22 100644
+--- a/printing/print_settings.cc
++++ b/printing/print_settings.cc
+@@ -309,6 +309,7 @@ PrintSettings& PrintSettings::operator=(const PrintSettings& settings) {
+   page_setup_device_units_ = settings.page_setup_device_units_;
+   borderless_ = settings.borderless_;
+   media_type_ = settings.media_type_;
++  input_tray_ = settings.input_tray_;
+   dpi_ = settings.dpi_;
+   scale_factor_ = settings.scale_factor_;
+   rasterize_pdf_ = settings.rasterize_pdf_;
+@@ -343,7 +344,7 @@ bool PrintSettings::operator==(const PrintSettings& other) const {
+                   display_header_footer_, should_print_backgrounds_, collate_,
+                   color_, copies_, duplex_mode_, device_name_, requested_media_,
+                   page_setup_device_units_, dpi_, scale_factor_, rasterize_pdf_,
+-                  rasterize_pdf_dpi_, landscape_,
++                  rasterize_pdf_dpi_, landscape_, media_type_, input_tray_,
+ #if BUILDFLAG(IS_WIN)
+                   printer_language_type_,
+ #endif
+@@ -366,7 +367,8 @@ bool PrintSettings::operator==(const PrintSettings& other) const {
+                   other.copies_, other.duplex_mode_, other.device_name_,
+                   other.requested_media_, other.page_setup_device_units_,
+                   other.dpi_, other.scale_factor_, other.rasterize_pdf_,
+-                  other.rasterize_pdf_dpi_, other.landscape_,
++                  other.rasterize_pdf_dpi_, other.landscape_, other.media_type_,
++                  other.input_tray_,
+ #if BUILDFLAG(IS_WIN)
+                   other.printer_language_type_,
+ #endif
+@@ -403,6 +405,7 @@ void PrintSettings::Clear() {
+   page_setup_device_units_.Clear();
+   borderless_ = false;
+   media_type_.clear();
++  input_tray_.clear();
+   dpi_ = gfx::Size();
+   scale_factor_ = 1.0f;
+   rasterize_pdf_ = false;
+diff --git a/printing/print_settings.h b/printing/print_settings.h
+index 567276620d97b7c35524f0f8f3b5d51d3ffd90ba..3d8f215c63e3b883fb544cfe32120a876e58fc4f 100644
+--- a/printing/print_settings.h
++++ b/printing/print_settings.h
+@@ -192,6 +192,12 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
+   }
+   const std::string& media_type() const { return media_type_; }
+ 
++  // Platform-specific paper source identifier. Empty preserves driver defaults.
++  void set_input_tray(const std::string& input_tray) {
++    input_tray_ = input_tray;
++  }
++  const std::string& input_tray() const { return input_tray_; }
++
+   void set_dpi(int dpi) { dpi_ = gfx::Size(dpi, dpi); }
+   void set_dpi_xy(int dpi_horizontal, int dpi_vertical) {
+     dpi_ = gfx::Size(dpi_horizontal, dpi_vertical);
+@@ -427,6 +433,9 @@ class COMPONENT_EXPORT(PRINTING_SETTINGS) PrintSettings {
+   // Media type requested by the user.
+   std::string media_type_;
+ 
++  // Input tray requested by the user.
++  std::string input_tray_;
++
+   // Printer's device effective dots per inch in both axes. The two values will
+   // generally be identical. However, on Windows, there are a few rare printers
+   // that support resolutions with different DPI in different dimensions.
+diff --git a/printing/print_settings_conversion.cc b/printing/print_settings_conversion.cc
+index 305059b4176546d8bd7f996aaaa773653ebbcc9d..979f5eb3bc32d02dd8e035566185fec63ca47013 100644
+--- a/printing/print_settings_conversion.cc
++++ b/printing/print_settings_conversion.cc
+@@ -16,6 +16,7 @@
+ 
+ #include "base/containers/fixed_flat_set.h"
+ #include "base/containers/to_value_list.h"
++#include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/time/time.h"
+@@ -282,6 +283,13 @@ std::unique_ptr<PrintSettings> PrintSettingsFromJobSettings(
+     settings->set_media_type(*media_type);
+   }
+ 
++  if (const auto* input_tray = job_settings.Find(kSettingInputTray)) {
++    if (!input_tray->is_string()) {
++      return nullptr;
++    }
++    settings->set_input_tray(input_tray->GetString());
++  }
++
+   settings->set_ranges(GetPageRangesFromJobSettings(job_settings));
+ 
+   std::optional<bool> is_modifiable =
+@@ -348,6 +356,43 @@ std::unique_ptr<PrintSettings> PrintSettingsFromJobSettings(
+   return settings;
+ }
+ 
++std::string PrintSettingsToCupsMediaCollection(const PrintSettings& settings) {
++  if (settings.input_tray().empty() && settings.media_type().empty()) {
++    return {};
++  }
++
++  std::string collection = "{";
++  const auto append_keyword = [&collection](std::string_view key,
++                                            std::string_view value) {
++    if (value.empty()) {
++      return;
++    }
++    base::StrAppend(&collection, {key, "=\""});
++    // CUPS collection values use its option-string quoting rules.
++    for (char character : value) {
++      if (character == '\\' || character == '"') {
++        collection += '\\';
++      }
++      collection += character;
++    }
++    collection += "\" ";
++  };
++  append_keyword("media-source", settings.input_tray());
++  append_keyword("media-type", settings.media_type());
++
++  // A media-col takes precedence over the separate paper-size option. Preserve
++  // an explicitly requested size in the collection (IPP units are 0.01 mm).
++  const gfx::Size& size = settings.requested_media().size_microns;
++  if (!size.IsEmpty()) {
++    base::StrAppend(
++        &collection,
++        {"media-size={x-dimension=", base::NumberToString(size.width() / 10),
++         " y-dimension=", base::NumberToString(size.height() / 10), "} "});
++  }
++  collection.back() = '}';
++  return collection;
++}
++
+ base::DictValue PrintSettingsToJobSettingsDebug(const PrintSettings& settings) {
+   auto job_settings =
+       base::DictValue()
+diff --git a/printing/print_settings_conversion.h b/printing/print_settings_conversion.h
+index 15871ed1e99e8d9cbfe5a86d4e2ea075044bfad1..7e653257347190711267bde2079d25bcc2e8b0ed 100644
+--- a/printing/print_settings_conversion.h
++++ b/printing/print_settings_conversion.h
+@@ -6,6 +6,7 @@
+ #define PRINTING_PRINT_SETTINGS_CONVERSION_H_
+ 
+ #include <memory>
++#include <string>
+ 
+ #include "base/component_export.h"
+ #include "base/values.h"
+@@ -23,6 +24,12 @@ COMPONENT_EXPORT(PRINTING)
+ std::unique_ptr<PrintSettings> PrintSettingsFromJobSettings(
+     const base::DictValue& job_settings);
+ 
++// Encodes explicitly requested IPP tray/media IDs and paper dimensions as a
++// CUPS media-col option. Returns an empty string when no tray/media is
++// selected.
++COMPONENT_EXPORT(PRINTING)
++std::string PrintSettingsToCupsMediaCollection(const PrintSettings& settings);
++
+ // Use for debug/test only, because output is not completely consistent with
+ // format of `PrintSettingsFromJobSettings` input.
+ COMPONENT_EXPORT(PRINTING)
+diff --git a/printing/print_settings_conversion_unittest.cc b/printing/print_settings_conversion_unittest.cc
+index 96517896c5d3b60dd2b7aa01bcf484683eb9c386..9e05bcc92d3d85e3764b317a52ecb84465655d23 100644
+--- a/printing/print_settings_conversion_unittest.cc
++++ b/printing/print_settings_conversion_unittest.cc
+@@ -12,6 +12,10 @@
+ #include "printing/print_settings.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
++#if BUILDFLAG(USE_CUPS)
++#include <cups/cups.h>
++#endif
++
+ namespace printing {
+ 
+ namespace {
+@@ -329,4 +333,100 @@ TEST(PrintSettingsConversionTest, FilterNonJobSettings) {
+ #endif  // BUILDFLAG(IS_CHROMEOS) || (BUILDFLAG(IS_LINUX) &&
+         // BUILDFLAG(USE_CUPS))
+ 
++#if BUILDFLAG(USE_CUPS)
++namespace {
++std::unique_ptr<ipp_t, decltype(&ippDelete)> EncodeMediaCollection(
++    const PrintSettings& settings) {
++  std::unique_ptr<ipp_t, decltype(&ippDelete)> job(
++      ippNewRequest(IPP_OP_PRINT_JOB), &ippDelete);
++  const std::string collection = PrintSettingsToCupsMediaCollection(settings);
++  if (!collection.empty()) {
++    cups_option_t* options = nullptr;
++    const int count =
++        cupsAddOption("media-col", collection.c_str(), 0, &options);
++    cupsEncodeOptions2(job.get(), count, options, IPP_TAG_JOB);
++    cupsFreeOptions(count, options);
++  }
++  return job;
++}
++}  // namespace
++
++TEST(PrintSettingsConversionTest, CupsMediaCollectionCarriesSelectionsAndSize) {
++  PrintSettings settings;
++  settings.set_input_tray("tray-2");
++  settings.set_media_type("labels");
++  PrintSettings::RequestedMedia media;
++  media.size_microns = gfx::Size(210000, 297000);
++  settings.set_requested_media(media);
++  auto job = EncodeMediaCollection(settings);
++  auto* attribute =
++      ippFindAttribute(job.get(), "media-col", IPP_TAG_BEGIN_COLLECTION);
++  ASSERT_TRUE(attribute);
++  ipp_t* collection = ippGetCollection(attribute, 0);
++  ASSERT_TRUE(collection);
++  EXPECT_STREQ(ippGetString(ippFindAttribute(collection, "media-source",
++                                             IPP_TAG_KEYWORD),
++                            0, nullptr),
++               "tray-2");
++  EXPECT_STREQ(
++      ippGetString(ippFindAttribute(collection, "media-type", IPP_TAG_KEYWORD),
++                   0, nullptr),
++      "labels");
++  ipp_t* size = ippGetCollection(
++      ippFindAttribute(collection, "media-size", IPP_TAG_BEGIN_COLLECTION), 0);
++  ASSERT_TRUE(size);
++  EXPECT_EQ(
++      ippGetInteger(ippFindAttribute(size, "x-dimension", IPP_TAG_INTEGER), 0),
++      21000);
++  EXPECT_EQ(
++      ippGetInteger(ippFindAttribute(size, "y-dimension", IPP_TAG_INTEGER), 0),
++      29700);
++}
++
++TEST(PrintSettingsConversionTest,
++     CupsMediaCollectionPreservesUnspecifiedFields) {
++  PrintSettings settings;
++  EXPECT_TRUE(PrintSettingsToCupsMediaCollection(settings).empty());
++  settings.set_input_tray("tray-2");
++  auto job = EncodeMediaCollection(settings);
++  auto* attribute =
++      ippFindAttribute(job.get(), "media-col", IPP_TAG_BEGIN_COLLECTION);
++  ASSERT_TRUE(attribute);
++  ipp_t* collection = ippGetCollection(attribute, 0);
++  ASSERT_TRUE(collection);
++  EXPECT_FALSE(ippFindAttribute(collection, "media-type", IPP_TAG_ZERO));
++  EXPECT_FALSE(ippFindAttribute(collection, "media-size", IPP_TAG_ZERO));
++}
++
++TEST(PrintSettingsConversionTest, CupsMediaCollectionEscapesOptionValues) {
++  PrintSettings settings;
++  const std::string value = "tray\\\" media-type=labels";
++  settings.set_input_tray(value);
++  auto job = EncodeMediaCollection(settings);
++  auto* attribute =
++      ippFindAttribute(job.get(), "media-col", IPP_TAG_BEGIN_COLLECTION);
++  ASSERT_TRUE(attribute);
++  ipp_t* collection = ippGetCollection(attribute, 0);
++  ASSERT_TRUE(collection);
++  EXPECT_STREQ(ippGetString(ippFindAttribute(collection, "media-source",
++                                             IPP_TAG_KEYWORD),
++                            0, nullptr),
++               value.c_str());
++  EXPECT_FALSE(ippFindAttribute(collection, "media-type", IPP_TAG_ZERO));
++}
++#endif  // BUILDFLAG(USE_CUPS)
++
++TEST(PrintSettingsConversionTest, PrinterMediaSettings) {
++  auto job = base::test::ParseJsonDict(kPrinterSettings);
++  job.Set("inputTray", "258");
++  job.Set("mediaType", "257");
++  auto settings = PrintSettingsFromJobSettings(job);
++  ASSERT_TRUE(settings);
++  EXPECT_EQ(settings->input_tray(), "258");
++  EXPECT_EQ(settings->media_type(), "257");
++
++  job.Set("inputTray", 258);
++  EXPECT_FALSE(PrintSettingsFromJobSettings(job));
++}
++
+ }  // namespace printing
+diff --git a/printing/print_settings_unittest.cc b/printing/print_settings_unittest.cc
+index 8792fdb451d8e51cae541073ad0f77ba12f704bb..8ef11aadae77e2bbd0f8bfc705ecbc3a6fb9cc74 100644
+--- a/printing/print_settings_unittest.cc
++++ b/printing/print_settings_unittest.cc
+@@ -15,6 +15,24 @@
+ 
+ namespace printing {
+ 
++TEST(PrintSettingsTest, PrinterMediaCopyAndClear) {
++  PrintSettings original;
++  original.set_input_tray("258");
++  original.set_media_type("257");
++  PrintSettings copy(original);
++  EXPECT_EQ(copy.input_tray(), "258");
++  EXPECT_EQ(copy.media_type(), "257");
++  EXPECT_EQ(copy, original);
++  copy.set_input_tray("259");
++  EXPECT_NE(copy, original);
++  copy = original;
++  copy.set_media_type("258");
++  EXPECT_NE(copy, original);
++  copy.Clear();
++  EXPECT_TRUE(copy.input_tray().empty());
++  EXPECT_TRUE(copy.media_type().empty());
++}
++
+ TEST(PrintSettingsTest, ColorModeToColorModel) {
+   for (int mode = static_cast<int>(mojom::ColorModel::kUnknownColorModel);
+        mode <= static_cast<int>(mojom::ColorModel::kMaxValue); ++mode) {
+diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
+index f7985331838387232b27e557e435113479dbb780..baf1e382a50edc6d00b80ec45187114fd494a78d 100644
+--- a/printing/printing_context_mac.h
++++ b/printing/printing_context_mac.h
+@@ -96,6 +96,7 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
+   // Sets output color mode in PMPrintSettings.
+   // Returns true if color mode is set.
+   bool SetOutputColor(int color_mode);
++  bool SetPrinterMediaInPrintSettings();
+ 
+   // Sets resolution in PMPrintSettings.
+   // Returns true if resolution is set.
+diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
+index edbb7d5281e52aed6a4d06f94f8a78e9ff978d97..8b2b83887cbc7961e49772853c180af48b998818 100644
+--- a/printing/printing_context_mac.mm
++++ b/printing/printing_context_mac.mm
+@@ -27,6 +27,7 @@
+ #include "printing/metafile.h"
+ #include "printing/mojom/print.mojom.h"
+ #include "printing/print_job_constants_cups.h"
++#include "printing/print_settings_conversion.h"
+ #include "printing/print_settings_initializer_mac.h"
+ #include "printing/units.h"
+ 
+@@ -554,6 +555,10 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+     return OnError();
+   }
+ 
++  if (!printer_settings.external_preview && !SetPrinterMediaInPrintSettings()) {
++    return OnError();
++  }
++
+   [print_info_ updateFromPMPrintSettings];
+ 
+   InitPrintSettingsFromPrintInfo();
+@@ -766,6 +771,32 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+   return true;
+ }
+ 
++bool PrintingContextMac::SetPrinterMediaInPrintSettings() {
++  const std::string collection = PrintSettingsToCupsMediaCollection(*settings_);
++  if (collection.empty()) {
++    return true;
++  }
++
++  PMPrintSettings print_settings =
++      static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
++  // Clear conflicting per-job PPD/paper-feed choices inherited from a preset.
++  if (!settings_->input_tray().empty()) {
++    for (CFStringRef key : {CFSTR("InputSlot"), CFSTR("AP_D_InputSlot"),
++                            kPMPrimaryPaperFeedKey, kPMSecondaryPaperFeedKey}) {
++      if (PMPrintSettingsSetValue(print_settings, key, nullptr, false) !=
++          noErr) {
++        return false;
++      }
++    }
++  }
++  if (!settings_->media_type().empty() &&
++      PMPrintSettingsSetValue(print_settings, CFSTR("MediaType"), nullptr,
++                              false) != noErr) {
++    return false;
++  }
++  return SetKeyValue("media-col", collection);
++}
++
+ bool PrintingContextMac::SetResolution(const gfx::Size& dpi_size) {
+   if (dpi_size.IsEmpty())
+     return true;
+diff --git a/printing/printing_context_win.cc b/printing/printing_context_win.cc
+index 8252622352a56486a6bb74df481aa9ae0bb16056..0a29ba31818e34028a91e6432921178b84e356c5 100644
+--- a/printing/printing_context_win.cc
++++ b/printing/printing_context_win.cc
+@@ -283,6 +283,20 @@ mojom::ResultCode PrintingContextWin::UpdatePrinterSettings(
+     }
+   }
+ 
++  if (!printer_settings.show_system_dialog &&
++      !PrinterSupportsMediaSettings(printer.Get(), settings_->input_tray(),
++                                    settings_->media_type(),
++                                    scoped_dev_mode.get())) {
++    ::SetLastError(ERROR_INVALID_PARAMETER);
++    return OnError();
++  }
++
++  if (!ApplyPrinterMediaSettings(settings_->input_tray(),
++                                 settings_->media_type(), *scoped_dev_mode)) {
++    ::SetLastError(ERROR_INVALID_PARAMETER);
++    return OnError();
++  }
++
+   // Update data using DocumentProperties.
+   if (printer_settings.show_system_dialog) {
+     mojom::ResultCode result = mojom::ResultCode::kFailed;
+@@ -296,6 +310,14 @@ mojom::ResultCode PrintingContextWin::UpdatePrinterSettings(
+   if (!scoped_dev_mode)
+     return OnError();
+ 
++  // A driver may reject or substitute an unsupported tray/media combination.
++  // Do not silently print on a different stock than the caller requested.
++  if (!PrinterMediaSettingsMatch(settings_->input_tray(),
++                                 settings_->media_type(), *scoped_dev_mode)) {
++    ::SetLastError(ERROR_INVALID_PARAMETER);
++    return OnError();
++  }
++
+   // Since CreateDevMode() doesn't honor color settings through the GDI call
+   // to DocumentProperties(), ensure the requested values persist here.
+   scoped_dev_mode->dmFields |= DM_COLOR;
+diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
+index f72c70fbcec039b00c774c23976fbdd477ba5f23..f9044ea44e6a1ca51eff0cc3ae83d4dde95bcacf 100644
+--- a/ui/gtk/printing/print_dialog_gtk.cc
++++ b/ui/gtk/printing/print_dialog_gtk.cc
+@@ -343,6 +343,8 @@
+     gtk_print_settings_set(gtk_settings_, setting_name.c_str(),
+                            pair.second.GetString().c_str());
+   }
++
++  UpdatePrinterMediaSettings(*settings);
+ 
+   std::string color_value;
+   std::string color_setting_name;
+@@ -420,6 +422,9 @@
+ #if BUILDFLAG(ENABLE_OOP_PRINTING_NO_OOP_BASIC_PRINT_DIALOG)
+ void PrintDialogGtk::LoadPrintSettings(const PrintSettings& settings) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++#if BUILDFLAG(USE_CUPS)
++  UpdatePrinterMediaSettings(settings);
++#endif
+   const std::string* printer_name =
+       settings.system_print_dialog_data().FindString(
+           printing::kLinuxSystemPrintDialogDataPrinter);
+@@ -458,6 +463,12 @@
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   callback_ = std::move(callback);
+   DCHECK(callback_);
++
++#if BUILDFLAG(USE_CUPS)
++  // The user's system-dialog selections take precedence over per-job choices.
++  input_tray_.clear();
++  media_type_.clear();
++#endif
+ 
+   dialog_ = gtk_print_unix_dialog_new(nullptr, nullptr);
+   gtk::SetGtkTransientForAura(dialog_, parent_view, platform_);
+@@ -635,6 +646,13 @@
+   static_cast<PrintJobCallbackHelper*>(user_data)->OnJobCompleted(print_job,
+                                                                   error);
+ }
++#if BUILDFLAG(USE_CUPS)
++void PrintDialogGtk::UpdatePrinterMediaSettings(const PrintSettings& settings) {
++  input_tray_ = settings.input_tray();
++  media_type_ = settings.media_type();
++}
++#endif
++
+ void PrintDialogGtk::SendDocumentToPrinter(
+     const std::u16string& document_name) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -645,12 +663,29 @@
+     return;
+   }
+ 
+-  // Save the settings for next time.
++  // Save the settings before applying explicit per-job media choices.
+   GetLastUsedSettings().SetLastUsedSettings(gtk_settings_);
+ 
++  ScopedGObject<GtkPrintSettings> job_settings =
++      TakeGObject(gtk_print_settings_copy(gtk_settings_));
+   GtkPrintJob* print_job =
+       gtk_print_job_new(base::UTF16ToUTF8(document_name).c_str(), printer_,
+-                        gtk_settings_, page_setup_);
++                        job_settings.get(), page_setup_);
++#if BUILDFLAG(USE_CUPS)
++  // Linux capability queries expose the driver's PPD choice IDs. Keep sending
++  // through GTK so its CUPS authentication and stored credentials still apply.
++  // GTK 3 cannot encode IPP media-col collections; native driver options also
++  // work for the PPDs CUPS generates for IPP Everywhere printers.
++  GtkPrintSettings* prepared_settings = gtk_print_job_get_settings(print_job);
++  if (!input_tray_.empty()) {
++    gtk_print_settings_set(prepared_settings, "cups-InputSlot",
++                           input_tray_.c_str());
++  }
++  if (!media_type_.empty()) {
++    gtk_print_settings_set(prepared_settings, "cups-MediaType",
++                           media_type_.c_str());
++  }
++#endif
+   gtk_print_job_set_source_file(print_job, path_to_pdf_.value().c_str(),
+                                 nullptr);
+   auto* helper = new PrintJobCallbackHelper{weak_factory_.GetWeakPtr()};
+diff --git a/ui/gtk/printing/print_dialog_gtk.h b/ui/gtk/printing/print_dialog_gtk.h
+index 428b463336ec19174345cd1568c817d3da55ecec..4bf98946ecae1c8a3e63d56d23500b669973089a 100644
+--- a/ui/gtk/printing/print_dialog_gtk.h
++++ b/ui/gtk/printing/print_dialog_gtk.h
+@@ -6,6 +6,7 @@
+ #define UI_GTK_PRINTING_PRINT_DIALOG_GTK_H_
+ 
+ #include <memory>
++#include <string>
+ 
+ #include "base/files/file_path.h"
+ #include "base/functional/callback.h"
+@@ -67,6 +68,10 @@
+   // Prints document named |document_name|.
+   void SendDocumentToPrinter(const std::u16string& document_name);
+ 
++#if BUILDFLAG(USE_CUPS)
++  void UpdatePrinterMediaSettings(const printing::PrintSettings& settings);
++#endif
++
+   // Helper function for initializing |context_|'s PrintSettings with a given
+   // |settings|.
+   void InitPrintSettings(std::unique_ptr<printing::PrintSettings> settings);
+@@ -86,6 +91,12 @@
+   raw_ptr<GtkPageSetup> page_setup_ = nullptr;
+   ScopedGObject<GtkPrinter> printer_;
+ 
++#if BUILDFLAG(USE_CUPS)
++  // Explicit choices apply only to this job, never GTK's saved settings.
++  std::string input_tray_;
++  std::string media_type_;
++#endif
++
+   base::OnceClosure reenable_parent_events_;
+ 
+   base::FilePath path_to_pdf_;

@@ -24,6 +24,14 @@ import * as url from 'node:url';
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
 import {
+  checkPrinterAuthentication,
+  effectiveMediaMember,
+  getPrintCapture,
+  listPrintCaptures,
+  mediaMember,
+  readNextPrintCapture
+} from './lib/printing-helpers';
+import {
   ifdescribe,
   defer,
   waitUntil,
@@ -334,6 +342,56 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
+    for (const option of ['inputTray', 'mediaType'] as const) {
+      it(`rejects malformed ${option} IDs before printing`, () => {
+        for (const value of [
+          '',
+          'tray\0suffix',
+          'tray"2',
+          'tray\\2',
+          'tray 2',
+          '{tray}',
+          'x'.repeat(256),
+          2,
+          null,
+          {}
+        ]) {
+          expect(() => {
+            w.webContents.print({ silent: true, [option]: value } as any);
+          }).to.throw(`${option} must be a non-empty printer capability ID string`);
+        }
+      });
+
+      ifit(process.platform === 'win32')(`rejects invalid ${option} IDs before printing`, () => {
+        for (const value of ['0', '-1', 'labels', '4294967296']) {
+          expect(() => {
+            w.webContents.print({ silent: true, [option]: value } as any);
+          }).to.throw(`${option} must be a valid printer capability ID string`);
+        }
+      });
+
+      it(`accepts ${option} driver IDs before checking the printer`, (done) => {
+        w.webContents.print(
+          {
+            silent: true,
+            deviceName: 'electron-nonexistent-printer',
+            [option]: process.platform === 'win32' ? '1' : 'tray-2'
+          },
+          (success, reason) => {
+            expect(success).to.equal(false);
+            expect(reason).to.equal('Invalid deviceName provided');
+            done();
+          }
+        );
+      });
+    }
+
+    ifit(process.platform === 'win32')('rejects input tray IDs larger than a Windows WORD', () => {
+      expect(() => {
+        w.webContents.print({ silent: true, inputTray: '65536' });
+      }).to.throw('inputTray must be a valid printer capability ID string');
+    });
+
     it('fails when an invalid deviceName is passed', (done) => {
       w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
         expect(success).to.equal(false);
@@ -376,10 +434,116 @@ describe('webContents module', () => {
     });
   });
 
+  ifdescribe(features.isPrintingEnabled())('webContents.getPrinterCapabilitiesAsync()', () => {
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(closeAllWindows);
+
+    it('rejects invalid printer names', async () => {
+      for (const name of ['', 'printer\0suffix', undefined, null, 42]) {
+        await expect(w.webContents.getPrinterCapabilitiesAsync(name as any)).to.be.rejectedWith(
+          'deviceName must be a non-empty printer name without null characters'
+        );
+      }
+    });
+
+    it('rejects unknown printers', async () => {
+      await expect(w.webContents.getPrinterCapabilitiesAsync('electron-nonexistent-printer')).to.be.rejectedWith(
+        'Failed to open printer'
+      );
+    });
+
+    ifit(process.platform === 'win32' && isTestingBindingAvailable())(
+      'does not block printer listing, timers or other queries when a driver hangs',
+      async function () {
+        this.timeout(20000);
+        const testing = process._linkedBinding('electron_common_testing');
+        const existingPids = new Set(app.getAppMetrics().map((metric) => metric.pid));
+        const getHelper = () =>
+          app.getAppMetrics().find((metric) => metric.name === 'Printer capabilities' && !existingPids.has(metric.pid));
+        const previousListing = w.webContents.getPrintersAsync();
+        expect(testing.setNextPrinterCapabilitiesQueryForTesting('block', 7000)).to.equal(true);
+        let settled = false;
+        const blocked = w.webContents.getPrinterCapabilitiesAsync('electron-blocked-printer');
+        blocked.then(
+          () => {
+            settled = true;
+          },
+          () => {
+            settled = true;
+          }
+        );
+        const timedOut = expect(blocked).to.be.rejectedWith('Printer capability lookup timed out');
+        try {
+          await waitUntil(() => getHelper() !== undefined, { timeout: 5000 });
+          const pid = getHelper()!.pid;
+          const start = Date.now();
+          await setTimeout(50);
+          expect(Date.now() - start).to.be.lessThan(1000);
+          expect(await previousListing).to.be.an('array');
+          expect(settled, 'an earlier printer listing waited for the blocked capability query').to.equal(false);
+          expect(await w.webContents.getPrintersAsync()).to.be.an('array');
+          expect(settled, 'printer listing waited for the blocked capability query').to.equal(false);
+
+          expect(testing.setNextPrinterCapabilitiesQueryForTesting('success', 10000)).to.equal(true);
+          expect(await w.webContents.getPrinterCapabilitiesAsync('electron-independent-query')).to.deep.equal({
+            inputTrays: [],
+            mediaTypes: []
+          });
+          expect(settled, 'another capability query waited for the blocked driver').to.equal(false);
+          await timedOut;
+          await waitUntil(() => app.getAppMetrics().every((metric) => metric.pid !== pid), { timeout: 5000 });
+        } finally {
+          testing.setNextPrinterCapabilitiesQueryForTesting('', 0);
+          await timedOut;
+        }
+      }
+    );
+
+    ifit(process.platform === 'win32' && isTestingBindingAvailable())(
+      'rejects a crashed capability helper and permits the next query',
+      async function () {
+        this.timeout(20000);
+        const testing = process._linkedBinding('electron_common_testing');
+        expect(testing.setNextPrinterCapabilitiesQueryForTesting('crash', 10000)).to.equal(true);
+        await expect(w.webContents.getPrinterCapabilitiesAsync('electron-crashed-printer')).to.be.rejectedWith(
+          'Printer capability lookup process exited unexpectedly'
+        );
+        expect(testing.setNextPrinterCapabilitiesQueryForTesting('success', 10000)).to.equal(true);
+        expect(await w.webContents.getPrinterCapabilitiesAsync('electron-recovery-query')).to.deep.equal({
+          inputTrays: [],
+          mediaTypes: []
+        });
+      }
+    );
+
+    it('returns driver IDs and default flags without printing', async function () {
+      this.timeout(30000);
+      // Query the dedicated fixture so local network printers cannot delay this test.
+      const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME;
+      if (!deviceName) return this.skip();
+      const capabilities = await w.webContents.getPrinterCapabilitiesAsync(deviceName);
+      expect(capabilities).to.have.all.keys('inputTrays', 'mediaTypes');
+      for (const options of [capabilities.inputTrays, capabilities.mediaTypes]) {
+        expect(options).to.be.an('array');
+        for (const option of options) {
+          expect(option.id).to.be.a('string').and.not.be.empty;
+          if (process.platform === 'win32') expect(option.id).to.match(/^[1-9][0-9]*$/);
+          expect(option.displayName).to.be.a('string');
+          expect(option.isDefault).to.be.a('boolean');
+        }
+      }
+    });
+  });
+
   // Exercises a real silent print with options against a virtual printer
   // provisioned by script/spec-runner.js and exposed via
   // ELECTRON_TEST_PRINTER_NAME.
-  // Self-skips when no such printer is available.
+  // Self-skips when no such printer is available, unless a capture fixture was
+  // configured. Missing capture fixtures fail so their coverage cannot disappear.
   ifdescribe(features.isPrintingEnabled())('webContents.print() settings', function () {
     let w: BrowserWindow;
     const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME ?? null;
@@ -405,6 +569,9 @@ describe('webContents module', () => {
     before(async function () {
       this.timeout(30000);
       if (!deviceName || !(await printerVisible(deviceName))) {
+        if (process.env.ELECTRON_TEST_PRINT_CAPTURE) {
+          throw new Error('The configured print capture fixture is not available');
+        }
         return this.skip();
       }
     });
@@ -420,6 +587,8 @@ describe('webContents module', () => {
 
       await w.loadURL('data:text/html,<h1>print test</h1>');
 
+      const capture = getPrintCapture();
+      const previous = capture ? await listPrintCaptures(capture) : [];
       const printResult = new Promise<[boolean, string]>((resolve) => {
         w.webContents.print({ silent: true, deviceName, printBackground: true }, (success, failureReason) =>
           resolve([success, failureReason])
@@ -427,9 +596,13 @@ describe('webContents module', () => {
       });
 
       // Guard against environments where silent printing surfaces a native
-      // dialog (which would block the callback) — skip rather than hang.
+      // dialog (which would block the callback). Skip the smoke test on timeout,
+      // but fail when a configured capture fixture does not complete the job.
       const result = await Promise.race([printResult, setTimeout(30000).then(() => 'timeout' as const)]);
-      if (result === 'timeout') return this.skip();
+      if (result === 'timeout') {
+        if (capture) throw new Error('Printing to the configured capture fixture timed out');
+        return this.skip();
+      }
 
       const [success, failureReason] = result;
       // Regression guard for #52266: non-empty print settings must never again
@@ -437,7 +610,74 @@ describe('webContents module', () => {
       // settings".
       expect(failureReason, `settings resolution failed: ${failureReason}`).to.not.match(/Invalid printer settings/);
       expect(success, `print failed: ${failureReason}`).to.equal(true);
+      if (capture) await readNextPrintCapture(capture, previous);
     });
+
+    for (const documentType of ['HTML', 'PDF']) {
+      it(`delivers non-default tray and media choices in ${documentType} print jobs without leaking them`, async function () {
+        this.timeout(180000);
+        const capture = getPrintCapture();
+        if (!capture) return this.skip();
+        if (documentType === 'PDF' && !features.isPDFViewerEnabled()) return this.skip();
+
+        const capabilities = await w.webContents.getPrinterCapabilitiesAsync(capture.deviceName);
+        expect(capabilities.inputTrays.map((option) => option.id)).to.include(capture.inputTray.id);
+        expect(capabilities.mediaTypes.map((option) => option.id)).to.include(capture.mediaType.id);
+
+        if (documentType === 'PDF') {
+          const readyToPrint = once(w.webContents, '-pdf-ready-to-print');
+          await w.loadFile(path.join(fixturesPath, 'cat.pdf'));
+          await readyToPrint;
+        } else {
+          await w.loadURL('data:text/html,<h1>printer media test</h1>');
+        }
+
+        let defaultTray: string | undefined;
+        let defaultMedia: string | undefined;
+        const selections = [
+          {},
+          { inputTray: capture.inputTray.id },
+          { mediaType: capture.mediaType.id },
+          { inputTray: capture.inputTray.id, mediaType: capture.mediaType.id },
+          {}
+        ];
+        for (const [index, selection] of selections.entries()) {
+          const previous = await listPrintCaptures(capture);
+          const [success, failureReason] = await new Promise<[boolean, string]>((resolve) => {
+            w.webContents.print(
+              { silent: true, deviceName: capture.deviceName, pageSize: 'A4', ...selection },
+              (success, failureReason) => resolve([success, failureReason])
+            );
+          });
+          expect(success, `print failed: ${failureReason}`).to.equal(true);
+          const job = await readNextPrintCapture(capture, previous);
+          const tray = effectiveMediaMember(job, 'media-source');
+          const media = effectiveMediaMember(job, 'media-type');
+          if (index === 0) {
+            defaultTray = tray;
+            defaultMedia = media;
+            expect(defaultTray).to.be.a('string').and.not.equal(capture.inputTray.ipp);
+            expect(defaultMedia).to.be.a('string').and.not.equal(capture.mediaType.ipp);
+          }
+          expect(tray, `job ${index}: received tray`).to.equal(
+            selection.inputTray ? capture.inputTray.ipp : defaultTray
+          );
+          expect(media, `job ${index}: received media`).to.equal(
+            selection.mediaType ? capture.mediaType.ipp : defaultMedia
+          );
+          // The Windows IPP driver can round down by one hundredth of a mm.
+          const dimensionTolerance = process.platform === 'win32' ? 1 : 0;
+          expect(Number(effectiveMediaMember(job, 'x-dimension'))).to.be.closeTo(21000, dimensionTolerance);
+          expect(Number(effectiveMediaMember(job, 'y-dimension'))).to.be.closeTo(29700, dimensionTolerance);
+          if (selection.inputTray) {
+            expect(mediaMember(job.IPP_MEDIA_COL, 'media-source')).to.equal(capture.inputTray.ipp);
+          }
+          if (selection.mediaType) expect(mediaMember(job.IPP_MEDIA_COL, 'media-type')).to.equal(capture.mediaType.ipp);
+        }
+        expect(await w.webContents.getPrinterCapabilitiesAsync(capture.deviceName)).to.deep.equal(capabilities);
+        await checkPrinterAuthentication(capture);
+      });
+    }
   });
 
   describe('webContents.executeJavaScript', () => {

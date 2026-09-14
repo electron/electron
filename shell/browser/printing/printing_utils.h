@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_PRINTING_PRINTING_UTILS_H_
 #define ELECTRON_SHELL_BROWSER_PRINTING_PRINTING_UTILS_H_
 
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"

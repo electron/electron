@@ -15,6 +15,7 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "printing/buildflags/buildflags.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
@@ -25,6 +26,10 @@
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
+
+#if DCHECK_IS_ON() && BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/printer_capabilities_query.h"
+#endif
 
 #if DCHECK_IS_ON()
 namespace {
@@ -291,6 +296,10 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("commitPendingLocalStateWrites",
                  &CommitPendingLocalStateWrites);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(ENABLE_PRINTING)
+  dict.SetMethod("setNextPrinterCapabilitiesQueryForTesting",
+                 &electron::SetNextPrinterCapabilitiesQueryForTesting);
+#endif
 }
 
 }  // namespace
