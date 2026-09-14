@@ -684,6 +684,7 @@ filenames = {
     "shell/common/gin_helper/cleaned_up_at_exit.h",
     "shell/common/gin_helper/constructible.h",
     "shell/common/gin_helper/constructor.h",
+    "shell/common/gin_helper/converted_value.h",
     "shell/common/gin_helper/destroyable.cc",
     "shell/common/gin_helper/destroyable.h",
     "shell/common/gin_helper/dictionary.h",

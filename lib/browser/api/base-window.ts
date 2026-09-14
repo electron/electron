@@ -177,8 +177,4 @@ Object.defineProperty(BaseWindow.prototype, 'movable', {
   }
 });
 
-BaseWindow.getFocusedWindow = () => {
-  return BaseWindow.getAllWindows().find((win) => win.isFocused()) ?? null;
-};
-
 module.exports = BaseWindow;
