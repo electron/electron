@@ -65,6 +65,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     virtual std::u16string GetAccessibilityLabelForCommandId(
         int command_id) const = 0;
 
+    virtual std::u16string GetSecondaryLabelForCommandId(
+        int command_id) const = 0;
+
 #if BUILDFLAG(IS_MAC)
     virtual bool GetSharingItemForCommandId(int command_id,
                                             SharingItem* item) const = 0;
