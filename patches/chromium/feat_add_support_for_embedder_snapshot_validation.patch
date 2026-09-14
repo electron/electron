@@ -6,7 +6,7 @@ Subject: feat: add support for embedder snapshot validation
 IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
 
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 3d39e021f8a00ba3300085331225156cbc484202..2416c8f53ac87761faa76b4cb6ed8a614d01ac72 100644
+index 8a55d77540b0dd4d51bb3798f5af3123e131a6fb..599dd7828d5721c96fcfdbe11d97693548346fc0 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -75,11 +75,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
@@ -45,10 +45,10 @@ index 3d39e021f8a00ba3300085331225156cbc484202..2416c8f53ac87761faa76b4cb6ed8a61
   public:
    void Visit(const std::string& feature_name,
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index 6f7382cd600cd34916d9382878aee4b469dae5d0..61ed0f46437d2e1abbcebcfb64df06d17c8d9139 100644
+index ec64afd9dd91b292604ca834a91b9cfbd52eb853..62e5c04e23a7f68b696c44f57981c3d491b284cc 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
-@@ -11,6 +11,7 @@
+@@ -9,6 +9,7 @@
  
  #include "base/files/file.h"
  #include "base/files/memory_mapped_file.h"
@@ -56,7 +56,7 @@ index 6f7382cd600cd34916d9382878aee4b469dae5d0..61ed0f46437d2e1abbcebcfb64df06d1
  #include "build/build_config.h"
  #include "gin/array_buffer.h"
  #include "gin/gin_export.h"
-@@ -28,6 +29,8 @@ class StartupData;
+@@ -26,6 +27,8 @@ class StartupData;
  
  namespace gin {
  
