@@ -100,7 +100,7 @@ describe('BrowserWindow module', () => {
           show: false,
           // apparently void 0 had different behaviour from undefined in the
           // issue that this test is supposed to catch.
-          webContents: void 0 // eslint-disable-line no-void
+          webContents: void 0 // oxlint-disable-line no-void
         } as any);
         w.destroy();
       }).not.to.throw();
@@ -125,7 +125,7 @@ describe('BrowserWindow module', () => {
       const w1 = new BrowserWindow({ show: false, name: 'duplicate-name' });
 
       expect(() => {
-        // eslint-disable-next-line no-new
+        // oxlint-disable-next-line no-new
         new BrowserWindow({ show: false, name: 'duplicate-name' });
       }).to.throw("Window name 'duplicate-name' is already in use. Window names must be unique.");
 
@@ -136,7 +136,7 @@ describe('BrowserWindow module', () => {
       const base = new BaseWindow({ show: false, name: 'shared-name' });
 
       expect(() => {
-        // eslint-disable-next-line no-new
+        // oxlint-disable-next-line no-new
         new BrowserWindow({ show: false, name: 'shared-name' });
       }).to.throw("Window name 'shared-name' is already in use. Window names must be unique.");
 
@@ -4057,11 +4057,11 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {
       expect(() => {
-        /* eslint-disable-next-line no-new */
+        /* oxlint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group1'
         });
-        /* eslint-disable-next-line no-new */
+        /* oxlint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group2',
           frame: false
@@ -4683,7 +4683,7 @@ describe('BrowserWindow module', () => {
           expect(message).to.equal('preload-stack-trace-marker');
           // The throw is on line 9 of preload-stack-trace.js (see the marker
           // comment in that fixture).
-          expect(stack).to.match(/preload-stack-trace\.js:9:\d+/, `stack should reference line 9, got:\n${stack}`);
+          expect(stack).to.match(/preload-stack-trace\.js:8:\d+/, `stack should reference line 8, got:\n${stack}`);
         });
       }
     });
@@ -6056,7 +6056,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', async () => {
       const w = new BrowserWindow();
       const sheetBegin = once(w, 'sheet-begin');
-      // eslint-disable-next-line no-new
+      // oxlint-disable-next-line no-new
       new BrowserWindow({
         modal: true,
         parent: w
