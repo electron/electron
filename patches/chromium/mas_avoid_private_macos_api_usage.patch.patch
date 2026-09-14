@@ -471,7 +471,7 @@ index af1a8021dd83eab66047d622323f2308aac39b8b..8ecf7a4c0ef2163ce7fb19aa3f68c619
  
  bool g_is_out_of_process_app_shim = false;
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index ae93fe9bd90c4d63983cf824cf2c23ef39b36eed..408a3f48e52a411fdc399cce15e9beb40e870857 100644
+index ae93fe9bd90c4d63983cf824cf2c23ef39b36eed..7287359129278df032868a2a056714b2eda5d882 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
@@ -509,14 +509,14 @@ index ae93fe9bd90c4d63983cf824cf2c23ef39b36eed..408a3f48e52a411fdc399cce15e9beb4
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -216,8 +223,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -216,8 +223,10 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
--  [base::apple::ObjCCastStrict<BrowserWindowFrame>(self.contentView.superview)
--      setAlwaysShowTrafficLights:alwaysShow];
-+  // [base::apple::ObjCCastStrict<BrowserWindowFrame>(self.contentView.superview)
-+  //    setAlwaysShowTrafficLights:alwaysShow];
++#if !IS_MAS_BUILD()
+   [base::apple::ObjCCastStrict<BrowserWindowFrame>(self.contentView.superview)
+       setAlwaysShowTrafficLights:alwaysShow];
++#endif
  }
  
  @end
