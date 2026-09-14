@@ -311,6 +311,13 @@ declare namespace NodeJS {
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
+    _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
+      setup(objects: {
+        ipcMain: NodeJS.EventEmitter;
+        ipcMainInternal: NodeJS.EventEmitter;
+        MessagePortMain: Function;
+      }): void;
+    };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };

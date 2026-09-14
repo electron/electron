@@ -12,7 +12,7 @@
 #include "content/public/common/child_process_id.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
-#include "shell/common/gin_helper/event.h"
+#include "v8/include/v8-forward.h"
 
 namespace content {
 class RenderProcessHost;
@@ -27,8 +27,9 @@ namespace electron {
 class ElectronBrowserContext;
 
 namespace api {
+class IpcMainServiceWorkerEvent;
 class Session;
-}
+}  // namespace api
 
 class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
                                     public content::RenderProcessHostObserver {
@@ -74,7 +75,7 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
   ElectronBrowserContext* GetBrowserContext();
   gin::WeakCell<api::Session>* GetSession();
 
-  gin_helper::internal::Event* MakeIPCEvent(
+  api::IpcMainServiceWorkerEvent* MakeIPCEvent(
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,
