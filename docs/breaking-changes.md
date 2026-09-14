@@ -72,25 +72,21 @@ renderer rather than the Node.js implementations. `require` in a sandboxed prelo
 now only loads `electron` (and `electron/renderer`, `electron/common`); `process`
 and `global` are still provided.
 
-```js
-// Removed in a sandboxed preload
-const { EventEmitter } = require('node:events')
-const { setImmediate } = require('node:timers')
-const { parse } = require('node:url')
-const encoded = Buffer.from(data).toString('base64')
-setImmediate(callback)
+Use the equivalent Web APIs instead, or bundle the polyfill you need into your
+preload script:
 
-// Replace with Web APIs (or bundle your own polyfill into the preload)
-class Emitter extends EventTarget {}
-const parsed = new URL(input)
-const decoded = new TextDecoder().decode(data) // or btoa() / Uint8Array.prototype.toBase64()
-setTimeout(callback) // or queueMicrotask(callback)
-```
+| Removed | Use instead |
+| --- | --- |
+| `require('events')` / `EventEmitter` | `EventTarget` and `Event`, or bundle the `events` package |
+| `require('timers')`, `setImmediate`, `clearImmediate` | `setTimeout` / `clearTimeout`, `queueMicrotask` |
+| `require('url')` | `URL`, `URLSearchParams` |
+| `Buffer` | `Uint8Array`, `TextEncoder` / `TextDecoder`, `atob` / `btoa`, or bundle the `buffer` package |
 
 `ipcRenderer` and the preload's `process` object keep their `EventEmitter` methods
 (`on`, `once`, `off`, `emit`, `removeListener`, `removeAllListeners`, ...).
 Preload scripts for renderers with `sandbox: false` are unaffected and continue to
 have the full Node.js environment.
+
 ### Removed: `contentTracing.enableHeapProfiling()`
 
 The experimental `contentTracing.enableHeapProfiling()` API has been removed.
