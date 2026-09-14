@@ -6,12 +6,15 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <utility>
 #include <vector>
 
 #include "base/base_switches.h"
 #include "base/containers/heap_array.h"
+#include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
+#include "base/numerics/clamped_math.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -40,6 +43,27 @@ namespace {
 constexpr uint8_t kNativeImageTag = 'i';
 constexpr uint8_t kTrailerOffsetTag = 0xFE;
 constexpr uint8_t kVersionTag = 0xFF;
+
+// Chromium rejects shared memory above INT_MAX on Apple, while Windows rounds
+// up to 64 KiB before applying the same limit. Round down to the largest size
+// both accept:
+// https://chromium.googlesource.com/chromium/src/+/7fa60cb68134571585fc14168d4d76888c7724de/base/memory/platform_shared_memory_region_apple.cc#136
+// https://chromium.googlesource.com/chromium/src/+/7fa60cb68134571585fc14168d4d76888c7724de/base/memory/platform_shared_memory_region_win.cc#291
+constexpr size_t kMaxIpcSerializationBufferSize =
+    (std::numeric_limits<int>::max() / (64 * 1024)) * (64 * 1024);
+
+#if DCHECK_IS_ON()
+thread_local size_t g_ipc_serialization_buffer_limit =
+    kMaxIpcSerializationBufferSize;
+#endif
+
+size_t GetIpcSerializationBufferLimit() {
+#if DCHECK_IS_ON()
+  return g_ipc_serialization_buffer_limit;
+#else
+  return kMaxIpcSerializationBufferSize;
+#endif
+}
 
 }  // namespace
 
@@ -92,7 +116,15 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     const size_t needed = size > 2 * capacity_ + 64 ? size - 64 : capacity_ + 1;
     if (use_transport_buffer_ &&
         needed > mojo_base::BigBuffer::kMaxInlineBytes) {
-      mojo_base::BigBuffer bigger(std::max(size, 4 * capacity_));
+      const size_t buffer_limit = GetIpcSerializationBufferLimit();
+      if (size > buffer_limit) {
+        // V8 treats a null return as allocation failure and will throw an error.
+        // https://v8.github.io/api/head/classv8_1_1ValueSerializer_1_1Delegate.html#a084ffe43274c09c462e8e6316744eea6 
+        return nullptr;
+      }
+      const size_t grown_capacity = std::min(
+          buffer_limit, base::ClampMul(capacity_, size_t{4}).RawValue());
+      mojo_base::BigBuffer bigger(std::max(size, grown_capacity));
       // Only kernel-zeroed shared memory is adopted; if the region could not
       // be created BigBuffer falls back to uninitialized heap, so stay on ours.
       if (bigger.storage_type() ==
@@ -147,10 +179,15 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   }
 
   void ThrowDataCloneError(v8::Local<v8::String> message) override {
-    isolate_->ThrowException(v8::Exception::Error(message));
+    ThrowExceptionIfNone(v8::Exception::Error(message));
   }
 
  private:
+  void ThrowExceptionIfNone(v8::Local<v8::Value> exception) {
+    if (!isolate_->HasPendingException())
+      isolate_->ThrowException(exception);
+  }
+
   bool Write(v8::Local<v8::Value> value, size_t* length) {
     v8::MicrotasksScope microtasks_scope(
         isolate_->GetCurrentContext(),
@@ -161,7 +198,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     bool wrote_value;
     if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
              .To(&wrote_value)) {
-      isolate_->ThrowException(v8::Exception::Error(
+      ThrowExceptionIfNone(v8::Exception::Error(
           gin::StringToV8(isolate_, "An object could not be cloned.")));
       return false;
     }
@@ -190,6 +227,14 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   bool use_transport_buffer_ = false;
   v8::ValueSerializer serializer_;
 };
+
+#if DCHECK_IS_ON()
+void SetIpcSerializationBufferLimitForTesting(size_t limit) {
+  DCHECK(limit == 0 || limit > mojo_base::BigBuffer::kMaxInlineBytes);
+  g_ipc_serialization_buffer_limit =
+      limit == 0 ? kMaxIpcSerializationBufferSize : limit;
+}
+#endif
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
  public:

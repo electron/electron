@@ -48,6 +48,7 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
+    setIpcSerializationBufferLimitForTesting(limit: number): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
   }
