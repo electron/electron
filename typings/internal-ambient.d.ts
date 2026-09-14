@@ -39,6 +39,7 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(options: { execution: 'sync' }): void;
     requestGarbageCollectionForTesting(options: { execution: 'async' }): Promise<void>;
     runUntilIdle(): void;
+    setIpcSerializationBufferLimitForTesting(limit: number): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
   }
