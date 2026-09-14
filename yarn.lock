@@ -3320,6 +3320,7 @@ __metadata:
     mocha-multi-reporters: "npm:^1.1.7"
     pdfjs-dist: "npm:4.10.38"
     plist: "npm:^3.1.0"
+    protobufjs: "npm:^8.7.2"
     ps-list: "npm:^7.0.0"
     resedit: "npm:^2.0.3"
     send: "npm:^1.2.0"
@@ -5476,6 +5477,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"long@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "long@npm:5.3.2"
+  checksum: 10c0/7130fe1cbce2dca06734b35b70d380ca3f70271c7f8852c922a7c62c86c4e35f0c39290565eca7133c625908d40e126ac57c02b1b1a4636b9457d77e1e60b981
+  languageName: node
+  linkType: hard
+
 "loose-envify@npm:^1.4.0":
   version: 1.4.0
   resolution: "loose-envify@npm:1.4.0"
@@ -7095,6 +7103,15 @@ __metadata:
   version: 6.5.0
   resolution: "property-information@npm:6.5.0"
   checksum: 10c0/981e0f9cc2e5acdb414a6fd48a99dd0fd3a4079e7a91ab41cf97a8534cf43e0e0bc1ffada6602a1b3d047a33db8b5fc2ef46d863507eda712d5ceedac443f0ef
+  languageName: node
+  linkType: hard
+
+"protobufjs@npm:^8.7.2":
+  version: 8.7.2
+  resolution: "protobufjs@npm:8.7.2"
+  dependencies:
+    long: "npm:^5.3.2"
+  checksum: 10c0/8bc6837f4a4bb59b63fb07575726274d8ac1ea6dd44cfb1ef517f34465885ce7f3468195142dfbf7c62f2b40497c3a3177f11fe00e0a2fde5268b29349af7f3c
   languageName: node
   linkType: hard
 
