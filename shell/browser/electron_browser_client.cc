@@ -547,6 +547,12 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
   base::AutoReset<bool> reset(&spare_renderer_compatible_, compatible);
   const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
   pending_processes_[pending_process_id] = web_contents->GetWeakPtr();
+  const auto pending_process_id =
+      pending_site_instance
+          ->GetOrCreateProcess(ProcessAllocationContext{
+              ProcessAllocationSource::kNoProcessCreationExpected})
+          ->GetID();
+  pending_processes_[pending_process_id] = web_contents;
 
   if (rfh->GetParent())
     renderer_is_subframe_.insert(pending_process_id);
