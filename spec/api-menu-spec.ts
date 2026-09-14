@@ -927,6 +927,31 @@ describe('Menu module', function () {
       }
     });
 
+    it('does not crash with an offscreen frame', async () => {
+      const osrWindow = new BrowserWindow({
+        show: false,
+        width: 200,
+        height: 200,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      try {
+        await osrWindow.loadURL('about:blank');
+
+        const menuWillShow = once(menu, 'menu-will-show');
+        menu.popup({ window: osrWindow, frame: osrWindow.webContents.mainFrame });
+        await menuWillShow;
+
+        const menuWillClose = once(menu, 'menu-will-close');
+        menu.closePopup(osrWindow);
+        await menuWillClose;
+      } finally {
+        await closeWindow(osrWindow, { assertNotWindows: false });
+      }
+    });
+
     // https://github.com/electron/electron/issues/35724
     // Maximizing window is enough to trigger the bug
     // FIXME(dsanders11): Test always passes on CI, even pre-fix

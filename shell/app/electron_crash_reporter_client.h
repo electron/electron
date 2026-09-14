@@ -42,6 +42,14 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
                                 std::wstring* version,
                                 std::wstring* special_build,
                                 std::wstring* channel_name) override;
+  std::wstring GetWerRuntimeExceptionModule() override;
+
+  // Lists electron_wer.dll under the current user's WER
+  // RuntimeExceptionHelperModules key so Windows will load it for crashes in
+  // this app. Windows only honours WerRegisterRuntimeExceptionModule() for
+  // DLLs listed there (HKCU or HKLM). Call once from the browser process
+  // before crashpad is initialized; may block.
+  static void RegisterWerHelperModuleForCurrentUser();
 #endif
 
 #if BUILDFLAG(IS_WIN)

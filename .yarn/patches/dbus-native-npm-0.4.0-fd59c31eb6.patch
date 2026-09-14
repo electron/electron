@@ -1,0 +1,33 @@
+diff --git a/index.js b/index.js
+index 59f2d2be89a19ced84e5705af7247cd1aab6e136..e77b9909637f7a732ec912520c0de2e5351357f0 100644
+--- a/index.js
++++ b/index.js
+@@ -40,10 +40,10 @@ function createStream(opts) {
+           return net.createConnection(port, host);
+         case 'unix':
+           if (params.socket) return net.createConnection(params.socket);
+-          if (params.abstract) {
+-            var abs = require('abstract-socket');
+-            return abs.connect('\u0000' + params.abstract);
+-          }
++          // Node.js >= 20.8 supports Linux abstract sockets natively via a
++          // leading NUL byte, so the optional native abstract-socket module
++          // is not needed.
++          if (params.abstract) return net.createConnection('\u0000' + params.abstract);
+           if (params.path) return net.createConnection(params.path);
+           throw new Error(
+             "not enough parameters for 'unix' connection - you need to specify 'socket' or 'abstract' or 'path' parameter"
+diff --git a/package.json b/package.json
+index 2519ac38fad44569cb8a156a91af25a70c8166a5..f22f0318d8c469714153237bbe0a7e0ca83faacc 100644
+--- a/package.json
++++ b/package.json
+@@ -46,9 +46,6 @@
+     "safe-buffer": "^5.1.1",
+     "xml2js": "^0.4.17"
+   },
+-  "optionalDependencies": {
+-    "abstract-socket": "^2.0.0"
+-  },
+   "devDependencies": {
+     "eslint": "^5.0.0",
+     "eslint-config-prettier": "^3.0.0",

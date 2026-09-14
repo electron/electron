@@ -201,15 +201,19 @@
   // arrived here from VoiceOver, which does not pass an event.
   // Create a synthetic event to pass to the click handler.
   if (![event respondsToSelector:@selector(locationInWindow)]) {
-    event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                               location:NSMakePoint(0, 0)
-                          modifierFlags:0
-                              timestamp:NSApp.currentEvent.timestamp
-                           windowNumber:0
-                                context:nil
-                            eventNumber:0
-                             clickCount:1
-                               pressure:1.0];
+    NSEvent* synthetic_event =
+        [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                           location:NSMakePoint(0, 0)
+                      modifierFlags:0
+                          timestamp:NSApp.currentEvent.timestamp
+                       windowNumber:0
+                            context:nil
+                        eventNumber:0
+                         clickCount:1
+                           pressure:1.0];
+    if (!synthetic_event)
+      return;
+    event = synthetic_event;
 
     // We also need to explicitly call the click handler here, since
     // VoiceOver won't trigger mouseUp.
@@ -390,16 +394,21 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model) {
+void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model,
+                              base::ScopedClosureRunner retain_menu) {
+  // -popUpContextMenu: spins a nested loop until the menu closes, so
+  // |retain_menu| covers the whole time the model is in use.
   [status_item_view_ popUpContextMenu:menu_model.get()];
 }
 
 void TrayIconCocoa::PopUpContextMenu(
     const gfx::Point& pos,
-    base::WeakPtr<ElectronMenuModel> menu_model) {
+    base::WeakPtr<ElectronMenuModel> menu_model,
+    base::ScopedClosureRunner retain_menu) {
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&TrayIconCocoa::PopUpOnUI,
-                                weak_factory_.GetWeakPtr(), menu_model));
+      FROM_HERE,
+      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
+                     menu_model, std::move(retain_menu)));
 }
 
 void TrayIconCocoa::CloseContextMenu() {

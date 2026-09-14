@@ -12,10 +12,12 @@
 #include "base/feature_list.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
@@ -28,6 +30,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -77,7 +80,11 @@ using LifecycleState = content::RenderFrameHostImpl::LifecycleStateImpl;
   // FrameTreeNode with a new RFH. In these cases, it's marked for
   // deletion. As this pending deletion RFH won't be following future
   // swaps, we need to indicate that its been detached.
-  return GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers;
+  // Also covers CommitPending: the old RFH is no longer current but still
+  // kActive, and embedder callbacks (focus/blur) can run in that window.
+  const auto* rfh_impl = static_cast<const content::RenderFrameHostImpl*>(rfh);
+  return GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers ||
+         rfh_impl->frame_tree_node()->current_frame_host() != rfh_impl;
 }
 
 }  // namespace
@@ -172,8 +179,12 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     auto& map = GetFrameTreeNodeIdMap();
     auto [it, inserted] = map.try_emplace(frame_tree_node_id_, this);
     if (!inserted) {
-      CHECK(!it->second);
+      WebFrameMain* stale = it->second.Get();
       it->second = this;
+      // A live entry here was never told its frame went away; dispose it
+      // rather than leave two live instances for one node.
+      if (stale)
+        stale->MarkRenderFrameDisposed();
     }
   }
 
@@ -198,6 +209,24 @@ void WebFrameMain::Destroyed() {
   MarkRenderFrameDisposed();
 }
 
+// static
+void WebFrameMain::DestroyAllForWebContents(
+    content::WebContents* web_contents) {
+  // The token map covers every live instance (the FTN-id map does not).
+  // Collect first; Destroyed() mutates both maps.
+  std::vector<content::GlobalRenderFrameHostToken> tokens;
+  for (const auto& [token, web_frame] : GetFrameTokenMap()) {
+    if (web_frame && content::WebContents::FromFrameTreeNodeId(
+                         web_frame->frame_tree_node_id_) == web_contents) {
+      tokens.push_back(token);
+    }
+  }
+  for (const auto& token : tokens) {
+    if (WebFrameMain* web_frame = FromFrameToken(token))
+      web_frame->Destroyed();
+  }
+}
+
 void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_detached_ = true;
   render_frame_disposed_ = true;
@@ -212,6 +241,10 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 
 // Should only be called when swapping frames.
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
+  // From() may already have adopted |rfh| before RenderFrameHostChanged ran.
+  if (!render_frame_disposed_ && frame_token_ == rfh->GetGlobalFrameToken())
+    return;
+
   GetFrameTokenMap().erase(frame_token_);
 
   // Ensure that RFH being swapped in doesn't already exist as its own
@@ -221,6 +254,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   DCHECK(inserted);
 
   render_frame_disposed_ = false;
+  render_frame_detached_ = false;
   TeardownMojoConnection();
   MaybeSetupMojoConnection();
 }
@@ -243,7 +277,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   // Optional userGesture parameter
-  bool user_gesture;
+  bool user_gesture = false;
   if (!args->PeekNext().IsEmpty()) {
     if (args->PeekNext()->IsBoolean()) {
       args->GetNext(&user_gesture);
@@ -251,8 +285,6 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
       args->ThrowTypeError("userGesture must be a boolean");
       return handle;
     }
-  } else {
-    user_gesture = false;
   }
 
   if (render_frame_disposed_) {
@@ -333,7 +365,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
                         bool internal,
                         const std::string& channel,
                         v8::Local<v8::Value> args) {
-  blink::CloneableMessage message;
+  electron::SerializedValue message;
   if (!gin::ConvertFromV8(isolate, args, &message)) {
     isolate->ThrowException(v8::Exception::Error(
         gin::StringToV8(isolate, "Failed to serialize arguments")));
@@ -409,7 +441,7 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
     return;
   }
 
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  v8::LocalVector<v8::Value> wrapped_ports(isolate);
   if (transfer && !transfer.value()->IsUndefined()) {
     if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
       isolate->ThrowException(v8::Exception::Error(
@@ -635,6 +667,12 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
       // RFH is in the process of being swapped. Need to lookup by FTN to avoid
       // creating dangling WebFrameMain.
       web_frame = FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+      if (!web_frame) {
+        // A WebFrameMain cannot be created for a transient RFH, so initialize
+        // it with the current active RFH and update it when the swap completes.
+        auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+        rfh = rfh_impl->frame_tree_node()->current_frame_host();
+      }
       break;
     case LifecycleState::kPrerendering:
     case LifecycleState::kActive:
@@ -642,6 +680,13 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
       // RFH is already assigned to the FrameTreeNode and can safely be looked
       // up directly.
       web_frame = FromRenderFrameHost(rfh);
+      if (!web_frame && !IsDetachedFrameHost(rfh)) {
+        // content makes the new RFH current before RenderFrameHostChanged
+        // re-keys the existing instance; adopt it rather than make a second.
+        web_frame = FromFrameTreeNodeId(rfh->GetFrameTreeNodeId());
+        if (web_frame)
+          web_frame->UpdateRenderFrameHost(rfh);
+      }
       break;
     case LifecycleState::kRunningUnloadHandlers:
       // Event/IPC emitted for a frame running unload handlers. Return the exact

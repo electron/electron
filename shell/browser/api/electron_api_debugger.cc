@@ -31,9 +31,14 @@ gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
 
 Debugger::Debugger(content::WebContents* web_contents)
-    : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
+    : content::WebContentsObserver{web_contents} {}
 
-Debugger::~Debugger() = default;
+Debugger::~Debugger() {
+  // The host holds a raw client pointer to us. Clear |agent_host_| first so
+  // messages dispatched during detach are dropped, not emitted from a dtor.
+  if (scoped_refptr<DevToolsAgentHost> agent_host = std::move(agent_host_))
+    agent_host->DetachClient(this);
+}
 
 void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
   DCHECK(agent_host == agent_host_);
@@ -44,7 +49,9 @@ void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
 
 void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        base::span<const uint8_t> message) {
-  DCHECK(agent_host == agent_host_);
+  // Null while detaching from the destructor; see ~Debugger().
+  if (agent_host != agent_host_)
+    return;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -125,7 +132,14 @@ void Debugger::Attach(gin::Arguments* args) {
     return;
   }
 
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents_);
+  // web_contents() is reset to null by WebContentsObserver once the
+  // observed WebContents has been destroyed.
+  if (!web_contents()) {
+    args->ThrowTypeError("No target available");
+    return;
+  }
+
+  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents());
   if (!agent_host_) {
     args->ThrowTypeError("No target available");
     return;

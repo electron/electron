@@ -630,6 +630,30 @@ menuItem.click = (passedMenuItem: Electron.MenuItem, browserWindow: Electron.Bro
   console.log('click', passedMenuItem, browserWindow);
 };
 
+const badgedItem = new MenuItem({
+  label: 'Alerts',
+  badge: { type: 'alerts', count: 3 }
+});
+console.log(badgedItem.badge);
+
+const customBadgeItem = new MenuItem({
+  label: 'Custom',
+  badge: { type: 'none', content: 'New' }
+});
+customBadgeItem.badge = { type: 'updates', count: 5 };
+
+const updatesItem = new MenuItem({
+  label: 'Updates',
+  badge: { type: 'updates', count: 10 }
+});
+console.log(updatesItem.badge);
+
+const newItemsBadge = new MenuItem({
+  label: 'New Items',
+  badge: { type: 'new-items', count: 1 }
+});
+console.log(newItemsBadge.badge);
+
 // menu
 // https://github.com/electron/electron/blob/main/docs/api/menu.md
 

@@ -27,7 +27,7 @@ with two gaps:
   embed their members' contents, so the raw scan finds the markers.
 
 diff --git a/build/toolchain/apple/linker_driver.py b/build/toolchain/apple/linker_driver.py
-index 95afea74f361c4c9ef831edb1326b1a0ffba21c6..ca5a46468794c90caa0a4af8e59a2e9a931f81c2 100755
+index 5b2edf92a47be38a327678db3a6968eedb971e63..a2c82fed08562d9fffeb4f0da5986d53a6426f80 100755
 --- a/build/toolchain/apple/linker_driver.py
 +++ b/build/toolchain/apple/linker_driver.py
 @@ -7,6 +7,7 @@
@@ -128,7 +128,7 @@ index 95afea74f361c4c9ef831edb1326b1a0ffba21c6..ca5a46468794c90caa0a4af8e59a2e9a
      def prepare_object_path_lto(self, arg):
          """Linker driver pre-action for -Wcrl,object_path_lto.
  
-@@ -563,6 +633,27 @@ def _remove_path(path):
+@@ -565,6 +635,27 @@ def _remove_path(path):
              os.unlink(path)
  
  
@@ -157,7 +157,7 @@ index 95afea74f361c4c9ef831edb1326b1a0ffba21c6..ca5a46468794c90caa0a4af8e59a2e9a
      LinkerDriver(sys.argv).run()
      sys.exit(0)
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index eb1d2a4ec1a1c95b473afd1373a839c6e26f8d88..9c90e9a2bb5064bed990af5009eb0cb3c3a01004 100644
+index ac7a5b84e93fd0bdf9eed224b2dd391621259636..78c1d0fcfd80b137d770a0064c4ffdf241f7a950 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
 @@ -42,7 +42,8 @@ if (enable_resource_allowlist_generation) {

@@ -19,6 +19,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
@@ -43,6 +44,7 @@
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/render_process_host.h"
+#include "content/public/browser/spare_render_process_host_manager.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
@@ -84,6 +86,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -347,9 +350,9 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
       auto error = v8::Exception::Error(
           gin::StringToV8(isolate, "Failed to clear data"));
       error.As<v8::Object>()
-          ->Set(promise_.GetContext(),
-                gin::StringToV8(isolate, "failedDataTypes"),
-                failed_data_types_array)
+          ->CreateDataProperty(promise_.GetContext(),
+                               gin::StringToV8(isolate, "failedDataTypes"),
+                               failed_data_types_array)
           .Check();
 
       promise_.Reject(error);
@@ -500,6 +503,27 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
+// Runs as its own task because DownloadManager dispatches OnDownloadCreated
+// over a non-reentrant observer list and the caller may be a will-download
+// handler.
+void CreateInterruptedDownloadItem(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    const base::FilePath& path,
+    const std::vector<GURL>& url_chain,
+    const std::string& mime_type,
+    int64_t offset,
+    int64_t length,
+    const std::string& last_modified,
+    const std::string& etag,
+    const base::Time& start_time) {
+  if (!browser_context)
+    return;
+  auto* download_manager = browser_context->GetDownloadManager();
+  download_manager->GetNextId(base::BindOnce(
+      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
+      length, last_modified, etag, start_time));
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
@@ -619,7 +643,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle_object, web_contents);
+  content::RenderFrameHost* frame =
+      content::DownloadItemUtils::GetRenderFrameHost(item);
+  bool prevent_default =
+      Emit("will-download", handle_object, web_contents, frame);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1099,11 +1126,12 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager = browser_context()->GetDownloadManager();
-  download_manager->GetNextId(base::BindRepeating(
-      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
-      length, last_modified, etag,
-      base::Time::FromSecondsSinceUnixEpoch(start_time)));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&CreateInterruptedDownloadItem,
+                     browser_context()->GetWeakPtr(), path, url_chain,
+                     mime_type, offset, length, last_modified, etag,
+                     base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
 std::string Session::RegisterPreloadScript(
@@ -1379,7 +1407,8 @@ api::ServiceWorkerContext* Session::ServiceWorkerContext() {
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
   if (!web_request_)
-    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{});
+    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{},
+                                      browser_context()->GetWeakPtr());
   return web_request_;
 }
 
@@ -1772,7 +1801,15 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return FromOrCreate(isolate, browser_context);
+  const bool creating = !FromBrowserContext(browser_context);
+  Session* session = FromOrCreate(isolate, browser_context);
+  // One renderer started ahead of the first window; the first sandboxed
+  // WebContents takes it (ElectronBrowserClient::ShouldUseSpareRenderProcess-
+  // Host), anything else lets content discard it.
+  if (creating && partition.empty()) {
+    content::SpareRenderProcessHostManager::Get().WarmupSpare(browser_context);
+  }
+  return session;
 }
 
 // static

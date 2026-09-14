@@ -243,6 +243,9 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 // Whether to focus the webContents on navigation.
 inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
 
+// Whether to disable the wake lock for this WebContents
+inline constexpr std::string_view kDisableWakeLocks = "disableWakeLocks";
+
 inline constexpr std::string_view kModal = "modal";
 
 }  // namespace options
@@ -326,10 +329,6 @@ inline constexpr base::cstring_view kEnableAuthNegotiatePort =
 
 // If set, NTLM v2 is disabled for POSIX platforms.
 inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
-
-// Indicates that preloads for service workers are registered.
-inline constexpr base::cstring_view kServiceWorkerPreload =
-    "service-worker-preload";
 
 // If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
 // be set for node initialization.

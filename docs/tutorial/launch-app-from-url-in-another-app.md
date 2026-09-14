@@ -43,6 +43,10 @@ if (process.defaultApp) {
 }
 ```
 
+On Windows, when running through the default Electron executable (for example, `electron .`),
+registration must include the app entry path so protocol launches load the correct application.
+Packaged apps launch their own executable and do not need these additional arguments.
+
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
 ```js
@@ -99,6 +103,10 @@ if (!gotTheLock) {
 ```
 
 #### macOS code:
+
+> [!IMPORTANT]
+> Register an `open-url` listener during initial startup, before waiting for `ready` or other
+> asynchronous initialization. Listeners registered later may miss a launch URL delivered by macOS.
 
 ```js @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished

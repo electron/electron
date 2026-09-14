@@ -7,7 +7,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('dialog module', () => {
@@ -1135,4 +1135,68 @@ describe('dialog module', () => {
       });
     });
   });
+
+  ifdescribe(process.platform === 'win32' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+    'external message injection (Windows)',
+    () => {
+      let dialogHelper: any;
+
+      before(() => {
+        dialogHelper = require('@electron-ci/dialog-helper');
+      });
+
+      afterEach(closeAllWindows);
+
+      // Poll for the native task dialog to appear.
+      async function waitForDialog(w: BrowserWindow): Promise<Buffer> {
+        const handle = w.getNativeWindowHandle();
+        for (let i = 0; i < 50; i++) {
+          if (dialogHelper.getDialogInfo(handle).type === 'message-box') return handle;
+          await setTimeout(100);
+        }
+        throw new Error('Timed out waiting for the message box to appear');
+      }
+
+      it('ignores button clicks for IDs it never created and keeps the dialog open', async () => {
+        const w = new BrowserWindow({ show: false });
+        const p = dialog.showMessageBox(w, {
+          message: 'External injection test',
+          buttons: ['Button A', 'Button B']
+        });
+
+        let resolvedEarly = false;
+        p.then(
+          () => {
+            resolvedEarly = true;
+          },
+          () => {
+            resolvedEarly = true;
+          }
+        );
+
+        const handle = await waitForDialog(w);
+        dialogHelper.clickMessageBoxButton(handle, 420);
+        await setTimeout(500);
+        expect(resolvedEarly, 'dialog closed on an unknown button ID').to.equal(false);
+        expect(dialogHelper.getDialogInfo(handle).type).to.equal('message-box');
+
+        // A real button still closes the dialog and returns its index. The
+        // dialog runs on a separate STA thread, so rather than a single click
+        // with a fixed deadline, re-inject the click until the dialog
+        // acknowledges it by closing.
+        await expect(
+          waitUntil(
+            () => {
+              dialogHelper.clickMessageBoxButton(handle, 1);
+              return dialogHelper.getDialogInfo(handle).type === 'none';
+            },
+            { rate: 100 }
+          ),
+          'a valid button click did not close the dialog; is kIDStart in dialog_helper_win.cc in sync with message_box_win.cc ?'
+        ).to.eventually.be.fulfilled();
+        const result = await p;
+        expect(result.response).to.equal(1);
+      });
+    }
+  );
 });

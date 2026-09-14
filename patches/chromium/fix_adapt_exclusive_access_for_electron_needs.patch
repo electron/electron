@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5b198cf05cbfca501341e57dfc37f7b1368058b2..8bb5909d1da55eae391e147eeff5e69c096688f7 100644
+index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e294e81d15 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -48,7 +48,7 @@
@@ -89,6 +89,15 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..8bb5909d1da55eae391e147eeff5e69c
  }
  
  void FullscreenController::RunOrDeferUntilTransitionIsComplete(
+@@ -562,7 +567,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+     FullscreenInternalOption option,
+     content::RenderFrameHost* requesting_frame,
+     FullscreenTabParams fullscreen_tab_params) {
+-#if !BUILDFLAG(IS_MAC)
++#if 0
+ 
+   Profile* profile = exclusive_access_manager()->context()->GetProfile();
+   // Do not enter fullscreen mode if disallowed by pref. This prevents the user
 @@ -575,9 +580,12 @@ void FullscreenController::EnterFullscreenModeInternal(
    fullscreen_parameters_ = fullscreen_tab_params;
    started_fullscreen_transition_ = true;

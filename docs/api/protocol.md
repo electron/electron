@@ -134,6 +134,12 @@ expect streaming responses.
 Register a protocol handler for `scheme`. Requests made to URLs with this
 scheme will delegate to this handler to determine what response should be sent.
 
+In addition to the standard `Request` fields, `request.initiatorOrigin` is set to the
+origin that issued the request (for example `https://example.com`, or `null`
+for an opaque origin) when web content made it; it is absent for requests the
+browser started itself. Unlike `request.referrer` it is not controlled by the
+requesting page, so prefer it when deciding whether to serve a request.
+
 Either a `Response` or a `Promise<Response>` can be returned.
 
 Example:

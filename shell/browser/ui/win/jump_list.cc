@@ -3,9 +3,7 @@
 // found in the LICENSE file.
 
 // FIXME(samuelmaddock): refactor this class to use modern
-// Microsoft::WRL::ComPtr must come before other includes. fixes bad #defines
-// from <shlwapi.h>.
-#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
+// Microsoft::WRL::ComPtr
 
 #include "shell/browser/ui/win/jump_list.h"
 
@@ -14,6 +12,7 @@
 #include "base/logging.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_propvariant.h"
+#include "base/win/shlwapi.h"
 #include "base/win/win_util.h"
 
 namespace {

@@ -21,4 +21,17 @@ for fs_file in fs_files:
             transformed_contents = contents.replace('internal/fs/',
                     'internal/original-fs/').replace('require(\'fs',
                     'require(\'original-fs')
+            # The asar fs wrapper (lib/node/asar-fs-wrapper.ts) intercepts
+            # some functions on the shared `fs` / `fs_dir` bindings so that
+            # every entry point of the `fs` module handles archives. It keeps
+            # a snapshot of the pristine bindings on the `fs` binding under
+            # `_electronOriginalBindings`; original-fs must always use that
+            # snapshot (falling back to the live binding when the wrapper is
+            # not installed, e.g. ELECTRON_RUN_AS_NODE) so that it keeps
+            # behaving like unmodified Node.js.
+            for name in ('fs', 'fs_dir'):
+                transformed_contents = transformed_contents.replace(
+                        f"internalBinding('{name}')",
+                        "(internalBinding('fs')._electronOriginalBindings"
+                        f"?.{name} ?? internalBinding('{name}'))")
             transformed_f.write(transformed_contents)

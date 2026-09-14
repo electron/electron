@@ -26,14 +26,8 @@
 
 class GURL;
 
-namespace gin {
-class Arguments;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
-template <typename T>
-class Promise;
 }  // namespace gin_helper
 
 namespace electron::api {

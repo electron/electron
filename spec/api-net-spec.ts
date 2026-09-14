@@ -1,4 +1,12 @@
-import { app, net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import {
+  app,
+  net,
+  protocol,
+  session,
+  ClientRequest,
+  ClientRequestConstructorOptions,
+  utilityProcess
+} from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -345,10 +353,13 @@ describe('net module', () => {
             response.writeHead(200).end('ok');
           });
           const request = net.request({ method: 'GET', url: serverUrl, credentials: 'omit' });
-          request.on('login', () => {
-            expect.fail('unexpected login event');
+          let loginEventEmitted = false;
+          request.on('login', (authInfo, cb) => {
+            loginEventEmitted = true;
+            cb();
           });
           const response = await getResponse(request);
+          expect(loginEventEmitted).to.be.false('unexpected login event');
           expect(response.statusCode).to.equal(401);
           expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
         });
@@ -369,8 +380,9 @@ describe('net module', () => {
         const finishPromise = once(urlRequest, 'close');
         // request "response" event
         const response = await getResponse(urlRequest);
+        let responseError: Error | undefined;
         response.on('error', (error: Error) => {
-          expect(error).to.be.an('Error');
+          responseError = error;
         });
         const statusCode = response.statusCode;
         expect(statusCode).to.equal(200);
@@ -378,10 +390,35 @@ describe('net module', () => {
         // respond end event
         const body = await collectStreamBody(response);
         expect(body).to.equal(bodyData);
+        let requestError: Error | undefined;
         urlRequest.on('error', (error) => {
-          expect(error).to.be.an('Error');
+          requestError = error;
         });
         await Promise.all([closePromise, finishPromise]);
+        expect(responseError).to.be.undefined();
+        expect(requestError).to.be.undefined();
+      });
+
+      test('request/response objects should emit error events when the connection is lost mid-body', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.writeHead(200, { 'Content-Length': kOneKiloByte * 2 });
+          // Only send half of the promised body, then drop the connection.
+          response.write(randomString(kOneKiloByte), () => request.socket.destroy());
+        });
+
+        const urlRequest = net.request(serverUrl);
+        const requestErrorPromise = once(urlRequest, 'error');
+        const response = await getResponse(urlRequest);
+        expect(response.statusCode).to.equal(200);
+        const responseErrorPromise = once(response, 'error');
+        // The body is only read (and the dropped connection noticed) while it is being consumed.
+        response.on('data', () => {});
+        const [responseError] = await responseErrorPromise;
+        const [requestError] = await requestErrorPromise;
+        expect(responseError).to.be.an.instanceOf(Error);
+        expect(responseError.message).to.match(/^net::ERR_/);
+        expect(requestError).to.be.an.instanceOf(Error);
+        expect(requestError.message).to.equal(responseError.message);
       });
 
       test('should be able to set a custom HTTP request header before first write', async () => {
@@ -746,20 +783,24 @@ describe('net module', () => {
       }
 
       test('should be able to abort an HTTP request before first write', async () => {
+        let requestReceivedByServer = false;
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          requestReceivedByServer = true;
           response.end();
-          expect.fail('Unexpected request event');
         });
 
         const urlRequest = net.request(serverUrl);
+        let responseEventEmitted = false;
         urlRequest.on('response', () => {
-          expect.fail('unexpected response event');
+          responseEventEmitted = true;
         });
         const aborted = once(urlRequest, 'abort');
         urlRequest.abort();
         urlRequest.write('');
         urlRequest.end();
         await aborted;
+        expect(requestReceivedByServer).to.be.false('Unexpected request event');
+        expect(responseEventEmitted).to.be.false('Unexpected response event');
       });
 
       test('it should be able to abort an HTTP request before request end', async () => {
@@ -772,14 +813,17 @@ describe('net module', () => {
         let requestAbortEventEmitted = false;
 
         urlRequest = net.request(serverUrl);
+        let responseEventEmitted = false;
         urlRequest.on('response', () => {
-          expect.fail('Unexpected response event');
+          responseEventEmitted = true;
         });
+        let finishEventEmitted = false;
         urlRequest.on('finish', () => {
-          expect.fail('Unexpected finish event');
+          finishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.on('abort', () => {
           requestAbortEventEmitted = true;
@@ -789,8 +833,161 @@ describe('net module', () => {
         urlRequest.chunkedEncoding = true;
         urlRequest.write(randomString(kOneKiloByte));
         await p;
+        expect(responseEventEmitted).to.be.false('Unexpected response event');
+        expect(finishEventEmitted).to.be.false('Unexpected finish event');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestReceivedByServer).to.equal(true);
         expect(requestAbortEventEmitted).to.equal(true);
+      });
+
+      it('should settle a pending upload stream read in a protocol handler when the request is aborted', async () => {
+        // A protocol handler that reads the chunked upload body slowly and
+        // never responds; the read it parks must not be left pending forever
+        // once the request is torn down.
+        let pendingRead: Promise<number> | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            (async () => {
+              const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+              if (!streamElement) {
+                callback({ statusCode: 400, data: null as any });
+                reject(new Error('request had no stream upload element'));
+                return;
+              }
+              const body: any = (streamElement as any).body;
+              // Drain the chunk that was already written, then park a read.
+              await body.read(new Uint8Array(1024));
+              pendingRead = body.read(new Uint8Array(1024));
+              resolve();
+            })();
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://pending-upload-read' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        urlRequest.write('hello');
+        await reached;
+
+        const aborted = once(urlRequest, 'abort');
+        urlRequest.abort();
+        await aborted;
+        await expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+      });
+
+      it('should preserve the request error when settling a pending upload stream read', async () => {
+        let failRequest: (() => void) | undefined;
+        let pendingRead: Promise<number> | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            failRequest = () => callback({ error: -2 } as any);
+            (async () => {
+              const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+              if (!streamElement) {
+                callback({ statusCode: 400, data: null as any });
+                reject(new Error('request had no stream upload element'));
+                return;
+              }
+              const body: any = (streamElement as any).body;
+              await body.read(new Uint8Array(1024));
+              pendingRead = body.read(new Uint8Array(1024));
+              resolve();
+            })().catch(reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://failed-pending-upload-read' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        urlRequest.write('hello');
+        await reached;
+
+        const readError = expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+        failRequest!();
+        await readError;
+      });
+
+      it('should settle an in-flight upload write when the response completes early', async () => {
+        let completeRequest: (() => void) | undefined;
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            completeRequest = () => callback({ statusCode: 200, data: null as any });
+            const streamElement = (request.uploadData || []).find((e: any) => e.type === 'stream');
+            if (!streamElement) {
+              callback({ statusCode: 400, data: null as any });
+              reject(new Error('request had no stream upload element'));
+              return;
+            }
+            const body: any = (streamElement as any).body;
+            body.read(new Uint8Array(1)).then(() => resolve(), reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://early-upload-response' });
+        urlRequest.on('error', () => {});
+        urlRequest.chunkedEncoding = true;
+        const responseReceived = once(urlRequest, 'response');
+        let writeCallbackCalled = false;
+        const writeCompleted = new Promise<Error | undefined>((resolve) => {
+          urlRequest.write(Buffer.alloc(4 * kOneMegaByte), 'buffer', (error?: Error | null) => {
+            writeCallbackCalled = true;
+            resolve(error || undefined);
+          });
+        });
+        await reached;
+        expect(writeCallbackCalled).to.equal(false);
+
+        completeRequest!();
+        const [response] = await responseReceived;
+        await collectStreamBody(response);
+        const writeError = await writeCompleted;
+        expect(writeError).to.be.an.instanceOf(Error);
+        expect(writeError!.message).to.contain('ERR_ABORTED');
+      });
+
+      it('should settle an in-flight upload write when the request is aborted', async () => {
+        const reached = new Promise<void>((resolve, reject) => {
+          protocol.interceptStreamProtocol('http', (request, callback) => {
+            const streamElement = (request.uploadData || []).find((element: any) => element.type === 'stream');
+            if (!streamElement) {
+              callback({ statusCode: 400, data: null as any });
+              reject(new Error('request had no stream upload element'));
+              return;
+            }
+            const body: any = (streamElement as any).body;
+            body.read(new Uint8Array(1)).then(() => resolve(), reject);
+          });
+        });
+        defer(() => protocol.uninterceptProtocol('http'));
+
+        const urlRequest = net.request({ method: 'POST', url: 'http://aborted-upload-write' });
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
+        });
+        urlRequest.chunkedEncoding = true;
+        let writeCallbackCalled = false;
+        const writeCompleted = new Promise<Error | undefined>((resolve) => {
+          urlRequest.write(Buffer.alloc(4 * kOneMegaByte), 'buffer', (error?: Error | null) => {
+            writeCallbackCalled = true;
+            resolve(error || undefined);
+          });
+        });
+        await reached;
+        expect(writeCallbackCalled).to.equal(false);
+
+        const aborted = once(urlRequest, 'abort');
+        urlRequest.abort();
+        await aborted;
+        // Like Node.js, which settles a write cancelled by abort() with an
+        // error (ECANCELED); the request itself emits 'abort', not 'error'.
+        const writeError = await writeCompleted;
+        expect(writeError).to.be.an.instanceOf(Error);
+        expect(writeError!.message).to.contain('ERR_ABORTED');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {
@@ -808,17 +1005,21 @@ describe('net module', () => {
         let requestFinishEventEmitted = false;
 
         urlRequest = net.request(serverUrl);
+        let responseEventEmitted = false;
         urlRequest.on('response', () => {
-          expect.fail('Unexpected response event');
+          responseEventEmitted = true;
         });
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(responseEventEmitted).to.be.false('Unexpected response event');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.equal(true);
         expect(requestReceivedByServer).to.equal(true);
       });
@@ -834,18 +1035,20 @@ describe('net module', () => {
         let requestFinishEventEmitted = false;
         let requestResponseEventEmitted = false;
         let responseCloseEventEmitted = false;
+        let unexpectedError: Error | undefined;
+        let responseStatusCode: number | undefined;
+        let responseEndEventEmitted = false;
 
         const urlRequest = net.request(serverUrl);
         urlRequest.on('response', (response) => {
           requestResponseEventEmitted = true;
-          const statusCode = response.statusCode;
-          expect(statusCode).to.equal(200);
+          responseStatusCode = response.statusCode;
           response.on('data', () => {});
           response.on('end', () => {
-            expect.fail('Unexpected end event');
+            responseEndEventEmitted = true;
           });
-          response.on('error', () => {
-            expect.fail('Unexpected error event');
+          response.on('error', (error) => {
+            unexpectedError = error;
           });
           response.on('close' as any, () => {
             responseCloseEventEmitted = true;
@@ -855,14 +1058,17 @@ describe('net module', () => {
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
         expect(requestReceivedByServer).to.be.true('request should be received by the server');
         expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted');
+        expect(responseStatusCode).to.equal(200);
+        expect(responseEndEventEmitted).to.be.false('Unexpected end event');
         expect(responseCloseEventEmitted).to.be.true('response should emit "close" event');
       });
 
@@ -878,20 +1084,24 @@ describe('net module', () => {
         let abortsEmitted = 0;
 
         urlRequest = net.request(serverUrl);
+        let responseEventEmitted = false;
         urlRequest.on('response', () => {
-          expect.fail('Unexpected response event');
+          responseEventEmitted = true;
         });
         urlRequest.on('finish', () => {
           requestFinishEventEmitted = true;
         });
-        urlRequest.on('error', () => {
-          expect.fail('Unexpected error event');
+        let unexpectedError: Error | undefined;
+        urlRequest.on('error', (error) => {
+          unexpectedError = error;
         });
         urlRequest.on('abort', () => {
           abortsEmitted++;
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
+        expect(responseEventEmitted).to.be.false('Unexpected response event');
+        expect(unexpectedError).to.be.undefined('Unexpected error event');
         expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
         expect(requestReceivedByServer).to.be.true('request should be received by server');
         expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event');
@@ -999,10 +1209,12 @@ describe('net module', () => {
           urlRequest.abort();
         });
         urlRequest.on('error', () => {});
+        let responseEventEmitted = false;
         urlRequest.on('response', () => {
-          expect.fail('Unexpected response');
+          responseEventEmitted = true;
         });
         await once(urlRequest, 'abort');
+        expect(responseEventEmitted).to.be.false('Unexpected response');
       });
 
       test('should not follow redirect when mode is error', async () => {
@@ -1084,12 +1296,12 @@ describe('net module', () => {
         const bodyData = randomString(kOneMegaByte);
         let netRequestReceived = false;
         let netRequestEnded = false;
+        let receivedBodyData = '';
 
         const [nodeServerUrl, netServerUrl] = await Promise.all([
           respondOnce.toSingleURL((request, response) => response.end(bodyData)),
           respondOnce.toSingleURL((request, response) => {
             netRequestReceived = true;
-            let receivedBodyData = '';
             request.on('data', (chunk) => {
               receivedBodyData += chunk.toString();
             });
@@ -1098,7 +1310,6 @@ describe('net module', () => {
               if (chunk) {
                 receivedBodyData += chunk.toString();
               }
-              expect(receivedBodyData).to.be.equal(bodyData);
               response.end();
             });
           })
@@ -1114,6 +1325,7 @@ describe('net module', () => {
         await collectStreamBody(netResponse);
         expect(netRequestReceived).to.be.true('net request received');
         expect(netRequestEnded).to.be.true('net request ended');
+        expect(receivedBodyData).to.equal(bodyData);
       });
 
       test('should report upload progress', async () => {
@@ -1905,7 +2117,7 @@ describe('net module', () => {
       let eventWebContents: unknown = 'unset';
       const handler = (
         event: Electron.Event,
-        webContents: Electron.WebContents,
+        webContents: Electron.WebContents | null,
         _url: string,
         _list: Electron.Certificate[],
         callback: (cert?: Electron.Certificate) => void

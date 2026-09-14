@@ -24,7 +24,14 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
     return originalFork(modulePath, args, options);
   }
   // When forking a child script, we setup a special environment to make
-  // the electron binary run like upstream Node.js.
+  // the electron binary run like upstream Node.js. With the runAsNode fuse
+  // disabled that environment is ignored and the child would start another
+  // copy of the app instead, so refuse up front.
+  if (!process._linkedBinding('electron_common_features').isRunAsNodeEnabled()) {
+    throw new Error(
+      'child_process.fork() is not supported when the runAsNode fuse is disabled; use utilityProcess.fork() instead'
+    );
+  }
   options = options ?? {};
   options.env = Object.create(options.env || process.env);
   options.env!.ELECTRON_RUN_AS_NODE = '1';
@@ -34,6 +41,42 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
   }
   return originalFork(modulePath, args, options);
 };
+
+// Hand crashpad's handler to ELECTRON_RUN_AS_NODE children so their crashes are
+// reported too; shell/app/node_main.cc reads these back. Every async spawn goes
+// through ChildProcess.prototype.spawn and every sync one through spawnSync,
+// both with the normalized file and envPairs.
+if (process.platform === 'linux') {
+  const { getCrashdumpSignalFD, getCrashpadHandlerPID } = process._linkedBinding('electron_common_crashpad_support');
+  const childProcess = __non_webpack_require__(
+    'internal/child_process'
+  ) as typeof import('@node/lib/internal/child_process');
+  // Invalid options are left for Node's own validation to reject.
+  const addCrashpadEnv = (options: any) => {
+    if (
+      options?.file !== process.execPath ||
+      !Array.isArray(options.envPairs) ||
+      !options.envPairs.some((pair: unknown) => typeof pair === 'string' && pair.startsWith('ELECTRON_RUN_AS_NODE='))
+    ) {
+      return;
+    }
+    const fd = getCrashdumpSignalFD();
+    const pid = getCrashpadHandlerPID();
+    if (fd !== -1 && pid !== -1) {
+      options.envPairs.push(`CRASHDUMP_SIGNAL_FD=${fd}`, `CRASHPAD_HANDLER_PID=${pid}`);
+    }
+  };
+  const { spawn } = childProcess.ChildProcess.prototype;
+  childProcess.ChildProcess.prototype.spawn = function (options: any) {
+    addCrashpadEnv(options);
+    return spawn.call(this, options);
+  };
+  const { spawnSync } = childProcess;
+  childProcess.spawnSync = (options: any) => {
+    addCrashpadEnv(options);
+    return spawnSync(options);
+  };
+}
 
 // Prevent Node from adding paths outside this app to search paths.
 import path = require('path'); // eslint-disable-line import/first

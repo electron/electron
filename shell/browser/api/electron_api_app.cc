@@ -101,6 +101,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/apple/scoped_cftyperef.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -1006,9 +1007,9 @@ std::string App::GetLocaleCountryCode() {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
-  CFLocaleRef locale = CFLocaleCopyCurrent();
-  auto value =
-      static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
+  base::apple::ScopedCFTypeRef<CFLocaleRef> locale(CFLocaleCopyCurrent());
+  auto value = static_cast<CFStringRef>(
+      CFLocaleGetValue(locale.get(), kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
     const CFIndex kCStringSize = sizeof(temporaryCString);
@@ -1238,7 +1239,8 @@ v8::Local<v8::Value> App::GetAccessibilitySupportFeatures() {
 
   v8::Local<v8::Array> arr = v8::Array::New(isolate, features.size());
   for (uint32_t i = 0; i < features.size(); ++i) {
-    arr->Set(isolate->GetCurrentContext(), i, features[i]).Check();
+    arr->CreateDataProperty(isolate->GetCurrentContext(), i, features[i])
+        .Check();
   }
   return handle_scope.Escape(arr);
 }
@@ -1696,6 +1698,20 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     return;
   }
 
+  // Validate before applying so a TypeError leaves existing configuration
+  // untouched; null/undefined mean "not set".
+  std::optional<bool> platform_passkeys;
+  v8::Local<v8::Value> platform_passkeys_value;
+  if (options.Get("platformPasskeys", &platform_passkeys_value) &&
+      !platform_passkeys_value->IsNullOrUndefined()) {
+    if (!platform_passkeys_value->IsBoolean()) {
+      thrower.ThrowTypeError(
+          "configureWebAuthn: 'platformPasskeys' must be a boolean");
+      return;
+    }
+    platform_passkeys = platform_passkeys_value.As<v8::Boolean>()->Value();
+  }
+
   gin_helper::Dictionary touch_id;
   if (options.Get("touchID", &touch_id)) {
     std::string keychain_access_group;
@@ -1733,10 +1749,9 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
     }
   }
 
-  bool platform_passkeys = false;
-  if (options.Get("platformPasskeys", &platform_passkeys)) {
+  if (platform_passkeys.has_value()) {
     ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
-        platform_passkeys);
+        *platform_passkeys);
   }
 }
 
@@ -1875,14 +1890,11 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
 // static
 App* App::Get() {
-  return Create(nullptr);
-}
-
-// static
-App* App::Create(v8::Isolate* isolate) {
-  static base::NoDestructor<cppgc::Persistent<App>> instance(
-      cppgc::MakeGarbageCollected<App>(
-          isolate->GetCppHeap()->GetAllocationHandle()));
+  static base::NoDestructor<cppgc::Persistent<App>> instance([] {
+    v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+    return cppgc::Persistent<App>(cppgc::MakeGarbageCollected<App>(
+        isolate->GetCppHeap()->GetAllocationHandle()));
+  }());
   return instance->Get();
 }
 
@@ -2089,7 +2101,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("app", electron::api::App::Create(isolate));
+  dict.Set("app", electron::api::App::Get());
 }
 
 }  // namespace

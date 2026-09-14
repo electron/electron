@@ -27,7 +27,9 @@ bool GetPreferredLanguagesUsingGlobalization(
   if (FAILED(hr))
     return false;
 
-  ABI::Windows::Foundation::Collections::IVectorView<HSTRING>* langs;
+  Microsoft::WRL::ComPtr<
+      ABI::Windows::Foundation::Collections::IVectorView<HSTRING>>
+      langs;
   hr = prefs->get_Languages(&langs);
   if (FAILED(hr))
     return false;
@@ -38,12 +40,10 @@ bool GetPreferredLanguagesUsingGlobalization(
     return false;
 
   for (unsigned i = 0; i < size; ++i) {
-    HSTRING hstr;
-    hr = langs->GetAt(i, &hstr);
-    if (SUCCEEDED(hr)) {
-      std::wstring_view str = base::win::ScopedHString(hstr).Get();
-      languages->emplace_back(str.data(), str.size());
-    }
+    base::win::ScopedHString str(nullptr);
+    hr = langs->GetAt(i, base::win::ScopedHString::Receiver(str).get());
+    if (SUCCEEDED(hr))
+      languages->emplace_back(str.Get());
   }
 
   return true;

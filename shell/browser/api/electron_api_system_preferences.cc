@@ -4,12 +4,18 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
+#include "base/no_destructor.h"
+#include "gin/persistent.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 #if BUILDFLAG(IS_LINUX)
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -18,28 +24,42 @@
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo SystemPreferences::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo SystemPreferences::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronSystemPreferences);
 
 #if BUILDFLAG(IS_WIN)
-SystemPreferences::SystemPreferences() {
+SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
   InitializeWindow();
 }
 #elif BUILDFLAG(IS_LINUX)
-SystemPreferences::SystemPreferences()
+SystemPreferences::SystemPreferences(v8::Isolate* isolate)
     : ui_theme_(ui::NativeTheme::GetInstanceForNativeUi()) {
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
   ui_theme_->AddObserver(this);
 }
 #else
-SystemPreferences::SystemPreferences() = default;
+SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+}
 #endif
 
-#if BUILDFLAG(IS_WIN)
-SystemPreferences::~SystemPreferences() {
-  Browser::Get()->RemoveObserver(this);
-}
-#else
 SystemPreferences::~SystemPreferences() = default;
+
+void SystemPreferences::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+  Dispose();
+}
+
+#if BUILDFLAG(IS_LINUX)
+void SystemPreferences::Dispose() {
+  ui_theme_->RemoveObserver(this);
+  weak_factory_.Invalidate();
+}
+#elif BUILDFLAG(IS_MAC)
+void SystemPreferences::Dispose() {
+  ClearNotificationSubscriptions();
+}
 #endif
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
@@ -71,16 +91,24 @@ void SystemPreferences::OnNativeThemeUpdatedOnUI() {
 }
 
 void SystemPreferences::OnNativeThemeUpdated(ui::NativeTheme* theme) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE, base::BindOnce(&SystemPreferences::OnNativeThemeUpdatedOnUI,
-                                base::Unretained(this)));
+      FROM_HERE,
+      base::BindOnce(&SystemPreferences::OnNativeThemeUpdatedOnUI,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))));
 }
 #endif
 
 // static
-gin_helper::Handle<SystemPreferences> SystemPreferences::Create(
-    v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new SystemPreferences());
+SystemPreferences* SystemPreferences::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<SystemPreferences>> instance(
+      [isolate] {
+        return cppgc::Persistent<SystemPreferences>(
+            cppgc::MakeGarbageCollected<SystemPreferences>(
+                isolate->GetCppHeap()->GetAllocationHandle(), isolate));
+      }());
+  return instance->Get();
 }
 
 gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
@@ -134,8 +162,19 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::GetAnimationSettings);
 }
 
-const char* SystemPreferences::GetTypeName() {
-  return "SystemPreferences";
+const gin::WrapperInfo* SystemPreferences::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* SystemPreferences::GetHumanReadableName() const {
+  return "Electron / SystemPreferences";
+}
+
+void SystemPreferences::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<SystemPreferences>::Trace(visitor);
+#if BUILDFLAG(IS_LINUX)
+  visitor->Trace(weak_factory_);
+#endif
 }
 
 }  // namespace electron::api

@@ -23,6 +23,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
@@ -575,6 +576,7 @@ describe('command line switches', () => {
       if (printEnv) {
         args.push('--print-env');
       }
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       appProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -598,6 +600,8 @@ describe('command line switches', () => {
     it('should set the locale', async () => testLocale('fr', `fr|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should set the locale with country code', async () =>
       testLocale('zh-CN', `zh-CN|${currentSystemLocale}|${currentPreferredLanguages}`));
+    it('should resolve a locale whose country code is not shipped', async () =>
+      testLocale('de-DE', `de|${currentSystemLocale}|${currentPreferredLanguages}`));
     it('should not set an invalid locale', async () =>
       testLocale('asdfkl', `${currentLocale}|${currentSystemLocale}|${currentPreferredLanguages}`));
 
@@ -618,7 +622,9 @@ describe('command line switches', () => {
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -640,7 +646,9 @@ describe('command line switches', () => {
     });
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+      const args = ['--remote-debugging-pipe', '--remote-debugging-port=0'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'pipe', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       let stderr = '';
@@ -665,7 +673,9 @@ describe('command line switches', () => {
     });
     it('should shut down Electron upon Browser.close CDP command', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -685,7 +695,9 @@ describe('command line switches', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      const args = ['--remote-debugging-port='];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args);
       appProcess.stdout.on('data', (data) => {
         console.log(data);
       });
@@ -774,6 +786,107 @@ describe('command line switches', () => {
         );
       }
     });
+
+    it('clears device metrics overrides when a client disconnects without detaching', async function () {
+      // A client dying without clearing its overrides used to leave the page
+      // pinned at the emulated size forever.
+      const appPath = path.join(fixturesPath, 'apps', 'remote-debugging-emulation');
+      appProcess = ChildProcess.spawn(process.execPath, [appPath, '--remote-debugging-port=0']);
+
+      let stderr = '';
+      const browserWsUrl = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on (ws:\/\/\S+)/.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools URL was found. stderr: ${stderr}`))
+        );
+      });
+
+      type Client = {
+        socket: ws.WebSocket;
+        send(method: string, params?: unknown, sessionId?: string): Promise<any>;
+        attachToPage(): Promise<string>;
+      };
+      const connectClient = async (): Promise<Client> => {
+        const socket = new ws.WebSocket(browserWsUrl);
+        await once(socket, 'open');
+        let nextId = 1;
+        const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
+        socket.on('message', (data) => {
+          const message = JSON.parse(data.toString());
+          const handler = message.id && pending.get(message.id);
+          if (handler) {
+            pending.delete(message.id);
+            if (message.error) handler.reject(new Error(message.error.message));
+            else handler.resolve(message.result);
+          }
+        });
+        const failPending = (why: string) => {
+          for (const handler of pending.values()) handler.reject(new Error(why));
+          pending.clear();
+        };
+        socket.on('error', (error) => failPending(`websocket error: ${error.message}`));
+        socket.on('close', () => failPending('websocket closed'));
+        const send = (method: string, params: unknown = {}, sessionId?: string) =>
+          new Promise<any>((resolve, reject) => {
+            const id = nextId++;
+            pending.set(id, { resolve, reject });
+            socket.send(JSON.stringify({ id, method, params, sessionId }));
+          });
+        const attachToPage = async () => {
+          // The window may not exist yet when the DevTools server comes up.
+          let page: any;
+          await waitUntil(async () => {
+            const { targetInfos } = await send('Target.getTargets');
+            page = targetInfos.find((target: any) => target.type === 'page');
+            return page !== undefined;
+          });
+          const { sessionId } = await send('Target.attachToTarget', { targetId: page.targetId, flatten: true });
+          return sessionId;
+        };
+        return { socket, send, attachToPage };
+      };
+      const innerSize = async (client: Client, sessionId: string) => {
+        const { result } = await client.send(
+          'Runtime.evaluate',
+          {
+            expression: 'window.innerWidth + "x" + window.innerHeight',
+            returnByValue: true
+          },
+          sessionId
+        );
+        return result.value;
+      };
+
+      const clientA = await connectClient();
+      const sessionA = await clientA.attachToPage();
+      const originalSize = await innerSize(clientA, sessionA);
+      await clientA.send(
+        'Emulation.setDeviceMetricsOverride',
+        {
+          width: 800,
+          height: 450,
+          deviceScaleFactor: 0,
+          mobile: false
+        },
+        sessionA
+      );
+      expect(await innerSize(clientA, sessionA)).to.equal('800x450');
+
+      // Drop the TCP connection like a killed client process would.
+      (clientA.socket as any)._socket.destroy();
+
+      const clientB = await connectClient();
+      const sessionB = await clientB.attachToPage();
+      await waitUntil(async () => (await innerSize(clientB, sessionB)) === originalSize);
+      clientB.socket.close();
+    });
   });
 
   describe('--trace-startup switch', () => {
@@ -842,7 +955,9 @@ describe('chromium features', () => {
 
     it('loads first party sets', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'base');
-      const fpsProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
       fpsProcess.stdout.on('data', (data) => {
@@ -856,6 +971,7 @@ describe('chromium features', () => {
     it('loads sets from the command line', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'command-line');
       const args = [appPath, `--use-first-party-set=${fps}`];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -1249,12 +1365,12 @@ describe('chromium features', () => {
   describe('File System API,', () => {
     let w: BrowserWindow | null = null;
 
-    afterEach(() => {
+    afterEach(async () => {
       ipcMain.removeAllListeners('did-create-file-handle');
       ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionCheckHandler(null);
       session.defaultSession.setPermissionRequestHandler(null);
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('allows access by default to reading an OPFS file', async () => {
@@ -1719,6 +1835,174 @@ describe('chromium features', () => {
     });
   });
 
+  describe('File System Access permission scope', () => {
+    // Pages obtain FileSystemHandles by pasting a file:// URI, the same way the
+    // tests above do, so no picker is needed.
+    const handlePage = `<!doctype html><body contenteditable tabindex="0">fsa<script>
+      window.gotHandle = false; window.handle = null; window.handleError = null;
+      document.onpaste = (event) => {
+        event.preventDefault();
+        event.clipboardData.items[0].getAsFileSystemHandle().then(
+          (h) => { window.handle = h; window.gotHandle = true; },
+          (e) => { window.handleError = String(e); window.gotHandle = true; });
+      };
+    </script></body>`;
+    let serverA: http.Server;
+    let serverB: http.Server;
+    let urlA: string;
+    let urlB: string;
+    before(async () => {
+      const handler = (_req: http.IncomingMessage, res: http.ServerResponse) => {
+        res.setHeader('content-type', 'text/html');
+        res.end(handlePage);
+      };
+      serverA = http.createServer(handler);
+      serverB = http.createServer(handler);
+      urlA = (await listen(serverA)).url;
+      urlB = (await listen(serverB)).url;
+    });
+    after(() => {
+      serverA.close();
+      serverB.close();
+    });
+    afterEach(closeAllWindows);
+
+    const pasteHandle = async (w: BrowserWindow, frame: Electron.WebFrameMain, dirOrFile: string) => {
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(dirOrFile).href })]);
+      if (!w.webContents.isFocused()) {
+        const focused = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focused;
+      }
+      await frame.executeJavaScript('window.focus(); document.body.focus(); window.gotHandle = false; true');
+      w.webContents.paste();
+    };
+    const waitForHandle = (frame: Electron.WebFrameMain) =>
+      waitUntil(async () => (await frame.executeJavaScript('window.gotHandle')) === true);
+
+    it('does not let a cross-origin iframe request more access than it was granted', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlB)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const requests: any[] = [];
+      ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        if (permission === 'fileSystem') requests.push(details);
+        callback(true);
+      });
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      await pasteHandle(w, iframe, testFile);
+      await waitForHandle(iframe);
+      expect(await iframe.executeJavaScript('window.handle && window.handle.kind')).to.equal('file');
+      // Matches Chrome: a third-party iframe cannot ask for more than it has.
+      const status = await iframe.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' }).catch((e) => e.name)",
+        true
+      );
+      expect(status).to.equal('SecurityError');
+      expect(requests).to.be.empty();
+
+      // The same request from the top-level document reaches the handler.
+      await pasteHandle(w, w.webContents.mainFrame, testFile);
+      await waitForHandle(w.webContents.mainFrame);
+      const topStatus = await w.webContents.mainFrame.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' })",
+        true
+      );
+      expect(topStatus).to.equal('granted');
+      expect(requests).to.have.lengthOf(1);
+      expect(requests[0].isMainFrame).to.equal(true);
+    });
+
+    it("asks about a restricted path once per requester, with that requester's identity", async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const events: { details: any; callback: (action: 'allow' | 'deny' | 'tryAgain') => void }[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        events.push({ details, callback });
+      });
+      const wa = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wa.loadURL(urlA);
+      const wb = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wb.loadURL(urlB);
+      const restricted = os.homedir();
+
+      await pasteHandle(wa, wa.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 1);
+      await pasteHandle(wb, wb.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 2);
+
+      expect(events[0].details.origin).to.equal(`${urlA}/`);
+      expect(events[0].details.webContents).to.equal(wa.webContents);
+      expect(events[0].details.frame).to.equal(wa.webContents.mainFrame);
+      expect(events[1].details.origin).to.equal(`${urlB}/`);
+      expect(events[1].details.webContents).to.equal(wb.webContents);
+      expect(events[1].details.frame).to.equal(wb.webContents.mainFrame);
+
+      // Answers are independent.
+      events[1].callback('allow');
+      events[0].callback('deny');
+      await waitForHandle(wb.webContents.mainFrame);
+      await waitForHandle(wa.webContents.mainFrame);
+      expect(await wb.webContents.executeJavaScript('window.handle && window.handle.kind')).to.equal('directory');
+      expect(await wa.webContents.executeJavaScript('window.handle')).to.equal(null);
+    });
+
+    it('revokes active grants once no top-level document of the origin remains', async function () {
+      this.timeout(60000);
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      // A top-level document of origin A obtains read/write access to the file.
+      const top = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await top.loadURL(urlA);
+      await pasteHandle(top, top.webContents.mainFrame, testFile);
+      await waitForHandle(top.webContents.mainFrame);
+      expect(
+        await top.webContents.mainFrame.executeJavaScript(
+          "window.handle.requestPermission({ mode: 'readwrite' })",
+          true
+        )
+      ).to.equal('granted');
+
+      // An origin-A iframe inside an origin-B page holds a handle to the same
+      // file and shares that grant.
+      const host = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await host.loadURL(urlB);
+      await host.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlA)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = host.webContents.mainFrame.frames[0];
+      await pasteHandle(host, iframe, testFile);
+      await waitForHandle(iframe);
+      const query = () => iframe.executeJavaScript("window.handle.queryPermission({ mode: 'readwrite' })");
+      expect(await query()).to.equal('granted');
+
+      // While another top-level origin-A document exists the grant survives the
+      // first one closing...
+      const otherTop = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await otherTop.loadURL(urlA);
+      top.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('granted');
+
+      // ...and once the last one is gone it is revoked, so the embedded frame
+      // can no longer write without the app being asked again.
+      otherTop.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('prompt');
+    });
+  });
+
   describe('web workers', () => {
     let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
 
@@ -1732,7 +2016,9 @@ describe('chromium features', () => {
     it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
 
-      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(process.execPath, args);
 
       const [code] = await once(appProcess, 'exit');
       expect(code).to.equal(0);
@@ -1815,6 +2101,59 @@ describe('chromium features', () => {
       w.loadURL(`file://${fixturesPath}/pages/worker.html`);
       const [, data] = await once(ipcMain, 'worker-result');
       expect(data).to.equal('object function object function');
+    });
+
+    it('only gives node integration to workers created by frames that have it themselves', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const probe = `new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`;
+      // The main frame's workers get Node...
+      expect(await w.webContents.mainFrame.executeJavaScript(probe)).to.equal('object function');
+      // ...a same-origin (same-process) iframe's workers do not, because the
+      // iframe itself has no Node integration (nodeIntegrationInSubFrames is off).
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      expect(await iframe.executeJavaScript(probe)).to.equal('undefined undefined');
+    });
+
+    it('gives node integration to subframe workers when nodeIntegrationInSubFrames is on', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          nodeIntegrationInSubFrames: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const result = await iframe.executeJavaScript(`new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`);
+      expect(result).to.equal('object function');
     });
 
     it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
@@ -2599,7 +2938,12 @@ describe('chromium features', () => {
         callback(permission === 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -2628,7 +2972,12 @@ describe('chromium features', () => {
         callback(permission !== 'top-level-storage-access');
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          enableBlinkFeatures: 'RequestStorageAccessFor'
+        }
+      });
       await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
 
       // requestStorageAccessFor returns a Promise that fulfills with undefined
@@ -2879,6 +3228,140 @@ describe('chromium features', () => {
       );
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
+    });
+
+    describe('permission requests', () => {
+      const deviceGetUserMedia = `navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+      const desktopGetUserMedia = `navigator.mediaDevices.getUserMedia({
+          video: { mandatory: { chromeMediaSource: 'desktop' } }
+        }).then(s => ({ ok: true, kinds: s.getTracks().map(t => t.kind) }), e => ({ ok: false, err: e.message }))`;
+      const getDisplayMedia = `navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+        .then(s => ({ ok: true }), e => ({ ok: false, err: e.message }))`;
+
+      type SeenRequest = { permission: string; mediaTypes: string[] | undefined; securityOrigin: string | undefined };
+      const collectRequests = (ses: Electron.Session, grant: (permission: string) => boolean) => {
+        const seen: SeenRequest[] = [];
+        ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+          const { mediaTypes, securityOrigin } = details as MediaAccessPermissionRequest;
+          seen.push({ permission, mediaTypes, securityOrigin });
+          callback(grant(permission));
+        });
+        return seen;
+      };
+
+      it('reports camera and microphone getUserMedia as a media request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(deviceGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('media');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('reports desktop getUserMedia as a display-capture request', async () => {
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err, kinds } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.true(err);
+        expect(kinds).to.deep.equal(['video']);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.deep.equal(['video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('denies desktop getUserMedia when display-capture is denied', async () => {
+        const seen = collectRequests(session.defaultSession, (permission) => permission === 'media');
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
+
+      it('reports getDisplayMedia as a display-capture request before the display media handler runs', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, () => true);
+        let requestsSeenByDisplayHandler = -1;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          requestsSeenByDisplayHandler = seen.length;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.true(err);
+        expect(requestsSeenByDisplayHandler).to.equal(1);
+        expect(seen).to.have.lengthOf(1);
+        expect(seen[0].permission).to.equal('display-capture');
+        expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
+        expect(seen[0].securityOrigin).to.be.a('string');
+      });
+
+      it('applies the display-capture permissions policy to desktop getUserMedia from a cross-origin iframe', async () => {
+        const iframeServer = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<body>iframe</body>');
+        });
+        const { url: iframeUrl } = await listen(iframeServer);
+        defer(() => iframeServer.close());
+
+        const seen = collectRequests(session.defaultSession, () => true);
+        const w = new BrowserWindow({ show: false });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+
+        const loadIframe = async (allow: string) => {
+          w.webContents.executeJavaScript(`(() => {
+            for (const f of document.querySelectorAll('iframe')) f.remove();
+            const iframe = document.createElement('iframe');
+            iframe.src = ${JSON.stringify(iframeUrl)};
+            iframe.allow = ${JSON.stringify(allow)};
+            document.body.appendChild(iframe);
+          })()`);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          return webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        };
+
+        // Without allow="display-capture" the policy defaults to 'self', so the
+        // cross-origin iframe is denied without the app being asked.
+        const denied = (await (await loadIframe('')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(denied.ok).to.be.false();
+        expect(denied.err).to.equal('Permission denied');
+        expect(seen).to.be.empty();
+
+        const allowed = (await (await loadIframe('display-capture')).executeJavaScript(desktopGetUserMedia, true)) as {
+          ok: boolean;
+          err: string;
+        };
+        expect(allowed.ok).to.be.true(allowed.err);
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
+
+      it('does not run the display media handler for getDisplayMedia when display-capture is denied', async () => {
+        const ses = session.fromPartition('' + Math.random());
+        const seen = collectRequests(ses, (permission) => permission === 'media');
+        let displayHandlerCalled = false;
+        ses.setDisplayMediaRequestHandler((request, callback) => {
+          displayHandlerCalled = true;
+          callback({ video: request.frame! });
+        });
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
+        expect(ok).to.be.false();
+        expect(err).to.equal('Permission denied');
+        expect(displayHandlerCalled).to.be.false();
+        expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
+      });
     });
   });
 
@@ -3132,16 +3615,12 @@ describe('chromium features', () => {
             show: false,
             ...extraPreferences
           });
-          let redirected = false;
-          w.webContents.on('render-process-gone', () => {
-            expect.fail('renderer crashed / was killed');
-          });
+          let redirectedTo: string | undefined;
           w.webContents.on('did-redirect-navigation', (event, url) => {
-            expect(url).to.equal(`${serverCrossSiteUrl}/redirected`);
-            redirected = true;
+            redirectedTo = url;
           });
           await w.loadURL(`${serverUrl}/redirect-cross-site`);
-          expect(redirected).to.be.true('didnt redirect');
+          expect(redirectedTo).to.equal(`${serverCrossSiteUrl}/redirected`, 'didnt redirect');
         });
       };
 
@@ -3226,6 +3705,13 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(pdfSource);
       expect(w.getURL()).to.equal(pdfSource);
+    });
+
+    it('loads a PDF resource in an in-memory session', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'pdf-viewer-in-memory' } });
+      await w.loadURL(pdfSource);
+      // The viewer hosts the document in a frame of its own once its plugin is up.
+      await waitUntil(() => w.webContents.mainFrame.framesInSubtree.filter((f) => f.url === pdfSource).length === 2);
     });
 
     it('successfully loads a PDF resource in a iframe', async () => {
@@ -3800,6 +4286,14 @@ describe('chromium features', () => {
     });
   });
 
+  describe('SpeechRecognition', () => {
+    itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
+      const options = { langs: ['en-US'], processLocally: true };
+      expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
+    });
+  });
+
   // FIXME(nornagon): this is broken on CI, it triggers:
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
@@ -3899,6 +4393,29 @@ describe('chromium features', () => {
       );
       expect(hasAttribution).to.be.true();
     });
+  });
+});
+
+ifdescribe(process.platform === 'darwin' && !process.mas)('kill ring', () => {
+  afterEach(closeAllWindows);
+
+  it('yanks back text killed with Ctrl+K', async () => {
+    const w = new BrowserWindow({ show: true });
+    await w.loadURL('data:text/html,<textarea id="t">kill me</textarea>');
+    w.webContents.focus();
+    await w.webContents.executeJavaScript(
+      'const t = document.getElementById("t"); t.focus(); t.setSelectionRange(0, 0); null'
+    );
+    w.webContents.debugger.attach();
+    const press = async (key: string, code: string, keyCode: number, commands: string[]) => {
+      const base = { key, code, windowsVirtualKeyCode: keyCode, modifiers: 2 };
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown', commands });
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    };
+    await press('k', 'KeyK', 75, ['deleteToEndOfParagraph']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('');
+    await press('y', 'KeyY', 89, ['yank']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('kill me');
   });
 });
 
@@ -4340,6 +4857,49 @@ describe('navigator.clipboard.write', () => {
   });
 });
 
+describe('pointer lock permission request', () => {
+  let server: http.Server;
+  let crossOriginUrl: string;
+  before(async () => {
+    server = http.createServer((_req, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end('<!doctype html><body>frame</body>');
+    });
+    crossOriginUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('is attributed to the frame that called requestPointerLock()', async () => {
+    const ses = session.fromPartition(`pointer-lock-${Math.random()}`);
+    const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const f = document.createElement('iframe');
+      f.src = ${JSON.stringify(crossOriginUrl)};
+      f.onload = resolve;
+      document.body.appendChild(f);
+    })`);
+    const iframe = w.webContents.mainFrame.frames[0];
+    const requests: { wc: Electron.WebContents; permission: string; details: any }[] = [];
+    ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+      requests.push({ wc, permission, details });
+      callback(false);
+    });
+    w.webContents.focus();
+    const result = await iframe.executeJavaScript(
+      "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
+      true
+    );
+    expect(result).to.not.equal('locked');
+    const request = requests.find((r) => r.permission === 'pointerLock');
+    expect(request).to.exist();
+    expect(request!.wc).to.equal(w.webContents);
+    expect(request!.details.requestingUrl).to.equal(`${crossOriginUrl}/`);
+    expect(request!.details.isMainFrame).to.equal(false);
+  });
+});
+
 describe('paste execCommand', () => {
   const readClipboard = async (w: BrowserWindow) => {
     if (!w.webContents.isFocused()) {
@@ -4348,6 +4908,8 @@ describe('paste execCommand', () => {
       await focus;
     }
 
+    // No user gesture: these tests exercise the permission path, and a
+    // gesture on the requesting frame allows paste by itself.
     return w.webContents.executeJavaScript(
       `
       new Promise((resolve) => {
@@ -4363,7 +4925,7 @@ describe('paste execCommand', () => {
         document.execCommand('paste');
       });
     `,
-      true
+      false
     );
   };
 
@@ -4372,9 +4934,9 @@ describe('paste execCommand', () => {
     ses = session.fromPartition(`paste-execCommand-${Math.random()}`);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     ses.setPermissionCheckHandler(null);
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   it('is disabled by default', async () => {
@@ -4488,6 +5050,83 @@ describe('paste execCommand', () => {
     const paste = await readClipboard(childWindow);
     expect(paste).to.equal(text);
   });
+
+  describe('user activation', () => {
+    // A cross-origin iframe next to a main frame that the user just clicked in.
+    let server: http.Server;
+    let crossOriginUrl: string;
+    before(async () => {
+      server = http.createServer((_req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('<!doctype html><body contenteditable>frame</body>');
+      });
+      crossOriginUrl = (await listen(server)).url;
+    });
+    after(() => server.close());
+
+    const pasteIn = (frame: Electron.WebFrameMain) =>
+      frame.executeJavaScript(
+        `new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(''), 1000);
+          document.addEventListener('paste', (event) => {
+            clearTimeout(timeout);
+            event.preventDefault();
+            resolve(event.clipboardData.getData('text'));
+          }, { once: true });
+          document.execCommand('paste');
+        })`,
+        false
+      );
+
+    const clickMainFrame = async (w: BrowserWindow) => {
+      if (!w.webContents.isFocused()) {
+        const focus = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focus;
+      }
+      w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
+      w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
+      await waitUntil(
+        async () => (await w.webContents.mainFrame.executeJavaScript('navigator.userActivation.isActive')) === true
+      );
+    };
+
+    it('lets the frame the user interacted with paste without a permission grant', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const text = 'paste with activation';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(w.webContents.mainFrame)).to.equal(text);
+    });
+
+    it('does not extend a click in the main frame to a cross-origin iframe', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute;top:200px;left:0;width:200px;height:100px';
+        f.src = ${JSON.stringify(crossOriginUrl)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const checks: string[] = [];
+      ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) => {
+        if (permission === 'deprecated-sync-clipboard-read') checks.push(requestingOrigin);
+        return false;
+      });
+      const text = 'main frame click, iframe paste';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(iframe)).to.equal('');
+      // The iframe had no activation of its own, so the decision went to the
+      // check handler, attributed to the iframe.
+      expect(checks).to.not.be.empty();
+      for (const origin of checks) expect(origin).to.equal(`${crossOriginUrl}/`);
+      expect(await clipboard.readText()).to.equal(text);
+    });
+  });
 });
 
 ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', () => {
@@ -4519,9 +5158,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     });
 
-    after(() => {
+    after(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can set a numerical value', async () => {
@@ -4558,9 +5197,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       });
     });
 
-    afterEach(() => {
+    afterEach(async () => {
       app.badgeCount = 0;
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     it('setAppBadge can be called in a ServiceWorker', (done) => {
@@ -4674,9 +5313,9 @@ describe('navigator.hid', () => {
   const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
     deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {
@@ -4848,6 +5487,26 @@ describe('navigator.hid', () => {
       }
     }
   });
+
+  it('does not crash when the requesting webContents is destroyed from the select-hid-device handler', async () => {
+    const guest = (webContents as typeof ElectronInternal.WebContents).create({
+      type: 'webview',
+      embedder: w.webContents
+    });
+    await guest.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+    const selectFired = new Promise<void>((resolve) => {
+      w.webContents.session.once('select-hid-device', () => {
+        guest.destroy();
+        resolve();
+      });
+    });
+    guest.executeJavaScript('navigator.hid.requestDevice({filters: []})', true).catch(() => {});
+    await selectFired;
+    await setTimeout();
+    expect(guest.isDestroyed()).to.be.true();
+  });
 });
 
 describe('navigator.usb', () => {
@@ -4886,9 +5545,9 @@ describe('navigator.usb', () => {
 
   const notFoundError = "NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.";
 
-  after(() => {
+  after(async () => {
     server.close();
-    closeAllWindows();
+    await closeAllWindows();
   });
 
   afterEach(() => {
@@ -5116,6 +5775,211 @@ describe('iframe sandbox external protocols', () => {
   });
 });
 
+describe('external protocol permission attribution', () => {
+  // The document that starts a navigation to an external protocol can be gone
+  // by the time the browser handles it: the navigation lives in the navigating
+  // frame (here, a popup), not in its initiator. The openExternal permission
+  // request must not be attributed to whatever the popup's WebContents happens
+  // to have committed (here, the trusted top-level origin).
+  let trusted: http.Server;
+  let untrusted: http.Server;
+  let trustedUrl: string;
+  let untrustedUrl: string;
+
+  before(async () => {
+    untrusted = http.createServer((req, res) => {
+      if (req.url!.startsWith('/slow-redirect')) {
+        // Give the initiating iframe time to navigate away first.
+        setTimeout(600).then(() => {
+          res.writeHead(302, { Location: 'magnet:attribution-test' });
+          res.end();
+        });
+        return;
+      }
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/self') {
+        res.end('<script>location.href = "/slow-redirect"</script>');
+        return;
+      }
+      // Cross-origin iframe content: open a popup on the trusted origin, send
+      // it to the slow redirect, then leave.
+      res.end(`<script>
+        (async () => {
+          const trusted = decodeURIComponent(location.hash.slice(1));
+          const w = window.open(trusted + '/blank', 'popup');
+          await new Promise(r => setTimeout(r, 400));
+          w.location = location.origin + '/slow-redirect';
+          await new Promise(r => setTimeout(r, 100));
+          location.href = 'about:blank';
+        })();
+      </script>`);
+    });
+    untrustedUrl = (await listen(untrusted)).url.replace('127.0.0.1', 'localhost');
+    trusted = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/blank') {
+        res.end('<p>trusted popup</p>');
+      } else {
+        res.end(`<iframe src="${untrustedUrl}/#${encodeURIComponent(trustedUrl)}"></iframe>`);
+      }
+    });
+    trustedUrl = (await listen(trusted)).url;
+  });
+
+  after(() => {
+    trusted.close();
+    untrusted.close();
+  });
+
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+    return closeAllWindows();
+  });
+
+  it('does not report the popup main frame as the requester when the initiator is gone', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({
+      action: 'allow',
+      overrideBrowserWindowOptions: { show: false }
+    }));
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(trustedUrl);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Before the fix this was the trusted popup's URL with isMainFrame: true.
+    expect(details.requestingUrl).to.not.contain(new URL(trustedUrl).host);
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.be.a('boolean');
+  });
+
+  it('keeps attributing a redirected navigation to the live document that started it', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    // The trusted main frame navigates itself to an untrusted URL that
+    // redirects to the external protocol; the requester is still that frame.
+    w.webContents.executeJavaScript(`location.href = ${JSON.stringify(untrustedUrl + '/slow-redirect')}; true`);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a redirected browser-initiated navigation to the redirecting origin', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    w.loadURL(`${untrustedUrl}/slow-redirect`).catch(() => {});
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Not the previously committed trusted page.
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a direct browser-initiated navigation to the navigating main frame', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve({ wc, details });
+      });
+    });
+    w.loadURL('magnet:direct-test').catch(() => {});
+    const { wc, details } = await request;
+    expect(wc).to.equal(w.webContents);
+    expect(details.externalURL).to.equal('magnet:direct-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('still attributes to the initiating frame while it is alive', async () => {
+    const w = new BrowserWindow({ show: false });
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(`data:text/html,<iframe src="${untrustedUrl}/self"></iframe>`);
+    // The iframe's own document navigates to the redirect and stays alive
+    // until it resolves, so attribution comes from that document.
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/self`);
+    expect(details.isMainFrame).to.equal(false);
+  });
+});
+
+describe('links opened into a new window', () => {
+  // A modifier-clicked link goes through OpenURLFromTab. The window the app
+  // creates for it must start its navigation as the clicking document did
+  // (renderer-initiated, with that document as initiator), not as a fresh
+  // browser-initiated load.
+  let server: http.Server;
+  let serverUrl: string;
+  const requests: Record<string, http.IncomingHttpHeaders> = {};
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      requests[req.url!] = req.headers;
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/popup') {
+        res.end('<p>popup</p>');
+        return;
+      }
+      res.end(`<a id="a" href="/popup" target="_blank">link</a><script>
+        window.clickLink = () => document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+          ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+        }));
+      </script>`);
+    });
+    serverUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('navigates the new window as the initiating document', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { show: false } }));
+    await w.loadURL(`${serverUrl}/opener`);
+    // The navigation starts before did-create-window is emitted, so hook the
+    // new webContents as soon as it exists.
+    const started = new Promise<any>((resolve) => {
+      app.once('web-contents-created', (_event, contents) => {
+        contents.once('did-start-navigation', (details: any) => resolve(details));
+      });
+    });
+    const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+    await w.webContents.executeJavaScript('window.clickLink(); true');
+    const [child] = await created;
+    const details = await started;
+    if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+    expect(details.url).to.equal(`${serverUrl}/popup`);
+    // The clicking document is the initiator...
+    expect(details.initiator).to.exist();
+    expect(details.initiator.routingId).to.equal(w.webContents.mainFrame.routingId);
+    // ...so the request is same-origin rather than a browser-typed load.
+    expect(requests['/popup']['sec-fetch-site']).to.equal('same-origin');
+  });
+});
+
 describe('iframe sandbox popups', () => {
   let server: http.Server;
   let serverUrl: string;
@@ -5126,6 +5990,7 @@ describe('iframe sandbox popups', () => {
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
         a.href = ${JSON.stringify(href)};
+        a.target = '_blank';
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
@@ -5139,6 +6004,9 @@ describe('iframe sandbox popups', () => {
       if (req.url === '/child') {
         res.end(makeChildHtml('https://example.com/sandbox-bypassed'));
       } else if (req.url === '/child-local-popup') {
+        res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/csp-sandbox-top') {
+        res.setHeader('Content-Security-Policy', 'sandbox allow-scripts allow-popups');
         res.end(makeChildHtml('/popup'));
       } else if (req.url === '/popup') {
         res.end('<title>popup</title>');
@@ -5226,5 +6094,28 @@ describe('iframe sandbox popups', () => {
     expect(result.origin).to.equal(new URL(serverUrl).origin);
     expect(result.localStorage).to.equal('allowed');
     expect(result.cookie).to.equal('allowed');
+  });
+
+  it('popups opened by a sandboxed top-level frame inherit the sandbox', async () => {
+    // A document made sandboxed by a CSP header is a sandboxed main frame (no
+    // parent); a window it opens must stay sandboxed just like an iframe's does.
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(`${serverUrl}/csp-sandbox-top`);
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    const result = await popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
   });
 });

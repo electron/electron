@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 
 import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -135,7 +136,7 @@ export async function getMsixPackageVersion(name: string): Promise<string | null
   return version || null;
 }
 
-export function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ code: number; out: string }> {
+export async function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ code: number; out: string }> {
   let out = '';
   const child = cp.spawn(cmd, args, opts);
   child.stdout.on('data', (chunk: Buffer) => {
@@ -144,13 +145,7 @@ export function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ co
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise<{ code: number; out: string }>((resolve) => {
-    child.on('exit', (code, signal) => {
-      expect(signal).to.equal(null);
-      resolve({
-        code: code!,
-        out
-      });
-    });
-  });
+  const [code, signal] = await once(child, 'exit');
+  expect(signal).to.equal(null);
+  return { code, out };
 }

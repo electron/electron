@@ -23,7 +23,15 @@ import * as url from 'node:url';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
-import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  defer,
+  waitUntil,
+  listen,
+  ifit,
+  isTestingBindingAvailable,
+  startRemoteControlApp
+} from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -202,6 +210,35 @@ describe('webContents module', () => {
       const wait = once(w, 'closed');
       w.close();
       await wait;
+    });
+  });
+
+  describe('webContents.sendToFrame(frameId, channel, args...)', () => {
+    afterEach(closeAllWindows);
+    it('only addresses frames that belong to this webContents', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-ipc-ping-pong.js');
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: { preload, sandbox: false, contextIsolation: false }
+      });
+      await w1.loadURL('about:blank');
+      await w2.loadURL('about:blank');
+      const received: number[] = [];
+      ipcMain.on('pong', (e) => {
+        received.push(e.sender.id);
+      });
+      defer(() => ipcMain.removeAllListeners('pong'));
+      const other = w2.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([other.processId, other.routingId], 'ping')).to.equal(false);
+      const own = w1.webContents.mainFrame;
+      expect(w1.webContents.sendToFrame([own.processId, own.routingId], 'ping')).to.equal(true);
+      await waitUntil(() => received.length > 0);
+      await setTimeout(200);
+      expect(received).to.deep.equal([w1.webContents.id]);
     });
   });
 
@@ -499,6 +536,12 @@ describe('webContents module', () => {
       const mainWorldResult = await w.webContents.executeJavaScript('window.X');
       expect(isolatedResult).to.equal(123);
       expect(mainWorldResult).to.equal(undefined);
+    });
+
+    it('rejects when worldId is not an integer', async () => {
+      await expect(
+        w.webContents.executeJavaScriptInIsolatedWorld('1234' as any, [{ code: '1+1' }])
+      ).to.eventually.be.rejectedWith(TypeError, 'worldId must be an integer');
     });
   });
 
@@ -811,6 +854,83 @@ describe('webContents module', () => {
         await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
         w.webContents.navigationHistory.goBack();
         expect(w.getTitle()).to.equal(title);
+      });
+
+      it('should update the title when navigating back or forward without browserWindow.setTitle()', async () => {
+        const page = `
+<html>
+<head><meta charset="UTF-8"><title>Document</title></head>
+<body>
+<script>
+  const setTitle = () => document.title = location.hash.slice(1) || 'Document';
+  addEventListener('popstate', setTitle);
+  setTitle(location.hash);
+  window.navigate = name => {
+        history.pushState(null, '', '#' + name);
+        setTitle();
+  };
+</script>
+<button id="btn1" onclick="navigate('path1')">Link 1</button>
+<button id="btn2" onclick="navigate('path2')">Link 2</button>
+
+</body>
+</html>`.trim();
+
+        w = new BrowserWindow({ show: false });
+
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+
+        const nav1 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn1").click()', true);
+        await nav1;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const nav2 = once(w.webContents, 'did-navigate-in-page');
+        await w.webContents.executeJavaScript('document.getElementById("btn2").click()', true);
+        await nav2;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        expect(w.webContents.navigationHistory.length()).to.equal(3);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+
+        const back = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back;
+        await waitUntil(() => w.getTitle() === 'path1');
+
+        const forward = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goForward();
+        await forward;
+        await waitUntil(() => w.getTitle() === 'path2');
+
+        w.setTitle('My own Title');
+        const back2 = once(w.webContents, 'did-navigate-in-page');
+        w.webContents.navigationHistory.goBack();
+        await back2;
+        expect(w.getTitle()).to.equal('My own Title');
+      });
+
+      it('should not update page title if there was no title update and window was created with title on back nav', async () => {
+        // page has no <title> tag to preserve the one from BrowserWindow options
+        const page = `<html><head></head><body>Test</body></html>`;
+        w = new BrowserWindow({ show: false, title: 'Our custom title' });
+
+        const pushed = once(w.webContents, 'did-navigate-in-page');
+        await w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(page)}`);
+        await w.webContents.executeJavaScript("history.pushState({}, '', '#test')", true);
+        await pushed;
+
+        // we need to wait for both events to make sure all the relevant
+        // code runs for the BaseWindow and title logic
+        const back = once(w.webContents, 'did-navigate-in-page');
+        const titleUpdated = once(w.webContents, 'page-title-updated');
+
+        w.webContents.navigationHistory.goBack();
+
+        await Promise.all([back, titleUpdated]);
+
+        expect(w.getTitle()).to.equal('Our custom title');
       });
     });
 
@@ -1243,6 +1363,20 @@ describe('webContents module', () => {
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
     });
+
+    it('falls back to the built-in devtools when the assigned webContents has been destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtools = new BrowserWindow({ show: false });
+      w.webContents.setDevToolsWebContents(devtools.webContents);
+      devtools.webContents.destroy();
+      await once(devtools.webContents, 'destroyed');
+      await setTimeout(50);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.devToolsWebContents).to.not.be.null();
+    });
   });
 
   describe('isFocused() API', () => {
@@ -1306,6 +1440,40 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
+    });
+
+    // Regression test for https://github.com/electron/electron/issues/52158.
+    // The api::WebContents wrapping the DevTools WebContents is created as soon
+    // as openDevTools() is called but only referenced again once the frontend
+    // has finished loading. A GC in between used to collect its wrapper, after
+    // which `devtools-opened` would either crash the main process (if the
+    // collected object had not been freed yet) or create a second
+    // api::WebContents for the same DevTools WebContents.
+    it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
+      const gc = require('node:vm').runInNewContext('gc');
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const created: number[] = [];
+      const onCreated = (_: any, wc: WebContents) => {
+        created.push(wc.id);
+      };
+      app.on('web-contents-created', onCreated);
+      try {
+        const devtoolsOpened = once(w.webContents, 'devtools-opened');
+        w.webContents.openDevTools({ mode: 'detach', activate: false });
+        gc({ type: 'major', execution: 'sync' });
+        await devtoolsOpened;
+      } finally {
+        app.removeListener('web-contents-created', onCreated);
+      }
+
+      const devtools = w.webContents.devToolsWebContents;
+      expect(devtools).to.not.be.null();
+      expect(devtools!.isDestroyed()).to.be.false();
+      // Exactly one WebContents (the DevTools one) was created, and it is the
+      // one we ended up with.
+      expect(created).to.deep.equal([devtools!.id]);
     });
 
     it('updates and restores the inspected page viewport for right-docked DevTools', async () => {
@@ -2025,14 +2193,123 @@ describe('webContents module', () => {
     });
   });
 
+  describe('disableWakeLocks webPreference', () => {
+    const blankPage = path.join(fixturesPath, 'api', 'blank.html');
+    afterEach(closeAllWindows);
+
+    const wakeLockCode = `
+      (async () => {
+        let wakeLockAvailability = true;
+
+        try {
+          const lock = await navigator.wakeLock.request("screen");
+          wakeLockAvailability = (lock !== null && !lock.released);
+          lock.addEventListener("release", () => {
+            wakeLockAvailability = false;
+          });
+        } catch {
+          wakeLockAvailability = false;
+        }
+        
+        // Brief pause to ensure the state stabilizes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        return wakeLockAvailability;
+      })();
+    `;
+
+    it('wake locks are enabled by default', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(blankPage);
+      assert(await w.webContents.executeJavaScript(wakeLockCode));
+    });
+
+    it('wake locks are unusable when disabled', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
+      await w.loadFile(blankPage);
+      assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
+    });
+  });
+
   describe('getOSProcessId()', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.getOSProcessId()).to.equal(0);
-
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+
+    it('returns 0 before a renderer has been assigned', () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: false } });
+      expect(w.webContents.getOSProcessId()).to.equal(0);
+    });
+
+    describe('pre-warmed renderer', () => {
+      const tabPidsAroundFirstWindow = (
+        rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
+        firstPrefs: Electron.WebPreferences
+      ) => {
+        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+          const { app, BrowserWindow, session } = require('electron');
+          const tabPids = () =>
+            app
+              .getAppMetrics()
+              .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
+              .map((m: Electron.ProcessMetric) => m.pid);
+          session.defaultSession.getUserAgent();
+          const deadline = Date.now() + 10000;
+          while (tabPids().length === 0 && Date.now() < deadline) {
+            await new Promise((resolve) => global.setTimeout(resolve, 20));
+          }
+          const warmed = tabPids();
+          const first = new BrowserWindow({ show: false, webPreferences: prefs });
+          const firstPidBeforeLoad = first.webContents.getOSProcessId();
+          await first.loadURL('about:blank');
+          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          const second = new BrowserWindow({ show: false });
+          const secondPidBeforeLoad = second.webContents.getOSProcessId();
+          await second.loadURL('about:blank');
+          const result = {
+            warmed,
+            firstPidBeforeLoad,
+            firstPid: first.webContents.getOSProcessId(),
+            secondPidBeforeLoad,
+            secondPid: second.webContents.getOSProcessId(),
+            tabsAfter: tabPids()
+          };
+          first.destroy();
+          second.destroy();
+          return result;
+        }, firstPrefs);
+      };
+
+      it('is handed to the first sandboxed window only', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.firstPid).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('is discarded when the first window cannot use it', async () => {
+        const rc = await startRemoteControlApp();
+        const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
+        expect(r.warmed).to.have.lengthOf(1);
+        expect(r.firstPidBeforeLoad).to.equal(0);
+        expect(r.firstPid).to.not.equal(r.warmed[0]);
+        expect(r.tabsAfter).to.not.include(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.equal(0);
+      });
+
+      it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
+        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {});
+        expect(r.firstPidBeforeLoad).to.equal(r.warmed[0]);
+        expect(r.secondPidBeforeLoad).to.not.equal(0);
+        expect(r.secondPidBeforeLoad).to.not.equal(r.firstPid);
+        expect(r.secondPid).to.equal(r.secondPidBeforeLoad);
+      });
     });
   });
 
@@ -2295,6 +2572,273 @@ describe('webContents module', () => {
 
       w.webContents.audioMuted = false;
       expect(w.webContents.audioMuted).to.be.false();
+    });
+  });
+
+  describe('caretBrowsingEnabled', () => {
+    afterEach(closeAllWindows);
+
+    const platformCaretBrowsing = () =>
+      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
+    it('defaults to false', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be toggled via the property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('stays enabled when set to the same value repeatedly', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    // Test that repeated calls aren't incorrectly incrementing the underlying refcount
+    it('can be enabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // Test that repeated calls aren't incorrectly decrementing the underlying refcount
+    it('can be disabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('persists across navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.caretBrowsingEnabled = true;
+
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('tracks each WebContents independently', () => {
+      const w1 = new BrowserWindow({ show: false });
+      const w2 = new BrowserWindow({ show: false });
+
+      w1.webContents.caretBrowsingEnabled = true;
+      w2.webContents.caretBrowsingEnabled = true;
+
+      w1.webContents.caretBrowsingEnabled = false;
+
+      expect(w1.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be enabled again after a WebContents is destroyed with it enabled', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.webContents.caretBrowsingEnabled = true;
+
+      const destroyed = once(w1.webContents, 'destroyed');
+      w1.close();
+      await destroyed;
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.webContents.caretBrowsingEnabled = true;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // These depend on a binding that is only available when DCHECK_IS_ON.
+    ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      it('stays on while another WebContents still has caret browsing enabled', () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w1.webContents.caretBrowsingEnabled = true;
+        w2.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w1.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w2.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('takes at most one reference per WebContents however often it is set', () => {
+        const w = new BrowserWindow({ show: false });
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        w.webContents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        w.webContents.caretBrowsingEnabled = false;
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('is withdrawn once an enabled WebContents is destroyed', async () => {
+        const w = new BrowserWindow({ show: false });
+        const contents = w.webContents;
+        contents.caretBrowsingEnabled = true;
+        expect(platformCaretBrowsing()).to.be.true();
+
+        const destroyed = once(contents, 'destroyed');
+        w.close();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+
+      it('is not left on by a will-destroy listener that re-enables caret browsing', async () => {
+        const contents = (webContents as typeof ElectronInternal.WebContents).create();
+
+        expect(platformCaretBrowsing()).to.be.false();
+
+        // will-destroy is emitted from the destructor, after it has released
+        // this WebContents' reference, while the wrapper is still dispatchable.
+        (contents as any).on('will-destroy', () => {
+          contents.caretBrowsingEnabled = true;
+        });
+
+        const destroyed = once(contents, 'destroyed');
+        contents.destroy();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
+    });
+
+    describe('renderer-side caret movement', () => {
+      const pressRight = (w: BrowserWindow, times: number) => {
+        for (let i = 0; i < times; i++) {
+          w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+          w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+        }
+      };
+
+      // Blink needs a starting selection to move away from
+      const collapseSelectionToStart = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(`
+        {
+          const textNode = document.getElementById('prose').firstChild;
+          getSelection().collapse(textNode, 0);
+        }
+      `);
+
+      it('moves the caret through non-editable text only while enabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        // Initialize to something neither phase expects so an unrun poll can't pass
+        let offset = -1;
+        // Renderer preferences propagate asynchronously, so poll for each state
+        const pollForOffset = (expected: number) =>
+          waitUntil(
+            async () => {
+              await collapseSelectionToStart(w);
+              pressRight(w, 3);
+              offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+              return offset === expected;
+            },
+            { rate: 100, timeout: 3000 }
+          );
+
+        w.webContents.caretBrowsingEnabled = true;
+        await pollForOffset(3);
+        expect(offset).to.equal(3);
+
+        // Now that the input pipeline is known to reach the page, a caret that
+        // stays put is attributable to the preference
+        w.webContents.caretBrowsingEnabled = false;
+        await pollForOffset(0);
+        expect(offset).to.equal(0);
+      });
+    });
+
+    describe('guest preference inheritance', () => {
+      it('inherits caretBrowsingEnabled in a guest webview', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.getType()).to.equal('webview');
+        expect(guest.caretBrowsingEnabled).to.be.true();
+      });
+
+      ifit(isTestingBindingAvailable())(
+        'releases exactly one reference when an inherited preference is disabled',
+        async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).to.be.true();
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.true();
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).to.be.false();
+        }
+      );
+
+      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.caretBrowsingEnabled).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true();
+
+        // An attached guest's WebContents is owned by its embedder frame, so the
+        // wrapper holding the reference is only deleted at garbage collection.
+        const destroyed = once(guest, 'destroyed');
+        w.close();
+        await destroyed;
+
+        expect(platformCaretBrowsing()).to.be.false();
+      });
     });
   });
 
@@ -3238,6 +3782,66 @@ describe('webContents module', () => {
     });
   });
 
+  describe('unresponsive event', () => {
+    afterEach(closeAllWindows);
+    const testing = () => process._linkedBinding('electron_common_testing');
+    // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.
+    const hangAndPoke = async (w: BrowserWindow, ms = 0) => {
+      w.webContents
+        .executeJavaScript(ms ? `{ const end = Date.now() + ${ms}; while (Date.now() < end) {} }` : 'while (true) {}')
+        .catch(() => {});
+      await setTimeout(200);
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
+    };
+
+    ifit(isTestingBindingAvailable())('is not emitted within a hang delay of a system resume', async function () {
+      this.timeout(70000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      let unresponsiveAt = 0;
+      w.webContents.once('unresponsive', () => {
+        unresponsiveAt = Date.now();
+      });
+      await hangAndPoke(w);
+      // Sleep and wake while the timeout is pending; it would fire ~6 s after
+      // this resume, which says nothing about the renderer.
+      await setTimeout(10000);
+      testing().simulatePowerEvent('suspend');
+      testing().simulatePowerEvent('resume');
+      const resumedAt = Date.now();
+      await once(w.webContents, 'unresponsive');
+      expect(unresponsiveAt - resumedAt).to.be.greaterThan(15000);
+    });
+
+    it('is not followed by responsive just because the window is hidden', async function () {
+      this.timeout(90000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w, 40000);
+      await once(w.webContents, 'unresponsive');
+      const events: string[] = [];
+      w.webContents.on('responsive', () => events.push('responsive'));
+      w.webContents.on('unresponsive', () => events.push('unresponsive'));
+      w.hide();
+      await setTimeout(2000);
+      expect(events, 'after hide').to.deep.equal([]);
+      w.show();
+      // Still hung and visible again: reported again after one delay.
+      await once(w.webContents, 'unresponsive');
+      // The spin ends ~40 s in; the pending key event is then acked.
+      await once(w.webContents, 'responsive');
+      expect(events).to.deep.equal(['unresponsive', 'responsive']);
+    });
+
+    it('is emitted for a hang with no suspend involved', async function () {
+      this.timeout(40000);
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      await hangAndPoke(w);
+      await once(w.webContents, 'unresponsive');
+    });
+  });
+
   describe('render view deleted events', () => {
     let server: http.Server;
     let serverUrl: string;
@@ -3522,6 +4126,40 @@ describe('webContents module', () => {
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
     });
+
+    describe('on a destroyed WebContents', () => {
+      const destroyedWebContents = async (handler?: (...args: any[]) => void) => {
+        const w = new BrowserWindow({ show: false });
+        const wc = w.webContents;
+        if (handler) wc.on('console-message', handler);
+        const destroyed = once(wc, 'destroyed');
+        w.destroy();
+        await destroyed;
+        expect(wc.isDestroyed()).to.be.true();
+        return wc;
+      };
+
+      it('does not throw when adding a listener', async () => {
+        const wc = await destroyedWebContents();
+        expect(() => wc.on('console-message', () => {})).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(1);
+      });
+
+      it('does not throw when removing a listener', async () => {
+        const handler = () => {};
+        const wc = await destroyedWebContents(handler);
+        expect(() => wc.removeListener('console-message', handler)).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+      });
+
+      it('does not throw when removing all listeners', async () => {
+        const wc = await destroyedWebContents(() => {});
+        expect(() => wc.removeAllListeners('console-message')).to.not.throw();
+        expect(wc.listenerCount('console-message')).to.equal(0);
+        wc.on('console-message', () => {});
+        expect(() => wc.removeAllListeners()).to.not.throw();
+      });
+    });
   });
 
   describe('ipc-message event', () => {
@@ -3786,6 +4424,45 @@ describe('webContents module', () => {
 
       w.webContents.setBackgroundThrottling(false);
     });
+
+    // Regression test: disabling throttling on a WebContentsView while its
+    // window is hidden used to un-hide the RenderWidgetHost without telling the
+    // view, so the surface the renderer produced was never embedded and the
+    // window stayed blank (and un-capturable) once shown, until a resize.
+    it('leaves a hidden WebContentsView paintable once its window is shown', async () => {
+      const w = new BaseWindow({ show: false, width: 300, height: 200 });
+      const view = new WebContentsView();
+      w.contentView.addChildView(view);
+      view.setBounds({ x: 0, y: 0, width: 300, height: 200 });
+      await view.webContents.loadURL('data:text/html,<body style="background:%23ff0000">');
+      view.webContents.setBackgroundThrottling(false);
+      // Give the renderer time to submit frames while still hidden.
+      await setTimeout(500);
+      w.show();
+      // In the broken state capturePage rejects forever ("Current display
+      // surface not available for capture"); in the fixed state the surface is
+      // available immediately or after a frame or two.
+      let image: Electron.NativeImage | undefined;
+      await waitUntil(
+        async () => {
+          try {
+            image = await view.webContents.capturePage();
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100, timeout: 5000 }
+      );
+      const size = image!.getSize();
+      expect(size.width).to.be.greaterThan(0);
+      expect(size.height).to.be.greaterThan(0);
+      const px = image!.toBitmap();
+      // BGRA; expect the red background, not the blank white surface.
+      expect(px[2]).to.equal(255);
+      expect(px[1]).to.equal(0);
+      expect(px[0]).to.equal(0);
+    });
   });
 
   describe('getBackgroundThrottling()', () => {
@@ -3845,8 +4522,8 @@ describe('webContents module', () => {
       });
     });
 
-    afterEach(() => {
-      closeAllWindows();
+    afterEach(async () => {
+      await closeAllWindows();
       if (server) {
         server.close();
       }
@@ -4265,6 +4942,36 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+
+    it('does not crash when the webContents is destroyed while an auth request is in flight', async () => {
+      const w = new BrowserWindow({ show: false });
+      const wc = w.webContents;
+      const dbg = wc.debugger;
+      dbg.attach('1.3');
+      const destroyed = once(wc, 'destroyed');
+      dbg.on('message', (_e, method, params) => {
+        if (method === 'Fetch.requestPaused') {
+          dbg.sendCommand('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {});
+        } else if (method === 'Fetch.authRequired') {
+          // Destroying here queues the WebContents deletion right before the
+          // task that emits 'login' for the resumed auth challenge.
+          wc.destroy();
+          dbg
+            .sendCommand('Fetch.continueWithAuth', {
+              requestId: params.requestId,
+              authChallengeResponse: { response: 'Default' }
+            })
+            .catch(() => {});
+        }
+      });
+      await dbg.sendCommand('Fetch.enable', {
+        patterns: [{ urlPattern: '*', requestStage: 'Request' }],
+        handleAuthRequests: true
+      });
+      wc.loadURL(serverUrl).catch(() => {});
+      await destroyed;
+      await setTimeout(100);
     });
   });
 

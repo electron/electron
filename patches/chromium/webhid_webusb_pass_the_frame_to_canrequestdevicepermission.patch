@@ -1,0 +1,197 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 6 Sep 2026 17:49:35 +0000
+Subject: [WebHID][WebUSB] Pass the frame to CanRequestDevicePermission()
+
+HidDelegate::CanRequestDevicePermission() and
+UsbDelegate::CanRequestDevicePermission() take only a BrowserContext and
+an origin, while the sibling methods on the same delegates
+(HasDevicePermission(), RevokeDevicePermission(), RunChooser(),
+AdjustProtectedInterfaceClasses()) also receive the RenderFrameHost.
+An embedder that scopes device permission checks to the requesting
+document therefore cannot tell which frame is asking in the "can
+request" step, even though it can in every later step.
+
+Add a RenderFrameHost* parameter to both methods, in the same position
+as in HasDevicePermission(). HidService and WebUsbServiceImpl pass
+their render_frame_host_, which is null for service worker clients, as
+HasDevicePermission() already documents. ChromeHidDelegate and
+ChromeUsbDelegate ignore the new argument and keep evaluating the
+top-level origin they are given, so there is no behavior change in
+Chrome.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8364427;
+remove this patch when it rolls in.
+
+diff --git a/chrome/browser/hid/chrome_hid_delegate.cc b/chrome/browser/hid/chrome_hid_delegate.cc
+index e296d15065a68ef16379c80e162ee56ba7f3fcf4..847899d4ce8b55c0703ea794b5242f28cd0df082 100644
+--- a/chrome/browser/hid/chrome_hid_delegate.cc
++++ b/chrome/browser/hid/chrome_hid_delegate.cc
+@@ -246,6 +246,7 @@ std::unique_ptr<content::HidChooser> ChromeHidDelegate::RunChooser(
+ 
+ bool ChromeHidDelegate::CanRequestDevicePermission(
+     content::BrowserContext* browser_context,
++    content::RenderFrameHost* render_frame_host,
+     const url::Origin& origin) {
+   return browser_context &&
+          GetChooserContext(browser_context)->CanRequestObjectPermission(origin);
+@@ -407,7 +408,7 @@ void ChromeHidDelegate::OnWebViewHidPermissionRequestCompleted(
+ 
+   auto* browser_context = render_frame_host->GetBrowserContext();
+   auto origin = render_frame_host->GetMainFrame()->GetLastCommittedOrigin();
+-  if (!CanRequestDevicePermission(browser_context, origin)) {
++  if (!CanRequestDevicePermission(browser_context, render_frame_host, origin)) {
+     std::move(callback).Run(/*devices=*/{});
+     return;
+   }
+diff --git a/chrome/browser/hid/chrome_hid_delegate.h b/chrome/browser/hid/chrome_hid_delegate.h
+index 4e3d99091ee5c0ac5ffd6d76758da6397574cabe..0edc5e93760ce8b4e453dcd63ec9aaa7e27ba67d 100644
+--- a/chrome/browser/hid/chrome_hid_delegate.h
++++ b/chrome/browser/hid/chrome_hid_delegate.h
+@@ -39,6 +39,7 @@ class ChromeHidDelegate : public content::HidDelegate {
+       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
+       content::HidChooser::Callback callback) override;
+   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
++                                  content::RenderFrameHost* render_frame_host,
+                                   const url::Origin& origin) override;
+   bool HasDevicePermission(content::BrowserContext* browser_context,
+                            content::RenderFrameHost* render_frame_host,
+diff --git a/chrome/browser/hid/chrome_hid_delegate_unittest.cc b/chrome/browser/hid/chrome_hid_delegate_unittest.cc
+index 084463d16d596861c0deae55d0eee30af11fc2d7..ffb716c687e3b24a98e70de18609f450151f6af9 100644
+--- a/chrome/browser/hid/chrome_hid_delegate_unittest.cc
++++ b/chrome/browser/hid/chrome_hid_delegate_unittest.cc
+@@ -1291,7 +1291,7 @@ TEST(ChromeHidDelegateBrowserContextTest, BrowserContextIsNull) {
+   ChromeHidDelegate chrome_hid_delegate;
+   url::Origin origin = url::Origin::Create(GURL(kDefaultTestUrl));
+   EXPECT_FALSE(chrome_hid_delegate.CanRequestDevicePermission(
+-      /*browser_context=*/nullptr, origin));
++      /*browser_context=*/nullptr, /*render_frame_host=*/nullptr, origin));
+   EXPECT_FALSE(chrome_hid_delegate.HasDevicePermission(
+       /*browser_context=*/nullptr, /*render_frame_host=*/nullptr, origin,
+       device::mojom::HidDeviceInfo()));
+diff --git a/chrome/browser/usb/chrome_usb_delegate.cc b/chrome/browser/usb/chrome_usb_delegate.cc
+index c34387a5e63299901e6e32e1b5a43e0b08b8d814..f0c2b7398cbec947acb3869b5e8d05e0c921c389 100644
+--- a/chrome/browser/usb/chrome_usb_delegate.cc
++++ b/chrome/browser/usb/chrome_usb_delegate.cc
+@@ -294,6 +294,7 @@ bool ChromeUsbDelegate::PageMayUseUsb(content::Page& page) {
+ 
+ bool ChromeUsbDelegate::CanRequestDevicePermission(
+     content::BrowserContext* browser_context,
++    content::RenderFrameHost* frame,
+     const url::Origin& origin) {
+   return browser_context &&
+          GetChooserContext(browser_context)->CanRequestObjectPermission(origin);
+diff --git a/chrome/browser/usb/chrome_usb_delegate.h b/chrome/browser/usb/chrome_usb_delegate.h
+index 0f8281c843aff6b095eed4176455f4e5c1b3bc97..190c8ad7733aa90dede09551f4ecf18e4cd18466 100644
+--- a/chrome/browser/usb/chrome_usb_delegate.h
++++ b/chrome/browser/usb/chrome_usb_delegate.h
+@@ -39,6 +39,7 @@ class ChromeUsbDelegate : public content::UsbDelegate {
+       blink::mojom::WebUsbService::GetPermissionCallback callback) override;
+   bool PageMayUseUsb(content::Page& page) override;
+   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
++                                  content::RenderFrameHost* frame,
+                                   const url::Origin& origin) override;
+   void RevokeDevicePermissionWebInitiated(
+       content::BrowserContext* browser_context,
+diff --git a/chrome/browser/usb/chrome_usb_delegate_unittest.cc b/chrome/browser/usb/chrome_usb_delegate_unittest.cc
+index 9463c12f2ab56c4bf04f80d0dd4ae7c4bad36891..f13ddc2c177b1d2ee90fd298fe16955364d01d14 100644
+--- a/chrome/browser/usb/chrome_usb_delegate_unittest.cc
++++ b/chrome/browser/usb/chrome_usb_delegate_unittest.cc
+@@ -1057,7 +1057,7 @@ TEST(ChromeUsbDelegateBrowserContextTest, BrowserContextIsNull) {
+   ChromeUsbDelegate chrome_usb_delegate;
+   url::Origin origin = url::Origin::Create(GURL(kDefaultTestUrl));
+   EXPECT_FALSE(chrome_usb_delegate.CanRequestDevicePermission(
+-      /*browser_context=*/nullptr, origin));
++      /*browser_context=*/nullptr, /*frame=*/nullptr, origin));
+   EXPECT_FALSE(chrome_usb_delegate.HasDevicePermission(
+       /*browser_context=*/nullptr, /*frame=*/nullptr, origin,
+       device::mojom::UsbDeviceInfo()));
+diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
+index 07016ab71eb699b8f637eba8fd7444e4de9e6cc4..2497764e77ff1413170aefd57729f5829f8f8d4a 100644
+--- a/content/browser/hid/hid_service.cc
++++ b/content/browser/hid/hid_service.cc
+@@ -435,8 +435,8 @@ void HidService::RequestDevice(
+     std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
+     RequestDeviceCallback callback) {
+   HidDelegate* delegate = GetContentClient()->browser()->GetHidDelegate();
+-  if (!delegate ||
+-      !delegate->CanRequestDevicePermission(GetBrowserContext(), origin_)) {
++  if (!delegate || !delegate->CanRequestDevicePermission(
++                       GetBrowserContext(), render_frame_host_, origin_)) {
+     std::move(callback).Run(std::vector<device::mojom::HidDeviceInfoPtr>());
+     return;
+   }
+diff --git a/content/browser/hid/hid_test_utils.h b/content/browser/hid/hid_test_utils.h
+index 86db539c1719da7e879f87ec6642de8a02a6f808..c4db21810c0764e76dc338002a969e344ed6499e 100644
+--- a/content/browser/hid/hid_test_utils.h
++++ b/content/browser/hid/hid_test_utils.h
+@@ -56,7 +56,7 @@ class MockHidDelegate : public HidDelegate {
+               ());
+   MOCK_METHOD(bool,
+               CanRequestDevicePermission,
+-              (BrowserContext*, const url::Origin&));
++              (BrowserContext*, RenderFrameHost*, const url::Origin&));
+   MOCK_METHOD(bool,
+               HasDevicePermission,
+               (BrowserContext*,
+diff --git a/content/browser/usb/usb_test_utils.h b/content/browser/usb/usb_test_utils.h
+index 0c6a091a224fcbb26bb134accf69d42e191e6041..f93b6402c1366d8a34da5e5d5e5268a94d99a98c 100644
+--- a/content/browser/usb/usb_test_utils.h
++++ b/content/browser/usb/usb_test_utils.h
+@@ -99,8 +99,8 @@ class MockUsbDelegate : public UsbDelegate {
+                     RenderFrameHost*,
+                     std::vector<uint8_t>&));
+   MOCK_METHOD1(PageMayUseUsb, bool(Page&));
+-  MOCK_METHOD2(CanRequestDevicePermission,
+-               bool(BrowserContext*, const url::Origin&));
++  MOCK_METHOD3(CanRequestDevicePermission,
++               bool(BrowserContext*, RenderFrameHost*, const url::Origin&));
+   MOCK_METHOD3(RevokeDevicePermissionWebInitiated,
+                void(BrowserContext*,
+                     const url::Origin&,
+diff --git a/content/browser/usb/web_usb_service_impl.cc b/content/browser/usb/web_usb_service_impl.cc
+index 3c34492e7274ddc3d628639b3f46acae0c6600d1..e0c9c2ac4518dc03dc3377ffc553aac9cec7bbed 100644
+--- a/content/browser/usb/web_usb_service_impl.cc
++++ b/content/browser/usb/web_usb_service_impl.cc
+@@ -336,8 +336,8 @@ void WebUsbServiceImpl::GetPermission(
+     blink::mojom::WebUsbRequestDeviceOptionsPtr options,
+     GetPermissionCallback callback) {
+   auto* delegate = GetContentClient()->browser()->GetUsbDelegate();
+-  if (!delegate ||
+-      !delegate->CanRequestDevicePermission(GetBrowserContext(), origin_)) {
++  if (!delegate || !delegate->CanRequestDevicePermission(
++                       GetBrowserContext(), render_frame_host_, origin_)) {
+     std::move(callback).Run(nullptr);
+     return;
+   }
+diff --git a/content/public/browser/hid_delegate.h b/content/public/browser/hid_delegate.h
+index cb1c313bea2bd7269f9560cd613a09596585fc95..27246a32e71222bb11339e81598a6a48efbfee02 100644
+--- a/content/public/browser/hid_delegate.h
++++ b/content/public/browser/hid_delegate.h
+@@ -57,7 +57,10 @@ class CONTENT_EXPORT HidDelegate {
+       HidChooser::Callback callback) = 0;
+ 
+   // Returns whether `origin` has permission to request access to a device.
++  // `render_frame_host` is the frame making the request, or null when there
++  // is none (for example, for a service worker).
+   virtual bool CanRequestDevicePermission(BrowserContext* browser_context,
++                                          RenderFrameHost* render_frame_host,
+                                           const url::Origin& origin) = 0;
+ 
+   // Returns whether `origin` has permission to access `device`.
+diff --git a/content/public/browser/usb_delegate.h b/content/public/browser/usb_delegate.h
+index fb8aec0347674b349058bf75849abf62a5b39ba9..7621fdcf0b52caaa0b9388826a2c12c018977bca 100644
+--- a/content/public/browser/usb_delegate.h
++++ b/content/public/browser/usb_delegate.h
+@@ -68,8 +68,10 @@ class CONTENT_EXPORT UsbDelegate {
+   virtual bool PageMayUseUsb(Page& page) = 0;
+ 
+   // Returns whether `origin` in `browser_context` has permission to request
+-  // access to a device.
++  // access to a device. `frame` is the frame making the request, or null when
++  // there is none (for example, for a service worker).
+   virtual bool CanRequestDevicePermission(BrowserContext* browser_context,
++                                          RenderFrameHost* frame,
+                                           const url::Origin& origin) = 0;
+ 
+   // Attempts to revoke the permission for `origin` in `browser_context` to

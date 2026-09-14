@@ -43,7 +43,7 @@ void ElectronApiIPCHandlerImpl::OnConnectionError() {
 
 void ElectronApiIPCHandlerImpl::Message(bool internal,
                                         const std::string& channel,
-                                        blink::CloneableMessage arguments) {
+                                        electron::SerializedValue arguments) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
@@ -58,7 +58,7 @@ void ElectronApiIPCHandlerImpl::Message(bool internal,
 }
 void ElectronApiIPCHandlerImpl::Invoke(bool internal,
                                        const std::string& channel,
-                                       blink::CloneableMessage arguments,
+                                       electron::SerializedValue arguments,
                                        InvokeCallback callback) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
@@ -93,7 +93,7 @@ void ElectronApiIPCHandlerImpl::ReceivePostMessage(
 
 void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
                                             const std::string& channel,
-                                            blink::CloneableMessage arguments,
+                                            electron::SerializedValue arguments,
                                             MessageSyncCallback callback) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
@@ -109,8 +109,9 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
   }
 }
 
-void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
-                                            blink::CloneableMessage arguments) {
+void ElectronApiIPCHandlerImpl::MessageHost(
+    const std::string& channel,
+    electron::SerializedValue arguments) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();

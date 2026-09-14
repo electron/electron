@@ -1,8 +1,8 @@
 import { session, webContents, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
-import { v4 } from 'uuid';
 
+import { randomUUID } from 'node:crypto';
 import { on, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -24,7 +24,7 @@ describe('session.serviceWorkers', () => {
   });
 
   beforeEach(async () => {
-    const uuid = v4();
+    const uuid = randomUUID();
 
     server = http.createServer((req, res) => {
       const url = new URL(req.url!, `http://${req.headers.host}`);

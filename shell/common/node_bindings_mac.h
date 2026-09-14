@@ -11,7 +11,7 @@ namespace electron {
 
 class NodeBindingsMac : public NodeBindings {
  public:
-  explicit NodeBindingsMac(BrowserEnvironment browser_env);
+  NodeBindingsMac(BrowserEnvironment browser_env, uv_loop_t* loop);
 
  private:
   // NodeBindings

@@ -383,6 +383,11 @@ UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
 void BrowserProcessImpl::set_usb_system_tray_icon_for_test(
     std::unique_ptr<UsbSystemTrayIcon> icon) {}
 
+speech::SpeechRecognitionSmallExpertModelInstaller*
+BrowserProcessImpl::speech_recognition_small_expert_model_installer() {
+  return nullptr;
+}
+
 os_crypt_async::OSCryptAsync* BrowserProcessImpl::os_crypt_async() {
   return os_crypt_async_.get();
 }

@@ -1,4 +1,4 @@
-import { webContents } from 'electron/main';
+import { BrowserWindow, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -27,6 +27,7 @@ import {
   startRemoteControlApp,
   useRemoteContext
 } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -48,6 +49,22 @@ describe('node feature', () => {
         const [msg] = await once(child, 'message');
         expect(msg.length).to.equal(2);
       });
+
+      ifit(process.platform === 'darwin')(
+        'does not start an app instance when the helper is executed without a process type',
+        () => {
+          const { status, stderr } = childProcess.spawnSync(
+            process.helperExecPath,
+            [path.join(fixtures, 'module', 'ping.js')],
+            {
+              encoding: 'utf-8',
+              timeout: 20000
+            }
+          );
+          expect(status).to.equal(64);
+          expect(stderr).to.include('requires a --type argument');
+        }
+      );
     });
   });
 
@@ -484,6 +501,180 @@ describe('node feature', () => {
         });
       });
     });
+  });
+
+  describe('environments sharing a renderer', () => {
+    afterEach(closeAllWindows);
+
+    const nodePreferences = { nodeIntegration: true, contextIsolation: false, sandbox: false };
+
+    const churnDuring = (teardown: string) => `new Promise((resolve) => {
+      const fs = require('node:fs');
+      let immediates = 0;
+      const spin = () => { if (++immediates < 200) setImmediate(spin); };
+      setImmediate(spin);
+      let read = false;
+      fs.readFile(__filename, () => { read = true; });
+      let echoed = false;
+      require('@electron-ci/echo').async(true, (value) => { echoed = value; });
+      let closed = 0;
+      const watchers = Array.from({ length: 5 }, () => fs.watch(__filename));
+      for (const w of watchers) w.on('close', () => closed++);
+      for (const w of watchers) w.close();
+      ${teardown};
+      const done = () => immediates < 200 || !read || !echoed ? setTimeout(done, 10) : resolve({ immediates, read, echoed, closed });
+      setTimeout(done, 10);
+    })`;
+
+    const loopWork = ['immediate', 'fs', 'napi async work', 'napi threadsafe function'];
+    const exerciseLoop = (wc: Electron.WebContents) =>
+      wc.executeJavaScript(`Promise.all([
+        new Promise((resolve) => setImmediate(() => resolve('immediate'))),
+        new Promise((resolve) => require('node:fs').readFile(__filename, () => resolve('fs'))),
+        new Promise((resolve) => require('@electron-ci/echo').async('napi async work', resolve)),
+        new Promise((resolve) => require('@electron-ci/echo').threadsafe('napi threadsafe function', resolve))
+      ])`);
+
+    const openWindow = async (webPreferences = {}) => {
+      const w = new BrowserWindow({ show: false, webPreferences: { ...nodePreferences, ...webPreferences } });
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: nodePreferences }
+      }));
+      const errors: string[] = [];
+      w.webContents.on('console-message', ({ level, message }) => {
+        if (level === 'error') errors.push(message);
+      });
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      return { w, errors };
+    };
+
+    const openChild = async (w: BrowserWindow, url: string) => {
+      const childCreated = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+      await w.webContents.executeJavaScript(`window.child = window.open(${JSON.stringify(url)}); undefined`);
+      const [child] = await childCreated;
+      if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+      expect(child.webContents.getOSProcessId()).to.equal(w.webContents.getOSProcessId());
+      return child;
+    };
+
+    it('runs each same-process child window on a working loop of its own', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      const blankChild = await openChild(w, 'about:blank');
+      await expect(exerciseLoop(blankChild.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps a child window working while its opener reloads', async () => {
+      const { w, errors } = await openWindow();
+      const child = await openChild(w, 'base-page.html');
+      for (let i = 0; i < 2; i++) {
+        const pending = exerciseLoop(child.webContents);
+        w.webContents.reload();
+        await once(w.webContents, 'did-finish-load');
+        await expect(pending).to.eventually.deep.equal(loopWork);
+        await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      }
+      await expect(exerciseLoop(w.webContents)).to.eventually.deep.equal(loopWork);
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps the opener working when a same-process child window closes', async () => {
+      const { w, errors } = await openWindow();
+      for (let i = 0; i < 3; i++) {
+        const child = await openChild(w, 'base-page.html');
+        const closed = once(child, 'closed');
+        const result = await w.webContents.executeJavaScript(churnDuring('window.child.close()'));
+        await closed;
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
+    });
+
+    it('keeps the parent frame working when a node-integrated iframe is removed', async () => {
+      const { w, errors } = await openWindow({ nodeIntegrationInSubFrames: true });
+      for (let i = 0; i < 3; i++) {
+        await w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          frame.onload = () => resolve();
+          document.body.appendChild(window.frame = frame);
+        })`);
+        const result = await w.webContents.executeJavaScript(churnDuring('window.frame.remove()'));
+        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+      }
+      expect(errors).to.deep.equal([]);
+    });
+
+    // Regression test for https://github.com/electron/electron/issues/53789.
+    it('does not crash when a node-integrated iframe is removed before its loop first runs', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegrationInSubFrames: true,
+          preload: path.join(fixtures, 'module', 'preload-remove-own-frame.js')
+        }
+      });
+      const gone = once(w.webContents, 'render-process-gone') as Promise<
+        [Electron.Event, Electron.RenderProcessGoneDetails]
+      >;
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      const removed = w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const frames = Array.from({ length: 10 }, () => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          return document.body.appendChild(frame);
+        });
+        const check = () => frames.some((frame) => frame.isConnected) ? setTimeout(check, 10) : resolve(frames.length);
+        check();
+      })`);
+      const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
+      expect(result).to.equal(10);
+    });
+  });
+
+  describe('native addons', () => {
+    // Regression test for https://github.com/electron/electron/issues/53387:
+    // Node.js 24.19.0 made node::ObjectWrap register an environment cleanup
+    // hook, and removing it from ~ObjectWrap() during garbage collection
+    // aborted the process until nodejs/node#63985 and nodejs/node#65630 were
+    // picked up. The addon is loaded in a child process because the failure
+    // mode is a CHECK abort.
+    //
+    // The fixture has to be compiled against Electron's headers, which
+    // script/spec-runner.js does after installing the spec modules. That does
+    // not happen on the Linux arm CI test jobs: linux-arm skips the spec
+    // install (--skipYarnInstall) and on linux-arm64 nothing can compile the
+    // headers, as the restored Chromium clang is an x64 binary and the image's
+    // GCC rejects the V8 headers
+    // (https://github.com/electron/electron/issues/53284). spec-runner sets
+    // this variable in those cases and the test is reported as skipped.
+    ifit(!process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS)(
+      'node::ObjectWrap instances survive garbage collection and teardown',
+      async () => {
+        const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'object-wrap-gc.js')], {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          stdio: ['ignore', 'pipe', 'pipe']
+        });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk;
+        });
+        const [code, signal] = await once(child, 'close');
+        expect(signal, stderr).to.be.null();
+        expect(code, stderr).to.equal(0);
+        expect(stdout.trim()).to.equal('ok');
+      }
+    );
   });
 
   describe('message loop in renderer', () => {
@@ -1301,6 +1492,25 @@ describe('node feature', () => {
     });
   });
 
+  describe('node:wasi', () => {
+    it('does not crash when a wasiImport call is optimized', async () => {
+      const child = childProcess.spawn(
+        process.execPath,
+        [path.join(fixtures, 'module', 'wasi-optimized-import-call.js')],
+        {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        }
+      );
+      let output = '';
+      child.stdout.on('data', (data) => {
+        output += data;
+      });
+      const [code] = await once(child, 'exit');
+      expect(output).to.equal('ok');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('type stripping', () => {
     it('strips TypeScript types automatically in the main process', async () => {
       const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'basic.ts')]);
@@ -1327,6 +1537,83 @@ describe('node feature', () => {
       ]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
+    });
+  });
+});
+
+describe('Node.js startup snapshot', () => {
+  afterEach(closeAllWindows);
+
+  // Everything here is captured into the embedded Node.js startup snapshot by
+  // node_mksnapshot, which runs on the build host. Renderer processes bootstrap
+  // Node.js from scratch, so they hold the values this binary was actually
+  // built for; anything the snapshot took from the host instead shows up as a
+  // difference. Serialized through JSON since the bindings have null
+  // prototypes.
+  const collect = `JSON.stringify({
+    arch: process.arch,
+    platform: process.platform,
+    endianness: require('node:os').endianness(),
+    features: process.features,
+    config: process.binding('config'),
+    constants: process.binding('constants'),
+    buffer: require('node:buffer').constants
+  })`;
+  // defaultCipherList is a CLI option value that only environments owning the
+  // process state define, so it never exists in a renderer.
+  const comparable = (json: string) => {
+    const values = JSON.parse(json);
+    delete values.constants.crypto.defaultCipherList;
+    return values;
+  };
+  // eslint-disable-next-line no-eval
+  const fromThisProcess = () => comparable(eval(collect));
+
+  const fromFreshEnvironment = async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: { nodeIntegration: true, contextIsolation: false }
+    });
+    await w.loadURL('about:blank');
+    return comparable(await w.webContents.executeJavaScript(collect));
+  };
+
+  it('captures the same values as an environment bootstrapped from scratch', async () => {
+    expect(fromThisProcess()).to.deep.equal(await fromFreshEnvironment());
+  });
+
+  it('captures the same values for ELECTRON_RUN_AS_NODE', async () => {
+    const child = childProcess.spawn(process.execPath, ['-p', collect], {
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      stdio: ['ignore', 'pipe', 'inherit']
+    });
+    let stdout = '';
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    const [code] = await once(child, 'close');
+    expect(code).to.equal(0);
+    expect(comparable(stdout)).to.deep.equal(await fromFreshEnvironment());
+  });
+
+  ifit(process.platform !== 'win32')('can open a directory with O_DIRECTORY', async () => {
+    await withTempDirectory(async (dir) => {
+      const { O_RDONLY, O_DIRECTORY } = fs.constants;
+      fs.closeSync(fs.openSync(dir, O_RDONLY | O_DIRECTORY));
+    });
+  });
+
+  ifit(process.platform !== 'win32')('refuses to follow a symlink with O_NOFOLLOW', async () => {
+    await withTempDirectory(async (dir) => {
+      const target = path.join(dir, 'target');
+      const link = path.join(dir, 'link');
+      fs.writeFileSync(target, '');
+      fs.symlinkSync(target, link);
+      const { O_RDONLY, O_NOFOLLOW } = fs.constants;
+      expect(() => fs.openSync(link, O_RDONLY | O_NOFOLLOW))
+        .to.throw()
+        .with.property('code', 'ELOOP');
     });
   });
 });

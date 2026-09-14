@@ -8,10 +8,6 @@
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "v8/include/v8-forward.h"
 
-namespace gin_helper {
-class Arguments;
-}
-
 namespace electron::api {
 
 // Where the context bridge should create the exception it is about to throw

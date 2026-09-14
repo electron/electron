@@ -21,7 +21,6 @@
 #include "v8/include/v8-local-handle.h"
 
 namespace blink {
-struct WebTextCheckingResult;
 class WebTextCheckingCompletion;
 }  // namespace blink
 

@@ -56,10 +56,7 @@ struct OffscreenReleaseHolderMonitor {
     CHECK(holder);
   }
 
-  void ReleaseTexture() {
-    delete holder_;
-    holder_ = nullptr;
-  }
+  void ReleaseTexture() { holder_.ClearAndDelete(); }
 
   [[nodiscard]] bool IsTextureReleased() const { return holder_ == nullptr; }
 

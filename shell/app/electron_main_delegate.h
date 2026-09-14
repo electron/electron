@@ -7,15 +7,10 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 
 #include "base/containers/span.h"
 #include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
-
-namespace content {
-class Client;
-}
 
 namespace tracing {
 class TracingSamplerProfiler;
@@ -43,7 +38,6 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
  protected:
   // content::ContentMainDelegate:
-  std::string_view GetBrowserV8SnapshotFilename() override;
   std::optional<int> BasicStartupComplete() override;
   void PreSandboxStartup() override;
   void SandboxInitialized(const std::string& process_type) override;

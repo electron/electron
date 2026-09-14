@@ -21,10 +21,10 @@ consumed by Electron's download hook
 against it - GN only needs the name.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..25697fa9d070a74bfab874bc5cc80e277ded8f0f 100644
+index d874f9b960a89fb431293048da0a5957c13e12c8..c60ce3b4343646f5e662840783d57d9758e22670 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
-@@ -117,6 +117,52 @@ config("pgo_optimization_flags") {
+@@ -123,6 +123,52 @@ config("pgo_optimization_flags") {
        inputs = [ "//chrome/build/android-desktop-x64.pgo.txt" ]
      }
  

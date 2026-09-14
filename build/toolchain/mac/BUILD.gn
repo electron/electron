@@ -1,0 +1,58 @@
+# Copyright (c) 2026 Anthropic, PBC.
+# Use of this source code is governed by the MIT license that can be
+# found in the LICENSE file.
+
+import("//build/config/mac/mac_sdk.gni")
+import("//build/toolchain/apple/toolchain.gni")
+
+# Toolchains for the build-time V8/Node tools: mksnapshot, node_mksnapshot,
+# v8_context_snapshot_generator and electron_natives_codecache. Their outputs
+# (snapshot blobs, code cache) are data that do not depend on how optimized
+# the tool binary itself is, but by default `v8_snapshot_toolchain` is the
+# target toolchain, so in official builds each of them is a full ThinLTO+PGO
+# link of V8 (and Blink, and Node) that runs serially through the link pool
+# on the macOS CI runners: 12 + 6 + 20 + 2 minutes of a release build before
+# the Electron Framework link can even start, at 5-9 GB RSS each on a 14 GB
+# machine.
+#
+# These toolchains are the target toolchain with ThinLTO and PGO turned off
+# and no debug info, so those tools become plain native links (seconds) at
+# the cost of compiling V8/Blink/Node a second time in this toolchain (remote
+# and cacheable; symbol_level=0 keeps those ~28k extra objects small).
+#
+# `enable_dsyms` is deliberately not overridden: the apple toolchain template
+# reads it from the default toolchain's scope when it defines the link tools,
+# so a per-toolchain override has no effect - but with symbol_level=0 there is
+# no DWARF for dsymutil to link, so the dsym step is near-free anyway.
+template("electron_snapshot_toolchain") {
+  apple_toolchain(target_name) {
+    bin_path = mac_bin_path
+    toolchain_args = {
+      forward_variables_from(invoker.toolchain_args, "*")
+      current_os = "mac"
+      use_thin_lto = false
+      chrome_pgo_phase = 0
+      symbol_level = 0
+    }
+  }
+}
+
+electron_snapshot_toolchain("clang_arm64_snapshot") {
+  toolchain_args = {
+    current_cpu = "arm64"
+  }
+}
+
+electron_snapshot_toolchain("clang_x64_snapshot") {
+  toolchain_args = {
+    current_cpu = "x64"
+  }
+}
+
+# arm64 host tools that generate x64 snapshots (arm64 -> x64 cross builds).
+electron_snapshot_toolchain("clang_arm64_v8_x64_snapshot") {
+  toolchain_args = {
+    current_cpu = "arm64"
+    v8_current_cpu = "x64"
+  }
+}

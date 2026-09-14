@@ -5,11 +5,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
 #define ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
 
-#include <atlbase.h>
 #include <shobjidl.h>
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/win/atl.h"
 
 namespace electron {
 

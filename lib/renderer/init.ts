@@ -1,6 +1,5 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 import * as path from 'path';
 import { pathToFileURL } from 'url';
@@ -41,17 +40,11 @@ Module.wrapper = [
   '\n}.call(this, exports, require, module, __filename, __dirname); });'
 ];
 
-// We modified the original process.argv to let node.js load the
-// init.js, we need to restore it here.
-process.argv.splice(1, 1);
-
 // Import common settings.
 require('@electron/internal/common/init');
 
 const { ipcRendererInternal } =
   require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRendererUtils =
-  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -59,6 +52,7 @@ process.getProcessMemoryInfo = () => {
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
@@ -72,7 +66,7 @@ if (nodeIntegration) {
   const { makeRequireFunction } = __non_webpack_require__(
     'internal/modules/helpers'
   ) as typeof import('@node/lib/internal/modules/helpers');
-  global.module = new Module('electron/js2c/renderer_init');
+  global.module = new Module('internal/electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module) as NodeRequire;
 
   // Set the __filename to the path of html file if it is file: protocol.
@@ -149,7 +143,9 @@ const onPreloadsLoaded = () => {
   appCodeLoaded!();
 };
 
-const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+// Pushed by the browser ahead of this navigation; see
+// ElectronRendererClient::DidCreateScriptContext.
+const preloadPaths: string[] = v8Util.getHiddenValue(process, 'preloadPaths') ?? [];
 const cjsPreloads = preloadPaths.filter((p) => path.extname(p) !== '.mjs');
 const esmPreloads = preloadPaths.filter((p) => path.extname(p) === '.mjs');
 if (cjsPreloads.length) {

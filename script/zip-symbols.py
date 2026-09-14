@@ -46,6 +46,12 @@ def main():
     pdb_name = 'pdb.zip'
     with scoped_cwd(args.build_dir):
       pdbs = glob.glob('*.pdb')
+      # electron_xcache is a build-time tool; its V8-sized PDB pushes
+      # pdb.zip over GitHub's 2 GiB release asset limit.
+      excluded_pdbs = ['electron_xcache.exe.pdb']
+      for pdb in excluded_pdbs:
+        if (pdb in pdbs):
+          pdbs.remove(pdb)
       pdb_zip_file = os.path.join(args.build_dir, pdb_name)
       print('Making pdb zip: ' + pdb_zip_file)
       make_zip(pdb_zip_file, pdbs + licenses, [])

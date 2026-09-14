@@ -11,17 +11,10 @@
 #include "shell/common/api/api.mojom.h"
 #include "v8/include/cppgc/prefinalizer.h"
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace v8 {
 class Isolate;
 template <typename T>
 class Local;
-class Object;
-class ObjectTemplate;
 }  // namespace v8
 
 namespace gin_helper::internal {
@@ -61,8 +54,9 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   void EnsureReplySent();
 
  private:
+  // |callback| is left untouched if |arg| cannot be serialized.
   static bool SendReplyImpl(v8::Isolate* isolate,
-                            InvokeCallback callback,
+                            InvokeCallback& callback,
                             v8::Local<v8::Value> arg);
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);

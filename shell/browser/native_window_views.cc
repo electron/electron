@@ -57,6 +57,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/notimplemented.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
@@ -142,7 +143,7 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   ::SetWindowLong(handle, GWL_STYLE, style);
   // Window's frame styles are cached so we need to call SetWindowPos
   // with the SWP_FRAMECHANGED flag to update cache properly.
-  ::SetWindowPos(handle, 0, 0, 0, 0, 0,  // ignored
+  ::SetWindowPos(handle, nullptr, 0, 0, 0, 0,  // ignored
                  SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
                      SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 }
@@ -560,8 +561,13 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 }
 
 void NativeWindowViews::SetContentView(views::View* view) {
-  if (content_view()) {
-    root_view_.GetMainView()->RemoveChildView(content_view());
+  if (views::View* old_view = content_view()) {
+    set_content_view(nullptr);
+    focused_view_ = nullptr;
+    if (old_view->owned_by_client())
+      root_view_.GetMainView()->RemoveChildView(old_view);
+    else
+      root_view_.GetMainView()->RemoveChildViewT(old_view);
   }
   set_content_view(view);
   focused_view_ = view;
@@ -1369,8 +1375,7 @@ bool NativeWindowViews::HasShadow() const {
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
-  const double bounded_opacity =
-      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+  const double bounded_opacity = ClampOpacity(opacity);
   opacity_ = bounded_opacity;
 #if BUILDFLAG(IS_WIN)
   HWND hwnd = GetAcceleratedWidget();
@@ -1472,21 +1477,29 @@ bool NativeWindowViews::IsFocusable() const {
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if BUILDFLAG(IS_LINUX)
   // Remove global menu bar.
+  bool try_global_menu_bar = true;
   if (global_menu_bar_ && menu_model == nullptr) {
+    const bool used_global_menu_bar = global_menu_bar_->IsServerStarted();
     global_menu_bar_.reset();
     root_view_.UnregisterAcceleratorsWithFocusManager();
-    return;
+    if (used_global_menu_bar)
+      return;
+    // No global menu server: the menu went in-window; fall through to clear.
+    try_global_menu_bar = false;
   }
 
   // Use global application menu bar when possible.
   const bool can_use_global_menus = ui::OzonePlatform::GetInstance()
                                         ->GetPlatformRuntimeProperties()
                                         .supports_global_application_menus;
-  if (can_use_global_menus && ShouldUseGlobalMenuBar()) {
+  if (try_global_menu_bar && can_use_global_menus && ShouldUseGlobalMenuBar()) {
     if (!global_menu_bar_)
       global_menu_bar_ =
           std::make_unique<GlobalMenuBarX11>(GetAcceleratedWidget());
     if (global_menu_bar_->IsServerStarted()) {
+      // The registrar can appear between calls; drop any in-window bar.
+      if (root_view_.HasMenu())
+        SetRootViewMenu(nullptr);
       root_view_.RegisterAcceleratorsWithFocusManager(menu_model);
       global_menu_bar_->SetMenu(menu_model);
       return;
@@ -1494,6 +1507,10 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   }
 #endif
 
+  SetRootViewMenu(menu_model);
+}
+
+void NativeWindowViews::SetRootViewMenu(ElectronMenuModel* menu_model) {
   // Should reset content size when setting menu.
   gfx::Size content_size = GetContentSize();
   bool should_reset_size = use_content_size_ && has_frame() &&
@@ -1592,6 +1609,8 @@ void NativeWindowViews::SetProgressBar(double progress,
                                        NativeWindow::ProgressState state) {
 #if BUILDFLAG(IS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
+#elif BUILDFLAG(IS_LINUX)
+  launcher_entry::SetProgress(progress);
 #endif
 }
 

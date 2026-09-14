@@ -14,12 +14,17 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "mojo/public/cpp/bindings/unique_receiver_set.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace node {
 
@@ -116,6 +121,11 @@ class NodeService : public node::mojom::NodeService {
   std::shared_ptr<node::Environment> node_env_;
 
   std::unique_ptr<net::NetworkChangeNotifier> network_change_notifier_;
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  // depends-on: js_env_'s isolate; cleared explicitly in the destructor.
+  mojo::UniqueReceiverSet<blink::mojom::AIManager> ai_managers_;
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 };
 
 }  // namespace electron

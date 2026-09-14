@@ -8,10 +8,10 @@ Check for broken links by confirming the file exists before setting its utime.
 This patch should be upstreamed & removed.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index adbdba66a359f61d695ac5cfa33c257b3b8c4db0..0895b902f135c48993cedd0c8686385745c2da4f 100755
+index 32b75b0f017b95ed00b6a2c78495ca28600fc886..c0a9a1b4a6cf1521e6d94887d07709fac6e21290 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
-@@ -202,10 +202,9 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):
+@@ -217,10 +217,9 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):
        # The nicest way to do this would be by passing a filter to extractall,
        # but that functionality is not available in macOS system Python (3.9.6).
        for m in members:

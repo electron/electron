@@ -100,6 +100,11 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
+  // make sure we don't override title on back/forward navigation
+  // if the title is provided
+  if (std::string title; options.Get(options::kTitle, &title))
+    title_set_from_api_ = true;
+
   // The parent window.
   gin_helper::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
@@ -235,10 +240,14 @@ void BaseWindow::OnWindowHide() {
 }
 
 void BaseWindow::OnWindowMaximize() {
+  // Persist the display mode; bounds events fired during the transition
+  // are skipped by SaveWindowState, so nothing else would.
+  window_->DebouncedSaveWindowState();
   Emit("maximize");
 }
 
 void BaseWindow::OnWindowUnmaximize() {
+  window_->DebouncedSaveWindowState();
   Emit("unmaximize");
 }
 
@@ -289,10 +298,12 @@ void BaseWindow::OnWindowMoved() {
 }
 
 void BaseWindow::OnWindowEnterFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("enter-full-screen");
 }
 
 void BaseWindow::OnWindowLeaveFullScreen() {
+  window_->DebouncedSaveWindowState();
   Emit("leave-full-screen");
 }
 
@@ -616,7 +627,22 @@ void BaseWindow::MoveTop() {
 }
 
 void BaseWindow::SetTitle(const std::string& title) {
+  title_set_from_api_ = true;
   window_->SetTitle(title);
+}
+
+void BaseWindow::SetTitleFromPage(const std::string& title) {
+  title_set_from_api_ = false;
+  window_->SetTitle(title);
+}
+
+bool BaseWindow::SetTitleFromPageIfNotSetFromApi(const std::string& title) {
+  if (title_set_from_api_) {
+    return false;
+  } else {
+    SetTitleFromPage(title);
+    return true;
+  }
 }
 
 std::string BaseWindow::GetTitle() const {
@@ -739,21 +765,54 @@ bool BaseWindow::IsFocusable() const {
   return window_->IsFocusable();
 }
 
+// static
+BaseWindow* BaseWindow::GetFocusedWindow() {
+  for (BaseWindow* window : GetAllNative()) {
+    if (window->window() && window->IsFocused())
+      return window;
+  }
+  return nullptr;
+}
+
+// static
+BaseWindow* BaseWindow::FromValue(v8::Isolate* isolate,
+                                  v8::Local<v8::Value> value) {
+  if (value.IsEmpty() || !value->IsObject())
+    return nullptr;
+  for (BaseWindow* window : GetAllNative()) {
+    if (window->window() && window->GetWrapper() == value)
+      return window;
+  }
+  return nullptr;
+}
+
+// static
+bool BaseWindow::IsLive(const BaseWindow* window) {
+  for (BaseWindow* live : GetAllNative()) {
+    if (live == window)
+      return live->window() != nullptr;
+  }
+  return false;
+}
+
+void BaseWindow::SetMenuNatively(Menu* menu) {
+  // We only want to update the menu if the menu has a non-zero item count,
+  // or we risk crashes.
+  if (menu->model()->GetItemCount() == 0) {
+    RemoveMenu();
+  } else {
+    window_->SetMenu(menu->model());
+  }
+  menu_ = menu;
+}
+
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   Menu* menu = nullptr;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && menu) {
-    // We only want to update the menu if the menu has a non-zero item count,
-    // or we risk crashes.
-    if (menu->model()->GetItemCount() == 0) {
-      RemoveMenu();
-    } else {
-      window_->SetMenu(menu->model());
-    }
-
-    menu_ = menu;
+    SetMenuNatively(menu);
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -1410,6 +1469,7 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
+  constructor.SetMethod("getFocusedWindow", &BaseWindow::GetFocusedWindow);
   constructor.SetMethod("clearPersistedState",
                         &BaseWindow::ClearPersistedState);
 

@@ -6,7 +6,7 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen } from './lib/spec-helpers';
+import { defer, listen, startRemoteControlApp } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -141,6 +141,70 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       const [, { error }] = await once(ipcMain, 'result');
       expect(error).to.match(/reply was never sent/);
+    });
+  });
+
+  describe('payloads across the shared-memory threshold', () => {
+    let w: BrowserWindow;
+    const sizes = [0, 1, 65535, 65536, 65537, 256 * 1024 + 3, 3 * 1024 * 1024 + 1];
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      await w.loadURL('about:blank');
+      ipcMain.handle('echo-large', (_e, arg) => arg);
+      ipcMain.on('echo-large-sync', (e, arg) => {
+        e.returnValue = arg;
+      });
+      ipcMain.on('echo-large-send', (e, arg) => {
+        e.sender.send('echo-large-reply', arg);
+      });
+    });
+    after(async () => {
+      w.destroy();
+      ipcMain.removeHandler('echo-large');
+      ipcMain.removeAllListeners('echo-large-sync');
+      ipcMain.removeAllListeners('echo-large-send');
+    });
+
+    function digest(value: any): any {
+      if (typeof value === 'string') return { string: value.length, ends: value.slice(0, 4) + value.slice(-4) };
+      if (value instanceof Uint8Array) {
+        return { u8: value.length, sum: value.reduce((a: number, b: number) => (a + b) % 65521, 0) };
+      }
+      return { text: digest(value.text), bytes: digest(value.bytes), meta: value.meta };
+    }
+
+    function samples(n: number) {
+      const text = `<${'x'.repeat(n)}>`;
+      const bytes = new Uint8Array(n).map((_, i) => (i * 7) & 255);
+      return [text, bytes, { text, bytes, meta: { n, list: [1, 'two', { three: true }] } }];
+    }
+
+    it('round trips strings, typed arrays and nested objects of each size through invoke, sendSync and send', async () => {
+      const result = await w.webContents.executeJavaScript(
+        `(${async (sizes: number[], samples: (n: number) => any[], digest: (v: any) => any) => {
+          const { ipcRenderer } = require('electron');
+          const out: any[] = [];
+          for (const n of sizes) {
+            for (const value of samples(n)) {
+              out.push(digest(await ipcRenderer.invoke('echo-large', value)));
+              out.push(digest(ipcRenderer.sendSync('echo-large-sync', value)));
+              out.push(
+                digest(
+                  await new Promise((resolve) => {
+                    ipcRenderer.once('echo-large-reply', (_e: any, v: any) => resolve(v));
+                    ipcRenderer.send('echo-large-send', value);
+                  })
+                )
+              );
+            }
+          }
+          return out;
+        }})(${JSON.stringify(sizes)}, ${samples}, ${digest})`,
+        true
+      );
+      const expected = sizes.flatMap((n) => samples(n).flatMap((value) => Array(3).fill(digest(value))));
+      expect(result).to.deep.equal(expected);
     });
   });
 
@@ -536,6 +600,10 @@ describe('ipc module', () => {
         const { port1 } = new MessageChannelMain();
 
         expect(() => {
+          port1.postMessage(null, {} as any);
+        }).to.throw(/transferables must be an array of MessagePorts/);
+
+        expect(() => {
           const buffer = new ArrayBuffer(10) as any;
           port1.postMessage(null, [buffer]);
         }).to.throw(/Port at index 0 is not a valid port/);
@@ -755,7 +823,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               (postMessage(w.webContents) as any)('channel', '', [123]);
-            }).to.throw(/Invalid value for transfer/);
+            }).to.throw(/Port at index 0 is not a valid port/);
           });
 
           it('throws when passing null ports', async () => {
@@ -763,7 +831,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)('foo', null, [null] as any);
-            }).to.throw(/Invalid value for transfer/);
+            }).to.throw(/Port at index 0 is not a valid port/);
           });
 
           it('throws when passing duplicate ports', async () => {
@@ -1051,6 +1119,58 @@ describe('ipc module', () => {
       w.loadURL(`http://127.0.0.1:${port}`); // cross-origin navigation
       const [{ senderFrame }] = await onUnloadIpc;
       expect(senderFrame.detached).to.be.true();
+    });
+  });
+
+  describe('event frame accessors', () => {
+    it('does not create an ObjectTemplate for every message', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const { messageCount, templatesCreated } = await remotely(
+        async (heap: string) => {
+          const { BrowserWindow, ipcMain } = require('electron');
+          const { recordState } = require(heap);
+
+          const channel = 'ipc-object-template-test';
+          const messageCount = 50;
+
+          const countObjectTemplates = () =>
+            recordState().snapshot.filter((node: any) => node.name === 'system / ObjectTemplateInfo').length;
+
+          const retainedEvents: any[] = [];
+          (globalThis as any).retainedEvents = retainedEvents;
+
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: { nodeIntegration: true, contextIsolation: false }
+          });
+          const handler = (event: Electron.IpcMainEvent) => {
+            retainedEvents.push(event);
+            event.returnValue = undefined;
+          };
+
+          ipcMain.on(channel, handler);
+          try {
+            await w.loadURL('about:blank');
+            const send = (count: number) =>
+              w.webContents.executeJavaScript(`
+                for (let i = 0; i < ${count}; ++i) require('electron').ipcRenderer.sendSync('${channel}');
+              `);
+
+            await send(1);
+            const templatesBefore = countObjectTemplates();
+            await send(messageCount);
+            const templatesAfter = countObjectTemplates();
+
+            return { messageCount, templatesCreated: templatesAfter - templatesBefore };
+          } finally {
+            ipcMain.removeListener(channel, handler);
+            w.destroy();
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(templatesCreated).to.be.below(messageCount / 2);
     });
   });
 });

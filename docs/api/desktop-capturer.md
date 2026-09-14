@@ -126,25 +126,22 @@ PipeWire supports a single capture for both screens and windows. If you request 
 `desktopCapturer`. If instead you are running Electron from another program like a terminal or IDE
 then that parent program must contain the Info.plist key.
 
-This is in order to facillitate use of Apple's new [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium.
+This is in order to facilitate use of Apple's [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium,
+which is gated behind the "System Audio Recording" privacy permission. macOS attributes that
+permission to the responsible process, so when running unpackaged from a terminal or IDE it is the
+terminal or IDE that must be granted access.
 
 > [!WARNING]
-> Failure of `desktopCapturer` to start an audio stream due to `NSAudioCaptureUsageDescription`
-> permission not present will still create a dead audio stream however no warnings or errors are
-> displayed.
+> If the permission is missing or has been denied, `desktopCapturer` still produces an audio
+> track, but it is created in the `ended` state and never delivers samples. No warning or error is
+> surfaced to JavaScript.
 
-As of Electron `v39.0.0-beta.4`, Chromium [made Apple's new `CoreAudio Tap API` the default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
-for desktop audio capture. There is no fallback to the older `Screen & System Audio Recording`
-permissions system even if [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps) stream creation fails.
-
-If you need to continue using `Screen & System Audio Recording` permissions for `desktopCapturer`
-on macOS versions 14.2 and later, you can apply a Chromium feature flag to force use of that older
-permissions system:
-
-```js
-// main.js (right beneath your require/import statments)
-app.commandLine.appendSwitch('disable-features', 'MacCatapLoopbackAudioForScreenShare')
-```
+Since Electron 39, Chromium [uses the CoreAudio Tap API by default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
+for system audio capture on macOS 14.2 and later. There is no automatic fallback to the older
+ScreenCaptureKit-based "Screen & System Audio Recording" path if tap creation fails, and as of
+Electron 45 the `MacCatapLoopbackAudioForScreenShare` feature flag that previously allowed opting
+back into it has been [removed upstream](https://chromium-review.googlesource.com/c/chromium/src/+/8275391)
+and no longer has any effect.
 
 ### macOS versions 12.7.6 or lower
 

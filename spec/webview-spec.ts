@@ -1,6 +1,5 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
@@ -10,6 +9,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers';
+import { parseBasicAuth } from './lib/net-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -314,17 +314,12 @@ describe('<webview> tag', function () {
           webContents.on('devtools-opened', function () {
             const showPanelIntervalId = setInterval(function () {
               if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
-                webContents.devToolsWebContents.executeJavaScript(
-                  '(' +
-                    function () {
-                      const { EUI } = window as any;
-                      const instance = EUI.InspectorView.InspectorView.instance();
-                      const tabs = instance.tabbedPane.tabs;
-                      const lastPanelId: any = tabs[tabs.length - 1].id;
-                      instance.showPanel(lastPanelId);
-                    }.toString() +
-                    ')()'
-                );
+                webContents.devToolsWebContents.executeJavaScript(`(async () => {
+                  const { InspectorView } = await import('./ui/legacy/legacy.js');
+                  const instance = InspectorView.InspectorView.instance();
+                  const tabs = instance.tabbedPane.tabs;
+                  instance.showPanel(tabs[tabs.length - 1].id);
+                })()`);
               } else {
                 clearInterval(showPanelIntervalId);
               }
@@ -540,7 +535,7 @@ describe('<webview> tag', function () {
       // Specifically this is async on macOS but can be on other platforms too
       await setTimeout(1000);
 
-      closeAllWindows();
+      await closeAllWindows();
     });
 
     ifit(process.platform !== 'darwin')('should make parent frame element fullscreen too (non-macOS)', async () => {
@@ -810,6 +805,63 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('webpreferences inheritance', () => {
+    afterEach(closeAllWindows);
+
+    // The guest page spins up a dedicated Worker and reports back, via the
+    // console, whether that Worker has access to Node's `require`.
+    const guestSrc =
+      'data:text/html,' +
+      encodeURIComponent(`<script>
+      const src = 'try { postMessage(typeof require) } catch (e) { postMessage("err") }';
+      const wk = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+      wk.onmessage = (e) => console.log('WORKER_REQUIRE:' + e.data);
+    </script>`);
+
+    async function workerRequireTypeof(w: BrowserWindow, webpreferences: string): Promise<string> {
+      await w.loadURL('about:blank');
+      return w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const webview = new WebView()
+        webview.setAttribute('src', ${JSON.stringify(guestSrc)})
+        webview.setAttribute('webpreferences', ${JSON.stringify(webpreferences)})
+        webview.addEventListener('console-message', (e) => {
+          if (e.message.startsWith('WORKER_REQUIRE:')) {
+            resolve(e.message.slice('WORKER_REQUIRE:'.length))
+          }
+        })
+        document.body.appendChild(webview)
+      })`);
+    }
+
+    it('does not let the webpreferences attribute grant a worker Node access the embedder lacks', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: false,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
+    });
+
+    it('keeps a guest worker free of Node when the embedder is sandboxed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          sandbox: true,
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+      const typeofRequire = await workerRequireTypeof(w, 'nodeIntegrationInWorker=yes');
+      expect(typeofRequire).to.equal('undefined');
+    });
+  });
+
   describe('webpreferences attribute', () => {
     const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
@@ -837,8 +889,8 @@ describe('<webview> tag', function () {
         src: 'data:text/html,foo'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('remains transparent when set', async () => {
@@ -847,8 +899,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=yes'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
     ifit(hasCapturableScreen())('can disable transparency', async () => {
@@ -857,8 +909,8 @@ describe('<webview> tag', function () {
         webpreferences: 'transparent=no'
       });
 
-      const screenCapture = new ScreenCapture();
-      await screenCapture.expectColorAtCenterMatches(HexColors.WHITE);
+      const capture = ScreenCapture.forWindow(w);
+      await capture.expectColorAtCenterMatches(HexColors.WHITE);
     });
   });
 
@@ -1500,6 +1552,50 @@ describe('<webview> tag', function () {
 
       generateSpecs('without sandbox');
       generateSpecs('with sandbox', 'sandbox=yes');
+
+      describe('links opened into a new window', () => {
+        // A modifier-clicked link is a popup like window.open() and is subject
+        // to allowpopups too. The click is synthesised by the guest itself, so
+        // no user gesture is involved.
+        const linkPage = (href: string) =>
+          'data:text/html,' +
+          encodeURIComponent(`<a id="a" href="${href}" target="_blank">link</a><script>
+            onload = () => {
+              document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+                ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+              }));
+              console.log('clicked');
+            };
+          </script>`);
+
+        const countNewWindows = async (attributes: Record<string, string>) => {
+          let created = 0;
+          const onCreated = (_e: unknown, bw: BrowserWindow) => {
+            created++;
+            // Not synchronously: this fires while the window is still being
+            // constructed.
+            setImmediate(() => {
+              if (!bw.isDestroyed()) bw.destroy();
+            });
+          };
+          app.on('browser-window-created', onCreated);
+          try {
+            await loadWebViewAndWaitForMessage(w, { ...attributes, src: linkPage('about:blank#popup') });
+            await setTimeout(1000);
+          } finally {
+            app.removeListener('browser-window-created', onCreated);
+          }
+          return created;
+        };
+
+        it('does not open a new window when allowpopups is not set', async () => {
+          expect(await countNewWindows({})).to.equal(0);
+        });
+
+        it('opens a new window when allowpopups is set', async () => {
+          expect(await countNewWindows({ allowpopups: 'on' })).to.equal(1);
+        });
+      });
     });
 
     describe('webpreferences attribute', () => {
@@ -1569,6 +1665,57 @@ describe('<webview> tag', function () {
         expect(frameId).to.be.an('array').that.has.lengthOf(2);
         expect(channel).to.equal('channel');
         expect(args).to.deep.equal(['arg1', 'arg2']);
+      });
+    });
+
+    describe('guest-view IPCs', () => {
+      let server: http.Server;
+      let crossOriginUrl: string;
+      before(async () => {
+        server = http.createServer((_req, res) => {
+          res.setHeader('content-type', 'text/html');
+          res.end('<!doctype html><body>frame</body>');
+        });
+        crossOriginUrl = (await listen(server)).url;
+      });
+      after(() => server.close());
+
+      it('are only honoured from the frame that created the <webview>', async () => {
+        const embedder = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            webviewTag: true,
+            nodeIntegration: true,
+            nodeIntegrationInSubFrames: true,
+            contextIsolation: false,
+            // A fresh partition so the cross-origin iframe below gets its own
+            // renderer rather than one an earlier test started without
+            // subframe node integration.
+            partition: 'guest-view-ipc-spec'
+          }
+        });
+        await embedder.loadURL(`file://${fixtures}/pages/blank.html`);
+        await loadWebView(embedder.webContents, { src: `file://${fixtures}/pages/a.html` });
+        const guestId = await embedder.webContents.executeJavaScript(
+          "document.querySelector('webview').getWebContentsId()"
+        );
+        await embedder.webContents.executeJavaScript(`new Promise((resolve) => {
+          const f = document.createElement('iframe');
+          f.src = ${JSON.stringify(crossOriginUrl)};
+          f.onload = resolve;
+          document.body.appendChild(f);
+        })`);
+        const iframe = embedder.webContents.mainFrame.frames.find((f) => f.url.startsWith('http'))!;
+        // The iframe shares the embedder WebContents but did not create the
+        // <webview>; it must not be able to drive it through the internal IPC.
+        const call = (frame: Electron.WebFrameMain) =>
+          frame.executeJavaScript(`(async () => {
+            const { ipc } = { ipc: process._linkedBinding('electron_renderer_ipc').createForRenderFrame() };
+            const { error, result } = await ipc.invoke(true, 'GUEST_VIEW_MANAGER_CALL', [${guestId}, 'executeJavaScript', ['6 * 7']]);
+            return error ? 'error:' + error : result;
+          })()`);
+        expect(await call(iframe)).to.match(/^error:.*Access denied/);
+        expect(await call(embedder.webContents.mainFrame)).to.equal(42);
       });
     });
 
@@ -2356,7 +2503,7 @@ describe('<webview> tag', function () {
     it('should authenticate with correct credentials', async () => {
       const message = 'Authenticated';
       const server = http.createServer((req, res) => {
-        const credentials = auth(req)!;
+        const credentials = parseBasicAuth(req)!;
         if (credentials.name === 'test' && credentials.pass === 'test') {
           res.end(message);
         } else {

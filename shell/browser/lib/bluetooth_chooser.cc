@@ -72,10 +72,15 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
       break;
   }
 
+  // The handler may run the callback synchronously, which runs
+  // |event_handler_| and destroys |this|.
+  base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
   bool prevent_default =
       api_web_contents_->Emit("select-bluetooth-device", GetDeviceList(),
                               base::BindOnce(&BluetoothChooser::OnDeviceChosen,
                                              weak_ptr_factory_.GetWeakPtr()));
+  if (!weak_this)
+    return;
   if (!prevent_default && idle_state) {
     if (device_id_to_name_map_.empty()) {
       event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
@@ -108,10 +113,15 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
   }
 
   if (changed) {
+    // The handler may run the callback synchronously, which runs
+    // |event_handler_| and destroys |this|.
+    base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
     bool prevent_default = api_web_contents_->Emit(
         "select-bluetooth-device", GetDeviceList(),
         base::BindOnce(&BluetoothChooser::OnDeviceChosen,
                        weak_ptr_factory_.GetWeakPtr()));
+    if (!weak_this)
+      return;
 
     if (!prevent_default)
       event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);

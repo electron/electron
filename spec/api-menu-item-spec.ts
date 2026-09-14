@@ -13,9 +13,10 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 
 /* oxlint-disable-next-line no-restricted-imports */
-import { roleList } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+
+const roleList: Record<string, { label: string; accelerator?: string }> = Menu._roleDefaults();
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
@@ -149,7 +150,7 @@ describe('MenuItems', () => {
           }
         }
       ]);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
     });
   });
 
@@ -163,7 +164,7 @@ describe('MenuItems', () => {
       ]);
 
       expect(menu.items[0].checked).to.be.false('menu item checked');
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -175,9 +176,9 @@ describe('MenuItems', () => {
         }
       ]);
 
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -310,11 +311,11 @@ describe('MenuItems', () => {
       ]);
 
       Menu.setApplicationMenu(menu);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(win.isMinimized()).to.equal(false);
 
       win.setMinimizable(true);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(win.isMinimized()).to.equal(true);
     });
   });
@@ -688,14 +689,14 @@ describe('MenuItems', () => {
         new MenuItem({
           label: 'item 1',
           customProp: 'bar',
-          overrideProperty: 'oops not allowed'
+          getDefaultRoleAccelerator: 'oops not allowed'
         } as any)
       );
 
       expect((menu.items[0] as any).customProp).to.equal('foo');
       expect(menu.items[0].submenu!.items[0].label).to.equal('item 1');
       expect((menu.items[0].submenu!.items[0] as any).customProp).to.equal('bar');
-      expect((menu.items[0].submenu!.items[0] as any).overrideProperty).to.be.a('function');
+      expect((menu.items[0].submenu!.items[0] as any).getDefaultRoleAccelerator).to.be.a('function');
     });
   });
 
@@ -754,6 +755,99 @@ describe('MenuItems', () => {
       expect(menu._getAcceleratorTextAt(3)).to.equal('Ctrl+#');
       expect(menu._getAcceleratorTextAt(4)).to.equal('Ctrl+Shift+/');
       expect(menu._getAcceleratorTextAt(5)).to.equal('Ctrl+?');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('MenuItem.badge', () => {
+    it('should set badge from constructor options', () => {
+      const item = new MenuItem({
+        label: 'test',
+        badge: { type: 'alerts', count: 3 }
+      });
+
+      expect(item.badge).to.deep.equal({ type: 'alerts', count: 3 });
+    });
+
+    it('should support all badge types', () => {
+      const alerts = new MenuItem({ label: 'a', badge: { type: 'alerts', count: 1 } });
+      const updates = new MenuItem({ label: 'b', badge: { type: 'updates', count: 2 } });
+      const newItems = new MenuItem({ label: 'c', badge: { type: 'new-items', count: 5 } });
+      const custom = new MenuItem({ label: 'd', badge: { type: 'none', content: 'Custom' } });
+
+      expect(alerts.badge).to.deep.equal({ type: 'alerts', count: 1 });
+      expect(updates.badge).to.deep.equal({ type: 'updates', count: 2 });
+      expect(newItems.badge).to.deep.equal({ type: 'new-items', count: 5 });
+      expect(custom.badge).to.deep.equal({ type: 'none', content: 'Custom' });
+    });
+
+    it('should allow dynamic badge updates', () => {
+      const item = new MenuItem({
+        label: 'test',
+        badge: { type: 'alerts', count: 1 }
+      });
+
+      item.badge = { type: 'updates', count: 10 };
+      expect(item.badge).to.deep.equal({ type: 'updates', count: 10 });
+    });
+
+    it('should have undefined badge when not set', () => {
+      const item = new MenuItem({ label: 'test' });
+      expect(item.badge).to.be.undefined();
+    });
+
+    it('should set badge on items added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 3 } }]);
+
+      expect(menu.items[0].badge).to.deep.equal({ type: 'alerts', count: 3 });
+    });
+
+    it('should update badge after item is added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 1 } }]);
+
+      menu.items[0].badge = { type: 'updates', count: 5 };
+      expect(menu.items[0].badge).to.deep.equal({ type: 'updates', count: 5 });
+    });
+
+    it('should remove an existing badge', () => {
+      const item = new MenuItem({ label: 'test', badge: { type: 'alerts', count: 3 } });
+      item.badge = undefined;
+      expect(item.badge).to.be.undefined();
+
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'none', content: 'New' } }]);
+      menu.items[0].badge = undefined;
+      expect(menu.items[0].badge).to.be.undefined();
+      menu.items[0].badge = { type: 'new-items', count: 2 };
+      expect(menu.items[0].badge).to.deep.equal({ type: 'new-items', count: 2 });
+    });
+
+    it('should default the badge type to none', () => {
+      const item = new MenuItem({ label: 'test', badge: { content: 'Beta' } });
+      expect(item.badge).to.deep.equal({ content: 'Beta' });
+    });
+
+    it('should throw on an invalid badge', () => {
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'bogus', count: 1 } as any })).to.throw(
+        /Invalid badge type/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts' } })).to.throw(
+        /badge.count must be a non-negative integer/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'updates', count: -1 } })).to.throw(
+        /badge.count must be a non-negative integer/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts', count: 1, content: 'x' } })).to.throw(
+        /badge.content can only be used/
+      );
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none' } })).to.throw(/badge.content must be a string/);
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none', content: 'x', count: 1 } })).to.throw(
+        /badge.count cannot be used/
+      );
+
+      const item = new MenuItem({ label: 'test' });
+      expect(() => {
+        item.badge = { type: 'bogus' } as any;
+      }).to.throw(/Invalid badge type/);
+      expect(item.badge).to.be.undefined();
     });
   });
 });

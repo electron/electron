@@ -2,8 +2,8 @@
 
 import ast
 import argparse
+import json
 import os
-import pprint
 import re
 import subprocess
 import sys
@@ -66,13 +66,20 @@ def main(target_file, target_cpu, v8_enable_cppgc_microtask_queue):
   v['node_module_version'] = int(args['node_module_version'])
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
-  # Enable clang conditionally based on target platform
-  # in common.gypi
-  if 'clang' in v:
-    del v['clang']
+  # One config.gypi ships in the headers for every platform, so per-OS values
+  # for native module builds are expressed as gyp conditions rather than baked.
+  v.pop('clang', None)
+  v.setdefault('conditions', []).append(['OS=="mac"', {'clang%': 1}])
+  # Evaluated after common.gypi's own conditions so it wins; keeps native
+  # modules loadable on macOS 13.0 - 13.4, which Chromium still supports.
+  config.setdefault('target_defaults', {}).setdefault(
+      'target_conditions', []).append(
+          ['OS=="mac"', {'xcode_settings': {'MACOSX_DEPLOYMENT_TARGET': '13.0'}}])
 
+  # JSON rather than pprint: node-gyp reads this file by swapping quote
+  # characters, which only round-trips the condition strings in this form.
   with open(target_file, 'w+', encoding='utf-8') as file_out:
-    file_out.write(pprint.pformat(config, indent=2))
+    file_out.write(json.dumps(config, indent=2, sort_keys=True))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()

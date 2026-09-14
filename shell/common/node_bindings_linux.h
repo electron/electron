@@ -11,7 +11,7 @@ namespace electron {
 
 class NodeBindingsLinux : public NodeBindings {
  public:
-  explicit NodeBindingsLinux(BrowserEnvironment browser_env);
+  NodeBindingsLinux(BrowserEnvironment browser_env, uv_loop_t* loop);
 
  private:
   // NodeBindings

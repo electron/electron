@@ -17,7 +17,6 @@
 namespace node {
 class Environment;
 class IsolateData;
-struct ThreadId;
 
 namespace EnvironmentFlags {
 enum Flags : uint64_t;
@@ -31,8 +30,8 @@ void EmitWarning(v8::Isolate* isolate,
                  std::string_view warning_msg,
                  std::string_view warning_type);
 
-// Emit a warning via node's process.emitWarning(),
-// using JavascriptEnvironment's isolate
+// Emit a warning via node's process.emitWarning() on the currently entered
+// isolate, or log it if there is no isolate / Node.js environment.
 void EmitWarning(std::string_view warning_msg, std::string_view warning_type);
 
 // Emit a deprecation warning via node's process.emitWarning()
@@ -40,16 +39,23 @@ void EmitDeprecationWarning(v8::Isolate* isolate,
                             std::string_view warning_msg,
                             std::string_view deprecation_code = "");
 
-// Emit a deprecation warning via node's process.emitWarning(),
-// using JavascriptEnvironment's isolate
+// Emit a deprecation warning via node's process.emitWarning() on the current
+// isolate, or log it if there is no isolate / Node.js environment.
 void EmitDeprecationWarning(std::string_view warning_msg,
                             std::string_view deprecation_code = "");
 
+// Compiles one of the electron/js2c/* bundles (with the build-time code cache)
+// into a function taking `parameters`; logs and returns empty on failure.
+v8::MaybeLocal<v8::Function> CompileBundle(
+    v8::Local<v8::Context> context,
+    const char* id,
+    v8::LocalVector<v8::String>* parameters);
+
 // Run a script with JS source bundled inside the binary as if it's wrapped
 // in a function called with a null receiver and arguments specified in C++.
-// The returned value is empty if an exception is encountered.
-// JS code run with this method can assume that their top-level
-// declarations won't affect the global scope.
+// The returned value is empty if an exception is encountered; the exception
+// is caught and logged. JS code run with this method can assume that their
+// top-level declarations won't affect the global scope.
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Isolate* isolate,
     v8::Local<v8::Context> context,
@@ -61,6 +67,15 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
 // so the *_init bundles are consumed. Call once, after CreateEnvironment and
 // before LoadEnvironment.
 void FeedEnvironmentCodeCache(node::Environment* env);
+
+// Install this process's build-time code cache (see node_natives_code_cache.h)
+// as the default every node BuiltinLoader constructed from now on starts with,
+// so builtins compiled before Electron can reach an Environment's loader --
+// the per-context scripts node::NewContext runs and the whole
+// internal/bootstrap/* sequence inside node::CreateEnvironment -- consume it
+// too. Idempotent; call before the first node::NewContext / CreateEnvironment
+// in a process that hosts a Node.js environment.
+void InstallProcessCodeCache();
 
 // Wrapper for node::CreateEnvironment that logs failure
 node::Environment* CreateEnvironment(v8::Isolate* isolate,

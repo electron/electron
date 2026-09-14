@@ -143,7 +143,6 @@ combo's instrumented build runs its own benchmarks:
 | linux-x64 | x64 ARC runner (build container) |
 | linux-arm64 | `ubuntu-22.04-arm` (arm64v8 test container) |
 | win-x64 | `windows-latest` |
-| win-x86 | `windows-latest` (WOW64) |
 | win-arm64 | `windows-11-arm` |
 | macos-x64 | `macos-15-large` |
 | macos-arm64 | `macos-15` |

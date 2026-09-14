@@ -330,8 +330,11 @@ bool XDGUtil(const std::vector<std::string>& argv,
   options.environment["MM_NOTTTY"] = "1";
 
   base::Process process = base::LaunchProcess(argv, options);
-  if (!process.IsValid())
+  if (!process.IsValid()) {
+    if (!callback.is_null())
+      std::move(callback).Run("Failed to launch " + argv[0]);
     return false;
+  }
 
   if (wait_for_exit) {
     base::ScopedAllowBaseSyncPrimitivesForTesting
@@ -344,6 +347,9 @@ bool XDGUtil(const std::vector<std::string>& argv,
   }
 
   base::EnsureProcessGetsReaped(std::move(process));
+  // Not waiting for the exit code, so report success once it has launched.
+  if (!callback.is_null())
+    std::move(callback).Run("");
   return true;
 }
 

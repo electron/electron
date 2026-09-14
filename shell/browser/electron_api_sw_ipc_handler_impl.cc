@@ -71,7 +71,7 @@ void ElectronApiSWIPCHandlerImpl::RemoteDisconnected() {
 
 void ElectronApiSWIPCHandlerImpl::Message(bool internal,
                                           const std::string& channel,
-                                          blink::CloneableMessage arguments) {
+                                          electron::SerializedValue arguments) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
@@ -87,7 +87,7 @@ void ElectronApiSWIPCHandlerImpl::Message(bool internal,
 
 void ElectronApiSWIPCHandlerImpl::Invoke(bool internal,
                                          const std::string& channel,
-                                         blink::CloneableMessage arguments,
+                                         electron::SerializedValue arguments,
                                          InvokeCallback callback) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
@@ -120,10 +120,11 @@ void ElectronApiSWIPCHandlerImpl::ReceivePostMessage(
   }
 }
 
-void ElectronApiSWIPCHandlerImpl::MessageSync(bool internal,
-                                              const std::string& channel,
-                                              blink::CloneableMessage arguments,
-                                              MessageSyncCallback callback) {
+void ElectronApiSWIPCHandlerImpl::MessageSync(
+    bool internal,
+    const std::string& channel,
+    electron::SerializedValue arguments,
+    MessageSyncCallback callback) {
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
@@ -140,7 +141,7 @@ void ElectronApiSWIPCHandlerImpl::MessageSync(bool internal,
 
 void ElectronApiSWIPCHandlerImpl::MessageHost(
     const std::string& channel,
-    blink::CloneableMessage arguments) {
+    electron::SerializedValue arguments) {
   NOTIMPLEMENTED();  // Service workers have no <webview>
 }
 

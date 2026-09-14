@@ -474,6 +474,110 @@ describe('contextBridge', () => {
         expect(result).equal('oh no');
       });
 
+      it('should throw instead of crashing when an array argument has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            echo: (arr: any) => arr.length
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const poisoned = [1, 2, 3];
+          Object.defineProperty(poisoned, 0, {
+            get() {
+              throw new Error('boom');
+            },
+            enumerable: true,
+            configurable: true
+          });
+          const nested = { a: [1, [2, 3]] };
+          Object.defineProperty(nested.a[1], 1, {
+            get() {
+              throw new Error('nested boom');
+            },
+            enumerable: true,
+            configurable: true
+          });
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return (e as Error).message;
+            }
+            return null;
+          };
+          return [
+            getError(() => root.example.echo(poisoned)),
+            getError(() => root.example.echo(nested)),
+            root.example.echo([1, 2, 3])
+          ];
+        });
+        expect(result).to.deep.equal(['boom', 'nested boom', 3]);
+      });
+
+      it('should throw when an object argument has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            check: (_: any) => {
+              (globalThis as any).called = true;
+            },
+            called: () => (globalThis as any).called === true
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return (e as Error).message;
+            }
+            return null;
+          };
+          class CustomError extends Error {
+            get message(): string {
+              throw new Error('error boom');
+            }
+          }
+          const objectError = getError(() =>
+            root.example.check({
+              a: 1,
+              get b() {
+                throw new Error('object boom');
+              }
+            })
+          );
+          const errorError = getError(() => root.example.check(new CustomError()));
+          return [objectError, errorError, root.example.called()];
+        });
+        expect(result).to.deep.equal(['object boom', 'error boom', false]);
+      });
+
+      it('should throw instead of crashing when a returned array has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getPoisoned: () => {
+              const poisoned = [1, 2, 3];
+              Object.defineProperty(poisoned, 0, {
+                get() {
+                  throw new Error('boom');
+                },
+                enumerable: true,
+                configurable: true
+              });
+              return poisoned;
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          try {
+            root.example.getPoisoned();
+          } catch (e) {
+            return (e as Error).message;
+          }
+          return null;
+        });
+        expect(result).to.equal('Uncaught Error: boom');
+      });
+
       it('should proxy methods that are callable multiple times', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {

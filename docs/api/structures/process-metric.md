@@ -14,7 +14,9 @@
 * `serviceName` string (optional) - The non-localized name of the process.
 * `name` string (optional) - The name of the process.
     Examples for utility: `Audio Service`, `Content Decryption Module Service`, `Network Service`, `Video Capture`, etc.
-* `cpu` [CPUUsage](cpu-usage.md) - CPU usage of the process.
+* `cpu` [CPUUsage](cpu-usage.md) - CPU usage of the process. Its `percentCPUUsage` and
+    `idleWakeupsPerSecond` are averages over the time since the previous call to the API
+    returning this object.
 * `creationTime` number - Creation time for this process.
     The time is represented as number of milliseconds since epoch.
     Since the `pid` can be reused after a process dies,

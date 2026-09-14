@@ -11,9 +11,11 @@
 #include "base/memory/scoped_refptr.h"
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
+#include "gin/per_isolate_data.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/wrappable.h"
 
 namespace v8 {
 class Context;
@@ -28,28 +30,32 @@ namespace gin {
 class ObjectTemplateBuilder;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron::api {
 
-class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
+class SafeStorage final : public gin::Wrappable<SafeStorage>,
+                          public gin::PerIsolateData::DisposeObserver {
  public:
-  static gin_helper::Handle<SafeStorage> Create(v8::Isolate* isolate);
+  static SafeStorage* Create(v8::Isolate* isolate);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "SafeStorage"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor* visitor) const override;
+
+  // gin::PerIsolateData::DisposeObserver
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnDisposed() override {}
 
   // disable copy
   SafeStorage(const SafeStorage&) = delete;
   SafeStorage& operator=(const SafeStorage&) = delete;
 
- protected:
+  // Public for cppgc::MakeGarbageCollected.
   explicit SafeStorage(v8::Isolate* isolate);
   ~SafeStorage() override;
 
@@ -116,6 +122,8 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   std::vector<PendingDecrypt> pending_decrypts_;
 
   std::vector<gin_helper::Promise<bool>> pending_availability_checks_;
+
+  gin::WeakCellFactory<SafeStorage> weak_factory_{this};
 };
 
 }  // namespace electron::api

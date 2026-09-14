@@ -2,19 +2,19 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '153.0.8001.0',
+    '155.0.8038.2',
   'node_version':
-    'v24.18.1',
+    'v24.21.0',
   'nan_version':
-    '675cefebca42410733da8a454c8d9391fcebfbc2',
+    'a1b4ba8f4bf2f46d2f270dbbb7bc0af482dc3e32',
   'squirrel.mac_version':
-    '8d808803bc89ec0e2aa1450474856dfee3b00c6b',
+    'eb13da304858c9c48ba970a55ee4afec38a55863',
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
     '2a8e2123a3931038179ee06105c9e6ec336b12ea',
-  'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
+  'sparkle_version':
+    '79bc9e872948e47877e76f194cb0c8e0412b0b90',
 
   'pyyaml_version': '3.12',
 
@@ -25,7 +25,7 @@ vars = {
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
-  'engflow_git': 'https://github.com/EngFlow',
+  'sparkle_git': 'https://github.com/sparkle-project',
   
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
@@ -96,18 +96,18 @@ deps = {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/vendor/ReactiveObjC': {
+  'src/third_party/squirrel.mac/Carthage/Checkouts/ReactiveObjC': {
     'url': Var("reactiveobjc_git") + '/ReactiveObjC.git@' + Var("reactiveobjc_version"),
     'condition': 'process_deps'
   },
-  'src/third_party/squirrel.mac/vendor/Mantle': {
+  'src/third_party/squirrel.mac/Carthage/Checkouts/Mantle': {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/engflow-reclient-configs': {
-    'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
-    'condition': 'process_deps'
-  }
+  'src/third_party/squirrel.mac/Carthage/Checkouts/Sparkle': {
+    'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
+    'condition': 'process_deps',
+  },
 }
 
 pre_deps_hooks = [
@@ -157,6 +157,17 @@ hooks = [
       'python3',
       '-c',
       'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.12.0.cjs", "install", "--immutable"]);',
+    ],
+  },
+  {
+    # Keep src/electron/build/siso_revision in step with the siso commit this
+    # Chromium pins; CI builds siso from that file (see the script header).
+    'name': 'gen_siso_revision',
+    'condition': 'checkout_chromium and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'node',
+      'src/electron/script/gen-siso-revision.js',
     ],
   },
   {
@@ -216,14 +227,14 @@ hooks = [
     'pattern': 'src/electron/build/pgo_profiles',
     'condition': 'checkout_linux and process_deps',
     'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
-               '--targets', 'linux-x64,linux-arm,linux-arm64'],
+               '--targets', 'linux-x64,linux-arm64'],
   },
   {
     'name': 'electron_pgo_profiles_win',
     'pattern': 'src/electron/build/pgo_profiles',
     'condition': 'checkout_win and process_deps',
     'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
-               '--targets', 'win-x64,win-x86,win-arm64'],
+               '--targets', 'win-x64,win-arm64'],
   },
   {
     'name': 'electron_pgo_profiles_mac',

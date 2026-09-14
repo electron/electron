@@ -78,10 +78,10 @@ index 6eef1315ebe70ce614426d847674e1be8c7d9c09..d9b25e76c3bff560e5246d1664562a98
    virtual ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
        const WebSecurityOrigin& origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index f7fcc71c12d08c49f9bc8a266610a1b6803e31d6..9c9bebe9d2072e7d3b399620dfec78b90901bc37 100644
+index 3e35d8d22fdcf1b475a709758cab3cabb930b1ab..891cdef8f7171ad3281892cc567fd757ff05b105 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-@@ -288,6 +288,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+@@ -290,6 +290,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    V8PerContextData* per_context_data = script_state_->PerContextData();
    std::ignore =
        per_context_data->ConstructorForType(global_scope_->GetWrapperTypeInfo());

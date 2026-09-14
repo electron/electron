@@ -15,12 +15,16 @@
 #include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
+#include "base/files/file.h"
 #include "base/files/file_util.h"
+#include "base/files/memory_mapped_file.h"
 #include "base/logging.h"
 #include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/threading/platform_thread.h"
+#include "base/time/time.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/profiler/process_type.h"
@@ -50,21 +54,26 @@
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
+#include "tools/v8_context_snapshot/buildflags.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 #include "v8/include/v8-snapshot.h"
 
 #if BUILDFLAG(IS_MAC)
+#include "base/apple/foundation_util.h"
 #include "shell/app/electron_main_delegate_mac.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include "base/win/win_util.h"
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "ui/gfx/linux/fontconfig_util.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -93,6 +102,39 @@ constexpr base::cstring_view kElectronDisableSandbox{
     "ELECTRON_DISABLE_SANDBOX"};
 constexpr base::cstring_view kElectronEnableStackDumping{
     "ELECTRON_ENABLE_STACK_DUMPING"};
+
+#if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+// The LoadBrowserProcessSpecificV8Snapshot fuse gives the browser process its
+// own snapshot, shipped next to the default one that content would load.
+void LoadBrowserProcessSpecificV8Snapshot() {
+  constexpr char kSnapshotFileName[] = "browser_v8_context_snapshot.bin";
+#if BUILDFLAG(IS_MAC)
+  base::FilePath path =
+      base::apple::PathForFrameworkBundleResource(kSnapshotFileName);
+#else
+  base::FilePath path = base::PathService::CheckedGet(base::DIR_ASSETS)
+                            .AppendASCII(kSnapshotFileName);
+#endif
+  // Same open flags and sharing-violation retry as gin's OpenV8File().
+  base::File file;
+  for (int attempt = 0; attempt < 5; ++attempt) {
+    file.Initialize(path, base::File::FLAG_OPEN | base::File::FLAG_READ |
+                              base::File::FLAG_WIN_SHARE_DELETE);
+    if (file.error_details() != base::File::FILE_ERROR_IN_USE)
+      break;
+    base::PlatformThread::Sleep(base::Milliseconds(250));
+  }
+  base::MemoryMappedFile::Region region =
+      base::MemoryMappedFile::Region::kWholeFile;
+  gin::V8Initializer::LoadV8SnapshotFromFile(
+      std::move(file), &region,
+#if BUILDFLAG(USE_V8_CONTEXT_SNAPSHOT)
+      gin::V8SnapshotFileType::kWithAdditionalContext);
+#else
+      gin::V8SnapshotFileType::kDefault);
+#endif
+}
+#endif
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
@@ -285,6 +327,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
   if (!IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, process_type);
+#if BUILDFLAG(IS_WIN)
+    // The sandbox job (JOB_OBJECT_LIMIT_DIE_ON_UNHANDLED_EXCEPTION) starts
+    // children with SEM_NOGPFAULTERRORBOX, which keeps Windows Error Reporting
+    // from running the registered helper for crashes crashpad cannot catch
+    // in-process. Crashpad is installed now, so let WER see those.
+    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+#endif
   }
 #endif
 
@@ -340,13 +389,21 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   if (!base::FieldTrialList::GetInstance()) {
-    base::FieldTrialList* leaked_field_trial_list = new base::FieldTrialList();
+    // Intentionally never destroyed: the FieldTrialList has to outlive
+    // everything that reads field trials. Storing it in a static keeps the
+    // allocation reachable, both for static analysis and for LeakSanitizer.
+    [[maybe_unused]] static base::FieldTrialList* leaked_field_trial_list =
+        new base::FieldTrialList();
     ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
-    std::ignore = leaked_field_trial_list;
   }
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
   content::InitializeMojoCore();
+#if BUILDFLAG(IS_LINUX)
+  // Queued before the browser ThreadPool starts, so FontConfig loads in
+  // parallel with toolkit initialization instead of on first use.
+  gfx::InitializeGlobalFontConfigAsync();
+#endif
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
@@ -381,16 +438,6 @@ void ElectronMainDelegate::InitializeMemorySystem() {
                                    AllocationTraceRecorderInclusion::kIgnore,
                                process_type)
       .Initialize(memory_system_);
-}
-
-std::string_view ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
-  bool load_browser_process_specific_v8_snapshot =
-      IsBrowserProcess() &&
-      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
-  if (load_browser_process_specific_v8_snapshot) {
-    return "browser_v8_context_snapshot.bin";
-  }
-  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
 }
 
 content::ContentClient* ElectronMainDelegate::CreateContentClient() {
@@ -451,6 +498,13 @@ bool ElectronMainDelegate::ShouldLoadV8Snapshot(
   if (process_type == ::switches::kGpuProcess) {
     return false;
   }
+#if defined(V8_USE_EXTERNAL_STARTUP_DATA)
+  if (IsBrowserProcess() &&
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled()) {
+    LoadBrowserProcessSpecificV8Snapshot();
+    return false;
+  }
+#endif
   return true;
 }
 

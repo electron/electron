@@ -2,14 +2,8 @@ import { Menu } from 'electron/main';
 
 const isMac = process.platform === 'darwin';
 
-let applicationMenuWasSet = false;
-
-export const setApplicationMenuWasSet = () => {
-  applicationMenuWasSet = true;
-};
-
 export const setDefaultApplicationMenu = () => {
-  if (applicationMenuWasSet) return;
+  if (Menu._applicationMenuWasSet()) return;
 
   const macAppMenu: Electron.MenuItemConstructorOptions = { role: 'appMenu' };
   const template: Electron.MenuItemConstructorOptions[] = [

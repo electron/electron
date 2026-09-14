@@ -102,7 +102,7 @@ When working on the `roller/chromium/main` branch for Chromium upgrades, use `e 
 
 ### Testing
 
-- Framework: Mocha + Chai + Sinon
+- Framework: Mocha + Chai
 - Test helpers in `spec/lib/` (e.g., `spec-helpers.ts`, `window-helpers.ts`)
 - Use `defer()` from spec-helpers for cleanup, `closeAllWindows()` for window teardown
 - Tests import from `electron/main` or `electron/renderer`

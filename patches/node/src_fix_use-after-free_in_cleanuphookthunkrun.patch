@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Caleb Everett <everett.caleb@gmail.com>
+Date: Mon, 10 Aug 2026 10:58:05 -0400
+Subject: src: fix use-after-free in CleanupHookThunkRun
+
+CleanupHookThunkRun() read thunk->isolate/fun/arg from the
+CleanupHookThunk after invoking thunk->fun(). For every
+node::ObjectWrap alive at teardown, thunk->fun is
+ObjectWrap::CleanupHook, which deletes the wrap; ~ObjectWrap() calls
+RemoveEnvironmentCleanupHook() itself, erasing the CleanupHookThunk
+from the registry and freeing the node it lives in. The subsequent
+read of thunk->isolate/fun/arg to make the (now redundant) second
+RemoveEnvironmentCleanupHook() call was therefore a use-after-free.
+
+Cache the fields before running the hook so nothing is read from
+`thunk` once it may have been freed.
+
+Taken over from #65196, which has been inactive; the original change is
+unmodified apart from the added comment.
+
+This also unblocks #65042, the backport of the cleanup hook registry to
+v24.x. Without that registry ~ObjectWrap() asserts during garbage
+collection, so every 24.x runtime aborts for ObjectWrap addons
+(#65446), as do 26.x runtimes before 26.4.0 when used with newer
+headers (#65262).
+
+Fixes: https://github.com/nodejs/node/issues/65195
+Refs: https://github.com/nodejs/node/pull/65196
+Refs: https://github.com/nodejs/node/pull/65042
+Refs: https://github.com/nodejs/node/issues/65446
+Refs: https://github.com/nodejs/node/issues/65262
+Assisted-by: a closed-source coding agent
+Co-authored-by: Sreehari Annam <sreehari.annam@gmail.com>
+Signed-off-by: Caleb Everett <everett.caleb@gmail.com>
+Cherry-pick of https://github.com/nodejs/node/pull/65630 at
+dd2fa31b1d99e5a6710e08ce4139da7c2e344598 (not yet landed upstream).
+Required alongside nodejs/node#63985: with the cleanup hook registry in
+place, ~ObjectWrap() erases its own CleanupHookThunk while
+CleanupHookThunkRun() is still using it during environment teardown.
+See https://github.com/electron/electron/issues/53387.
+
+(cherry picked from commit dd2fa31b1d99e5a6710e08ce4139da7c2e344598)
+
+diff --git a/src/api/hooks.cc b/src/api/hooks.cc
+index 07efb145a29eecc3e701f4c7b62ca96ea4555050..3213a30a7bc734a6626d0f93d4ce2ac7ddc747f6 100644
+--- a/src/api/hooks.cc
++++ b/src/api/hooks.cc
+@@ -157,8 +157,15 @@ static ExclusiveAccess<CleanupHookRegistry> cleanup_hook_registry;
+ 
+ static void CleanupHookThunkRun(void* arg) {
+   const CleanupHookThunk* thunk = static_cast<CleanupHookThunk*>(arg);
+-  thunk->fun(thunk->arg);
+-  RemoveEnvironmentCleanupHook(thunk->isolate, thunk->fun, thunk->arg);
++  // `thunk->fun` may itself remove and free this CleanupHookThunk (e.g. via
++  // ~ObjectWrap(), which calls RemoveEnvironmentCleanupHook()), so cache the
++  // fields we still need before invoking it rather than reading them from
++  // `thunk` afterwards.
++  Isolate* isolate = thunk->isolate;
++  CleanupHook fun = thunk->fun;
++  void* fun_arg = thunk->arg;
++  fun(fun_arg);
++  RemoveEnvironmentCleanupHook(isolate, fun, fun_arg);
+ }
+ 
+ void AddEnvironmentCleanupHook(Isolate* isolate,

@@ -44,6 +44,10 @@ class ElectronFrameViewLinux : public views::NativeFrameViewLinux {
   bool WantsFrame() const;
   void SetWantsFrame(bool wants_frame);
 
+  // Hit test for the internal resize band used when the frame has no
+  // external frame insets (e.g., translucent windows).
+  int ResizingBorderHitTest(const gfx::Point& point);
+
   // views::FrameViewLinux:
   bool HasWindowTitle() const override;
   int NonClientHitTest(const gfx::Point& point) override;

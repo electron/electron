@@ -71,8 +71,6 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   void OnSuggestionsChanged();
 
-  int GetSelectedLine() { return selected_line_.value_or(-1); }
-
   // views::WidgetDelegateView implementation.
   void WriteDragDataForView(views::View*,
                             const gfx::Point&,

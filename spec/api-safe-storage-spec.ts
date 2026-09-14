@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
+import { expectWarningMessages } from './lib/warning-helpers';
 
 chai.use(chaiAsPromised);
 
@@ -25,6 +26,18 @@ describe('safeStorage module', () => {
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });
     }
+  });
+
+  it('emits deprecation warnings for the synchronous methods', async () => {
+    await expectWarningMessages(
+      () => {
+        safeStorage.isEncryptionAvailable();
+        safeStorage.decryptString(safeStorage.encryptString('plaintext'));
+      },
+      "(electron) 'safeStorage.isEncryptionAvailable' is deprecated and will be removed. Please use 'safeStorage.isAsyncEncryptionAvailable' instead.",
+      "(electron) 'safeStorage.encryptString' is deprecated and will be removed. Please use 'safeStorage.encryptStringAsync' instead.",
+      "(electron) 'safeStorage.decryptString' is deprecated and will be removed. Please use 'safeStorage.decryptStringAsync' instead."
+    );
   });
 
   describe('SafeStorage.isEncryptionAvailable()', () => {

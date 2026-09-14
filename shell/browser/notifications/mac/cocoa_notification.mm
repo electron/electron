@@ -160,7 +160,15 @@ void CocoaNotification::Show(const NotificationOptions& options) {
                                        URL:url
                                    options:attachment_options
                                      error:&error];
-              return (attachment && !error) ? attachment : nil;
+              if (!attachment || error) {
+                if (electron::debug_notifications) {
+                  LOG(INFO) << "Notification icon attachment failed: "
+                            << (error ? error.localizedDescription.UTF8String
+                                      : "unknown error");
+                }
+                return nil;
+              }
+              return attachment;
             },
             mac_presenter, icon),
         base::BindOnce(
@@ -168,7 +176,9 @@ void CocoaNotification::Show(const NotificationOptions& options) {
                UNMutableNotificationContent* content,
                UNNotificationAttachment* attachment) {
               if (auto* notification = weak_self.get()) {
-                content.attachments = @[ attachment ];
+                // Deliver without an icon if the attachment couldn't be made.
+                if (attachment)
+                  content.attachments = @[ attachment ];
                 auto* self = static_cast<CocoaNotification*>(notification);
                 self->ScheduleNotification(content);
               }

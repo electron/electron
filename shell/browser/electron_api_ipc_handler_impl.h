@@ -43,19 +43,19 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   // mojom::ElectronApiIPC:
   void Message(bool internal,
                const std::string& channel,
-               blink::CloneableMessage arguments) override;
+               electron::SerializedValue arguments) override;
   void Invoke(bool internal,
               const std::string& channel,
-              blink::CloneableMessage arguments,
+              electron::SerializedValue arguments,
               InvokeCallback callback) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
   void MessageSync(bool internal,
                    const std::string& channel,
-                   blink::CloneableMessage arguments,
+                   electron::SerializedValue arguments,
                    MessageSyncCallback callback) override;
   void MessageHost(const std::string& channel,
-                   blink::CloneableMessage arguments) override;
+                   electron::SerializedValue arguments) override;
 
   base::WeakPtr<ElectronApiIPCHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

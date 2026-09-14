@@ -20,10 +20,6 @@ class Value;
 class Isolate;
 }  // namespace v8
 
-namespace gin {
-class Arguments;
-}  // namespace gin
-
 namespace electron {
 
 // There is only a single instance of this class for the lifetime of a Utility

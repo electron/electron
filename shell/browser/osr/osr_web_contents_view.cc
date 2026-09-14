@@ -4,6 +4,7 @@
 
 #include "shell/browser/osr/osr_web_contents_view.h"
 
+#include "base/check.h"
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -142,6 +143,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
     embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
         web_contents_impl->GetRenderWidgetHostView());
   }
+  CHECK(embedder_host_view);
 
   return new OffScreenRenderWidgetHostView(
       transparent_, offscreen_use_shared_texture_,

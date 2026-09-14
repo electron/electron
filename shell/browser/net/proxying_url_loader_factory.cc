@@ -21,10 +21,13 @@
 #include "net/http/http_status_code.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_info.h"
+#include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/url_loader_factory_gate.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
@@ -84,10 +87,11 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       proxied_loader_receiver_(this, std::move(loader_receiver)),
       target_client_(std::move(client)),
       current_response_(network::mojom::URLResponseHead::New()),
-      // Always use "extraHeaders" mode to be compatible with old APIs.
-      // A non-zero request ID is required to use the TrustedHeaderClient path
-      // which allows webRequest to modify headers like Proxy-Authorization.
-      has_any_extra_headers_listeners_(network_service_request_id != 0) {
+      // "extraHeaders" mode (two round trips per request) only while
+      // webRequest has listeners; see has_any_extra_headers_listeners_.
+      has_any_extra_headers_listeners_(network_service_request_id != 0 &&
+                                       factory->web_request_ &&
+                                       factory->web_request_->HasListener()) {
   // If there is a client error, clean up the request.
   target_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -512,6 +516,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
   }
 
   if (current_request_uses_header_client_ && !redirect_url_.is_empty()) {
+    if (for_cors_preflight_) {
+      // CORS preflight doesn't support redirect.
+      OnRequestError(network::URLLoaderCompletionStatus(net::ERR_FAILED));
+      return;
+    }
     HandleBeforeRequestRedirect();
     return;
   }
@@ -721,15 +730,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
   factory_->web_request_->OnBeforeRedirect(&info_.value(), request_,
                                            redirect_info.new_url);
   target_client_->OnReceiveRedirect(redirect_info, current_response_.Clone());
-  request_.url = redirect_info.new_url;
-  request_.method = redirect_info.new_method;
-  request_.site_for_cookies = redirect_info.new_site_for_cookies;
-  request_.referrer = GURL(redirect_info.new_referrer);
-  request_.referrer_policy = redirect_info.new_referrer_policy;
+  bool should_clear_upload = false;
+  net::RedirectUtil::UpdateHttpRequest(
+      request_.url, request_.method, redirect_info,
+      /*removed_headers=*/std::nullopt, /*modified_headers=*/std::nullopt,
+      &request_.headers, &should_clear_upload);
+  request_.UpdateOnRedirect(redirect_info);
 
-  // The request method can be changed to "GET". In this case we need to
-  // reset the request body manually.
-  if (request_.method == net::HttpRequestHeaders::kGetMethod)
+  if (should_clear_upload)
     request_.request_body = nullptr;
 }
 
@@ -863,11 +871,26 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
-  if (!web_request_->HasListener()) {
-    // Pass-through to the original factory.
+  // Requests that no blocking listener can match do not need an
+  // InProgressRequest on this thread; observers hear about them from the IO
+  // thread (see URLLoaderFactoryGate, which does the same for renderer
+  // subresources before they get here).
+  const auto route =
+      browser_context_ ? browser_context_->intercept_state()->RouteFor(request)
+                       : InterceptState::Route::kProxy;
+  if (route != InterceptState::Route::kProxy || !web_request_->HasListener()) {
     auto& target_factory = override_target_factory.is_bound()
                                ? override_target_factory
                                : target_factory_;
+    if (route == InterceptState::Route::kObserve) {
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> observed_target;
+      target_factory->Clone(observed_target.InitWithNewPipeAndPassReceiver());
+      CreateObservedLoaderAndStartOnIO(
+          browser_context_, render_process_id_, frame_routing_id_,
+          std::move(loader), request_id, options, request, std::move(client),
+          traffic_annotation, std::move(observed_target));
+      return;
+    }
     target_factory->CreateLoaderAndStart(std::move(loader), request_id, options,
                                          request, std::move(client),
                                          traffic_annotation);

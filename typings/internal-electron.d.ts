@@ -98,9 +98,10 @@ declare namespace Electron {
   interface WebContents {
     _awaitNextLoad(expectedUrl: string): Promise<void>;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
+    _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
-    _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
+    _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
     _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
@@ -174,55 +175,22 @@ declare namespace Electron {
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
+  namespace Menu {
+    function _applicationMenuWasSet(): boolean;
+    function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
+  }
+
   interface Menu {
-    _init(): void;
-    _isCommandIdChecked(id: string): boolean;
-    _isCommandIdEnabled(id: string): boolean;
-    _shouldCommandIdWorkWhenHidden(id: string): boolean;
-    _isCommandIdVisible(id: string): boolean;
-    _getLabelForCommandId(id: string): string;
-    _getAccessibilityLabelForCommandId(id: string): string;
-    _getSecondaryLabelForCommandId(id: string): string;
-    _getIconForCommandId(id: string): string | Electron.NativeImage | null;
-    _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
-    _shouldRegisterAcceleratorForCommandId(id: string): boolean;
-    _getSharingItemForCommandId(id: string): SharingItem | null;
-    _callMenuWillShow(): void;
-    _executeCommand(event: KeyboardEvent, id: number): void;
+    _activate(commandId: number): void;
     _menuWillShow(): void;
-    commandsMap: Record<string, MenuItem>;
-    groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
-    popupAt(
-      window: BaseWindow,
-      frame: WebFrameMain | undefined,
-      x: number,
-      y: number,
-      positioning: number,
-      sourceType: Required<Electron.PopupOptions>['sourceType'],
-      callback: () => void
-    ): void;
-    closePopupAt(id: number): void;
-    setSublabel(index: number, label: string): void;
-    setToolTip(index: number, tooltip: string): void;
-    setIcon(index: number, image: string | NativeImage): void;
-    setRole(index: number, role: string): void;
-    setCustomType(index: number, customType: string): void;
-    insertItem(index: number, commandId: number, label: string): void;
-    insertCheckItem(index: number, commandId: number, label: string): void;
-    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
-    insertSeparator(index: number): void;
-    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
-    delegate?: any;
+    getIndexOfCommandId(commandId: number): number;
     _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {
-    overrideReadOnlyProperty(property: string, value: any): void;
-    groupId: number;
-    getDefaultRoleAccelerator(): Accelerator | undefined;
-    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
+    getDefaultRoleAccelerator(): Accelerator | undefined;
   }
 
   interface ReplyChannel {
@@ -279,7 +247,8 @@ declare namespace Electron {
         rawFeatures: string,
         referrer: Electron.Referrer,
         postData: LoadURLOptions['postData'],
-        inheritedSandboxFlags: number
+        inheritedSandboxFlags: number,
+        navigate: (webContents: Electron.WebContents) => void
       ) => void
     ): this;
     on(

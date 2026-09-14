@@ -3,10 +3,12 @@ import { app } from 'electron/main';
 
 import { expect } from 'chai';
 
+import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process module', () => {
@@ -132,5 +134,18 @@ describe('process module', () => {
 
   describe('main process', () => {
     generateSpecs((fn, ...args) => fn(...args));
+  });
+
+  ifdescribe(process.platform === 'linux')('process.env', () => {
+    it('can add variables while another thread reads the environment', async () => {
+      const fixture = path.join(__dirname, 'fixtures', 'api', 'environ-write-race.js');
+      const child = cp.spawn(process.execPath, [fixture], { stdio: ['ignore', 'pipe', 'inherit'] });
+      let stdout = '';
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      const [code, signal] = await once(child, 'close');
+      expect({ code, signal, stdout: stdout.trim() }).to.deep.equal({ code: 0, signal: null, stdout: 'done' });
+    });
   });
 });

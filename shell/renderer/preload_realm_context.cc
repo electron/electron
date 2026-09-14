@@ -11,10 +11,12 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
+#include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
 #include "third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h"  // nogncheck
@@ -31,7 +33,7 @@ namespace {
 
 static constexpr int kElectronContextEmbedderDataIndex =
     static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(gin::kEmbedderElectron);
+    static_cast<int>(electron::kEmbedderElectron);
 
 // This is a helper class to make the initiator ExecutionContext the owner
 // of a ShadowRealmGlobalScope and its ScriptState. When the initiator
@@ -304,7 +306,8 @@ void OnCreatePreloadableV8Context(
 
   // Associate the Blink object with the v8::Context.
   blink::ScriptState* script_state =
-      blink::ScriptState::Create(context, world, shadow_realm_global_scope);
+      blink::MakeGarbageCollected<blink::ScriptStateImpl>(
+          context, world, *shadow_realm_global_scope);
 
   // Associate the Blink object with the v8::Objects.
   global_proxy = context->Global();

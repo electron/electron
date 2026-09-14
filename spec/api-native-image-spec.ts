@@ -242,6 +242,19 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('toJPEG()', () => {
+    it('encodes an image that only has a non-1x representation', () => {
+      const image = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      const jpeg = image.toJPEG(90);
+      expect(jpeg).to.not.be.empty();
+      expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({ width: 8, height: 6 });
+    });
+  });
+
   describe('toPNG()', () => {
     it('returns a buffer at 1x scale factor by default', () => {
       const imageData = imageLogo;

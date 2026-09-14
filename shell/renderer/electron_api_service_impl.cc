@@ -10,6 +10,7 @@
 #include "gin/converter.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
@@ -127,7 +128,7 @@ void ElectronApiServiceImpl::OnConnectionError() {
 
 void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
-                                     blink::CloneableMessage arguments) {
+                                     electron::SerializedValue arguments) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;

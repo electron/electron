@@ -9,8 +9,10 @@
 #include <memory>
 #include <string>
 
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
@@ -69,12 +71,21 @@ class InspectableWebContentsView : public views::View {
   // when undocked, otherwise the window containing this view).
   void ShowDevToolsContextMenu(const content::ContextMenuParams& params);
 
+  // Invoked when this view's bounds have changed but before its children (and
+  // therefore the RenderWidgetHostView) have been laid out to match.
+  void SetBoundsChangedCallback(base::RepeatingClosure callback) {
+    bounds_changed_callback_ = std::move(callback);
+  }
+
   // views::View:
   void Layout(PassKey) override;
+  void OnBoundsChanged(const gfx::Rect& previous_bounds) override;
 
   views::View* GetContentsView() const;
 
  private:
+  void SetContentsViewBounds(const gfx::Rect& bounds);
+
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
@@ -94,6 +105,7 @@ class InspectableWebContentsView : public views::View {
   bool devtools_visible_ = false;
   raw_ptr<views::WidgetDelegate> devtools_window_delegate_ = nullptr;
   std::u16string title_;
+  base::RepeatingClosure bounds_changed_callback_;
 };
 
 }  // namespace electron
