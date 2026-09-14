@@ -1257,7 +1257,7 @@ describe('<webview> tag', function () {
         expect(message).to.be.not.equal('Window script is loaded before preload script');
       });
 
-      it('preload script can still use "process" and "Buffer" when nodeintegration is off', async () => {
+      it('preload script can still use "process" but not "Buffer" when sandboxed', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
           preload: `${fixtures}/module/preload-node-off.js`,
           src: `file://${fixtures}/api/blank.html`
@@ -1266,7 +1266,9 @@ describe('<webview> tag', function () {
         const types = JSON.parse(message);
         expect(types).to.include({
           process: 'object',
-          Buffer: 'function'
+          setImmediate: 'undefined',
+          global: 'object',
+          Buffer: 'undefined'
         });
       });
 

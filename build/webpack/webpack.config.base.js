@@ -85,11 +85,10 @@ module.exports = ({
       );
     }
 
-    // Webpack 5 no longer polyfills process or Buffer.
+    // Webpack 5 no longer polyfills process.
     if (!alwaysHasNode) {
       plugins.push(
         new webpack.ProvidePlugin({
-          Buffer: ['buffer', 'Buffer'],
           process: 'process/browser'
         })
       );
@@ -146,16 +145,9 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           'electron/main$': electronAPIFile,
           'electron/renderer$': electronAPIFile,
           'electron/common$': electronAPIFile,
-          'electron/utility$': electronAPIFile,
-          // Force timers to resolve to our own shim that doesn't use window.postMessage
-          timers: path.resolve(electronRoot, 'lib', 'common', 'timers-shim.ts')
+          'electron/utility$': electronAPIFile
         },
-        extensions: ['.ts', '.js'],
-        fallback: {
-          // We provide our own "timers" import above, any usage of setImmediate inside
-          // one of our renderer bundles should import it from the 'timers' package
-          setImmediate: false
-        }
+        extensions: ['.ts', '.js']
       },
       module: {
         rules: [

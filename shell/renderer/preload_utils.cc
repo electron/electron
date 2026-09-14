@@ -144,10 +144,9 @@ v8::Local<v8::Value> CreatePreloadScript(
     return {};
   }
   // V8 validates a code cache against the source but not against the
-  // parameter names, and the sandboxed preload's parameter list depends on
-  // whether it runs in an isolated world. Name the parameters in a trailing
-  // comment so a cache made for one list is rejected (and rebuilt) rather
-  // than run against another.
+  // parameter names. Name the parameters in a trailing comment so a persisted
+  // cache made for a different parameter list (an older Electron with the same
+  // V8) is rejected and rebuilt rather than run against this one.
   body = v8::String::Concat(
       isolate, body,
       gin::StringToV8(isolate, "\n//# electronPreloadParameters=" +
