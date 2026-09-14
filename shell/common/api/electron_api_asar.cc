@@ -339,26 +339,17 @@ static void CreateSentinelFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(gin::ConvertToV8(isolate, fd));
 }
 
+// splitPath(path, requireNormalized) -> archive prefix length, or
+// asar::kNotInArchive / asar::kNeedsNormalization. See
+// asar::FindArchivePrefixLength().
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
-
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  args.GetReturnValue().Set(dict.GetHandle());
-
-  base::FilePath path;
-  if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-    dict.Set("isAsar", false);
-    return;
-  }
-
-  base::FilePath asar_path, file_path;
-  if (asar::GetAsarArchivePath(path, &asar_path, &file_path, true)) {
-    dict.Set("isAsar", true);
-    dict.Set("asarPath", asar_path);
-    dict.Set("filePath", file_path);
-  } else {
-    dict.Set("isAsar", false);
-  }
+  const bool require_normalized = args[1]->IsTrue();
+  int result = asar::kNotInArchive;
+  WithUtf8Path(isolate, args[0], [&](std::string_view path) {
+    result = asar::FindArchivePrefixLength(path, require_normalized);
+  });
+  args.GetReturnValue().Set(result);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
