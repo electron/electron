@@ -2327,8 +2327,11 @@ void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
                                     ->GetWrapper(isolate)
                                     .ToLocalChecked();
   // app first: it always was the WebContents' first listener. Its listeners
-  // may destroy |this|.
+  // may destroy |this|. One callback scope around both emits so that ticks
+  // and microtasks run once, after both, as when one emit nested the other.
   base::WeakPtr<WebContents> weak_this = GetWeakPtr();
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
   gin_helper::EmitEvent(isolate, app, "render-process-gone", event, wrapper,
                         details);
   if (base::Environment::Create()->HasVar("ELECTRON_ENABLE_LOGGING") ||
@@ -2515,12 +2518,19 @@ void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
   if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
     auto weak_this = GetWeakPtr();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Object> wrapper;
+    if (!GetWrapper(isolate).ToLocal(&wrapper))
+      return;
+    // One callback scope around both emits: the window's listeners run before
+    // microtasks queued by the WebContents', as when it was a nextTick.
+    node::CallbackScope callback_scope(isolate, wrapper,
+                                       node::async_context{0, 0});
     Emit("ready-to-show");
     // Then the window showing it, as BrowserWindow documents.
     if (!weak_this || !web_contents() || !owner_window())
       return;
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Value> owner = BrowserWindow::From(isolate, owner_window());
     if (owner->IsObject() &&
         !gin_helper::Destroyable::IsDestroyed(owner.As<v8::Object>())) {
@@ -2805,6 +2815,14 @@ void WebContents::DidUpdateFaviconURL(
 
 void WebContents::DevToolsReloadPage() {
   auto weak_this = GetWeakPtr();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  // reload() used to run from the event's first listener: same scope.
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
   Reload();
   if (weak_this && web_contents())
     Emit("devtools-reload-page");
@@ -5387,19 +5405,22 @@ gin_helper::Handle<WebContents> WebContents::New(
 
 void WebContents::InitializeJS(v8::Isolate* isolate) {
   base::WeakPtr<WebContents> weak_this = GetWeakPtr();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  // 'web-contents-created' used to be emitted from inside _init: same scope.
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
   {
     v8::TryCatch try_catch(isolate);
     gin_helper::CallMethod(isolate, this, "_init");
     if (try_catch.HasCaught())
       node::errors::TriggerUncaughtException(isolate, try_catch);
   }
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Object> wrapper;
   v8::Local<v8::Object> app;
-  if (!weak_this || !GetWrapper(isolate).ToLocal(&wrapper) ||
-      !App::Get()->GetWrapper(isolate).ToLocal(&app)) {
+  if (!weak_this || !App::Get()->GetWrapper(isolate).ToLocal(&app))
     return;
-  }
   v8::Local<v8::Object> event = gin_helper::internal::Event::New(isolate)
                                     ->GetWrapper(isolate)
                                     .ToLocalChecked();
