@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -569,30 +569,16 @@ describe('utilityProcess module', () => {
       child.stdout!.on('data', listener);
     });
 
-    it('supports changing dns verbatim with --dns-result-order', (done) => {
+    it('supports changing dns verbatim with --dns-result-order', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
-        });
-        child.kill();
-      };
-
-      const listener = (data: Buffer) => {
-        output += data;
-        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
-        cleanup();
-      };
-
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
+      deferKillUtilityProcess(child);
+      await once(child, 'spawn');
+      const result = once(child, 'message');
+      child.postMessage('get-default-result-order');
+      const [order] = await result;
+      expect(order).to.equal('ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
