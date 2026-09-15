@@ -96,6 +96,14 @@ class RendererClientBase : public content::ContentRendererClient
                       v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
+  // Whether Electron sets up its renderer API (and runs preload scripts) for
+  // documents in this frame: the main frame, DevTools, or any frame when
+  // nodeIntegrationInSubFrames is on, but never a <webview>'s placeholder
+  // iframe.
+  bool ShouldLoadPreload(v8::Isolate* isolate,
+                         v8::Local<v8::Context> context,
+                         content::RenderFrame* render_frame) const;
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
 #endif
@@ -104,10 +112,6 @@ class RendererClientBase : public content::ContentRendererClient
   void BindProcess(v8::Isolate* isolate,
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
-
-  bool ShouldLoadPreload(v8::Isolate* isolate,
-                         v8::Local<v8::Context> context,
-                         content::RenderFrame* render_frame) const;
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;

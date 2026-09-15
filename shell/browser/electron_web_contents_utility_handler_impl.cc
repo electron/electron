@@ -13,6 +13,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/preload_code_cache.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
@@ -59,6 +60,22 @@ void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
   if (api_web_contents) {
     api_web_contents->SetTemporaryZoomLevel(level);
   }
+}
+
+void ElectronWebContentsUtilityHandlerImpl::NotifyGuestFocusChange(bool focus) {
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (api_web_contents && api_web_contents->is_guest())
+    api_web_contents->Emit("-focus-change", focus);
+}
+
+void ElectronWebContentsUtilityHandlerImpl::CloseWindow() {
+  // Only the top-level document may close its window, as in the HTML spec.
+  content::RenderFrameHost* rfh = GetRenderFrameHost();
+  if (!rfh || rfh->GetParentOrOuterDocument())
+    return;
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (api_web_contents && api_web_contents->owner_window())
+    api_web_contents->owner_window()->Close();
 }
 
 void ElectronWebContentsUtilityHandlerImpl::SetPreloadCodeCache(
