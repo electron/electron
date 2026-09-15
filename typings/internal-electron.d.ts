@@ -119,6 +119,7 @@ declare namespace Electron {
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
+    _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _init(): void;
