@@ -1005,10 +1005,10 @@ index f921a4a7cb2e122f2d439fe6e4c2e67d553b6fb7..de68ea282607b76a3ba42f22cfb0619d
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fc72f43ec09e4aec93ca00e91d2923ad4deb6ca0..8e0a48e0a985c345d9d7191440e21a25f98924b5 100644
+index 53dd562d46baea4035051e4760616752dee69be7..46cc7be341407f84e70b602d17c03e74b9d530c4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -380,6 +380,7 @@ source_set("browser") {
+@@ -381,6 +381,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1017,7 +1017,7 @@ index fc72f43ec09e4aec93ca00e91d2923ad4deb6ca0..8e0a48e0a985c345d9d7191440e21a25
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 2856a74454c33d5ff05303ade39ca1260f444bc6..65ef68b483b9a47c99ad1001c6bacf46895cf2b5 100644
+index 2126c6c61ed8acce6614967052f6acfc306784ee..7ce7293312121047165d894be7a2cba79b98ec32 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -26,6 +26,7 @@
@@ -1038,7 +1038,7 @@ index 2856a74454c33d5ff05303ade39ca1260f444bc6..65ef68b483b9a47c99ad1001c6bacf46
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -724,9 +727,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -727,9 +730,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    bool pointer_lock_unadjusted_movement_ = false;
  
  
@@ -1051,10 +1051,10 @@ index 2856a74454c33d5ff05303ade39ca1260f444bc6..65ef68b483b9a47c99ad1001c6bacf46
    ui::AXTreeID parent_ax_tree_id_ = ui::AXTreeIDUnknown();
  
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 333dc8d9e873528bafec8d6b0e677b7e3ba967ba..12d571fd8c30c22ed482d7bb069300b955995457 100644
+index 0e5f95d678d26a5e3cc7e833d74d96cfb4943893..7611d6e3d0d172fcd417571a5f4bcd8f2dc6c7a2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -57,6 +57,7 @@
+@@ -58,6 +58,7 @@
  #include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/web_contents.h"
  #include "content/public/common/page_visibility_state.h"
@@ -1062,7 +1062,7 @@ index 333dc8d9e873528bafec8d6b0e677b7e3ba967ba..12d571fd8c30c22ed482d7bb069300b9
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -318,8 +319,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
+@@ -312,8 +313,10 @@ void SendVisibleTimeRequestToDelegatedFrameHost(
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1073,7 +1073,7 @@ index 333dc8d9e873528bafec8d6b0e677b7e3ba967ba..12d571fd8c30c22ed482d7bb069300b9
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1838,10 +1841,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1882,10 +1885,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1086,7 +1086,7 @@ index 333dc8d9e873528bafec8d6b0e677b7e3ba967ba..12d571fd8c30c22ed482d7bb069300b9
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1916,9 +1921,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1960,9 +1965,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1098,7 +1098,7 @@ index 333dc8d9e873528bafec8d6b0e677b7e3ba967ba..12d571fd8c30c22ed482d7bb069300b9
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2469,20 +2476,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2532,20 +2539,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index e843d9dd8d59431e6d042a4ffc7fed7751d6183d..e8d7bf16598b2f3382a3f5304d43101f40d1d288 100644
+index 830f84198c02fb17c0a743b66cbfc7bd7ac04f07..e9f122a37733e4c2c55b134f42fddb49615d9598 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -2406,7 +2406,7 @@ index 4a30d5128fb313cdc436ea9c1ac8cd637dfeb1f9..914ae79d89f332a7cd0f4b039e1438b3
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 831f54542a6f3db46e954127af5cf59b9ec82720..aa8fd9cbb9711e81a8772ff0b3d8a625625e7e4d 100644
+index e4b543e6ac670e9cb42c13b354dbc68e109925d5..d6592e42e4dcf685a990555eda74cc047f1067ec 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -19,6 +19,7 @@
@@ -2441,7 +2441,7 @@ index 831f54542a6f3db46e954127af5cf59b9ec82720..aa8fd9cbb9711e81a8772ff0b3d8a625
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 2c672cbd1622001fa5655b64ade5ee679841e80c..87426d0099c00b4f5e4227731ef9235556aaee1a 100644
+index c3e4177cf9e2a69b4115c9c5a8cc10b83a2d6872..e8956065a0ec871a2c29759675f20a2ada3f7237 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -24,6 +24,7 @@
