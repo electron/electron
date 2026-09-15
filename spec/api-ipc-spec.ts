@@ -263,6 +263,30 @@ describe('ipc module', () => {
       const expected = sizes.flatMap((n) => samples(n).flatMap((value) => Array(3).fill(digest(value))));
       expect(result).to.deep.equal(expected);
     });
+
+    it('throws a catchable error when V8 requests more than the buffer limit', async () => {
+      const result = await w.webContents.executeJavaScript(
+        `(${function () {
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          v8Util.setIpcSerializationBufferLimitForTesting(1024 * 1024);
+          try {
+            require('electron').ipcRenderer.send('oversized', new Uint8Array(2 * 1024 * 1024));
+            return { threw: false };
+          } catch (error) {
+            return { threw: true, name: (error as Error).name, message: (error as Error).message };
+          } finally {
+            v8Util.setIpcSerializationBufferLimitForTesting(0);
+          }
+        }})()`
+      );
+
+      expect(result).to.deep.equal({
+        threw: true,
+        name: 'Error',
+        message: 'Data cannot be cloned, out of memory.'
+      });
+      expect(await w.webContents.executeJavaScript('6 * 7')).to.equal(42);
+    });
   });
 
   describe('ordering', () => {
