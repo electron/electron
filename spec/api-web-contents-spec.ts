@@ -4028,6 +4028,52 @@ describe('webContents module', () => {
         await once(w.webContents, 'did-finish-load');
         expect(w.webContents.isCrashed()).to.equal(false);
       });
+
+      // The response is held until a renderer has been frozen, so the
+      // navigation is waiting to commit when that renderer is killed; loadURL()
+      // then rejects from inside content's teardown and the handler navigates
+      // again straight away. With COOP the response starts a second renderer
+      // for a speculative frame host and that is the one killed.
+      for (const coop of [false, true]) {
+        ifit(process.platform !== 'win32')(
+          `survives a loadURL() from the rejection of a load whose ${coop ? 'speculative ' : ''}renderer died before commit`,
+          async () => {
+            let release: (() => void) | null = null;
+            const server = http.createServer((req, res) => {
+              release = () => {
+                res.setHeader('content-type', 'text/html');
+                if (coop) res.setHeader('cross-origin-opener-policy', 'same-origin-allow-popups');
+                res.end('<h1>hi</h1>');
+              };
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const rendererPids = () =>
+              app
+                .getAppMetrics()
+                .filter((m) => m.type === 'Tab')
+                .map((m) => m.pid);
+
+            const load = w.webContents.loadURL(url);
+            await waitUntil(() => w.webContents.getOSProcessId() !== 0 && release !== null);
+            const before = new Set(rendererPids());
+            let victim = w.webContents.getOSProcessId();
+            if (!coop) process.kill(victim, 'SIGSTOP');
+            release!();
+            if (coop) {
+              await waitUntil(() => rendererPids().some((pid) => !before.has(pid)));
+              victim = rendererPids().find((pid) => !before.has(pid))!;
+              process.kill(victim, 'SIGSTOP');
+            }
+            await setTimeout(1000);
+            process.kill(victim, 'SIGKILL');
+
+            await expect(load).to.eventually.be.rejected();
+            await w.webContents.loadURL('about:blank');
+            expect(w.webContents.isCrashed()).to.equal(false);
+          }
+        );
+      }
     });
   }
 

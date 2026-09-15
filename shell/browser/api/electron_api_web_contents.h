@@ -25,6 +25,7 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -207,6 +208,7 @@ class WebContents final : public ExclusiveAccessContext,
   [[nodiscard]] Type type() const { return type_; }
   v8::Local<v8::Value> Clone(v8::Isolate* isolate);
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
+  void LoadURLWithParams(content::NavigationController::LoadURLParams params);
   void Reload();
   void ReloadIgnoringCache();
   void DownloadURL(const GURL& url, gin::Arguments* args);
@@ -714,6 +716,10 @@ class WebContents final : public ExclusiveAccessContext,
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
+  // Posts |navigate| and returns true while DidStopLoading is emitting for a
+  // load that ended because its renderer died; otherwise returns false.
+  bool PostNavigationInRendererTeardown(base::OnceClosure navigate);
+
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 
@@ -935,6 +941,12 @@ class WebContents final : public ExclusiveAccessContext,
   // defers guest WebContents deletion to prevent use-after-free when a JS
   // handler calls webContents.destroy() mid-emission.
   bool is_emitting_event_ = false;
+
+  // Set by DidFinishNavigation when content discards a navigation because
+  // its renderer died; consumed by the DidStopLoading that follows, which
+  // holds in_renderer_teardown_ for the duration of its emit.
+  bool navigation_discarded_by_process_gone_ = false;
+  bool in_renderer_teardown_ = false;
 
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
