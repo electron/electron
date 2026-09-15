@@ -20,11 +20,6 @@ ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
   }
 });
 
-ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_LAST_WEB_PREFERENCES, function (event) {
-  if (event.type !== 'frame') return;
-  return event.sender.getLastWebPreferences();
-});
-
 ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (event) {
   if (event.type !== 'frame') return;
   // Report the calling frame's own renderer process, which for an
