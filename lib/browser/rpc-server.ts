@@ -6,20 +6,6 @@ import { webFrameMain } from 'electron/main';
 
 import * as path from 'path';
 
-// Implements window.close(). Only the top-level document may close its
-// window, as in the HTML spec; the renderer override is installed for the main
-// frame only, and the request is ignored here if it comes from anywhere else.
-ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
-  event.returnValue = null;
-  if (event.type !== 'frame') return;
-  if (!event.senderFrame || event.senderFrame !== event.sender.mainFrame) return;
-
-  const window = event.sender.getOwnerBrowserWindow();
-  if (window) {
-    window.close();
-  }
-});
-
 ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (event) {
   if (event.type !== 'frame') return;
   // Report the calling frame's own renderer process, which for an

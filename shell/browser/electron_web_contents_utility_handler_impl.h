@@ -39,6 +39,8 @@ class ElectronWebContentsUtilityHandlerImpl
   // mojom::ElectronWebContentsUtility:
   void OnFirstNonEmptyLayout() override;
   void SetTemporaryZoomLevel(double level) override;
+  void CloseWindow() override;
+  void NotifyGuestFocusChange(bool focus) override;
   void CanAccessClipboardDeprecated(
       mojom::PermissionName name,
       const blink::LocalFrameToken& frame_token,
