@@ -23,9 +23,9 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
-#include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
+#include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
@@ -264,7 +264,7 @@ bool ElectronBrowserMainParts::SetExitCode(int code) {
   if (!exit_code_)
     return false;
 
-  content::BrowserMainLoop::GetInstance()->SetResultCode(code);
+  content::BrowserMainRunner::SetOverrideResultCode(code);
   *exit_code_ = code;
   return true;
 }
