@@ -15,6 +15,10 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
 namespace gin_helper {
 class ErrorThrower;
 }  // namespace gin_helper
@@ -59,7 +63,7 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
   void Close();
 
  private:
-  void PostMessage(v8::Local<v8::Value> message_value);
+  void PostMessage(gin::Arguments* args);
   void Start();
   void Pause();
 
