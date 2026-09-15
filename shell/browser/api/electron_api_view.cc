@@ -532,6 +532,13 @@ void View::SetBackgroundBlur(int blur_radius) {
   layer->SetBackgroundBlur(blur_radius);
 }
 
+void View::SetInteractive(bool interactive) {
+  interactive_ = interactive;
+  if (!view_)
+    return;
+  view_->SetCanProcessEventsWithinSubtree(interactive);
+}
+
 void View::SetVisible(bool visible) {
   if (!view_)
     return;
@@ -600,6 +607,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setBackgroundBlur", &View::SetBackgroundBlur)
+      .SetMethod("setInteractive", &View::SetInteractive)
+      .SetMethod("getInteractive", &View::GetInteractive)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible)
       .SetMethod("getVisible", &View::GetVisible);
