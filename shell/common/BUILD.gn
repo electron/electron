@@ -48,9 +48,6 @@ mojom("mojo") {
 }
 
 mojom("plugin") {
-  # We don't want Blink variants of these bindings to be generated.
-  disable_variants = true
-
   sources = [ "plugin.mojom" ]
 
   public_deps = [
@@ -60,9 +57,6 @@ mojom("plugin") {
 }
 
 mojom("web_contents_utility") {
-  # We don't want Blink variants of these bindings to be generated.
-  disable_variants = true
-
   sources = [ "web_contents_utility.mojom" ]
 
   public_deps = [
