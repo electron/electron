@@ -1974,6 +1974,39 @@ describe('net module', () => {
           expect(r.status).to.equal(200);
           await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
         });
+
+        test('can handle non-ASCII characters in response headers', async () => {
+          const filename = 'zażółć.txt';
+          const headerValue = `attachment; filename="${filename}"`;
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.setHeader('content-disposition', Buffer.from(headerValue, 'utf-8').toString('latin1'));
+            response.end('ok');
+          });
+          const resp = await net.fetch(serverUrl);
+          expect(resp.ok).to.be.true();
+          const header = resp.headers.get('content-disposition');
+          expect(header).to.be.a('string');
+          const decoded = Buffer.from(header!, 'latin1').toString('utf-8');
+          expect(decoded).to.equal(headerValue);
+        });
+
+        test('preserves multiple Set-Cookie headers', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.setHeader('set-cookie', [
+              'cookie1=val1; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/',
+              'cookie2=val2; Path=/'
+            ]);
+            response.end('ok');
+          });
+          const resp = await net.fetch(serverUrl);
+          expect(resp.ok).to.be.true();
+          if (typeof resp.headers.getSetCookie === 'function') {
+            const cookies = resp.headers.getSetCookie();
+            expect(cookies).to.have.lengthOf(2);
+            expect(cookies[0]).to.equal('cookie1=val1; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/');
+            expect(cookies[1]).to.equal('cookie2=val2; Path=/');
+          }
+        });
       });
     });
 
