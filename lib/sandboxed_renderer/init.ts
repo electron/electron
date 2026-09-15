@@ -1,6 +1,7 @@
 import '@electron/internal/sandboxed_renderer/pre-init';
 import {
   createPreloadProcessObject,
+  defineLazyBufferGlobal,
   executeSandboxedPreloadScripts
 } from '@electron/internal/sandboxed_renderer/preload';
 
@@ -10,6 +11,7 @@ import { setImmediate, clearImmediate } from 'timers';
 declare const binding: {
   process: NodeJS.Process;
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
+  isolatedWorld: boolean;
   // Pushed by the browser via mojom.ElectronFrameStartup, ordered ahead of
   // the CommitNavigation that triggered DidCreateScriptContext — always
   // present for documents that reach this bundle.
@@ -61,20 +63,29 @@ Object.assign(process, processProps);
 // Common renderer initialization
 require('@electron/internal/renderer/common-init');
 
+const exposeGlobals: Record<string, unknown> = {
+  // FIXME(samuelmaddock): workaround webpack bug replacing this with just
+  // `__webpack_require__.g,` which causes script error
+  global: globalThis,
+  setImmediate,
+  clearImmediate
+};
+if (binding.isolatedWorld) {
+  // The isolated world's global is private to preloads, so `Buffer` can live
+  // there as a lazy property instead of being built up front for every frame.
+  defineLazyBufferGlobal(globalThis);
+} else {
+  // Sharing the page's global: keep `Buffer` a preload-scoped parameter.
+  exposeGlobals.Buffer = require('buffer').Buffer;
+}
+
 executeSandboxedPreloadScripts(
   {
     loadedModules,
     loadableModules,
     process: preloadProcess,
     createPreloadScript: binding.createPreloadScript,
-    exposeGlobals: {
-      Buffer,
-      // FIXME(samuelmaddock): workaround webpack bug replacing this with just
-      // `__webpack_require__.g,` which causes script error
-      global: globalThis,
-      setImmediate,
-      clearImmediate
-    }
+    exposeGlobals
   },
   preloadScripts
 );
