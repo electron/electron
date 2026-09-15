@@ -325,6 +325,11 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
+    _linkedBinding(name: 'electron_renderer_context_bridge'): {
+      executeInWorld(worldId: number, script: { func: Function; args?: any[] }): any;
+      exposeAPIInWorld(worldId: number, key: string, api: any): void;
+      contextBridge: Electron.ContextBridge;
+    };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
