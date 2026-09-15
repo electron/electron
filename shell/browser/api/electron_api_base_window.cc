@@ -141,6 +141,15 @@ BaseWindow::BaseWindow(gin::Arguments* args,
   window()->InitFromOptions(options);
 }
 
+void BaseWindow::InitWithArgs(gin::Arguments* args) {
+  gin_helper::TrackableObject<BaseWindow>::InitWithArgs(args);
+#if !BUILDFLAG(IS_MAC)
+  // The application menu is each window's menu bar until it sets its own.
+  if (Menu* menu = Menu::application_menu())
+    SetMenuNatively(menu);
+#endif
+}
+
 BaseWindow::~BaseWindow() {
   CloseImmediately();
 
