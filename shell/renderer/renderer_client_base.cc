@@ -38,6 +38,7 @@
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
 #include "shell/renderer/oom_stack_trace.h"
+#include "shell/renderer/security_warnings.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -348,6 +349,7 @@ void RendererClientBase::RenderFrameCreated(
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
   new ElectronApiServiceImpl(render_frame, this);
+  MaybeAddSecurityWarnings(render_frame);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->dispatcher();
