@@ -6,9 +6,9 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import path = require('node:path');
 
-import { startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
 
-describe('fuses', () => {
+ifdescribe(isTestingBindingAvailable())('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');
