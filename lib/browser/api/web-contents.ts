@@ -18,7 +18,6 @@ import * as url from 'url';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
-// eslint-disable-next-line no-unused-expressions
 session;
 
 // Stock page sizes

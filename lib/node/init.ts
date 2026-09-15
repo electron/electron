@@ -1,11 +1,9 @@
-/* eslint-disable import/newline-after-import */
-/* eslint-disable import/order */
 // Initialize ASAR support in fs module.
 import { wrapFsWithAsar } from './asar-fs-wrapper';
 wrapFsWithAsar(require('fs'));
 
 // Hook child_process.fork.
-import cp = require('child_process'); // eslint-disable-line import/first
+import cp = require('child_process'); // oxlint-disable-line import/first
 const originalFork = cp.fork;
 cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
   // Parse optional args.
@@ -79,7 +77,7 @@ if (process.platform === 'linux') {
 }
 
 // Prevent Node from adding paths outside this app to search paths.
-import path = require('path'); // eslint-disable-line import/first
+import path = require('path'); // oxlint-disable-line import/first
 const Module = require('module') as NodeJS.ModuleInternal;
 const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep;
 const originalNodeModulePaths = Module._nodeModulePaths;

@@ -21,6 +21,7 @@
     "correctness": "off"
   },
   "options": {
+    "reportUnusedDisableDirectives": "error",
     "typeAware": false
   },
   "env": {

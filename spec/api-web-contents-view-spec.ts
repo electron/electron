@@ -17,12 +17,12 @@ describe('WebContentsView', () => {
   });
 
   it('can be instantiated with no arguments', () => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView();
   });
 
   it('can be instantiated with no webPreferences', () => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView({});
   });
 
@@ -164,7 +164,7 @@ describe('WebContentsView', () => {
   }
 
   it("doesn't crash when GCed during allocation", (done) => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView();
     setTimeout(() => {
       // NB. the crash we're testing for is the lack of a current `v8::Context`
