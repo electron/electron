@@ -426,8 +426,20 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   }
 }
 
+mojom::ElectronFrame* WebFrameMain::GetFrameApi() {
+  if (!HasRenderFrame() || !render_frame_host()->IsRenderFrameLive())
+    return nullptr;
+  if (!frame_api_ || !frame_api_.is_connected()) {
+    frame_api_.reset();
+    render_frame_host()->GetRemoteAssociatedInterfaces()->GetInterface(
+        &frame_api_);
+  }
+  return frame_api_.get();
+}
+
 void WebFrameMain::TeardownMojoConnection() {
   renderer_api_.reset();
+  frame_api_.reset();
   pending_receiver_.reset();
 }
 

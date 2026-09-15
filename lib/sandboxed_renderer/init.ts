@@ -9,7 +9,7 @@ import type { EventEmitter } from 'events';
 declare const binding: {
   process: NodeJS.Process;
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
-  // Pushed by the browser via mojom.ElectronFrameStartup, ordered ahead of
+  // Pushed by the browser via mojom.ElectronFrame, ordered ahead of
   // the CommitNavigation that triggered DidCreateScriptContext — always
   // present for documents that reach this bundle.
   startupData: {
