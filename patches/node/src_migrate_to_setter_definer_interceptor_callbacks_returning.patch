@@ -12,10 +12,10 @@ accessor setter/definer callbacks to PropertyCallbackInfo<Boolean> and
 register the non-deprecated callback types as external references.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de5093dd52 100644
+index 40d1cdc169603e7617639eb38b7767677aca08ce..57eed79a77d49fd4c118313bbd352a029689940c 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -577,7 +577,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
+@@ -566,7 +566,7 @@ Intercepted ContextifyContext::PropertyGetterCallback(
  Intercepted ContextifyContext::PropertySetterCallback(
      Local<Name> property,
      Local<Value> value,
@@ -24,7 +24,7 @@ index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -700,7 +700,7 @@ Intercepted ContextifyContext::PropertyDescriptorCallback(
+@@ -689,7 +689,7 @@ Intercepted ContextifyContext::PropertyDescriptorCallback(
  Intercepted ContextifyContext::PropertyDefinerCallback(
      Local<Name> property,
      const PropertyDescriptor& desc,
@@ -33,7 +33,7 @@ index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -909,7 +909,7 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
+@@ -898,7 +898,7 @@ Intercepted ContextifyContext::IndexedPropertyGetterCallback(
  Intercepted ContextifyContext::IndexedPropertySetterCallback(
      uint32_t index,
      Local<Value> value,
@@ -42,7 +42,7 @@ index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de
    ContextifyContext* ctx = ContextifyContext::Get(args);
  
    // Still initializing
-@@ -938,7 +938,7 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
+@@ -927,7 +927,7 @@ Intercepted ContextifyContext::IndexedPropertyDescriptorCallback(
  Intercepted ContextifyContext::IndexedPropertyDefinerCallback(
      uint32_t index,
      const PropertyDescriptor& desc,
@@ -52,10 +52,10 @@ index af7cf14a6b153626fb9c7ba8647f68c46975f642..900bf7a3d67245dbbdbe9198671bc4de
  
    // Still initializing
 diff --git a/src/node_contextify.h b/src/node_contextify.h
-index 4d6788b9705911e33d74f9d106374d7a5f58142b..0fe57da1b9c73c54d9f48a6e0108a0496a44fbf5 100644
+index c7c39ae8c0632695d8b22023b8e6b1d1cb2e6589..be3034da39fffe541394137e5e8107cf63b64743 100644
 --- a/src/node_contextify.h
 +++ b/src/node_contextify.h
-@@ -161,14 +161,14 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+@@ -153,14 +153,14 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
    static v8::Intercepted PropertySetterCallback(
        v8::Local<v8::Name> property,
        v8::Local<v8::Value> value,
@@ -72,7 +72,7 @@ index 4d6788b9705911e33d74f9d106374d7a5f58142b..0fe57da1b9c73c54d9f48a6e0108a049
    static v8::Intercepted PropertyDeleterCallback(
        v8::Local<v8::Name> property,
        const v8::PropertyCallbackInfo<v8::Boolean>& args);
-@@ -181,13 +181,13 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+@@ -173,13 +173,13 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
    static v8::Intercepted IndexedPropertySetterCallback(
        uint32_t index,
        v8::Local<v8::Value> value,

@@ -8,9 +8,9 @@
 #include <windows.system.userprofile.h>
 #include <wrl.h>
 
+#include "base/i18n/win/preferred_languages.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/core_winrt_util.h"
-#include "base/win/i18n.h"
 
 namespace electron {
 
@@ -50,18 +50,21 @@ bool GetPreferredLanguagesUsingGlobalization(
 }
 
 std::vector<std::string> GetPreferredLanguages() {
+  std::vector<std::string> languages;
   std::vector<std::wstring> languages16;
 
   // Attempt to use API available on Windows 10 or later, which
   // returns the full list of language preferences.
-  if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
-    base::win::i18n::GetThreadPreferredUILanguageList(&languages16);
+  if (GetPreferredLanguagesUsingGlobalization(&languages16)) {
+    for (const auto& language : languages16) {
+      languages.push_back(base::SysWideToUTF8(language));
+    }
+  } else {
+    for (const auto& tag : base::i18n::GetThreadPreferredUILanguageList()) {
+      languages.emplace_back(tag.tag_string());
+    }
   }
 
-  std::vector<std::string> languages;
-  for (const auto& language : languages16) {
-    languages.push_back(base::SysWideToUTF8(language));
-  }
   return languages;
 }
 
