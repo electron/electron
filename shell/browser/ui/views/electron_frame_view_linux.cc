@@ -275,8 +275,7 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
   // Apply custom WCO overlay colors if set.
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color =
-      window_->overlay_symbol_color().value_or(SkColor());
+  const std::optional<SkColor> symbol_color = window_->overlay_symbol_color();
   const std::optional<SkColor> background_color =
       window_->overlay_button_color();
   // Frame color is used for blending, force it to be opaque
@@ -292,8 +291,11 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
     auto* frame_caption_button =
         static_cast<views::FrameCaptionButton*>(button);
     frame_caption_button->SetPaintAsActive(active);
-    frame_caption_button->SetButtonColor(symbol_color);
+    // The icon color comes from whichever setter ran last, so set the frame
+    // color first and let an explicit symbol color override it.
     frame_caption_button->SetBackgroundColor(frame_color);
+    if (symbol_color.has_value())
+      frame_caption_button->SetIconColor(*symbol_color);
   }
 }
 
