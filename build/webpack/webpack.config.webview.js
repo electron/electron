@@ -1,6 +1,6 @@
 module.exports = require('./webpack.config.base')({
-  target: 'preload_realm',
+  target: 'webview',
   alwaysHasNode: false,
-  wrapInitWithProfilingTimeout: true,
+  loadElectronFromAlternateTarget: 'renderer',
   wrapInitWithTryCatch: true
 });
