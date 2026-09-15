@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 #include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
@@ -234,8 +236,11 @@ class App final : public gin::Wrappable<App>,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(gin_helper::ErrorThrower thrower);
-  void SetUserAgentFallback(const std::string& user_agent);
+  void SetUserAgentFallback(gin::Arguments* args);
   std::string GetUserAgentFallback();
+  void SetUserAgentMetadataFallback(
+      std::optional<blink::UserAgentMetadata> ua_meta);
+  v8::Local<v8::Value> GetUserAgentMetadataFallback(v8::Isolate* isolate);
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
   v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
 
