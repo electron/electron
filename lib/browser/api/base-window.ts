@@ -7,17 +7,6 @@ const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as
 
 Object.setPrototypeOf(BaseWindow.prototype, EventEmitter.prototype);
 
-BaseWindow.prototype._init = function (this: TLWT) {
-  // Avoid recursive require.
-  const { app } = require('electron');
-
-  // Simulate the application menu on platforms other than macOS.
-  if (process.platform !== 'darwin') {
-    const menu = app.applicationMenu;
-    if (menu) this.setMenu(menu);
-  }
-};
-
 BaseWindow.prototype.setTouchBar = function (touchBar) {
   (TouchBar as any)._setOnWindow(touchBar, this);
 };

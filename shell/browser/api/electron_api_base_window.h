@@ -77,6 +77,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   BaseWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BaseWindow() override;
 
+  // Wraps |this| for JavaScript (running any JS _init) and gives the window
+  // the application menu where that is per-window.
+  void InitWithArgs(gin::Arguments* args);
+
   // TrackableObject:
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
 
