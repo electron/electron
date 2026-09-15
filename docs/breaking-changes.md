@@ -51,6 +51,26 @@ when it is a top-level frame or is hosted inside the DevTools front-end (a
 `devtools_page` or panel); an extension frame embedded in an ordinary page is
 treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
+### Deprecated: arguments in `did-navigate` and `did-frame-navigate` events on `WebContents`
+
+The `did-navigate` and `did-frame-navigate` events on `WebContents` have been updated to
+provide details on the `Event` argument, including the navigated `frame` and the
+`responseHeaders` of the navigation. The remaining positional arguments are deprecated.
+
+```js
+// Deprecated
+webContents.on('did-navigate', (event, url, httpResponseCode, httpStatusText) => {})
+webContents.on('did-frame-navigate', (event, url, httpResponseCode, httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {})
+
+// Replace with:
+webContents.on('did-navigate', ({ url, httpResponseCode, httpStatusText, frame, responseHeaders }) => {})
+webContents.on('did-frame-navigate', ({ url, httpResponseCode, httpStatusText, isMainFrame, frame, responseHeaders }) => {})
+```
+
+The `frameProcessId` and `frameRoutingId` arguments of `did-frame-navigate` are replaced by the
+`frame` property, a [`WebFrameMain`](api/web-frame-main.md) which exposes the same values as
+`frame.processId` and `frame.routingId`.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: `contentTracing.enableHeapProfiling()`
