@@ -151,6 +151,10 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "nv16";
     case media::PIXEL_FORMAT_P010LE:
       return "p010le";
+    case media::PIXEL_FORMAT_XRGB:
+      return "xrgb";
+    case media::PIXEL_FORMAT_XBGR:
+      return "xbgr";
     default:
       NOTREACHED();
   }
@@ -645,6 +649,10 @@ struct Converter<ImportSharedTextureInfo> {
         out->pixel_format = media::PIXEL_FORMAT_NV16;
       else if (pixel_format_str == "p010le")
         out->pixel_format = media::PIXEL_FORMAT_P010LE;
+      else if (pixel_format_str == "xrgb")
+        out->pixel_format = media::PIXEL_FORMAT_XRGB;
+      else if (pixel_format_str == "xbgr")
+        out->pixel_format = media::PIXEL_FORMAT_XBGR;
       else
         return false;
     }
