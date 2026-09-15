@@ -65,6 +65,32 @@ describe('ipc module', () => {
       await done;
     });
 
+    it('receives a response from a handler that returns a lazy thenable', async () => {
+      // Promise subclasses such as this one only start their work when
+      // then() is called, so the reply must go through it.
+      class Lazy extends Promise<number> {
+        static get [Symbol.species]() {
+          return Promise;
+        }
+
+        started = false;
+        then(onFulfilled?: any, onRejected?: any): any {
+          this.started = true;
+          return Promise.resolve(3).then(onFulfilled, onRejected);
+        }
+      }
+      let returned: Lazy | undefined;
+      ipcMain.handleOnce('test', () => {
+        returned = new Lazy(() => {});
+        return returned;
+      });
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg).to.deep.equal({ result: 3 });
+      expect(returned?.started).to.equal(true);
+    });
+
     it('receives an error from a synchronous handler', async () => {
       ipcMain.handleOnce('test', () => {
         throw new Error('some error');
@@ -77,6 +103,14 @@ describe('ipc module', () => {
       );
       await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       await done;
+    });
+
+    it('receives an error when the handler result cannot be cloned', async () => {
+      ipcMain.handleOnce('test', () => ({ notCloneable() {} }));
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg.error).to.match(/could not be cloned/);
     });
 
     it('receives an error from an asynchronous handler', async () => {
@@ -92,6 +126,29 @@ describe('ipc module', () => {
       );
       await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       await done;
+    });
+
+    it('does not report an unhandled rejection for a handler that rejects', async () => {
+      let unhandled = false;
+      const onUnhandled = () => {
+        unhandled = true;
+      };
+      process.on('unhandledRejection', onUnhandled);
+      try {
+        // Rejected before it is returned: an async function that throws
+        // before its first await.
+        ipcMain.handleOnce('test', async () => {
+          throw new Error('some error');
+        });
+        const result = once(ipcMain, 'result');
+        await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+        const [, arg] = await result;
+        expect(arg.error).to.match(/some error/);
+        await new Promise(setImmediate);
+        expect(unhandled).to.equal(false);
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
     });
 
     it('throws an error if no handler is registered', async () => {

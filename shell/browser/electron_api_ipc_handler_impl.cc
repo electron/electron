@@ -10,11 +10,15 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "shell/browser/api/electron_api_ipc_dispatch.h"
+#include "shell/browser/api/electron_api_ipc_event.h"
 #include "shell/browser/api/electron_api_session.h"
-#include "shell/common/gin_converters/content_converter.h"
-#include "shell/common/gin_converters/frame_converter.h"
-#include "shell/common/gin_helper/event.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/api/message_port.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
+#include "shell/common/gin_helper/reply_channel.h"
+#include "shell/common/v8_util.h"
 
 namespace electron {
 ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
@@ -51,9 +55,12 @@ void ElectronApiIPCHandlerImpl::Message(bool internal,
     auto* event = MakeIPCEvent(isolate, session->Get(), internal);
     if (!event)
       return;
-    v8::Local<v8::Object> event_object =
-        event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->Message(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::Message(isolate, api::WebContents::From(web_contents()),
+                          event, internal, channel,
+                          gin::ConvertToV8(isolate, arguments),
+                          /*sync=*/false);
   }
 }
 void ElectronApiIPCHandlerImpl::Invoke(bool internal,
@@ -68,9 +75,11 @@ void ElectronApiIPCHandlerImpl::Invoke(bool internal,
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
     if (!event)
       return;
-    v8::Local<v8::Object> event_object =
-        event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->Invoke(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::Invoke(isolate, api::WebContents::From(web_contents()), event,
+                         internal, channel,
+                         gin::ConvertToV8(isolate, arguments));
   }
 }
 
@@ -84,10 +93,16 @@ void ElectronApiIPCHandlerImpl::ReceivePostMessage(
     auto* event = MakeIPCEvent(isolate, session->Get(), false);
     if (!event)
       return;
-    v8::Local<v8::Object> event_object =
-        event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->ReceivePostMessage(event_object, channel,
-                                       std::move(message));
+    if (!ipc_dispatch::IsReady())
+      return;
+    v8::LocalVector<v8::Value> ports(isolate);
+    if (!MessagePort::EntanglePorts(isolate, std::move(message.ports),
+                                    &ports)) {
+      return;
+    }
+    ipc_dispatch::PostMessage(
+        isolate, api::WebContents::From(web_contents()), event, channel,
+        DeserializeV8Value(isolate, message), std::move(ports));
   }
 }
 
@@ -103,9 +118,12 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
     if (!event)
       return;
-    v8::Local<v8::Object> event_object =
-        event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->MessageSync(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::Message(isolate, api::WebContents::From(web_contents()),
+                          event, internal, channel,
+                          gin::ConvertToV8(isolate, arguments),
+                          /*sync=*/true);
   }
 }
 
@@ -119,9 +137,11 @@ void ElectronApiIPCHandlerImpl::MessageHost(
     auto* event = MakeIPCEvent(isolate, session->Get(), false);
     if (!event)
       return;
-    v8::Local<v8::Object> event_object =
-        event->GetWrapper(isolate).ToLocalChecked();
-    session->Get()->MessageHost(event_object, channel, std::move(arguments));
+    if (!ipc_dispatch::IsReady())
+      return;
+    ipc_dispatch::MessageHost(isolate, api::WebContents::From(web_contents()),
+                              event, channel,
+                              gin::ConvertToV8(isolate, arguments));
   }
 }
 
@@ -135,7 +155,7 @@ gin::WeakCell<api::Session>* ElectronApiIPCHandlerImpl::GetSession() {
              : nullptr;
 }
 
-gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
+api::IpcMainEvent* ElectronApiIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
     bool internal,
@@ -163,26 +183,8 @@ gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
     return {};
   }
 
-  content::RenderFrameHost* frame = GetRenderFrameHost();
-  gin_helper::internal::Event* event =
-      gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object =
-      event->GetWrapper(isolate).ToLocalChecked();
-  gin_helper::Dictionary dict(isolate, event_object);
-  dict.Set("type", "frame");
-  dict.Set("sender", web_contents());
-  if (internal)
-    dict.SetHidden("internal", internal);
-  if (callback)
-    dict.Set("_replyChannel", gin_helper::internal::ReplyChannel::Create(
-                                  isolate, std::move(callback)));
-  if (frame) {
-    dict.SetGetter("senderFrame", frame);
-    dict.Set("frameId", frame->GetRoutingID());
-    dict.Set("processId", frame->GetProcess()->GetID().GetUnsafeValue());
-    dict.Set("frameTreeNodeId", frame->GetFrameTreeNodeId());
-  }
-  return event;
+  return api::IpcMainEvent::Create(isolate, wrapper, GetRenderFrameHost(),
+                                   std::move(callback));
 }
 
 // static
