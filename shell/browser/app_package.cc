@@ -109,11 +109,14 @@ std::optional<AppPackage> LoadAppPackage() {
                                 &json)) {
       continue;
     }
+    // As Node reads it: BOM dropped, bad UTF-8 replaced rather than fatal.
+    if (!base::IsStringUTF8AllowingNoncharacters(json))
+      json = base::UTF16ToUTF8(base::UTF8ToUTF16(json));
     std::string_view json_view(json);
     if (json_view.starts_with("\xEF\xBB\xBF"))
       json_view.remove_prefix(3);
-    std::optional<base::Value> manifest =
-        base::JSONReader::Read(json_view, base::JSON_PARSE_RFC);
+    std::optional<base::Value> manifest = base::JSONReader::Read(
+        json_view, base::JSON_REPLACE_INVALID_CHARACTERS);
     if (!manifest || !manifest->is_dict())
       continue;
     const base::DictValue& dict = manifest->GetDict();
