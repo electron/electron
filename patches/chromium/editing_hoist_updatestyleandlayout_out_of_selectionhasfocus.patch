@@ -215,10 +215,10 @@ index cdeab8c10de1ed99139df5e4e35d861ba68a60bd..36d4d76d40342a125f00a61f87b92c9b
    }
    auto visible_selection =
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 52b223b26ce4692f12725aaf75a048acdee1b961..871d037f17453366be526c2a9bc5e2d4a92ed90f 100644
+index 1165042ad0e918678409c42c1825a3ff4bf0abba..a9ea376da8d001c1ee20eac8bd2d27ba855d4eba 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -5558,6 +5558,12 @@
+@@ -5584,6 +5584,12 @@
        name: "SelectionHandleWithBottomClipped",
        status: "stable",
      },
