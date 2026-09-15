@@ -70,6 +70,10 @@ class ElectronApiServiceImpl
       double min_level,
       double max_level,
       SetVisualZoomLevelLimitsCallback callback) override;
+  void ReceiveSharedTexture(electron::SerializedValue transfer,
+                            const std::string& texture_id,
+                            electron::SerializedValue args,
+                            ReceiveSharedTextureCallback callback) override;
 
   // The data pushed by the browser ahead of CommitNavigation, or null if it
   // has not arrived (the initial empty document of a fresh RenderFrame, or a
