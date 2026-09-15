@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_LOAD_URL_PROMISES_H_
 #define ELECTRON_SHELL_BROWSER_API_LOAD_URL_PROMISES_H_
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -18,42 +17,41 @@
 namespace electron {
 
 // The promises webContents.loadURL()/loadFile() and navigationHistory.restore()
-// return. Each is settled from the navigation events the WebContents emits
-// after it was made: resolved when the main frame finishes loading; rejected
-// with {errno, code, url} when the main frame fails to load, when another
+// return. Each is settled from the WebContents' navigation events after it was
+// made: resolved when the main frame finishes loading; rejected with
+// {errno, code, url} when the main frame fails to load, when another
 // (non-same-document) main-frame navigation starts first (ERR_ABORTED), or
 // when loading stops or the WebContents is destroyed with neither having
 // happened (ERR_FAILED). The rejection is marked handled, so an app that
 // ignores the promise gets no unhandled-rejection warning.
+//
+// WebContents notifies this right before emitting each event, so promise
+// reactions are queued before the event's listeners run and run when the emit
+// drains microtasks, i.e. straight after the listeners, and a listener that
+// navigates again affects only promises still pending.
 class LoadURLPromises {
  public:
   LoadURLPromises();
   ~LoadURLPromises();
 
-  // Events must not affect promises made while that very event was being
-  // emitted (e.g. by a listener calling loadURL() again). Take a Mark before
-  // emitting and pass it to the notification afterwards.
-  using Mark = uint64_t;
-  Mark mark() const { return next_id_; }
-
   // A new pending promise for a load of |url| that is about to start.
   v8::Local<v8::Promise> Add(v8::Isolate* isolate, std::string_view url);
 
-  // The WebContents emitted the corresponding event. Each may settle promises,
-  // which runs microtasks and so arbitrary JavaScript.
-  void DidFinishLoad(Mark mark);
-  void DidFailLoad(Mark mark,
-                   int error_code,
+  bool empty() const { return pending_.empty(); }
+
+  // The WebContents is about to emit the corresponding event. Each may settle
+  // promises (queuing their reactions as microtasks).
+  void DidFinishLoad();
+  void DidFailLoad(int error_code,
                    std::string_view error_description,
                    std::string_view validated_url,
                    bool is_main_frame);
-  void DidStartNavigation(Mark mark,
-                          std::string_view url,
+  void DidStartNavigation(std::string_view url,
                           bool is_same_document,
                           bool is_main_frame);
-  void DidNavigateInPage(Mark mark);
+  void DidNavigateInPage();
   // Also 'destroyed'.
-  void DidStopLoading(Mark mark);
+  void DidStopLoading();
 
  private:
   struct LoadError {
@@ -62,9 +60,8 @@ class LoadURLPromises {
     std::string url;
   };
   struct Pending {
-    Pending(uint64_t id, v8::Isolate* isolate, std::string_view url);
+    Pending(v8::Isolate* isolate, std::string_view url);
     ~Pending();
-    uint64_t id;
     gin_helper::Promise<void> promise;
     std::string url;
     std::optional<LoadError> error;
@@ -80,11 +77,9 @@ class LoadURLPromises {
   PendingList::iterator Take(PendingList::iterator it,
                              bool resolve,
                              PendingList* settle);
-  // Resolves/rejects everything in |settle|. Runs JavaScript; |this| may be
-  // gone afterwards.
+  // Resolves/rejects everything in |settle|.
   static void Settle(PendingList settle);
 
-  uint64_t next_id_ = 0;
   PendingList pending_;
 };
 
