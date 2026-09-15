@@ -15,6 +15,7 @@
 #include "content/public/browser/global_routing_id.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "printing/buildflags/buildflags.h"
@@ -102,6 +103,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  // Null when there is no live render frame. Ordered with navigation.
+  mojom::ElectronFrame* GetFrameApi();
   void MaybeSetupMojoConnection();
   void TeardownMojoConnection();
   void OnRendererConnectionError();
@@ -163,6 +166,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
       "process.")
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of the renderer remote is not needed in the browser "
+      "process.")
+  mojo::AssociatedRemote<mojom::ElectronFrame> frame_api_;
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;
