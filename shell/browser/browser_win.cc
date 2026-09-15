@@ -440,17 +440,17 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   base::win::RegKey classesKey;
   base::win::RegKey commandKey;
 
-  if (FAILED(classesKey.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+  if (classesKey.Open(root, keyPath.c_str(), KEY_ALL_ACCESS) != ERROR_SUCCESS)
     // Classes key doesn't exist, that's concerning, but I guess
     // we're not the default handler
     return true;
 
-  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+  if (commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS) != ERROR_SUCCESS)
     // Key doesn't even exist, we can confirm that it is not set
     return true;
 
   std::wstring keyVal;
-  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+  if (commandKey.ReadValue(L"", &keyVal) != ERROR_SUCCESS)
     // Default value not set, we can confirm that it is not set
     return true;
 
@@ -460,15 +460,15 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   if (keyVal == exe) {
     // Let's kill the key
-    if (FAILED(classesKey.DeleteKey(shellPath.c_str())))
+    if (classesKey.DeleteKey(shellPath.c_str()) != ERROR_SUCCESS)
       return false;
 
     // Let's clean up after ourselves
     base::win::RegKey protocolKey;
     std::wstring protocolPath = keyPath + wprotocol;
 
-    if (SUCCEEDED(
-            protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
+    if (protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS) ==
+        ERROR_SUCCESS) {
       protocolKey.DeleteValue(L"URL Protocol");
 
       // Overwrite the default value to be empty, we can't delete it right away
@@ -521,12 +521,12 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
-  if (FAILED(key.WriteValue(L"URL Protocol", L"")) ||
-      FAILED(key.WriteValue(L"", urlDecl.c_str())))
+  if (key.WriteValue(L"URL Protocol", L"") != ERROR_SUCCESS ||
+      key.WriteValue(L"", urlDecl.c_str()) != ERROR_SUCCESS)
     return false;
 
   base::win::RegKey commandKey(root, cmdPath.c_str(), KEY_ALL_ACCESS);
-  if (FAILED(commandKey.WriteValue(L"", exe.c_str())))
+  if (commandKey.WriteValue(L"", exe.c_str()) != ERROR_SUCCESS)
     return false;
 
   return true;
@@ -550,16 +550,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
-  if (FAILED(key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS)))
+  if (key.Open(root, keyPath.c_str(), KEY_ALL_ACCESS) != ERROR_SUCCESS)
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
-  if (FAILED(commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS)))
+  if (commandKey.Open(root, cmdPath.c_str(), KEY_ALL_ACCESS) != ERROR_SUCCESS)
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
   std::wstring keyVal;
-  if (FAILED(commandKey.ReadValue(L"", &keyVal)))
+  if (commandKey.ReadValue(L"", &keyVal) != ERROR_SUCCESS)
     // Default value not set, we can confirm that it is not set
     return false;
 
@@ -722,7 +722,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
   std::wstring keyVal;
 
   // keep old openAtLogin behaviour
-  if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
+  if (key.ReadValue(GetAppUserModelID(), &keyVal) == ERROR_SUCCESS) {
     std::wstring exe = base::UTF16ToWide(options.path);
     if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
