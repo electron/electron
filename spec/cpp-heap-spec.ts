@@ -806,7 +806,7 @@ describe('cpp heap', () => {
 
         let { port1, port2 } = new MessageChannelMain();
         port1.start();
-        const weakRef = new WeakRef((port1 as any)._internalPort);
+        const weakRef = new WeakRef(port1);
         port1.close();
         port1 = null as any;
 
