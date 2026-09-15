@@ -157,7 +157,7 @@ index 5b2edf92a47be38a327678db3a6968eedb971e63..a2c82fed08562d9fffeb4f0da5986d53
      LinkerDriver(sys.argv).run()
      sys.exit(0)
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index ac7a5b84e93fd0bdf9eed224b2dd391621259636..78c1d0fcfd80b137d770a0064c4ffdf241f7a950 100644
+index 482f7c9e9030e86a35ba18cd8dc33070d9528723..3dba2acb87698c631022c30b4acb92715ff02e9e 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
 @@ -42,7 +42,8 @@ if (enable_resource_allowlist_generation) {

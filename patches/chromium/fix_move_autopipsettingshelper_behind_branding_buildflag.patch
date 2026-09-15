@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63c060a807 100644
+index b02065efac3316f6493776df979752dd9d749a14..5838047b94e7638cbe29aa3a2d9ca1234baa9cb1 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,10 +20,10 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/ui/navigator/browser_navigator_params.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
-@@ -34,11 +35,15 @@
+@@ -28,11 +29,15 @@
+ #include "base/metrics/histogram_functions.h"
+ #include "base/numerics/checked_math.h"
  #include "base/task/sequenced_task_runner.h"
- // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
- // Android when supporting document PiP.
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
@@ -33,10 +33,10 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/ui/views/picture_in_picture/document_pip_host.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "components/webapps/isolated_web_apps/scheme.h"
  #include "media/base/media_switches.h"
- #include "net/base/url_util.h"
  #include "ui/views/view.h"
-@@ -76,6 +81,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -70,6 +75,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -44,7 +44,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -92,6 +98,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -86,6 +92,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -52,7 +52,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -225,7 +232,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -219,7 +226,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -61,7 +61,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -588,7 +595,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -582,7 +589,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -70,7 +70,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -649,14 +656,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+@@ -643,14 +650,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
  void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
  
@@ -87,7 +87,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -699,6 +706,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -693,6 +700,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -747,6 +755,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -741,6 +749,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
    }
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -757,6 +766,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -751,6 +760,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index e3122d4555bbb492b3a7f1fd4fd757fdadd88d9e..69c06a04c20b794519c4b588deacba63
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -795,6 +805,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -789,6 +799,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
