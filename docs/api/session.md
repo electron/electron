@@ -771,6 +771,94 @@ app.whenReady().then(() => {
 })
 ```
 
+#### Event: 'webauthn-hybrid-request'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53733
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `requestType` string - `'create'` for `navigator.credentials.create()` or
+    `'get'` for `navigator.credentials.get()`.
+  * `qrCode` string - The `FIDO:/` URL to encode in a QR code. Scanning it with a
+    phone starts the hybrid (cross-device) passkey flow.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+
+Emitted at the start of every WebAuthn request that can use hybrid transport,
+the FIDO cross-device flow where a phone holding the passkey scans a QR code
+and proves proximity over Bluetooth Low Energy. Electron does not draw any UI
+for this flow. The app renders `details.qrCode` as a QR code and shows it to
+the user. Once the phone connects, the ceremony completes on the phone and the
+page's `navigator.credentials` promise resolves as usual.
+
+Hybrid transport is only enabled for a request when at least one listener is
+registered for this event. Without a listener the request behaves exactly as
+before and is served by the remaining authenticators (USB security keys and
+platform authenticators). Every request receives a fresh single-use QR code.
+
+Listen for [`webauthn-hybrid-request-completed`](#event-webauthn-hybrid-request-completed)
+to know when to dismiss the QR code.
+
+On macOS the app's `Info.plist` must include `NSBluetoothAlwaysUsageDescription`
+so the system Bluetooth permission prompt can be shown the first time the
+phone is discovered. The app must also be launched from Finder or with the app
+bundle as the responsible process; when launched from a terminal, macOS
+attributes Bluetooth use to the terminal and Chromium disables hybrid transport.
+
+This event is not emitted on Windows 11 and later, where the operating system
+implements hybrid transport and shows its own QR code, or on systems without
+Bluetooth Low Energy support.
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow()
+
+win.webContents.session.on('webauthn-hybrid-request', (event, details) => {
+  // Render details.qrCode with a QR code library and show it to the user,
+  // for example in a small dialog window.
+  win.webContents.send('show-passkey-qr-code', {
+    qrCode: details.qrCode,
+    relyingPartyId: details.relyingPartyId
+  })
+})
+
+win.webContents.session.on('webauthn-hybrid-request-completed', () => {
+  win.webContents.send('hide-passkey-qr-code')
+})
+```
+
+#### Event: 'webauthn-hybrid-request-completed'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53733
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+
+Emitted when a WebAuthn request that was offered hybrid transport through
+[`webauthn-hybrid-request`](#event-webauthn-hybrid-request) has finished,
+whether it succeeded, failed, timed out, or was cancelled by the page. Use it
+to dismiss the QR code. This event is not emitted for requests that had no
+`webauthn-hybrid-request` listener.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
