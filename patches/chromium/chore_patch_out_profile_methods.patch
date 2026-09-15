@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc08485ea4 100644
+index 5dd1c5c85fe0785ea05ead8e2388c76f5503b9ae..c2ca9ca4ba2380a90e4a99912cd038cdd6db9c4c 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -54,7 +54,7 @@ index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
  #include "chrome/common/url_constants.h"
-@@ -285,10 +284,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -286,10 +285,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,7 +68,7 @@ index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -506,11 +508,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -507,11 +509,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
@@ -83,7 +83,7 @@ index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index e7a09d34f33a184099dfa52738978119fa70b15e..f0f29926c1c6d5c13a510c11b9f16171147498c2 100644
+index d2185014bf3a11a4e05f32ad71953e6cd59ec5cb..d31f90a2caa78a615b19290f8091f5404d827fa1 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -25,8 +25,10 @@
@@ -108,7 +108,7 @@ index e7a09d34f33a184099dfa52738978119fa70b15e..f0f29926c1c6d5c13a510c11b9f16171
  }
  
  }  // namespace
-@@ -507,11 +512,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+@@ -504,11 +509,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
        features::kInitialWebUIWithoutSpellCheck.Get()) {
      return;
    }
