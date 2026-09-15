@@ -1486,6 +1486,28 @@ v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
   return handle_scope.Escape(fn);
 }
 
+v8::Local<v8::Function> GetNodeEventEmitterConstructor(
+    v8::Local<v8::Context> context) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Private> key =
+      v8::Private::ForApi(isolate, Intern(isolate, "electron:EventEmitter"));
+  v8::Local<v8::Object> global = context->Global();
+  v8::Local<v8::Value> existing;
+  if (global->GetPrivate(context, key).ToLocal(&existing) &&
+      existing->IsFunction()) {
+    return existing.As<v8::Function>();
+  }
+  v8::Local<v8::Function> ctor = CreateNodeEventEmitterConstructor(context);
+  global->SetPrivate(context, key, ctor).Check();
+  return ctor;
+}
+
+v8::Local<v8::Object> NewNodeEventEmitter(v8::Local<v8::Context> context) {
+  return GetNodeEventEmitterConstructor(context)
+      ->NewInstance(context, 0, nullptr)
+      .ToLocalChecked();
+}
+
 bool EmitEvent(v8::Isolate* isolate,
                v8::Local<v8::Object> emitter,
                v8::Local<v8::Value> type,

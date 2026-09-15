@@ -14,8 +14,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict{v8::Isolate::GetCurrent(), exports};
-  dict.Set("EventEmitter",
-           gin_helper::CreateNodeEventEmitterConstructor(context));
+  dict.Set("EventEmitter", gin_helper::GetNodeEventEmitterConstructor(context));
 }
 
 }  // namespace

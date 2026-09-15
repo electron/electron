@@ -34,7 +34,9 @@ Object.assign(preloadProcess, processProps);
 
 Object.assign(process, processProps);
 
-require('@electron/internal/renderer/ipc-native-setup');
+// Creates ipcRenderer up front so that messages from the browser have
+// somewhere to go before anything imports it.
+process._linkedBinding('electron_renderer_ipc');
 
 executeSandboxedPreloadScripts(
   {
