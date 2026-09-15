@@ -8,6 +8,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/node_includes.h"
 
 namespace gin {
 
@@ -43,6 +44,12 @@ bool BluetoothChooser::EmitSelectBluetoothDevice() {
   v8::Local<v8::Object> web_contents;
   if (!api_web_contents_->GetWrapper(isolate).ToLocal(&web_contents))
     return false;
+  // One callback scope over the count and the emit so that pending ticks and
+  // microtasks (which may run the chooser callback and delete |this|) run
+  // once at the end, as they did at the end of the single emit; nothing of
+  // |this| is touched after it closes.
+  node::CallbackScope callback_scope(isolate, web_contents,
+                                     node::async_context{0, 0});
   int listeners = 0;
   gin::ConvertFromV8(
       isolate,
