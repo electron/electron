@@ -928,6 +928,10 @@ class WebContents final : public ExclusiveAccessContext,
   // handler calls webContents.destroy() mid-emission.
   bool is_emitting_event_ = false;
 
+  // Set by DidFinishNavigation when content discards a navigation because
+  // its renderer died; consumed by the DidStopLoading that follows.
+  bool navigation_discarded_by_process_gone_ = false;
+
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 

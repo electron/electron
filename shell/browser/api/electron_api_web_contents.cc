@@ -64,6 +64,7 @@
 #include "content/public/browser/keyboard_event_processing_result.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_details.h"
+#include "content/public/browser/navigation_discard_reason.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_entry_restore_context.h"
 #include "content/public/browser/navigation_handle.h"
@@ -2283,6 +2284,28 @@ void WebContents::DidStopLoading() {
   if (web_preferences && web_preferences->ShouldUsePreferredSizeMode())
     web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 
+  // Loading also stops when a renderer dies mid-load. Content reports that
+  // from inside RenderFrameHostImpl::RenderProcessGone, and a navigation
+  // started by the app in response (a listener, or the rejected loadURL()
+  // promise) would replace the frame host content is still tearing down. Post
+  // the event in that case, as PrimaryMainFrameRenderProcessGone does.
+  const bool in_renderer_teardown =
+      std::exchange(navigation_discarded_by_process_gone_, false) ||
+      !web_contents()
+           ->GetPrimaryMainFrame()
+           ->GetProcess()
+           ->IsInitializedAndNotDead();
+  if (in_renderer_teardown) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(
+                       [](base::WeakPtr<WebContents> self) {
+                         if (self)
+                           self->Emit("did-stop-loading");
+                       },
+                       weak_factory_.GetWeakPtr()));
+    return;
+  }
+
   Emit("did-stop-loading");
 }
 
@@ -2474,6 +2497,13 @@ void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
   if (owner_window_) {
     owner_window_->NotifyLayoutWindowControlsOverlay();
+  }
+
+  if (navigation_handle->GetNavigationDiscardReason() ==
+      content::NavigationDiscardReason::kRenderProcessGone) {
+    // The frame whose process died may not be the primary main frame (a
+    // speculative frame host, for one), so tell DidStopLoading explicitly.
+    navigation_discarded_by_process_gone_ = true;
   }
 
   if (!navigation_handle->HasCommitted())
