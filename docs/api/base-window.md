@@ -603,6 +603,27 @@ Returns `boolean` - Whether the window is focused.
 
 Returns `boolean` - Whether the window is destroyed.
 
+Once a window is destroyed, reading most of its properties or calling most of
+its methods throws `Object has been destroyed`. This usually surfaces in
+callbacks that were queued before the window went away — for example a
+[`DownloadItem`](download-item.md) or [`Session`](session.md) event handler that
+runs while the app is quitting. Guard those callbacks with `isDestroyed()`:
+
+```js @ts-type={win:Electron.BaseWindow} @ts-type={item:Electron.DownloadItem}
+item.on('updated', () => {
+  if (win.isDestroyed()) return
+  console.log(win.getBounds())
+})
+```
+
+`isDestroyed()` itself never throws, and the main process runs JavaScript on a
+single thread, so a window cannot become destroyed between the guard and the
+rest of the same synchronous block.
+
+Optional chaining is not a substitute for this guard. Expressions such as
+`win.contentView?.children` still throw, because the property access itself
+throws rather than evaluating to `undefined`.
+
 #### `win.show()`
 
 Shows and gives focus to the window.

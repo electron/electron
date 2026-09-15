@@ -512,6 +512,16 @@ win.loadURL('https://github.com')
 A `WebContents` object this window owns. All web page related events and
 operations will be done via it.
 
+Reading this property throws `Object has been destroyed` once the window itself
+has been destroyed — see [`win.isDestroyed()`](base-window.md#winisdestroyed)
+for the guard to use in callbacks that may run after the window is gone.
+
+A window's `WebContents` is destroyable in its own right, so guarding on
+`win.isDestroyed()` alone does not guarantee that the object returned here is
+still usable. Callbacks that outlive a page — rather than the window — should
+also check [`contents.isDestroyed()`](web-contents.md#contentsisdestroyed)
+before calling into it.
+
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
