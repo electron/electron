@@ -7,6 +7,8 @@
   * `nv12` - 12bpp with Y plane followed by a 2x2 interleaved UV plane.
   * `nv16` - 16bpp with Y plane followed by a 2x1 interleaved UV plane.
   * `p010le` - 4:2:0 10-bit YUV (little-endian), Y plane followed by a 2x2 interleaved UV plane.
+  * `xrgb` - 32bpp BGRX (byte-order), 1 plane. XRGB8888, the alpha/X channel is ignored.
+  * `xbgr` - 32bpp RGBX (byte-order), 1 plane. XBGR8888, the alpha/X channel is ignored.
 * `colorSpace` [ColorSpace](color-space.md) (optional) - The color space of the texture.
 * `codedSize` [Size](size.md) - The full dimensions of the shared texture.
 * `visibleRect` [Rectangle](rectangle.md) (optional) - A subsection of [0, 0, codedSize.width, codedSize.height]. In common cases, it is the full section area.
