@@ -2900,8 +2900,8 @@ void WebContents::LoadURL(const GURL& url,
 
   if (in_renderer_teardown_) {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&WebContents::LoadURLWithParams,
-                                  GetWeakPtr(), std::move(params)));
+        FROM_HERE, base::BindOnce(&WebContents::LoadURLWithParams, GetWeakPtr(),
+                                  std::move(params)));
     return;
   }
   LoadURLWithParams(std::move(params));
