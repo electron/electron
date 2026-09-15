@@ -547,6 +547,11 @@ std::optional<base::DictValue> MediaSizeFromPageSize(
     v8::Isolate* isolate,
     v8::Local<v8::Value> page_size) {
   gin_helper::ErrorThrower thrower(isolate);
+  if (page_size->IsNull()) {
+    // What `pageSize.height` threw.
+    thrower.ThrowTypeError("Cannot read properties of null (reading 'height')");
+    return std::nullopt;
+  }
   if (page_size->IsString()) {
     std::string name = gin::V8ToString(isolate, page_size);
     for (const StockMediaSize& stock : kStockMediaSizes) {
@@ -555,7 +560,7 @@ std::optional<base::DictValue> MediaSizeFromPageSize(
                              stock.height_um);
       }
     }
-  } else if (page_size->IsObject()) {
+  } else if (page_size->IsObject() && !page_size->IsFunction()) {
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> size = page_size.As<v8::Object>();
     v8::Local<v8::Value> width_value;
@@ -4103,7 +4108,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
             return GetRenderFrameHostToUse(self->web_contents());
           },
           self->GetWeakPtr()),
-      "Object has been destroyed", options);
+      {"Object has been destroyed", /*type_error=*/true}, options);
 }
 
 // static: does not need the WebContents, destroyed or not.

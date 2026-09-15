@@ -216,13 +216,17 @@ class PdfQueue;
 
 // One queued printToPDF call.
 struct PdfJob {
-  PdfJob(v8::Isolate* isolate, PrintToPDFFrame frame, std::string frame_gone)
+  PdfJob(v8::Isolate* isolate,
+         PrintToPDFFrame frame,
+         PrintToPDFFrameGone frame_gone)
       : promise(isolate),
         frame(std::move(frame)),
-        frame_gone_message(std::move(frame_gone)) {}
+        frame_gone_message(frame_gone.message),
+        frame_gone_type_error(frame_gone.type_error) {}
   gin_helper::Promise<v8::Local<v8::Value>> promise;
   PrintToPDFFrame frame;
   std::string frame_gone_message;
+  bool frame_gone_type_error;
   PdfRequest request;
 };
 
@@ -277,14 +281,13 @@ class PdfQueue {
     PdfJob& job = *queues_[frame_tree].front();
     content::RenderFrameHost* rfh = job.frame.Run();
     if (!rfh) {
-      job.promise.RejectWithErrorMessage(job.frame_gone_message);
-      return Pop(frame_tree);
-    }
-    if (!rfh->IsRenderFrameLive()) {
-      job.promise.RejectWithErrorMessage(
-          base::StrCat({"Failed to generate PDF: ",
-                        print_to_pdf::PdfPrintResultToString(
-                            print_to_pdf::PdfPrintResult::kPrintFailure)}));
+      v8::Isolate* isolate = job.promise.isolate();
+      v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::String> message =
+          gin::StringToV8(isolate, job.frame_gone_message);
+      job.promise.Reject(job.frame_gone_type_error
+                             ? v8::Exception::TypeError(message)
+                             : v8::Exception::Error(message));
       return Pop(frame_tree);
     }
     const PdfRequest& r = job.request;
@@ -304,6 +307,15 @@ class PdfQueue {
         content::WebContents::FromRenderFrameHost(rfh));
     if (!manager) {
       job.promise.RejectWithErrorMessage("Failed to find print manager");
+      return Pop(frame_tree);
+    }
+    // PdfPrintJob reports this too, but only after the print manager has
+    // CHECKed it.
+    if (!rfh->IsRenderFrameLive()) {
+      job.promise.RejectWithErrorMessage(
+          base::StrCat({"Failed to generate PDF: ",
+                        print_to_pdf::PdfPrintResultToString(
+                            print_to_pdf::PdfPrintResult::kPrintFailure)}));
       return Pop(frame_tree);
     }
     printing::mojom::PrintPagesParamsPtr pages =
@@ -362,10 +374,9 @@ class PdfQueue {
 v8::Local<v8::Promise> PrintToPDF(v8::Isolate* isolate,
                                   int frame_tree,
                                   PrintToPDFFrame frame,
-                                  std::string_view frame_gone_message,
+                                  PrintToPDFFrameGone frame_gone,
                                   v8::Local<v8::Value> options) {
-  auto job = std::make_unique<PdfJob>(isolate, std::move(frame),
-                                      std::string(frame_gone_message));
+  auto job = std::make_unique<PdfJob>(isolate, std::move(frame), frame_gone);
   v8::Local<v8::Promise> handle = job->promise.GetHandle();
   ConversionError error;
   // Reading the options can run getters and coercions that throw; that is a

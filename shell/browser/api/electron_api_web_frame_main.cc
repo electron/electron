@@ -335,7 +335,7 @@ v8::Local<v8::Promise> WebFrameMain::PrintToPDF(gin::Arguments* args) {
                                                   : nullptr;
           },
           cppgc::WeakPersistent<WebFrameMain>(this)),
-      "Render frame was disposed before WebFrameMain could be accessed",
+      {"Render frame was disposed before WebFrameMain could be accessed"},
       options);
 #else
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);

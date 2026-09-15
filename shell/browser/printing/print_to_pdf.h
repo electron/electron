@@ -26,11 +26,15 @@ using PrintToPDFFrame = base::RepeatingCallback<content::RenderFrameHost*()>;
 // one frame tree conflict in the renderer, so a job waits for earlier ones with
 // the same |frame_tree| key (the tree's top FrameTreeNode id) to settle, then
 // prints whatever |frame| returns at that point; if that is null the promise is
-// rejected with |frame_gone_message|.
+// rejected with |frame_gone| (a message and whether it is a TypeError).
+struct PrintToPDFFrameGone {
+  std::string_view message;
+  bool type_error = false;
+};
 v8::Local<v8::Promise> PrintToPDF(v8::Isolate* isolate,
                                   int frame_tree,
                                   PrintToPDFFrame frame,
-                                  std::string_view frame_gone_message,
+                                  PrintToPDFFrameGone frame_gone,
                                   v8::Local<v8::Value> options);
 
 }  // namespace electron
