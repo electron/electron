@@ -3896,12 +3896,22 @@ void WebContents::Print(gin::Arguments* const args) {
     return;
   }
 
+  // `const {pageSize, usePrinterDefaultPageSize} = options`: a throwing
+  // getter throws out of print() before anything happens.
   std::optional<base::DictValue> media_size;
-  if (v8::Local<v8::Value> page_size;
-      options.Get("pageSize", &page_size) && !page_size->IsUndefined()) {
-    if (v8::Local<v8::Value> use_default;
-        options.Get(kUseDefaultPrinterPageSize, &use_default) &&
-        !use_default->IsUndefined()) {
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Value> page_size;
+  v8::Local<v8::Value> use_default;
+  if (!options.GetHandle()
+           ->Get(context, gin::StringToV8(isolate, "pageSize"))
+           .ToLocal(&page_size) ||
+      !options.GetHandle()
+           ->Get(context, gin::StringToV8(isolate, kUseDefaultPrinterPageSize))
+           .ToLocal(&use_default)) {
+    return;
+  }
+  if (!page_size->IsUndefined()) {
+    if (!use_default->IsUndefined()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
           "usePrinterDefaultPageSize cannot be combined with pageSize");
       return;

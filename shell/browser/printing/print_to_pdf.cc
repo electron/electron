@@ -125,20 +125,40 @@ bool ReadPageSize(const OptionsReader& options, PaperSize* out) {
 }
 
 // As the JavaScript `margin !== undefined && !(margin <= limit)` this
-// replaces, i.e. with `<=`'s coercion; type checking proper comes after.
+// replaces, i.e. with `<=`'s coercion (null is 0, BigInt compares exactly,
+// anything unconvertible throws); type checking proper comes after.
 bool MarginExceeds(const OptionsReader& margins,
                    std::string_view key,
                    double limit) {
+  if (margins.failed())
+    return false;
+  v8::Local<v8::Context> context = margins.isolate()->GetCurrentContext();
   v8::Local<v8::Value> value;
-  if (!margins.GetValue(key, &value))
+  if (!margins.object()
+           ->Get(context, gin::StringToV8(margins.isolate(), key))
+           .ToLocal(&value)) {
+    margins.error().Fail("Exception reading margins");
+    return false;
+  }
+  if (value->IsUndefined())
     return false;
   if (value->IsBigInt()) {
     bool lossless;
-    return !(value.As<v8::BigInt>()->Int64Value(&lossless) <= limit);
+    int64_t as_int = value.As<v8::BigInt>()->Int64Value(&lossless);
+    if (!lossless) {
+      // Beyond int64: only its sign matters against a finite limit.
+      int sign_bit = 0;
+      int word_count = 0;
+      value.As<v8::BigInt>()->ToWordsArray(&sign_bit, &word_count, nullptr);
+      return sign_bit == 0;
+    }
+    return !(as_int <= limit);
   }
   double number;
-  if (!value->NumberValue(margins.isolate()->GetCurrentContext()).To(&number))
+  if (!value->NumberValue(context).To(&number)) {
+    margins.error().Fail("Exception reading margins");
     return true;
+  }
   return !(number <= limit);
 }
 
@@ -174,12 +194,18 @@ std::optional<PdfRequest> ReadPdfRequest(v8::Isolate* isolate,
   request.paper_width = paper.width;
   request.paper_height = paper.height;
 
-  if (margins && (MarginExceeds(*margins, "top", paper.height) ||
-                  MarginExceeds(*margins, "bottom", paper.height) ||
-                  MarginExceeds(*margins, "left", paper.width) ||
-                  MarginExceeds(*margins, "right", paper.width))) {
-    error.Fail("margins must be less than or equal to pageSize");
-    return std::nullopt;
+  if (margins) {
+    // Both pairs are evaluated, each pair stopping at its first excess.
+    const bool bad_height = MarginExceeds(*margins, "top", paper.height) ||
+                            MarginExceeds(*margins, "bottom", paper.height);
+    const bool bad_width = MarginExceeds(*margins, "left", paper.width) ||
+                           MarginExceeds(*margins, "right", paper.width);
+    if (error.failed())  // a read or coercion threw
+      return std::nullopt;
+    if (bad_height || bad_width) {
+      error.Fail("margins must be less than or equal to pageSize");
+      return std::nullopt;
+    }
   }
 
   options->Get("landscape", &request.landscape);
