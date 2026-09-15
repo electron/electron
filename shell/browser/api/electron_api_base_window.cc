@@ -30,6 +30,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
@@ -1279,9 +1280,21 @@ bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
 }
 
 // static
+v8::Local<v8::FunctionTemplate> BaseWindow::GetConstructorTemplate(
+    v8::Isolate* isolate) {
+  static bool created = false;
+  if (!created) {
+    created = true;
+    SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
+  }
+  return GetConstructor(isolate);
+}
+
+// static
 void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
+  prototype->Inherit(gin_helper::internal::GetEventEmitterTemplate(isolate));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setContentView", &BaseWindow::SetContentView)
@@ -1461,10 +1474,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
-
   gin_helper::Dictionary constructor(isolate,
-                                     BaseWindow::GetConstructor(isolate)
+                                     BaseWindow::GetConstructorTemplate(isolate)
                                          ->GetFunction(context)
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);

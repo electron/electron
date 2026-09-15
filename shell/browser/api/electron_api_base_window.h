@@ -50,6 +50,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+  // The constructor's template, created on first use; BrowserWindow inherits
+  // from it.
+  static v8::Local<v8::FunctionTemplate> GetConstructorTemplate(
+      v8::Isolate* isolate);
 
   // Clears window state from the Local State JSON file in
   // app.getPath('userData') via PrefService.

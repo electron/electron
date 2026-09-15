@@ -245,9 +245,10 @@ gin_helper::Handle<WebContentsView> WebContentsView::Create(
 v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
   static base::NoDestructor<v8::Global<v8::Function>> constructor;
   if (constructor.get()->IsEmpty()) {
-    constructor->Reset(
-        isolate, gin_helper::CreateConstructor<WebContentsView>(
-                     isolate, base::BindRepeating(&WebContentsView::New)));
+    constructor->Reset(isolate,
+                       gin_helper::CreateConstructor<WebContentsView>(
+                           isolate, base::BindRepeating(&WebContentsView::New),
+                           View::GetConstructorTemplate(isolate)));
   }
   return v8::Local<v8::Function>::New(isolate, *constructor.get());
 }

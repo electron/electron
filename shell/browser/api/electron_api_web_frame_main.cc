@@ -734,7 +734,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
-      .SetMethod("_postMessage", &WebFrameMain::PostMessage)
+      .SetMethod("postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)

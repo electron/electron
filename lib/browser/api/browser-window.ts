@@ -3,8 +3,6 @@ import type { BrowserWindow as BWT } from 'electron/main';
 
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
-Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
-
 BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
   (BaseWindow.prototype as any)._init.call(this);
