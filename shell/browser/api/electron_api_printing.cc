@@ -2,21 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "base/logging.h"
-#include "chrome/browser/browser_process.h"
 #include "gin/converter.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "base/task/task_traits.h"
-#include "base/task/thread_pool.h"
+#include "base/functional/bind.h"
 #include "printing/backend/print_backend.h"
+#include "shell/browser/printing/printing_utils.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/process_util.h"
 #endif
 
 namespace gin {
@@ -44,28 +40,12 @@ namespace electron::api {
 v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
   gin_helper::Promise<printing::PrinterList> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  base::ThreadPool::PostTaskAndReplyWithResult(
-      FROM_HERE, {base::TaskPriority::USER_VISIBLE, base::MayBlock()},
-      base::BindOnce([]() {
-        printing::PrinterList printers;
-        auto print_backend = printing::PrintBackend::CreateInstance(
-            g_browser_process->GetApplicationLocale());
-        printing::mojom::ResultCode code =
-            print_backend->EnumeratePrinters(printers);
-        if (code != printing::mojom::ResultCode::kSuccess)
-          LOG(INFO) << "Failed to enumerate printers";
-        return printers;
-      }),
-      base::BindOnce(
-          [](gin_helper::Promise<printing::PrinterList> promise,
-             const printing::PrinterList& printers) {
-            promise.Resolve(printers);
-          },
-          std::move(promise)));
-
+  GetPrinterList(base::BindOnce(
+      &gin_helper::Promise<printing::PrinterList>::ResolvePromise,
+      std::move(promise)));
   return handle;
 }
+
 #endif
 
 }  // namespace electron::api

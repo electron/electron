@@ -32,7 +32,8 @@ export const readPDF = async (data: any) => {
     console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
   }
   try {
-    return JSON.parse(Buffer.concat(stdout).toString().trim());
+    // pdf.js may print polyfill warnings ahead of the JSON line.
+    return JSON.parse(Buffer.concat(stdout).toString().trim().split('\n').pop()!);
   } catch (err) {
     console.error('Error parsing PDF file:', err);
     console.error('Raw output:', Buffer.concat(stdout).toString().trim());
