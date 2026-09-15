@@ -27,8 +27,11 @@ class View : public gin_helper::EventEmitter<View>,
   static gin_helper::WrappableBase* New(gin::Arguments* args);
   static gin_helper::Handle<View> Create(v8::Isolate* isolate);
 
-  // Return the cached constructor function.
+  // Return the cached constructor function / its template (for subclasses to
+  // inherit from).
   static v8::Local<v8::Function> GetConstructor(v8::Isolate* isolate);
+  static v8::Local<v8::FunctionTemplate> GetConstructorTemplate(
+      v8::Isolate* isolate);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

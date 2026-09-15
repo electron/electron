@@ -308,11 +308,7 @@ declare namespace NodeJS {
     };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
-      setup(objects: {
-        ipcMain: NodeJS.EventEmitter;
-        ipcMainInternal: NodeJS.EventEmitter;
-        MessagePortMain: Function;
-      }): void;
+      setup(objects: { ipcMain: NodeJS.EventEmitter; ipcMainInternal: NodeJS.EventEmitter }): void;
     };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
@@ -332,13 +328,14 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
-    _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
+    _linkedBinding(name: 'electron_browser_view'): { View: typeof Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
+    _linkedBinding(name: 'electron_utility_parent_port'): { createParentPort(): ElectronInternal.ParentPort };
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 

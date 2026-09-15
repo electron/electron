@@ -366,7 +366,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("BrowserWindow",
            gin_helper::CreateConstructor<BrowserWindow>(
-               isolate, base::BindRepeating(&BrowserWindow::New)));
+               isolate, base::BindRepeating(&BrowserWindow::New),
+               electron::api::BaseWindow::GetConstructorTemplate(isolate)));
 }
 
 }  // namespace

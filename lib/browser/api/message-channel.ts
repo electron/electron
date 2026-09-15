@@ -1,13 +1,11 @@
-import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-
 const { createPair } = process._linkedBinding('electron_browser_message_port');
 
 export default class MessageChannelMain implements Electron.MessageChannelMain {
-  port1: MessagePortMain;
-  port2: MessagePortMain;
+  port1: Electron.MessagePortMain;
+  port2: Electron.MessagePortMain;
   constructor() {
     const { port1, port2 } = createPair();
-    this.port1 = new MessagePortMain(port1);
-    this.port2 = new MessagePortMain(port2);
+    this.port1 = port1;
+    this.port2 = port2;
   }
 }
