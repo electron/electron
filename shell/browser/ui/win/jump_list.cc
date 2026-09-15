@@ -138,7 +138,7 @@ void ConvertRemovedJumpListItems(IObjectArray* in,
   DCHECK(out);
 
   UINT removed_count;
-  if (SUCCEEDED(in->GetCount(&removed_count) && (removed_count > 0))) {
+  if (SUCCEEDED(in->GetCount(&removed_count)) && removed_count > 0) {
     out->reserve(removed_count);
     JumpListItem item;
     IShellItem* shell_item;
