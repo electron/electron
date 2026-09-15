@@ -273,11 +273,11 @@ class WebContents final : public ExclusiveAccessContext,
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
-#if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin::Arguments* args);
-  // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  // Print current page as PDF. Static (with the WebContents as holder) so
+  // that a destroyed WebContents gets a rejection rather than a throw.
+  static v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
+  static v8::Local<v8::Promise> GetPrintersAsync(v8::Isolate* isolate);
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
