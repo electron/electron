@@ -322,9 +322,10 @@ v8::Local<v8::Promise> WebFrameMain::PrintToPDF(gin::Arguments* args) {
   args->GetNext(&options);
   // Jobs queue per frame tree, keyed by its top frame (or this one if that is
   // already gone).
-  content::RenderFrameHost* top = Top();
   const int frame_tree =
-      top ? top->GetFrameTreeNodeId().value() : FrameTreeNodeID().value();
+      HasRenderFrame()
+          ? render_frame_host()->GetMainFrame()->GetFrameTreeNodeId().value()
+          : FrameTreeNodeID().value();
   return electron::PrintToPDF(
       isolate, frame_tree,
       base::BindRepeating(

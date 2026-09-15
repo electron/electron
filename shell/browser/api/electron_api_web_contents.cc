@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <list>
 #include <memory>
@@ -24,6 +25,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/power_monitor/power_monitor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
@@ -155,6 +157,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/osr_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
@@ -508,19 +511,33 @@ constexpr StockMediaSize kStockMediaSizes[] = {
 
 // The keys are the ones the JS implementation always sent; Chromium reads the
 // sizes and imageable area (print_settings_conversion.cc).
+// A JS number as it used to arrive through base::Value: an int if it is
+// one, a double otherwise, and absent if not finite.
+void SetNumber(base::DictValue& dict, std::string_view key, double value) {
+  if (!std::isfinite(value))
+    return;
+  if (base::IsValueInRangeForNumericType<int>(value) &&
+      value == static_cast<int>(value)) {
+    dict.Set(key, static_cast<int>(value));
+  } else {
+    dict.Set(key, value);
+  }
+}
+
 base::DictValue MediaSizeDict(std::string_view name,
                               std::string_view display_name,
-                              int width_um,
-                              int height_um) {
-  return base::DictValue()
-      .Set("name", name)
-      .Set("custom_display_name", display_name)
-      .Set(printing::kSettingMediaSizeWidthMicrons, width_um)
-      .Set(printing::kSettingMediaSizeHeightMicrons, height_um)
-      .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-      .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-      .Set(printing::kSettingsImageableAreaRightMicrons, width_um)
-      .Set(printing::kSettingsImageableAreaTopMicrons, height_um);
+                              double width_um,
+                              double height_um) {
+  base::DictValue dict;
+  dict.Set("name", name);
+  dict.Set("custom_display_name", display_name);
+  SetNumber(dict, printing::kSettingMediaSizeHeightMicrons, height_um);
+  SetNumber(dict, printing::kSettingMediaSizeWidthMicrons, width_um);
+  dict.Set(printing::kSettingsImageableAreaLeftMicrons, 0);
+  dict.Set(printing::kSettingsImageableAreaBottomMicrons, 0);
+  SetNumber(dict, printing::kSettingsImageableAreaRightMicrons, width_um);
+  SetNumber(dict, printing::kSettingsImageableAreaTopMicrons, height_um);
+  return dict;
 }
 
 // webContents.print()'s pageSize option as a print-settings media size: one
@@ -570,8 +587,7 @@ std::optional<base::DictValue> MediaSizeFromPageSize(
           "height and width properties must be minimum 352 microns.");
       return std::nullopt;
     }
-    return MediaSizeDict("CUSTOM", "Custom", static_cast<int>(width),
-                         static_cast<int>(height));
+    return MediaSizeDict("CUSTOM", "Custom", width, height);
   }
   v8::Local<v8::String> as_string;
   if (page_size->ToString(isolate->GetCurrentContext()).ToLocal(&as_string)) {
@@ -3868,18 +3884,10 @@ void WebContents::Print(gin::Arguments* const args) {
 
   v8::Local<v8::Value> options_value;
   if (args->GetNext(&options_value) && !options_value->IsUndefined() &&
-      !gin::ConvertFromV8(isolate, options_value, &options)) {
+      (options_value->IsFunction() ||
+       !gin::ConvertFromV8(isolate, options_value, &options))) {
     args->ThrowTypeError(
         "webContents.print(): Invalid print settings specified.");
-    return;
-  }
-
-  printing::CompletionCallback callback;
-  v8::Local<v8::Value> callback_value;
-  if (args->GetNext(&callback_value) && callback_value->BooleanValue(isolate) &&
-      !gin::ConvertFromV8(isolate, callback_value, &callback)) {
-    args->ThrowTypeError(
-        "webContents.print(): Invalid optional callback provided.");
     return;
   }
 
@@ -3898,8 +3906,17 @@ void WebContents::Print(gin::Arguments* const args) {
       return;
   }
 
+  printing::CompletionCallback callback;
+  v8::Local<v8::Value> callback_value;
+  if (args->GetNext(&callback_value) && callback_value->BooleanValue(isolate) &&
+      !gin::ConvertFromV8(isolate, callback_value, &callback)) {
+    args->ThrowTypeError(
+        "webContents.print(): Invalid optional callback provided.");
+    return;
+  }
+
   base::DictValue settings;
-  if (options.IsEmptyObject()) {
+  if (!media_size && options.IsEmptyObject()) {
     content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
     if (!rfh)
       return;
@@ -4059,22 +4076,37 @@ void WebContents::Print(gin::Arguments* const args) {
                      std::move(settings), std::move(callback)));
 }
 
+// static: a destroyed WebContents rejects rather than throws.
 v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  v8::Local<v8::Object> holder;
+  WebContents* self = nullptr;
+  if (!args->GetHolder(&holder) ||
+      gin_helper::Destroyable::IsDestroyed(holder) ||
+      !gin::ConvertFromV8(isolate, holder, &self) || !self ||
+      !self->web_contents()) {
+    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Local<v8::Promise> handle = promise.GetHandle();
+    promise.Reject(v8::Exception::TypeError(
+        gin::StringToV8(isolate, "Object has been destroyed")));
+    return handle;
+  }
   v8::Local<v8::Value> options;
   args->GetNext(&options);
   return electron::PrintToPDF(
-      args->isolate(),
-      web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
+      isolate,
+      self->web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
       base::BindRepeating(
           [](base::WeakPtr<WebContents> self) -> content::RenderFrameHost* {
             if (!self || !self->web_contents())
               return nullptr;
             return GetRenderFrameHostToUse(self->web_contents());
           },
-          GetWeakPtr()),
+          self->GetWeakPtr()),
       "Object has been destroyed", options);
 }
 
+// static: does not need the WebContents, destroyed or not.
 v8::Local<v8::Promise> WebContents::GetPrintersAsync(v8::Isolate* isolate) {
   return GetPrinterListAsync(isolate);
 }
@@ -4083,6 +4115,7 @@ void WebContents::Print(gin::Arguments* args) {
   LOG(ERROR) << "Error: Printing feature is disabled.";
 }
 
+// static
 v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -4090,6 +4123,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
   return handle;
 }
 
+// static
 v8::Local<v8::Promise> WebContents::GetPrintersAsync(v8::Isolate* isolate) {
   LOG(ERROR) << "Error: Printing feature is disabled.";
   return gin_helper::Promise<std::vector<int>>::ResolvedPromise(isolate, {});

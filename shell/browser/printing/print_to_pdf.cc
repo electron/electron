@@ -4,6 +4,7 @@
 
 #include "shell/browser/printing/print_to_pdf.h"
 
+#include <cmath>
 #include <map>
 #include <memory>
 #include <optional>
@@ -32,6 +33,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_util.h"
 #include "third_party/abseil-cpp/absl/types/variant.h"
+#include "v8/include/v8-exception.h"
 #include "v8/include/v8-primitive.h"
 
 namespace electron {
@@ -64,6 +66,9 @@ constexpr auto kPaperFormats =
 
 // Everything printToPDF takes from its options, validated; turned into
 // PrintPagesParams once the frame (and so the URL) is known.
+// Numbers are optional only so that a non-finite value can fall back to the
+// print_to_pdf default, as it did when it was dropped crossing into a
+// base::Value.
 struct PdfRequest {
   int request_id = 0;
   bool landscape = false;
@@ -71,12 +76,13 @@ struct PdfRequest {
   std::string header_template;
   std::string footer_template;
   bool print_background = false;
-  double scale = 1.0;
-  PaperSize paper{8.5, 11};
-  double margin_top = 0.4;
-  double margin_bottom = 0.4;
-  double margin_left = 0.4;
-  double margin_right = 0.4;
+  std::optional<double> scale = 1.0;
+  std::optional<double> paper_width = 8.5;
+  std::optional<double> paper_height = 11;
+  std::optional<double> margin_top = 0.4;
+  std::optional<double> margin_bottom = 0.4;
+  std::optional<double> margin_left = 0.4;
+  std::optional<double> margin_right = 0.4;
   std::string page_ranges;
   bool prefer_css_page_size = false;
   bool generate_tagged_pdf = false;
@@ -119,17 +125,26 @@ bool ReadPageSize(const OptionsReader& options, PaperSize* out) {
 }
 
 // As the JavaScript `margin !== undefined && !(margin <= limit)` this
-// replaces, i.e. with ToNumber coercion; type checking proper comes after.
+// replaces, i.e. with `<=`'s coercion; type checking proper comes after.
 bool MarginExceeds(const OptionsReader& margins,
                    std::string_view key,
                    double limit) {
   v8::Local<v8::Value> value;
   if (!margins.GetValue(key, &value))
     return false;
+  if (value->IsBigInt()) {
+    bool lossless;
+    return !(value.As<v8::BigInt>()->Int64Value(&lossless) <= limit);
+  }
   double number;
   if (!value->NumberValue(margins.isolate()->GetCurrentContext()).To(&number))
     return true;
   return !(number <= limit);
+}
+
+void DropIfNotFinite(std::optional<double>& value) {
+  if (value && !std::isfinite(*value))
+    value.reset();
 }
 
 // Reads and validates printToPDF's options in the order, and with the
@@ -153,13 +168,16 @@ std::optional<PdfRequest> ReadPdfRequest(v8::Isolate* isolate,
     margins.emplace(isolate, margins_value.As<v8::Object>(), error, "margins");
   }
 
-  if (!ReadPageSize(*options, &request.paper))
+  PaperSize paper{8.5, 11};
+  if (!ReadPageSize(*options, &paper))
     return std::nullopt;
+  request.paper_width = paper.width;
+  request.paper_height = paper.height;
 
-  if (margins && (MarginExceeds(*margins, "top", request.paper.height) ||
-                  MarginExceeds(*margins, "bottom", request.paper.height) ||
-                  MarginExceeds(*margins, "left", request.paper.width) ||
-                  MarginExceeds(*margins, "right", request.paper.width))) {
+  if (margins && (MarginExceeds(*margins, "top", paper.height) ||
+                  MarginExceeds(*margins, "bottom", paper.height) ||
+                  MarginExceeds(*margins, "left", paper.width) ||
+                  MarginExceeds(*margins, "right", paper.width))) {
     error.Fail("margins must be less than or equal to pageSize");
     return std::nullopt;
   }
@@ -169,12 +187,12 @@ std::optional<PdfRequest> ReadPdfRequest(v8::Isolate* isolate,
   options->Get("headerTemplate", &request.header_template);
   options->Get("footerTemplate", &request.footer_template);
   options->Get("printBackground", &request.print_background);
-  options->Get("scale", &request.scale);
+  options->Get("scale", &*request.scale);
   if (margins) {
-    margins->Get("top", &request.margin_top);
-    margins->Get("bottom", &request.margin_bottom);
-    margins->Get("left", &request.margin_left);
-    margins->Get("right", &request.margin_right);
+    margins->Get("top", &*request.margin_top);
+    margins->Get("bottom", &*request.margin_bottom);
+    margins->Get("left", &*request.margin_left);
+    margins->Get("right", &*request.margin_right);
   }
   options->Get("pageRanges", &request.page_ranges);
   options->Get("preferCSSPageSize", &request.prefer_css_page_size);
@@ -182,6 +200,12 @@ std::optional<PdfRequest> ReadPdfRequest(v8::Isolate* isolate,
   options->Get("generateDocumentOutline", &request.generate_document_outline);
   if (error.failed())
     return std::nullopt;
+  for (std::optional<double>* number :
+       {&request.scale, &request.paper_width, &request.paper_height,
+        &request.margin_top, &request.margin_bottom, &request.margin_left,
+        &request.margin_right}) {
+    DropIfNotFinite(*number);
+  }
 
   static int next_request_id = 0;
   request.request_id = ++next_request_id;
@@ -215,7 +239,7 @@ class PdfQueue {
     base::circular_deque<std::unique_ptr<PdfJob>>& jobs = queues_[frame_tree];
     jobs.push_back(std::move(job));
     if (jobs.size() == 1)
-      Start(frame_tree);
+      PostStart(frame_tree);
   }
 
  private:
@@ -256,11 +280,18 @@ class PdfQueue {
       job.promise.RejectWithErrorMessage(job.frame_gone_message);
       return Pop(frame_tree);
     }
+    if (!rfh->IsRenderFrameLive()) {
+      job.promise.RejectWithErrorMessage(
+          base::StrCat({"Failed to generate PDF: ",
+                        print_to_pdf::PdfPrintResultToString(
+                            print_to_pdf::PdfPrintResult::kPrintFailure)}));
+      return Pop(frame_tree);
+    }
     const PdfRequest& r = job.request;
     absl::variant<printing::mojom::PrintPagesParamsPtr, std::string> params =
         print_to_pdf::GetPrintPagesParams(
             rfh->GetLastCommittedURL(), r.landscape, r.display_header_footer,
-            r.print_background, r.scale, r.paper.width, r.paper.height,
+            r.print_background, r.scale, r.paper_width, r.paper_height,
             r.margin_top, r.margin_bottom, r.margin_left, r.margin_right,
             r.header_template, r.footer_template, r.prefer_css_page_size,
             r.generate_tagged_pdf, r.generate_document_outline);
@@ -311,7 +342,16 @@ class PdfQueue {
     if (it->second.empty())
       queues_.erase(it);
     else
-      Start(frame_tree);
+      PostStart(frame_tree);
+  }
+
+  // Jobs start from a fresh task, never from inside printToPDF() or a
+  // previous job's completion (which can arrive mid-teardown of a frame), as
+  // they did when a promise reaction started them.
+  void PostStart(int frame_tree) {
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&PdfQueue::Start, base::Unretained(this), frame_tree));
   }
 
   std::map<int, base::circular_deque<std::unique_ptr<PdfJob>>> queues_;
@@ -328,7 +368,16 @@ v8::Local<v8::Promise> PrintToPDF(v8::Isolate* isolate,
                                       std::string(frame_gone_message));
   v8::Local<v8::Promise> handle = job->promise.GetHandle();
   ConversionError error;
+  // Reading the options can run getters and coercions that throw; that is a
+  // rejection too, not an exception from printToPDF().
+  v8::TryCatch try_catch(isolate);
   std::optional<PdfRequest> request = ReadPdfRequest(isolate, options, error);
+  if (try_catch.HasCaught()) {
+    v8::Local<v8::Value> exception = try_catch.Exception();
+    try_catch.Reset();
+    job->promise.Reject(exception);
+    return handle;
+  }
   if (!request) {
     job->promise.Reject(error.ToException(isolate));
     return handle;
