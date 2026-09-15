@@ -710,7 +710,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
            content::PROCESS_TYPE_UTILITY);
        !it.Done(); ++it) {
     if (it.GetDelegate()->GetServiceName() == node::mojom::NodeService::Name_) {
-      auto& process = it.GetData().GetProcess();
+      const base::Process& process = it.GetProcess();
       if (!process.IsValid())
         continue;
       auto* utility_process_wrapper =
