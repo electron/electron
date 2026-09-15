@@ -212,6 +212,8 @@
 #include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
+#include "printing/print_job_constants.h"
+#include "shell/browser/api/electron_api_printing.h"
 #include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
@@ -484,6 +486,100 @@ constexpr char kDuplexMode[] = "duplexMode";
 
 constexpr char kDpiHorizontal[] = "horizontal";
 constexpr char kDpiVertical[] = "vertical";
+
+struct StockMediaSize {
+  std::string_view key;  // webContents.print()'s pageSize name
+  std::string_view name;
+  int width_um;
+  int height_um;
+};
+constexpr StockMediaSize kStockMediaSizes[] = {
+    {"Letter", "NA_LETTER", 215900, 279400},
+    {"Legal", "NA_LEGAL", 215900, 355600},
+    {"Tabloid", "NA_LEDGER", 279400, 431800},
+    {"A0", "ISO_A0", 841000, 1189000},
+    {"A1", "ISO_A1", 594000, 841000},
+    {"A2", "ISO_A2", 420000, 594000},
+    {"A3", "ISO_A3", 297000, 420000},
+    {"A4", "ISO_A4", 210000, 297000},
+    {"A5", "ISO_A5", 148000, 210000},
+    {"A6", "ISO_A6", 105000, 148000},
+};
+
+// The keys are the ones the JS implementation always sent; Chromium reads the
+// sizes and imageable area (print_settings_conversion.cc).
+base::DictValue MediaSizeDict(std::string_view name,
+                              std::string_view display_name,
+                              int width_um,
+                              int height_um) {
+  return base::DictValue()
+      .Set("name", name)
+      .Set("custom_display_name", display_name)
+      .Set(printing::kSettingMediaSizeWidthMicrons, width_um)
+      .Set(printing::kSettingMediaSizeHeightMicrons, height_um)
+      .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+      .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+      .Set(printing::kSettingsImageableAreaRightMicrons, width_um)
+      .Set(printing::kSettingsImageableAreaTopMicrons, height_um);
+}
+
+// webContents.print()'s pageSize option as a print-settings media size: one
+// of the stock names, or {width, height} in microns. nullopt (having thrown)
+// if invalid.
+std::optional<base::DictValue> MediaSizeFromPageSize(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> page_size) {
+  gin_helper::ErrorThrower thrower(isolate);
+  if (page_size->IsString()) {
+    std::string name = gin::V8ToString(isolate, page_size);
+    for (const StockMediaSize& stock : kStockMediaSizes) {
+      if (stock.key == name) {
+        return MediaSizeDict(stock.name, stock.key, stock.width_um,
+                             stock.height_um);
+      }
+    }
+  } else if (page_size->IsObject()) {
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Object> size = page_size.As<v8::Object>();
+    v8::Local<v8::Value> width_value;
+    v8::Local<v8::Value> height_value;
+    if (!size->Get(context, gin::StringToV8(isolate, "height"))
+             .ToLocal(&height_value) ||
+        !size->Get(context, gin::StringToV8(isolate, "width"))
+             .ToLocal(&width_value)) {
+      return std::nullopt;
+    }
+    if (!height_value->BooleanValue(isolate) ||
+        !width_value->BooleanValue(isolate)) {
+      thrower.ThrowError(
+          "height and width properties are required for pageSize");
+      return std::nullopt;
+    }
+    // Microns; Chromium needs at least one point (printing/units.h), i.e.
+    // more than 352 of them, or printing silently fails.
+    double height;
+    double width;
+    if (!height_value->NumberValue(context).To(&height) ||
+        !width_value->NumberValue(context).To(&width)) {
+      return std::nullopt;
+    }
+    height = std::ceil(height);
+    width = std::ceil(width);
+    if (!(height > 352 && width > 352)) {
+      thrower.ThrowRangeError(
+          "height and width properties must be minimum 352 microns.");
+      return std::nullopt;
+    }
+    return MediaSizeDict("CUSTOM", "Custom", static_cast<int>(width),
+                         static_cast<int>(height));
+  }
+  v8::Local<v8::String> as_string;
+  if (page_size->ToString(isolate->GetCurrentContext()).ToLocal(&as_string)) {
+    thrower.ThrowError(base::StrCat(
+        {"Unsupported pageSize: ", gin::V8ToString(isolate, as_string)}));
+  }
+  return std::nullopt;
+}
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -3770,17 +3866,36 @@ void WebContents::Print(gin::Arguments* const args) {
   v8::Isolate* const isolate = args->isolate();
   auto options = gin_helper::Dictionary::CreateEmpty(isolate);
 
-  if (args->Length() >= 1 && !args->GetNext(&options)) {
+  v8::Local<v8::Value> options_value;
+  if (args->GetNext(&options_value) && !options_value->IsUndefined() &&
+      !gin::ConvertFromV8(isolate, options_value, &options)) {
     args->ThrowTypeError(
         "webContents.print(): Invalid print settings specified.");
     return;
   }
 
   printing::CompletionCallback callback;
-  if (args->Length() == 2 && !args->GetNext(&callback)) {
+  v8::Local<v8::Value> callback_value;
+  if (args->GetNext(&callback_value) && callback_value->BooleanValue(isolate) &&
+      !gin::ConvertFromV8(isolate, callback_value, &callback)) {
     args->ThrowTypeError(
         "webContents.print(): Invalid optional callback provided.");
     return;
+  }
+
+  std::optional<base::DictValue> media_size;
+  if (v8::Local<v8::Value> page_size;
+      options.Get("pageSize", &page_size) && !page_size->IsUndefined()) {
+    if (v8::Local<v8::Value> use_default;
+        options.Get(kUseDefaultPrinterPageSize, &use_default) &&
+        !use_default->IsUndefined()) {
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          "usePrinterDefaultPageSize cannot be combined with pageSize");
+      return;
+    }
+    media_size = MediaSizeFromPageSize(isolate, page_size);
+    if (!media_size)
+      return;
   }
 
   base::DictValue settings;
@@ -3918,9 +4033,11 @@ void WebContents::Print(gin::Arguments* const args) {
   // Set custom media size if passed. If none is passed, the media size
   // will be set in OnGetDeviceNameToUse based on the printer's default
   // settings where applicable.
-  base::DictValue media_size;
-  if (options.Get(kMediaSize, &media_size))
-    settings.Set(printing::kSettingMediaSize, std::move(media_size));
+  if (media_size) {
+    settings.Set(printing::kSettingMediaSize, std::move(*media_size));
+  } else if (base::DictValue dict; options.Get(kMediaSize, &dict)) {
+    settings.Set(printing::kSettingMediaSize, std::move(dict));
+  }
 
   // Set custom dots per inch (dpi)
   if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
@@ -3942,8 +4059,40 @@ void WebContents::Print(gin::Arguments* const args) {
                      std::move(settings), std::move(callback)));
 }
 
-v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
-  return PrintFrameToPDF(GetRenderFrameHostToUse(web_contents()), settings);
+v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
+  v8::Local<v8::Value> options;
+  args->GetNext(&options);
+  return electron::PrintToPDF(
+      args->isolate(),
+      web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
+      base::BindRepeating(
+          [](base::WeakPtr<WebContents> self) -> content::RenderFrameHost* {
+            if (!self || !self->web_contents())
+              return nullptr;
+            return GetRenderFrameHostToUse(self->web_contents());
+          },
+          GetWeakPtr()),
+      "Object has been destroyed", options);
+}
+
+v8::Local<v8::Promise> WebContents::GetPrintersAsync(v8::Isolate* isolate) {
+  return GetPrinterListAsync(isolate);
+}
+#else
+void WebContents::Print(gin::Arguments* args) {
+  LOG(ERROR) << "Error: Printing feature is disabled.";
+}
+
+v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  promise.RejectWithErrorMessage("Printing feature is disabled");
+  return handle;
+}
+
+v8::Local<v8::Promise> WebContents::GetPrintersAsync(v8::Isolate* isolate) {
+  LOG(ERROR) << "Error: Printing feature is disabled.";
+  return gin_helper::Promise<std::vector<int>>::ResolvedPromise(isolate, {});
 }
 #endif
 
@@ -5262,10 +5411,9 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("inspectSharedWorkerById",
                  &WebContents::InspectSharedWorkerById)
       .SetMethod("getAllSharedWorkers", &WebContents::GetAllSharedWorkers)
-#if BUILDFLAG(ENABLE_PRINTING)
-      .SetMethod("_print", &WebContents::Print)
-      .SetMethod("_printToPDF", &WebContents::PrintToPDF)
-#endif
+      .SetMethod("print", &WebContents::Print)
+      .SetMethod("printToPDF", &WebContents::PrintToPDF)
+      .SetMethod("getPrintersAsync", &WebContents::GetPrintersAsync)
       .SetMethod("_setNextChildWebPreferences",
                  &WebContents::SetNextChildWebPreferences)
       .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
