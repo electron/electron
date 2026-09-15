@@ -1,5 +1,4 @@
 import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
-import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
 import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
 
@@ -34,10 +33,6 @@ if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
   webViewInit(webviewTag, isWebView);
 }
-
-const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
-
-webFrameInit();
 
 // Warn about security issues
 if (process.isMainFrame) {

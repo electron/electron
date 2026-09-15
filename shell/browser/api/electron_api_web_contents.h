@@ -39,6 +39,7 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/api/api.mojom-forward.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -80,6 +81,7 @@ class Arguments;
 
 namespace gin_helper {
 class Dictionary;
+class PromiseBase;
 class ErrorThrower;
 template <typename T>
 class Handle;
@@ -243,7 +245,6 @@ class WebContents final : public ExclusiveAccessContext,
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
-  void InsertCSS(const std::string& css);
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
                                   const content::SavePageType& save_type);
   void OpenDevTools(gin::Arguments* args);
@@ -387,6 +388,24 @@ class WebContents final : public ExclusiveAccessContext,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
+  // The main frame's renderer-side API, or null with |promise| rejected when
+  // there is no live render frame.
+  mojom::ElectronFrame* MainFrameRenderer(v8::Isolate* isolate,
+                                          gin_helper::PromiseBase& promise);
+  v8::Local<v8::Promise> ExecuteJavaScriptInRenderer(
+      v8::Isolate* isolate,
+      int world_id,
+      const std::vector<gin_helper::Dictionary>& sources,
+      bool has_user_gesture);
+  v8::Local<v8::Promise> InsertCSS(gin::Arguments* args,
+                                   const std::string& css);
+  v8::Local<v8::Promise> RemoveInsertedCSS(v8::Isolate* isolate,
+                                           const std::u16string& key);
+  v8::Local<v8::Promise> InsertText(v8::Isolate* isolate,
+                                    const std::string& text);
+  v8::Local<v8::Promise> SetVisualZoomLevelLimits(v8::Isolate* isolate,
+                                                  double min_level,
+                                                  double max_level);
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
