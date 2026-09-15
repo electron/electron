@@ -2326,7 +2326,9 @@ void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
   v8::Local<v8::Object> event = gin_helper::internal::Event::New(isolate)
                                     ->GetWrapper(isolate)
                                     .ToLocalChecked();
-  // app first: it always was the WebContents' first listener.
+  // app first: it always was the WebContents' first listener. Its listeners
+  // may destroy |this|.
+  base::WeakPtr<WebContents> weak_this = GetWeakPtr();
   gin_helper::EmitEvent(isolate, app, "render-process-gone", event, wrapper,
                         details);
   if (base::Environment::Create()->HasVar("ELECTRON_ENABLE_LOGGING") ||
@@ -2349,7 +2351,6 @@ void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
                "information."}));
     }
   }
-  auto weak_this = GetWeakPtr();
   if (weak_this)
     EmitWithoutEvent("render-process-gone", event, details);
 }
@@ -5385,6 +5386,7 @@ gin_helper::Handle<WebContents> WebContents::New(
 }
 
 void WebContents::InitializeJS(v8::Isolate* isolate) {
+  base::WeakPtr<WebContents> weak_this = GetWeakPtr();
   {
     v8::TryCatch try_catch(isolate);
     gin_helper::CallMethod(isolate, this, "_init");
@@ -5394,7 +5396,7 @@ void WebContents::InitializeJS(v8::Isolate* isolate) {
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   v8::Local<v8::Object> app;
-  if (!GetWrapper(isolate).ToLocal(&wrapper) ||
+  if (!weak_this || !GetWrapper(isolate).ToLocal(&wrapper) ||
       !App::Get()->GetWrapper(isolate).ToLocal(&app)) {
     return;
   }
