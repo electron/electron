@@ -60,10 +60,10 @@ index 3e47a795e9f4d1e25fab5fefb3addf1ff3911f7c..55e19177b71b7dd157540eda6ce208fe
  
    void StartInputEventAckTimeoutForTesting() { StartInputEventAckTimeout(); }
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 94a3ee40f5594ce2aebe6aed5a1e4794008ecfa2..89e5684d92fb0174c1f0969f63daddd4b2af8e09 100644
+index 4f47b7a67327d9ee56f4ca6077e53dba53519d5c..4d6f62e3dfd8fb88784e8f39d4b333ad22ef3a78 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -867,8 +867,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -891,8 +891,10 @@ void RenderWidgetHostImpl::WasHidden() {
    // show goes through immediately.
    visual_properties_ack_pending_ = false;
  

@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 0c724ef752a0625ed001472cedebc49fc2c3d954..55d7f098430380513a36dd3f30c3dfe42a9886d8 100644
+index efb3b3360f149dff55a3e302b7edfffd1e995a4c..495865e9c81b54a44deca3dcc76fbaba6a5a10df 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -34,6 +34,7 @@
@@ -21,16 +21,16 @@ index 0c724ef752a0625ed001472cedebc49fc2c3d954..55d7f098430380513a36dd3f30c3dfe4
  using storage::BigIOBuffer;
  
 @@ -61,7 +62,8 @@ void CheckValidResource(const GURL& resource_url,
-   DCHECK(
-       resource_url.SchemeIsHTTPOrHTTPS() ||
-       resource_url_is_chrome_or_chrome_untrusted ||
--      blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.GetScheme()));
-+      blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.GetScheme()) ||
-+      url::IsCodeCacheScheme(resource_url.GetScheme()));
+   CHECK(resource_url.SchemeIsHTTPOrHTTPS() ||
+             resource_url_is_chrome_or_chrome_untrusted ||
+             blink::CommonSchemeRegistry::IsExtensionScheme(
+-                resource_url.GetScheme()),
++                resource_url.GetScheme()) ||
++            url::IsCodeCacheScheme(resource_url.GetScheme()),
+         base::NotFatalUntil::M159);
  
    if (!blink::features::IsPersistentCacheForCodeCacheEnabled()) {
-     // The chrome and chrome-untrusted schemes are only used with the WebUI code
-@@ -77,9 +79,10 @@ void CheckValidResource(const GURL& resource_url,
+@@ -79,9 +81,10 @@ void CheckValidResource(const GURL& resource_url,
  void CheckValidContext(const GURL& origin_lock,
                         GeneratedCodeCache::CodeCacheType cache_type) {
    // |origin_lock| should be either empty or should have
@@ -44,16 +44,16 @@ index 0c724ef752a0625ed001472cedebc49fc2c3d954..55d7f098430380513a36dd3f30c3dfe4
    bool origin_lock_is_chrome_or_chrome_untrusted =
        origin_lock.SchemeIs(content::kChromeUIScheme) ||
        origin_lock.SchemeIs(content::kChromeUIUntrustedScheme);
-@@ -87,7 +90,8 @@ void CheckValidContext(const GURL& origin_lock,
-          ((origin_lock.SchemeIsHTTPOrHTTPS() ||
-            origin_lock_is_chrome_or_chrome_untrusted ||
-            blink::CommonSchemeRegistry::IsExtensionScheme(
--               origin_lock.GetScheme())) &&
-+               origin_lock.GetScheme()) ||
-+           url::IsCodeCacheScheme(origin_lock.GetScheme())) &&
-           !url::Origin::Create(origin_lock).opaque()));
+@@ -89,7 +92,8 @@ void CheckValidContext(const GURL& origin_lock,
+             ((origin_lock.SchemeIsHTTPOrHTTPS() ||
+               origin_lock_is_chrome_or_chrome_untrusted ||
+               blink::CommonSchemeRegistry::IsExtensionScheme(
+-                  origin_lock.GetScheme())) &&
++                  origin_lock.GetScheme()) ||
++              url::IsCodeCacheScheme(origin_lock.GetScheme())) &&
+              !url::Origin::Create(origin_lock).opaque()),
+         base::NotFatalUntil::M159);
  
-   if (!blink::features::IsPersistentCacheForCodeCacheEnabled()) {
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
 index 1f4155cc89a68f7020897cb9b61ad88d2f391991..6d025fb2bdd2d2d0f7f907c166342ea6887835b2 100644
 --- a/content/browser/code_cache/generated_code_cache.h
