@@ -1,0 +1,4 @@
+{
+  "name": "devtools-extension-no-sandbox",
+  "main": "main.js"
+}
