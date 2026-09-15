@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Fri, 28 Aug 2026 19:33:51 -0700
+Subject: GL: add finish-before-multi-attachment-blit workaround.
+
+If performing glBlitFramebuffer to a draw framebuffer which either has
+multiple color attachments, or has a color texture attachment with
+base level greater than zero, glFinish() as a workaround. Apply this
+to Mali GPUs.
+
+It wasn't feasible to add a regression test for this workaround.
+
+Bug: chromium:546252753
+Change-Id: I3ef79ac6f0d25529bd22db598262704d2056802b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8311814
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 8efd15f71c27cd0bc2a9cf0074d77e899ca9c448)
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 9d9e441ad595927f717e7105664e2d84d832bbb5..466242c2cd1e76cf87f0de94eb3f3d134cf0b57c 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -758,6 +758,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo finishBeforeBlitFramebufferMultiAttachment = {
++        "finishBeforeBlitFramebufferMultiAttachment",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 23c63db65a08d07e20745f4c90a4a67d861ba4a1..ec414f9cc04b87bbabe935c1f8e907773b31f1e4 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -993,6 +993,15 @@
+                 "to work around driver bugs."
+             ],
+             "issue": "http://crbug.com/548127218"
++        },
++        {
++            "name": "finish_before_blit_framebuffer_multi_attachment",
++            "category": "Workarounds",
++            "description": [
++                "Issue a glFinish before calling glBlitFramebuffer if the draw framebuffer has ",
++                "multiple color attachments or any color attachment's texture has base_level > 0."
++            ],
++            "issue": "http://crbug.com/546252753"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.cpp b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+index 7df55413c7aebdddf0591253e103beff24cc48ab..6d239cf9809c683088e988c1c93d148f551a20c1 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.cpp
++++ b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+@@ -17,6 +17,7 @@
+ #include "libANGLE/ErrorStrings.h"
+ #include "libANGLE/FramebufferAttachment.h"
+ #include "libANGLE/State.h"
++#include "libANGLE/Texture.h"
+ #include "libANGLE/angletypes.h"
+ #include "libANGLE/formatutils.h"
+ #include "libANGLE/queryconversions.h"
+@@ -973,6 +974,36 @@ angle::Result FramebufferGL::blit(const gl::Context *context,
+         }
+     }
+ 
++    if (features.finishBeforeBlitFramebufferMultiAttachment.enabled)
++    {
++        bool needFinish = false;
++        if (destFramebuffer->getState().getColorAttachmentsMask().count() > 1)
++        {
++            needFinish = true;
++        }
++        else
++        {
++            for (size_t colorIndex : destFramebuffer->getState().getColorAttachmentsMask())
++            {
++                const FramebufferAttachment *attachment =
++                    destFramebuffer->getColorAttachment(colorIndex);
++                if (attachment && attachment->type() == GL_TEXTURE)
++                {
++                    const Texture *texture = attachment->getTexture();
++                    if (texture && texture->getBaseLevel() > 0)
++                    {
++                        needFinish = true;
++                        break;
++                    }
++                }
++            }
++        }
++        if (needFinish)
++        {
++            functions->finish();
++        }
++    }
++
+     functions->blitFramebuffer(finalSourceArea.x, finalSourceArea.y, finalSourceArea.x1(),
+                                finalSourceArea.y1(), finalDestArea.x, finalDestArea.y,
+                                finalDestArea.x1(), finalDestArea.y1(), blitMask, filter);
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 52a360dabcda0505ad0c056862c70ab64b24e3d1..914d801619a84adc371c619c2bfffa58e882fcee 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2754,6 +2754,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // http://crbug.com/534468209
+     ANGLE_FEATURE_CONDITION(features, flushQueriesBeforeDeletingOrUnbindingFbo, isMali);
+ 
++    // http://crbug.com/546252753
++    ANGLE_FEATURE_CONDITION(features, finishBeforeBlitFramebufferMultiAttachment, isMali);
++
+     // https://crbug.com/40264674
+     ANGLE_FEATURE_CONDITION(features, disableClipControl, IsMaliG72OrG76OrG51(functions));
+ 
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 8e36eb5b9242afa25d180b1f0d9b6209d23a384b..600290922fc241b11715bc093106794776ca49b2 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -177,6 +177,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ExposeES32ForTesting, "exposeES32ForTesting"},
+     {Feature::ExposeNonConformantExtensionsAndVersions, "exposeNonConformantExtensionsAndVersions"},
+     {Feature::ExternallySynchronizePipelineCacheAccess, "externallySynchronizePipelineCacheAccess"},
++    {Feature::FinishBeforeBlitFramebufferMultiAttachment, "finishBeforeBlitFramebufferMultiAttachment"},
+     {Feature::FinishDoesNotCauseQueriesToBeAvailable, "finishDoesNotCauseQueriesToBeAvailable"},
+     {Feature::FlushAfterEndingTransformFeedback, "flushAfterEndingTransformFeedback"},
+     {Feature::FlushAfterStreamVertexData, "flushAfterStreamVertexData"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 95b57001d541522d825d38f5aa64a74ae7a5e37a..3ae0adf90f79b925ebb14de70c93db2ce336ba64 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -177,6 +177,7 @@ enum class Feature
+     ExposeES32ForTesting,
+     ExposeNonConformantExtensionsAndVersions,
+     ExternallySynchronizePipelineCacheAccess,
++    FinishBeforeBlitFramebufferMultiAttachment,
+     FinishDoesNotCauseQueriesToBeAvailable,
+     FlushAfterEndingTransformFeedback,
+     FlushAfterStreamVertexData,

@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Thompson <grt@chromium.org>
+Date: Mon, 31 Aug 2026 23:17:16 -0700
+Subject: [Windows] Handle re-entrant destruction when creating the caret
+
+Creation of an AXSystemCaretWin can pump native messages, which means
+that an WM_NCDESTROY could arrive and destroy the window for which the
+caret is being created. Handle this by returning early from
+LegacyRenderWidgetHostHWND::InitOrDeleteSelf.
+
+Fixed: 522546457
+Change-Id: I10b97cb7e1d067edf7b74768ea0598fa0bc65f76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8320427
+Commit-Queue: Greg Thompson <grt@chromium.org>
+Auto-Submit: Greg Thompson <grt@chromium.org>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689642}
+(cherry picked from commit 590ec980cd0778861da360e5f343dc3816a69b9c)
+
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index daf43849609aa21be968a2a569c7405a27ec0e22..433f9f64d6dd82a5ca4b1190f417e897adc2bca7 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -250,16 +250,14 @@ bool LegacyRenderWidgetHostHWND::InitOrDeleteSelf(HWND parent) {
+     return false;
+   }
+ 
+-  // We create a system caret regardless of accessibility mode since not all
++  // Create a system caret regardless of accessibility mode since not all
+   // assistive software that makes use of a caret is classified as a screen
+   // reader, e.g. the built-in Windows Magnifier.
+-  ax_system_caret_ = std::make_unique<ui::AXSystemCaretWin>(hwnd());
+-
+-  // If we failed to create the child, then return false.
+-  if (!::IsWindow(hwnd())) {
+-    delete this;
++  auto ax_system_caret = std::make_unique<ui::AXSystemCaretWin>(hwnd());
++  if (!ref) {
+     return false;
+   }
++  ax_system_caret_ = std::move(ax_system_caret);
+ 
+   // Ignore failure from this call. Some SKUs of Windows such as Hololens do not
+   // support MSAA, and this call failing should not stop us from initializing

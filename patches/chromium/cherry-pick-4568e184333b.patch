@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Patrick Meenan <pmeenan@chromium.org>
+Date: Thu, 27 Aug 2026 18:42:10 -0700
+Subject: Block renderer-provided dcb or dcz Accept-Encoding headers
+
+Dictionary compression is 100% handled in the network service and net
+stack. This makes sure that renderer's don't accidentally try to
+advertise dictionary compression when it's not really enabled.
+
+Bug: 553118043
+Change-Id: If9cdcf100520e0f74216daa80dc948e0f397748f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8300933
+Commit-Queue: Patrick Meenan <pmeenan@chromium.org>
+Reviewed-by: Tsuyoshi Horo <horo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1687719}
+(cherry picked from commit 4568e184333b8b92b07c135f11b10b3d811d8f36)
+
+diff --git a/services/network/public/cpp/header_util.cc b/services/network/public/cpp/header_util.cc
+index f358a1557de7fc1e230f654b42078173425b9788..e34b64658d43d9018548c88bdad93067438403fd 100644
+--- a/services/network/public/cpp/header_util.cc
++++ b/services/network/public/cpp/header_util.cc
+@@ -15,6 +15,7 @@
+ #include "net/http/http_response_headers.h"
+ #include "net/http/http_status_code.h"
+ #include "net/http/http_util.h"
++#include "net/shared_dictionary/shared_dictionary_constants.h"
+ #include "services/network/public/cpp/cors/cors.h"
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
+@@ -83,6 +84,26 @@ bool IsRequestHeaderSafe(std::string_view key, std::string_view value) {
+       return false;
+   }
+ 
++  // The Accept-Encoding header can be set by the media pipeline (e.g.
++  // "identity;q=1, *;q=0"), but must not be used to negotiate shared
++  // dictionary compression (dcb, dcz) which is managed by the network stack.
++  if (base::EqualsCaseInsensitiveASCII(
++          key, net::HttpRequestHeaders::kAcceptEncoding)) {
++    net::HttpUtil::ValuesIterator encodings(value, ',');
++    while (encodings.GetNext()) {
++      if (base::StartsWith(
++              encodings.value(),
++              net::shared_dictionary::kSharedBrotliContentEncodingName,
++              base::CompareCase::INSENSITIVE_ASCII) ||
++          base::StartsWith(
++              encodings.value(),
++              net::shared_dictionary::kSharedZstdContentEncodingName,
++              base::CompareCase::INSENSITIVE_ASCII)) {
++        return false;
++      }
++    }
++  }
++
+   for (const auto& header : kUnsafeHeaderValues) {
+     if (base::EqualsCaseInsensitiveASCII(header.name, key) &&
+         base::EqualsCaseInsensitiveASCII(header.value, value)) {
+diff --git a/services/network/public/cpp/header_util_unittest.cc b/services/network/public/cpp/header_util_unittest.cc
+index 24eab352c7213ed8c8b979f1a01aceca4f7728ea..a5afc30317a2d8665c16a8012230dece0d0521e9 100644
+--- a/services/network/public/cpp/header_util_unittest.cc
++++ b/services/network/public/cpp/header_util_unittest.cc
+@@ -8,6 +8,8 @@
+ #include "base/strings/stringprintf.h"
+ #include "net/http/http_request_headers.h"
+ #include "net/http/http_response_headers.h"
++#include "net/shared_dictionary/shared_dictionary_constants.h"
++#include "services/network/public/cpp/features.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ namespace network {
+@@ -27,6 +29,15 @@ TEST(HeaderUtilTest, IsRequestHeaderSafe) {
+       {"Upgrade", "webbedsocket", false},
+       {"hOsT", "foo.test", false},
+ 
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "identity;q=1, *;q=0", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, identity;q=1, *;q=0",
++       true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz;q=1", false},
++
+       {net::HttpRequestHeaders::kConnection, "Upgrade", false},
+       {net::HttpRequestHeaders::kConnection, "Close", true},
+       {net::HttpRequestHeaders::kTransferEncoding, "Chunked", false},
+@@ -75,6 +86,15 @@ TEST(HeaderUtilTest, AreRequestHeadersSafe) {
+       {net::HttpRequestHeaders::kTransferEncoding, "gzip", false},
+       {"Set-Cookie", "foo=bar", false},
+ 
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "identity;q=1, *;q=0", true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, identity;q=1, *;q=0",
++       true},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "gzip, dcb", false},
++      {net::HttpRequestHeaders::kAcceptEncoding, "dcz;q=1", false},
++
+       {net::HttpRequestHeaders::kConnection, "Upgrade", false},
+       {net::HttpRequestHeaders::kConnection, "Close", true},
+       {net::HttpRequestHeaders::kTransferEncoding, "Chunked", false},
