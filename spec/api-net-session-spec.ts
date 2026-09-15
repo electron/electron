@@ -631,6 +631,61 @@ describe('net module (session)', () => {
         expect(body).to.equal('hi');
         expect(webRequestDetails).to.have.property('url', serverUrl);
       });
+
+      it('emits a warning when invalid headers are provided in onBeforeSendHeaders', async () => {
+        const serverUrl = await respondOnce.toSingleURL((req, res) => res.end('hi'));
+        let warningEmitted = false;
+        const warningListener = (warning: Error) => {
+          console.log('WARNING EMITTED:', warning.message);
+          if (warning.message.includes('Invalid header provided in requestHeaders')) {
+            warningEmitted = true;
+          }
+        };
+        process.on('warning', warningListener);
+
+        session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          callback({
+            requestHeaders: {
+              'X-Bad': 'bad\r\nvalue',
+              ...details.requestHeaders
+            }
+          });
+        });
+        try {
+          await net.fetch(serverUrl);
+        } finally {
+          process.off('warning', warningListener);
+          session.defaultSession.webRequest.onBeforeSendHeaders(null);
+        }
+        expect(warningEmitted).to.be.true('Warning should have been emitted');
+      });
+
+      it('emits a warning when invalid headers are provided in onHeadersReceived', async () => {
+        const serverUrl = await respondOnce.toSingleURL((req, res) => res.end('hi'));
+        let warningEmitted = false;
+        const warningListener = (warning: Error) => {
+          if (warning.message.includes('Invalid header provided in responseHeaders')) {
+            warningEmitted = true;
+          }
+        };
+        process.on('warning', warningListener);
+
+        session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+          callback({
+            responseHeaders: {
+              'X-Bad': ['bad\r\nvalue'],
+              ...details.responseHeaders
+            }
+          });
+        });
+        try {
+          await net.fetch(serverUrl);
+        } finally {
+          process.off('warning', warningListener);
+          session.defaultSession.webRequest.onHeadersReceived(null);
+        }
+        expect(warningEmitted).to.be.true('Warning should have been emitted');
+      });
     });
 
     it('should throw if given an invalid session option', () => {
