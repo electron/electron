@@ -22,11 +22,14 @@ struct AppPackage {
   std::string main;
   // Whether |main| is loaded as an ES module.
   bool esm = false;
+  // package.json "v8Flags"; applied just before |main| is loaded so that the
+  // bundled startup scripts still match their code cache.
+  std::string v8_flags;
 };
 
 // Finds the app and applies its package.json to the process: name, version,
-// the Linux desktop name, v8Flags, and on Windows the Squirrel app user
-// model id. nullopt if no candidate has a readable package.json.
+// the Linux desktop name, and on Windows the Squirrel app user model id.
+// nullopt if no candidate has a readable package.json.
 std::optional<AppPackage> LoadAppPackage();
 
 // The .desktop file name derived from an app name when package.json does not
