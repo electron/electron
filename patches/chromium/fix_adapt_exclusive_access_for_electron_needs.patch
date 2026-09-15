@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e294e81d15 100644
+index 1e0d6650245c12c2320a7cbc5157d8e24bc45b76..5451864c5768d68d53a6cb23c6de4f3ae9542bcb 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -48,7 +48,7 @@
@@ -111,7 +111,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e2
    if (option == FullscreenInternalOption::kTab) {
      origin = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -615,6 +623,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -616,6 +624,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        origin = url::Origin::Create(extension_url_.value());
      }
    }
@@ -119,7 +119,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e2
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == FullscreenInternalOption::kBrowser) {
-@@ -636,6 +645,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -637,6 +646,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -127,7 +127,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e2
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -647,13 +657,14 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -648,13 +658,14 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -144,7 +144,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..fdc5859a111661482ec191cfb54378e2
    // state_prior_to_tab_fullscreen_ to match them else other logic using
    // state_prior_to_tab_fullscreen_ will be incorrect.
    // On Android the state of fullscreen is keep in the Java Fullscreen
-@@ -663,7 +674,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -664,7 +675,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
    if (!weak_ptr) {
      return;
    }

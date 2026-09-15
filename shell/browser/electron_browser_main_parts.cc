@@ -478,7 +478,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
-void ElectronBrowserMainParts::PostCreateThreads() {
+int ElectronBrowserMainParts::PostCreateThreads() {
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
@@ -493,6 +493,7 @@ void ElectronBrowserMainParts::PostCreateThreads() {
   for (const auto& plugin : plugins)
     plugin_service->RegisterInternalPlugin(plugin);
 #endif
+  return 0;
 }
 
 void ElectronBrowserMainParts::PostDestroyThreads() {
