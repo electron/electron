@@ -14,6 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/dictionary.h"
+#include "gin/per_context_data.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_menu_item.h"
 #include "shell/browser/api/electron_api_menu_roles.h"
@@ -438,6 +439,15 @@ void Menu::InstallDefaultApplicationMenu(v8::Isolate* isolate) {
     return;
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  // Nothing need have touched electron.Menu yet; the wrappers created below
+  // get their templates from the constructors.
+  gin::PerContextData* data = gin::PerContextData::From(context);
+  if (!data)
+    return;
+  if (data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
+    GetConstructor(isolate, context, &kWrapperInfo);
+  if (data->GetObjectTemplate(&MenuItem::kWrapperInfo).IsEmpty())
+    MenuItem::GetConstructor(isolate, context, &MenuItem::kWrapperInfo);
   v8::LocalVector<v8::Value> entries(isolate);
   for (std::string_view role : {
 #if BUILDFLAG(IS_MAC)
