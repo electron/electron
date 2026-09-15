@@ -167,45 +167,39 @@ describe('<webview> tag', function () {
     });
   });
 
-  // FIXME(deepak1556): Ch69 follow up.
-  xdescribe('document.visibilityState/hidden', () => {
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
 
     afterEach(closeAllWindows);
 
-    it('updates when the window is shown after the ready-to-show event', async () => {
-      const w = new BrowserWindow({ show: false });
-      const readyToShowSignal = once(w, 'ready-to-show');
-      const pongSignal1 = once(ipcMain, 'pong');
+    it('follows the embedder window when it is hidden and shown again', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: { webviewTag: true, nodeIntegration: true, contextIsolation: false }
+      });
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
-      await pongSignal1;
-      const pongSignal2 = once(ipcMain, 'pong');
-      await readyToShowSignal;
-      w.show();
-
-      const [, visibilityState, hidden] = await pongSignal2;
-      expect(visibilityState).to.equal('visible');
-      expect(hidden).to.be.false();
-    });
-
-    it('inherits the parent window visibility state and receives visibilitychange events', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
-      const [, visibilityState, hidden] = await once(ipcMain, 'pong');
-      expect(visibilityState).to.equal('hidden');
-      expect(hidden).to.be.true();
-
-      // We have to start waiting for the event
-      // before we ask the webContents to resize.
-      const getResponse = once(ipcMain, 'pong');
-      w.webContents.emit('-window-visibility-change', 'visible');
-
-      return getResponse.then(([, visibilityState, hidden]) => {
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false();
-      });
+      }
+
+      w.hide();
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        expect(visibilityState).to.equal('hidden');
+        expect(hidden).to.be.true();
+      }
+
+      w.show();
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        expect(visibilityState).to.equal('visible');
+        expect(hidden).to.be.false();
+      }
     });
   });
 

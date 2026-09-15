@@ -796,6 +796,8 @@ filenames = {
     "shell/renderer/service_worker_data.h",
     "shell/renderer/web_worker_observer.cc",
     "shell/renderer/web_worker_observer.h",
+    "shell/renderer/window_setup.cc",
+    "shell/renderer/window_setup.h",
     "shell/services/node/node_service.cc",
     "shell/services/node/node_service.h",
     "shell/services/node/parent_port.cc",
