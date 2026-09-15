@@ -59,7 +59,10 @@ bool ConvertFromV8(v8::Isolate* isolate,
 // converting each with ConvertFromV8 and recording the first failure on a
 // shared ConversionError under the property's path from the outermost object
 // ("pageSize.width"). A property whose value is undefined or null counts as
-// absent, as it would for `options.key ?? fallback`.
+// absent, as it would for `options.key ?? fallback`. Once error() has failed
+// (including because a getter threw; the exception is left pending for the
+// caller's v8::TryCatch) nothing further is read, so later getters do not run,
+// as if each read had thrown at the first failure.
 class OptionsReader {
  public:
   // |path| is how this object is referred to in messages about its
@@ -87,7 +90,8 @@ class OptionsReader {
   // "<path>.<key>", or just "<key>" at the top.
   std::string PathOf(std::string_view key) const;
 
-  // The property's value if present (not undefined or null).
+  // The property's value if present (not undefined or null). False, without
+  // reading, once error() has failed.
   bool GetValue(std::string_view key, v8::Local<v8::Value>* out) const;
   bool Has(std::string_view key) const;
 

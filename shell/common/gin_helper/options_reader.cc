@@ -46,13 +46,17 @@ std::string OptionsReader::PathOf(std::string_view key) const {
 
 bool OptionsReader::GetValue(std::string_view key,
                              v8::Local<v8::Value>* out) const {
+  if (error_->failed())
+    return false;
   v8::Local<v8::Value> value;
   if (!object_
            ->Get(isolate_->GetCurrentContext(), gin::StringToV8(isolate_, key))
-           .ToLocal(&value) ||
-      value->IsNullOrUndefined()) {
+           .ToLocal(&value)) {
+    error_->Fail(base::StrCat({"Exception reading ", PathOf(key)}));
     return false;
   }
+  if (value->IsNullOrUndefined())
+    return false;
   *out = value;
   return true;
 }
