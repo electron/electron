@@ -77,10 +77,10 @@ index 4f47b7a67327d9ee56f4ca6077e53dba53519d5c..4d6f62e3dfd8fb88784e8f39d4b333ad
    // Show/Hide state is not sent to the renderer when it has requested for us to
    // wait until it requests them via Init().
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ec6de53ff3009fc69639d09dd569f25db9e4b882..001c183497c3e662bbf4f2df70f4d25565879bdd 100644
+index 0f081085e6ac6cba6a9778829d543b01549a9ff5..f87bdd4bbb1c5561ea85057c68c2c75890d4fad4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11230,25 +11230,13 @@ void WebContentsImpl::RendererUnresponsive(
+@@ -11240,25 +11240,13 @@ void WebContentsImpl::RendererUnresponsive(
      base::RepeatingClosure hang_monitor_restarter) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RendererUnresponsive",
                          "render_widget_host", render_widget_host);
