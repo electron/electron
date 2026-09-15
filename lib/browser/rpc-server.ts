@@ -2,8 +2,6 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { webFrameMain } from 'electron/main';
-
 import * as path from 'path';
 
 ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (event) {
@@ -36,18 +34,4 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
   if (event.type !== 'frame') return;
   event.sender?.emit('preload-error', event, preloadPath, error);
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_GET_FRAME_ROUTING_ID_SYNC, function (event, frameToken: string) {
-  if (event.type !== 'frame') return;
-  const senderFrame = event.senderFrame;
-  if (!senderFrame || senderFrame.isDestroyed()) return;
-  return webFrameMain.fromFrameToken(senderFrame.processId, frameToken)?.routingId;
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_GET_FRAME_TOKEN_SYNC, function (event, routingId: number) {
-  if (event.type !== 'frame') return;
-  const senderFrame = event.senderFrame;
-  if (!senderFrame || senderFrame.isDestroyed()) return;
-  return webFrameMain.fromId(senderFrame.processId, routingId)?.frameToken;
 });
