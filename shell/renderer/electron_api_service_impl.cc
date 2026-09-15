@@ -4,6 +4,7 @@
 
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -11,10 +12,12 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_ipc_native.h"
+#include "shell/renderer/preload_utils.h"
 
 #include "base/functional/callback_helpers.h"
 #include "base/no_destructor.h"
@@ -371,6 +374,186 @@ void ElectronApiServiceImpl::SetVisualZoomLevelLimits(
   render_frame()->GetWebFrame()->View()->SetDefaultPageScaleLimits(min_level,
                                                                    max_level);
   std::move(callback).Run();
+}
+
+namespace {
+
+// release() of the object handed to the shared texture receiver: releases the
+// imported texture, then tells the browser this frame no longer references it.
+void ReleaseReceivedSharedTexture(
+    const v8::FunctionCallbackInfo<v8::Value>& info) {
+  v8::Isolate* isolate = info.GetIsolate();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Value> imported, texture_id, release;
+  if (!data->Get(context, 0).ToLocal(&imported) || !imported->IsObject() ||
+      !data->Get(context, 1).ToLocal(&texture_id) ||
+      !imported.As<v8::Object>()
+           ->Get(context, gin::StringToSymbol(isolate, "release"))
+           .ToLocal(&release) ||
+      !release->IsFunction()) {
+    return;
+  }
+  v8::Local<v8::Function> notify_browser;
+  if (!v8::Function::New(
+           context,
+           [](const v8::FunctionCallbackInfo<v8::Value>& info) {
+             v8::Isolate* isolate = info.GetIsolate();
+             v8::Local<v8::Context> context = isolate->GetCurrentContext();
+             v8::Local<v8::Value> binding = preload_utils::GetBinding(
+                 isolate, gin::StringToV8(isolate, "electron_renderer_ipc"));
+             v8::Local<v8::Value> ipc_renderer, invoke;
+             if (binding.IsEmpty() || !binding->IsObject() ||
+                 !binding.As<v8::Object>()
+                      ->Get(context,
+                            gin::StringToSymbol(isolate, "ipcRenderer"))
+                      .ToLocal(&ipc_renderer) ||
+                 !ipc_renderer->IsObject() ||
+                 !ipc_renderer.As<v8::Object>()
+                      ->Get(context, gin::StringToSymbol(isolate, "invoke"))
+                      .ToLocal(&invoke) ||
+                 !invoke->IsFunction()) {
+               return;
+             }
+             v8::Local<v8::Value> args[] = {
+                 gin::StringToV8(
+                     isolate, "IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN"),
+                 info.Data()};
+             v8::Local<v8::Value> result;
+             if (invoke.As<v8::Function>()
+                     ->Call(context, ipc_renderer, 2, args)
+                     .ToLocal(&result)) {
+               info.GetReturnValue().Set(result);
+             }
+           },
+           texture_id, 0, v8::ConstructorBehavior::kThrow)
+           .ToLocal(&notify_browser)) {
+    return;
+  }
+  v8::Local<v8::Value> argv[] = {notify_browser};
+  v8::Local<v8::Value> result;
+  if (release.As<v8::Function>()
+          ->Call(context, imported, 1, argv)
+          .ToLocal(&result)) {
+    info.GetReturnValue().Set(result);
+  }
+}
+
+}  // namespace
+
+void ElectronApiServiceImpl::ReceiveSharedTexture(
+    electron::SerializedValue transfer,
+    const std::string& texture_id,
+    electron::SerializedValue args,
+    ReceiveSharedTextureCallback callback) {
+  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
+  v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = renderer_client_->GetContext(frame, isolate);
+  v8::Context::Scope context_scope(context);
+  v8::MicrotasksScope microtasks_scope(context,
+                                       v8::MicrotasksScope::kRunMicrotasks);
+  v8::TryCatch try_catch(isolate);
+
+  auto reply_error = [&]() {
+    v8::Local<v8::Value> error =
+        try_catch.HasCaught()
+            ? try_catch.Exception()
+            : v8::Exception::Error(
+                  gin::StringToV8(isolate, "Failed to import shared texture"));
+    try_catch.Reset();
+    electron::SerializedValue serialized;
+    if (!electron::SerializeV8Value(isolate, error, &serialized))
+      serialized = electron::SerializedValue();
+    std::move(callback).Run(false, std::move(serialized));
+  };
+
+  auto get = [&](v8::Local<v8::Value> object, const char* key,
+                 v8::Local<v8::Value>* out) {
+    return object->IsObject() &&
+           object.As<v8::Object>()
+               ->Get(context, gin::StringToSymbol(isolate, key))
+               .ToLocal(out);
+  };
+
+  // imported = sharedTexture.subtle.finishTransferSharedTexture({...transfer,
+  // id})
+  v8::Local<v8::Value> binding = preload_utils::GetBinding(
+      isolate, gin::StringToV8(isolate, "electron_common_shared_texture"));
+  v8::Local<v8::Value> finish, transfer_value, imported;
+  if (try_catch.HasCaught() ||
+      !get(binding, "finishTransferSharedTexture", &finish) ||
+      !finish->IsFunction()) {
+    return reply_error();
+  }
+  transfer_value = gin::ConvertToV8(isolate, transfer);
+  if (!transfer_value->IsObject() ||
+      transfer_value.As<v8::Object>()
+          ->Set(context, gin::StringToSymbol(isolate, "id"),
+                gin::StringToV8(isolate, texture_id))
+          .IsNothing() ||
+      !finish.As<v8::Function>()
+           ->Call(context, binding, 1, &transfer_value)
+           .ToLocal(&imported) ||
+      !imported->IsObject()) {
+    return reply_error();
+  }
+
+  // Reply with imported.getFrameCreationSyncToken().
+  v8::Local<v8::Value> get_sync_token, sync_token;
+  electron::SerializedValue serialized_token;
+  if (!get(imported, "getFrameCreationSyncToken", &get_sync_token) ||
+      !get_sync_token->IsFunction() ||
+      !get_sync_token.As<v8::Function>()
+           ->Call(context, imported, 0, nullptr)
+           .ToLocal(&sync_token) ||
+      !electron::SerializeV8Value(isolate, sync_token, &serialized_token)) {
+    return reply_error();
+  }
+  std::move(callback).Run(true, std::move(serialized_token));
+
+  // receiver({ importedSharedTexture: { textureId, subtle, getVideoFrame,
+  // release } }, ...args)
+  try_catch.SetVerbose(true);
+  gin_helper::Dictionary global(isolate, context->Global());
+  v8::Local<v8::Value> receiver;
+  if (!global.GetHidden("sharedTextureReceiver", &receiver) ||
+      !receiver->IsFunction()) {
+    return;
+  }
+  v8::Local<v8::Value> get_video_frame;
+  if (!get(imported, "getVideoFrame", &get_video_frame))
+    return;
+  v8::Local<v8::Value> release_data_items[] = {
+      imported, gin::StringToV8(isolate, texture_id)};
+  v8::Local<v8::Function> release;
+  if (!v8::Function::New(context, ReleaseReceivedSharedTexture,
+                         v8::Array::New(isolate, release_data_items, 2), 0,
+                         v8::ConstructorBehavior::kThrow)
+           .ToLocal(&release)) {
+    return;
+  }
+  auto wrapper = gin_helper::Dictionary::CreateEmpty(isolate);
+  wrapper.Set("textureId", texture_id);
+  wrapper.Set("subtle", imported);
+  wrapper.Set("getVideoFrame", get_video_frame);
+  wrapper.Set("release", release.As<v8::Value>());
+  auto data = gin_helper::Dictionary::CreateEmpty(isolate);
+  data.Set("importedSharedTexture", wrapper);
+
+  v8::LocalVector<v8::Value> argv(isolate, {data.GetHandle()});
+  v8::Local<v8::Value> extra = gin::ConvertToV8(isolate, args);
+  if (extra->IsArray()) {
+    v8::Local<v8::Array> extra_array = extra.As<v8::Array>();
+    for (uint32_t i = 0; i < extra_array->Length(); ++i) {
+      v8::Local<v8::Value> item;
+      if (extra_array->Get(context, i).ToLocal(&item))
+        argv.push_back(item);
+    }
+  }
+  std::ignore = receiver.As<v8::Function>()->Call(
+      context, v8::Undefined(isolate), static_cast<int>(argv.size()),
+      argv.data());
 }
 
 }  // namespace electron

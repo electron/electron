@@ -290,7 +290,9 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
-    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
+    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle & {
+      setSharedTextureReceiver: Electron.SharedTexture['setSharedTextureReceiver'];
+    };
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
