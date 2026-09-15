@@ -2284,29 +2284,26 @@ void WebContents::DidStopLoading() {
   if (web_preferences && web_preferences->ShouldUsePreferredSizeMode())
     web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 
-  // Loading also stops when a renderer dies mid-load. Content reports that
-  // from inside RenderFrameHostImpl::RenderProcessGone, and a navigation
-  // started by the app in response (a listener, or the rejected loadURL()
-  // promise) would replace the frame host content is still tearing down. Post
-  // the event in that case, as PrimaryMainFrameRenderProcessGone does.
+  // Loading also stops when a renderer dies mid-load, reported from inside
+  // RenderFrameHostImpl::RenderProcessGone. A navigation started by the app
+  // while handling this event (or the loadURL() rejection it causes) would
+  // replace the frame host content is still tearing down, so navigations are
+  // posted until the emit returns; see PostNavigationInRendererTeardown().
   const bool in_renderer_teardown =
       std::exchange(navigation_discarded_by_process_gone_, false) ||
       !web_contents()
            ->GetPrimaryMainFrame()
            ->GetProcess()
            ->IsInitializedAndNotDead();
-  if (in_renderer_teardown) {
-    content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(
-                       [](base::WeakPtr<WebContents> self) {
-                         if (self)
-                           self->Emit("did-stop-loading");
-                       },
-                       weak_factory_.GetWeakPtr()));
-    return;
-  }
-
+  base::AutoReset<bool> defer(&in_renderer_teardown_, in_renderer_teardown);
   Emit("did-stop-loading");
+}
+
+bool WebContents::PostNavigationInRendererTeardown(base::OnceClosure navigate) {
+  if (!in_renderer_teardown_)
+    return false;
+  content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE, std::move(navigate));
+  return true;
 }
 
 bool WebContents::EmitNavigationEvent(
@@ -2885,9 +2882,6 @@ void WebContents::LoadURL(const GURL& url,
     params.reload_type = content::ReloadType::BYPASSING_CACHE;
   }
 
-  // Calling LoadURLWithParams() can trigger JS which destroys |this|.
-  auto weak_this = GetWeakPtr();
-
   params.transition_type = ui::PageTransitionFromInt(
       ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
@@ -2904,8 +2898,22 @@ void WebContents::LoadURL(const GURL& url,
     return;
   }
 
+  if (in_renderer_teardown_) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&WebContents::LoadURLWithParams,
+                                  GetWeakPtr(), std::move(params)));
+    return;
+  }
+  LoadURLWithParams(std::move(params));
+}
+
+void WebContents::LoadURLWithParams(
+    content::NavigationController::LoadURLParams params) {
   if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
-    pending_unload_url_ = url;
+    pending_unload_url_ = params.url;
+
+  // Calling LoadURLWithParams() can trigger JS which destroys |this|.
+  auto weak_this = GetWeakPtr();
 
   // Discard non-committed entries to ensure we don't re-use a pending entry.
   web_contents()->GetController().DiscardNonCommittedEntries();
@@ -2929,11 +2937,17 @@ void WebContents::LoadURL(const GURL& url,
 // result in them succeeding, but reposting which although more correct could be
 // considering a breaking change.
 void WebContents::Reload() {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::Reload, GetWeakPtr())))
+    return;
   web_contents()->GetController().Reload(content::ReloadType::NORMAL,
                                          /* check_for_repost */ true);
 }
 
 void WebContents::ReloadIgnoringCache() {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::ReloadIgnoringCache, GetWeakPtr())))
+    return;
   web_contents()->GetController().Reload(content::ReloadType::BYPASSING_CACHE,
                                          /* check_for_repost */ true);
 }
@@ -3001,6 +3015,9 @@ bool WebContents::CanGoBack() const {
 }
 
 void WebContents::GoBack() {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::GoBack, GetWeakPtr())))
+    return;
   if (CanGoBack())
     web_contents()->GetController().GoBack();
 }
@@ -3010,6 +3027,9 @@ bool WebContents::CanGoForward() const {
 }
 
 void WebContents::GoForward() {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::GoForward, GetWeakPtr())))
+    return;
   if (CanGoForward())
     web_contents()->GetController().GoForward();
 }
@@ -3019,6 +3039,9 @@ bool WebContents::CanGoToOffset(int offset) const {
 }
 
 void WebContents::GoToOffset(int offset) {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::GoToOffset, GetWeakPtr(), offset)))
+    return;
   if (CanGoToOffset(offset))
     web_contents()->GetController().GoToOffset(offset);
 }
@@ -3028,6 +3051,9 @@ bool WebContents::CanGoToIndex(int index) const {
 }
 
 void WebContents::GoToIndex(int index) {
+  if (PostNavigationInRendererTeardown(
+          base::BindOnce(&WebContents::GoToIndex, GetWeakPtr(), index)))
+    return;
   if (CanGoToIndex(index))
     web_contents()->GetController().GoToIndex(index);
 }
