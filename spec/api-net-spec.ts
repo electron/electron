@@ -1888,6 +1888,24 @@ describe('net module', () => {
           expect(await resp.text()).to.equal('anchovies');
         });
 
+        test('can upload a ReadableStream body', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            request.on('data', (chunk) => response.write(chunk));
+            request.on('end', () => response.end());
+          });
+          const chunks = Array.from({ length: 64 }, (_, i) => `chunk ${i};`);
+          const expected = chunks.join('');
+          const body = new ReadableStream<Uint8Array>({
+            pull(controller) {
+              const chunk = chunks.shift();
+              if (chunk) controller.enqueue(new TextEncoder().encode(chunk));
+              else controller.close();
+            }
+          });
+          const resp = await net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit);
+          expect(await resp.text()).to.equal(expected);
+        });
+
         test('can read response as an array buffer', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
             request.on('data', (chunk) => response.write(chunk));

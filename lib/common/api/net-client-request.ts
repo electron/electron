@@ -124,19 +124,17 @@ class IncomingMessage extends Readable {
 
 /** Writable stream that buffers up everything written to it. */
 class SlurpStream extends Writable {
-  _data: Buffer;
-  constructor() {
-    super();
-    this._data = Buffer.alloc(0);
-  }
+  _chunks: Buffer[] = [];
 
   _write(chunk: Buffer, encoding: string, callback: () => void) {
-    this._data = Buffer.concat([this._data, chunk]);
+    this._chunks.push(chunk);
     callback();
   }
 
   data() {
-    return this._data;
+    const data = this._chunks.length === 1 ? this._chunks[0] : Buffer.concat(this._chunks);
+    this._chunks = [];
+    return data;
   }
 }
 
