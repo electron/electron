@@ -1,0 +1,220 @@
+name: Coverage
+
+# Manually dispatched: builds Electron with Clang source-based code coverage
+# (use_clang_coverage=true), runs the full test suite against the instrumented
+# binaries, and publishes an llvm-cov HTML report for Electron's own C++.
+#
+# Instrumented binaries run several times slower than a normal testing build,
+# so this is deliberately not wired into the per-PR build.
+
+on:
+  push:  # TODO: Remove after debugging
+  workflow_dispatch:
+    inputs:
+      build-image-sha:
+        type: string
+        description: 'SHA for electron/build image'
+        default: ''
+        required: false
+      platform:
+        type: choice
+        description: 'Platform to measure coverage on'
+        default: all
+        required: false
+        options:
+          - all
+          - linux
+          - macos
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  setup:
+    if: ${{ github.repository == 'electron/electron' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+      # The inputs context is empty for non-dispatch events; fall back to 'all'.
+      linux: ${{ inputs.platform == '' || inputs.platform == 'linux' || inputs.platform == 'all' }}
+      macos: ${{ inputs.platform == '' || inputs.platform == 'macos' || inputs.platform == 'all' }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+
+  # GCLIENT_EXTRA_ARGS feeds the DEPS hash, so these must match the values
+  # pipeline-segment-electron-build.yml sets or the src cache is missed.
+  checkout-linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.linux == 'true' }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        target-platform: linux
+
+  checkout-macos:
+    needs: setup
+    if: ${{ needs.setup.outputs.macos == 'true' }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: macos
+
+  build-siso-linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.linux == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: linux-amd64
+
+  build-siso-macos:
+    needs: setup
+    if: ${{ needs.setup.outputs.macos == 'true' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    with:
+      host: darwin-arm64
+
+  # Instrumented builds (use_clang_coverage=true via GN_EXTRA_ARGS)
+  build-linux-x64:
+    needs: [checkout-linux, build-siso-linux]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      generate-chromedriver: false
+      upload-to-storage: '0'
+      is-coverage: true
+    secrets: inherit
+
+  build-macos-arm64:
+    needs: [checkout-macos, build-siso-macos]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: macos-15-xlarge
+      target-platform: macos
+      target-arch: arm64
+      target-variant: darwin
+      is-release: false
+      gn-build-type: testing
+      generate-symbols: false
+      generate-chromedriver: false
+      upload-to-storage: '0'
+      is-coverage: true
+    secrets: inherit
+
+  test-linux-x64:
+    needs: [checkout-linux, build-linux-x64]
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    with:
+      target-platform: linux
+      target-arch: x64
+      test-runs-on: electron-arc-centralus-linux-amd64-4core
+      test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+      is-coverage: true
+    secrets: inherit
+
+  test-macos-arm64:
+    needs: build-macos-arm64
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    with:
+      target-platform: macos
+      target-arch: arm64
+      test-runs-on: macos-15
+      is-coverage: true
+    secrets: inherit
+
+  # Report on whatever counters the suite produced, even when tests failed -
+  # a red suite still yields a usable coverage picture.
+  report-linux-x64:
+    needs: [checkout-linux, test-linux-x64]
+    if: ${{ !cancelled() && needs.test-linux-x64.result != 'skipped' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-coverage-report.yml
+    with:
+      target-platform: linux
+      target-arch: x64
+      report-runs-on: electron-arc-centralus-linux-amd64-8core
+      report-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root"}'
+
+  report-macos-arm64:
+    needs: test-macos-arm64
+    if: ${{ !cancelled() && needs.test-macos-arm64.result != 'skipped' }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-electron-coverage-report.yml
+    with:
+      target-platform: macos
+      target-arch: arm64
+      report-runs-on: macos-15
