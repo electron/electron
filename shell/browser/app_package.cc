@@ -21,7 +21,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "third_party/icu/source/common/unicode/normalizer2.h"
 #include "third_party/icu/source/common/unicode/uchar.h"
-#include "v8/include/v8-initialization.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
@@ -80,8 +79,6 @@ void Apply(const base::DictValue& manifest) {
           ? *desktop_name
           : DefaultDesktopName(base::UTF8ToUTF16(browser->GetName())));
 #endif
-  if (const std::string* v8_flags = manifest.FindString("v8Flags"))
-    v8::V8::SetFlagsFromString(v8_flags->c_str(), v8_flags->size());
 }
 
 }  // namespace
@@ -125,6 +122,8 @@ std::optional<AppPackage> LoadAppPackage() {
     package.path = path;
     const std::string* main = dict.FindString("main");
     package.main = main && !main->empty() ? *main : "index.js";
+    if (const std::string* v8_flags = dict.FindString("v8Flags"))
+      package.v8_flags = *v8_flags;
     const std::string* type = dict.FindString("type");
     package.esm =
         (type && *type == "module" && !base::EndsWith(package.main, ".cjs")) ||
