@@ -389,7 +389,7 @@ describe('contextBridge', () => {
           return new Promise((resolve) => {
             let observed = false;
             const original = Function.prototype.bind;
-            // eslint-disable-next-line no-extend-native
+            // oxlint-disable-next-line no-extend-native
             Function.prototype.bind = new Proxy(original, {
               apply(target, thisArg, args) {
                 observed = true;
@@ -397,7 +397,7 @@ describe('contextBridge', () => {
               }
             });
             root.example.getPromise().then((v: string) => {
-              // eslint-disable-next-line no-extend-native
+              // oxlint-disable-next-line no-extend-native
               Function.prototype.bind = original;
               resolve({ observed, value: v });
             });
@@ -1062,7 +1062,7 @@ describe('contextBridge', () => {
               throw new Error('whoops');
             },
             throwWeird: () => {
-              throw 'this is no error...'; // eslint-disable-line no-throw-literal
+              throw 'this is no error...'; // oxlint-disable-line no-throw-literal
             },
             throwNotClonable: () => {
               return Object(Symbol('foo'));

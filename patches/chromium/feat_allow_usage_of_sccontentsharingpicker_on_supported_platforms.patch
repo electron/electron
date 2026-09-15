@@ -366,7 +366,7 @@ index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823
                               std::move(receiver_on_io_thread)),
            std::move(after_start_capture_callback));
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
-index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d8b55d85d 100644
+index ef33761a5794ac1bd157d1bff0d579735282edef..42effd7b5454284914ca86d48397e08d382ade99 100644
 --- a/content/public/browser/desktop_media_id.h
 +++ b/content/public/browser/desktop_media_id.h
 @@ -35,6 +35,8 @@ struct CONTENT_EXPORT DesktopMediaID {

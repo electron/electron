@@ -12,7 +12,6 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-/* oxlint-disable-next-line no-restricted-imports */
 import { ifit, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
 

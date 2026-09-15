@@ -104,10 +104,10 @@ index 838106acff8fda886a11a28e9f23f47588a2e8d4..c977e31ab87158a527bf76d0e1f7283e
        (per_process::cli_options->use_largepages == "on" ||
         per_process::cli_options->use_largepages == "silent")) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 900bf7a3d67245dbbdbe9198671bc4de5093dd52..1c37d60329af852a53f352bfc8c53a37acf34ae1 100644
+index 57eed79a77d49fd4c118313bbd352a029689940c..5801ee7773824a216cc6114fc602fd79071ebc28 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -1054,8 +1054,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -1043,8 +1043,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
  
    ContextifyScript* contextify_script = New(env, args.This());
  

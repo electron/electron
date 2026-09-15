@@ -712,7 +712,7 @@ index 8335c2b4893952ff2d37f9582d79c05d6383226f..92a916d8cb7015519e9054e8753da41e
    // runs a nested run loop in the renderer until print preview for
    // window.print() finishes.
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 4e509e3d127391faee5b9417c7dc3557aa918de5..9c8d9d72dbf367743ffd79958776bc38cffdc753 100644
+index 53172b32dabe34c4ac5ea9a762f1882d16b71cbb..368116faddcf6216f460d7f92c1704d8abc448a7 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -56,6 +56,7 @@

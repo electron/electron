@@ -13,7 +13,7 @@ describe('ImageView', () => {
   });
 
   it('can be instantiated with no arguments', () => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new ImageView();
   });
 

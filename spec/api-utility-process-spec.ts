@@ -575,13 +575,14 @@ describe('utilityProcess module', () => {
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
       deferKillUtilityProcess(child);
-      // The fixture prints dns.getDefaultResultOrder() and exits on its own.
-      const output = await outputUntil(child, /ipv4first|verbatim/);
-      expect(output).to.contain('ipv4first', 'default verbatim should be ipv4first');
+      await once(child, 'spawn');
+      const result = once(child, 'message');
+      child.postMessage('get-default-result-order');
+      const [order] = await result;
+      expect(order).to.equal('ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
