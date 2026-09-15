@@ -133,6 +133,15 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #endif
 }
 
+void BaseWindow::OnWrapped(v8::Isolate* isolate) {
+#if !BUILDFLAG(IS_MAC)
+  // The application menu is each window's menu bar until it sets its own,
+  // which the JS that runs while constructing it may already do.
+  if (Menu* menu = Menu::application_menu())
+    SetMenuNatively(menu);
+#endif
+}
+
 BaseWindow::BaseWindow(gin::Arguments* args,
                        const gin_helper::Dictionary& options)
     : BaseWindow(args->isolate(), options) {
