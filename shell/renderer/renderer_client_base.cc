@@ -393,10 +393,26 @@ void RendererClientBase::DidCreateScriptContext(
   RegisterOomStackTraceCallback(isolate);
 }
 
+bool RendererClientBase::HasScriptsToInject(
+    content::RenderFrame* render_frame) const {
+  return true;
+}
+
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
-  // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
+  // Blink only creates a document's main-world script context once the page
+  // runs script. Preload scripts and Node.js have to run even in a document
+  // with no scripts of its own, so force the context for the frames Electron
+  // injects into (see ShouldLoadPreload()); leave every other frame alone.
+  const auto& prefs = render_frame->GetBlinkPreferences();
+  if ((render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames ||
+       IsDevTools(render_frame) || IsDevToolsExtension(render_frame)) &&
+      HasScriptsToInject(render_frame)) {
+    blink::WebLocalFrame* web_frame = render_frame->GetWebFrame();
+    v8::HandleScope handle_scope(
+        web_frame->GetAgentGroupScheduler()->Isolate());
+    web_frame->MainWorldScriptContext();
+  }
 }
 
 bool RendererClientBase::OverrideCreatePlugin(
