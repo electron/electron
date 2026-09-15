@@ -18,7 +18,7 @@ const paperFormats: Record<string, ElectronInternal.PageSize> = {
 } as const;
 
 function checkType<T>(value: T, type: 'number' | 'boolean' | 'string' | 'object', name: string): T {
-  // eslint-disable-next-line valid-typeof
+  // oxlint-disable-next-line valid-typeof
   if (typeof value !== type) {
     throw new TypeError(`${name} must be a ${type}`);
   }

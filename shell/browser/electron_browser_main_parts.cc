@@ -62,6 +62,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/platform_util.h"
 #include "shell/common/v8_util.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -477,7 +478,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
-void ElectronBrowserMainParts::PostCreateThreads() {
+int ElectronBrowserMainParts::PostCreateThreads() {
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
@@ -492,6 +493,7 @@ void ElectronBrowserMainParts::PostCreateThreads() {
   for (const auto& plugin : plugins)
     plugin_service->RegisterInternalPlugin(plugin);
 #endif
+  return 0;
 }
 
 void ElectronBrowserMainParts::PostDestroyThreads() {
@@ -508,17 +510,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if BUILDFLAG(IS_LINUX)
-  // GTK3's gtk_init() probes the display for OpenGL and loads the GL driver
-  // into this process; nothing here uses GdkGLContext. GDK_GL is read once at
-  // init and only by GTK3 (GTK4 renders with GL itself and ignores it).
-  auto env = base::Environment::Create();
-  constexpr char kGdkGl[] = "GDK_GL";
-  const bool restore_gdk_gl = !env->HasVar(kGdkGl);
-  if (restore_gdk_gl)
-    env->SetVar(kGdkGl, "disable");
   auto* linux_ui = ui::GetDefaultLinuxUi();
-  if (restore_gdk_gl)
-    env->UnSetVar(kGdkGl);
   CHECK(linux_ui);
   linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
 
@@ -609,6 +601,16 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
   }
+
+#if BUILDFLAG(IS_LINUX)
+  // Read by media/audio/pulse in this process and inherited by the audio
+  // service, so PulseAudio shows the app's name and icon.
+  auto env = base::Environment::Create();
+  env->SetVar("ELECTRON_PA_APP_NAME", GetPossiblyOverriddenApplicationName());
+  env->SetVar("ELECTRON_PA_ICON_NAME",
+              platform_util::GetXdgAppId().value_or(
+                  command_line->GetProgram().BaseName().value()));
+#endif
 
   fake_browser_process_->PreMainMessageLoopRun();
 

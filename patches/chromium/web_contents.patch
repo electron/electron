@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ef5291544a95a491ff26b4ba4383d58ba799e0c4..4564bf7951d4672ecf153cc2351bc96252a92348 100644
+index b4668743cacc06159ee0711f0e94a863b02b83f7..7f5dbff6f8c822aee3bd1dab0854233edd231687 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4440,6 +4440,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,7 +35,7 @@ index ef5291544a95a491ff26b4ba4383d58ba799e0c4..4564bf7951d4672ecf153cc2351bc962
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 5bb53e8ecfffa77ef7a101d7058f1ed2876cb052..7c58d5201819575b134436511c202cad3d4378d6 100644
+index dce1307c7451224e6d23dad62ee4a177e6ef62b5..114ff9f255230670a7d2c246c9d7d623ad982128 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -138,12 +138,14 @@ class PrerenderHandle;

@@ -19,6 +19,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
@@ -500,6 +501,27 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
       false, std::vector<download::DownloadItem::ReceivedSlice>());
+}
+
+// Runs as its own task because DownloadManager dispatches OnDownloadCreated
+// over a non-reentrant observer list and the caller may be a will-download
+// handler.
+void CreateInterruptedDownloadItem(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    const base::FilePath& path,
+    const std::vector<GURL>& url_chain,
+    const std::string& mime_type,
+    int64_t offset,
+    int64_t length,
+    const std::string& last_modified,
+    const std::string& etag,
+    const base::Time& start_time) {
+  if (!browser_context)
+    return;
+  auto* download_manager = browser_context->GetDownloadManager();
+  download_manager->GetNextId(base::BindOnce(
+      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
+      length, last_modified, etag, start_time));
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1104,11 +1126,12 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager = browser_context()->GetDownloadManager();
-  download_manager->GetNextId(base::BindRepeating(
-      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
-      length, last_modified, etag,
-      base::Time::FromSecondsSinceUnixEpoch(start_time)));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&CreateInterruptedDownloadItem,
+                     browser_context()->GetWeakPtr(), path, url_chain,
+                     mime_type, offset, length, last_modified, etag,
+                     base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
 std::string Session::RegisterPreloadScript(

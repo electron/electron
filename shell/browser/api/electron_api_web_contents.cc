@@ -29,6 +29,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/timer/elapsed_timer.h"
 #include "base/unguessable_token.h"
@@ -41,6 +42,7 @@
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/input/input_constants.h"
+#include "components/input/input_router.h"
 #include "components/input/native_web_keyboard_event.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -181,6 +183,7 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -629,12 +632,14 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
+                       float scale_factor,
                        const content::CopyFromSurfaceResult& result) {
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
   if (!ui_task_runner->RunsTasksInCurrentSequence()) {
     ui_task_runner->PostTask(
-        FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                  std::move(capture_handle), result));
+        FROM_HERE,
+        base::BindOnce(&OnCapturePageDone, std::move(promise),
+                       std::move(capture_handle), scale_factor, result));
     return;
   }
 
@@ -645,8 +650,8 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
     return;
   }
 
-  // Hack to enable transparency in captured image
-  promise.Resolve(gfx::Image::CreateFrom1xBitmap(result->bitmap));
+  promise.Resolve(gfx::Image(
+      gfx::ImageSkia::CreateFromBitmap(result->bitmap, scale_factor)));
   capture_handle.RunAndReset();
 }
 
@@ -2162,6 +2167,19 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->MaybeSetupMojoConnection();
+
+  // A Node.js renderer used to fetch its preload list with a sync IPC, which
+  // also worked for a script context created on the frame's initial empty
+  // document (first navigation still pending or cancelled, then e.g.
+  // webFrameMain.executeJavaScript()). Push the list at frame creation so
+  // that case still sees it; the payload is only the paths, so the extra
+  // message per frame is cheap. ReadyToCommitNavigation refreshes it.
+  if (!renderer_startup_data::IsFrameInSandboxedRenderer(render_frame_host)) {
+    const bool allow_subframes =
+        web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
+    if (!render_frame_host->GetParent() || allow_subframes)
+      SendRendererStartupData(render_frame_host);
+  }
 }
 
 void WebContents::OnBackgroundColorChanged() {
@@ -2494,19 +2512,18 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
-// Pushes preload contents + process.env + helperExecPath over an associated
-// channel ordered before CommitNavigation, so the renderer never has to ask.
+// Pushes the preload list (plus, for sandboxed frames, preload contents,
+// process.env and helperExecPath) over an associated channel ordered before
+// CommitNavigation, so the renderer never has to ask.
 void WebContents::MaybeSendRendererStartupData(
     content::NavigationHandle* navigation_handle) {
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
-    return;
   // May be null for a WebContents that never went through a
   // BrowserWindow/webContents constructor (extension pages, devtools); such a
   // WebContents has no per-WC preload but still gets session preloads + env.
   auto* web_prefs = WebContentsPreferences::From(web_contents());
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
-  // that will actually compile the sandbox bundle.
+  // that will actually run preloads / create a Node.js environment.
   content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
@@ -2525,6 +2542,13 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
+  SendRendererStartupData(rfh);
+}
+
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2536,11 +2560,12 @@ void WebContents::MaybeSendRendererStartupData(
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
-  // content.mojom.Frame (the navigation channel), so this message is ordered
-  // before the CommitNavigation that the browser sends right after
-  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
-  // created in RenderFrameCreated, before any navigation — will have cached it
-  // by the time DidCreateScriptContext fires.
+  // content.mojom.Frame (the navigation channel), so a push from
+  // ReadyToCommitNavigation is ordered before the CommitNavigation that the
+  // browser sends right after it returns, and a push from HandleNewRenderFrame
+  // is ordered before anything else on the frame. The renderer's
+  // ElectronApiServiceImpl — created in RenderFrameCreated, before any
+  // navigation — will have cached it by the time DidCreateScriptContext fires.
   mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));
@@ -2784,6 +2809,10 @@ content::WebContents* WebContents::GetDevToolsWebContents() const {
   if (!inspectable_web_contents_)
     return nullptr;
   return inspectable_web_contents_->GetDevToolsWebContents();
+}
+
+content::WebContents* WebContents::GetOpenDevToolsWebContents() const {
+  return devtools_web_contents_.IsEmpty() ? nullptr : GetDevToolsWebContents();
 }
 
 void WebContents::WebContentsDestroyed() {
@@ -3349,7 +3378,7 @@ void WebContents::ForcefullyCrashRenderer() {
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
     // A generic |CrashDumpHungChildProcess()| is not implemented for Linux.
     // Instead we send an explicit IPC to crash on the renderer's IO thread.
-    rph->ForceCrash();
+    rph->CrashHungProcess();
 #else
     // Try to generate a crash report for the hung process.
 #if !IS_MAS_BUILD()
@@ -3385,8 +3414,13 @@ v8::Local<v8::Promise> WebContents::SavePage(
     return handle;
   }
 
+  // SavePackage creates its download item synchronously; run it as its own
+  // task for the same reason as Session::CreateInterruptedDownload().
   auto* handler = new SavePageHandler{std::move(promise)};
-  handler->Handle(full_file_path, save_type, web_contents());
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&SavePageHandler::Handle, base::Unretained(handler),
+                     full_file_path, save_type, web_contents()->GetWeakPtr()));
 
   return handle;
 }
@@ -4026,6 +4060,12 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     return;
 
   content::RenderWidgetHost* rwh = view->GetRenderWidgetHost();
+  // Input is held back until the first frame after a navigation arrives;
+  // an explicitly sent event should not be dropped on that account.
+  input::InputRouter* input_router =
+      content::RenderWidgetHostImpl::From(rwh)->input_router();
+  if (!input_router->IsActive())
+    input_router->MakeActive();
   blink::WebInputEvent::Type type =
       gin::GetWebInputEventType(isolate, input_event);
   if (blink::WebInputEvent::IsMouseEventType(type)) {
@@ -4172,13 +4212,13 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
 
   // Capture at the view's own scale factor. Offscreen views render at
   // |offscreen.deviceScaleFactor|, not the display's, and it may be below 1.
-  const gfx::Size bitmap_size =
-      gfx::ScaleToCeiledSize(view_size, view->GetDeviceScaleFactor());
+  const float scale_factor = view->GetDeviceScaleFactor();
+  const gfx::Size bitmap_size = gfx::ScaleToCeiledSize(view_size, scale_factor);
 
-  view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
-                        base::TimeDelta(),
-                        base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                       std::move(capture_handle)));
+  view->CopyFromSurface(
+      gfx::Rect(rect.origin(), view_size), bitmap_size, base::TimeDelta(),
+      base::BindOnce(&OnCapturePageDone, std::move(promise),
+                     std::move(capture_handle), scale_factor));
   return handle;
 }
 
@@ -4236,8 +4276,11 @@ void WebContents::OnPaint(const gfx::Rect& dirty_rect,
     dict.Set("texture", tex);
   }
 
-  EmitWithoutEvent("paint", event_object, dirty_rect,
-                   gfx::Image::CreateFrom1xBitmap(bitmap));
+  auto* const view = web_contents()->GetRenderWidgetHostView();
+  const float scale_factor = view ? view->GetDeviceScaleFactor() : 1.0f;
+  EmitWithoutEvent(
+      "paint", event_object, dirty_rect,
+      gfx::Image(gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor)));
 }
 
 void WebContents::StartPainting() {
@@ -5339,6 +5382,20 @@ std::list<WebContents*> WebContents::GetWebContentsList() {
     list.push_back(iter.GetCurrentValue());
   }
   return list;
+}
+
+// static
+WebContents* WebContents::GetFocusedWebContents() {
+  WebContents* focused = nullptr;
+  for (WebContents* contents : GetWebContentsList()) {
+    if (!contents->IsFocused())
+      continue;
+    if (!focused)
+      focused = contents;
+    if (contents->type() == Type::kWebView)
+      return contents;
+  }
+  return focused;
 }
 
 // static

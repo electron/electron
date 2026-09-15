@@ -35,6 +35,12 @@ class EventEmitterMixin;
 // Do NOT define the usual gin_helper::Wrappable::GetObjectTemplateBuilder. It
 // will not be called for Constructible classes.
 //
+// A class may also define
+//     static void FillInstanceTemplate(v8::Isolate*,
+//                                      v8::Local<v8::ObjectTemplate>);
+// to put accessors on the instances themselves (own properties) rather than
+// on the prototype.
+//
 // To expose the constructor, call GetConstructor:
 //
 //   gin::Dictionary dict(isolate, exports);
@@ -63,6 +69,9 @@ class Constructible {
           gin::kNumberOfInternalFields);
       constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
+      if constexpr (requires { &T::FillInstanceTemplate; }) {
+        T::FillInstanceTemplate(isolate, constructor->InstanceTemplate());
+      }
       data->DeprecatedSetObjectTemplate(wrapper_info,
                                         constructor->InstanceTemplate());
       data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
@@ -99,6 +108,9 @@ class Constructible {
         gin::kNumberOfInternalFields);
     constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
     T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
+    if constexpr (requires { &T::FillInstanceTemplate; }) {
+      T::FillInstanceTemplate(isolate, constructor->InstanceTemplate());
+    }
 
     data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
     data->SetUserData(wrapper_info, std::make_unique<PerContextConstructorData>(

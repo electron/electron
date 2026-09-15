@@ -140,7 +140,6 @@ const WORKLOADS = [
 ];
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log('[pgo-benchmark]', ...args);
 }
 

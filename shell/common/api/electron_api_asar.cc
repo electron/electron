@@ -2,8 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <limits>
+#include <string>
+#include <string_view>
 #include <vector>
 
+#include "base/compiler_specific.h"
+#include "base/strings/string_util.h"
 #include "build/build_config.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
@@ -23,6 +28,54 @@
 
 namespace {
 
+// Hands |fn| the UTF-8 bytes of |value|. Archive-relative paths are almost
+// always ASCII, and for those the flat one-byte string is used in place --
+// no copy, no allocation -- which matters because this sits under every fs
+// call on a packed path. |fn| must not allocate on the V8 heap.
+template <typename Fn>
+bool WithUtf8Path(v8::Isolate* isolate, v8::Local<v8::Value> value, Fn&& fn) {
+  if (!value->IsString())
+    return false;
+  {
+    v8::String::ValueView view(isolate, value.As<v8::String>());
+    if (view.is_one_byte()) {
+      // SAFETY: ValueView guarantees data8() points at length() bytes of the
+      // flattened string for the lifetime of |view|.
+      const std::string_view latin1 = UNSAFE_BUFFERS(std::string_view(
+          reinterpret_cast<const char*>(view.data8()), view.length()));
+      if (base::IsStringASCII(latin1)) {
+        fn(latin1, /*is_ascii=*/true);
+        return true;
+      }
+    }
+  }
+  std::string utf8;
+  if (!gin::ConvertFromV8(isolate, value, &utf8))
+    return false;
+  fn(std::string_view(utf8), /*is_ascii=*/false);
+  return true;
+}
+
+// Number of UTF-16 code units (what JS string offsets count) that the first
+// |byte_length| bytes of the UTF-8 |utf8| decode to.
+int Utf16LengthOfUtf8Prefix(std::string_view utf8, size_t byte_length) {
+  int units = 0;
+  for (unsigned char c : utf8.substr(0, byte_length)) {
+    if ((c & 0xC0) == 0x80)
+      continue;  // continuation byte
+    units +=
+        (c & 0xF8) == 0xF0 ? 2 : 1;  // 4-byte sequences are surrogate pairs
+  }
+  return units;
+}
+
+// Archive offsets and sizes are nearly always Smi-sized; avoid a HeapNumber.
+v8::Local<v8::Value> ToV8Size(v8::Isolate* isolate, uint64_t value) {
+  if (value <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max()))
+    return v8::Integer::New(isolate, static_cast<int32_t>(value));
+  return v8::Number::New(isolate, static_cast<double>(value));
+}
+
 class Archive : public node::ObjectWrap {
  public:
   static v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
@@ -34,6 +87,8 @@ class Archive : public node::ObjectWrap {
     NODE_SET_PROTOTYPE_METHOD(tpl, "getFileInfo", &Archive::GetFileInfo);
     NODE_SET_PROTOTYPE_METHOD(tpl, "stat", &Archive::Stat);
     NODE_SET_PROTOTYPE_METHOD(tpl, "readdir", &Archive::Readdir);
+    NODE_SET_PROTOTYPE_METHOD(tpl, "readdirWithTypes",
+                              &Archive::ReaddirWithTypes);
     NODE_SET_PROTOTYPE_METHOD(tpl, "realpath", &Archive::Realpath);
     NODE_SET_PROTOTYPE_METHOD(tpl, "copyFileOut", &Archive::CopyFileOut);
     NODE_SET_PROTOTYPE_METHOD(tpl, "getFdAndValidateIntegrityLater",
@@ -47,8 +102,21 @@ class Archive : public node::ObjectWrap {
   Archive& operator=(const Archive&) = delete;
 
  protected:
-  explicit Archive(std::shared_ptr<asar::Archive> archive)
-      : archive_(std::move(archive)) {}
+  Archive(v8::Isolate* isolate, std::shared_ptr<asar::Archive> archive)
+      : archive_(std::move(archive)) {
+    // stat() and getFileInfo() sit under every fs call on a packed path, so
+    // their results are stamped out from a v8::DictionaryTemplate (one shared
+    // hidden class, no per-call property-name strings) instead of being built
+    // key by key.
+    static constexpr std::string_view kStatKeys[] = {"size", "offset", "type",
+                                                     "executable"};
+    static constexpr std::string_view kFileInfoKeys[] = {
+        "size", "unpacked", "offset", "executable", "integrity"};
+    stat_template_.Reset(isolate,
+                         v8::DictionaryTemplate::New(isolate, kStatKeys));
+    file_info_template_.Reset(
+        isolate, v8::DictionaryTemplate::New(isolate, kFileInfoKeys));
+  }
 
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args) {
     auto* isolate = args.GetIsolate();
@@ -67,7 +135,7 @@ class Archive : public node::ObjectWrap {
       return;
     }
 
-    auto* archive_wrap = new Archive(std::move(archive));
+    auto* archive_wrap = new Archive(isolate, std::move(archive));
     archive_wrap->Wrap(args.This());
     args.GetReturnValue().Set(args.This());
   }
@@ -77,23 +145,21 @@ class Archive : public node::ObjectWrap {
     auto* isolate = args.GetIsolate();
     auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
 
-    base::FilePath path;
-    if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-      args.GetReturnValue().Set(v8::False(isolate));
-      return;
-    }
-
     asar::Archive::FileInfo info;
-    if (!wrap->archive_ || !wrap->archive_->GetFileInfo(path, &info)) {
+    bool found = false;
+    if (!wrap->archive_ ||
+        !WithUtf8Path(isolate, args[0],
+                      [&](std::string_view path, bool) {
+                        found = wrap->archive_->GetFileInfo(path, &info);
+                      }) ||
+        !found) {
       args.GetReturnValue().Set(v8::False(isolate));
       return;
     }
 
-    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("size", info.size);
-    dict.Set("unpacked", info.unpacked);
-    dict.Set("offset", info.offset);
-    dict.Set("executable", info.executable);
+    // Every slot gets a value (undefined when there is no integrity data):
+    // DictionaryTemplate only reuses its cached map when all are present.
+    v8::MaybeLocal<v8::Value> integrity_value = v8::Undefined(isolate);
     if (info.integrity.has_value()) {
       const asar::IntegrityPayload& payload = info.integrity.value();
       gin_helper::Dictionary integrity(isolate, v8::Object::New(isolate));
@@ -107,65 +173,113 @@ class Archive : public node::ObjectWrap {
       integrity.Set("hash", payload.hash);
       integrity.Set("blockSize", payload.block_size);
       integrity.Set("blocks", payload.blocks);
-      dict.Set("integrity", integrity);
+      integrity_value = integrity.GetHandle();
     }
-    args.GetReturnValue().Set(dict.GetHandle());
+    v8::MaybeLocal<v8::Value> values[] = {
+        ToV8Size(isolate, info.size), v8::Boolean::New(isolate, info.unpacked),
+        ToV8Size(isolate, info.offset),
+        v8::Boolean::New(isolate, info.executable), integrity_value};
+    args.GetReturnValue().Set(
+        wrap->file_info_template_.Get(isolate)->NewInstance(
+            isolate->GetCurrentContext(), values));
   }
 
   // Returns a fake result of fs.stat(path).
   static void Stat(const v8::FunctionCallbackInfo<v8::Value>& args) {
     auto* isolate = args.GetIsolate();
     auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
-    base::FilePath path;
-    if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-      args.GetReturnValue().Set(v8::False(isolate));
-      return;
-    }
-
     asar::Archive::Stats stats;
-    if (!wrap->archive_ || !wrap->archive_->Stat(path, &stats)) {
+    bool found = false;
+    if (!wrap->archive_ ||
+        !WithUtf8Path(isolate, args[0],
+                      [&](std::string_view path, bool) {
+                        found = wrap->archive_->Stat(path, &stats);
+                      }) ||
+        !found) {
       args.GetReturnValue().Set(v8::False(isolate));
       return;
     }
 
-    gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
-    dict.Set("size", stats.size);
-    dict.Set("offset", stats.offset);
-    dict.Set("type", static_cast<int>(stats.type));
-    dict.Set("executable", stats.executable);
-    args.GetReturnValue().Set(dict.GetHandle());
+    v8::MaybeLocal<v8::Value> values[] = {
+        ToV8Size(isolate, stats.size), ToV8Size(isolate, stats.offset),
+        v8::Integer::New(isolate, static_cast<int>(stats.type)),
+        v8::Boolean::New(isolate, stats.executable)};
+    args.GetReturnValue().Set(wrap->stat_template_.Get(isolate)->NewInstance(
+        isolate->GetCurrentContext(), values));
+  }
+
+  static v8::Local<v8::Array> NamesToV8(v8::Isolate* isolate,
+                                        const std::vector<std::string>& names) {
+    v8::LocalVector<v8::Value> elements(isolate);
+    elements.reserve(names.size());
+    for (const std::string& name : names) {
+      elements.push_back(v8::String::NewFromUtf8(isolate, name.data(),
+                                                 v8::NewStringType::kNormal,
+                                                 static_cast<int>(name.size()))
+                             .ToLocalChecked());
+    }
+    return v8::Array::New(isolate, elements.data(), elements.size());
   }
 
   // Returns all files under a directory.
   static void Readdir(const v8::FunctionCallbackInfo<v8::Value>& args) {
     auto* isolate = args.GetIsolate();
     auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
-    base::FilePath path;
-    if (!gin::ConvertFromV8(isolate, args[0], &path)) {
+    std::vector<std::string> names;
+    bool found = false;
+    if (!wrap->archive_ ||
+        !WithUtf8Path(isolate, args[0],
+                      [&](std::string_view path, bool) {
+                        found = wrap->archive_->Readdir(path, &names, nullptr);
+                      }) ||
+        !found) {
       args.GetReturnValue().Set(v8::False(isolate));
       return;
     }
+    args.GetReturnValue().Set(NamesToV8(isolate, names));
+  }
 
-    std::vector<base::FilePath> files;
-    if (!wrap->archive_ || !wrap->archive_->Readdir(path, &files)) {
+  // Returns [names, types] for a directory, the shape node's own
+  // fs binding produces for readdir(withFileTypes).
+  static void ReaddirWithTypes(
+      const v8::FunctionCallbackInfo<v8::Value>& args) {
+    auto* isolate = args.GetIsolate();
+    auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
+    std::vector<std::string> names;
+    std::vector<asar::Archive::FileType> types;
+    bool found = false;
+    if (!wrap->archive_ ||
+        !WithUtf8Path(isolate, args[0],
+                      [&](std::string_view path, bool) {
+                        found = wrap->archive_->Readdir(path, &names, &types);
+                      }) ||
+        !found) {
       args.GetReturnValue().Set(v8::False(isolate));
       return;
     }
-    args.GetReturnValue().Set(gin::ConvertToV8(isolate, files));
+    v8::LocalVector<v8::Value> type_elements(isolate);
+    type_elements.reserve(types.size());
+    for (asar::Archive::FileType type : types)
+      type_elements.push_back(
+          v8::Integer::New(isolate, static_cast<int>(type)));
+    v8::Local<v8::Value> result[] = {
+        NamesToV8(isolate, names),
+        v8::Array::New(isolate, type_elements.data(), type_elements.size())};
+    args.GetReturnValue().Set(v8::Array::New(isolate, result, 2));
   }
 
   // Returns the path of file with symbol link resolved.
   static void Realpath(const v8::FunctionCallbackInfo<v8::Value>& args) {
     auto* isolate = args.GetIsolate();
     auto* wrap = node::ObjectWrap::Unwrap<Archive>(args.This());
-    base::FilePath path;
-    if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-      args.GetReturnValue().Set(v8::False(isolate));
-      return;
-    }
-
-    base::FilePath realpath;
-    if (!wrap->archive_ || !wrap->archive_->Realpath(path, &realpath)) {
+    std::string realpath;
+    bool found = false;
+    if (!wrap->archive_ ||
+        !WithUtf8Path(isolate, args[0],
+                      [&](std::string_view path, bool) {
+                        found = wrap->archive_->Realpath(path, &realpath);
+                      }) ||
+        !found) {
       args.GetReturnValue().Set(v8::False(isolate));
       return;
     }
@@ -200,6 +314,8 @@ class Archive : public node::ObjectWrap {
   }
 
   std::shared_ptr<asar::Archive> archive_;
+  v8::Global<v8::DictionaryTemplate> stat_template_;
+  v8::Global<v8::DictionaryTemplate> file_info_template_;
 };
 
 // Returns a new, caller-owned, non-inheritable file descriptor that refers
@@ -238,26 +354,27 @@ static void CreateSentinelFd(const v8::FunctionCallbackInfo<v8::Value>& args) {
   args.GetReturnValue().Set(gin::ConvertToV8(isolate, fd));
 }
 
+// splitPath(path, requireNormalized) -> archive prefix length, or
+// asar::kNotInArchive / asar::kNeedsNormalization. See
+// asar::FindArchivePrefixLength().
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
-
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  args.GetReturnValue().Set(dict.GetHandle());
-
-  base::FilePath path;
-  if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-    dict.Set("isAsar", false);
-    return;
-  }
-
-  base::FilePath asar_path, file_path;
-  if (asar::GetAsarArchivePath(path, &asar_path, &file_path, true)) {
-    dict.Set("isAsar", true);
-    dict.Set("asarPath", asar_path);
-    dict.Set("filePath", file_path);
-  } else {
-    dict.Set("isAsar", false);
-  }
+  const bool require_normalized = args[1]->IsTrue();
+  int result = asar::kNotInArchive;
+  WithUtf8Path(isolate, args[0], [&](std::string_view path, bool is_ascii) {
+    // The FilePath converter that Archive::New() goes through refuses paths
+    // with control characters; agree with it so such a path stays "not an
+    // archive" instead of becoming an archive that can never be opened.
+    for (const char c : path) {
+      if (static_cast<unsigned char>(c) < 0x20)
+        return;
+    }
+    result = asar::FindArchivePrefixLength(path, require_normalized);
+    // The caller slices a JS string with this, so report UTF-16 code units.
+    if (result > 0 && !is_ascii)
+      result = Utf16LengthOfUtf8Prefix(path, result);
+  });
+  args.GetReturnValue().Set(result);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

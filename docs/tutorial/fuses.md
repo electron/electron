@@ -30,8 +30,8 @@ on Windows).
 **@electron/fuses:** `FuseV1Options.RunAsNode`
 
 The `runAsNode` fuse toggles whether the [`ELECTRON_RUN_AS_NODE`](../api/environment-variables.md)
-environment variable is respected or not. With this fuse disabled, [`child_process.fork`](https://nodejs.org/api/child_process.html#child_processforkmodulepath-args-options) in the main process will not function
-as expected, as it depends on this environment variable to function. Instead, we recommend that you
+environment variable is respected or not. With this fuse disabled, [`child_process.fork`](https://nodejs.org/api/child_process.html#child_processforkmodulepath-args-options) throws,
+as it depends on this environment variable to function. Instead, we recommend that you
 use [Utility Processes](../api/utility-process.md), which work for many use cases where you need a
 standalone Node.js process (e.g. a SQLite server process).
 

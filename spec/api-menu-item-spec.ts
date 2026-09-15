@@ -12,10 +12,10 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-/* oxlint-disable-next-line no-restricted-imports */
-import { roleList } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+
+const roleList: Record<string, { label: string; accelerator?: string }> = Menu._roleDefaults();
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
@@ -149,7 +149,7 @@ describe('MenuItems', () => {
           }
         }
       ]);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
     });
   });
 
@@ -163,7 +163,7 @@ describe('MenuItems', () => {
       ]);
 
       expect(menu.items[0].checked).to.be.false('menu item checked');
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -175,9 +175,9 @@ describe('MenuItems', () => {
         }
       ]);
 
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
     });
 
@@ -310,11 +310,11 @@ describe('MenuItems', () => {
       ]);
 
       Menu.setApplicationMenu(menu);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(win.isMinimized()).to.equal(false);
 
       win.setMinimizable(true);
-      menu._executeCommand({}, menu.items[0].commandId);
+      menu._activate(menu.items[0].commandId);
       expect(win.isMinimized()).to.equal(true);
     });
   });
@@ -688,14 +688,14 @@ describe('MenuItems', () => {
         new MenuItem({
           label: 'item 1',
           customProp: 'bar',
-          overrideProperty: 'oops not allowed'
+          getDefaultRoleAccelerator: 'oops not allowed'
         } as any)
       );
 
       expect((menu.items[0] as any).customProp).to.equal('foo');
       expect(menu.items[0].submenu!.items[0].label).to.equal('item 1');
       expect((menu.items[0].submenu!.items[0] as any).customProp).to.equal('bar');
-      expect((menu.items[0].submenu!.items[0] as any).overrideProperty).to.be.a('function');
+      expect((menu.items[0].submenu!.items[0] as any).getDefaultRoleAccelerator).to.be.a('function');
     });
   });
 

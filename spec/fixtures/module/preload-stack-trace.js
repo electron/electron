@@ -5,8 +5,7 @@
 // api-browser-window-spec.ts ("preload script stack traces").
 const { ipcRenderer } = require('electron');
 try {
-  // eslint-disable-next-line no-throw-literal
-  throw new Error('preload-stack-trace-marker'); // <-- line 9
+  throw new Error('preload-stack-trace-marker'); // <-- line 8
 } catch (error) {
   ipcRenderer.send('preload-stack-trace', { message: error.message, stack: error.stack });
 }
