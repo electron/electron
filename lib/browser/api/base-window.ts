@@ -11,6 +11,21 @@ BaseWindow.prototype._init = function (this: TLWT) {
   // Avoid recursive require.
   const { app } = require('electron');
 
+  const nativeSetBounds = this.setBounds;
+  this.setBounds = (bounds, ...opts) => {
+    bounds = bounds ?? {};
+    if (bounds.x == null || bounds.y == null || bounds.width == null || bounds.height == null) {
+      const currentBounds = this.getBounds();
+      bounds = {
+        x: bounds.x ?? currentBounds.x,
+        y: bounds.y ?? currentBounds.y,
+        width: bounds.width ?? currentBounds.width,
+        height: bounds.height ?? currentBounds.height
+      };
+    }
+    nativeSetBounds.call(this, bounds, ...opts);
+  };
+
   // Simulate the application menu on platforms other than macOS.
   if (process.platform !== 'darwin') {
     const menu = app.applicationMenu;
