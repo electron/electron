@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 Aug 2026 02:00:50 -0700
+Subject: [PATCH] blink: Tolerate a null locale name in
+ LCIDFromLocaleInternal()
+
+Platform::DefaultLocale() is allowed to be empty, and in that case
+InitializePlatformLanguage() stores a null AtomicString, so
+DefaultLanguage() and therefore the string handed to Locale::Create()
+by Locale::DefaultLocale() can be null. The ICU and Mac Locale
+implementations cope with that, but on Windows LCIDFromLocaleInternal()
+calls String::Is8Bit() on it, which dereferences the null StringImpl
+(read at offset 8) the first time a page needs the default Locale, for
+example when an <input type=file> builds its shadow tree.
+
+Return 0 for a null or empty name, the same result as for any other
+name Windows cannot resolve, so LCIDFromLocale() falls through to its
+existing DefaultLanguage() fallback instead of crashing. An empty name
+previously reached LocaleNameToLCID(L"") and yielded LOCALE_INVARIANT;
+it now takes the same fallback.
+
+Bug: none
+Test: blink_platform_unittests --gtest_filter=LocaleWinTest.CreateWithNullLocale
+Change-Id: I6f76917d1df827de7256885c5653382072aaa0df
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8266170
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Reviewed-by: David Sanders <dsanders11@ucsbalum.com>
+Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1682959}
+---
+ third_party/blink/renderer/platform/text/locale_win.cc      | 5 ++++-
+ third_party/blink/renderer/platform/text/locale_win_test.cc | 5 +++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/blink/renderer/platform/text/locale_win.cc b/third_party/blink/renderer/platform/text/locale_win.cc
+index 66e47634166a6..6aabfb8b07f21 100644
+--- a/third_party/blink/renderer/platform/text/locale_win.cc
++++ b/third_party/blink/renderer/platform/text/locale_win.cc
+@@ -125,8 +125,11 @@ LCID LCIDFromLocaleInternal(LCID user_default_lcid,
+   if (DeprecatedEqualIgnoringCase(locale_language_code,
+                                   user_default_language_code))
+     return user_default_lcid;
+-  if (locale.length() >= LOCALE_NAME_MAX_LENGTH)
++  // `locale` is null when the embedder reports an empty default locale; treat
++  // it like any other name that does not resolve.
++  if (locale.empty() || locale.length() >= LOCALE_NAME_MAX_LENGTH) {
+     return 0;
++  }
+   std::array<UChar, LOCALE_NAME_MAX_LENGTH> buffer;
+   auto buffer_slice = base::span(buffer).first(locale.length());
+   if (locale.Is8Bit())
+diff --git a/third_party/blink/renderer/platform/text/locale_win_test.cc b/third_party/blink/renderer/platform/text/locale_win_test.cc
+index 2183e6aad13a6..1e959ad73a7ff 100644
+--- a/third_party/blink/renderer/platform/text/locale_win_test.cc
++++ b/third_party/blink/renderer/platform/text/locale_win_test.cc
+@@ -307,4 +307,9 @@ TEST_F(LocaleWinTest, localizedNumberRoundTrip) {
+   TestNumbers(kChineseTW);
+ }
+ 
++TEST_F(LocaleWinTest, CreateWithNullLocale) {
++  std::unique_ptr<Locale> locale = Locale::Create(String());
++  EXPECT_EQ(12u, locale->MonthLabels().size());
++}
++
+ }  // namespace blink
