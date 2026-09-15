@@ -174,7 +174,7 @@ Please do not submit patches that fail either check.
 If you are updating tests and want to run a single spec to check it:
 
 ```sh
-yarn test -match=menu
+yarn test --match=menu
 ```
 
 The above would only run spec modules matching `menu`, which is useful for

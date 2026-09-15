@@ -689,7 +689,15 @@ Returns `boolean` - Whether the window is destroyed.
 
 Shows and gives focus to the window.
 
-#### `win.showInactive()`
+#### `win.showInactive([options])`
+
+* `options` Object (optional)
+  * `order` string (optional) _macOS_ - How to order the window when shown.
+    Can be `front` or `automatic`. Default is `front`. `front` brings the window to
+    the front of the window stack. `automatic` uses Chromium’s inactive window ordering.
+    It typically places the window behind the application’s main window, or behind
+    all other windows at the same level if no main window exists.
+    Note that it may not emit the `show` event if it remains fully covered by another window.
 
 Shows the window but doesn't focus on it.
 
