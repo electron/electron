@@ -168,7 +168,8 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames);
+      (is_main_frame || allow_node_in_sub_frames) &&
+      renderer_client_->HasScriptsToInject(render_frame_);
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
