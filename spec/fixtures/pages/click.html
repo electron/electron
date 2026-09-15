@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>click</title>
+</head>
+<body style="margin: 0; width: 100vw; height: 100vh; background: transparent;">
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    // which view this page is loaded into ('top' / 'bottom' / etc) is
+    // passed in via the query string so a single fixture can be reused for
+    // every overlapping view in a click-through test
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('id') || 'default'
+
+    document.body.addEventListener('click', () => {
+      ipcRenderer.send('clicked', id)
+    })
+  </script>
+</body>
+</html>
