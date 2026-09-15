@@ -21,6 +21,7 @@
 #include "base/logging.h"
 #include "base/metrics/field_trial.h"
 #include "base/path_service.h"
+#include "base/process/current_process.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/threading/platform_thread.h"
@@ -32,7 +33,9 @@
 #include "components/memory_system/initializer.h"
 #include "components/memory_system/parameters.h"
 #include "content/public/app/initialize_mojo_core.h"
+#include "content/public/browser/browser_main_runner.h"
 #include "content/public/common/content_switches.h"
+#include "content/public/common/result_codes.h"
 #include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -45,6 +48,7 @@
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
@@ -474,8 +478,25 @@ std::variant<int, content::MainFunctionParams> ElectronMainDelegate::RunProcess(
     content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
     return relauncher::RelauncherMain(main_function_params);
-  else
+  if (!process_type.empty())
     return std::move(main_function_params);
+
+  // Run the browser process here instead of through content::BrowserMain() so
+  // that the exit code recorded by app.exit(code) is the one returned to the
+  // OS: content only lets an embedder override a normal exit with codes at or
+  // above content::RESULT_CODE_LAST_CODE.
+  base::CurrentProcess::GetInstance().SetProcessType(
+      base::CurrentProcessType::PROCESS_BROWSER);
+  std::unique_ptr<content::BrowserMainRunner> browser_runner =
+      content::BrowserMainRunner::Create();
+  int exit_code = browser_runner->Initialize(std::move(main_function_params));
+  if (exit_code >= 0)
+    return exit_code;
+  exit_code = browser_runner->Run();
+  browser_runner->Shutdown();
+  if (exit_code == content::RESULT_CODE_NORMAL_EXIT)
+    exit_code = ElectronBrowserMainParts::GetExitCode();
+  return exit_code;
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {

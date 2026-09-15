@@ -88,7 +88,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   bool SetExitCode(int code);
 
   // Gets the exit code
-  int GetExitCode() const;
+  static int GetExitCode();
 
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
@@ -159,8 +159,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<BrowserProcessImpl> fake_browser_process_;
 
   // A place to remember the exit code once the message loop is ready.
-  // Before then, we just exit() without any intermediate steps.
-  std::optional<int> exit_code_;
+  // Before then, we just exit() without any intermediate steps. Static so
+  // that ElectronMainDelegate::RunProcess() can return it after the
+  // BrowserMainRunner, which owns this object, has shut down.
+  static std::optional<int> exit_code_;
 
   const std::unique_ptr<NodeBindings> node_bindings_;
 

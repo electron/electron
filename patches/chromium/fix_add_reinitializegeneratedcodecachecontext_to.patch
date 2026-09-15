@@ -14,10 +14,10 @@ This new method properly shuts down the existing context and creates a
 fresh one, allowing Electron session.setCodeCachePath() to work correctly.
 
 diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
-index 4750d110f46c99c767f27778a6acaffbdcb2bc3a..2c22de117b3f41f03a7b876757194636dc4c169d 100644
+index fb25666bd8748c0dc66317ebcce9ec45bb87126a..260fced8f99c7891a4803cdb557525b670fdf9ce 100644
 --- a/content/browser/storage_partition_impl.cc
 +++ b/content/browser/storage_partition_impl.cc
-@@ -1877,6 +1877,22 @@ StoragePartitionImpl::GetGeneratedCodeCacheContext() {
+@@ -1879,6 +1879,22 @@ StoragePartitionImpl::GetGeneratedCodeCacheContext() {
    return generated_code_cache_context_.get();
  }
  
@@ -41,7 +41,7 @@ index 4750d110f46c99c767f27778a6acaffbdcb2bc3a..2c22de117b3f41f03a7b876757194636
  StoragePartitionImpl::GetDevToolsBackgroundServicesContext() {
    CHECK(initialized_, base::NotFatalUntil::M159);
 diff --git a/content/browser/storage_partition_impl.h b/content/browser/storage_partition_impl.h
-index 950e91e164189c4cb051d6a8ccc66e0db615e005..d1e459b227e13cfd15b60416f6a82c170ec20290 100644
+index 5f34e2418631739ad8c7673e7f86c892fad3c820..5579567ab72be026845ead1d8b9eb5fc932f7450 100644
 --- a/content/browser/storage_partition_impl.h
 +++ b/content/browser/storage_partition_impl.h
 @@ -187,6 +187,8 @@ class CONTENT_EXPORT StoragePartitionImpl

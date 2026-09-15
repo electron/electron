@@ -63,8 +63,10 @@ struct Converter<views::ProposedLayout> {
       return false;
     if (!dict.Get("size", &out->host_size))
       return false;
-    if (!dict.Get("layouts", &out->child_layouts))
+    std::vector<views::ChildLayout> layouts;
+    if (!dict.Get("layouts", &layouts))
       return false;
+    out->child_layouts.assign(layouts.begin(), layouts.end());
     return true;
   }
 };

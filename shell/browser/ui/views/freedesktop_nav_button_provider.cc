@@ -169,7 +169,7 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
     const SkColor base =
         symbol_ ? *symbol_
         : background_
-            ? views::FrameCaptionButton::GetAccessibleButtonColor(*background_)
+            ? views::FrameCaptionButton::GetButtonColor(*background_)
             : SkColorSetRGB(0x2E, 0x34, 0x36);
     const SkColor inverse =
         background_ ? *background_ : color_utils::GetColorWithMaxContrast(base);
