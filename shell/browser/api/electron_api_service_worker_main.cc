@@ -102,6 +102,8 @@ ServiceWorkerMain::~ServiceWorkerMain() {
 }
 
 void ServiceWorkerMain::Destroy() {
+  if (version_destroyed_)
+    return;
   version_destroyed_ = true;
   InvalidateVersionInfo();
   MaybeDisconnectRemote();
@@ -181,6 +183,14 @@ void ServiceWorkerMain::OnVersionRedundant() {
   // ServiceWorkerMain will need to be created.
   // Set internal state to mark it for deletion once it has fully stopped.
   redundant_ = true;
+
+  // content only broadcasts OnStopped for versions that reached RUNNING;
+  // anything else gets no further running status change, so destroy now.
+  auto* version = GetLiveVersion(service_worker_context_, version_id_);
+  if (!version ||
+      version->running_status() != blink::EmbeddedWorkerStatus::kRunning) {
+    Destroy();
+  }
 }
 
 bool ServiceWorkerMain::IsDestroyed() const {
@@ -236,6 +246,12 @@ void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
   content::ServiceWorkerExternalRequestResult result =
       service_worker_context_->FinishedExternalRequest(version_id_,
                                                        request_uuid);
+  // Still release the request above so a doomed worker can stop.
+  if (version_destroyed_) {
+    isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(isolate, "ServiceWorkerMain is destroyed")));
+    return;
+  }
 
   std::string error;
   switch (result) {

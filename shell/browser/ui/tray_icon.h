@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/functional/callback_helpers.h"
 #include "base/observer_list.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/tray_icon_observer.h"
@@ -87,9 +88,11 @@ class TrayIcon {
   // Returns focus to the taskbar notification area.
   virtual void Focus() {}
 
-  // Popups the menu.
+  // Popups the menu. |retain_menu| keeps the model's owner alive and is
+  // released once the platform no longer needs |menu_model|.
   virtual void PopUpContextMenu(const gfx::Point& pos,
-                                base::WeakPtr<ElectronMenuModel> menu_model) {}
+                                base::WeakPtr<ElectronMenuModel> menu_model,
+                                base::ScopedClosureRunner retain_menu) {}
 
   virtual void CloseContextMenu() {}
 

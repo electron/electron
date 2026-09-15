@@ -30,7 +30,8 @@ class GURL;
 
 namespace content {
 class RenderFrameHost;
-}
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;
@@ -87,6 +88,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   // Called when FrameTreeNode is deleted.
   void Destroyed();
+
+  // Calls Destroyed() on every instance belonging to |web_contents|; used when
+  // api::WebContents stops observing a WebContents it does not own.
+  static void DestroyAllForWebContents(content::WebContents* web_contents);
 
   // Mark RenderFrameHost as disposed and to no longer access it. This can
   // happen when the WebFrameMain v8-forward.handle is GC'd or when a
