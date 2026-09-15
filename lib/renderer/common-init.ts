@@ -1,10 +1,8 @@
-import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
 import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
 
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const isWebView = mainFrame.getWebPreference('isWebView');
@@ -32,11 +30,4 @@ switch (window.location.protocol) {
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
   webViewInit(webviewTag, isWebView);
-}
-
-// Warn about security issues
-if (process.isMainFrame) {
-  const { securityWarnings } =
-    require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
-  securityWarnings(nodeIntegration);
 }
