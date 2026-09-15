@@ -67,11 +67,24 @@ void WebContentsZoomController::SetEmbedderZoomController(
 
 bool WebContentsZoomController::SetZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  // Cannot zoom in disabled mode. Also, don't allow changing zoom level on
-  // a crashed tab, an error page or an interstitial page.
-  if (zoom_mode_ == ZOOM_MODE_DISABLED ||
-      !web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive())
+  // Cannot zoom in disabled mode.
+  if (zoom_mode_ == ZOOM_MODE_DISABLED)
     return false;
+
+  // Without a live frame (before the first navigation, or on a crashed tab)
+  // there is nothing to zoom yet. In a persistent isolated/manual mode, record
+  // the level for the next navigation to apply, as the `zoomFactor` +
+  // `zoomMode` web preferences already do. Otherwise - an error page, or a mode
+  // set without the persist flag - reject it.
+  if (!web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive()) {
+    if (persist_zoom_mode_ &&
+        (zoom_mode_ == ZOOM_MODE_ISOLATED || zoom_mode_ == ZOOM_MODE_MANUAL)) {
+      zoom_level_ = level;
+      has_pending_zoom_level_ = true;
+      return true;
+    }
+    return false;
+  }
 
   // Do not actually rescale the page in manual mode.
   if (zoom_mode_ == ZOOM_MODE_MANUAL) {
@@ -120,15 +133,25 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
     zoom_map->SetZoomLevelForHost(host, level);
   }
 
+  has_pending_zoom_level_ = false;
+
   DCHECK(!event_data_);
   return true;
 }
 
 double WebContentsZoomController::GetZoomLevel() const {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  return zoom_mode_ == ZOOM_MODE_MANUAL
-             ? zoom_level_
-             : content::HostZoomMap::GetZoomLevel(web_contents());
+  if (zoom_mode_ == ZOOM_MODE_MANUAL)
+    return zoom_level_;
+
+  // A level recorded while no frame was live has not reached HostZoomMap yet,
+  // so report the level that the next navigation will apply. The frame goes
+  // live when the navigation request is created, long before it commits, so
+  // this cannot key off IsRenderFrameLive().
+  if (has_pending_zoom_level_)
+    return zoom_level_;
+
+  return content::HostZoomMap::GetZoomLevel(web_contents());
 }
 
 void WebContentsZoomController::SetDefaultZoomFactor(double factor) {
@@ -169,6 +192,11 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
   DCHECK(!event_data_);
   event_data_.emplace(web_contents(), original_zoom_level, original_zoom_level,
                       false /* temporary */, new_mode);
+
+  // When entering a mode that persists, track the level the page is at, so
+  // that a later navigation cannot re-apply a stale one.
+  if (new_mode == ZOOM_MODE_ISOLATED || new_mode == ZOOM_MODE_MANUAL)
+    zoom_level_ = original_zoom_level;
 
   switch (new_mode) {
     case ZOOM_MODE_DEFAULT: {
@@ -219,7 +247,6 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
       // the zoom level is handled independently.
       if (zoom_mode_ != ZOOM_MODE_DISABLED) {
         zoom_map->SetTemporaryZoomLevel(rfh_id, GetDefaultZoomLevel());
-        zoom_level_ = original_zoom_level;
       } else {
         // When we don't call any HostZoomMap set functions, we send the event
         // manually.
@@ -240,6 +267,7 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
   // Any event data we've stored should have been consumed by this point.
   DCHECK(!event_data_);
 
+  has_pending_zoom_level_ = false;
   zoom_mode_ = new_mode;
 }
 
@@ -253,6 +281,13 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   // the temporary zoom level for the new RenderFrameHost (which changes on
   // cross-origin navigation).
   if (persist_zoom_mode_) {
+    has_pending_zoom_level_ = false;
+
+    // Manual mode tracks the level without ever rescaling the page, so it must
+    // not reach HostZoomMap here either.
+    if (zoom_mode_ == ZOOM_MODE_MANUAL)
+      return;
+
     content::HostZoomMap* zoom_map =
         content::HostZoomMap::GetForWebContents(web_contents());
     content::GlobalRenderFrameHostId rfh_id =

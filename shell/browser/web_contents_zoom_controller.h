@@ -156,6 +156,10 @@ class WebContentsZoomController
   // The current zoom level.
   double zoom_level_;
 
+  // Whether `zoom_level_` was set while no frame was live and still has to be
+  // applied by the next navigation.
+  bool has_pending_zoom_level_ = false;
+
   // The current default zoom factor.
   double default_zoom_factor_;
 
