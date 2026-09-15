@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Thu, 20 Aug 2026 02:00:50 -0700
-Subject: [PATCH] blink: Tolerate a null locale name in
- LCIDFromLocaleInternal()
+Subject: blink: Tolerate a null locale name in LCIDFromLocaleInternal()
 
 Platform::DefaultLocale() is allowed to be empty, and in that case
 InitializePlatformLanguage() stores a null AtomicString, so
@@ -27,16 +26,12 @@ Reviewed-by: Kent Tamura <tkent@chromium.org>
 Reviewed-by: David Sanders <dsanders11@ucsbalum.com>
 Commit-Queue: Shelley Vohr <shelley.vohr@gmail.com>
 Cr-Commit-Position: refs/heads/main@{#1682959}
----
- third_party/blink/renderer/platform/text/locale_win.cc      | 5 ++++-
- third_party/blink/renderer/platform/text/locale_win_test.cc | 5 +++++
- 2 files changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/third_party/blink/renderer/platform/text/locale_win.cc b/third_party/blink/renderer/platform/text/locale_win.cc
-index 66e47634166a6..6aabfb8b07f21 100644
+index 5e2c006d944ce163a3c96bc407a866033cd2f63c..8634c22aaffcec1327875bb5468dad279a8abb81 100644
 --- a/third_party/blink/renderer/platform/text/locale_win.cc
 +++ b/third_party/blink/renderer/platform/text/locale_win.cc
-@@ -125,8 +125,11 @@ LCID LCIDFromLocaleInternal(LCID user_default_lcid,
+@@ -124,8 +124,11 @@ LCID LCIDFromLocaleInternal(LCID user_default_lcid,
    if (DeprecatedEqualIgnoringCase(locale_language_code,
                                    user_default_language_code))
      return user_default_lcid;
@@ -50,7 +45,7 @@ index 66e47634166a6..6aabfb8b07f21 100644
    auto buffer_slice = base::span(buffer).first(locale.length());
    if (locale.Is8Bit())
 diff --git a/third_party/blink/renderer/platform/text/locale_win_test.cc b/third_party/blink/renderer/platform/text/locale_win_test.cc
-index 2183e6aad13a6..1e959ad73a7ff 100644
+index fc68dff51c879c91e6e54edcaa10cecc04c76d23..98ac153d5dc53e526a4519416c19e2302a58b7f2 100644
 --- a/third_party/blink/renderer/platform/text/locale_win_test.cc
 +++ b/third_party/blink/renderer/platform/text/locale_win_test.cc
 @@ -307,4 +307,9 @@ TEST_F(LocaleWinTest, localizedNumberRoundTrip) {
