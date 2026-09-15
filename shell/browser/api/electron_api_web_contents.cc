@@ -563,16 +563,19 @@ std::optional<base::DictValue> MediaSizeFromPageSize(
   } else if (page_size->IsObject() && !page_size->IsFunction()) {
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> size = page_size.As<v8::Object>();
-    v8::Local<v8::Value> width_value;
+    // `!pageSize.height || !pageSize.width`, read in that order.
     v8::Local<v8::Value> height_value;
+    v8::Local<v8::Value> width_value;
     if (!size->Get(context, gin::StringToV8(isolate, "height"))
-             .ToLocal(&height_value) ||
+             .ToLocal(&height_value)) {
+      return std::nullopt;
+    }
+    if (height_value->BooleanValue(isolate) &&
         !size->Get(context, gin::StringToV8(isolate, "width"))
              .ToLocal(&width_value)) {
       return std::nullopt;
     }
-    if (!height_value->BooleanValue(isolate) ||
-        !width_value->BooleanValue(isolate)) {
+    if (width_value.IsEmpty() || !width_value->BooleanValue(isolate)) {
       thrower.ThrowError(
           "height and width properties are required for pageSize");
       return std::nullopt;
