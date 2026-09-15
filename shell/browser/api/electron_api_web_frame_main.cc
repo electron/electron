@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_web_frame_main.h"
 
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+
 #include <string>
 #include <utility>
 #include <vector>
@@ -460,6 +462,31 @@ WebFrameMain::BindPromiseToReply(
                      electron::SerializedValue(), std::string()));
 }
 
+v8::Local<v8::Promise> WebFrameMain::TransferSharedTexture(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> transfer,
+    const std::string& texture_id,
+    v8::Local<v8::Value> args) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  electron::SerializedValue serialized_transfer, serialized_args;
+  if (!electron::SerializeV8Value(isolate, transfer, &serialized_transfer) ||
+      !electron::SerializeV8Value(isolate, args, &serialized_args)) {
+    promise.RejectWithErrorMessage("Failed to serialize arguments");
+    return handle;
+  }
+  mojom::ElectronFrame* frame = GetFrameApi();
+  if (!frame) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+  frame->ReceiveSharedTexture(std::move(serialized_transfer), texture_id,
+                              std::move(serialized_args),
+                              BindPromiseToReply(std::move(promise)));
+  return handle;
+}
+
 mojom::ElectronFrame* WebFrameMain::GetFrameApi() {
   if (!HasRenderFrame() || !render_frame_host()->IsRenderFrameLive())
     return nullptr;
@@ -780,6 +807,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
+      .SetMethod("_transferSharedTexture", &WebFrameMain::TransferSharedTexture)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
