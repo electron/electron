@@ -13,7 +13,9 @@ const fixtureTimeout = 20000;
 const fixtureKillTimeout = 5000;
 
 const runFixture = async (appPath: string, args: string[] = []) => {
-  return await spawnAndWait(process.execPath, [appPath, ...args], {
+  const spawnArgs = [appPath, ...args];
+  if (process.platform === 'darwin') spawnArgs.push('--use-mock-keychain');
+  return await spawnAndWait(process.execPath, spawnArgs, {
     timeout: fixtureTimeout,
     killTimeout: fixtureKillTimeout,
     stripOutput: true

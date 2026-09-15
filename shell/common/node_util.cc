@@ -14,7 +14,6 @@
 #include "base/threading/thread_local.h"
 #include "base/values.h"
 #include "gin/converter.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_natives_code_cache.h"
@@ -97,13 +96,15 @@ void InstallProcessCodeCache() {
 
 void EmitWarning(const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  EmitWarning(JavascriptEnvironment::GetIsolate(), warning_msg, warning_type);
+  // Reachable from renderers, where there is no JavascriptEnvironment.
+  EmitWarning(v8::Isolate::TryGetCurrent(), warning_msg, warning_type);
 }
 
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[" << warning_type << "] " << warning_msg;
@@ -114,14 +115,15 @@ void EmitWarning(v8::Isolate* isolate,
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  EmitDeprecationWarning(JavascriptEnvironment::GetIsolate(), warning_msg,
+  EmitDeprecationWarning(v8::Isolate::TryGetCurrent(), warning_msg,
                          deprecation_code);
 }
 
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  node::Environment* env = node::Environment::GetCurrent(isolate);
+  node::Environment* env =
+      isolate ? node::Environment::GetCurrent(isolate) : nullptr;
   if (!env) {
     // No Node.js environment available, fall back to console logging.
     LOG(WARNING) << "[DeprecationWarning] " << warning_msg

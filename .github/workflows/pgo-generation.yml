@@ -185,6 +185,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -215,6 +216,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -245,6 +247,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -275,6 +278,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -305,6 +309,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
       build-runs-on: garm-windows-x64-32core
@@ -334,6 +339,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
       build-runs-on: garm-windows-x64-32core
@@ -468,6 +474,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: [checkout-linux, build-linux-x64]
     with:
       target-platform: linux
@@ -480,6 +487,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: [checkout-linux, build-linux-arm64]
     with:
       target-platform: linux
@@ -493,6 +501,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-macos-x64
     with:
       target-platform: macos
@@ -504,6 +513,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-macos-arm64
     with:
       target-platform: macos
@@ -515,6 +525,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-windows-x64
     with:
       target-platform: win
@@ -526,6 +537,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-windows-arm64
     with:
       target-platform: win

@@ -22,6 +22,10 @@ class CleanedUpAtExit {
   virtual void WillBeDestroyed();
 
   static void DoCleanup();
+
+  // True once DoCleanup() has started, i.e. weak second-pass callbacks that
+  // fire from here on may refer to objects it already destroyed.
+  static bool DidStartCleanup();
 };
 
 }  // namespace gin_helper

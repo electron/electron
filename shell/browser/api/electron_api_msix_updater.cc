@@ -8,10 +8,11 @@
 #include <string_view>
 #include "base/environment.h"
 #include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/single_thread_task_runner.h"
+#include "base/task/bind_post_task.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -231,10 +232,27 @@ HRESULT GetCurrentPackage(ComPtr<IPackage>* package) {
   return package_statics->get_Current(package->GetAddressOf());
 }
 
+// Bound to the UI thread so the promise (a cppgc handle) is only touched
+// there; the callback itself may be run or dropped on any thread.
+using SettleCallback = base::OnceCallback<void(std::string error)>;
+
+void SettlePromise(gin_helper::Promise<void> promise, std::string error) {
+  if (error.empty()) {
+    promise.Resolve();
+  } else {
+    promise.RejectWithErrorMessage(error);
+  }
+}
+
+// Must be called on the UI thread.
+SettleCallback MakeSettleCallback(gin_helper::Promise<void> promise) {
+  return base::BindPostTaskToCurrentDefault(
+      base::BindOnce(&SettlePromise, std::move(promise)));
+}
+
 // Structure to hold callback data for async operations
 struct DeploymentCallbackData {
-  scoped_refptr<base::SingleThreadTaskRunner> reply_runner;
-  gin_helper::Promise<void> promise;
+  SettleCallback settle;
   bool fire_and_forget;
   ComPtr<DeploymentAsyncOp> async_op;  // Keep async_op alive
   std::string operation_name;  // "Deployment" or "Registration" for logs
@@ -254,11 +272,7 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
            "Good bye!";
     DebugLog(oss.str());
     // Don't wait for result in fire-and-forget mode
-    data->reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise) { promise.Resolve(); },
-            std::move(data->promise)));
+    std::move(data->settle).Run(std::string());
     return;
   }
 
@@ -309,23 +323,13 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
   }
 
   // Post result back to UI thread
-  data->reply_runner->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](gin_helper::Promise<void> promise, std::string error) {
-                       if (error.empty()) {
-                         promise.Resolve();
-                       } else {
-                         promise.RejectWithErrorMessage(error);
-                       }
-                     },
-                     std::move(data->promise), std::move(error)));
+  std::move(data->settle).Run(std::move(error));
 }
 
 // Performs MSIX update on IO thread
 void DoUpdateMsix(const std::string& package_uri,
                   UpdateMsixOptions opts,
-                  scoped_refptr<base::SingleThreadTaskRunner> reply_runner,
-                  gin_helper::Promise<void> promise) {
+                  SettleCallback settle) {
   DebugLog("DoUpdateMsix: Starting");
   std::string error;
 
@@ -334,13 +338,7 @@ void DoUpdateMsix(const std::string& package_uri,
   HRESULT hr = CreatePackageManager(&package_manager);
   if (FAILED(hr)) {
     error = "Failed to create PackageManager";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -349,13 +347,7 @@ void DoUpdateMsix(const std::string& package_uri,
   hr = package_manager.As(&package_manager9);
   if (FAILED(hr)) {
     error = "Failed to get IPackageManager9 interface";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -365,13 +357,7 @@ void DoUpdateMsix(const std::string& package_uri,
   hr = CreateUri(uri_wstring, &uri);
   if (FAILED(hr)) {
     error = "Failed to create URI";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -380,13 +366,7 @@ void DoUpdateMsix(const std::string& package_uri,
   hr = CreateAddPackageOptions(opts, &package_options);
   if (FAILED(hr)) {
     error = "Failed to create AddPackageOptions";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -415,52 +395,38 @@ void DoUpdateMsix(const std::string& package_uri,
     error =
         "Deployment is NULL. See "
         "http://go.microsoft.com/fwlink/?LinkId=235160 for diagnosing.";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
   // Set up callback data
   auto callback_data = std::make_unique<DeploymentCallbackData>();
-  callback_data->reply_runner = reply_runner;
-  callback_data->promise = std::move(promise);
+  callback_data->settle = std::move(settle);
   callback_data->fire_and_forget =
       opts.force_shutdown || opts.force_target_shutdown;
   callback_data->async_op = async_op;  // Keep async_op alive
   callback_data->operation_name = "Deployment";
 
-  // Register completion handler
+  // Register completion handler; |handler| keeps |raw_data| alive below.
   DeploymentCallbackData* raw_data = callback_data.get();
-  hr = async_op->put_Completed(
-      Callback<DeploymentCompletedHandler>([data = std::move(callback_data)](
-                                               DeploymentAsyncOp* op,
-                                               AsyncStatus status) mutable {
+  auto handler = Callback<DeploymentCompletedHandler>(
+      [data = std::move(callback_data)](DeploymentAsyncOp* op,
+                                        AsyncStatus status) mutable {
         OnDeploymentCompleted(std::move(data), op, status);
         return S_OK;
-      }).Get());
+      });
+  hr = async_op->put_Completed(handler.Get());
 
   if (FAILED(hr)) {
     DebugLog("Failed to register completion handler");
-    raw_data->reply_runner->PostTask(
-        FROM_HERE, base::BindOnce(
-                       [](gin_helper::Promise<void> promise) {
-                         promise.RejectWithErrorMessage(
-                             "Failed to register completion handler");
-                       },
-                       std::move(raw_data->promise)));
+    std::move(raw_data->settle).Run("Failed to register completion handler");
   }
 }
 
 // Performs package registration on IO thread
 void DoRegisterPackage(const std::string& family_name,
                        RegisterPackageOptions opts,
-                       scoped_refptr<base::SingleThreadTaskRunner> reply_runner,
-                       gin_helper::Promise<void> promise) {
+                       SettleCallback settle) {
   DebugLog("DoRegisterPackage: Starting");
   std::string error;
 
@@ -469,13 +435,7 @@ void DoRegisterPackage(const std::string& family_name,
   HRESULT hr = CreatePackageManager(&package_manager);
   if (FAILED(hr)) {
     error = "Failed to create PackageManager";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -484,13 +444,7 @@ void DoRegisterPackage(const std::string& family_name,
   hr = package_manager.As(&package_manager5);
   if (FAILED(hr)) {
     error = "Failed to get IPackageManager5 interface";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -514,13 +468,7 @@ void DoRegisterPackage(const std::string& family_name,
       base::win::ScopedHString::Create(family_name);
   if (!family_name_hstring.is_valid()) {
     error = "Failed to create family name string";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
@@ -553,44 +501,31 @@ void DoRegisterPackage(const std::string& family_name,
     error =
         "Deployment is NULL. See "
         "http://go.microsoft.com/fwlink/?LinkId=235160 for diagnosing.";
-    reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise, std::string error) {
-              promise.RejectWithErrorMessage(error);
-            },
-            std::move(promise), std::move(error)));
+    std::move(settle).Run(std::move(error));
     return;
   }
 
   // Set up callback data
   auto callback_data = std::make_unique<DeploymentCallbackData>();
-  callback_data->reply_runner = reply_runner;
-  callback_data->promise = std::move(promise);
+  callback_data->settle = std::move(settle);
   callback_data->fire_and_forget =
       opts.force_shutdown || opts.force_target_shutdown;
   callback_data->async_op = async_op;  // Keep async_op alive
   callback_data->operation_name = "Registration";
 
-  // Register completion handler
+  // Register completion handler; |handler| keeps |raw_data| alive below.
   DeploymentCallbackData* raw_data = callback_data.get();
-  hr = async_op->put_Completed(
-      Callback<DeploymentCompletedHandler>([data = std::move(callback_data)](
-                                               DeploymentAsyncOp* op,
-                                               AsyncStatus status) mutable {
+  auto handler = Callback<DeploymentCompletedHandler>(
+      [data = std::move(callback_data)](DeploymentAsyncOp* op,
+                                        AsyncStatus status) mutable {
         OnDeploymentCompleted(std::move(data), op, status);
         return S_OK;
-      }).Get());
+      });
+  hr = async_op->put_Completed(handler.Get());
 
   if (FAILED(hr)) {
     DebugLog("Failed to register completion handler");
-    raw_data->reply_runner->PostTask(
-        FROM_HERE, base::BindOnce(
-                       [](gin_helper::Promise<void> promise) {
-                         promise.RejectWithErrorMessage(
-                             "Failed to register completion handler");
-                       },
-                       std::move(raw_data->promise)));
+    std::move(raw_data->settle).Run("Failed to register completion handler");
   }
 }
 #endif
@@ -635,10 +570,8 @@ v8::Local<v8::Promise> UpdateMsix(const std::string& package_uri,
 
   // Post to IO thread
   content::GetIOThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&DoUpdateMsix, package_uri, opts,
-                     base::SingleThreadTaskRunner::GetCurrentDefault(),
-                     std::move(promise)));
+      FROM_HERE, base::BindOnce(&DoUpdateMsix, package_uri, opts,
+                                MakeSettleCallback(std::move(promise))));
 #else
   promise.RejectWithErrorMessage(
       "MSIX updates are only supported on Windows with identity.");
@@ -685,10 +618,8 @@ v8::Local<v8::Promise> RegisterPackage(const std::string& family_name,
 
   // Post to IO thread with POD options (no V8 objects)
   content::GetIOThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&DoRegisterPackage, family_name, opts,
-                     base::SingleThreadTaskRunner::GetCurrentDefault(),
-                     std::move(promise)));
+      FROM_HERE, base::BindOnce(&DoRegisterPackage, family_name, opts,
+                                MakeSettleCallback(std::move(promise))));
 #else
   promise.RejectWithErrorMessage(
       "MSIX package registration is only supported on Windows.");

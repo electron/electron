@@ -88,13 +88,14 @@ jobs:
             - '.github/dependabot.yml'
             - '.github/faraday.yml'
             - README.md
+            - REVIEW.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           pgo:
             - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,REVIEW.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
           # Changes that can affect compiled native code (C/C++/Objective-C,
           # GN build config, patches, and the Chromium checkout inputs).
           # Currently gates clang-tidy; designed to be reused by future

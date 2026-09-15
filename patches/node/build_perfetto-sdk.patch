@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/common.gypi b/common.gypi
-index 990b97cddc8099f2c9c6f2b00d810b71aab1e295..c36e5f8dc92654ffbe15ffb2e8566f0808b00520 100644
+index 7e67f7575c866c7628c980c77d131a4766caf58f..b1802a5fa1742f1896bcdfaca644245051cf7841 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -90,7 +90,7 @@
@@ -20,13 +20,13 @@ index 990b97cddc8099f2c9c6f2b00d810b71aab1e295..c36e5f8dc92654ffbe15ffb2e8566f08
 -    'v8_use_perfetto': 0,
 +    'v8_use_perfetto%': 0,
      'tsan%': 0,
-     'v8_cppgc_microtask_queue%': 0,
  
+     'using_electron_config_gypi%': 0,
 diff --git a/configure.py b/configure.py
-index 86aea91a11eb9bf39247ccf90479542aa7558319..4f945f30076ef0ba9ea0bb2dcfaf9bded4675f57 100755
+index 443818802df9bf62c17aa783617ec5b932cedf81..be0707fa1781201959fa0f4b3712021657dbfee8 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1039,6 +1039,12 @@ parser.add_argument('--without-inspector',
+@@ -1031,6 +1031,12 @@ parser.add_argument('--without-inspector',
      default=None,
      help='disable the V8 inspector protocol')
  
@@ -39,8 +39,8 @@ index 86aea91a11eb9bf39247ccf90479542aa7558319..4f945f30076ef0ba9ea0bb2dcfaf9bde
  parser.add_argument('--shared',
      action='store_true',
      dest='shared',
-@@ -2006,6 +2012,7 @@ def configure_v8(o, configs):
-   o['variables']['v8_cppgc_microtask_queue'] = 1 if options.v8_enable_cppgc_microtask_queue else 0
+@@ -1997,6 +2003,7 @@ def configure_v8(o, configs):
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_extensible_ro_snapshot'] = 0
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
 +  o['variables']['v8_use_perfetto'] = 1 if options.with_perfetto else 0
@@ -48,10 +48,10 @@ index 86aea91a11eb9bf39247ccf90479542aa7558319..4f945f30076ef0ba9ea0bb2dcfaf9bde
    o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
    o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
 diff --git a/node.gyp b/node.gyp
-index 72dd7525473c96293374019dc1626ec8798b2e09..0602f93ae89f314c91d335793c3932adf4b408e7 100644
+index 5df80c48e7c747a49bd2e86ea7706de757fff32e..a5c17ed75b5513fdba2a5ea0d9fb7b259041da75 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -1385,6 +1385,14 @@
+@@ -1387,6 +1387,14 @@
          }, {
            'sources!': [ '<@(node_cctest_quic_sources)' ],
          }],
@@ -66,7 +66,7 @@ index 72dd7525473c96293374019dc1626ec8798b2e09..0602f93ae89f314c91d335793c3932ad
          ['v8_enable_inspector==1', {
            'defines': [
              'HAVE_INSPECTOR=1',
-@@ -1707,6 +1715,14 @@
+@@ -1709,6 +1717,14 @@
              'NODE_USE_NODE_CODE_CACHE=1',
            ],
          }],

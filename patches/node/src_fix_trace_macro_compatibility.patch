@@ -110,7 +110,7 @@ index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..952161d9e2cf1c92c3600fc2da0af594
      return env->ThrowUVException(err, "opendir");
    }
 diff --git a/src/node_file.cc b/src/node_file.cc
-index dec05abe58a969334ee4f13b4ed7b7dc0fd0b6ad..d4ef107d870859d256e12f5829d6085eb7851bb0 100644
+index 15a433fc2c1fde03d1e875a88c238bc36fcc6c93..06bafaea64e7fbb2b5f32e92fd7dc79be875ac68 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -153,10 +153,16 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {

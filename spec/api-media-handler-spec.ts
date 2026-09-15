@@ -594,6 +594,22 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(videoTrackCount).to.equal(1);
   });
 
+  it('does not capture a webContents through the desktop source with a raw web-contents id', async () => {
+    const sourceWindow = new BrowserWindow({ show: false });
+    const requestingWindow = new BrowserWindow({ show: false });
+    await Promise.all([sourceWindow.loadURL(serverUrl), requestingWindow.loadURL(serverUrl)]);
+    const { processId, routingId } = sourceWindow.webContents.mainFrame;
+    const rawId = `web-contents-media-stream://${processId}:${routingId}`;
+    const { ok, message } = await requestingWindow.webContents.executeJavaScript(`
+      navigator.mediaDevices.getUserMedia({
+        video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: ${JSON.stringify(rawId)} } }
+      }).then((stream) => { stream.getTracks().forEach((t) => t.stop()); return { ok: true }; },
+              (e) => ({ ok: false, message: e.message }))
+    `);
+    expect(ok).to.be.false();
+    expect(message).to.equal('Invalid state');
+  });
+
   it('rejects a tab source id when used from a different requesting webContents', async () => {
     const sourceWindow = new BrowserWindow({ show: false });
     const registeredRequesterWindow = new BrowserWindow({ show: false });

@@ -50,6 +50,9 @@ class ElectronRendererClient : public RendererClientBase {
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
+  std::unique_ptr<blink::WebContentSettingsClient>
+  CreateWorkerContentSettingsClient(
+      content::RenderFrame* render_frame) override;
   void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(

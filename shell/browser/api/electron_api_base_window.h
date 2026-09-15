@@ -61,6 +61,15 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }
 
+  static BaseWindow* GetFocusedWindow();
+  // Null unless |value| is a live BaseWindow.
+  static BaseWindow* FromValue(v8::Isolate* isolate,
+                               v8::Local<v8::Value> value);
+  // |window| may be dangling.
+  static bool IsLive(const BaseWindow* window);
+  void SetMenuNatively(Menu* menu);
+  void RemoveMenu();
+
  protected:
   // Common constructor.
   BaseWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
@@ -202,7 +211,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetFocusable(bool focusable);
   bool IsFocusable() const;
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
-  void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin::Arguments* args);
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();

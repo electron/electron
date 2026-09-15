@@ -164,6 +164,8 @@ class WebContents final : public ExclusiveAccessContext,
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
   static std::list<WebContents*> GetWebContentsList();
+  // Prefers a focused <webview> guest over its embedder.
+  static WebContents* GetFocusedWebContents();
 
   // Whether to disable draggable regions globally. This can be used to allow
   // events to skip client region hit tests.
@@ -390,7 +392,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
-  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
 
   // content::WebContentsDelegate:
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
@@ -399,6 +401,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Properties.
   int32_t ID() const { return id_; }
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  api::Session* session() const { return session_.Get(); }
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
@@ -442,6 +445,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
+  // As above but null unless DevTools (managed or external) are open, i.e.
+  // what `devToolsWebContents` is non-null for.
+  content::WebContents* GetOpenDevToolsWebContents() const;
 
   InspectableWebContents* inspectable_web_contents() const {
     return inspectable_web_contents_.get();
@@ -462,6 +468,7 @@ class WebContents final : public ExclusiveAccessContext,
   void SetImageAnimationPolicy(const std::string& new_policy);
 
   // content::RenderWidgetHost::InputEventObserver:
+  bool OnMouseEvent(const blink::WebMouseEvent& event);
   void OnInputEvent(const content::RenderWidgetHost& rfh,
                     const blink::WebInputEvent& event,
                     input::InputEventSource source) override;
@@ -566,8 +573,6 @@ class WebContents final : public ExclusiveAccessContext,
                            const input::NativeWebKeyboardEvent& event) override;
   bool PlatformHandleKeyboardEvent(content::WebContents* source,
                                    const input::NativeWebKeyboardEvent& event);
-  bool PreHandleMouseEvent(content::WebContents* source,
-                           const blink::WebMouseEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const input::NativeWebKeyboardEvent& event) override;
@@ -656,11 +661,12 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
-  // Pushes preload script contents + process info to a sandboxed renderer over
-  // the navigation's associated mojo channel, ahead of CommitNavigation.
-  // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
+  // Pushes the preload script list (plus contents + process info for a
+  // sandboxed renderer) over the frame's associated mojo channel, ahead of
+  // CommitNavigation, for documents that will run preloads.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
+  void SendRendererStartupData(content::RenderFrameHost* rfh);
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;
@@ -934,6 +940,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Declared after |inspectable_web_contents_| because it observes its views.
   std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
+
+  // Registered on every widget of this WebContents; see HandleNewRenderFrame.
+  content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

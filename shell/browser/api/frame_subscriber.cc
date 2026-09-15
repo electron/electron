@@ -17,6 +17,7 @@
 #include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom-shared.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace electron::api {
@@ -164,7 +165,10 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
   CHECK(success);
 
-  callback_.Run(gfx::Image::CreateFrom1xBitmap(copy), damage);
+  content::RenderWidgetHostView* view = host_->GetView();
+  const float scale_factor = view ? view->GetDeviceScaleFactor() : 1.0f;
+  callback_.Run(
+      gfx::Image(gfx::ImageSkia::CreateFromBitmap(copy, scale_factor)), damage);
 }
 
 gfx::Size FrameSubscriber::GetRenderViewSize() const {

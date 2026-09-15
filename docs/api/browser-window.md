@@ -1249,6 +1249,15 @@ Returns `boolean` - Whether the window's document has been edited.
 
 #### `win.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The bounds to capture
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -1256,7 +1265,7 @@ Returns `boolean` - Whether the window's document has been edited.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
-Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page. If the page is not visible, `rect` may be empty. The page is considered visible when its browser window is hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true. The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `win.loadURL(url[, options])`
 

@@ -9,7 +9,11 @@
 
 #include "base/base64.h"
 #include "base/command_line.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
+#include "base/memory/scoped_refptr.h"
 #include "base/numerics/byte_conversions.h"
+#include "base/task/bind_post_task.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
@@ -152,13 +156,19 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
   }
 }
 
+// VideoFrames holding a reference may die on any thread, but the GPU helpers
+// and cppgc-backed |release_callback| are sequence-affine; delete on sequence.
 struct ImportedSharedTexture
-    : base::RefCountedThreadSafe<ImportedSharedTexture> {
+    : base::RefCountedDeleteOnSequence<ImportedSharedTexture> {
+  ImportedSharedTexture()
+      : base::RefCountedDeleteOnSequence<ImportedSharedTexture>(
+            base::SequencedTaskRunner::GetCurrentDefault()) {}
+
   // Metadata
   gfx::Size coded_size;
   gfx::Rect visible_rect;
-  int64_t timestamp;
-  media::VideoPixelFormat pixel_format;
+  int64_t timestamp = 0;
+  media::VideoPixelFormat pixel_format = media::PIXEL_FORMAT_UNKNOWN;
 
   // Holds a reference to prevent it from being destroyed.
   scoped_refptr<gpu::ClientSharedImage> client_shared_image;
@@ -172,6 +182,10 @@ struct ImportedSharedTexture
 
   void UpdateReleaseSyncToken(const gpu::SyncToken& token);
   void SetupReleaseSyncTokenCallback();
+
+  // Safe to run or destroy on any thread; forwards the release sync token to
+  // UpdateReleaseSyncToken() on the owning sequence.
+  media::VideoFrame::ReleaseMailboxCB CreateFrameReleaseCallback();
 
   // Transfer to other Chromium processes.
   v8::Local<v8::Value> StartTransferSharedTexture(v8::Isolate* isolate);
@@ -196,7 +210,8 @@ struct ImportedSharedTexture
 
   // The cleanup happens at destructor.
  private:
-  friend class base::RefCountedThreadSafe<ImportedSharedTexture>;
+  friend class base::RefCountedDeleteOnSequence<ImportedSharedTexture>;
+  friend class base::DeleteHelper<ImportedSharedTexture>;
   ~ImportedSharedTexture();
 };
 
@@ -234,11 +249,12 @@ void ImportedSharedTextureWrapper::ReleaseReference() {
   ist.reset();
 }
 
-// This function will be called when the VideoFrame is destructed.
-void OnVideoFrameMailboxReleased(
-    const scoped_refptr<ImportedSharedTexture>& ist,
-    const gpu::SyncToken& sync_token) {
-  ist->UpdateReleaseSyncToken(sync_token);
+media::VideoFrame::ReleaseMailboxCB
+ImportedSharedTexture::CreateFrameReleaseCallback() {
+  return base::BindPostTask(
+      base::WrapRefCounted(owning_task_runner()),
+      base::BindOnce(&ImportedSharedTexture::UpdateReleaseSyncToken,
+                     base::WrapRefCounted(this)));
 }
 
 v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
@@ -248,7 +264,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
       blink::ToExecutionContext(current_script_state);
 
   auto si = ist->client_shared_image;
-  auto cb = base::BindOnce(OnVideoFrameMailboxReleased, ist);
+  auto cb = ist->CreateFrameReleaseCallback();
 
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(

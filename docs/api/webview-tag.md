@@ -214,7 +214,9 @@ value will fail with a DOM exception.
 ```
 
 A `boolean`. When this attribute is present the guest page will be allowed to open new
-windows. Popups are disabled by default.
+windows, whether through `window.open()` or a link opened into a new window
+(for example a modifier-clicked or `target="_blank"` link). Popups are
+disabled by default.
 
 ### `webpreferences`
 
@@ -610,11 +612,21 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
 
 ### `<webview>.capturePage([rect])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 ### `<webview>.send(channel, ...args)`
 
@@ -960,6 +972,10 @@ Returns:
 * `args` any[]
 
 Fired when the guest page has sent an asynchronous message to embedder page.
+`frameId` does not tell the embedder which document sent the message; when
+that matters, have the guest use `ipcRenderer.send()` and handle the guest
+`webContents`' [`ipc-message`](web-contents.md#event-ipc-message) event in the
+main process, where `event.senderFrame` identifies the sender.
 
 With `sendToHost` method and `ipc-message` event you can communicate
 between guest page and embedder page:

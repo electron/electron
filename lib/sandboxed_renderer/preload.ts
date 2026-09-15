@@ -105,7 +105,6 @@ export function executeSandboxedPreloadScripts(
       if (hasContents) {
         runPreloadScript(context, script);
       } else if (error) {
-        // eslint-disable-next-line no-throw-literal
         throw error;
       }
     } catch (error) {

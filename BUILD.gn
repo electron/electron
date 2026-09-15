@@ -53,6 +53,16 @@ if (is_mac) {
   assert(
       mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
+
+  # shell/browser/feature_list_mac.mm enables this unexported content feature
+  # by name; fail here rather than silently if a Chromium roll removes it.
+  assert(
+      filter_include(
+              read_file(
+                  "//content/browser/renderer_host/render_widget_host_view_mac.mm",
+                  "list lines"),
+              [ "BASE_FEATURE(kThrottleResizeIpc,*" ]) != [],
+      "kThrottleResizeIpc is gone from render_widget_host_view_mac.mm; update shell/browser/feature_list_mac.mm")
 }
 
 if (is_linux) {
@@ -321,10 +331,6 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
-
-  if (v8_cppgc_microtask_queue) {
-    args += [ "--v8-enable-cppgc-microtask-queue" ]
-  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -582,6 +588,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//tools/v8_context_snapshot:buildflags",
     "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
@@ -1736,6 +1743,10 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
+
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
@@ -1791,6 +1802,20 @@ if (is_mac) {
       if (is_linux) {
         deps += [ "//sandbox/linux:chrome_sandbox" ]
       }
+    }
+  }
+
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
     }
   }
 

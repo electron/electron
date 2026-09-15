@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable camelcase */
+/* oxlint-disable @typescript-eslint/no-unused-vars */
 require('ts-node/register');
 
 const main_1 = require('electron/main');
@@ -29,11 +28,11 @@ process.parentPort.on('message', async (e) => {
   try {
     if (e.data.args) {
       for (const [key, value] of Object.entries(e.data.args)) {
-        // eslint-disable-next-line no-eval
+        // oxlint-disable-next-line no-eval
         eval(`var ${key} = value;`);
       }
     }
-    // eslint-disable-next-line no-eval
+    // oxlint-disable-next-line no-eval
     await eval(e.data.fn);
   } catch (err) {
     fail(`${err}`);

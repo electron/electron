@@ -29,6 +29,22 @@ describe('fuses', () => {
     expect(status).to.equal(0);
   });
 
+  it('makes child_process.fork throw when run_as_node is 0', async () => {
+    const rc = await startRemoteControlApp(['--set-fuse-run_as_node=0']);
+    const message = await rc.remotely(
+      (fixture: string) => {
+        try {
+          require('node:child_process').fork(fixture);
+          return 'forked';
+        } catch (error) {
+          return (error as Error).message;
+        }
+      },
+      path.join(__dirname, 'fixtures', 'module', 'noop.js')
+    );
+    expect(message).to.include('runAsNode fuse is disabled');
+  });
+
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {
     const rc = await startRemoteControlApp(['--set-fuse-grant_file_protocol_extra_privileges=0']);
     await expect(

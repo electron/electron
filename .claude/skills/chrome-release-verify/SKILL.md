@@ -13,7 +13,7 @@ The flow is **local-first**: nothing is pushed until every patch applies via `e 
 
 Run `/chrome-release-cls <blog-url>` (or its inline procedure) to produce `/tmp/cve_bugs.txt` (`CVE|bug|severity|desc`) and a per-bug canonical fix CL. For each CL also note `repo` (path under `src/`: `.`, `v8`, `third_party/{skia,angle,pdfium,dawn}`, `third_party/libaom/source/libaom`) and `gerrit-host`.
 
-**Prefer the target-milestone merge CL** if one exists (e.g. on `41-x-y` ≈ M146, prefer the `[M146]` cherry-pick over the main CL) — it's already rebased and far less likely to conflict. Find it via `git log --all --grep` on the Change-Id, or Gerrit `?q=bug:<n>`. If Chrome did *not* merge a fix to the target milestone, that's a strong signal the vulnerable code doesn't exist there — flag it for skip rather than forcing a port.
+**Prefer the target-milestone merge CL** if one exists (e.g. on `41-x-y` ≈ M146, prefer the `[M146]` cherry-pick over the main CL) — it's already rebased and far less likely to conflict. Find it via `git log --all --grep` on the Change-Id, or Gerrit `?q=bug:<n>`. If Chrome did _not_ merge a fix to the target milestone, that is **not** by itself a reason to skip — Chrome's merge window is shorter than Electron's support window. Fall back to the main CL (or a nearby-milestone rebase, see step 5) and let step 3 decide whether the vulnerable code exists on the branch.
 
 ## 2. Prepare a synced worktree
 
@@ -71,7 +71,11 @@ On `Patch failed at NNNN <subject>`:
 
 - `cd` into the failing repo, inspect `git diff` for conflict markers.
 - **Test-only files** (e.g. `web_tests/VirtualTestSuites`, `*_unittest.cc` context drift): take ours (`git checkout --ours -- <file>`) if the security-relevant hunks merged cleanly.
-- **Substantive code conflicts**: check whether a target-milestone merge CL exists and swap to it. If none exists upstream and the surrounding code is structurally different, **drop the patch** (delete the file, remove from `.patches` and `config.json`) and note it for a separate manual-port PR — do not improvise security-fix semantics.
+- **Substantive code conflicts**: a conflict is not a reason to drop. Work through, in order:
+  1. A merge of the same Change-Id on the **target milestone** (`git log --all --grep` on the Change-Id, or Gerrit `?q=change:<Change-Id>`) — swap to it.
+  2. The same Change-Id on a **nearby milestone** (the author's rebase, e.g. an `[M152]` CL when the target is M150 — status NEW is fine), and any **prerequisite CL** the fix was written against (the refactor that introduced the helpers or signatures the fix touches). Pick those so the fix applies verbatim; list prerequisites in the report.
+  3. Otherwise **hand-port** the fix's semantics onto the branch's code, inside the pick's patch file: resolve the hunks in the target repo, fold them into the pick's commit (`git commit --fixup` + autosquash rebase), then re-export. Keep the upstream commit header verbatim and append an `Electron adaptation notes (<branch>)` paragraph to the patch header describing **every** adaptation (renamed member, changed signature, helper inlined, ...). Adapt mechanically and structurally only — never change what the fix checks or guards, and never invent semantics the upstream diff doesn't have. Mark the row `BACKPORTED (adapted)` and flag it for reviewer attention in the report and the PR body. An adapted pick is held to the same bar as any other: `e sync --3`, `lint --patches`, and whatever build gate the caller imposes.
+- **DROPPED** is reserved for two cases: (a) the vulnerable code is **absent** on the branch (file, function or feature doesn't exist), or (b) a **subsystem rewrite** where the fix has no counterpart to attach to. Every DROPPED row must say which, with the evidence. Remove a dropped patch fully (delete the file, remove from `.patches` and `config.json`).
 - After resolving: `git add <files> && git -c commit.gpgsign=false am --continue`, then `e patches <repo>` to export the resolved patch, then re-run `e sync --3`. Repeat until clean.
 
 ## 6. Export → lint → re-apply loop
@@ -115,6 +119,7 @@ PR body format — follow `.github/PULL_REQUEST_TEMPLATE.md` (`Description of Ch
 Backports the following changes:
 
 * [`<shortCommit>`](<gerrit-CL-url>) from <patchDir> — <subject>
+* [`<shortCommit>`](<gerrit-CL-url>) from <patchDir> — <subject> (adapted for <branch>; see patch header)
 * ...
 
 #### Checklist
@@ -129,6 +134,6 @@ Notes: Backported fixes from upstream Chromium and V8.
 
 **Keep the PR body low-key about security.** The PR is public the moment it opens, while the fixes only protect users after a release ships — don't advertise the exploit map in between. Concretely: no CVE numbers, no crbug.com links, no "security"/"0-day"/severity wording anywhere in the title, body, or `Notes:` line. The `security 🔒` label is fine (it's how releases track these). Upstream commit subjects stay verbatim even when they say "UAF" — rewriting them breaks traceability to the Gerrit CL. Adjust the `Notes:` wording to match what's actually in the set (e.g. drop "and V8" if no v8 patches).
 
-Keep the CVE↔CL mapping out of the PR entirely: leave it in the local notes file (`/tmp/cve_cls.txt`) and report it to the user in chat, including any dropped or skipped fixes with reasons.
+Keep the CVE↔CL mapping out of the PR entirely: leave it in the local notes file (`/tmp/cve_cls.txt`) and report it to the user in chat, including any adapted, dropped or skipped fixes with reasons.
 
 Restore `e use <previous>` when done.

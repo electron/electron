@@ -426,6 +426,11 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+std::string InspectableWebContents::DockStateSetting() const {
+  // DevTools settings are stored JSON-encoded.
+  return "\"" + dock_state_ + "\"";
+}
+
 void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
   devtools_title_ = title;
   view_->SetTitle(devtools_title_);
@@ -454,6 +459,39 @@ void InspectableWebContents::ShowDevTools(bool activate) {
   // SetIsDocked is called *BEFORE* ShowDevTools.
   embedder_message_dispatcher_ =
       DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this);
+
+  if (can_dock_) {
+    if (dock_state_.empty()) {
+      const base::DictValue& prefs =
+          pref_service_->GetDict(kDevToolsPreferences);
+      const std::string* current_dock_state =
+          prefs.FindString("currentDockState");
+      if (current_dock_state) {
+        std::string sanitized;
+        base::RemoveChars(*current_dock_state, "\"", &sanitized);
+        dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
+      } else {
+        dock_state_ = "right";
+      }
+    }
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+    auto* api_web_contents = api::WebContents::From(GetWebContents());
+    if (api_web_contents) {
+      auto* win =
+          static_cast<NativeWindowViews*>(api_web_contents->owner_window());
+      // When WCO is enabled, undock the devtools if the current dock
+      // position overlaps with the position of window controls to avoid
+      // broken layout.
+      if (win && win->IsWindowControlsOverlayEnabled()) {
+        if (IsAppRTL() && dock_state_ == "left") {
+          dock_state_ = "undocked";
+        } else if (dock_state_ == "right") {
+          dock_state_ = "undocked";
+        }
+      }
+    }
+#endif
+  }
 
   if (!external_devtools_web_contents_) {  // no external devtools
     managed_devtools_web_contents_ = content::WebContents::Create(
@@ -595,48 +633,12 @@ void InspectableWebContents::LoadCompleted() {
       view_->ShowDevTools(activate_);
 
     // If the devtools can dock, "SetIsDocked" will be called by devtools
-    // itself.
+    // itself with the currentDockState handed out by GetPreferences().
     if (!can_dock_) {
       SetIsDocked(DispatchCallback(), false);
       if (!devtools_title_.empty()) {
         view_->SetTitle(devtools_title_);
       }
-    } else {
-      if (dock_state_.empty()) {
-        const base::DictValue& prefs =
-            pref_service_->GetDict(kDevToolsPreferences);
-        const std::string* current_dock_state =
-            prefs.FindString("currentDockState");
-        if (current_dock_state) {
-          std::string sanitized;
-          base::RemoveChars(*current_dock_state, "\"", &sanitized);
-          dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
-        } else {
-          dock_state_ = "right";
-        }
-      }
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-      auto* api_web_contents = api::WebContents::From(GetWebContents());
-      if (api_web_contents) {
-        auto* win =
-            static_cast<NativeWindowViews*>(api_web_contents->owner_window());
-        // When WCO is enabled, undock the devtools if the current dock
-        // position overlaps with the position of window controls to avoid
-        // broken layout.
-        if (win && win->IsWindowControlsOverlayEnabled()) {
-          if (IsAppRTL() && dock_state_ == "left") {
-            dock_state_ = "undocked";
-          } else if (dock_state_ == "right") {
-            dock_state_ = "undocked";
-          }
-        }
-      }
-#endif
-      std::u16string javascript = base::UTF8ToUTF16(
-          "EUI.DockController.DockController.instance().setDockSide(\"" +
-          dock_state_ + "\");");
-      GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
-          javascript, base::NullCallback());
     }
   }
 
@@ -1016,12 +1018,21 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
+  base::Value prefs = pref_service_->GetValue(kDevToolsPreferences).Clone();
+  if (can_dock_) {
+    // The frontend's DockController docks to this setting when it loads.
+    prefs.GetDict().Set("currentDockState", DockStateSetting());
+  }
   std::move(callback).Run(&prefs);
 }
 
 void InspectableWebContents::GetPreference(DispatchCallback callback,
                                            const std::string& name) {
+  if (can_dock_ && name == "currentDockState") {
+    base::Value dock_state(DockStateSetting());
+    std::move(callback).Run(&dock_state);
+    return;
+  }
   if (auto* pref = pref_service_->GetDict(kDevToolsPreferences).Find(name)) {
     std::move(callback).Run(pref);
     return;

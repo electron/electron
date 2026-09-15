@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/containers/flat_set.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace content {
@@ -32,10 +31,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   void HandleCommand(content::DevToolsAgentHostClientChannel* channel,
                      base::span<const uint8_t> message,
                      NotHandledCallback callback) override;
-  void ClientAttached(
-      content::DevToolsAgentHostClientChannel* channel) override;
-  void ClientDetached(
-      content::DevToolsAgentHostClientChannel* channel) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url,
       TargetType target_type,
@@ -44,11 +39,6 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
   bool HasBundledFrontendResources() override;
   bool ShouldUseBundledFrontendResources() override;
   content::BrowserContext* GetDefaultBrowserContext() override;
-
- private:
-  // Channels with an uncleared Emulation.setDeviceMetricsOverride.
-  base::flat_set<content::DevToolsAgentHostClientChannel*>
-      channels_with_device_overrides_;
 };
 
 }  // namespace electron

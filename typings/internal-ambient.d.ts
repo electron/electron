@@ -27,6 +27,7 @@ declare namespace NodeJS {
     isPromptAPIEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererImpl {
@@ -94,6 +95,7 @@ declare namespace NodeJS {
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
+    readdirWithTypes(path: string): [names: string[], types: number[]] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
@@ -102,15 +104,10 @@ declare namespace NodeJS {
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
     createSentinelFd(): number | -1;
-    splitPath(path: string):
-      | {
-          isAsar: false;
-        }
-      | {
-          isAsar: true;
-          asarPath: string;
-          filePath: string;
-        };
+    // Length of the leading part of |path| that names an archive file, -1 if
+    // none, or -2 if |requireNormalized| and the path has "."/".."/empty
+    // components (normalize and ask again).
+    splitPath(path: string, requireNormalized: boolean): number;
   }
 
   interface NetBinding {
@@ -313,6 +310,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
+    _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
     };

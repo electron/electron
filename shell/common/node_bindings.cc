@@ -762,11 +762,10 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     exit(result->exit_code());
 
 #if BUILDFLAG(IS_WIN)
-  // uv_init overrides error mode to suppress the default crash dialog, bring
-  // it back if user wants to show it.
-  if (browser_env_ == BrowserEnvironment::kBrowser ||
-      env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
-    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+  // libuv sets SEM_NOGPFAULTERRORBOX, which stops Windows Error Reporting
+  // from handling crashes that bypass crashpad's in-process handler (see
+  // electron_wer.dll). Clear it in every process type, as Chromium does.
+  SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
   g_is_initialized = true;

@@ -48,8 +48,8 @@ void StatusIconGtk::SetToolTip(const std::u16string& tool_tip) {
 }
 
 void StatusIconGtk::UpdatePlatformContextMenu(ui::MenuModel* model) {
-  if (model)
-    menu_ = std::make_unique<gtkui::MenuGtk>(model);
+  // MenuGtk holds a bare model pointer the caller may be about to destroy.
+  menu_ = model ? std::make_unique<gtkui::MenuGtk>(model) : nullptr;
 }
 
 void StatusIconGtk::RefreshPlatformContextMenu() {
