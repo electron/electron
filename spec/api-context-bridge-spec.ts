@@ -10,7 +10,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { listen } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
@@ -1416,7 +1416,7 @@ describe('contextBridge', () => {
         expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true));
       });
 
-      describe('internalContextBridge', () => {
+      ifdescribe(isTestingBindingAvailable())('internalContextBridge', () => {
         describe('overrideGlobalValueFromIsolatedWorld', () => {
           it('should override top level properties', async () => {
             await makeBindingWindow(() => {
