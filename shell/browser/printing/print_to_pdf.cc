@@ -124,23 +124,13 @@ bool ReadPageSize(const OptionsReader& options, PaperSize* out) {
   return false;
 }
 
-// As the JavaScript `margin !== undefined && !(margin <= limit)` this
-// replaces, i.e. with `<=`'s coercion (null is 0, BigInt compares exactly,
-// anything unconvertible throws); type checking proper comes after.
+// The JavaScript `margin !== undefined && !(margin <= limit)` this replaces,
+// with `<=`'s coercion (null is 0, BigInt compares exactly, anything
+// unconvertible throws); type checking proper comes after.
 bool MarginExceeds(const OptionsReader& margins,
-                   std::string_view key,
+                   v8::Local<v8::Value> value,
                    double limit) {
-  if (margins.failed())
-    return false;
-  v8::Local<v8::Context> context = margins.isolate()->GetCurrentContext();
-  v8::Local<v8::Value> value;
-  if (!margins.object()
-           ->Get(context, gin::StringToV8(margins.isolate(), key))
-           .ToLocal(&value)) {
-    margins.error().Fail("Exception reading margins");
-    return false;
-  }
-  if (value->IsUndefined())
+  if (margins.failed() || value.IsEmpty() || value->IsUndefined())
     return false;
   if (value->IsBigInt()) {
     bool lossless;
@@ -155,11 +145,27 @@ bool MarginExceeds(const OptionsReader& margins,
     return !(as_int <= limit);
   }
   double number;
-  if (!value->NumberValue(context).To(&number)) {
+  if (!value->NumberValue(margins.isolate()->GetCurrentContext()).To(&number)) {
     margins.error().Fail("Exception reading margins");
     return true;
   }
   return !(number <= limit);
+}
+
+// `const {top, bottom, left, right} = margins`: all four read up front.
+bool ReadMargin(const OptionsReader& margins,
+                std::string_view key,
+                v8::Local<v8::Value>* out) {
+  if (margins.failed())
+    return false;
+  if (!margins.object()
+           ->Get(margins.isolate()->GetCurrentContext(),
+                 gin::StringToV8(margins.isolate(), key))
+           .ToLocal(out)) {
+    margins.error().Fail("Exception reading margins");
+    return false;
+  }
+  return true;
 }
 
 void DropIfNotFinite(std::optional<double>& value) {
@@ -195,12 +201,19 @@ std::optional<PdfRequest> ReadPdfRequest(v8::Isolate* isolate,
   request.paper_height = paper.height;
 
   if (margins) {
-    // Both pairs are evaluated, each pair stopping at its first excess.
-    const bool bad_height = MarginExceeds(*margins, "top", paper.height) ||
-                            MarginExceeds(*margins, "bottom", paper.height);
-    const bool bad_width = MarginExceeds(*margins, "left", paper.width) ||
-                           MarginExceeds(*margins, "right", paper.width);
-    if (error.failed())  // a read or coercion threw
+    v8::Local<v8::Value> top, bottom, left, right;
+    if (!ReadMargin(*margins, "top", &top) ||
+        !ReadMargin(*margins, "bottom", &bottom) ||
+        !ReadMargin(*margins, "left", &left) ||
+        !ReadMargin(*margins, "right", &right)) {
+      return std::nullopt;
+    }
+    // Both pairs are compared, each pair stopping at its first excess.
+    const bool bad_height = MarginExceeds(*margins, top, paper.height) ||
+                            MarginExceeds(*margins, bottom, paper.height);
+    const bool bad_width = MarginExceeds(*margins, left, paper.width) ||
+                           MarginExceeds(*margins, right, paper.width);
+    if (error.failed())  // a coercion threw
       return std::nullopt;
     if (bad_height || bad_width) {
       error.Fail("margins must be less than or equal to pageSize");
