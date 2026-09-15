@@ -70,7 +70,7 @@ ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
     expectConsumed(r.browser, 'internal/electron/js2c/browser_init');
     expectConsumed(r.browser, 'internal/electron/js2c/node_init');
 
-    expectConsumed(r.sandbox, 'internal/electron/js2c/sandbox_bundle');
+    expectConsumed(r.sandbox, 'internal/electron/js2c/webview_bundle');
 
     expectConsumed(r.renderer, 'internal/electron/js2c/renderer_init');
     expectConsumed(r.renderer, 'internal/electron/js2c/node_init');

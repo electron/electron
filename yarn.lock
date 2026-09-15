@@ -411,7 +411,6 @@ __metadata:
     oxfmt: "npm:^0.42.0"
     oxlint: "npm:^1.80.0"
     pre-flight: "npm:^2.0.0"
-    process: "npm:^0.11.10"
     semver: "npm:^7.6.3"
     stream-json: "npm:^1.9.1"
     tap-xunit: "npm:^2.4.1"
@@ -7026,13 +7025,6 @@ __metadata:
   version: 2.0.1
   resolution: "process-nextick-args@npm:2.0.1"
   checksum: 10c0/bec089239487833d46b59d80327a1605e1c5287eaad770a291add7f45fda1bb5e28b38e0e061add0a1d0ee0984788ce74fa394d345eed1c420cacf392c554367
-  languageName: node
-  linkType: hard
-
-"process@npm:^0.11.10":
-  version: 0.11.10
-  resolution: "process@npm:0.11.10"
-  checksum: 10c0/40c3ce4b7e6d4b8c3355479df77aeed46f81b279818ccdc500124e6a5ab882c0cc81ff7ea16384873a95a74c4570b01b120f287abbdd4c877931460eca6084b3
   languageName: node
   linkType: hard
 

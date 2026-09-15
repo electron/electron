@@ -91,7 +91,7 @@ module.exports = ({
     if (!alwaysHasNode) {
       plugins.push(
         new webpack.ProvidePlugin({
-          process: 'process/browser'
+          process: [path.resolve(electronRoot, 'lib', 'webview', 'process.ts'), 'default']
         })
       );
       // No Node.js `events` in these bundles; EventEmitter is implemented
