@@ -26,6 +26,16 @@ namespace gin_helper {
 v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
     v8::Local<v8::Context> context);
 
+// The shared EventEmitter class for `context`, created on first use. Electron's
+// own emitters (ipcRenderer, the sandboxed preload's process object) and the
+// class handed to scripts through the `electron_common_events` binding are all
+// this one, so they share a prototype.
+v8::Local<v8::Function> GetNodeEventEmitterConstructor(
+    v8::Local<v8::Context> context);
+
+// `new EventEmitter()` of the shared class.
+v8::Local<v8::Object> NewNodeEventEmitter(v8::Local<v8::Context> context);
+
 // `emitter.emit(type, ...args)`. When `emitter` is an instance of the class
 // above the listeners are invoked directly from C++; for any other object
 // (a Node.js EventEmitter in a renderer with Node.js integration) its `emit`

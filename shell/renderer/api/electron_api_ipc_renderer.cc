@@ -2,7 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <optional>
 #include <string>
+
+#include "base/strings/strcat.h"
 
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
@@ -18,6 +21,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
@@ -33,6 +37,7 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/prefinalizer.h"
 #include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-template.h"
 
 using blink::WebLocalFrame;
 using content::RenderFrame;
@@ -303,14 +308,224 @@ template <>
 gin::WrapperInfo IPCBase<IPCServiceWorker>::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronIPCServiceWorker);
 
+// The `ipcRenderer` / `ipcRendererInternal` objects: native EventEmitters whose
+// send/invoke/... methods talk to an IPC transport (`T`) directly. Each method
+// carries the transport's wrapper and the `internal` flag in its data object,
+// so the functions work unbound (`const { send } = ipcRenderer`) as the
+// JavaScript implementation's closures did.
+enum MethodData { kTransport, kInternal, kMethodDataCount };
+
+template <typename T>
+struct EmitterMethods {
+  static bool Unpack(const v8::FunctionCallbackInfo<v8::Value>& info,
+                     const char* method,
+                     T** transport,
+                     bool* internal,
+                     std::string* channel) {
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Object> data = info.Data().As<v8::Object>();
+    *internal = data->GetInternalField(kInternal).As<v8::Value>()->IsTrue();
+    if (!gin::ConvertFromV8(isolate,
+                            data->GetInternalField(kTransport).As<v8::Value>(),
+                            transport) ||
+        !*transport) {
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          kIPCMethodCalledAfterContextReleasedError);
+      return false;
+    }
+    if (info.Length() < 1 || !gin::ConvertFromV8(isolate, info[0], channel)) {
+      gin_helper::ErrorThrower(isolate).ThrowTypeError(
+          base::StrCat({"Error processing argument at index 0 of ", method,
+                        ", conversion failure: channel must be a string"}));
+      return false;
+    }
+    return true;
+  }
+
+  // info[start..] as an array, for the transport's `args` parameter.
+  static v8::Local<v8::Value> Rest(
+      const v8::FunctionCallbackInfo<v8::Value>& info,
+      int start) {
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::LocalVector<v8::Value> rest(isolate);
+    for (int i = start; i < info.Length(); ++i)
+      rest.push_back(info[i]);
+    return v8::Array::New(isolate, rest.data(), rest.size());
+  }
+
+  static void Send(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport;
+    bool internal;
+    std::string channel;
+    if (!Unpack(info, "send", &transport, &internal, &channel))
+      return;
+    v8::Isolate* isolate = info.GetIsolate();
+    transport->SendMessage(isolate, gin_helper::ErrorThrower(isolate), internal,
+                           channel, Rest(info, 1));
+  }
+
+  static void SendSync(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport;
+    bool internal;
+    std::string channel;
+    if (!Unpack(info, "sendSync", &transport, &internal, &channel))
+      return;
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Value> result =
+        transport->SendSync(isolate, gin_helper::ErrorThrower(isolate),
+                            internal, channel, Rest(info, 1));
+    if (!result.IsEmpty())
+      info.GetReturnValue().Set(result);
+  }
+
+  static void SendToHost(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport;
+    bool internal;
+    std::string channel;
+    if (!Unpack(info, "sendToHost", &transport, &internal, &channel))
+      return;
+    v8::Isolate* isolate = info.GetIsolate();
+    transport->SendToHost(isolate, gin_helper::ErrorThrower(isolate), channel,
+                          Rest(info, 1));
+  }
+
+  static void PostMessage(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport;
+    bool internal;
+    std::string channel;
+    if (!Unpack(info, "postMessage", &transport, &internal, &channel))
+      return;
+    v8::Isolate* isolate = info.GetIsolate();
+    std::optional<v8::Local<v8::Value>> transfer;
+    if (info.Length() > 2)
+      transfer = info[2];
+    transport->PostMessage(isolate, gin_helper::ErrorThrower(isolate), channel,
+                           info[1], transfer);
+  }
+
+  // invoke() resolves with the handler's return value or rejects with the
+  // error the browser reported for `channel`.
+  static void Invoke(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport;
+    bool internal;
+    std::string channel;
+    if (!Unpack(info, "invoke", &transport, &internal, &channel))
+      return;
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Promise> reply =
+        transport->Invoke(isolate, gin_helper::ErrorThrower(isolate), internal,
+                          channel, Rest(info, 1));
+    if (reply.IsEmpty())
+      return;
+    v8::Local<v8::Function> unwrap;
+    v8::Local<v8::Promise> result;
+    if (v8::Function::New(context, UnwrapInvokeResult, info[0], 1,
+                          v8::ConstructorBehavior::kThrow)
+            .ToLocal(&unwrap) &&
+        reply->Then(context, unwrap).ToLocal(&result)) {
+      info.GetReturnValue().Set(result);
+    }
+  }
+
+  static void UnwrapInvokeResult(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    v8::Isolate* isolate = info.GetIsolate();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Value> error, result;
+    if (info.Length() < 1 || !info[0]->IsObject() ||
+        !info[0]
+             .As<v8::Object>()
+             ->Get(context, gin::StringToSymbol(isolate, "error"))
+             .ToLocal(&error) ||
+        !info[0]
+             .As<v8::Object>()
+             ->Get(context, gin::StringToSymbol(isolate, "result"))
+             .ToLocal(&result)) {
+      return;
+    }
+    if (error->BooleanValue(isolate)) {
+      v8::Local<v8::String> error_string;
+      if (!error->ToString(context).ToLocal(&error_string))
+        return;
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, base::StrCat({"Error invoking remote method '",
+                                 gin::V8ToString(isolate, info.Data()), "': ",
+                                 gin::V8ToString(isolate, error_string)}))));
+      return;
+    }
+    info.GetReturnValue().Set(result);
+  }
+};
+
+template <typename T>
+v8::Local<v8::Object> CreateEmitter(v8::Local<v8::Context> context,
+                                    v8::Local<v8::Value> transport,
+                                    bool internal) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::ObjectTemplate> data_template =
+      v8::ObjectTemplate::New(isolate);
+  data_template->SetInternalFieldCount(kMethodDataCount);
+  v8::Local<v8::Object> data =
+      data_template->NewInstance(context).ToLocalChecked();
+  data->SetInternalField(kTransport, transport);
+  data->SetInternalField(kInternal, v8::Boolean::New(isolate, internal));
+
+  // emitter -> { send, invoke, ... } -> EventEmitter.prototype, mirroring the
+  // old `class IpcRenderer extends EventEmitter` so the methods stay off the
+  // instance (contextBridge copies own properties only).
+  v8::Local<v8::Object> emitter = gin_helper::NewNodeEventEmitter(context);
+  v8::Local<v8::Object> proto = v8::Object::New(isolate);
+  proto->SetPrototype(context, emitter->GetPrototype()).Check();
+  emitter->SetPrototype(context, proto).Check();
+  auto method = [&](const char* name, v8::FunctionCallback callback,
+                    int length) {
+    v8::Local<v8::String> key = gin::StringToSymbol(isolate, name);
+    v8::Local<v8::Function> fn =
+        v8::Function::New(context, callback, data, length,
+                          v8::ConstructorBehavior::kThrow)
+            .ToLocalChecked();
+    fn->SetName(key);
+    proto->DefineOwnProperty(context, key, fn, v8::DontEnum).Check();
+  };
+  method("send", EmitterMethods<T>::Send, 1);
+  method("sendSync", EmitterMethods<T>::SendSync, 1);
+  method("invoke", EmitterMethods<T>::Invoke, 1);
+  if (!internal) {
+    method("sendToHost", EmitterMethods<T>::SendToHost, 1);
+    method("postMessage", EmitterMethods<T>::PostMessage, 3);
+  }
+  return emitter;
+}
+
+template <typename T>
+void CreateEmitters(v8::Local<v8::Context> context,
+                    v8::Local<v8::Object> exports) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> transport;
+  if (!gin::ConvertToV8(isolate, T::Create(isolate)).ToLocal(&transport))
+    return;
+  v8::Local<v8::Object> ipc_renderer =
+      CreateEmitter<T>(context, transport, /*internal=*/false);
+  v8::Local<v8::Object> ipc_renderer_internal =
+      CreateEmitter<T>(context, transport, /*internal=*/true);
+  gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("ipcRenderer", ipc_renderer);
+  dict.Set("ipcRendererInternal", ipc_renderer_internal);
+
+  // ipc_native::EmitIPCEvent() delivers incoming messages to these.
+  gin_helper::Dictionary(isolate, context->Global())
+      .SetHidden("ipcNative", exports);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
-  gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createForRenderFrame", &IPCRenderFrame::Create);
-  dict.SetMethod("createForServiceWorker", &IPCServiceWorker::Create);
+  if (IsWorkerThread())
+    CreateEmitters<IPCServiceWorker>(context, exports);
+  else
+    CreateEmitters<IPCRenderFrame>(context, exports);
 }
 
 }  // namespace
