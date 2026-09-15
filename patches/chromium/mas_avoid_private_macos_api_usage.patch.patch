@@ -326,10 +326,10 @@ index 7e09a9d4a676c7a91b3a68ef6e173c590c384b5a..2f86e619a4441c0d290834da43193121
  
    std::vector<char*> argv_cstr;
 diff --git a/base/process/process_info_mac.mm b/base/process/process_info_mac.mm
-index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e650417647b45a6af 100644
+index f038c8ae1a2d80dc788e315963f883b5445cbad3..54f2b2c1bb3458f0df677b69e9d2d4a95fd89d1d 100644
 --- a/base/process/process_info_mac.mm
 +++ b/base/process/process_info_mac.mm
-@@ -4,15 +4,20 @@
+@@ -4,6 +4,8 @@
  
  #include "base/process/process_info.h"
  
@@ -337,6 +337,10 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
 +
  #import <AppKit/AppKit.h>
  #include <unistd.h>
+ 
+@@ -11,12 +13,15 @@
+ 
+ #include "base/check.h"
  
 +#if !IS_MAS_BUILD()
  extern "C" {
@@ -350,9 +354,9 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  bool AppContainsBluetoothUsageDescription(NSRunningApplication* app) {
    NSURL* bundle_url = app.bundleURL;
    if (!bundle_url) {
-@@ -24,12 +29,14 @@ bool AppContainsBluetoothUsageDescription(NSRunningApplication* app) {
-       [bundle objectForInfoDictionaryKey:@"NSBluetoothAlwaysUsageDescription"];
-   return bluetooth_entry != nil;
+@@ -35,16 +40,22 @@ bool AppContainsBluetoothUsageDescription(NSRunningApplication* app) {
+   PCHECK(responsible_pid != -1);
+   return pid != responsible_pid ? std::optional(responsible_pid) : std::nullopt;
  }
 +#endif
  
@@ -360,12 +364,20 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  namespace base {
  
+ bool IsCurrentProcessSelfResponsible() {
++#if !IS_MAS_BUILD()
+   return ResponsiblePidIfNotSelf() == std::nullopt;
++#else
++  return true;
++#endif
+ }
+ 
  bool DoesResponsibleProcessHaveBluetoothMetadata() {
 +#if !IS_MAS_BUILD()
-   const pid_t pid = getpid();
-   const pid_t responsible_pid = responsibility_get_pid_responsible_for_pid(pid);
-   // Returns true directly if this is a self-responsible app(e.g. Chrome opens
-@@ -46,6 +53,9 @@ bool DoesResponsibleProcessHaveBluetoothMetadata() {
+   const std::optional<pid_t> responsible_pid = ResponsiblePidIfNotSelf();
+ 
+   // Returns true directly if this is a self-responsible app (e.g., Chrome opens
+@@ -61,6 +72,9 @@ bool DoesResponsibleProcessHaveBluetoothMetadata() {
      return AppContainsBluetoothUsageDescription(app);
    }
    return false;
@@ -376,11 +388,11 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index f240dc22ee391c98c8768af7141b7447b6507cc6..69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb 100644
+index 212b93095214422112afd346e36cd2838891725b..80b417c1a022c287acae948b51d6f7c863f93721 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
-@@ -19,6 +19,7 @@
- #include "base/types/expected.h"
+@@ -16,6 +16,7 @@
+ #include "base/strings/string_view_util.h"
  #include "build/branding_buildflags.h"
  #include "crypto/apple/keychain_v2.h"
 +#include "electron/mas.h"
