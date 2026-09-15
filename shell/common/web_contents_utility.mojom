@@ -14,7 +14,12 @@ interface ElectronWebContentsUtility {
   // by compositor.
   OnFirstNonEmptyLayout();
 
-  SetTemporaryZoomLevel(double zoom_level);
+  // Sets a temporary zoom level for the frame's WebContents. Replies with the
+  // zoom level actually in effect afterwards, which differs from |zoom_level|
+  // when the browser rejected the request (e.g. the zoom mode is disabled), so
+  // the renderer can keep its locally applied zoom in sync with the browser.
+  [Sync]
+  SetTemporaryZoomLevel(double zoom_level) => (double effective_zoom_level);
 
   [Sync]
   CanAccessClipboardDeprecated(
