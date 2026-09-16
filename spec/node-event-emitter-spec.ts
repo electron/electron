@@ -243,18 +243,38 @@ describe('native EventEmitter (electron_common_events)', () => {
       });
     });
 
-    it('for symbol and numeric event names', () => {
+    it('for symbol, numeric and object event names', () => {
       sameAsNode((EventEmitter, log) => {
         const e = new EventEmitter();
         const sym = Symbol('s');
+        const obj = { toString: () => 'obj-key' };
+        const numListener = () => log('num');
+        const objListener = () => log('obj');
         e.on(sym, () => log('sym'));
-        e.on(42 as any, () => log('num'));
+        e.on(42 as any, numListener);
+        e.on(obj as any, objListener);
         e.emit(sym);
         e.emit(42 as any);
         e.emit('42');
+        e.emit('obj-key');
+        log(e.eventNames().map((n) => (typeof n === 'symbol' ? n.toString() : n)));
+        e.removeListener(42 as any, numListener);
+        e.removeListener(obj as any, objListener);
         log(e.eventNames().map((n) => (typeof n === 'symbol' ? n.toString() : n)));
         e.removeAllListeners();
         log(e.eventNames());
+      });
+    });
+
+    it('when removing every listener of a large event', () => {
+      sameAsNode((EventEmitter, log) => {
+        const e = new EventEmitter();
+        e.setMaxListeners(0);
+        let removed = 0;
+        e.on('removeListener', () => removed++);
+        for (let i = 0; i < 10000; i++) e.on('big', () => {});
+        e.removeAllListeners('big');
+        log(removed, e.listenerCount('big'), e.eventNames());
       });
     });
 

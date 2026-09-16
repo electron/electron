@@ -1008,6 +1008,15 @@ void PrependOnceListener(const v8::FunctionCallbackInfo<v8::Value>& info) {
                              const Receiver& self,
                              v8::Local<v8::Value> events,
                              v8::Local<v8::Value> type) {
+  // Unlike Get/Set, v8::Object::Delete must not run script, so it cannot
+  // convert an arbitrary value (an object with a toString) to a property key
+  // itself.
+  if (!type->IsName() && !type->IsNumber()) {
+    v8::Local<v8::String> key;
+    if (!type->ToString(s.context()).ToLocal(&key))
+      return false;
+    type = key;
+  }
   double count;
   return self.AddEventsCount(s, -1, &count) &&
          !events.As<v8::Object>()->Delete(s.context(), type).IsNothing();
@@ -1151,6 +1160,7 @@ bool RemoveAllListenersCore(const State& s,
     if (!OwnKeys(s, events, &keys) || !ReadArray(s, keys, &names))
       return false;
     for (auto& key : names) {
+      v8::HandleScope handle_scope(isolate);
       if (key->StrictEquals(s.Key(kKeyRemoveListener)))
         continue;
       if (!CallRemoveAllListeners(s, self, key))
@@ -1172,6 +1182,7 @@ bool RemoveAllListenersCore(const State& s,
     if (!ReadArray(s, listeners.As<v8::Array>(), &items))
       return false;
     for (size_t i = items.size(); i > 0; --i) {
+      v8::HandleScope handle_scope(isolate);
       if (!CallRemoveListener(s, self, type, items[i - 1]))
         return false;
     }
