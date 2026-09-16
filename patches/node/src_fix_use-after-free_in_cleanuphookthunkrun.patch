@@ -19,6 +19,10 @@ cleanup hook which removes itself while the queue is drained.
 Backport of nodejs/node#65630. This patch can be removed when Electron
 updates to a Node.js release that contains it.
 
+Co-authored-by: Sreehari Annam <sreehari.annam@gmail.com>
+Co-authored-by: nsavoire <19255994+nsavoire@users.noreply.github.com>
+Signed-off-by: Caleb Everett <everett.caleb@gmail.com>
+
 diff --git a/src/api/hooks.cc b/src/api/hooks.cc
 index 07efb145a29eecc3e701f4c7b62ca96ea4555050..3213a30a7bc734a6626d0f93d4ce2ac7ddc747f6 100644
 --- a/src/api/hooks.cc
