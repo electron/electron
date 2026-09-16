@@ -3146,8 +3146,14 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     return;
 
   std::string state;
-  const bool inherently_detached =
-      type_ == Type::kWebView || type_ == Type::kBackgroundPage;
+  // Offscreen contents are never displayed on screen, so docked DevTools would
+  // be invisible; they detach regardless of any window association. Listing
+  // them here is also what keeps them clear of the owner_window() check below:
+  // `offscreen: true` overwrites type_, so an offscreen BrowserWindow no longer
+  // reports kBrowserWindow and would otherwise be timing-dependent again.
+  const bool inherently_detached = type_ == Type::kWebView ||
+                                   type_ == Type::kBackgroundPage ||
+                                   type_ == Type::kOffScreen;
   const bool windowed_type =
       type_ == Type::kBrowserWindow || type_ == Type::kBrowserView;
   if (inherently_detached || (!owner_window() && !windowed_type)) {
