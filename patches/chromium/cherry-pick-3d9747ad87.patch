@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Nakayama <tnak@chromium.org>
+Date: Mon, 14 Sep 2026 19:39:26 -0700
+Subject: [M152] ServiceWorker: Add feature flag to disable Code Cache
+
+Original change's description:
+> ServiceWorker: Add feature flag to disable Code Cache
+>
+> This CL adds a new runtime enabled feature, `ServiceWorkerCodeCache` to
+> disable Code Caching for subresource requests through Service Workers.
+> The new feature is disabled by default.
+>
+> Bug: 558367547, 546413288, 547815507, 558342353
+> Change-Id: I2a3b7fbf8c489eec00bce668abb3a7cf438d9f44
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8377021
+> Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+> Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+> Commit-Queue: Takashi Nakayama <tnak@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1695233}
+
+(cherry picked from commit c0b5e81749361a9c8a79990f2c721a16d141882c)
+
+Binary-Size: Failing due to crbug.com/552358195
+Bug: 561362418,558367547,546413288,547815507,558342353
+Change-Id: I2a3b7fbf8c489eec00bce668abb3a7cf438d9f44
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8403526
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Commit-Queue: Takashi Nakayama <tnak@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2666}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/service_worker/service_worker_browsertest.cc b/content/browser/service_worker/service_worker_browsertest.cc
+index 9cb141eec6b9ef31926bd9bd9e7b66e11d7bba5d..dfa93a56a27010a77c045379345c46b2ca5c35fe 100644
+--- a/content/browser/service_worker/service_worker_browsertest.cc
++++ b/content/browser/service_worker/service_worker_browsertest.cc
+@@ -3091,7 +3091,10 @@ class CacheStorageSideDataSizeChecker
+ class ServiceWorkerV8CodeCacheForCacheStorageTest
+     : public ServiceWorkerBrowserTest {
+  public:
+-  ServiceWorkerV8CodeCacheForCacheStorageTest() = default;
++  ServiceWorkerV8CodeCacheForCacheStorageTest() {
++    feature_list_.InitAndEnableFeature(
++        blink::features::kServiceWorkerCodeCache);
++  }
+ 
+   ServiceWorkerV8CodeCacheForCacheStorageTest(
+       const ServiceWorkerV8CodeCacheForCacheStorageTest&) = delete;
+@@ -3166,6 +3169,8 @@ class ServiceWorkerV8CodeCacheForCacheStorageTest
+         partition->GetCacheStorageControl(), embedded_test_server()->base_url(),
+         std::string("cache_name"), embedded_test_server()->GetURL(kScriptUrl));
+   }
++
++  base::test::ScopedFeatureList feature_list_;
+ };
+ 
+ const char ServiceWorkerV8CodeCacheForCacheStorageTest::kPageUrl[] =
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_streamer.cc b/third_party/blink/renderer/bindings/core/v8/script_streamer.cc
+index aabdaa9e40f343727cc7669b7b7b591586adff9e..615c4455667fd30ea64b16e4a27285e46e77916e 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_streamer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_streamer.cc
+@@ -58,6 +58,7 @@
+ #include "third_party/blink/renderer/platform/loader/fetch/response_body_loader.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/script_cached_metadata_handler.h"
+ #include "third_party/blink/renderer/platform/network/mime/mime_type_registry.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/thread_scheduler.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/worker_pool.h"
+@@ -1874,6 +1875,11 @@ bool BackgroundResourceScriptStreamer::BackgroundProcessor::
+     return false;
+   }
+ 
++  if (!RuntimeEnabledFeatures::ServiceWorkerCodeCacheEnabled() &&
++      head->was_fetched_via_service_worker) {
++    cached_metadata.reset();
++  }
++
+   if (is_valid_wasm_mime_type) {
+     // TODO(https://crbug.com/42204365): Add support for code caching.
+     // For now, we clear cached_metadata to avoid unintended side-effects.
+diff --git a/third_party/blink/renderer/core/loader/resource/script_resource.cc b/third_party/blink/renderer/core/loader/resource/script_resource.cc
+index 39a58fef94253a49098b53f0d9a45f617eebd2b7..8b9f16164d6cb9164e0db16c240999722bcfc3a6 100644
+--- a/third_party/blink/renderer/core/loader/resource/script_resource.cc
++++ b/third_party/blink/renderer/core/loader/resource/script_resource.cc
+@@ -59,6 +59,7 @@
+ #include "third_party/blink/renderer/platform/loader/fetch/webui_bundled_cached_metadata_handler.h"
+ #include "third_party/blink/renderer/platform/loader/subresource_integrity.h"
+ #include "third_party/blink/renderer/platform/network/mime/mime_type_registry.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+ #include "third_party/blink/renderer/platform/wtf/shared_buffer.h"
+@@ -411,6 +412,10 @@ void ScriptResource::ResponseReceived(const ResourceResponse& response) {
+   }
+ 
+   cached_metadata_handler_ = nullptr;
++  if (response.WasFetchedViaServiceWorker() &&
++      !RuntimeEnabledFeatures::ServiceWorkerCodeCacheEnabled()) {
++    return;
++  }
+   // Currently we support the metadata caching only for HTTP family and any
+   // schemes defined by SchemeRegistry as requiring a hash check.
+   bool http_family = GetResourceRequest().Url().ProtocolIsInHttpFamily() &&
+diff --git a/third_party/blink/renderer/core/loader/resource/script_resource_test.cc b/third_party/blink/renderer/core/loader/resource/script_resource_test.cc
+index df582f1c811fadafa632787eb0a457a147592023..4a1d54b052a60880415d4fe0d3066c906e62c480 100644
+--- a/third_party/blink/renderer/core/loader/resource/script_resource_test.cc
++++ b/third_party/blink/renderer/core/loader/resource/script_resource_test.cc
+@@ -9,6 +9,7 @@
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/testing_platform_support.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+@@ -323,5 +324,35 @@ TEST(ScriptResourceTest, CreatesHandlerForWebUIBundledCodeCaching) {
+   enable_webui_bundled_code_caching(false);
+ }
+ 
++TEST(ScriptResourceTest, ServiceWorkerCodeCacheFlag) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  const KURL url("https://www.example.com/sw-script.js");
++
++  {
++    ScopedServiceWorkerCodeCacheForTest scoped_feature(false);
++    ScriptResource* resource =
++        ScriptResource::CreateForTest(scope.GetIsolate(), url, Utf8Encoding());
++    ResourceResponse response(url);
++    response.SetHttpStatusCode(200);
++    response.SetWasFetchedViaServiceWorker(true);
++
++    resource->ResponseReceived(response);
++    EXPECT_FALSE(resource->CacheHandler());
++  }
++
++  {
++    ScopedServiceWorkerCodeCacheForTest scoped_feature(true);
++    ScriptResource* resource =
++        ScriptResource::CreateForTest(scope.GetIsolate(), url, Utf8Encoding());
++    ResourceResponse response(url);
++    response.SetHttpStatusCode(200);
++    response.SetWasFetchedViaServiceWorker(true);
++
++    resource->ResponseReceived(response);
++    EXPECT_TRUE(resource->CacheHandler());
++  }
++}
++
+ }  // namespace
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+index c2c0d7c73e8c159d38fc5c8541f21314943fcc76..cbfba390ad2b6b1d14665e3263fe734a5cab429c 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+@@ -12,6 +12,7 @@
+ #include "third_party/blink/public/platform/web_url.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/code_cache_host.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_response.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ 
+ namespace blink {
+ 
+@@ -131,6 +132,11 @@ std::unique_ptr<CachedMetadataSender> CachedMetadataSender::Create(
+     const ResourceResponse& response,
+     mojom::blink::CodeCacheType code_cache_type,
+     scoped_refptr<const SecurityOrigin> requestor_origin) {
++  if (!RuntimeEnabledFeatures::ServiceWorkerCodeCacheEnabled() &&
++      response.WasFetchedViaServiceWorker()) {
++    return std::make_unique<NullCachedMetadataSender>();
++  }
++
+   // Non-ServiceWorker scripts and passthrough SW responses use the site
+   // isolated code cache.
+   if (!response.WasFetchedViaServiceWorker() ||
+@@ -166,6 +172,11 @@ std::unique_ptr<CachedMetadataSender> CachedMetadataSender::Create(
+ bool ShouldUseIsolatedCodeCache(
+     mojom::blink::RequestContextType request_context,
+     const ResourceResponse& response) {
++  if (!RuntimeEnabledFeatures::ServiceWorkerCodeCacheEnabled() &&
++      response.WasFetchedViaServiceWorker()) {
++    return false;
++  }
++
+   // Service worker script has its own code cache.
+   if (request_context == mojom::blink::RequestContextType::SERVICE_WORKER)
+     return false;
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler_test.cc b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler_test.cc
+index 1b86d43f5ede7401a60f10da792c62def7c7c1db..19e209b3ade596d3a799fdcc9179fdda6ffa0439 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler_test.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler_test.cc
+@@ -9,12 +9,14 @@
+ #include "components/persistent_cache/pending_backend.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-blink.h"
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-blink.h"
+ #include "third_party/blink/public/platform/url_conversion.h"
+ #include "third_party/blink/public/platform/web_url.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/code_cache_host.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_request.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_response.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/testing_platform_support.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+@@ -136,6 +138,7 @@ TEST(
+ TEST(
+     CachedMetadataHandlerTest,
+     SendsMetadataToPlatformWhenFetchedViaServiceWorkerWithPassThroughResponse) {
++  ScopedServiceWorkerCodeCacheForTest scoped_feature(true);
+   MockGeneratedCodeCache mock_disk_cache;
+ 
+   // Equivalent to service worker calling respondWith(fetch(evt.request.url));
+@@ -151,6 +154,7 @@ TEST(
+ TEST(
+     CachedMetadataHandlerTest,
+     DoesNotSendMetadataToPlatformWhenFetchedViaServiceWorkerWithDifferentURLResponse) {
++  ScopedServiceWorkerCodeCacheForTest scoped_feature(true);
+   MockGeneratedCodeCache mock_disk_cache;
+ 
+   // Equivalent to service worker calling respondWith(fetch(some_different_url))
+@@ -166,6 +170,7 @@ TEST(
+ 
+ TEST(CachedMetadataHandlerTest,
+      SendsMetadataToPlatformWhenFetchedViaServiceWorkerWithCacheResponse) {
++  ScopedServiceWorkerCodeCacheForTest scoped_feature(true);
+   MockGeneratedCodeCache mock_disk_cache;
+ 
+   // Equivalent to service worker calling respondWith(cache.match(some_url));
+@@ -178,5 +183,38 @@ TEST(CachedMetadataHandlerTest,
+   EXPECT_EQ(1u, mock_disk_cache.CacheStorageCachedURLs().size());
+ }
+ 
++TEST(CachedMetadataHandlerTest,
++     DoesNotSendMetadataToPlatformWhenServiceWorkerCodeCacheDisabled) {
++  ScopedServiceWorkerCodeCacheForTest scoped_feature(false);
++  MockGeneratedCodeCache mock_disk_cache;
++
++  ResourceResponse response(CreateTestResourceResponse());
++  response.SetWasFetchedViaServiceWorker(true);
++  response.SetUrlListViaServiceWorker({response.CurrentRequestUrl()});
++  response.SetCacheStorageCacheName("dummy");
++
++  SendDataFor(response, &mock_disk_cache);
++  EXPECT_EQ(0u, mock_disk_cache.CachedURLs().size());
++  EXPECT_EQ(0u, mock_disk_cache.CacheStorageCachedURLs().size());
++}
++
++TEST(CachedMetadataHandlerTest,
++     ShouldUseIsolatedCodeCacheRespectsServiceWorkerCodeCacheFlag) {
++  ResourceResponse response(CreateTestResourceResponse());
++  response.SetWasFetchedViaServiceWorker(true);
++  response.SetUrlListViaServiceWorker({response.CurrentRequestUrl()});
++
++  {
++    ScopedServiceWorkerCodeCacheForTest scoped_feature(false);
++    EXPECT_FALSE(ShouldUseIsolatedCodeCache(
++        mojom::blink::RequestContextType::SCRIPT, response));
++  }
++  {
++    ScopedServiceWorkerCodeCacheForTest scoped_feature(true);
++    EXPECT_TRUE(ShouldUseIsolatedCodeCache(
++        mojom::blink::RequestContextType::SCRIPT, response));
++  }
++}
++
+ }  // namespace
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 0a386eda79bb9d0d0bb14fc0a3972c675ebef588..ec42d8decc654df1d09efda40466f4fc2c9d5a04 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -5744,6 +5744,10 @@
+       name: "ServiceWorkerClientLifecycleState",
+       status: "experimental",
+     },
++    {
++      // V8 Code Cache for resource requests passing through Service Worker.
++      name: "ServiceWorkerCodeCache",
++    },
+     {
+       // Support for Service Worker APIs in Dedicated Workers.
+       // See https://chromestatus.com/feature/6497653025931264
