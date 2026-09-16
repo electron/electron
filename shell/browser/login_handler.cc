@@ -124,6 +124,8 @@ void LoginHandler::EmitEvent(
         v8::Local<v8::Value> callback = gin::ConvertToV8(
             isolate, base::BindOnce(&LoginHandler::CallbackFromJS,
                                     weak_factory_.GetWeakPtr()));
+        // One authInfo object for both, as one details object.
+        v8::Local<v8::Value> auth = gin::ConvertToV8(isolate, auth_info);
         base::WeakPtr<api::WebContents> weak_web_contents =
             api_web_contents->GetWeakPtr();
         // One callback scope around both emits so ticks and microtasks run
@@ -132,11 +134,11 @@ void LoginHandler::EmitEvent(
         node::CallbackScope callback_scope(isolate, wrapper,
                                            node::async_context{0, 0});
         gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
-                              details, auth_info, callback);
+                              details, auth, callback);
         if (weak_web_contents &&
             weak_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
           gin_helper::EmitEvent(isolate, wrapper, "login", event_object,
-                                details, auth_info, callback);
+                                details, auth, callback);
         }
       }
       default_prevented = event->GetDefaultPrevented();
