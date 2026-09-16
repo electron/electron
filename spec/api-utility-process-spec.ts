@@ -237,6 +237,20 @@ describe('utilityProcess module', () => {
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
+    ifit(process.platform === 'win32')('reports a launch failure with its system error code', async () => {
+      const ERROR_FILENAME_EXCED_RANGE = 206;
+      const name = crypto.randomUUID();
+      const gonePromise = waitForCrash(name);
+      utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
+        serviceName: name,
+        execArgv: [`--title=${'a'.repeat(40000)}`]
+      });
+      const details = await gonePromise;
+      expect(details.type).to.equal('Utility');
+      expect(details.reason).to.equal('launch-failed');
+      expect(details.systemErrorCode).to.equal(ERROR_FILENAME_EXCED_RANGE);
+    });
+
     it('does not keep stale observers for crashed processes without JS references', async () => {
       const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
       const logExpectedCrash = (phase: string) => {
