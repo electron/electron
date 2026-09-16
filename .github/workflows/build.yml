@@ -327,6 +327,13 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   # Build Jobs - These cascade into testing jobs
+  #
+  # Pull requests run a reduced macOS test matrix: the x64 legs and the mas
+  # legs each run one shard over an allowlist (script/macos-*-spec-allowlist.txt)
+  # while darwin arm64 runs the whole suite. The whole suite runs on every leg
+  # for pushes to main and release branches, for roller/ PRs and for PRs
+  # carrying the run-full-macos label (labels are read from the event that
+  # started the run, so add the label before the next push).
   macos-x64:
     permissions:
       contents: read
@@ -344,6 +351,7 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
+      full-macos-tests: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'roller/') || contains(github.event.pull_request.labels.*.name, 'run-full-macos') }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
@@ -380,6 +388,7 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
+      full-macos-tests: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'roller/') || contains(github.event.pull_request.labels.*.name, 'run-full-macos') }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
