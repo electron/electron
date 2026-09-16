@@ -26,7 +26,6 @@
 #include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
 class DraggableRegionProvider;
 class PrefService;
 
@@ -191,6 +190,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool HasShadow() const = 0;
   virtual void SetOpacity(const double opacity) = 0;
   virtual double GetOpacity() const = 0;
+  // NaN is treated as fully opaque, then the value is clamped to [0, 1].
+  static double ClampOpacity(double opacity);
   virtual void SetRepresentedFilename(const std::string& filename) {}
   virtual std::string GetRepresentedFilename() const;
   virtual void SetDocumentEdited(bool edited) {}
@@ -408,7 +409,7 @@ class NativeWindow : public views::WidgetDelegate {
 
   [[nodiscard]] bool has_frame() const { return has_frame_; }
 
-  NativeWindow* parent() const { return parent_; }
+  NativeWindow* parent() const { return parent_.get(); }
 
   [[nodiscard]] bool is_modal() const { return is_modal_; }
 
@@ -450,6 +451,11 @@ class NativeWindow : public views::WidgetDelegate {
   // Flushes save_window_state_timer_ that was queued by
   // DebouncedSaveWindowState. This does NOT flush the actual disk write.
   void FlushWindowState();
+  // Fires save_window_state_timer_ now if DebouncedSaveWindowState started it,
+  // so the electron_common_testing binding can make the debounced save
+  // deterministic in specs. Unlike FlushWindowState this has no other side
+  // effects, and it does NOT flush the actual disk write either.
+  void FlushPendingWindowStateSaveForTesting();
 
   // Restores window state - bounds first and then display mode.
   void RestoreWindowState(const gin_helper::Dictionary& options);
@@ -571,8 +577,9 @@ class NativeWindow : public views::WidgetDelegate {
   double aspect_ratio_ = 0.0;
   gfx::Size aspect_ratio_extraSize_;
 
-  // The parent window, it is guaranteed to be valid during this window's life.
-  raw_ptr<NativeWindow> parent_ = nullptr;
+  // The parent window. Held weakly because the parent may be destroyed
+  // before this window (e.g. a modal child whose parent is destroy()ed).
+  base::WeakPtr<NativeWindow> parent_;
 
   bool is_transitioning_fullscreen_ = false;
 

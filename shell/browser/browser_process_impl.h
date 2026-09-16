@@ -21,10 +21,6 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/sync/key_storage_util_linux.h"
-#endif
-
 class PrefService;
 class ValueMapPrefStore;
 
@@ -66,7 +62,6 @@ class BrowserProcessImpl : public BrowserProcess {
   electron::ResolveProxyHelper* GetResolveProxyHelper();
 
 #if BUILDFLAG(IS_LINUX)
-  void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
   [[nodiscard]] const std::string& linux_storage_backend() const {
     return selected_linux_storage_backend_;
   }
@@ -129,6 +124,8 @@ class BrowserProcessImpl : public BrowserProcess {
   UsbSystemTrayIcon* usb_system_tray_icon() override;
   void set_usb_system_tray_icon_for_test(
       std::unique_ptr<UsbSystemTrayIcon> icon) override;
+  speech::SpeechRecognitionSmallExpertModelInstaller*
+  speech_recognition_small_expert_model_installer() override;
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,

@@ -18,12 +18,21 @@
 #include "ui/base/hit_test.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/compositor/layer.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_background.h"
 #include "ui/views/window/frame_caption_button.h"
 
 namespace electron {
+
+namespace {
+
+// Values used for internal resizing when there are no insets.
+const int kResizeAreaCornerSize = 16;
+const int kResizeInsideBoundsSize = 5;
+
+}  // namespace
 
 ElectronFrameViewLinux::ElectronFrameViewLinux(
     NativeWindowViews* window,
@@ -148,6 +157,21 @@ int ElectronFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
     return contents_hit_test;
 
   return HTCLIENT;
+}
+
+int ElectronFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
+  // Fall back to an internal resize band only when there are no frame insets
+  // but the window is still supposed to be resizable. The main use case is
+  // transparent windows. Matches the behavior of
+  // WinFrameView::ResizingBorderHitTest.
+  if (!window_->IsResizable() ||
+      !efv_layout()->GetRestoredFrameBorderInsets().IsEmpty() ||
+      GetWidget()->IsMaximized() || GetWidget()->IsFullscreen())
+    return HTNOWHERE;
+
+  return GetHTComponentForFrame(point, gfx::Insets(kResizeInsideBoundsSize),
+                                kResizeAreaCornerSize, kResizeAreaCornerSize,
+                                /*can_resize=*/true);
 }
 
 void ElectronFrameViewLinux::Layout(PassKey) {

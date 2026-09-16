@@ -11,12 +11,17 @@
     {
       "name": "no-only-tests",
       "specifier": "./script/lint-plugins/no-only-tests.mjs"
+    },
+    {
+      "name": "no-floating-spec-helpers",
+      "specifier": "./script/lint-plugins/no-floating-spec-helpers.mjs"
     }
   ],
   "categories": {
     "correctness": "off"
   },
   "options": {
+    "reportUnusedDisableDirectives": "error",
     "typeAware": false
   },
   "env": {
@@ -344,7 +349,8 @@
         "spec/**/*.mjs"
       ],
       "rules": {
-        "no-only-tests/no-only-tests": "error"
+        "no-only-tests/no-only-tests": "error",
+        "no-floating-spec-helpers/no-floating-spec-helpers": "error"
       }
     },
     {

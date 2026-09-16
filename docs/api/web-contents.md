@@ -926,6 +926,15 @@ app.whenReady().then(() => {
 
 #### Event: 'paint'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "`image` now has the view's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 Returns:
 
 * `details` Event\<\>
@@ -934,6 +943,8 @@ Returns:
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
+`image` has the view's device scale factor, so `image.getSize()` is in DIPs, while
+`dirtyRect` is in the pixels of `image.toBitmap()`.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -1537,6 +1548,30 @@ Returns `boolean` - Whether this page has been muted.
 
 Returns `boolean` - Whether audio is currently playing.
 
+#### `contents.setCaretBrowsingEnabled(enabled)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+* `enabled` boolean
+
+Sets whether [caret browsing](#contentscaretbrowsingenabled) is enabled on the current web page.
+
+#### `contents.isCaretBrowsingEnabled()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+Returns `boolean` - Whether [caret browsing](#contentscaretbrowsingenabled) is enabled for this page.
+
 #### `contents.setZoomFactor(factor)`
 
 * `factor` Double - Zoom factor; default is 1.0.
@@ -1780,6 +1815,15 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -1790,6 +1834,7 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 The page is considered visible when its browser window is hidden and the capturer count is non-zero.
 If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `contents.isBeingCaptured()`
 
@@ -2156,6 +2201,15 @@ Sends an input `event` to the page.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `onlyDirty` boolean (optional) - Defaults to `false`.
 * `callback` Function
   * `image` [NativeImage](native-image.md)
@@ -2166,7 +2220,8 @@ will be called with `callback(image, dirtyRect)` when there is a presentation
 event.
 
 The `image` is an instance of [NativeImage](native-image.md) that stores the
-captured frame.
+captured frame. It has the page's device scale factor, so `image.getSize()` is
+in DIPs, while `dirtyRect` is in the pixels of `image.toBitmap()`.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
@@ -2305,6 +2360,10 @@ Setting the WebRTC UDP Port Range allows you to restrict the udp port range used
 Returns `string` - The identifier of a WebContents stream. This identifier can be used
 with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
 The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
+The `desktop` source only accepts screen and window identifiers from
+[`desktopCapturer.getSources`](desktop-capturer.md#desktopcapturergetsourcesoptions);
+to capture a WebContents use this identifier with the `tab` source, or
+[`ses.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts).
 
 #### `contents.getOrCreateDevToolsTargetId()`
 
@@ -2422,6 +2481,29 @@ register handlers on the appropriate frame directly using the
 #### `contents.audioMuted`
 
 A `boolean` property that determines whether this page is muted.
+
+#### `contents.caretBrowsingEnabled`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+A `boolean` property that determines whether caret browsing is enabled for this page.
+
+When enabled, a movable cursor is placed in the page's text, allowing the user to navigate and select content with the keyboard. Changes apply to the live page without reloading it.
+
+A `<webview>` guest inherits this value from its embedder when it is created and
+then tracks it independently, so disabling caret browsing on the embedder leaves
+an existing guest enabled.
+
+While any `WebContents` in the process has caret browsing enabled, assistive
+technology is notified process-wide that caret browsing is active, so that screen
+readers report the caret's position as it moves. That notification is only
+withdrawn once every `WebContents` that enabled caret browsing has either
+disabled it or been destroyed.
 
 #### `contents.userAgent`
 

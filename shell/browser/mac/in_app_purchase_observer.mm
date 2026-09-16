@@ -4,6 +4,7 @@
 
 #include "shell/browser/mac/in_app_purchase_observer.h"
 
+#include <utility>
 #include <vector>
 
 #include "base/functional/bind.h"
@@ -19,17 +20,16 @@
 
 namespace {
 
-using InAppTransactionCallback = base::RepeatingCallback<void(
-    const std::vector<in_app_purchase::Transaction>&)>;
+using in_app_purchase::TransactionsUpdatedCallback;
 
 }  // namespace
 
 @interface InAppTransactionObserver : NSObject <SKPaymentTransactionObserver> {
  @private
-  InAppTransactionCallback callback_;
+  TransactionsUpdatedCallback callback_;
 }
 
-- (id)initWithCallback:(const InAppTransactionCallback&)callback;
+- (id)initWithCallback:(const TransactionsUpdatedCallback&)callback;
 
 @end
 
@@ -41,7 +41,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
  * @param callback - The callback that will be called for each transaction
  * update.
  */
-- (id)initWithCallback:(const InAppTransactionCallback&)callback {
+- (id)initWithCallback:(const TransactionsUpdatedCallback&)callback {
   if ((self = [super init])) {
     callback_ = callback;
 
@@ -220,15 +220,15 @@ Transaction::Transaction() = default;
 Transaction::Transaction(const Transaction&) = default;
 Transaction::~Transaction() = default;
 
-TransactionObserver::TransactionObserver() {
-  observer_ = [[InAppTransactionObserver alloc]
-      initWithCallback:base::BindRepeating(
-                           &TransactionObserver::OnTransactionsUpdated,
-                           weak_ptr_factory_.GetWeakPtr())];
-}
+TransactionObserver::TransactionObserver() = default;
 
 TransactionObserver::~TransactionObserver() {
   observer_ = nil;
+}
+
+void TransactionObserver::StartObserving(TransactionsUpdatedCallback callback) {
+  observer_ =
+      [[InAppTransactionObserver alloc] initWithCallback:std::move(callback)];
 }
 
 }  // namespace in_app_purchase

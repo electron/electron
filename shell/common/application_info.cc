@@ -53,7 +53,7 @@ std::string GetApplicationUserAgent() {
 bool IsAppRTL() {
   const std::string& locale = g_browser_process->GetApplicationLocale();
   base::i18n::TextDirection text_direction =
-      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
+      base::i18n::GetTextDirectionForLocale(locale.c_str());
   return text_direction == base::i18n::RIGHT_TO_LEFT;
 }
 

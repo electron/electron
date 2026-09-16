@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "base/i18n/rtl.h"
-#include "components/autofill/core/common/autofill_features.h"
 #include "content/public/browser/render_frame_host.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
@@ -16,8 +15,6 @@
 #include "shell/browser/ui/views/autofill_popup_view.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-#include "ui/color/color_id.h"
-#include "ui/color/color_provider.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -304,12 +301,6 @@ const gfx::FontList& AutofillPopup::GetValueFontListForRow(int index) const {
 
 const gfx::FontList& AutofillPopup::GetLabelFontListForRow(int index) const {
   return smaller_font_list_;
-}
-
-ui::ColorId AutofillPopup::GetBackgroundColorIDForRow(int index) const {
-  return (view_ && index == view_->GetSelectedLine())
-             ? ui::kColorResultsTableHoveredBackground
-             : ui::kColorResultsTableNormalBackground;
 }
 
 int AutofillPopup::LineFromY(int y) const {

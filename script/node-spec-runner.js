@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const utils = require('./lib/utils');
 const DISABLED_TESTS = require('./node-disabled-tests.json');
+const FLAKY_TESTS = require('./node-flaky-tests.json');
 
 const args = minimist(process.argv.slice(2), {
   boolean: ['default', 'validateDisabled'],
@@ -15,7 +16,9 @@ const args = minimist(process.argv.slice(2), {
 const BASE = path.resolve(__dirname, '../..');
 
 const ROOT_PACKAGE_JSON = path.resolve(BASE, 'package.json');
+const OUT_PACKAGE_JSON = path.resolve(path.dirname(utils.getAbsoluteElectronExec()), 'package.json');
 const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node');
+const ROOT_STATUS = path.resolve(NODE_DIR, 'test', 'root.status');
 const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null;
 const TAP_FILE_NAME = 'test.tap';
 
@@ -39,36 +42,54 @@ const defaultOptions = [
   '-J'
 ];
 
-// The upstream Node.js test suite assumes there is no package.json above the
-// test tree. In Electron, third_party/electron_node lives under Chromium's
-// src/, whose package.json ("type": "module") is always an ancestor. That
-// changes how Node resolves the module type of test files and fixtures: it
-// disables module-syntax detection (breaking e.g.
-// test-compile-cache-typescript-esm) and emits MODULE_TYPELESS_PACKAGE_JSON
-// warnings that break tests asserting clean stderr (e.g. test-esm-detect-
-// ambiguous, test-esm-import-meta-main-eval, test-output-coverage-with-mock).
+// Files outside Electron that are rewritten for the duration of a run and put
+// back afterwards. Originals are kept in sibling backup files so an interrupted
+// run self-heals next time.
 //
-// While the suite runs we move src/package.json aside so the environment
-// matches upstream exactly, then restore it when done. The original contents
-// are kept in a sibling backup file so an interrupted/killed run self-heals on
-// the next invocation rather than leaving src/package.json missing.
-const ROOT_PACKAGE_JSON_BACKUP = `${ROOT_PACKAGE_JSON}.spec-runner-backup`;
-
-const stashPackageJson = () => {
-  // This won't always exist in CI.
-  if (!fs.existsSync(ROOT_PACKAGE_JSON)) {
-    return;
+// The upstream suite assumes there is no package.json above its test files or
+// rooted at process.execPath; Chromium's src/ root and the output directory
+// both have a "type": "module" one, which changes module-type detection for
+// test files and fixtures and emits MODULE_TYPELESS_PACKAGE_JSON warnings that
+// break tests asserting clean stderr. They are removed while the suite runs.
+//
+// Tests that flake under Electron but should keep running are appended to the
+// suite's root.status as PASS,FLAKY, which --flaky-tests=dontcare then reports
+// without failing the run.
+const REWRITES = [
+  { file: ROOT_PACKAGE_JSON, rewrite: () => null },
+  { file: OUT_PACKAGE_JSON, rewrite: () => null },
+  {
+    file: ROOT_STATUS,
+    rewrite: (original) => `${original}\n[true]\n${FLAKY_TESTS.map((test) => `${test}: PASS,FLAKY`).join('\n')}\n`
   }
-  fs.copyFileSync(ROOT_PACKAGE_JSON, ROOT_PACKAGE_JSON_BACKUP);
-  fs.rmSync(ROOT_PACKAGE_JSON);
+];
+
+const backupPath = (file) => `${file}.spec-runner-backup`;
+
+const applyRewrites = () => {
+  for (const { file, rewrite } of REWRITES) {
+    // The package.json files won't always exist in CI.
+    if (!fs.existsSync(file)) {
+      continue;
+    }
+    fs.copyFileSync(file, backupPath(file));
+    const rewritten = rewrite(fs.readFileSync(file, 'utf8'));
+    if (rewritten === null) {
+      fs.rmSync(file);
+    } else {
+      fs.writeFileSync(file, rewritten);
+    }
+  }
 };
 
-const restorePackageJson = () => {
-  if (!fs.existsSync(ROOT_PACKAGE_JSON_BACKUP)) {
-    return;
+const restoreRewrites = () => {
+  for (const { file } of REWRITES) {
+    if (!fs.existsSync(backupPath(file))) {
+      continue;
+    }
+    fs.copyFileSync(backupPath(file), file);
+    fs.rmSync(backupPath(file));
   }
-  fs.copyFileSync(ROOT_PACKAGE_JSON_BACKUP, ROOT_PACKAGE_JSON);
-  fs.rmSync(ROOT_PACKAGE_JSON_BACKUP);
 };
 
 const getCustomOptions = () => {
@@ -90,7 +111,7 @@ async function main() {
   // Optionally validate that all disabled specs still exist.
   if (args.validateDisabled) {
     const missing = [];
-    for (const test of DISABLED_TESTS) {
+    for (const test of [...DISABLED_TESTS, ...FLAKY_TESTS]) {
       const js = path.join(NODE_DIR, 'test', `${test}.js`);
       const mjs = path.join(NODE_DIR, 'test', `${test}.mjs`);
       if (!fs.existsSync(js) && !fs.existsSync(mjs)) {
@@ -99,38 +120,35 @@ async function main() {
     }
 
     if (missing.length > 0) {
-      console.error(`Found ${missing.length} missing disabled specs: \n${missing.join('\n')}`);
+      console.error(`Found ${missing.length} missing disabled/flaky specs: \n${missing.join('\n')}`);
       process.exit(1);
     }
 
-    console.log(`All ${DISABLED_TESTS.length} disabled specs exist.`);
+    console.log(`All ${DISABLED_TESTS.length} disabled and ${FLAKY_TESTS.length} flaky specs exist.`);
     process.exit(0);
   }
 
   const options = args.default ? defaultOptions : getCustomOptions();
 
-  // Recover src/package.json if a previous run was interrupted, then move it
-  // aside for the duration of this run.
-  restorePackageJson();
-  stashPackageJson();
-
-  // Make sure src/package.json is put back even if we exit abnormally.
-  process.on('exit', restorePackageJson);
+  // Undo a previous interrupted run first, then rewrite for this one and make
+  // sure everything is put back even if we exit abnormally.
+  restoreRewrites();
+  applyRewrites();
+  process.on('exit', restoreRewrites);
   process.on('SIGINT', () => process.exit(130));
   process.on('SIGTERM', () => process.exit(143));
 
   const testChild = cp.spawn('python3', options, {
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: 'true',
-      ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING: 'true'
+      ELECTRON_RUN_AS_NODE: 'true'
     },
     cwd: NODE_DIR,
     stdio: 'inherit'
   });
 
   testChild.on('exit', (testCode) => {
-    restorePackageJson();
+    restoreRewrites();
 
     if (JUNIT_DIR) {
       fs.mkdirSync(JUNIT_DIR);

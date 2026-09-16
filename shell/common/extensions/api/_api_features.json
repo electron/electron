@@ -78,5 +78,23 @@
   },
   "tabs.removeCSS": {
     "max_manifest_version": 2
+  },
+  // Electron does not support chrome.webstorePrivate. The core definition in
+  // //extensions/common/api/_api_features.json exposes it to web pages on the
+  // Chrome Web Store origin, but the browser-side implementation requires an
+  // embedder-provided WebstorePrivateAPIDelegate that Electron does not have.
+  //
+  // This entry replaces the core one (ElectronExtensionsAPIProvider is added
+  // after CoreExtensionsAPIProvider and FeatureProvider::AddFeature() is
+  // last-writer-wins). It matches the core entry except that it also requires
+  // a delegated availability check; Electron never registers a handler for
+  // one, so the feature fails closed (kMissingDelegatedAvailabilityCheck) in
+  // every context in both the renderer and the browser. Do not remove this
+  // without providing a WebstorePrivateAPIDelegate.
+  "webstorePrivate": {
+    "channel": "stable",
+    "contexts": ["web_page"],
+    "matches": ["https://chromewebstore.google.com/*"],
+    "requires_delegated_availability_check": true
   }
 }

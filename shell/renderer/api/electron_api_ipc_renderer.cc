@@ -14,12 +14,14 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/serialized_value.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/service_worker_data.h"
@@ -75,7 +77,7 @@ class IPCBase : public gin::Wrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
@@ -91,18 +93,18 @@ class IPCBase : public gin::Wrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return {};
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return {};
     }
-    gin_helper::Promise<blink::CloneableMessage> p(isolate);
+    gin_helper::Promise<electron::SerializedValue> p(isolate);
     auto handle = p.GetHandle();
 
     electron_ipc_remote_->Invoke(
         internal, channel, std::move(message),
         base::BindOnce(
-            [](gin_helper::Promise<blink::CloneableMessage> p,
-               blink::CloneableMessage result) { p.Resolve(result); },
+            [](gin_helper::Promise<electron::SerializedValue> p,
+               electron::SerializedValue result) { p.Resolve(result); },
             std::move(p)));
 
     return handle;
@@ -157,7 +159,7 @@ class IPCBase : public gin::Wrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
@@ -173,12 +175,12 @@ class IPCBase : public gin::Wrappable<T> {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return {};
     }
-    blink::CloneableMessage message;
+    electron::SerializedValue message;
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return {};
     }
 
-    blink::CloneableMessage result;
+    electron::SerializedValue result;
     electron_ipc_remote_->MessageSync(internal, channel, std::move(message),
                                       &result);
     return electron::DeserializeV8Value(isolate, result);
@@ -257,10 +259,13 @@ gin::WrapperInfo IPCBase<IPCRenderFrame>::kWrapperInfo =
 
 class IPCServiceWorker final : public IPCBase<IPCServiceWorker>,
                                public content::WorkerThread::Observer {
+  CPPGC_USING_PRE_FINALIZER(IPCServiceWorker, Dispose);
+
  public:
   explicit IPCServiceWorker(v8::Isolate* isolate) {
     DCHECK(IsWorkerThread());
     content::WorkerThread::AddObserver(this);
+    observing_worker_thread_ = true;
 
     electron::ServiceWorkerData* service_worker_data =
         electron::preload_realm::GetServiceWorkerData(
@@ -270,11 +275,28 @@ class IPCServiceWorker final : public IPCBase<IPCServiceWorker>,
         electron_ipc_remote_.BindNewEndpointAndPassReceiver());
   }
 
-  void WillStopCurrentWorkerThread() override { electron_ipc_remote_.reset(); }
+  // Deregister from the worker thread's observer list before cppgc reclaims
+  // this object, otherwise thread shutdown would notify a swept observer.
+  void Dispose() {
+    if (observing_worker_thread_) {
+      observing_worker_thread_ = false;
+      content::WorkerThread::RemoveObserver(this);
+    }
+  }
+
+  void WillStopCurrentWorkerThread() override {
+    // The per-thread observer list is destroyed right after this returns, so
+    // there is nothing left to deregister from in Dispose().
+    observing_worker_thread_ = false;
+    electron_ipc_remote_.reset();
+  }
 
   const char* GetHumanReadableName() const override {
     return "Electron / IPCServiceWorker";
   }
+
+ private:
+  bool observing_worker_thread_ = false;
 };
 
 template <>

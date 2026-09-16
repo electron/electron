@@ -1,7 +1,7 @@
 name: PR Blocked Automation
 
 on:
-  pull_request_target:
+  pull_request_target: # zizmor: ignore[dangerous-triggers] deliberate; only base-branch code runs, the PR head is never checked out (see SECURITY note)
     types: [opened, reopened, synchronize, labeled, unlabeled]
 
 # SECURITY: This workflow uses pull_request_target and has access to secrets.

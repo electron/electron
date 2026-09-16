@@ -164,7 +164,7 @@ If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync
 e test                    # Run full test suite
 ```
 
-**Test frameworks:** Mocha, Chai, Sinon
+**Test frameworks:** Mocha, Chai
 
 ## Build Configuration
 
@@ -217,6 +217,41 @@ gh label list --repo electron/electron --search target/ --json name,color --jq '
 
 **C++:** Follows Chromium style, enforced by clang-format
 **TypeScript/JavaScript:** [oxlint](https://oxc.rs/docs/guide/usage/linter) configuration in `.oxlintrc.json`
+
+### cppgc / Oilpan
+
+- Treat prefinalizers as an absolute last resort. They add GC cost to every
+  collection involving the object; first redesign ownership or make teardown
+  release only non GC resources in the destructor. Use
+  `CPPGC_USING_PRE_FINALIZER` only when teardown unavoidably needs to inspect
+  another GC managed object.
+- Destructors must not access other GC managed objects: sweeping has no object
+  destruction order or timing guarantee.
+- Never store a bare pointer or `raw_ptr` to a GC managed object in a heap
+  field. Use `cppgc::Member`/`WeakMember` for on heap edges and
+  `cppgc::Persistent`/`WeakPersistent` for off heap edges. A bare pointer is
+  safe only as a native stack local.
+- Allocate GC-managed objects only with `cppgc::MakeGarbageCollected`; never
+  use `new`, `delete`, `std::unique_ptr`, or `scoped_refptr`.
+- Trace every `Member`, `WeakMember`, `v8::TracedReference`, and traceable
+  helper such as `gin::WeakCellFactory`; call the GC managed base class's
+  `Trace()` first. Missing an edge can cause use-after-free.
+- Use `v8::TracedReference` for V8 values that participate in unified heap
+  tracing. Use `v8::Global` only for an intentionally independent V8 root.
+- Keep handle construction, access, and destruction on the owning isolate's
+  thread. Use a cross thread handle only when a cross thread reference is
+  unavoidable.
+- Use `gin_helper::SelfKeepAlive` only when native asynchronous work must keep
+  the object alive after all JavaScript references are gone. Clear it on every
+  terminal path.
+- For callbacks that may outlive or escape the object, use `WeakCellFactory`.
+  Use `base::Unretained(this)` only when the callback is registered on a member
+  owned by the object and destroying that member guarantees cancellation.
+- `GetHumanReadableName()` must return stable storage (normally a string
+  literal) and must not allocate GC objects or mutate the heap.
+- Annotate intentionally untraced owned members that the Blink GC plugin cannot
+  understand, such as Mojo remotes and receivers, with `GC_PLUGIN_IGNORE` and a
+  specific justification.
 
 **Linting:**
 

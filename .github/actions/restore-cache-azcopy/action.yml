@@ -19,6 +19,8 @@ runs:
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
+      restore-keys: |
+        sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-
       enableCrossOsArchive: true
   - name: Download Src Cache from AKS
     # The cache will always exist here as a result of the checkout job

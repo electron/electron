@@ -159,12 +159,13 @@ void SystemPreferences::InitializeWindow() {
   // Wait until app is ready before creating sys color listener
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
-  if (Browser::Get()->is_ready())
+  if (Browser::Get()->is_ready()) {
     hwnd_subscription_ =
         gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
             &SystemPreferences::OnWndProc, base::Unretained(this)));
-  else
+  } else {
     Browser::Get()->AddObserver(this);
+  }
 
   WNDCLASSEX window_class;
   base::win::InitializeWindowClass(
@@ -178,8 +179,8 @@ void SystemPreferences::InitializeWindow() {
   // colorization color.  Create a hidden WS_POPUP window instead of an
   // HWND_MESSAGE window, because only top-level windows such as popups can
   // receive broadcast messages like "WM_DWMCOLORIZATIONCOLORCHANGED".
-  window_ = CreateWindow(MAKEINTATOM(atom_), 0, WS_POPUP, 0, 0, 0, 0, 0, 0,
-                         instance_, 0);
+  window_ = CreateWindow(MAKEINTATOM(atom_), nullptr, WS_POPUP, 0, 0, 0, 0,
+                         nullptr, nullptr, instance_, nullptr);
   gfx::CheckWindowCreated(window_, ::GetLastError());
   gfx::SetWindowUserData(window_, this);
 }
@@ -226,6 +227,24 @@ void SystemPreferences::OnFinishLaunching(base::DictValue launch_info) {
   hwnd_subscription_ =
       gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
           &SystemPreferences::OnWndProc, base::Unretained(this)));
+  Browser::Get()->RemoveObserver(this);
+}
+
+void SystemPreferences::Dispose() {
+  if (electron::IsUtilityProcess())
+    return;
+
+  hwnd_subscription_ = {};
+  Browser::Get()->RemoveObserver(this);
+  if (window_) {
+    gfx::SetWindowUserData(window_, nullptr);
+    DestroyWindow(window_);
+    window_ = nullptr;
+  }
+  if (atom_) {
+    UnregisterClass(MAKEINTATOM(atom_), instance_);
+    atom_ = 0;
+  }
 }
 
 }  // namespace api

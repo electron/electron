@@ -20,10 +20,6 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
 
-namespace base {
-class Value;
-}
-
 namespace mojo {
 template <typename T>
 class PendingRemote;

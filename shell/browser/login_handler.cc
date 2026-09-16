@@ -8,6 +8,7 @@
 
 #include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/web_contents.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "net/http/http_response_headers.h"
@@ -18,6 +19,9 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 
@@ -36,12 +40,18 @@ LoginHandler::LoginHandler(
     : auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
+  // The WebContents may be destroyed before the posted task runs, so only
+  // carry a weak reference to it across the hop.
+  base::WeakPtr<content::WebContents> weak_web_contents;
+  if (web_contents)
+    weak_web_contents = web_contents->GetWeakPtr();
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
-      base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
-                     auth_info, web_contents, is_request_for_primary_main_frame,
-                     is_request_for_navigation, process_id, url,
-                     response_headers, first_auth_attempt));
+      base::BindOnce(
+          &LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(), auth_info,
+          web_contents != nullptr, std::move(weak_web_contents),
+          is_request_for_primary_main_frame, is_request_for_navigation,
+          process_id, url, response_headers, first_auth_attempt));
 }
 
 LoginHandler::LoginHandler(
@@ -63,7 +73,8 @@ LoginHandler::LoginHandler(
 
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,
-    content::WebContents* web_contents,
+    bool has_web_contents,
+    base::WeakPtr<content::WebContents> web_contents,
     bool is_request_for_primary_main_frame,
     bool is_request_for_navigation,
     base::ProcessId process_id,
@@ -74,8 +85,11 @@ void LoginHandler::EmitEvent(
   v8::HandleScope scope(isolate);
 
   raw_ptr<api::WebContents> api_web_contents = nullptr;
-  if (web_contents) {
-    api_web_contents = api::WebContents::From(web_contents);
+  if (has_web_contents) {
+    // Cancel the request if the WebContents (or its JS wrapper) that issued
+    // it has since been destroyed.
+    if (web_contents)
+      api_web_contents = api::WebContents::From(web_contents.get());
     if (!api_web_contents) {
       std::move(auth_required_callback_).Run(std::nullopt);
       return;
@@ -96,10 +110,39 @@ void LoginHandler::EmitEvent(
   auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented = false;
   if (api_web_contents) {
-    default_prevented =
-        api_web_contents->Emit("login", std::move(details), auth_info,
-                               base::BindOnce(&LoginHandler::CallbackFromJS,
-                                              weak_factory_.GetWeakPtr()));
+    // app 'login' first (it always was the WebContents' first listener), then
+    // the WebContents, sharing the event and the one-shot callback.
+    v8::Local<v8::Object> wrapper;
+    v8::Local<v8::Object> app;
+    if (api_web_contents->GetWrapper(isolate).ToLocal(&wrapper) &&
+        api::App::Get()->GetWrapper(isolate).ToLocal(&app)) {
+      gin_helper::internal::Event* event =
+          gin_helper::internal::Event::New(isolate);
+      {
+        v8::Local<v8::Object> event_object =
+            event->GetWrapper(isolate).ToLocalChecked();
+        v8::Local<v8::Value> callback = gin::ConvertToV8(
+            isolate, base::BindOnce(&LoginHandler::CallbackFromJS,
+                                    weak_factory_.GetWeakPtr()));
+        // One authInfo object for both, as one details object.
+        v8::Local<v8::Value> auth = gin::ConvertToV8(isolate, auth_info);
+        base::WeakPtr<api::WebContents> weak_web_contents =
+            api_web_contents->GetWeakPtr();
+        // One callback scope around both emits so ticks and microtasks run
+        // once, after both, as when the app emit nested in the WebContents';
+        // defaultPrevented is read after they have run, as Emit() did.
+        node::CallbackScope callback_scope(isolate, wrapper,
+                                           node::async_context{0, 0});
+        gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
+                              details, auth, callback);
+        if (weak_web_contents &&
+            weak_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
+          gin_helper::EmitEvent(isolate, wrapper, "login", event_object,
+                                details, auth, callback);
+        }
+      }
+      default_prevented = event->GetDefaultPrevented();
+    }
   } else if (auto* utility_process =
                  api::UtilityProcessWrapper::FromProcessId(process_id);
              utility_process && utility_process->has_session()) {

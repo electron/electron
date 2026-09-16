@@ -11,10 +11,6 @@ namespace content {
 class RenderFrame;
 }
 
-namespace extensions {
-class Dispatcher;
-}
-
 namespace electron {
 
 class ElectronExtensionsRendererClient

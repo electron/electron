@@ -26,8 +26,6 @@ using Microsoft::WRL::RuntimeClassFlags;
 
 namespace electron {
 
-class ScopedHString;
-
 using DesktopToastActivatedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<
         ABI::Windows::UI::Notifications::ToastNotification*,

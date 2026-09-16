@@ -10,7 +10,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { listen } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
@@ -389,7 +389,7 @@ describe('contextBridge', () => {
           return new Promise((resolve) => {
             let observed = false;
             const original = Function.prototype.bind;
-            // eslint-disable-next-line no-extend-native
+            // oxlint-disable-next-line no-extend-native
             Function.prototype.bind = new Proxy(original, {
               apply(target, thisArg, args) {
                 observed = true;
@@ -397,7 +397,7 @@ describe('contextBridge', () => {
               }
             });
             root.example.getPromise().then((v: string) => {
-              // eslint-disable-next-line no-extend-native
+              // oxlint-disable-next-line no-extend-native
               Function.prototype.bind = original;
               resolve({ observed, value: v });
             });
@@ -472,6 +472,110 @@ describe('contextBridge', () => {
           }
         });
         expect(result).equal('oh no');
+      });
+
+      it('should throw instead of crashing when an array argument has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            echo: (arr: any) => arr.length
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const poisoned = [1, 2, 3];
+          Object.defineProperty(poisoned, 0, {
+            get() {
+              throw new Error('boom');
+            },
+            enumerable: true,
+            configurable: true
+          });
+          const nested = { a: [1, [2, 3]] };
+          Object.defineProperty(nested.a[1], 1, {
+            get() {
+              throw new Error('nested boom');
+            },
+            enumerable: true,
+            configurable: true
+          });
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return (e as Error).message;
+            }
+            return null;
+          };
+          return [
+            getError(() => root.example.echo(poisoned)),
+            getError(() => root.example.echo(nested)),
+            root.example.echo([1, 2, 3])
+          ];
+        });
+        expect(result).to.deep.equal(['boom', 'nested boom', 3]);
+      });
+
+      it('should throw when an object argument has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            check: (_: any) => {
+              (globalThis as any).called = true;
+            },
+            called: () => (globalThis as any).called === true
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const getError = (fn: Function) => {
+            try {
+              fn();
+            } catch (e) {
+              return (e as Error).message;
+            }
+            return null;
+          };
+          class CustomError extends Error {
+            get message(): string {
+              throw new Error('error boom');
+            }
+          }
+          const objectError = getError(() =>
+            root.example.check({
+              a: 1,
+              get b() {
+                throw new Error('object boom');
+              }
+            })
+          );
+          const errorError = getError(() => root.example.check(new CustomError()));
+          return [objectError, errorError, root.example.called()];
+        });
+        expect(result).to.deep.equal(['object boom', 'error boom', false]);
+      });
+
+      it('should throw instead of crashing when a returned array has a throwing getter', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getPoisoned: () => {
+              const poisoned = [1, 2, 3];
+              Object.defineProperty(poisoned, 0, {
+                get() {
+                  throw new Error('boom');
+                },
+                enumerable: true,
+                configurable: true
+              });
+              return poisoned;
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          try {
+            root.example.getPoisoned();
+          } catch (e) {
+            return (e as Error).message;
+          }
+          return null;
+        });
+        expect(result).to.equal('Uncaught Error: boom');
       });
 
       it('should proxy methods that are callable multiple times', async () => {
@@ -958,7 +1062,7 @@ describe('contextBridge', () => {
               throw new Error('whoops');
             },
             throwWeird: () => {
-              throw 'this is no error...'; // eslint-disable-line no-throw-literal
+              throw 'this is no error...'; // oxlint-disable-line no-throw-literal
             },
             throwNotClonable: () => {
               return Object(Symbol('foo'));
@@ -1312,7 +1416,7 @@ describe('contextBridge', () => {
         expect(result.protoMatches).to.deep.equal(result.protoMatches.map(() => true));
       });
 
-      describe('internalContextBridge', () => {
+      ifdescribe(isTestingBindingAvailable())('internalContextBridge', () => {
         describe('overrideGlobalValueFromIsolatedWorld', () => {
           it('should override top level properties', async () => {
             await makeBindingWindow(() => {

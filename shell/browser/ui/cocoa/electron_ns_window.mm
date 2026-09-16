@@ -140,6 +140,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       class_getInstanceMethod([view class], @selector(swipeWithEvent:));
   Method new_swipe_with_event =
       class_getInstanceMethod([SwizzledMethodsClass class], swiz_selector);
+  CHECK(original_swipe_with_event);
+  CHECK(new_swipe_with_event);
   method_setImplementation(original_swipe_with_event,
                            method_getImplementation(new_swipe_with_event));
 }

@@ -4,7 +4,9 @@
 * `nodeIntegration` boolean (optional) - Whether node integration is enabled.
   Default is `false`.
 * `nodeIntegrationInWorker` boolean (optional) - Whether node integration is
-  enabled in web workers. Default is `false`. More about this can be found
+  enabled in web workers. Default is `false`. Only workers created by a frame
+  that itself has access to Node.js (the main frame, or any frame when
+  `nodeIntegrationInSubFrames` is enabled) get it. More about this can be found
   in [Multithreading](../../tutorial/multithreading.md).
 * `nodeIntegrationInSubFrames` boolean (optional) - Experimental option for
   enabling Node.js support in sub-frames such as iframes and child windows. All your preloads will load for
@@ -163,6 +165,7 @@
 * `enableDeprecatedPaste` boolean (optional) _Deprecated_ - Whether to enable the `paste` [execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand). Default is `false`.
 * `focusOnNavigation` boolean (optional) - Whether to focus the WebContents
   when navigating. Default is `true`.
+* `disableWakeLocks` boolean (optional) - Whether to disable the wake locks of the WebContents. Default is `false`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5

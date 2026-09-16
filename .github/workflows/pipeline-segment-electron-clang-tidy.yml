@@ -20,12 +20,15 @@ on:
         description: 'JSON container information for aks runs-on'
         required: false
         default: '{"image":null}'
+    secrets:
+      ELECTRON_RBE_JWT:
+        required: false
 
 permissions: {}
 
 concurrency:
-  group: electron-clang-tidy-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: electron-clang-tidy-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
@@ -39,8 +42,9 @@ jobs:
     runs-on: ${{ inputs.clang-tidy-runs-on }}
     permissions:
       contents: read
-    container: ${{ fromJSON(inputs.clang-tidy-container) }}
+    container: ${{ fromJSON(inputs.clang-tidy-container) }} # zizmor: ignore[unpinned-images] the caller passes ghcr.io/electron/build tagged by the content hash computed in build.yml; there is no static digest to pin
     env:
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       TARGET_PLATFORM: ${{ inputs.target-platform }}
@@ -52,6 +56,7 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
     - name: Cleanup disk space on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       shell: bash
@@ -93,17 +98,33 @@ jobs:
       uses: ./src/electron/.github/actions/restore-cache-aks
       with:
         target-platform: ${{ inputs.target-platform }}
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+        persist-credentials: false
+    - name: Fix hermetic Python (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: cpython3-host
+        deps-file: src/DEPS
+        installation-dir: src/third_party/cpython3/host
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/cpython3/${platform}
     - name: Run Electron Only Hooks
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
           echo "target_os=['win']" >> tmpgclient
         fi
         e d gclient runhooks --gclientfile=tmpgclient
 
         # Fix VS Toolchain
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           rm -rf src/third_party/depot_tools/win_toolchain/vs_files
           e d python3 src/build/vs_toolchain.py update --force
         fi
@@ -111,12 +132,6 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-    - name: Checkout Electron
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Default GN gen
@@ -131,41 +146,56 @@ jobs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
+    # The src cache is produced on Linux, so the siso fetched from CIPD is a
+    # Linux binary; swap in the macOS one this job runs (as fix-sync does for
+    # the build job).
+    - name: Install siso (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: siso
+        deps-file: src/DEPS
+        installation-dir: src/third_party/siso/cipd
+        target-platform: ${{ inputs.target-platform }}
+        package: build/siso/${platform}
+    # clang-tidy runs as siso build steps (script/gen-clang-tidy-ninja.py): one
+    # remotely executed, remotely cached action per translation unit.
     - name: Run Clang-Tidy
-      env:
-        # macOS runners have fewer CPU cores, so use fewer jobs for better results
-        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
       run: |
-        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
-
-        # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
-        export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build siso
+        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        if [ "$TARGET_PLATFORM" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
-
         e build --gen=only
 
-        # Copy macOS framework headers so clang-tidy can find them via -F.
-        # This must happen after e build since e init -f may
-        # recreate the output directory.
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
+          # The steps run on the Linux RBE workers through clang_remote_wrapper;
+          # `e build` staged the Linux clang for that, add the Linux clang-tidy.
+          python3 src/tools/clang/scripts/update.py --package clang-tidy --host-os linux --output-dir src/third_party/llvm-build/Release+Asserts_linux
+
+          # Squirrel and friends are included via -F framework paths that only
+          # exist in the out dir after a build; recreate their Headers dirs.
           OUT=src/out/${ELECTRON_OUT_DIR}
           SQRL=src/third_party/squirrel.mac
-
           mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
-
-          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${OUT}/ReactiveObjC.framework/Headers/
-          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
-
+          cp ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/*.h ${SQRL}/Carthage/Checkouts/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
           cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
-
-          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${OUT}/Mantle.framework/Headers/
-          cp ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/Carthage/Checkouts/Mantle/Mantle/include/*.h ${SQRL}/Carthage/Checkouts/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
         fi
 
+        e d python3 src/electron/script/gen-clang-tidy-ninja.py src/out/${ELECTRON_OUT_DIR}
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
+        e build --gen=off --target electron_clang_tidy -f clang_tidy.ninja -batch -k 0
+    - name: Upload siso metrics
+      if: always() && !cancelled()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+      with:
+        name: clang_tidy_siso_${{ env.ARTIFACT_KEY }}
+        path: |
+          src/out/Default/siso_metrics.json
+          src/out/Default/siso_output
+        if-no-files-found: ignore
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"

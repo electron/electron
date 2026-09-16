@@ -17,6 +17,8 @@
 #include "electron/electron_version.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+#include "net/base/net_errors.h"
 #include "net/log/file_net_log_observer.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
@@ -208,14 +210,17 @@ v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
     // Move the net_log_exporter_ into the callback to ensure that the mojo
     // pointer lives long enough to resolve the promise. Moving it into the
     // callback will cause the instance variable to become empty.
+    // If the pipe disconnects the reply is dropped; still settle the promise.
     net_log_exporter_->Stop(
         base::DictValue(),
-        base::BindOnce(
-            [](mojo::Remote<network::mojom::NetLogExporter>,
-               gin_helper::Promise<void> promise, int32_t error) {
-              ResolvePromiseWithNetError(std::move(promise), error);
-            },
-            std::move(net_log_exporter_), std::move(promise)));
+        mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+            base::BindOnce(
+                [](mojo::Remote<network::mojom::NetLogExporter>,
+                   gin_helper::Promise<void> promise, int32_t error) {
+                  ResolvePromiseWithNetError(std::move(promise), error);
+                },
+                std::move(net_log_exporter_), std::move(promise)),
+            static_cast<int32_t>(net::ERR_FAILED)));
   } else {
     promise.RejectWithErrorMessage("No net log in progress");
   }

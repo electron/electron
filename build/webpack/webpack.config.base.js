@@ -1,11 +1,18 @@
 const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
-const WrapperPlugin = require('wrapper-webpack-plugin');
 
 const fs = require('node:fs');
 const path = require('node:path');
 
 const electronRoot = path.resolve(__dirname, '../..');
+
+// Wraps the emitted bundle in `header` / `footer`. BannerPlugin instances run
+// in registration order, so wrapping twice nests the later wrapper outside the
+// earlier one.
+const wrapBundle = (header, footer) => [
+  new webpack.BannerPlugin({ banner: header, raw: true }),
+  new webpack.BannerPlugin({ banner: footer, raw: true, footer: true })
+];
 
 class AccessDependenciesPlugin {
   apply(compiler) {
@@ -62,8 +69,6 @@ module.exports = ({
       }
     }
 
-    const ignoredModules = [];
-
     const plugins = [];
 
     if (onlyPrintingGraph) {
@@ -100,34 +105,40 @@ module.exports = ({
 
     if (wrapInitWithProfilingTimeout) {
       plugins.push(
-        new WrapperPlugin({
-          header: 'function ___electron_webpack_init__() {',
-          footer: `
+        ...wrapBundle(
+          'function ___electron_webpack_init__() {',
+          `
 };
 if ((globalThis.process || binding.process).argv.includes("--profile-electron-init")) {
   setTimeout(___electron_webpack_init__, 0);
 } else {
   ___electron_webpack_init__();
 }`
-        })
+        )
       );
     }
 
     if (wrapInitWithTryCatch) {
       plugins.push(
-        new WrapperPlugin({
-          header: 'try {',
-          footer: `
+        ...wrapBundle(
+          'try {',
+          `
 } catch (err) {
   console.error('Electron ${outputFilename} script failed to run');
   console.error(err);
 }`
-        })
+        )
       );
     }
 
+    // GN passes mode=production for official builds; that only decides
+    // whether the output is minified. webpack itself always runs in
+    // production mode (deterministic module ids, scope hoisting, unused-export
+    // removal) so testing builds exercise the same module graph as releases.
+    const minimize = env.mode === 'production';
+
     return {
-      mode: 'development',
+      mode: 'production',
       devtool: false,
       entry,
       target: alwaysHasNode ? 'node' : 'web',
@@ -155,10 +166,6 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       module: {
         rules: [
           {
-            test: (moduleName) => !onlyPrintingGraph && ignoredModules.includes(moduleName),
-            loader: 'null-loader'
-          },
-          {
             test: /\.ts$/,
             loader: 'ts-loader',
             options: {
@@ -178,8 +185,12 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         __dirname: false,
         __filename: false
       },
+      performance: { hints: false },
       optimization: {
-        minimize: env.mode === 'production',
+        minimize,
+        // These bundles are Electron's own runtime; leave the app's
+        // process.env.NODE_ENV alone.
+        nodeEnv: false,
         minimizer: [
           new TerserPlugin({
             terserOptions: {

@@ -75,6 +75,7 @@ ElectronMessagingDelegate::CreateReceiverForNativeApp(
     const PortId& receiver_port_id,
     const std::string& native_app_name,
     bool allow_user_level,
+    const SigningCertificates& android_certificates,
     std::string* error_out) {
   return nullptr;
 }

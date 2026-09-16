@@ -204,8 +204,9 @@ void ElectronSandboxedRendererClient::WillEvaluateServiceWorkerOnWorkerThread(
       context_proxy, v8_isolate, v8_context, service_worker_version_id,
       service_worker_scope, script_url, service_worker_token);
 
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kServiceWorkerPreload)) {
+  // The browser attaches preload data only when the session has service
+  // worker preload scripts registered (GetServiceWorkerStartupData).
+  if (context_proxy->ElectronPreloadData().has_value()) {
     if (!service_worker_data) {
       service_worker_data = new ServiceWorkerData{
           context_proxy, service_worker_version_id, v8_isolate, v8_context};

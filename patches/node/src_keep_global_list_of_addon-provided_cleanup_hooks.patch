@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Henningsen <anna@addaleax.net>
+Date: Thu, 18 Jun 2026 17:38:03 +0200
+Subject: src: keep global list of addon-provided cleanup hooks
+
+A recent change, 215027c8eded2e, introduced flakiness into our
+test suite that exposed an issue with the cleanup hook API design.
+
+Specifically, the signatures of `AddEnvironmentCleanupHook()` and
+`RemoveEnvironmentCleanupHook()` are problematic. Both functions
+take `Isolate*` arguments, as addons are not generally expected
+to have to care about the Node.js `Environment` as a first-class
+scope provider.
+
+However, this model made the incorrect assumption that in the
+situations in which `RemoveEnvironmentCleanupHook()` would be
+invoked an `Environment` would always be associated with the
+current `Isolate` (via the current V8 `Context`, if there is one).
+
+This occasionally breaks down when `RemoveEnvironmentCleanupHook()`
+is called during garbage collection -- which would be an expected
+use case of the functionality, but one that has not been covered
+through our tests before 215027c8eded2e.
+
+Since Node.js guarantees API and ABI stability within a major version,
+and this is a bug that is independent from the aforementioned change,
+this commit resolves it by adding global mutable state to keep track
+off cleanup hooks registered through the Node.js public API.
+
+Obviously, this solution does not represent a desirable long-term
+state, and a semver-minor follow up should add an API that does not
+require modifications to these data structures, likely based on
+the async cleanup hook API which already solves this issue properly.
+
+Refs: https://github.com/nodejs/node/pull/63642
+Fixes: https://github.com/nodejs/node/issues/63923
+Signed-off-by: Anna Henningsen <anna@addaleax.net>
+PR-URL: https://github.com/nodejs/node/pull/63985
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Santiago Gimeno <santiago.gimeno@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Backport of https://github.com/nodejs/node/pull/63985 for
+https://github.com/electron/electron/issues/53387: Node.js 24.19.0 made
+node::ObjectWrap register an environment cleanup hook, and removing it
+from ~ObjectWrap() during GC (no current context) hit CHECK_NOT_NULL(env)
+and aborted native addons. Conflict in test/addons/worker-addon/binding.cc
+resolved by deriving `isolate` from the module context, since v24.x does
+not carry the upstream refactor that introduced that local.
+
+(cherry picked from commit 68321eff80918e324e9fdaf1aa8cee6db14b84f7)
+
+diff --git a/src/api/hooks.cc b/src/api/hooks.cc
+index 86132d5eec29ce1fea946e233a96c2ba9cc64471..07efb145a29eecc3e701f4c7b62ca96ea4555050 100644
+--- a/src/api/hooks.cc
++++ b/src/api/hooks.cc
+@@ -127,20 +127,71 @@ struct ACHHandle final {
+ // this.
+ void DeleteACHHandle::operator ()(ACHHandle* handle) const { delete handle; }
+ 
++// TODO(addaleax): Having this extra set of data structures is far from
++// ideal, but unfortunately the public synchronous cleanup hook API was
++// slightly mis-designed; in particular, RemoveEnvironmentCleanupHook() needs
++// to keep working when the Isolate either has no active context (such as
++// during GC) or that context is associated with another Node.js Environment.
++// We should align this with the asynchronous API, which handles this properly
++// through an explicit reference to the cleanup hook instead of requiring
++// lookups in internal maps.
++struct CleanupHookThunk final {
++  Isolate* isolate;
++  Environment* env;
++  CleanupHook fun;
++  void* arg;
++
++  bool operator==(const CleanupHookThunk& other) const {
++    // `env` is intentionally not part of this comparison
++    return isolate == other.isolate && fun == other.fun && arg == other.arg;
++  }
++};
++struct CleanupHookThunkHash {
++  size_t operator()(const CleanupHookThunk& thunk) const {
++    return std::hash<void*>()(thunk.arg);
++  }
++};
++using CleanupHookRegistry =
++    std::unordered_set<CleanupHookThunk, CleanupHookThunkHash>;
++static ExclusiveAccess<CleanupHookRegistry> cleanup_hook_registry;
++
++static void CleanupHookThunkRun(void* arg) {
++  const CleanupHookThunk* thunk = static_cast<CleanupHookThunk*>(arg);
++  thunk->fun(thunk->arg);
++  RemoveEnvironmentCleanupHook(thunk->isolate, thunk->fun, thunk->arg);
++}
++
+ void AddEnvironmentCleanupHook(Isolate* isolate,
+                                CleanupHook fun,
+                                void* arg) {
+   Environment* env = Environment::GetCurrent(isolate);
+   CHECK_NOT_NULL(env);
+-  env->AddCleanupHook(fun, arg);
++  void* wrapped_arg;
++  {
++    ExclusiveAccess<CleanupHookRegistry>::Scoped registry(
++        &cleanup_hook_registry);
++    auto result = registry->insert({isolate, env, fun, arg});
++    CHECK(result.second);
++    wrapped_arg = const_cast<CleanupHookThunk*>(&*result.first);
++  }
++  env->AddCleanupHook(CleanupHookThunkRun, wrapped_arg);
+ }
+ 
+ void RemoveEnvironmentCleanupHook(Isolate* isolate,
+                                   CleanupHook fun,
+                                   void* arg) {
+-  Environment* env = Environment::GetCurrent(isolate);
+-  CHECK_NOT_NULL(env);
+-  env->RemoveCleanupHook(fun, arg);
++  CleanupHookThunk thunk;
++  void* wrapped_arg;
++  {
++    ExclusiveAccess<CleanupHookRegistry>::Scoped registry(
++        &cleanup_hook_registry);
++    auto result = registry->find({isolate, nullptr, fun, arg});
++    if (result == registry->end()) return;
++    wrapped_arg = const_cast<CleanupHookThunk*>(&*result);
++    thunk = *result;
++    registry->erase(result);
++  }
++  thunk.env->RemoveCleanupHook(CleanupHookThunkRun, wrapped_arg);
+ }
+ 
+ static void FinishAsyncCleanupHook(void* arg) {
+diff --git a/test/addons/worker-addon/binding.cc b/test/addons/worker-addon/binding.cc
+index a5f9d8b3f835d8926d55d06b57a523617afc6e65..183cad371c3286d872f681015585cc80d57fd0b5 100644
+--- a/test/addons/worker-addon/binding.cc
++++ b/test/addons/worker-addon/binding.cc
+@@ -51,12 +51,26 @@ void Cleanup(void* str) {
+ void Initialize(Local<Object> exports,
+                 Local<Value> module,
+                 Local<Context> context) {
++  Isolate* isolate = context->GetIsolate();
+   node::AddEnvironmentCleanupHook(
+-      context->GetIsolate(),
+-      Cleanup,
+-      const_cast<void*>(static_cast<const void*>("cleanup")));
+-  node::AddEnvironmentCleanupHook(context->GetIsolate(), Dummy, nullptr);
+-  node::RemoveEnvironmentCleanupHook(context->GetIsolate(), Dummy, nullptr);
++      isolate, Cleanup, const_cast<void*>(static_cast<const void*>("cleanup")));
++
++  // Test that adding and removing a cleanup hook works as expected
++  {
++    node::AddEnvironmentCleanupHook(isolate, Dummy, nullptr);
++    node::RemoveEnvironmentCleanupHook(isolate, Dummy, nullptr);
++  }
++
++  // Test that adding and removing a cleanup hook also works if there
++  // is no active context during removal
++  {
++    node::AddEnvironmentCleanupHook(isolate, Dummy, nullptr);
++    {
++      context->Exit();
++      node::RemoveEnvironmentCleanupHook(isolate, Dummy, nullptr);
++      context->Enter();
++    }
++  }
+ 
+   if (getenv("addExtraItemToEventLoop") != nullptr) {
+     // Add an item to the event loop that we do not clean up in order to make

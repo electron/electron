@@ -777,7 +777,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
              viewForItemAtIndex:(NSInteger)index {
   std::string s_id = base::SysNSStringToUTF8(scrubber.identifier);
   if (![self hasItemWithID:s_id])
-    return nil;
+    return [[NSScrubberItemView alloc] initWithFrame:NSZeroRect];
 
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -785,33 +785,32 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   gin_helper::PersistentDictionary settings = settings_[s_id];
   std::vector<gin_helper::PersistentDictionary> items;
   if (!settings.Get("items", &items))
-    return nil;
+    return [[NSScrubberItemView alloc] initWithFrame:NSZeroRect];
 
   if (index >= static_cast<NSInteger>(items.size()))
-    return nil;
+    return [[NSScrubberItemView alloc] initWithFrame:NSZeroRect];
 
   gin_helper::PersistentDictionary item = items[index];
 
-  NSScrubberItemView* itemView;
   std::string title;
 
   if (item.Get("label", &title)) {
     NSScrubberTextItemView* view =
         [scrubber makeItemWithIdentifier:TextScrubberItemIdentifier owner:self];
+    if (!view)
+      return [[NSScrubberItemView alloc] initWithFrame:NSZeroRect];
     view.title = base::SysUTF8ToNSString(title);
-    itemView = view;
-  } else {
-    NSScrubberImageItemView* view =
-        [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier
-                                   owner:self];
-    gfx::Image image;
-    if (item.Get("icon", &image)) {
-      view.image = image.AsNSImage();
-    }
-    itemView = view;
+    return view;
   }
 
-  return itemView;
+  NSScrubberImageItemView* view =
+      [scrubber makeItemWithIdentifier:ImageScrubberItemIdentifier owner:self];
+  if (!view)
+    return [[NSScrubberItemView alloc] initWithFrame:NSZeroRect];
+  gfx::Image image;
+  if (item.Get("icon", &image))
+    view.image = image.AsNSImage();
+  return view;
 }
 
 - (NSSize)scrubber:(NSScrubber*)scrubber

@@ -62,6 +62,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-cors-file', privileges: { supportFetchAPI: true } },
+  { scheme: 'no-cors-http', privileges: { supportFetchAPI: true } },
   { scheme: 'no-cors-standard', privileges: { standard: true, supportFetchAPI: true } },
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
   { scheme: 'stream', privileges: { standard: true, stream: true } },
@@ -250,7 +252,10 @@ app
     // 1. test completes,
     // 2. `defer()`-ed methods run, in reverse order,
     // 3. regular `afterEach` hooks run.
-    const { runCleanupFunctions } = require('./lib/spec-helpers');
+    const { runCleanupFunctions, isTestingBindingAvailable } = require('./lib/spec-helpers');
+    if (process.env.ELECTRON_REQUIRE_TESTING_BINDINGS === '1' && !isTestingBindingAvailable()) {
+      throw new Error('Testing build expected, but testing bindings are unavailable');
+    }
     mocha.suite.on('suite', function attach(suite) {
       suite.afterEach('cleanup', runCleanupFunctions);
       suite.on('suite', attach);
@@ -338,6 +343,39 @@ app
       if (err?.stack) console.log(err.stack.split('\n').slice(0, 3).join('\n'));
       console.log(`Retrying test (${test.currentRetry() + 1}/${test.retries()})...`);
     });
+
+    // Per-file wall time, consumed by script/gen-spec-weights.js to balance CI
+    // shards. Skipped for grep'd runs so a rerun doesn't overwrite the full run.
+    if (process.env.CI && !argv.grep && !process.env.MOCHA_GREP) {
+      const started = new Map();
+      const timings = {};
+      runner.on('suite', (suite) => {
+        if (suite.parent?.root) started.set(suite, Date.now());
+      });
+      runner.on('suite end', (suite) => {
+        if (!started.has(suite) || !suite.file) return;
+        const file = path.relative(baseElectronDir, suite.file).split(path.sep).join('/');
+        timings[file] = (timings[file] || 0) + (Date.now() - started.get(suite)) / 1000;
+      });
+      runner.on('end', () => {
+        const artifactsDir = path.join(__dirname, 'artifacts');
+        fs.mkdirSync(artifactsDir, { recursive: true });
+        fs.writeFileSync(
+          path.join(artifactsDir, 'spec-timings.json'),
+          JSON.stringify(
+            {
+              platform: process.platform,
+              arch: process.arch,
+              mas: !!process.mas,
+              sanitizer: process.env.IS_ASAN === 'true' ? 'asan' : process.env.IS_UBSAN === 'true' ? 'ubsan' : null,
+              files: timings
+            },
+            null,
+            2
+          )
+        );
+      });
+    }
   })
   .catch((err) => {
     console.error('An error occurred while running the spec runner');

@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { localAIHandler, net, systemPreferences, LanguageModelUtility } from 'electron/utility';
 
 process.parentPort.on('message', (e) => {
@@ -83,7 +81,7 @@ localAIHandler.setPromptAPIHandler((details) => {
     }
 
     async prompt() {
-      return 'Hello World';
+      return `Hello to ${this.details.securityOrigin}`;
     }
   };
 });

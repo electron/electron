@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 58cc571ea3ff50eacff60688bc13226ad80815be..3de3d0f8f08d6fd9fd15006ff73b2a2e529f96ff 100644
+index cc52998162acd58c928ce47ea08fb92dd8c7ea18..178d3885a282d7fa26b83a7652182968fcb92265 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -58,7 +58,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -77,7 +77,7 @@ index 58cc571ea3ff50eacff60688bc13226ad80815be..3de3d0f8f08d6fd9fd15006ff73b2a2e
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -443,6 +456,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -478,6 +491,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -85,7 +85,7 @@ index 58cc571ea3ff50eacff60688bc13226ad80815be..3de3d0f8f08d6fd9fd15006ff73b2a2e
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -456,6 +470,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -491,6 +505,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }
@@ -94,10 +94,10 @@ index 58cc571ea3ff50eacff60688bc13226ad80815be..3de3d0f8f08d6fd9fd15006ff73b2a2e
  }
  
 diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
-index 4b140399a35486a9e00f7d8324a54ff6d5449128..21341bd765c63d23b9f99eb0e3ad96168cbb5eed 100644
+index 68cd4a3d13fec17f089c66b237f211dc0fa898e3..a0e1acaca772b53a215b8cb9714c38fb0f91a352 100644
 --- a/components/webrtc/media_stream_devices_controller.h
 +++ b/components/webrtc/media_stream_devices_controller.h
-@@ -49,7 +49,8 @@ class MediaStreamDevicesController {
+@@ -52,7 +52,8 @@ class MediaStreamDevicesController {
    // synchronously or asynchronously returned via |callback|.
    static void RequestPermissions(const content::MediaStreamRequest& request,
                                   MediaStreamDeviceEnumerator* enumerator,

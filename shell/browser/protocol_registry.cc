@@ -86,11 +86,18 @@ const HandlersMap::mapped_type* ProtocolRegistry::FindRegistered(
 bool ProtocolRegistry::InterceptProtocol(ProtocolType type,
                                          const std::string& scheme,
                                          const ProtocolHandler& handler) {
-  return intercept_handlers_.try_emplace(scheme, type, handler).second;
+  const bool added =
+      intercept_handlers_.try_emplace(scheme, type, handler).second;
+  if (added)
+    browser_context_->InterceptedProtocolsChanged();
+  return added;
 }
 
 bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {
-  return intercept_handlers_.erase(scheme) != 0;
+  const bool removed = intercept_handlers_.erase(scheme) != 0;
+  if (removed)
+    browser_context_->InterceptedProtocolsChanged();
+  return removed;
 }
 
 const HandlersMap::mapped_type* ProtocolRegistry::FindIntercepted(

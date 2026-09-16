@@ -9,11 +9,13 @@
 #include <set>
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "base/types/pass_key.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/mojom/url_response_head.mojom-forward.h"
 
 class URLPattern;
 
@@ -30,10 +32,16 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
+namespace electron {
+class ElectronBrowserContext;
+}  // namespace electron
+
+namespace net {
+struct RedirectInfo;
+}
+namespace network {
+struct URLLoaderCompletionStatus;
+}
 
 namespace electron::api {
 
@@ -70,10 +78,14 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
                                   content::BrowserContext* browser_context);
 
   // Return a new WebRequest object. This can only be called by api::Session.
-  static WebRequest* Create(v8::Isolate* isolate, base::PassKey<Session>);
+  static WebRequest* Create(
+      v8::Isolate* isolate,
+      base::PassKey<Session>,
+      base::WeakPtr<ElectronBrowserContext> browser_context);
 
   // Make public for cppgc::MakeGarbageCollected.
-  explicit WebRequest(base::PassKey<Session>);
+  WebRequest(base::PassKey<Session>,
+             base::WeakPtr<ElectronBrowserContext> browser_context);
   ~WebRequest() override;
 
   // disable copy
@@ -126,7 +138,37 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
                    int net_error);
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
+  // Requests that only observer listeners match take the direct network path;
+  // URLLoaderFactoryGate reports what they did afterwards, from the IO thread,
+  // to the WebRequest of `browser_context`'s session.
+  static void ObservedRequestStarted(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      uint64_t key,
+      int render_process_id,
+      int frame_routing_id,
+      const network::ResourceRequest& request);
+  static void ObservedRequestRedirected(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      uint64_t key,
+      const net::RedirectInfo& redirect_info,
+      network::mojom::URLResponseHeadPtr head);
+  static void ObservedRequestFollowedRedirect(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      uint64_t key,
+      const network::ResourceRequest& request);
+  static void ObservedRequestResponded(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+      uint64_t key,
+      network::mojom::URLResponseHeadPtr head);
+  static void ObservedRequestFinished(
+      base::WeakPtr<ElectronBrowserContext> browser_context,
+
+      uint64_t key,
+      const network::URLLoaderCompletionStatus& status);
+
  private:
+  base::WeakPtr<ElectronBrowserContext> browser_context_;
+
   // Contains info about requests that are blocked waiting for a response from
   // the user.
   struct BlockedRequest;
@@ -209,6 +251,8 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
     void AddType(extensions::WebRequestResourceType type);
 
     bool MatchesRequest(const extensions::WebRequestInfo* info) const;
+    // Bit per WebRequestResourceType; all bits when no type filter was given.
+    uint32_t TypeMask() const;
 
    private:
     bool MatchesURL(const GURL& url,
@@ -241,6 +285,13 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, BlockedRequest> blocked_requests_;
+
+  // Pushes which resource types blocking / observing listeners cover to the
+  // session's InterceptState.
+  void UpdateInterceptState();
+
+  struct ObservedRequest;
+  std::map<uint64_t, std::unique_ptr<ObservedRequest>> observed_requests_;
 
   gin::WeakCellFactory<WebRequest> weak_factory_{this};
 };

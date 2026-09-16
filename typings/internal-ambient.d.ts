@@ -27,6 +27,7 @@ declare namespace NodeJS {
     isPromptAPIEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererImpl {
@@ -48,6 +49,7 @@ declare namespace NodeJS {
     requestGarbageCollectionForTesting(): void;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
+    exitImmediately(code: number): never;
   }
 
   type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
@@ -73,9 +75,12 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    executable: boolean;
     integrity?: {
       algorithm: 'SHA256';
       hash: string;
+      blockSize: number;
+      blocks: string[];
     };
   };
 
@@ -83,12 +88,14 @@ declare namespace NodeJS {
     size: number;
     offset: number;
     type: number;
+    executable: boolean;
   };
 
   interface AsarArchive {
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
+    readdirWithTypes(path: string): [names: string[], types: number[]] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
@@ -96,15 +103,11 @@ declare namespace NodeJS {
 
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
-    splitPath(path: string):
-      | {
-          isAsar: false;
-        }
-      | {
-          isAsar: true;
-          asarPath: string;
-          filePath: string;
-        };
+    createSentinelFd(): number | -1;
+    // Length of the leading part of |path| that names an archive file, -1 if
+    // none, or -2 if |requireNormalized| and the path has "."/".."/empty
+    // components (normalize and ask again).
+    splitPath(path: string, requireNormalized: boolean): number;
   }
 
   interface NetBinding {
@@ -255,6 +258,7 @@ declare namespace NodeJS {
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
+    hold(): void;
     on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
     on(
       eventName: 'response-started',
@@ -279,10 +283,13 @@ declare namespace NodeJS {
   }
 
   interface Process {
-    internalBinding?(name: string): any;
     _linkedBinding(name: string): any;
     _linkedBinding(name: 'electron_common_asar'): AsarBinding;
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
+    _linkedBinding(name: 'electron_common_crashpad_support'): {
+      getCrashdumpSignalFD(): number;
+      getCrashpadHandlerPID(): number;
+    };
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
@@ -300,9 +307,17 @@ declare namespace NodeJS {
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
+    _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
+      setup(objects: {
+        ipcMain: NodeJS.EventEmitter;
+        ipcMainInternal: NodeJS.EventEmitter;
+        MessagePortMain: Function;
+      }): void;
+    };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
+    _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
     };

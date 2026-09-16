@@ -50,6 +50,8 @@ jobs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -80,6 +82,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
@@ -106,6 +109,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -136,6 +140,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:
@@ -180,6 +185,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -192,7 +198,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-linux-arm64:
     permissions:
@@ -200,6 +216,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-linux, build-siso-linux]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -212,7 +229,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-macos-x64:
     permissions:
@@ -220,6 +247,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -232,7 +260,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-macos-arm64:
     permissions:
@@ -240,6 +278,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -252,7 +291,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-windows-x64:
     permissions:
@@ -260,6 +309,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
       build-runs-on: garm-windows-x64-32core
@@ -271,7 +321,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   build-windows-arm64:
     permissions:
@@ -279,6 +339,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    cache-mode: read
     needs: [checkout-windows, build-siso-windows]
     with:
       build-runs-on: garm-windows-x64-32core
@@ -290,7 +351,17 @@ jobs:
       generate-chromedriver: false
       generate-test-artifacts: false
       upload-to-storage: '0'
-    secrets: inherit
+    secrets:
+      CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+      CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+      SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+      SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
 
   # ---------------------------------------------------------------------------
   # V8 builtins PGO: instrumented d8 + JetStream 2 -> block-hint profile.
@@ -321,6 +392,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
@@ -340,6 +412,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -401,6 +474,7 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: [checkout-linux, build-linux-x64]
     with:
       target-platform: linux
@@ -408,12 +482,12 @@ jobs:
       artifact-key: linux_x64
       collect-runs-on: electron-arc-centralus-linux-amd64-8core
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
 
   collect-linux-arm64:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: [checkout-linux, build-linux-arm64]
     with:
       target-platform: linux
@@ -422,55 +496,54 @@ jobs:
       # Instrumented arm64 crashes on GitHub-hosted arm64 runners; ARC nodes work.
       collect-runs-on: electron-arc-centralus-linux-arm64-4core
       collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
-    secrets: inherit
 
   collect-macos-x64:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-macos-x64
     with:
       target-platform: macos
       target-arch: x64
       artifact-key: darwin_x64
       collect-runs-on: macos-15-large
-    secrets: inherit
 
   collect-macos-arm64:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-macos-arm64
     with:
       target-platform: macos
       target-arch: arm64
       artifact-key: darwin_arm64
       collect-runs-on: macos-15
-    secrets: inherit
 
   collect-windows-x64:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-windows-x64
     with:
       target-platform: win
       target-arch: x64
       artifact-key: win_x64
       collect-runs-on: windows-latest
-    secrets: inherit
 
   collect-windows-arm64:
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    cache-mode: read
     needs: build-windows-arm64
     with:
       target-platform: win
       target-arch: arm64
       artifact-key: win_arm64
       collect-runs-on: windows-11-arm
-    secrets: inherit
 
   # ---------------------------------------------------------------------------
   # Merge: .profraw sets -> named .profdata (one x64 job, in-tree clang tooling)
@@ -499,6 +572,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -512,6 +586,7 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
+        persist-credentials: false
     - name: Download llvm-profdata
       run: |
         # --output-dir is required: the default location replaces the clang install.
@@ -540,8 +615,12 @@ jobs:
           fi
           out="profiles/electron-${target}-${TIMESTAMP}-${SHORT_SHA}.profdata"
           echo "Merging $count profraw files for $target"
-          # Tolerate truncated profraw from children killed at shutdown.
-          "$PROFDATA" merge --failure-mode=all -o "$out" "$dir"*.profraw
+          # A truncated or corrupt profraw means a child process was killed
+          # mid-dump, and that child is usually the benchmark renderer - the
+          # merged profile would silently lose most of its Blink counters and
+          # pessimize the renderer in release builds. Fail the run instead so
+          # the branch keeps its last good state files.
+          "$PROFDATA" merge --failure-mode=any -o "$out" "$dir"*.profraw
           merged=$((merged+1))
         done
         if [ "$merged" -eq 0 ]; then
@@ -592,7 +671,7 @@ jobs:
         name: pgo-v8-builtins-profiles
         path: profiles
     - name: Azure Login
-      uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca
+      uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c
       with:
         client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}

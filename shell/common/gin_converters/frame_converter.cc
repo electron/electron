@@ -4,12 +4,15 @@
 
 #include "shell/common/gin_converters/frame_converter.h"
 
+#include <cstdint>
+
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/common/gin_helper/accessor.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_util.h"
+#include "v8/include/v8-primitive.h"
 
 namespace gin {
 
@@ -55,19 +58,17 @@ Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::ToV8(
   if (!rfh)
     return v8::Null(isolate);
 
-  const int32_t process_id = rfh->GetProcess()->GetID().GetUnsafeValue();
-  const int routing_id = rfh->GetRoutingID();
+  // The two ids are packed into a BigInt rather than stored in the internal
+  // fields of an object because building such an object requires an
+  // ObjectTemplate and caching via gin::PerContextData which is not
+  // necessary here as the token never reaches JS, it is only the payload
+  // of the native data property installed by gin_helper::Dictionary::SetGetter.
+  const uint64_t token = (static_cast<uint64_t>(static_cast<uint32_t>(
+                              rfh->GetProcess()->GetID().GetUnsafeValue()))
+                          << 32) |
+                         static_cast<uint32_t>(rfh->GetRoutingID());
 
-  v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
-  templ->SetInternalFieldCount(2);
-
-  v8::Local<v8::Object> rfh_obj =
-      templ->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
-
-  rfh_obj->SetInternalField(0, v8::Number::New(isolate, process_id));
-  rfh_obj->SetInternalField(1, v8::Number::New(isolate, routing_id));
-
-  return rfh_obj;
+  return v8::BigInt::NewFromUnsigned(isolate, token);
 }
 
 // static
@@ -75,24 +76,19 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     gin_helper::AccessorValue<content::RenderFrameHost*>* out) {
-  v8::Local<v8::Object> rfh_obj;
-  if (!ConvertFromV8(isolate, val, &rfh_obj))
+  if (!val->IsBigInt())
     return false;
 
-  if (rfh_obj->InternalFieldCount() != 2)
+  bool lossless = false;
+  const uint64_t token = val.As<v8::BigInt>()->Uint64Value(&lossless);
+  if (!lossless)
     return false;
 
-  v8::Local<v8::Value> process_id_wrapper =
-      rfh_obj->GetInternalField(0).As<v8::Value>();
-  v8::Local<v8::Value> routing_id_wrapper =
-      rfh_obj->GetInternalField(1).As<v8::Value>();
-
-  if (process_id_wrapper.IsEmpty() || !process_id_wrapper->IsNumber() ||
-      routing_id_wrapper.IsEmpty() || !routing_id_wrapper->IsNumber())
-    return false;
-
-  const int process_id = process_id_wrapper.As<v8::Number>()->Value();
-  const int routing_id = routing_id_wrapper.As<v8::Number>()->Value();
+  // Both ids are signed (e.g. MSG_ROUTING_NONE), so go back
+  // through uint32_t to undo the packing before reinterpreting the sign bit.
+  const int process_id =
+      static_cast<int32_t>(static_cast<uint32_t>(token >> 32));
+  const int routing_id = static_cast<int32_t>(static_cast<uint32_t>(token));
 
   auto* rfh = content::RenderFrameHost::FromID(process_id, routing_id);
 

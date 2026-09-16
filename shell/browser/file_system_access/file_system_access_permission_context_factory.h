@@ -32,6 +32,8 @@ class FileSystemAccessPermissionContextFactory
   ~FileSystemAccessPermissionContextFactory() override;
 
   // BrowserContextKeyedServiceFactory:
+  content::BrowserContext* GetBrowserContextToUse(
+      content::BrowserContext* context) const override;
   std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(
       content::BrowserContext* context) const override;
 };

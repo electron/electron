@@ -80,6 +80,7 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.h",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.cc",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.h",
+    "//chrome/browser/picture_in_picture/video_overlay_window.h",
     "//chrome/browser/platform_util.cc",
     "//chrome/browser/platform_util.h",
     "//chrome/browser/predictors/predictors_features.cc",
@@ -464,9 +465,7 @@ source_set("chrome_spellchecker") {
 
   if (enable_builtin_spellchecker) {
     sources += [
-      "//chrome/browser/profiles/profile_keyed_service_factory.cc",
       "//chrome/browser/profiles/profile_keyed_service_factory.h",
-      "//chrome/browser/profiles/profile_selections.cc",
       "//chrome/browser/profiles/profile_selections.h",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.cc",
       "//chrome/browser/spellchecker/spell_check_host_chrome_impl.h",
@@ -480,6 +479,8 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h",
       "//chrome/browser/spellchecker/spellcheck_service.cc",
       "//chrome/browser/spellchecker/spellcheck_service.h",
+      "//electron/shell/browser/profiles/profile_keyed_service_factory_stub.cc",
+      "//electron/shell/browser/profiles/profile_selections_stub.cc",
     ]
 
     if (!is_mac) {

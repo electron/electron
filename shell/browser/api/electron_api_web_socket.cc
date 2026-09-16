@@ -205,7 +205,9 @@ void WebSocketWrapper::Start() {
       /*throttling_profile_id=*/std::nullopt,
       // Browser-initiated WebSocket with no associated document, so no
       // Connection-Allowlist network restrictions apply.
-      /*network_restrictions_id=*/network::GetNoOpNetworkRestrictionsId());
+      /*network_restrictions_id=*/network::GetNoOpNetworkRestrictionsId(),
+      // No Local Network Access checks for browser-initiated WebSockets.
+      /*target_address_space=*/network::mojom::IPAddressSpace::kUnknown);
 }
 
 void WebSocketWrapper::OnMojoDisconnect() {

@@ -9,10 +9,10 @@ capability to switch the microtask polciy of these per context microtask queue t
 Node.js integration in the renderer.
 
 diff --git a/include/v8-microtask-queue.h b/include/v8-microtask-queue.h
-index b99a734aa6f6a539457d7bb54c6c152b57effcfd..c22c1975dc5e7378ffe31d0cc0d90eac331a1299 100644
+index de58638c85d6999bc933bfcd9822bce74b709c6b..6424f85c8136f0c9c3e8866c18e0b59147f4a502 100644
 --- a/include/v8-microtask-queue.h
 +++ b/include/v8-microtask-queue.h
-@@ -121,6 +121,9 @@ class V8_EXPORT MicrotaskQueue
+@@ -106,6 +106,9 @@ class V8_EXPORT MicrotaskQueue : public cppgc::GarbageCollected<MicrotaskQueue>,
     */
    virtual int GetMicrotasksScopeDepth() const = 0;
  
@@ -23,10 +23,10 @@ index b99a734aa6f6a539457d7bb54c6c152b57effcfd..c22c1975dc5e7378ffe31d0cc0d90eac
    MicrotaskQueue& operator=(const MicrotaskQueue&) = delete;
  
 diff --git a/src/execution/microtask-queue.h b/src/execution/microtask-queue.h
-index ef643a9a3c6e79763962058d7f0f75eab44392d5..b9ddea8c29d94d9795c5adf0a5dc0982da6aeea3 100644
+index f13c994fc2735f813d8f1ea668e7a8f9d78c22fa..e2d7201b7c7c5dda73eb0e614bf3379451c53c58 100644
 --- a/src/execution/microtask-queue.h
 +++ b/src/execution/microtask-queue.h
-@@ -115,10 +115,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
+@@ -103,10 +103,10 @@ class V8_EXPORT_PRIVATE MicrotaskQueue final : public v8::MicrotaskQueue {
    }
  #endif
  

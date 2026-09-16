@@ -1,5 +1,4 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
-import { defaultDesktopName } from '@electron/internal/browser/desktop-name';
 
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -9,10 +8,6 @@ import type * as url from 'url';
 import type * as v8 from 'v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
-
-// We modified the original process.argv to let node.js load the init.js,
-// we need to restore it here.
-process.argv.splice(1, 1);
 
 // Import common settings.
 require('@electron/internal/common/init');
@@ -30,7 +25,7 @@ process.on('uncaughtException', function (error) {
   // We can't import { dialog } at the top of this file as this file is
   // responsible for setting up the require hook for the "electron" module
   // so we import it inside the handler down here
-  import('electron').then(({ dialog }) => {
+  import('electron/main').then(({ dialog }) => {
     const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
     const message = 'Uncaught Exception:\n' + stack;
     dialog.showErrorBox('A JavaScript error occurred in the main process', message);
@@ -85,6 +80,9 @@ process.exit = ((code: number | string | undefined | null) => {
   app.exit(process.exitCode || 0);
 }) as typeof process.exit;
 
+// Deliver IPC from renderers to ipcMain and friends.
+require('@electron/internal/browser/ipc-dispatch');
+
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
 
@@ -137,7 +135,11 @@ if (packageJson.productName != null) {
   app.name = `${packageJson.name}`.trim();
 }
 
-app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
+if (process.platform === 'linux') {
+  const { defaultDesktopName } =
+    require('@electron/internal/browser/desktop-name') as typeof import('@electron/internal/browser/desktop-name');
+  app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
+}
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price

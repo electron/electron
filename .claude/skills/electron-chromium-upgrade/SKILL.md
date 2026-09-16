@@ -55,7 +55,8 @@ Run these once at the start of each upgrade session:
    - IMPORTANT: Once `git am --continue` succeeds you MUST run `e patches {target}` to export fixes
    - Return to step 1
 4. When `e sync --3` succeeds, run `e patches all`
-5. **Read `references/phase-one-commit-guidelines.md` NOW**, then commit changes following those instructions exactly.
+5. If the sync changed `build/siso_revision` (the `gen_siso_revision` hook rewrites it when the new Chromium pins a different siso), commit that file on its own as `chore: update siso revision`. CI builds siso from this file and gn-check fails the roll if it is stale.
+6. **Read `references/phase-one-commit-guidelines.md` NOW**, then commit changes following those instructions exactly.
 
 ## Commands Reference
 

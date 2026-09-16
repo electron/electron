@@ -67,10 +67,10 @@ index 9ef66ec39e8cb8ef9a8753baf7bbddc227768d77..6eef1315ebe70ce614426d847674e1be
        const WebSecurityOrigin& origin) {
      return ProtocolHandlerSecurityLevel::kStrict;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index e86e07127fe544ff459200560179ed488dd8f6d7..d641cd7e4df1f6f5d5de5203c331015d3e1a2074 100644
+index b0c7e16ba156ad1e2c94bd5d8c7f6ba482160347..5230b6722909fdc2061d641b0c1a7f18ada24c93 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -808,6 +808,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -810,6 +810,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
    }
    pause_handle_.reset();
  

@@ -37,16 +37,28 @@ const char kSeparators[] = "\\/";
 const char kSeparators[] = "/";
 #endif
 
-const base::DictValue* GetNodeFromPath(std::string path,
-                                       const base::DictValue& root);
+// Upper bound on how many "link" entries may be chained while resolving a
+// single path. Legitimate archives only ever produce short link chains (one
+// hop per symlinked directory captured at pack time), so this generous limit
+// never rejects a valid lookup, while stopping a header whose links form a
+// cycle from recursing until the stack is exhausted.
+constexpr int kMaxLinkDepth = 40;
+
+const base::DictValue* GetNodeFromPath(std::string_view path,
+                                       const base::DictValue& root,
+                                       int depth);
 
 // Gets the "files" from "dir".
 const base::DictValue* GetFilesNode(const base::DictValue& root,
-                                    const base::DictValue& dir) {
+                                    const base::DictValue& dir,
+                                    int depth) {
   // Test for symbol linked directory.
   const std::string* link = dir.FindString("link");
   if (link != nullptr) {
-    const base::DictValue* linked_node = GetNodeFromPath(*link, root);
+    if (depth >= kMaxLinkDepth)
+      return nullptr;
+    const base::DictValue* linked_node =
+        GetNodeFromPath(*link, root, depth + 1);
     if (!linked_node)
       return nullptr;
     return linked_node->FindDict("files");
@@ -57,35 +69,39 @@ const base::DictValue* GetFilesNode(const base::DictValue& root,
 
 // Gets sub-file "name" from "dir".
 const base::DictValue* GetChildNode(const base::DictValue& root,
-                                    const std::string& name,
-                                    const base::DictValue& dir) {
-  if (name.empty())
-    return &root;
-
-  const base::DictValue* files = GetFilesNode(root, dir);
+                                    std::string_view name,
+                                    const base::DictValue& dir,
+                                    int depth) {
+  const base::DictValue* files = GetFilesNode(root, dir, depth);
   return files ? files->FindDict(name) : nullptr;
 }
 
-// Gets the node of "path" from "root".
-const base::DictValue* GetNodeFromPath(std::string path,
-                                       const base::DictValue& root) {
-  if (path.empty())
-    return &root;
-
-  const base::DictValue* dir = &root;
-  for (size_t delimiter_position = path.find_first_of(kSeparators);
-       delimiter_position != std::string::npos;
-       delimiter_position = path.find_first_of(kSeparators)) {
-    const base::DictValue* child =
-        GetChildNode(root, path.substr(0, delimiter_position), *dir);
-    if (!child)
-      return nullptr;
-
-    dir = child;
-    path.erase(0, delimiter_position + 1);
+// Gets the node of "path" from "root". Walks |path| one component at a time
+// as views into the caller's string; nothing is copied. Empty components
+// (leading, trailing or doubled separators) are skipped; "." and ".." are
+// ordinary names here -- callers pass lexically normalized paths.
+const base::DictValue* GetNodeFromPath(std::string_view path,
+                                       const base::DictValue& root,
+                                       int depth) {
+  const base::DictValue* node = &root;
+  while (!path.empty()) {
+    const size_t delimiter_position = path.find_first_of(kSeparators);
+    const std::string_view component = path.substr(0, delimiter_position);
+    if (!component.empty()) {
+      node = GetChildNode(root, component, *node, depth);
+      if (!node)
+        return nullptr;
+    }
+    if (delimiter_position == std::string_view::npos)
+      break;
+    path.remove_prefix(delimiter_position + 1);
   }
+  return node;
+}
 
-  return GetChildNode(root, path, *dir);
+const base::DictValue* GetNodeFromPath(std::string_view path,
+                                       const base::DictValue& root) {
+  return GetNodeFromPath(path, root, 0);
 }
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
@@ -278,26 +294,59 @@ std::optional<base::FilePath> Archive::RelativePath() const {
 }
 #endif
 
+// Enough for every distinct path a large app probes during startup; past
+// this the memo is simply started over rather than evicted entry by entry.
+constexpr size_t kMaxNodeCacheEntries = 32 * 1024;
+
+const base::DictValue* Archive::LookupNode(std::string_view path) const {
+  DCHECK(header_);
+  {
+    base::AutoLock auto_lock(node_cache_lock_);
+    auto it = node_cache_.find(path);
+    if (it != node_cache_.end())
+      return it->second;
+  }
+  const base::DictValue* node = GetNodeFromPath(path, *header_);
+  base::AutoLock auto_lock(node_cache_lock_);
+  if (node_cache_.size() >= kMaxNodeCacheEntries)
+    node_cache_.clear();
+  node_cache_.emplace(std::string(path), node);
+  return node;
+}
+
 bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
+  return GetFileInfo(path.AsUTF8Unsafe(), info, 0);
+}
+
+bool Archive::GetFileInfo(std::string_view path, FileInfo* info) const {
+  return GetFileInfo(path, info, 0);
+}
+
+bool Archive::GetFileInfo(std::string_view path,
+                          FileInfo* info,
+                          int depth) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
   const std::string* link = node->FindString("link");
-  if (link)
-    return GetFileInfo(base::FilePath::FromUTF8Unsafe(*link), info);
+  if (link) {
+    if (depth >= kMaxLinkDepth)
+      return false;
+    return GetFileInfo(*link, info, depth + 1);
+  }
 
   return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
 
-bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
+bool Archive::Stat(std::string_view path, Stats* stats) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
@@ -314,40 +363,53 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
 }
 
-bool Archive::Readdir(const base::FilePath& path,
-                      std::vector<base::FilePath>* files) const {
+bool Archive::Readdir(std::string_view path,
+                      std::vector<std::string>* names,
+                      std::vector<FileType>* types) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
-  const base::DictValue* files_node = GetFilesNode(*header_, *node);
+  const base::DictValue* files_node = GetFilesNode(*header_, *node, 0);
   if (!files_node)
     return false;
 
-  for (const auto iter : *files_node)
-    files->push_back(base::FilePath::FromUTF8Unsafe(iter.first));
+  names->reserve(files_node->size());
+  if (types)
+    types->reserve(files_node->size());
+  for (const auto iter : *files_node) {
+    names->push_back(iter.first);
+    if (types) {
+      const base::DictValue* child = iter.second.GetIfDict();
+      if (child && child->Find("link"))
+        types->push_back(FileType::kLink);
+      else if (child && child->Find("files"))
+        types->push_back(FileType::kDirectory);
+      else
+        types->push_back(FileType::kFile);
+    }
+  }
   return true;
 }
 
-bool Archive::Realpath(const base::FilePath& path,
-                       base::FilePath* realpath) const {
+bool Archive::Realpath(std::string_view path, std::string* realpath) const {
   if (!header_)
     return false;
 
-  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = LookupNode(path);
   if (!node)
     return false;
 
   const std::string* link = node->FindString("link");
   if (link) {
-    *realpath = base::FilePath::FromUTF8Unsafe(*link);
+    *realpath = *link;
     return true;
   }
 
-  *realpath = path;
+  realpath->assign(path);
   return true;
 }
 
@@ -379,9 +441,13 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
     return false;
 
 #if BUILDFLAG(IS_POSIX)
-  if (info.executable) {
-    // chmod a+x temp_file;
-    base::SetPosixFilePermissions(temp_file->path(), 0755);
+  {
+    // The temporary file is a cached, integrity-validated copy that may be
+    // handed out again for the lifetime of this process, so make it read-only
+    // to keep it from being modified out from under later consumers.
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    base::SetPosixFilePermissions(temp_file->path(),
+                                  info.executable ? 0555 : 0444);
   }
 #endif
 

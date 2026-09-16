@@ -177,11 +177,9 @@ class ChunkedBodyStream extends Writable {
     this._downstream = pipe;
     if (this._pendingChunk) {
       const doneWriting = (maybeError: Error | void) => {
-        // If the underlying request has been aborted, we honestly don't care about the error
-        // all work should cease as soon as we abort anyway, this error is probably a
-        // "mojo pipe disconnected" error (code=9)
-        if (this._clientRequest._aborted) return;
-
+        // This also runs when the request was aborted mid-write: the write
+        // then settles with the abort error, as Node.js does, and no 'error'
+        // event follows because the request is already destroyed by then.
         const cb = this._pendingCallback!;
         delete this._pendingCallback;
         delete this._pendingChunk;
@@ -369,6 +367,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._chunkedEncoding = !!value;
     if (this._chunkedEncoding) {
       this._body = new ChunkedBodyStream(this);
+      // A write that fails because the request ended first is reported
+      // through the write callback on this request; the body stream must not
+      // also raise it as an unhandled 'error' of its own.
+      this._body.on('error', () => {});
       this._urlLoaderOptions.body = (pipe: NodeJS.DataPipe) => {
         (this._body! as ChunkedBodyStream).startReading(pipe);
       };

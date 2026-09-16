@@ -5,7 +5,8 @@ runs:
   steps:
   - name: Install Build Tools
     shell: bash
-    run: |
+    # zizmor: ignore[adhoc-packages] the latest @electron/build-tools CLI is installed by design; it then pins depot_tools itself
+    run: | # zizmor: ignore[github-env] composite action; only run by trusted push/pull_request pipelines, paths are fixed depot_tools locations
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         git config --global core.filemode false
         git config --global core.autocrlf false
@@ -15,10 +16,13 @@ runs:
         git config --global core.preloadindex true
         git config --global core.longpaths true
       fi
-      export BUILD_TOOLS_SHA=1a105fe49c59e173d91925b4a1e6760bcff73cf9
-      npm i -g @electron/build-tools
+      export BUILD_TOOLS_SHA=6c0834d9c052463a8834b02c11a6f8b4311990f2
+      # Both fetch over the network (the first `e` command clones depot_tools),
+      # so retry them on transient failures.
+      RETRY="$PWD/src/electron/script/actions/retry.sh"
+      bash "$RETRY" npm i -g @electron/build-tools
       # Update depot_tools to ensure python
-      e d update_depot_tools
+      bash "$RETRY" e d update_depot_tools
       e auto-update disable
       # Disable further updates of depot_tools
       e d auto-update disable

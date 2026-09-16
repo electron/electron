@@ -6,9 +6,9 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import path = require('node:path');
 
-import { startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
 
-describe('fuses', () => {
+ifdescribe(isTestingBindingAvailable())('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');
@@ -27,6 +27,22 @@ describe('fuses', () => {
     expect(stderr).to.not.include('Debugger listening on ws://');
     // Should print the version and exit with 0
     expect(status).to.equal(0);
+  });
+
+  it('makes child_process.fork throw when run_as_node is 0', async () => {
+    const rc = await startRemoteControlApp(['--set-fuse-run_as_node=0']);
+    const message = await rc.remotely(
+      (fixture: string) => {
+        try {
+          require('node:child_process').fork(fixture);
+          return 'forked';
+        } catch (error) {
+          return (error as Error).message;
+        }
+      },
+      path.join(__dirname, 'fixtures', 'module', 'noop.js')
+    );
+    expect(message).to.include('runAsNode fuse is disabled');
   });
 
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {

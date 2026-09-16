@@ -1,7 +1,39 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
+source_set("serialized_value") {
+  sources = [
+    "serialized_value.cc",
+    "serialized_value.h",
+  ]
+  include_dirs = [ "//electron" ]
+  public_deps = [
+    "//base",
+    "//mojo/public/cpp/base",
+  ]
+}
+
 mojom("mojo") {
   sources = [ "api/api.mojom" ]
+
+  cpp_typemaps = [
+    {
+      types = [
+        {
+          mojom = "electron.mojom.SerializedValue"
+          cpp = "::electron::SerializedValue"
+          move_only = true
+        },
+      ]
+      traits_headers =
+          [ "//electron/shell/common/serialized_value_mojom_traits.h" ]
+      traits_sources =
+          [ "//electron/shell/common/serialized_value_mojom_traits.cc" ]
+      traits_public_deps = [
+        ":serialized_value",
+        "//mojo/public/cpp/base:shared_typemap_traits",
+      ]
+    },
+  ]
 
   public_deps = [
     "//mojo/public/mojom/base",

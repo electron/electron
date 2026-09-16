@@ -25,6 +25,8 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
+#include "content/public/browser/navigation_controller.h"
+#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -103,6 +105,7 @@ class DevToolsEyeDropper;
 namespace electron {
 
 class DevToolsContextMenu;
+class DraggableRegionDebugger;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
@@ -162,6 +165,8 @@ class WebContents final : public ExclusiveAccessContext,
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
   static std::list<WebContents*> GetWebContentsList();
+  // Prefers a focused <webview> guest over its embedder.
+  static WebContents* GetFocusedWebContents();
 
   // Whether to disable draggable regions globally. This can be used to allow
   // events to skip client region hit tests.
@@ -203,6 +208,7 @@ class WebContents final : public ExclusiveAccessContext,
   [[nodiscard]] Type type() const { return type_; }
   v8::Local<v8::Value> Clone(v8::Isolate* isolate);
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
+  void LoadURLWithParams(content::NavigationController::LoadURLParams params);
   void Reload();
   void ReloadIgnoringCache();
   void DownloadURL(const GURL& url, gin::Arguments* args);
@@ -231,6 +237,8 @@ class WebContents final : public ExclusiveAccessContext,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  bool IsCaretBrowsingEnabled() const;
+  void SetCaretBrowsingEnabled(bool enabled);
   v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
   void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
@@ -264,6 +272,9 @@ class WebContents final : public ExclusiveAccessContext,
   void SetDevToolsWebContents(const WebContents* devtools);
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
+  // Runs the wrapper's JS _init and announces it as app
+  // 'web-contents-created'.
+  void InitializeJS(v8::Isolate* isolate);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin::Arguments* args);
@@ -385,7 +396,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
-  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
 
   // content::WebContentsDelegate:
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
@@ -394,6 +405,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Properties.
   int32_t ID() const { return id_; }
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
+  api::Session* session() const { return session_.Get(); }
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
@@ -425,6 +437,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Set the window as owner window.
   void SetOwnerWindow(NativeWindow* owner_window);
+  void SetConsoleMessageObserved(bool observed) {
+    console_message_observed_ = observed;
+  }
   void SetOwnerWindow(content::WebContents* web_contents,
                       NativeWindow* owner_window);
   void SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window);
@@ -434,6 +449,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Returns the WebContents of devtools.
   content::WebContents* GetDevToolsWebContents() const;
+  // As above but null unless DevTools (managed or external) are open, i.e.
+  // what `devToolsWebContents` is non-null for.
+  content::WebContents* GetOpenDevToolsWebContents() const;
 
   InspectableWebContents* inspectable_web_contents() const {
     return inspectable_web_contents_.get();
@@ -454,6 +472,7 @@ class WebContents final : public ExclusiveAccessContext,
   void SetImageAnimationPolicy(const std::string& new_policy);
 
   // content::RenderWidgetHost::InputEventObserver:
+  bool OnMouseEvent(const blink::WebMouseEvent& event);
   void OnInputEvent(const content::RenderWidgetHost& rfh,
                     const blink::WebInputEvent& event,
                     input::InputEventSource source) override;
@@ -478,6 +497,10 @@ class WebContents final : public ExclusiveAccessContext,
   void PDFReadyToPrint();
 
   SkRegion* draggable_region();
+
+  DraggableRegionDebugger* draggable_region_debugger() const {
+    return draggable_region_debugger_.get();
+  }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -518,6 +541,8 @@ class WebContents final : public ExclusiveAccessContext,
                              extensions::mojom::ViewType view_type);
 #endif
 
+  void ReconcileCaretBrowsingCount(bool enabled);
+
   // content::WebContentsDelegate:
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
@@ -552,8 +577,6 @@ class WebContents final : public ExclusiveAccessContext,
                            const input::NativeWebKeyboardEvent& event) override;
   bool PlatformHandleKeyboardEvent(content::WebContents* source,
                                    const input::NativeWebKeyboardEvent& event);
-  bool PreHandleMouseEvent(content::WebContents* source,
-                           const blink::WebMouseEvent& event) override;
   content::KeyboardEventProcessingResult PreHandleKeyboardEvent(
       content::WebContents* source,
       const input::NativeWebKeyboardEvent& event) override;
@@ -566,6 +589,9 @@ class WebContents final : public ExclusiveAccessContext,
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host,
       base::RepeatingClosure hang_monitor_restarter) override;
+  bool SaveFrame(const GURL& url,
+                 const content::Referrer& referrer,
+                 content::RenderFrameHost* rfh) override;
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
@@ -639,11 +665,12 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
-  // Pushes preload script contents + process info to a sandboxed renderer over
-  // the navigation's associated mojo channel, ahead of CommitNavigation.
-  // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
+  // Pushes the preload script list (plus contents + process info for a
+  // sandboxed renderer) over the frame's associated mojo channel, ahead of
+  // CommitNavigation, for documents that will run preloads.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
+  void SendRendererStartupData(content::RenderFrameHost* rfh);
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;
@@ -653,6 +680,8 @@ class WebContents final : public ExclusiveAccessContext,
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
                            blink::mojom::FaviconUpdateReason reason) override;
+  void NotifyPageTitleUpdated(content::NavigationEntry* entry,
+                              bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(
@@ -689,6 +718,10 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
+
+  // Posts |navigate| and returns true while DidStopLoading is emitting for a
+  // load that ended because its renderer died; otherwise returns false.
+  bool PostNavigationInRendererTeardown(base::OnceClosure navigate);
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
@@ -829,6 +862,13 @@ class WebContents final : public ExclusiveAccessContext,
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
 
+  // Kept by JS while 'console-message' has listeners.
+  bool console_message_observed_ = false;
+
+  // Whether this WebContents currently contributes to the process-wide caret
+  // browsing refcount.
+  bool caret_browsing_counted_ = false;
+
   // Whether to enable devtools.
   bool enable_devtools_ = true;
 
@@ -905,10 +945,22 @@ class WebContents final : public ExclusiveAccessContext,
   // handler calls webContents.destroy() mid-emission.
   bool is_emitting_event_ = false;
 
+  // Set by DidFinishNavigation when content discards a navigation because
+  // its renderer died; consumed by the DidStopLoading that follows, which
+  // holds in_renderer_teardown_ for the duration of its emit.
+  bool navigation_discarded_by_process_gone_ = false;
+  bool in_renderer_teardown_ = false;
+
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::optional<SkRegion> draggable_region_;
+
+  // Declared after |inspectable_web_contents_| because it observes its views.
+  std::unique_ptr<DraggableRegionDebugger> draggable_region_debugger_;
+
+  // Registered on every widget of this WebContents; see HandleNewRenderFrame.
+  content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };
