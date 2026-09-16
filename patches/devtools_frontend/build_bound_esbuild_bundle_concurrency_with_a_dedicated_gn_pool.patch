@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 16 Sep 2026 17:31:40 +0000
+Subject: build: bound esbuild bundle concurrency with a dedicated GN pool
+
+Every bundle() target runs esbuild locally (minify plus sourcemap in release
+builds) and each one spawns an esbuild service process that keeps the whole
+bundle graph in memory. Through the generic action pool, small macOS hosts
+such as the 5-core / 14 GB GitHub runners run five of them at once and, under
+memory pressure, the kernel kills the esbuild service, which surfaces as
+"Failed to run esbuild: Error: The service was stopped" with no crash trace.
+Give bundle actions their own pool, bounded to two concurrent esbuild
+processes on macOS hosts; other hosts keep using the toolchain's action pool.
+
+This change is meant to be upstreamed to devtools-frontend; the patch can be
+dropped once an equivalent change has landed there.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 4755b262a7f57c83fc078a9be5d0a030927cb7a3..b8589451a3f89f40bd472b3497241977deccf652 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -12,6 +12,18 @@ import("./third_party/blink/public/public_features.gni")
+ 
+ #-------------------------------------------------------------------------------
+ 
++# esbuild bundling (see scripts/build/ninja/bundle.gni) runs locally and each
++# bundle spawns an esbuild service process that holds the whole minified graph
++# in memory. On small macOS hosts (the 5-core / 14 GB GitHub runners) letting
++# the generic action pool run five of them at once gets the esbuild processes
++# killed under memory pressure. Bound their concurrency separately from other
++# actions; bundle.gni only uses this pool on macOS hosts.
++if (current_toolchain == default_toolchain) {
++  pool("esbuild_pool") {
++    depth = 2
++  }
++}
++
+ devtools_frontend_resources_deps = [
+   ":favicon",
+   "front_end",
+diff --git a/scripts/build/ninja/bundle.gni b/scripts/build/ninja/bundle.gni
+index faca2814040bbb16a9bdceb21075e469b015cb4c..dd6d70afb34aabcaf836edfbc19272dbc69293e9 100644
+--- a/scripts/build/ninja/bundle.gni
++++ b/scripts/build/ninja/bundle.gni
+@@ -25,6 +25,12 @@ template("bundle") {
+   node_action(target_name) {
+     script = "scripts/build/esbuild.js"
+ 
++    # Keep the number of concurrent esbuild processes small on macOS hosts,
++    # see the esbuild_pool comment in the root BUILD.gn.
++    if (host_os == "mac") {
++      pool = devtools_location_prepend + ":esbuild_pool($default_toolchain)"
++    }
++
+     deps = []
+     if (defined(invoker.deps)) {
+       deps += invoker.deps
