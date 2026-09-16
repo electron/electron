@@ -73,6 +73,7 @@
   V(electron_browser_desktop_capturer)    \
   V(electron_browser_dialog)              \
   V(electron_browser_event_emitter)       \
+  V(electron_browser_ipc_dispatch)        \
   V(electron_browser_global_shortcut)     \
   V(electron_browser_image_view)          \
   V(electron_browser_in_app_purchase)     \

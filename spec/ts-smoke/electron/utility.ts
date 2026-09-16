@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { localAIHandler, net, systemPreferences, LanguageModelUtility } from 'electron/utility';
 
 process.parentPort.on('message', (e) => {

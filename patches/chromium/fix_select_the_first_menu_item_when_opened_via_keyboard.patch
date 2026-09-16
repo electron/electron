@@ -11,10 +11,10 @@ PlatformStyle::kAutoSelectFirstMenuItemFromKeyboard
 covers the other views platforms.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 6a8ca3233d40714d183c67baf12bcbff16f18bdc..18c3e8fdb1697bfb219c8abae881843f08b5beb2 100644
+index c0ac144111219d215580fa48a47f6efd2f08ae59..66ab3bb0d70c445d1044ab9f1c075511d3e017c1 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -797,6 +797,22 @@ void MenuController::Run(Widget* parent,
+@@ -800,6 +800,22 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -37,9 +37,9 @@ index 6a8ca3233d40714d183c67baf12bcbff16f18bdc..18c3e8fdb1697bfb219c8abae881843f
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2684,18 +2700,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
-     // would be left in should it be allowed to continue.
-     CHECK(weak_this);
+@@ -2776,18 +2792,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+       return;
+     }
  
 -    // Figure out if the mouse is under the menu; if so, remember the mouse
 -    // location so we can ignore the first mouse move event(s) with that

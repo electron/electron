@@ -20,57 +20,68 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index d20920174d7e7fafa4f58283db2a660beef7ef7a..7abe8d07aa86d99263fce0d52c030b997de94c57 100644
+index d20920174d7e7fafa4f58283db2a660beef7ef7a..fcff902ca98c598659e4418f96b633eea2296fc8 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -584,6 +584,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -584,7 +584,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-     case PermissionType::NUM:
+-    case PermissionType::NUM:
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:    case PermissionType::NUM:
        break;
    }
+ 
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 454bcb2466b39aefb636d9b3232fdefe5224708d..671e9f149f6f38930a408b3a15eb70d4a65d1fd3 100644
+index 05881bf26476bb6d5b7fa921c9b41ce41eec07c6..31c80a1ed6f124c387754d0ae5e9a1d1140ae430 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -98,6 +98,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -98,7 +98,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-       return std::nullopt;
+-      return std::nullopt;
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:      return std::nullopt;
    }
  }
+ 
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..83208809fdeb4ce0e21ac2de8cf29be62728e2b2 100644
+index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..d2ea06fa66c07baaf741382af40de154068a7d6b 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -180,6 +180,9 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+@@ -180,7 +180,12 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
      case blink::PermissionType::LOOPBACK_NETWORK:
        return CreatePermissionDescriptor(
            blink::mojom::PermissionName::LOOPBACK_NETWORK);
+-    case blink::PermissionType::NUM:
++    case blink::PermissionType::GEOLOCATION_APPROXIMATE:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::GEOLOCATION_APPROXIMATE);
 +    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +      return CreatePermissionDescriptor(
-+          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
-     case blink::PermissionType::NUM:
++          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);    case blink::PermissionType::NUM:
        NOTREACHED();
    }
+   NOTREACHED();
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9c1b4762fe932618ec85a86a8367dce706d23c0b..944c75f4a727e58bf3986a50197ab0aa2606f32b 100644
+index 9c1b4762fe932618ec85a86a8367dce706d23c0b..a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -110,6 +110,8 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -110,7 +110,10 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
+-    case PermissionType::NUM:
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++      return "GeolocationApproximate";
 +    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-+      return "DeprecatedSyncClipboardRead";
-     case PermissionType::NUM:
++      return "DeprecatedSyncClipboardRead";    case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -191,6 +193,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+   NOTREACHED();
+@@ -191,6 +194,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:

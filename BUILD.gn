@@ -1,7 +1,6 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
-import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//content/public/common/features.gni")
@@ -331,10 +330,6 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
-
-  if (v8_cppgc_microtask_queue) {
-    args += [ "--v8-enable-cppgc-microtask-queue" ]
-  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -539,7 +534,6 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
-    "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -906,10 +900,6 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
-
-  if (allow_runtime_configurable_key_storage) {
-    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
-  }
 }
 
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8

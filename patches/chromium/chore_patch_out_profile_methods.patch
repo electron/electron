@@ -83,7 +83,7 @@ index 578e8975738e0da7719548bb47d13f7660c82215..a0427ca11c7a23ecce8cfb905053b5bc
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 4d538186fd804419f36c363d785376cbfbf9509d..93d81b0d1c37e7f4967bba16eb24c0db26773035 100644
+index e7a09d34f33a184099dfa52738978119fa70b15e..f0f29926c1c6d5c13a510c11b9f16171147498c2 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -25,8 +25,10 @@

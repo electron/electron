@@ -292,7 +292,15 @@ describe('asar package', () => {
     });
 
     after(function () {
-      originalFs.rmSync(tmp, { recursive: true, force: true });
+      try {
+        originalFs.rmSync(tmp, { recursive: true, force: true });
+      } catch (error: any) {
+        // Every archive this suite has touched stays open for the rest of the
+        // process: the asar layer caches its Archive objects, and Archive opens
+        // the file without FILE_SHARE_DELETE. Windows will not delete an open
+        // file, so the directory can only go once this process has exited.
+        if (process.platform !== 'win32' || !['EBUSY', 'EPERM'].includes(error.code)) throw error;
+      }
     });
 
     describe('splitPath (native archive prefix detection)', function () {
@@ -730,17 +738,14 @@ describe('asar package', () => {
   });
 });
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function expectToThrowErrorWithCode(_func: Function, _code: string) {
   /* dummy for typescript */
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function promisify(_f: Function): any {
   /* dummy for typescript */
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function tempPath(): string {
   /* dummy for typescript */
   return '';
@@ -3317,7 +3322,6 @@ describe('asar package', function () {
 
         // Breaking out of iteration closes the handle.
         const dir4 = await fs.promises.opendir(p);
-        // eslint-disable-next-line no-unreachable-loop
         for await (const _ of dir4) {
           expect(_).to.be.an.instanceOf(fs.Dirent);
           break;
@@ -3502,7 +3506,6 @@ describe('asar package', function () {
       itremote('reports false rather than an error object', async function () {
         const p = path.join(asarDir, 'not-an-archive.asar', 'file');
         expect(fs.existsSync(p)).to.be.false();
-        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
         expect(exists).to.be.false();
       });
@@ -3638,28 +3641,24 @@ describe('asar package', function () {
     describe('fs.exists', function () {
       itremote('handles an existing file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
         expect(exists).to.be.true();
       });
 
       itremote('handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
-        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
         expect(exists).to.be.false();
       });
 
       itremote('promisified version handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.true();
       });
 
       itremote('promisified version handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
-        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.false();
       });
