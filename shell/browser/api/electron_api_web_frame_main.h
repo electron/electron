@@ -116,9 +116,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
-#if BUILDFLAG(ENABLE_PRINTING)
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
   void CopyVideoFrameAt(int x, int y);
   void SaveVideoFrameAs(int x, int y);
   bool Reload();

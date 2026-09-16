@@ -97,7 +97,6 @@ declare namespace Electron {
 
   interface WebContents {
     _awaitNextLoad(expectedUrl: string): Promise<void>;
-    _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
@@ -119,11 +118,6 @@ declare namespace Electron {
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
-    _print(
-      options: ElectronInternal.NormalizedPrintOptions | null,
-      callback: (success: boolean, failureReason: string) => void
-    ): void;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -137,7 +131,7 @@ declare namespace Electron {
     _goToIndex(index: number): void;
     _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
-    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): void;
+    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): Promise<void>;
     _clearHistory(): void;
     destroy(): void;
     // <webview>
@@ -152,7 +146,6 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
     _lifecycleStateForTesting: string;
   }
 
@@ -372,38 +365,6 @@ declare namespace ElectronInternal {
   interface LoadURLOptions extends Electron.LoadURLOptions {
     reloadIgnoringCache?: boolean;
   }
-
-  interface NormalizedPrintOptions {
-    silent: boolean;
-    printBackground: boolean;
-    deviceName: string;
-    color: boolean;
-    marginType: 'default' | 'none' | 'printableArea' | 'custom';
-    margins: { top: number; bottom: number; left: number; right: number } | null;
-    landscape: boolean;
-    scaleFactor: number;
-    pagesPerSheet: number;
-    collate: boolean;
-    copies: number;
-    pageRanges: { from: number; to: number }[];
-    duplexMode: 'simplex' | 'shortEdge' | 'longEdge' | null;
-    dpi: { horizontal: number; vertical: number } | null;
-    header: string;
-    footer: string;
-    mediaSize: MediaSize;
-    usePrinterDefaultPageSize: boolean;
-  }
-
-  type MediaSize = {
-    name: string;
-    custom_display_name: string;
-    height_microns: number;
-    width_microns: number;
-    imageable_area_left_microns?: number;
-    imageable_area_bottom_microns?: number;
-    imageable_area_right_microns?: number;
-    imageable_area_top_microns?: number;
-  };
 
   type PageSize = {
     width: number;

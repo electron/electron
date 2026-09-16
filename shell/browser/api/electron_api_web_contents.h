@@ -25,6 +25,7 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -32,6 +33,7 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/load_url_promises.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
@@ -206,7 +208,9 @@ class WebContents final : public ExclusiveAccessContext,
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
   v8::Local<v8::Value> Clone(v8::Isolate* isolate);
-  void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
+  // webContents.loadURL(url[, options]); see LoadURLPromises for the promise.
+  v8::Local<v8::Promise> LoadURL(gin::Arguments* args, const std::string& url);
+  void LoadURLWithParams(content::NavigationController::LoadURLParams params);
   void Reload();
   void ReloadIgnoringCache();
   void DownloadURL(const GURL& url, gin::Arguments* args);
@@ -228,10 +232,11 @@ class WebContents final : public ExclusiveAccessContext,
   bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
-  void RestoreHistory(v8::Isolate* isolate,
-                      gin_helper::ErrorThrower thrower,
-                      int index,
-                      const std::vector<v8::Local<v8::Value>>& entries);
+  v8::Local<v8::Promise> RestoreHistory(
+      v8::Isolate* isolate,
+      gin_helper::ErrorThrower thrower,
+      int index,
+      const std::vector<v8::Local<v8::Value>>& entries);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
@@ -270,13 +275,15 @@ class WebContents final : public ExclusiveAccessContext,
   void SetDevToolsWebContents(const WebContents* devtools);
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
+  // Runs the wrapper's JS _init and announces it as app
+  // 'web-contents-created'.
+  void InitializeJS(v8::Isolate* isolate);
 
-#if BUILDFLAG(ENABLE_PRINTING)
-  void Print(std::optional<base::DictValue> options,
-             base::OnceCallback<void(bool, const std::string&)> callback);
-  // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  void Print(gin::Arguments* args);
+  // Print current page as PDF. Static (with the WebContents as holder) so
+  // that a destroyed WebContents gets a rejection rather than a throw.
+  static v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
+  static v8::Local<v8::Promise> GetPrintersAsync(v8::Isolate* isolate);
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
@@ -422,6 +429,13 @@ class WebContents final : public ExclusiveAccessContext,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+  // 'did-fail-load'; the frame ids are omitted from the event when -1.
+  void EmitDidFailLoad(int error_code,
+                       std::string_view error_description,
+                       const GURL& url,
+                       bool is_main_frame,
+                       int frame_process_id = -1,
+                       int frame_routing_id = -1);
 
   WebContents* embedder() { return embedder_; }
 
@@ -715,6 +729,10 @@ class WebContents final : public ExclusiveAccessContext,
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
+  // Posts |navigate| and returns true while DidStopLoading is emitting for a
+  // load that ended because its renderer died; otherwise returns false.
+  bool PostNavigationInRendererTeardown(base::OnceClosure navigate);
+
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 
@@ -899,6 +917,11 @@ class WebContents final : public ExclusiveAccessContext,
 
   raw_ptr<ElectronBrowserContext> browser_context_;
 
+  // Pending loadURL()/restore() promises. Declared before
+  // |inspectable_web_contents_|, whose destruction emits 'destroyed', which
+  // settles them.
+  LoadURLPromises load_url_promises_;
+
   // The stored InspectableWebContents object.
   // Notice that inspectable_web_contents_ must be placed after
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
@@ -932,6 +955,12 @@ class WebContents final : public ExclusiveAccessContext,
   // defers guest WebContents deletion to prevent use-after-free when a JS
   // handler calls webContents.destroy() mid-emission.
   bool is_emitting_event_ = false;
+
+  // Set by DidFinishNavigation when content discards a navigation because
+  // its renderer died; consumed by the DidStopLoading that follows, which
+  // holds in_renderer_teardown_ for the duration of its emit.
+  bool navigation_discarded_by_process_gone_ = false;
+  bool in_renderer_teardown_ = false;
 
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;

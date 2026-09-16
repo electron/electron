@@ -40,10 +40,11 @@ const certPath = path.join(fixturesPath, 'certificates');
 describe('reporting api', () => {
   it('sends a report for an intervention', async () => {
     const reporting = new EventEmitter();
+    const ses = session.fromPartition(`reporting-${Math.random()}`);
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
-    session.defaultSession.setCertificateVerifyProc((req, cb) => {
+    ses.setCertificateVerifyProc((req, cb) => {
       cb(0);
     });
 
@@ -77,17 +78,18 @@ describe('reporting api', () => {
     });
 
     await listen(server);
-    const bw = new BrowserWindow({ show: false });
+    const bw = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    const pageUrl = `https://localhost:${(server.address() as AddressInfo).port}/a`;
 
     try {
       const reportGenerated = once(reporting, 'report');
-      await bw.loadURL(`https://localhost:${(server.address() as AddressInfo).port}/a`);
+      await bw.loadURL(pageUrl);
 
       const [reports] = await reportGenerated;
       expect(reports).to.be.an('array').with.lengthOf(1);
       const { type, url, body } = reports[0];
       expect(type).to.equal('intervention');
-      expect(url).to.equal(url);
+      expect(url).to.equal(pageUrl);
       expect(body.id).to.equal('NavigatorVibrate');
       expect(body.message).to.match(
         /Blocked call to navigator.vibrate because user hasn't tapped on the frame or any embedded frame yet/
@@ -95,7 +97,7 @@ describe('reporting api', () => {
     } finally {
       bw.destroy();
       server.close();
-      session.defaultSession.setCertificateVerifyProc(null);
+      ses.setCertificateVerifyProc(null);
     }
   });
 });
