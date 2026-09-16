@@ -118,8 +118,6 @@ declare namespace Electron {
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
-    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -148,7 +146,6 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
     _lifecycleStateForTesting: string;
   }
 
@@ -368,22 +365,6 @@ declare namespace ElectronInternal {
   interface LoadURLOptions extends Electron.LoadURLOptions {
     reloadIgnoringCache?: boolean;
   }
-
-  interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
-    mediaSize?: MediaSize;
-  }
-
-  type MediaSize = {
-    name: string;
-    custom_display_name: string;
-    height_microns: number;
-    width_microns: number;
-    imageable_area_left_microns?: number;
-    imageable_area_bottom_microns?: number;
-    imageable_area_right_microns?: number;
-    imageable_area_top_microns?: number;
-    is_default?: 'true';
-  };
 
   type PageSize = {
     width: number;
