@@ -91,7 +91,7 @@ index 8b9b804ee32599fd728c24a390827a0c54337781..da08b9a57f4eaebfae8cc27107425255
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index a1a4baea41002c4fac37c518cc707f26786946c9..e21ae6e9ff5c3460a48e88301f73e2135f62c30b 100644
+index 7b4064f7ab76deb38d810c972276bd96d1645961..935693355b2cd364e01f0b0b56b43e0990f36ed6 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12762,5 +12762,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(

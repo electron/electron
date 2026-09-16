@@ -21,10 +21,10 @@ index a08ebce1d2cadfe19a8447481819951ce85f588e..8a72281ba7e08ca02fac48f7405861a6
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 503e19a566b58e7e99446b87cee60554819dcc07..d5df2dda24a5c001d2683887d3e44089824bf873 100644
+index 7f46e5595ec717f2f5c02a49da1fa10860f0d1d1..43006bee8ce969390144b1ffc68351cf301f7dca 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5587,6 +5587,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5594,6 +5594,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 503e19a566b58e7e99446b87cee60554819dcc07..d5df2dda24a5c001d2683887d3e44089
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5641,6 +5645,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5648,6 +5652,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -49,7 +49,7 @@ index 503e19a566b58e7e99446b87cee60554819dcc07..d5df2dda24a5c001d2683887d3e44089
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5682,13 +5693,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5689,13 +5700,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -173,10 +173,10 @@ index e7ab9bb9e35277de4fb2b13cb3427446274c3394..ff5eca0ab8c01544f61434b5fd395f4e
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 425fb0e410ff144e322b0dfef17d71fe56344eee..4e61991a00652257b1d8aa17cabdb0dcbd1a1def 100644
+index 3743dd88436121007b408efb0008c3ecf76e628e..a637adc69c8925f870702b96813a42ff4ebfccbd 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7005,6 +7005,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7006,6 +7006,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

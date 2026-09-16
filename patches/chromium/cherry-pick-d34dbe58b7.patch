@@ -659,7 +659,7 @@ index 0000000000000000000000000000000000000000..5c27242cf73b11ab6976ed91984da557
 +
 +}  // namespace gpu
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index 17578aaf40b455a5ee4eedb9f445b715bc3351bd..bd2340e4e9ce5e372308724debe53914eff479af 100644
+index 484f2487c1d7e23cea5b41ff9727ae5874cf8869..829ce7df7b2a4dbffaf3d245d6f7ef60c74882e1 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
 @@ -3872,6 +3872,18 @@
