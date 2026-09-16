@@ -1,0 +1,40 @@
+# Spec files the mas (Mac App Store) test legs run on pull requests, one per
+# line, matched exactly against script/split-tests output. Everything else in
+# spec/ is covered by the darwin legs of the same run; this list is the areas
+# where the mas build differs from darwin (IS_MAS_BUILD() in shell/,
+# is_mas_build in BUILD.gn and the patches/chromium/mas_* and
+# *_mas_* patches). The full suite still runs on pushes to main and release
+# branches, on roller/ PRs and on PRs carrying the run-full-macos label.
+# Used by .github/workflows/pipeline-segment-electron-test.yml.
+#
+# private API symbol scan of every MAS binary (mas_avoid_private_macos_api_usage)
+spec/mas-spec.ts
+# app sandbox: getAppMetrics().sandboxed, startAccessingSecurityScopedResource,
+# login items (electron_login_helper), process.mas gating
+spec/api-app-spec.ts
+# security-scoped bookmarks returned by the open/save dialogs
+spec/api-dialog-spec.ts
+# keychain account name differs in MAS builds (feat_ensure_mas_builds_..._safestorage)
+spec/api-safe-storage-spec.ts
+# StoreKit, only meaningful for the App Store build
+spec/api-in-app-purchase-spec.ts
+# frameless window mouseDown/swipe swizzling, no remote CoreAnimation,
+# capturePage and hasCapturableScreen branches on process.mas
+spec/api-browser-window-spec.ts
+# screen capture without CGSSetWindowCaptureExcludeShape / remote CA
+spec/api-desktop-capturer-spec.ts
+# ui/display/mac/screen_mac.mm is patched for MAS
+spec/api-screen-spec.ts
+# menu_controller_cocoa_delegate_impl.mm / NSToolbar private API removal
+spec/api-menu-spec.ts
+# forcefullyCrashRenderer without CrashDumpHungChildProcess, patched
+# render_widget_host_view_mac paths
+spec/api-web-contents-spec.ts
+# sandboxMain branches on process.mas
+spec/api-subframe-spec.ts
+# renderer/main crash paths without crashpad
+spec/crash-spec.ts
+# node_service.cc drops crash keys in MAS builds
+spec/api-utility-process-spec.ts
+# kill ring, font matching, remote cocoa and sandbox paths patched for MAS
+spec/chromium-spec.ts
