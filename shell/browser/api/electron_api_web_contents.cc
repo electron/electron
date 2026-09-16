@@ -2517,15 +2517,17 @@ void WebContents::OnFirstNonEmptyLayout(
     // microtasks queued by the WebContents', as when it was a nextTick.
     node::CallbackScope callback_scope(isolate, wrapper,
                                        node::async_context{0, 0});
+    // The owner as it is before any listener runs, as the first listener saw.
+    v8::Local<v8::Value> owner =
+        owner_window() ? BrowserWindow::From(isolate, owner_window())
+                       : v8::Local<v8::Value>(v8::Null(isolate));
+    const bool notify_owner =
+        owner->IsObject() &&
+        !gin_helper::Destroyable::IsDestroyed(owner.As<v8::Object>());
     Emit("ready-to-show");
     // Then the window showing it, as BrowserWindow documents.
-    if (!weak_this || !web_contents() || !owner_window())
-      return;
-    v8::Local<v8::Value> owner = BrowserWindow::From(isolate, owner_window());
-    if (owner->IsObject() &&
-        !gin_helper::Destroyable::IsDestroyed(owner.As<v8::Object>())) {
+    if (notify_owner)
       gin_helper::EmitEvent(isolate, owner.As<v8::Object>(), "ready-to-show");
-    }
   }
 }
 
