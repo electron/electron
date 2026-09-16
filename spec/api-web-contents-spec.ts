@@ -4013,6 +4013,35 @@ describe('webContents module', () => {
         expect(w.webContents.isCrashed()).to.equal(false);
       });
 
+      it('emits render-process-gone on app, then on the webContents, then runs their microtasks', async () => {
+        const order: string[] = [];
+        const onApp = (_e: Electron.Event, wc: WebContents) => {
+          if (wc !== w.webContents) return;
+          order.push('app');
+          Promise.resolve().then(() => order.push('app-microtask'));
+        };
+        app.on('render-process-gone', onApp);
+        defer(() => app.removeListener('render-process-gone', onApp));
+        w.webContents.on('render-process-gone', () => order.push('webContents-1'));
+        w.webContents.on('render-process-gone', () => order.push('webContents-2'));
+        const done = once(w.webContents, 'render-process-gone');
+        w.webContents.forcefullyCrashRenderer();
+        await done;
+        await setTimeout();
+        expect(order).to.deep.equal(['app', 'webContents-1', 'webContents-2', 'app-microtask']);
+      });
+
+      it('still emits render-process-gone on a webContents destroyed by an app listener', async () => {
+        const onApp = (_e: Electron.Event, wc: WebContents) => {
+          if (wc === w.webContents) wc.destroy();
+        };
+        app.on('render-process-gone', onApp);
+        defer(() => app.removeListener('render-process-gone', onApp));
+        const done = once(w.webContents, 'render-process-gone');
+        w.webContents.forcefullyCrashRenderer();
+        await done;
+      });
+
       it('survives a synchronous reload() from the render-process-gone handler', async () => {
         // Regression test: a synchronous reload() from 'render-process-gone'
         // used to re-enter renderer process launch mid-teardown and
