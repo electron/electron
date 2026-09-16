@@ -65,7 +65,7 @@ class UvHandle {
   UvHandle() : t_{new T{}} {}
   ~UvHandle() { reset(); }
 
-  explicit UvHandle(UvHandle&& that) {
+  UvHandle(UvHandle&& that) {
     t_ = that.t_;
     that.t_ = nullptr;
   }
