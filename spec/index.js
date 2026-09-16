@@ -22,6 +22,15 @@ if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
   app.disableHardwareAcceleration();
 }
 
+// macos-x64 CI runners have no Metal-capable GPU: every hardware GPU process
+// fails EGL init and Chromium relaunches it until it falls back to SwiftShader.
+// Start on SwiftShader directly to skip the failed launches. Mirrors
+// `ciGpuArgs` in spec/lib/spec-helpers.ts, which cannot be required here
+// because ts-node is registered only after app is ready.
+if (process.env.CI && process.platform === 'darwin' && process.arch === 'x64') {
+  app.commandLine.appendSwitch('use-angle', 'swiftshader');
+}
+
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 // Prevent the spec runner quitting when the first window closes

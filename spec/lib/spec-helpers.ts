@@ -33,6 +33,12 @@ export const isWayland =
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
 
+// macos-x64 CI runners have no Metal-capable GPU: every hardware GPU process
+// fails EGL init and Chromium relaunches it until it falls back to SwiftShader.
+// Start on SwiftShader directly so spawned apps skip the failed launches.
+export const ciGpuArgs: string[] =
+  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--use-angle=swiftshader'] : [];
+
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions() {
@@ -94,7 +100,7 @@ class RemoteControlApp {
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
