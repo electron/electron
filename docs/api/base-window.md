@@ -332,6 +332,32 @@ configured to allow this kind of swiping anymore, so in order for it to emit pro
 'Swipe between pages' preference in `System Preferences > Trackpad > More Gestures` must be
 set to 'Swipe with two or three fingers'.
 
+#### Event: 'swipe-gesture' _macOS_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53522
+```
+-->
+
+Returns:
+
+* `event` Event
+* `direction` string - Can be `left` or `right`.
+* `phase` string - Can be `began`, `changed`, `ended`, or `cancelled`.
+* `progress` number - The gesture's progress, from `0` to `1`.
+
+Emitted during a continuous horizontal swipe tracked by macOS. The window starts
+tracking when the first listener is added and stops when the last listener is
+removed. The application decides whether and how to respond to the gesture.
+
+While tracking is enabled, recognized horizontal swipe gestures are consumed by
+the window instead of being delivered as horizontal scroll events.
+
+This event requires the "Swipe between pages" setting in
+`System Settings > Trackpad > More Gestures` to be enabled.
+
 #### Event: 'rotate-gesture' _macOS_
 
 Returns:
