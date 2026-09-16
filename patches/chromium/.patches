@@ -165,7 +165,6 @@ webhid_webusb_pass_the_frame_to_canrequestdevicepermission.patch
 webhid_webusb_key_document_services_on_the_requesting_frame_s_origin.patch
 cherry-pick-a4c300b.patch
 cherry-pick-bdf7332.patch
-cherry-pick-7858f67.patch
 cherry-pick-c0b5e81.patch
 cherry-pick-92d214b.patch
 cherry-pick-77d3b67.patch
