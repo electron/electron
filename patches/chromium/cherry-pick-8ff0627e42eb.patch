@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 11 Sep 2026 10:06:41 -0700
+Subject: Prevent page unloading in PDFiumPage::PopulateAnnotationLinks()
+
+PDFiumPage::PopulateAnnotationLinks() can trigger JS embedded in PDFs,
+which can in turn trigger page unloads. Avoid this with a
+ScopedPageUnloadPreventer.
+
+Bug: 558036280
+Change-Id: I8944a1ea5879029be30051edb1a80d1d557de3a1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393364
+Reviewed-by: Andy Phan <andyphan@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696369}
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- The RAII helper is still named PDFiumPage::ScopedUnloadPreventer on this
+  branch (renamed to ScopedPageUnloadPreventer upstream later); the new
+  guard in PopulateAnnotationLinks() uses the branch name.
+
+diff --git a/pdf/pdfium/pdfium_page.cc b/pdf/pdfium/pdfium_page.cc
+index 59d842ed76c07d9f4de6d42548fb988e3459b8d2..ba866025a286b4cadde5a8f817aef247b71e08e8 100644
+--- a/pdf/pdfium/pdfium_page.cc
++++ b/pdf/pdfium/pdfium_page.cc
+@@ -1572,6 +1572,8 @@ void PDFiumPage::PopulateAnnotationLinks() {
+   int start_pos = 0;
+   FPDF_LINK link_annot;
+   FPDF_PAGE page = GetPage();
++  // Make sure `page` stays valid for the duration of the loop.
++  ScopedUnloadPreventer scoped_unload_preventer(this);
+   while (FPDFLink_Enumerate(page, &start_pos, &link_annot)) {
+     Link link;
+     Area area = GetLinkTarget(link_annot, &link.target);

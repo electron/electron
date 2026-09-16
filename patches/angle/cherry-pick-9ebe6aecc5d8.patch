@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Wed, 9 Sep 2026 22:54:35 +0800
+Subject: Metal: Avoid using stale render target in TextureMtl::getRenderTarget
+
+Previously, TextureMtl::getRenderTarget skipped calling rtt.set() if
+rtt.getTexture() was already non-null. When a texture image was
+redefined with a new image, this caused mRenderTargets to retain a stale
+render target pointing to the old image, diverting subsequent render or
+copy operations to the stale render target instead of the newly defined
+image.
+
+Update TextureMtl::getRenderTarget to always set rtt with the current
+imageDef.image and add CHECK(imageDef.image).
+
+Bug: angleproject:523470135
+Change-Id: I7a49e2206cb33eaf5b6818bd1e4b65a9620a345d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8377204
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- RobustResourceInitTest.cpp hunk dropped: the new test is anchored on tests
+  that do not exist at this ANGLE revision. TextureMtl.mm applied cleanly.
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index ef639fd96ce1c04fd56c65d0aa71b649a4f02a03..27a0f2a6ba0087a117e7d640f01b01361a2566ae 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -1417,21 +1417,15 @@ uint32_t height(GLuint glLevel) const
+ 
+     GLuint layer         = GetImageLayerIndexFrom(imageIndex);
+     RenderTargetMtl &rtt = mRenderTargets[imageIndex][renderToTextureIndex];
+-    if (!rtt.getTexture())
++    CHECK(imageDef.image);
++    if (imageIndex.getType() == gl::TextureType::CubeMap)
+     {
+-        // Lazy initialization of render target:
+-        if (imageDef.image)
+-        {
+-            if (imageIndex.getType() == gl::TextureType::CubeMap)
+-            {
+-                // Cube map is special, the image is already the view of its layer
+-                rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, 0, format);
+-            }
+-            else
+-            {
+-                rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, layer, format);
+-            }
+-        }
++        // Cube map is special, the image is already the view of its layer
++        rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, 0, format);
++    }
++    else
++    {
++        rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, layer, format);
+     }
+ 
+     if (implicitSamples > 1 && !rtt.getImplicitMSTexture())
