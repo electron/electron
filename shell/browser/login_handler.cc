@@ -118,23 +118,26 @@ void LoginHandler::EmitEvent(
         api::App::Get()->GetWrapper(isolate).ToLocal(&app)) {
       gin_helper::internal::Event* event =
           gin_helper::internal::Event::New(isolate);
-      v8::Local<v8::Object> event_object =
-          event->GetWrapper(isolate).ToLocalChecked();
-      v8::Local<v8::Value> callback = gin::ConvertToV8(
-          isolate, base::BindOnce(&LoginHandler::CallbackFromJS,
-                                  weak_factory_.GetWeakPtr()));
-      base::WeakPtr<api::WebContents> weak_web_contents =
-          api_web_contents->GetWeakPtr();
-      // One callback scope around both emits so ticks and microtasks run
-      // once, after both, as when the app emit nested in the WebContents'.
-      node::CallbackScope callback_scope(isolate, wrapper,
-                                         node::async_context{0, 0});
-      gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
-                            details, auth_info, callback);
-      if (weak_web_contents &&
-          weak_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
-        gin_helper::EmitEvent(isolate, wrapper, "login", event_object, details,
-                              auth_info, callback);
+      {
+        v8::Local<v8::Object> event_object =
+            event->GetWrapper(isolate).ToLocalChecked();
+        v8::Local<v8::Value> callback = gin::ConvertToV8(
+            isolate, base::BindOnce(&LoginHandler::CallbackFromJS,
+                                    weak_factory_.GetWeakPtr()));
+        base::WeakPtr<api::WebContents> weak_web_contents =
+            api_web_contents->GetWeakPtr();
+        // One callback scope around both emits so ticks and microtasks run
+        // once, after both, as when the app emit nested in the WebContents';
+        // defaultPrevented is read after they have run, as Emit() did.
+        node::CallbackScope callback_scope(isolate, wrapper,
+                                           node::async_context{0, 0});
+        gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
+                              details, auth_info, callback);
+        if (weak_web_contents &&
+            weak_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
+          gin_helper::EmitEvent(isolate, wrapper, "login", event_object,
+                                details, auth_info, callback);
+        }
       }
       default_prevented = event->GetDefaultPrevented();
     }
