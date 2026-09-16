@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: BILL SHEN <15865969+cucbin@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 21:51:32 -0800
+Subject: feat: enable retry on commit failure for renderer process
+
+This patch effectively prevents a direct crash when encountering
+a commit failure for the first time. In Electron, the renderer process
+is more significant than tabs in Chromium;
+this effectively prevents page crashes during user interaction.
+
+diff --git a/base/allocator/partition_alloc_support.cc b/base/allocator/partition_alloc_support.cc
+index 83bf7cce89cb5b17131836075298cb53002cd618..41444d49432586e6d9105ab855b40955560d7e2e 100644
+--- a/base/allocator/partition_alloc_support.cc
++++ b/base/allocator/partition_alloc_support.cc
+@@ -1371,9 +1371,10 @@ void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
+ #endif  // PA_BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+ 
+ #if BUILDFLAG(IS_WIN)
+-  // Browser process only, since this is the one we want to prevent from
++  // Browser process, since this is the one we want to prevent from
+   // crashing the most (as it takes down all the tabs).
+-  if (process_type.empty()) {
++  // Renderer process, we also want to to prevent from crashing in Electron.
++  if (process_type.empty() || process_type == switches::kRendererProcess) {
+     partition_alloc::SetRetryOnCommitFailure(true);
+   }
+ #endif
