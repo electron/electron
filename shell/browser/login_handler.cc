@@ -126,20 +126,17 @@ void LoginHandler::EmitEvent(
                                     weak_factory_.GetWeakPtr()));
         // One authInfo object for both, as one details object.
         v8::Local<v8::Value> auth = gin::ConvertToV8(isolate, auth_info);
-        base::WeakPtr<api::WebContents> weak_web_contents =
-            api_web_contents->GetWeakPtr();
         // One callback scope around both emits so ticks and microtasks run
         // once, after both, as when the app emit nested in the WebContents';
-        // defaultPrevented is read after they have run, as Emit() did.
-        node::CallbackScope callback_scope(isolate, wrapper,
-                                           node::async_context{0, 0});
+        // defaultPrevented is read after they have run, as Emit() did. The
+        // WebContents' listeners run off the saved wrapper even if an app
+        // listener destroyed it, as the rest of an emit in progress did.
+        node::CallbackScope callback_scope{isolate, wrapper,
+                                           node::async_context{0, 0}};
         gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
                               details, auth, callback);
-        if (weak_web_contents &&
-            weak_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
-          gin_helper::EmitEvent(isolate, wrapper, "login", event_object,
-                                details, auth, callback);
-        }
+        gin_helper::EmitEvent(isolate, wrapper, "login", event_object, details,
+                              auth, callback);
       }
       default_prevented = event->GetDefaultPrevented();
     }
