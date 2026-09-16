@@ -47,15 +47,21 @@ bool BluetoothChooser::EmitSelectBluetoothDevice() {
   // One callback scope over the count and the emit so that pending ticks and
   // microtasks (which may run the chooser callback and delete |this|) run
   // once at the end, as they did at the end of the single emit; nothing of
-  // |this| is touched after it closes.
-  node::CallbackScope callback_scope(isolate, web_contents,
-                                     node::async_context{0, 0});
+  // |this| is touched after it closes. listenerCount itself is app-replaceable
+  // JavaScript, so |this| and the WebContents are re-checked after it too.
+  node::CallbackScope callback_scope{isolate, web_contents,
+                                     node::async_context{0, 0}};
+  base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
+  base::WeakPtr<api::WebContents> weak_web_contents =
+      api_web_contents_->GetWeakPtr();
   int listeners = 0;
   gin::ConvertFromV8(
       isolate,
       gin_helper::CallMethod(isolate, web_contents, "listenerCount",
                              "select-bluetooth-device"),
       &listeners);
+  if (!weak_this || !weak_web_contents)
+    return true;
   if (listeners == 0) {
     OnDeviceChosen("");
     return true;
