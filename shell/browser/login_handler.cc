@@ -21,6 +21,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/node_includes.h"
 
 using content::BrowserThread;
 
@@ -124,6 +125,10 @@ void LoginHandler::EmitEvent(
                                   weak_factory_.GetWeakPtr()));
       base::WeakPtr<api::WebContents> weak_web_contents =
           api_web_contents->GetWeakPtr();
+      // One callback scope around both emits so ticks and microtasks run
+      // once, after both, as when the app emit nested in the WebContents'.
+      node::CallbackScope callback_scope(isolate, wrapper,
+                                         node::async_context{0, 0});
       gin_helper::EmitEvent(isolate, app, "login", event_object, wrapper,
                             details, auth_info, callback);
       if (weak_web_contents &&
