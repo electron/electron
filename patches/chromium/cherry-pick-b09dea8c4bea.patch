@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 15 Sep 2026 12:55:59 +0000
+Subject: Abort navigation on overlapping redirect or response
+
+In NavigationURLLoaderImpl, receiving an OnReceiveRedirect or
+OnReceiveResponse IPC while another exclusive task is in flight (such as
+asynchronous header parsing for an earlier redirect) violates the
+URLLoaderClient protocol.
+
+Previously, these entry points guarded against this using only
+DUMP_WILL_BE_CHECK(!loader_holder_.HasExclusiveTask()). In builds where
+DUMP_WILL_BE_CHECK is non-fatal, an untrusted or compromised Network
+Service could send overlapping OnReceiveRedirect calls. This overwrote
+redirect_info_ with the new redirect target while NavigationRequest was
+still asynchronously vetting the earlier redirect. When NavigationRequest
+subsequently called FollowRedirect(), NavigationURLLoaderImpl followed
+the unvetted target.
+
+This CL fixes the issue by:
+1. Immediately terminating the navigation with net::ERR_UNEXPECTED if
+   loader_holder_.HasExclusiveTask() is true in OnReceiveRedirect().
+2. Adding an identical guard to OnReceiveResponse() to prevent desync
+   if a response arrives while an exclusive task is in progress.
+3. In OnReceiveRedirect's error path, allowing LoaderHolder::State::kNone
+   alongside kLoadingViaReceiver when url_loader() is null.
+4. Adding unit tests in NavigationURLLoaderImplTest covering overlapping
+   redirects during header parsing, overlapping redirects while throttle
+   checks are pending, and responses arriving during redirect header parsing.
+
+Bug: 553115724
+Change-Id: I1da1b9b57d6f6f649190f017d264bb92ea6deaea
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8365644
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1693615}
+(cherry picked from commit 92d214b025565169bf5a2d8a3718ef9e7dbc040a)
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- Based on the author's [M150-LTS] rebase (CL 8409888): its OnReceiveRedirect()
+  bypass_redirect_checks structure matches this branch, unlike the main CL.
+- navigation_url_loader_impl_unittest.cc hunks dropped (the new tests rely on
+  fixtures not present on this branch). The .cc hunks applied via 3-way merge.
+
+diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
+index 315d0f0a366110661be28b970c090ad66a775f04..fa6f36f8bb5ce1a19d912693028377bb81f499c4 100644
+--- a/content/browser/loader/navigation_url_loader_impl.cc
++++ b/content/browser/loader/navigation_url_loader_impl.cc
+@@ -1422,8 +1422,19 @@ void NavigationURLLoaderImpl::OnReceiveResponse(
+     mojo::ScopedDataPipeConsumerHandle response_body,
+     std::optional<mojo_base::BigBuffer> cached_metadata) {
+   DCHECK(!cached_metadata);
+-  // TODO(https://crbug.com/434182226): Remove DUMP_WILL_BE_.
+-  DUMP_WILL_BE_CHECK(!loader_holder_.HasExclusiveTask());
++  if (loader_holder_.HasExclusiveTask()) {
++    // Receiving a response while an exclusive task (such as header parsing
++    // for a redirect or an interceptor check) is in flight violates the
++    // URLLoaderClient protocol. Cancel immediately.
++    if (loader_holder_.url_loader()) {
++      loader_holder_.url_loader()->CancelWithError(
++          net::ERR_UNEXPECTED,
++          std::string_view(base::NumberToString(net::ERR_UNEXPECTED)));
++    } else {
++      OnComplete(network::URLLoaderCompletionStatus(net::ERR_UNEXPECTED));
++    }
++    return;
++  }
+   LogQueueTimeHistogram("Navigation.QueueTime.OnReceiveResponse",
+                         resource_request_->is_outermost_main_frame);
+ 
+@@ -1563,27 +1574,32 @@ void NavigationURLLoaderImpl::CallOnReceivedResponse(
+ void NavigationURLLoaderImpl::OnReceiveRedirect(
+     const net::RedirectInfo& redirect_info,
+     network::mojom::URLResponseHeadPtr head) {
+-  // TODO(https://crbug.com/434182226): Remove DUMP_WILL_BE_.
+-  DUMP_WILL_BE_CHECK(!loader_holder_.HasExclusiveTask());
+   LogQueueTimeHistogram("Navigation.QueueTime.OnReceiveRedirect",
+                         resource_request_->is_outermost_main_frame);
+   net::Error error = net::OK;
+ 
+-  bool bypass_redirect_checks =
+-      base::FeatureList::IsEnabled(features::kBypassRedirectChecksPerRequest)
+-          ? head->bypass_redirect_checks
+-          : bypass_redirect_checks_;
+-
+-  if (url_.SchemeIsBlob()) {
++  if (loader_holder_.HasExclusiveTask()) {
++    // A redirect shouldn't be received while another exclusive task is already
++    // in flight. Receiving an overlapping redirect from a network service
++    // violates the URLLoaderClient protocol. Fail the navigation immediately.
++    error = net::ERR_UNEXPECTED;
++  } else if (url_.SchemeIsBlob()) {
+     // Loading a blob URL never produces a redirect.
+     error = net::ERR_UNSAFE_REDIRECT;
+-  } else if (!bypass_redirect_checks &&
+-             !IsSafeRedirectTarget(url_, redirect_info.new_url)) {
+-    error = net::ERR_UNSAFE_REDIRECT;
+-  } else if (--redirect_limit_ == 0) {
+-    error = net::ERR_TOO_MANY_REDIRECTS;
+-    if (redirect_info.is_signed_exchange_fallback_redirect) {
+-      UMA_HISTOGRAM_BOOLEAN("SignedExchange.FallbackRedirectLoop", true);
++  } else {
++    bool bypass_redirect_checks =
++        base::FeatureList::IsEnabled(features::kBypassRedirectChecksPerRequest)
++            ? head->bypass_redirect_checks
++            : bypass_redirect_checks_;
++
++    if (!bypass_redirect_checks &&
++        !IsSafeRedirectTarget(url_, redirect_info.new_url)) {
++      error = net::ERR_UNSAFE_REDIRECT;
++    } else if (--redirect_limit_ == 0) {
++      error = net::ERR_TOO_MANY_REDIRECTS;
++      if (redirect_info.is_signed_exchange_fallback_redirect) {
++        UMA_HISTOGRAM_BOOLEAN("SignedExchange.FallbackRedirectLoop", true);
++      }
+     }
+   }
+   if (error != net::OK) {
+@@ -1598,8 +1614,9 @@ void NavigationURLLoaderImpl::OnReceiveRedirect(
+           error, std::string_view(base::NumberToString(error)));
+     } else {
+       // TODO(https://crbug.com/434182226): Turn this to `CHECK()`.
+-      DUMP_WILL_BE_CHECK_EQ(loader_holder_.state(),
+-                            LoaderHolder::State::kLoadingViaReceiver);
++      DUMP_WILL_BE_CHECK(loader_holder_.state() ==
++                             LoaderHolder::State::kLoadingViaReceiver ||
++                         loader_holder_.state() == LoaderHolder::State::kNone);
+       // TODO(crbug.com/40118809): Make sure ResetWithReason() is called
+       // on the original `url_loader_`.
+       OnComplete(network::URLLoaderCompletionStatus(error));

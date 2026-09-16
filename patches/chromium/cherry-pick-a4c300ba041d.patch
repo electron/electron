@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Sato <annasato@chromium.org>
+Date: Wed, 9 Sep 2026 06:39:46 -0700
+Subject: Fix Browser-process Heap-UAF in LockManager caused by stale
+ SharedWorkerHost
+
+SharedWorkerHost unconditionally registers as a Web Locks observer in
+CreateLockManager(), but only removed itself in ~SharedWorkerHost()
+inside an if (site_instance_->HasProcess()) block. When the worker host
+is destroyed after its renderer process has exited, deregistration was
+skipped, leaving a dangling pointer in LockManager::client_observer_map_
+that triggered a heap-use-after-free during subsequent lock contention.
+
+This CL fixes the issue by updating SharedWorkerHost::GetStoragePartitionImpl()
+to return service_->storage_partition(), which is valid throughout the
+entire lifetime of SharedWorkerHost, and unconditionally removing the
+lock observer in ~SharedWorkerHost(). In addition, client_observer_map_
+in LockManager is hardened to use raw_ptr<Observer>.
+
+TAG=agy
+CONV=7314e936-8382-47a3-b488-db116be9ff5e
+
+Bug: 558456602
+Change-Id: I911a92dc8012917036ab96ddae0ae596e0c58fad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8370922
+Auto-Submit: Anna Sato <annasato@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1694548}
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- content/browser/devtools/shared_worker_devtools_agent_host_unittest.cc does
+  not exist on this branch; its hunk is dropped.
+- ~SharedWorkerHost() conflict resolved by keeping the branch's
+  ClearNoncesInNetworkContextAfterDelay() call (renamed upstream) while moving
+  RemoveLockObserver() out of the HasProcess() block exactly as upstream does.
+
+diff --git a/content/browser/locks/lock_manager.h b/content/browser/locks/lock_manager.h
+index 4ca7d03d9cf0f330b772311e5f337af90341586b..80a51f4fd7bc99d3c3ace871dc9169a7c5848fdc 100644
+--- a/content/browser/locks/lock_manager.h
++++ b/content/browser/locks/lock_manager.h
+@@ -118,7 +118,7 @@ class CONTENT_EXPORT LockManager : public blink::mojom::LockManager {
+   int64_t next_lock_id_ = 0;
+   std::map<LockGroupIdType, LockGroupState> lock_groups_;
+ 
+-  base::flat_map<std::string, Observer*> client_observer_map_;
++  base::flat_map<std::string, raw_ptr<Observer>> client_observer_map_;
+ 
+   SEQUENCE_CHECKER(sequence_checker_);
+   base::WeakPtrFactory<LockManager> weak_ptr_factory_{this};
+diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
+index 928b22a16ef60b1a027dfa47dc178f9e7ada8b18..4c6a2d08369475baa25a932d7a6911ee28fd559a 100644
+--- a/content/browser/worker_host/shared_worker_host.cc
++++ b/content/browser/worker_host/shared_worker_host.cc
+@@ -222,6 +222,10 @@ SharedWorkerHost::~SharedWorkerHost() {
+     }
+   }
+ 
++  if (auto* lock_manager = GetStoragePartitionImpl()->GetLockManager()) {
++    lock_manager->RemoveLockObserver(token().value());
++  }
++
+   if (site_instance_->HasProcess()) {
+     // Send any final reports and allow the reporting configuration to be
+     // removed.
+@@ -234,10 +238,6 @@ SharedWorkerHost::~SharedWorkerHost() {
+ 
+     GetProcessHost()->RemoveObserver(this);
+ 
+-    if (auto* lock_manager = GetStoragePartitionImpl()->GetLockManager()) {
+-      lock_manager->RemoveLockObserver(token().value());
+-    }
+-
+     GetStoragePartitionImpl()->ClearNoncesInNetworkContextAfterDelay({
+         network_restrictions_id_,
+     });
+@@ -613,7 +613,7 @@ void SharedWorkerHost::CreateLockManager(
+   GetStoragePartitionImpl()->BindLockManager(
+       GetWorkerStorageKey(), token().value(), std::move(receiver));
+   GetStoragePartitionImpl()->GetLockManager()->AddLockObserver(token().value(),
+-                                                            this);
++                                                               this);
+ }
+ 
+ void SharedWorkerHost::OnLockContention() {
+@@ -929,8 +929,7 @@ void SharedWorkerHost::RenderProcessHostDestroyed(RenderProcessHost* host) {
+ }
+ 
+ StoragePartitionImpl* SharedWorkerHost::GetStoragePartitionImpl() {
+-  return static_cast<StoragePartitionImpl*>(
+-      GetProcessHost()->GetStoragePartition());
++  return service_->storage_partition();
+ }
+ 
+ std::vector<GlobalRenderFrameHostId>
+diff --git a/content/browser/worker_host/shared_worker_host_unittest.cc b/content/browser/worker_host/shared_worker_host_unittest.cc
+index 699408c8b6782ff0348709369de39df53a0f38e0..f387902fb27b106a61bc54b068fe6a80d7442c48 100644
+--- a/content/browser/worker_host/shared_worker_host_unittest.cc
++++ b/content/browser/worker_host/shared_worker_host_unittest.cc
+@@ -20,6 +20,7 @@
+ #include "content/browser/service_worker/service_worker_context_core.h"
+ #include "content/browser/service_worker/service_worker_main_resource_handle.h"
+ #include "content/browser/site_instance_impl.h"
++#include "content/browser/storage_partition_impl.h"
+ #include "content/browser/worker_host/mock_shared_worker.h"
+ #include "content/browser/worker_host/shared_worker_connector_impl.h"
+ #include "content/browser/worker_host/shared_worker_service_impl.h"
+@@ -73,7 +74,8 @@ class SharedWorkerHostTest : public testing::Test {
+   }
+ 
+   SharedWorkerHostTest()
+-      : service_(nullptr /* storage_partition */,
++      : service_(static_cast<StoragePartitionImpl*>(
++                     browser_context_.GetDefaultStoragePartition()),
+                  nullptr /* service_worker_context */) {}
+ 
+   SharedWorkerHostTest(const SharedWorkerHostTest&) = delete;

@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Fri, 17 Jul 2026 13:28:05 -0400
+Subject: [Ganesh] If a resolve task fails to execute unwind the dirty
+ tracking.
+
+If a flush fails for some reason then we can get in an inconsistent
+state with our dirty rect tracking for msaa resolves and mip maps.
+This happens because we immediately update the proxies tracking of these
+values when we recording a resolve task. But if that resolve task
+never executes for some reason then we can end up in a bad state.
+
+This changes makes it so that if a resolve task is ended without ever
+executing, then it resets the proxies state to what it was before.
+
+Technically if the draws before the resolve also never execute we will
+now be marking a region dirty that isn't neccessarily dirty. This
+could cause an extra resolve on future draws but is safe. However in
+practice is flushes fail, clients will usually either tear everything
+down (and thus it doesn't matter), or repeat the same draws again
+(which would end up with the same resolve rect anyways). So this
+possible extra resolve doesn't have a large real world impact.
+
+Bug: b/517973093
+Change-Id: Icc54310b87061471631f7a81adcfe661794a4e9c
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1297216
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- Picked as a prerequisite for "Update GrRenderTask execution error handling"
+  (cherry-pick-02c834bed9e0.patch).
+- tests/GrSurfaceResolveTest.cpp hunk dropped (conflicts with the branch's
+  test file); source hunks applied cleanly.
+
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 3af47a00d802ba24e52330186e0abe15d390dbff..4be0e63c715e3ed25861f78908211fe4decfe641 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -512,8 +512,9 @@ static void resolve_and_mipmap(GrGpu* gpu, GrSurfaceProxy* proxy) {
+     if (auto* textureProxy = proxy->asTextureProxy()) {
+         if (textureProxy->mipmapsAreDirty()) {
+             SkASSERT(textureProxy->peekTexture());
+-            gpu->regenerateMipMapLevels(textureProxy->peekTexture());
+-            textureProxy->markMipmapsClean();
++            if (gpu->regenerateMipMapLevels(textureProxy->peekTexture())) {
++                textureProxy->markMipmapsClean();
++            }
+         }
+     }
+ }
+diff --git a/src/gpu/ganesh/GrTextureResolveRenderTask.cpp b/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
+index 892c534c00d1fb054213b4c78cd621b339d654f7..d7fdfd64005750d18302d27bbc92f8adb0b1a050 100644
+--- a/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
++++ b/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
+@@ -94,24 +94,25 @@ bool GrTextureResolveRenderTask::onExecute(GrOpFlushState* flushState) {
+     // Resolve all msaa back-to-back, before regenerating mipmaps.
+     SkASSERT(fResolves.size() == this->numTargets());
+     for (int i = 0; i < fResolves.size(); ++i) {
+-        const Resolve& resolve = fResolves[i];
++        Resolve& resolve = fResolves[i];
+         if (GrSurfaceProxy::ResolveFlags::kMSAA & resolve.fFlags) {
+             GrSurfaceProxy* proxy = this->target(i);
+             // peekRenderTarget might be null if there was an instantiation error.
+             if (GrRenderTarget* renderTarget = proxy->peekRenderTarget()) {
+                 flushState->gpu()->resolveRenderTarget(renderTarget, resolve.fMSAAResolveRect);
++                resolve.fFlags &= ~GrSurfaceProxy::ResolveFlags::kMSAA;
+             }
+         }
+     }
+     // Regenerate all mipmaps back-to-back.
+     for (int i = 0; i < fResolves.size(); ++i) {
+-        const Resolve& resolve = fResolves[i];
++        Resolve& resolve = fResolves[i];
+         if (GrSurfaceProxy::ResolveFlags::kMipMaps & resolve.fFlags) {
+             // peekTexture might be null if there was an instantiation error.
+             GrTexture* texture = this->target(i)->peekTexture();
+-            if (texture && texture->mipmapsAreDirty()) {
+-                flushState->gpu()->regenerateMipMapLevels(texture);
+-                SkASSERT(!texture->mipmapsAreDirty());
++            if (texture && (!texture->mipmapsAreDirty() ||
++                            flushState->gpu()->regenerateMipMapLevels(texture))) {
++                resolve.fFlags &= ~GrSurfaceProxy::ResolveFlags::kMipMaps;
+             }
+         }
+     }
+@@ -119,6 +120,29 @@ bool GrTextureResolveRenderTask::onExecute(GrOpFlushState* flushState) {
+     return true;
+ }
+ 
++void GrTextureResolveRenderTask::endFlush(GrDrawingManager* drawingMgr) {
++    // Any flags still set here correspond to resolves that were recorded by addProxy() but never
++    // executed (the flush was dropped before render-task execution, this task was skipped because
++    // its targets failed to instantiate, or a per-target operation failed). Re-mark those proxies
++    // dirty so a subsequent flush will re-record the resolve.
++    SkASSERT(fResolves.size() == this->numTargets());
++    for (int i = 0; i < fResolves.size(); ++i) {
++        const Resolve& resolve = fResolves[i];
++        GrSurfaceProxy* proxy = this->target(i);
++        if (GrSurfaceProxy::ResolveFlags::kMSAA & resolve.fFlags) {
++            if (GrRenderTargetProxy* rtProxy = proxy->asRenderTargetProxy()) {
++                rtProxy->markMSAADirty(resolve.fMSAAResolveRect);
++            }
++        }
++        if (GrSurfaceProxy::ResolveFlags::kMipMaps & resolve.fFlags) {
++            if (GrTextureProxy* texProxy = proxy->asTextureProxy()) {
++                texProxy->markMipmapsDirty();
++            }
++        }
++    }
++    this->GrRenderTask::endFlush(drawingMgr);
++}
++
+ #ifdef SK_DEBUG
+ void GrTextureResolveRenderTask::visitProxies_debugOnly(const GrVisitProxyFunc&) const {}
+ #endif
+diff --git a/src/gpu/ganesh/GrTextureResolveRenderTask.h b/src/gpu/ganesh/GrTextureResolveRenderTask.h
+index 04aa4d10671cecf6bdd9135cc9785001d959393d..7d56470d8f2f7e6fa4fea9626185a61f302a8f16 100644
+--- a/src/gpu/ganesh/GrTextureResolveRenderTask.h
++++ b/src/gpu/ganesh/GrTextureResolveRenderTask.h
+@@ -44,6 +44,12 @@ private:
+ 
+     bool onExecute(GrOpFlushState*) override;
+ 
++    // addProxy() optimistically marks the proxy resolved/clean at recording time. If the flush
++    // is dropped before this task executes (or a per-target operation fails) we must restore the
++    // proxy's dirty state so a later flush will re-record the resolve.
++    bool requiresExplicitCleanup() const override { return true; }
++    void endFlush(GrDrawingManager*) override;
++
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "TextureResolve"; }
+ #endif

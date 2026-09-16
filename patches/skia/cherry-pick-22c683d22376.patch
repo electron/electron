@@ -1,0 +1,213 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 8 Jun 2026 10:16:00 -0400
+Subject: [ganesh] Track async task execution for callbacks
+
+The submit proc is invoked with success=true if any tasks were executed
+and the submission of *those* tasks succeeded. Async reads also need
+to be gated on whether or not their actual task was executed.
+
+Bug: 517992755
+Fixed: 517992755
+Change-Id: I75b196111f03873c92b6d2f599a1055ce6a814cf
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1257336
+Reviewed-by: Greg Daniel <egdaniel@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- Picked as a prerequisite for "Update GrRenderTask execution error handling"
+  (cherry-pick-02c834bed9e0.patch). Applied cleanly.
+
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 6aa1644e2ad3e3684ca130f90c5b4d298a904e2c..dc8ec7b56f29b91ed512621ab7ad18afe8816154 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -840,19 +840,21 @@ void GrDrawingManager::newWaitRenderTask(const sk_sp<GrSurfaceProxy>& proxy,
+     SkDEBUGCODE(this->validate());
+ }
+ 
+-void GrDrawingManager::newTransferFromRenderTask(const sk_sp<GrSurfaceProxy>& srcProxy,
+-                                                 const SkIRect& srcRect,
+-                                                 GrColorType surfaceColorType,
+-                                                 GrColorType dstColorType,
+-                                                 sk_sp<GrGpuBuffer> dstBuffer,
+-                                                 size_t dstOffset) {
++sk_sp<GrTransferFromRenderTask> GrDrawingManager::newTransferFromRenderTask(
++        const sk_sp<GrSurfaceProxy>& srcProxy,
++        const SkIRect& srcRect,
++        GrColorType surfaceColorType,
++        GrColorType dstColorType,
++        sk_sp<GrGpuBuffer> dstBuffer,
++        size_t dstOffset) {
+     SkDEBUGCODE(this->validate());
+     SkASSERT(fContext);
+     this->closeActiveOpsTask();
+ 
+-    GrRenderTask* task = this->appendTask(sk_make_sp<GrTransferFromRenderTask>(
++    sk_sp<GrTransferFromRenderTask> task = sk_make_sp<GrTransferFromRenderTask>(
+             srcProxy, srcRect, surfaceColorType, dstColorType,
+-            std::move(dstBuffer), dstOffset));
++            std::move(dstBuffer), dstOffset);
++    SkAssertResult(this->appendTask(task) == task.get());
+ 
+     const GrCaps& caps = *fContext->priv().caps();
+ 
+@@ -866,6 +868,8 @@ void GrDrawingManager::newTransferFromRenderTask(const sk_sp<GrSurfaceProxy>& sr
+     // shouldn't be an active one.
+     SkASSERT(!fActiveOpsTask);
+     SkDEBUGCODE(this->validate());
++
++    return task;
+ }
+ 
+ void GrDrawingManager::newBufferTransferTask(sk_sp<GrGpuBuffer> src,
+diff --git a/src/gpu/ganesh/GrDrawingManager.h b/src/gpu/ganesh/GrDrawingManager.h
+index f26b04dccaf8746c4fa621212887ea55a9a95989..6caf142b9d756803fe1489bd4622d14e2dfcace8 100644
+--- a/src/gpu/ganesh/GrDrawingManager.h
++++ b/src/gpu/ganesh/GrDrawingManager.h
+@@ -42,6 +42,7 @@ class GrResourceAllocator;
+ class GrSemaphore;
+ class GrSurfaceProxyView;
+ class GrTextureResolveRenderTask;
++class GrTransferFromRenderTask;
+ class SkData;
+ enum GrSurfaceOrigin : int;
+ enum class GrColorType;
+@@ -102,9 +103,13 @@ public:
+     // to be copied. The surfaceColorType says how we should interpret the data when reading back
+     // from the source. DstColorType describes how the data should be stored in the dstBuffer.
+     // DstOffset is the offset into the dstBuffer where we will start writing data.
+-    void newTransferFromRenderTask(const sk_sp<GrSurfaceProxy>& srcProxy, const SkIRect& srcRect,
+-                                   GrColorType surfaceColorType, GrColorType dstColorType,
+-                                   sk_sp<GrGpuBuffer> dstBuffer, size_t dstOffset);
++    sk_sp<GrTransferFromRenderTask> newTransferFromRenderTask(
++            const sk_sp<GrSurfaceProxy>& srcProxy,
++            const SkIRect& srcRect,
++            GrColorType surfaceColorType,
++            GrColorType dstColorType,
++            sk_sp<GrGpuBuffer> dstBuffer,
++            size_t dstOffset);
+ 
+     // Creates a new render task which copies a pixel rectangle from srcView into dstView. The src
+     // pixels copied are specified by srcRect. They are copied to the dstRect in dstProxy. Some
+diff --git a/src/gpu/ganesh/GrTransferFromRenderTask.cpp b/src/gpu/ganesh/GrTransferFromRenderTask.cpp
+index ad52a2a080cbe4e0d4767f32de17d1f3af1254d3..e2eb76d49b7035bb1db55b73abd45e8d945a0d77 100644
+--- a/src/gpu/ganesh/GrTransferFromRenderTask.cpp
++++ b/src/gpu/ganesh/GrTransferFromRenderTask.cpp
+@@ -22,13 +22,15 @@ void GrTransferFromRenderTask::gatherProxyIntervals(GrResourceAllocator* alloc)
+ }
+ 
+ bool GrTransferFromRenderTask::onExecute(GrOpFlushState* flushState) {
++    SkASSERT(!fExecuted); // These are one-time tasks
+     if (!fSrcProxy->isInstantiated()) {
+         return false;
+     }
+-    return flushState->gpu()->transferPixelsFrom(fSrcProxy->peekSurface(),
+-                                                 fSrcRect,
+-                                                 fSurfaceColorType,
+-                                                 fDstColorType,
+-                                                 fDstBuffer,
+-                                                 fDstOffset);
++    fExecuted = flushState->gpu()->transferPixelsFrom(fSrcProxy->peekSurface(),
++                                                      fSrcRect,
++                                                      fSurfaceColorType,
++                                                      fDstColorType,
++                                                      fDstBuffer,
++                                                      fDstOffset);
++    return fExecuted;
+ }
+diff --git a/src/gpu/ganesh/GrTransferFromRenderTask.h b/src/gpu/ganesh/GrTransferFromRenderTask.h
+index fd9b2a27ca49ce5c1f25e4553ae4882a962a6cb8..6b8079b68ba6112c78169f1888b7731a846e3c95 100644
+--- a/src/gpu/ganesh/GrTransferFromRenderTask.h
++++ b/src/gpu/ganesh/GrTransferFromRenderTask.h
+@@ -41,6 +41,8 @@ public:
+             , fDstBuffer(std::move(dstBuffer))
+             , fDstOffset(dstOffset) {}
+ 
++    bool wasExecuted() const { return fExecuted; }
++
+ private:
+     bool onIsUsed(GrSurfaceProxy* proxy) const override {
+         SkASSERT(0 == this->numTargets());
+@@ -70,7 +72,7 @@ private:
+     sk_sp<GrGpuBuffer> fDstBuffer;
+     size_t fDstOffset;
+ 
++    bool fExecuted = false;
+ };
+ 
+ #endif
+-
+diff --git a/src/gpu/ganesh/SurfaceContext.cpp b/src/gpu/ganesh/SurfaceContext.cpp
+index 5bee6e07ade153ca8fb16c35044f8eb40de54d3b..0918836f504bdbd218a7b5e837313dc3df1aa2b3 100644
+--- a/src/gpu/ganesh/SurfaceContext.cpp
++++ b/src/gpu/ganesh/SurfaceContext.cpp
+@@ -50,6 +50,7 @@
+ #include "src/gpu/ganesh/GrSurface.h"
+ #include "src/gpu/ganesh/GrTextureProxy.h"
+ #include "src/gpu/ganesh/GrTracing.h"
++#include "src/gpu/ganesh/GrTransferFromRenderTask.h"
+ #include "src/gpu/ganesh/SurfaceFillContext.h"
+ #include "src/gpu/ganesh/effects/GrBicubicEffect.h"
+ #include "src/gpu/ganesh/effects/GrTextureEffect.h"
+@@ -725,6 +726,20 @@ struct SurfaceContext::AsyncReadPixelContext {
+ 
+     void setSubmitted(bool success) {
+         SkASSERT(fSubmitted == kUnsubmitted);
++        // `success` initially represents whether or not the command buffer was submitted, but the
++        // actual transfer tasks need to have been executed in order for that submission to
++        // have valid results for the async read. Ganesh will submit if any task is executed.
++        if (success) {
++            for (auto transfer : {&fPrimaryTransfer, &fUTransfer, &fVTransfer, &fATransfer}) {
++                if (!transfer->fTransferBuffer) {
++                    break; // Reached end of the planes being copied
++                }
++                if (!transfer->fTransferTask || !transfer->fTransferTask->wasExecuted()) {
++                    success = false;
++                    break;
++                }
++            }
++        }
+         fSubmitted = success ? kSuccess : kFailure;
+         this->runClientCallbackMaybe();
+     }
+@@ -1441,10 +1456,15 @@ SurfaceContext::PixelTransferResult SurfaceContext::transferPixels(GrColorType d
+         srcRect = SkIRect::MakeLTRB(rect.fLeft, this->height() - rect.fBottom, rect.fRight,
+                                     this->height() - rect.fTop);
+     }
+-    this->drawingManager()->newTransferFromRenderTask(this->asSurfaceProxyRef(), srcRect,
+-                                                      this->colorInfo().colorType(),
+-                                                      supportedRead.fColorType, buffer, 0);
++
+     PixelTransferResult result;
++    result.fTransferTask = this->drawingManager()->newTransferFromRenderTask(
++            this->asSurfaceProxyRef(),
++            srcRect,
++            this->colorInfo().colorType(),
++            supportedRead.fColorType,
++            buffer,
++            0);
+     result.fTransferBuffer = std::move(buffer);
+     auto at = this->colorInfo().alphaType();
+     if (supportedRead.fColorType != dstCT || flip) {
+diff --git a/src/gpu/ganesh/SurfaceContext.h b/src/gpu/ganesh/SurfaceContext.h
+index 54135d5f3ea44ce59e628a7f5cf075f937280687..d3cbc427e728c5bb80eb80bc1a089b62a5ecc438 100644
+--- a/src/gpu/ganesh/SurfaceContext.h
++++ b/src/gpu/ganesh/SurfaceContext.h
+@@ -35,6 +35,7 @@ class GrDirectContext;
+ class GrDrawingManager;
+ class GrRecordingContext;
+ class GrRecordingContextPriv;
++class GrTransferFromRenderTask;
+ class SkColorSpace;
+ enum GrSurfaceOrigin : int;
+ enum SkColorType : int;
+@@ -208,6 +209,8 @@ protected:
+         sk_sp<GrGpuBuffer> fTransferBuffer;
+         // RowBytes for transfer buffer data
+         size_t fRowBytes;
++        // The task that is executed to perform the texture->buffer copy
++        sk_sp<GrTransferFromRenderTask> fTransferTask;
+         // If this is null then the transfer buffer will contain the data in the requested
+         // color type. Otherwise, when the transfer is done this must be called to convert
+         // from the transfer buffer's color type to the requested color type.

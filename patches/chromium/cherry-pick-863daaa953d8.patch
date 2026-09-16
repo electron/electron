@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Tue, 8 Sep 2026 11:01:10 -0700
+Subject: Check transfer cache entries for wrap around
+
+The GPU service transfer cache uses the same namespace of ids for every
+client in the same process, The ID generation had no protection against
+wrap around so we could see duplicate IDs if enough are allocated
+maliciously. To prevent ID collisions add a CHECK that ensures wrap
+around doesn't happen. We don't expect wrap around to happen through
+normal usage of Chrome.
+
+This CL moves the ID generation implementation to source file since it's
+only used there. It also generates uint32_t instead of int values so the
+full uint32_t ID range is used.
+
+Bug: 556260782
+Change-Id: I876c5fdd55185a3a2d290abfdb59cb257f8e1196
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8349499
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1693922}
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- ClientImageTransferCacheEntry constructor init-list conflict resolved by
+  keeping the branch's hdr_metadata_ initializer alongside the upstream
+  GetNextCacheEntryId() change.
+- Depends on base::AtomicSequenceNumberT (cherry-pick-7767cccfee47.patch).
+
+diff --git a/cc/paint/image_transfer_cache_entry.cc b/cc/paint/image_transfer_cache_entry.cc
+index 399455813a3bb2aac07b75f03c0011734629d2db..4ab75252ffb394d20fa5bfd3412400a8a43b5276 100644
+--- a/cc/paint/image_transfer_cache_entry.cc
++++ b/cc/paint/image_transfer_cache_entry.cc
+@@ -6,9 +6,11 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <limits>
+ #include <type_traits>
+ #include <utility>
+ 
++#include "base/atomic_sequence_num.h"
+ #include "base/compiler_specific.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/logging.h"
+@@ -432,6 +434,13 @@ sk_sp<SkImage> ReadImage(
+   }
+ }
+ 
++uint32_t GetNextCacheEntryId() {
++  static base::AtomicSequenceNumberT<uint32_t> id_sequence;
++  uint32_t id = id_sequence.GetNext();
++  CHECK_NE(id, std::numeric_limits<uint32_t>::max());
++  return id;
++}
++
+ }  // namespace
+ 
+ size_t NumberOfPlanesForYUVDecodeFormat(YUVDecodeFormat format) {
+@@ -495,7 +504,7 @@ ClientImageTransferCacheEntry::ClientImageTransferCacheEntry(
+     sk_sp<SkColorSpace> target_color_space)
+     : needs_mips_(needs_mips),
+       target_color_space_(target_color_space),
+-      id_(GetNextId()),
++      id_(GetNextCacheEntryId()),
+       image_(image),
+       hdr_metadata_(hdr_metadata) {
+   ComputeSize();
+@@ -507,7 +516,7 @@ ClientImageTransferCacheEntry::ClientImageTransferCacheEntry(
+     const SkGainmapInfo& gainmap_info,
+     bool needs_mips)
+     : needs_mips_(needs_mips),
+-      id_(GetNextId()),
++      id_(GetNextCacheEntryId()),
+       image_(image),
+       gainmap_image_(gainmap_image),
+       gainmap_info_(gainmap_info) {
+@@ -516,9 +525,6 @@ ClientImageTransferCacheEntry::ClientImageTransferCacheEntry(
+ 
+ ClientImageTransferCacheEntry::~ClientImageTransferCacheEntry() = default;
+ 
+-// static
+-base::AtomicSequenceNumber ClientImageTransferCacheEntry::s_next_id_;
+-
+ uint32_t ClientImageTransferCacheEntry::SerializedSize() const {
+   return size_;
+ }
+diff --git a/cc/paint/image_transfer_cache_entry.h b/cc/paint/image_transfer_cache_entry.h
+index 27275a588cd152e5cb93d1fa8b9d7dda6eaf4e95..8f01e55813370b4a7f38c0e0a2657278ab0fcd71 100644
+--- a/cc/paint/image_transfer_cache_entry.h
++++ b/cc/paint/image_transfer_cache_entry.h
+@@ -12,7 +12,6 @@
+ #include <optional>
+ #include <vector>
+ 
+-#include "base/atomic_sequence_num.h"
+ #include "base/containers/span.h"
+ #include "base/memory/raw_ptr.h"
+ #include "cc/paint/tone_map_util.h"
+@@ -98,7 +97,6 @@ class CC_PAINT_EXPORT ClientImageTransferCacheEntry final
+   uint32_t SerializedSize() const final;
+   bool Serialize(base::span<uint8_t> data) const final;
+ 
+-  static uint32_t GetNextId() { return s_next_id_.GetNext(); }
+   bool IsYuv() const {
+     return image_.yuv_plane_config != SkYUVAInfo::PlaneConfig::kUnknown;
+   }
+@@ -111,7 +109,6 @@ class CC_PAINT_EXPORT ClientImageTransferCacheEntry final
+   sk_sp<SkColorSpace> target_color_space_;
+   const uint32_t id_;
+   uint32_t size_ = 0;
+-  static base::AtomicSequenceNumber s_next_id_;
+ 
+   Image image_;
+ 
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index d42d1a482a340ee086622fd38ad33bceed6033b5..74f85c77f3da1901fc9cbe3a1150b65f46c69fa0 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ 
++#include "base/atomic_sequence_num.h"
+ #include "base/compiler_specific.h"
+ #include "base/debug/crash_logging.h"
+ #include "base/debug/dump_without_crashing.h"

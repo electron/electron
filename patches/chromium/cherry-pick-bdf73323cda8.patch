@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joe Mason <joenotcharles@google.com>
+Date: Fri, 11 Sep 2026 10:58:05 -0700
+Subject: Post a task from JavaScriptDialogDismissNotifier
+
+Runs the callbacks registered with JavaScriptDialogDismissNotifier by
+posting a task, to unwind the stack before executing them.
+
+Fixed: 557320614
+Change-Id: Iaae279449dc996713c08daa6e5fdf16ba574cc77
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8384757
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Joe Mason <joenotcharles@google.com>
+Auto-Submit: Joe Mason <joenotcharles@google.com>
+Owners-Override: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696429}
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- web_contents_impl_browsertest.cc hunks dropped: the new browser tests are
+  anchored on test infrastructure (surface_embed, preloading) that does not
+  exist on 148.0.7778.280. The content/ and chrome/ code hunks applied cleanly.
+
+diff --git a/chrome/browser/ui/browser_browsertest.cc b/chrome/browser/ui/browser_browsertest.cc
+index 9f1fed843c9f83c0791becce1ff68129d7e67b91..15b058b20a3a65452a7c63b0b53f232d7de1f932 100644
+--- a/chrome/browser/ui/browser_browsertest.cc
++++ b/chrome/browser/ui/browser_browsertest.cc
+@@ -27,6 +27,7 @@
+ #include "base/strings/string_split.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/system/sys_info.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/test/bind.h"
+ #include "base/test/metrics/histogram_tester.h"
+@@ -700,17 +701,25 @@ IN_PROC_BROWSER_TEST_F(BrowserTest, DialogDefersNavigationCommit) {
+     manager.ResumeNavigation();
+ 
+     content::NavigationHandle* handle = manager.GetNavigationHandle();
++    ASSERT_TRUE(handle);
+     EXPECT_FALSE(handle->IsWaitingToCommit());
+     EXPECT_TRUE(handle->IsCommitDeferringConditionDeferredForTesting());
+     EXPECT_TRUE(js_dialog_manager->IsShowingDialogForTesting());
+   }
+ 
+-  // Dismiss the dialog. This should resume the navigation.
++  // Dismiss the dialog. This should post a task that resumes the navigation.
+   {
+     js_dialog_manager->ClickDialogButtonForTesting(true, std::u16string());
+     ASSERT_FALSE(js_dialog_manager->IsShowingDialogForTesting());
+ 
++    // Wait for the dialog close task to execute.
++    base::RunLoop run_loop;
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, run_loop.QuitClosure());
++    run_loop.Run();
++
+     content::NavigationHandle* handle = manager.GetNavigationHandle();
++    ASSERT_TRUE(handle);
+     EXPECT_FALSE(handle->IsCommitDeferringConditionDeferredForTesting());
+     EXPECT_TRUE(handle->IsWaitingToCommit());
+   }
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index e24c2cd92be8f49703f2782409e2f2b88ffa0afa..2beb3ea411196e6f138596be68d91fef6f77482b 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -761,9 +761,16 @@ class JavaScriptDialogDismissNotifier {
+       const JavaScriptDialogDismissNotifier&) = delete;
+ 
+   ~JavaScriptDialogDismissNotifier() {
+-    for (auto& callback : callbacks_) {
+-      std::move(callback).Run();
+-    }
++    // Post a task to notify all clients, since callbacks could destroy an
++    // object on the stack.
++    GetUIThreadTaskRunner({})->PostTask(
++        FROM_HERE, base::BindOnce(
++                       [](std::vector<base::OnceClosure> callbacks) {
++                         for (auto& callback : callbacks) {
++                           std::move(callback).Run();
++                         }
++                       },
++                       std::move(callbacks_)));
+   }
+ 
+   void NotifyOnDismiss(base::OnceClosure callback) {
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index dc66040d56e564c18d64ffe1ee25b1e0396bcdc2..1da6dd4fccf91cde6bcf89450f01fa3c0260005f 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1535,10 +1535,15 @@ class CONTENT_EXPORT WebContentsImpl
+                                const GURL& scope,
+                                AllowServiceWorkerResult allowed);
+ 
++  // Returns true if a dialog that should defer navigations is open. Callbacks
++  // passed to NotifyOnJavaScriptDialogDismiss(), which can be used to resume
++  // any deferred navigations, will be posted after this becomes false.
+   bool JavaScriptDialogDefersNavigations() {
+     return javascript_dialog_dismiss_notifier_.get();
+   }
+ 
++  // Adds a callback that will be posted to the UI thread when all Javascript
++  // dialogs that should defer navigations are dismissed.
+   void NotifyOnJavaScriptDialogDismiss(base::OnceClosure callback);
+ 
+   bool has_persistent_video() { return has_persistent_video_; }

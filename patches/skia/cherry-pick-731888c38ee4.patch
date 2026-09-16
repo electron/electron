@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Thu, 16 Jul 2026 11:01:22 -0400
+Subject: [ganesh] prevent stale readbacks
+
+* Ganesh's SurfaceContext::readPixels did not consider whether the content it was attempting to readback was successfully rendered or not, leading to a scenario where stale texture data could potentially be readback.
+
+* Add some state tracking so that a failed flush is propagated out of the drawing manager and to the surface context
+
+Bug: b/521491024
+Change-Id: Idb2b5eaccda7f4ec388e3dc415ee41d329d28533
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1295737
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+
+Electron adaptation notes (42-x-y, Chromium 148.0.7778.280):
+- Picked as a prerequisite for "Update GrRenderTask execution error handling"
+  (cherry-pick-02c834bed9e0.patch).
+- tests/ReadWritePixelsGpuTest.cpp hunk dropped (conflicts with the branch's
+  test file); source hunks applied cleanly.
+
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index dc8ec7b56f29b91ed512621ab7ad18afe8816154..3af47a00d802ba24e52330186e0abe15d390dbff 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -177,6 +177,7 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+     }
+ 
+     bool cachePurgeNeeded = false;
++    bool flushSuccessful = false;
+ 
+     if (preFlushSuccessful) {
+         bool usingReorderedDAG = false;
+@@ -207,8 +208,10 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+             resourceAllocator.assign();
+         }
+ 
+-        cachePurgeNeeded = !resourceAllocator.failedInstantiation() &&
+-                           this->executeRenderTasks(&flushState);
++        if (!resourceAllocator.failedInstantiation()) {
++            cachePurgeNeeded = this->executeRenderTasks(&flushState);
++            flushSuccessful = true;
++        }
+     }
+     this->removeRenderTasks();
+ 
+@@ -228,7 +231,7 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+     }
+     fFlushing = false;
+ 
+-    return true;
++    return flushSuccessful;
+ }
+ 
+ bool GrDrawingManager::submitToGpu() {
+diff --git a/src/gpu/ganesh/SurfaceContext.cpp b/src/gpu/ganesh/SurfaceContext.cpp
+index 0918836f504bdbd218a7b5e837313dc3df1aa2b3..1524fde467de912e14c05cca69de7f26735dba18 100644
+--- a/src/gpu/ganesh/SurfaceContext.cpp
++++ b/src/gpu/ganesh/SurfaceContext.cpp
+@@ -287,7 +287,12 @@ bool SurfaceContext::readPixels(GrDirectContext* dContext, GrPixmap dst, SkIPoin
+         pt.fY = flip ? srcSurface->height() - pt.fY - dst.height() : pt.fY;
+     }
+ 
+-    dContext->priv().flushSurface(srcProxy.get());
++    bool hasPendingTasks =
++            dContext->priv().drawingManager()->getLastRenderTask(srcProxy.get()) != nullptr;
++    GrSemaphoresSubmitted flushResult = dContext->priv().flushSurface(srcProxy.get());
++    if (flushResult == GrSemaphoresSubmitted::kNo && hasPendingTasks) {
++        return false;
++    }
+     dContext->submit();
+     if (!dContext->priv().getGpu()->readPixels(srcSurface,
+                                                SkIRect::MakePtSize(pt, dst.dimensions()),

@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 31 Aug 2026 14:22:50 -0700
+Subject: Add integer type template parameter to base::AtomicSequenceNumber
+
+Bug: 523554372
+Change-Id: I54358e7f65423124809b316e00a37f00008021ba
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8289881
+Reviewed-by: Gabriel Charette <gab@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689270}
+
+diff --git a/base/atomic_sequence_num.h b/base/atomic_sequence_num.h
+index 71f11b2936bc82e0d52812d833b1a0820229880b..c880f872ce611d3fe11d1f470c142c887c435c9c 100644
+--- a/base/atomic_sequence_num.h
++++ b/base/atomic_sequence_num.h
+@@ -6,26 +6,31 @@
+ #define BASE_ATOMIC_SEQUENCE_NUM_H_
+ 
+ #include <atomic>
++#include <type_traits>
+ 
+ namespace base {
+ 
+-// AtomicSequenceNumber is a thread safe increasing sequence number generator.
++// AtomicSequenceNumberT is a thread safe increasing sequence number generator.
+ // Its constructor doesn't emit a static initializer, so it's safe to use as a
+ // global variable or static member.
+-class AtomicSequenceNumber {
++template <typename T>
++  requires(std::is_integral<T>::value)
++class AtomicSequenceNumberT {
+  public:
+-  constexpr AtomicSequenceNumber() = default;
+-  AtomicSequenceNumber(const AtomicSequenceNumber&) = delete;
+-  AtomicSequenceNumber& operator=(const AtomicSequenceNumber&) = delete;
++  constexpr AtomicSequenceNumberT() = default;
++  AtomicSequenceNumberT(const AtomicSequenceNumberT&) = delete;
++  AtomicSequenceNumberT& operator=(const AtomicSequenceNumberT&) = delete;
+ 
+   // Returns an increasing sequence number starts from 0 for each call.
+   // This function can be called from any thread without data race.
+-  inline int GetNext() { return seq_.fetch_add(1, std::memory_order_relaxed); }
++  inline T GetNext() { return seq_.fetch_add(1, std::memory_order_relaxed); }
+ 
+  private:
+-  std::atomic_int seq_{0};
++  std::atomic<T> seq_{0};
+ };
+ 
++using AtomicSequenceNumber = AtomicSequenceNumberT<int>;
++
+ }  // namespace base
+ 
+ #endif  // BASE_ATOMIC_SEQUENCE_NUM_H_
