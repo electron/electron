@@ -33,11 +33,12 @@ export const isWayland =
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
 
-// macos-x64 CI runners have no Metal-capable GPU: every hardware GPU process
-// fails EGL init and Chromium relaunches it until it falls back to SwiftShader.
-// Start on SwiftShader directly so spawned apps skip the failed launches.
+// macos-x64 CI runner VMs have no Metal-capable GPU, and SwiftShader's Vulkan
+// backend fails to initialize there too, so every GPU process launch fails
+// until Chromium falls back to software compositing with GL disabled. Start
+// spawned apps in that end state directly so they skip the failed launches.
 export const ciGpuArgs: string[] =
-  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--use-angle=swiftshader'] : [];
+  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
 
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];
