@@ -34,8 +34,10 @@
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 #include "components/spellcheck/common/spellcheck_common.h"
+#endif
 #endif
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -825,12 +827,14 @@ class WebContents final : public ExclusiveAccessContext,
       content::GlobalRenderFrameHostId render_frame_host_id,
       std::vector<std::u16string> types);
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
   void OnGetPlatformSuggestionsComplete(
       content::ContextMenuParams params,
       content::GlobalRenderFrameHostId render_frame_host_id,
       std::vector<std::u16string> types,
       const spellcheck::PerLanguageSuggestions& platform_suggestions);
+#endif
 #endif
 
   [[nodiscard]] bool CanGoToIndex(int index) const;

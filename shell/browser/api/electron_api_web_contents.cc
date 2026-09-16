@@ -228,12 +228,14 @@
 #include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_factory.h"
 #include "chrome/browser/spellchecker/spellcheck_service.h"
 #include "components/spellcheck/browser/spellcheck_platform.h"
 #include "components/spellcheck/common/spellcheck_common.h"
 #include "components/spellcheck/common/spellcheck_features.h"
+#endif
 #endif
 
 namespace gin {
@@ -1967,6 +1969,7 @@ void WebContents::OnReadAvailableTypes(
     return;
   }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
   if (!params.misspelled_word.empty() && spellcheck::UseBrowserSpellChecker()) {
     SpellcheckService* spellcheck_service =
@@ -1981,6 +1984,7 @@ void WebContents::OnReadAvailableTypes(
     }
   }
 #endif
+#endif
 
   ContextMenuParamsWithRenderFrameHost event_data{
       params,
@@ -1990,6 +1994,7 @@ void WebContents::OnReadAvailableTypes(
   Emit("context-menu", event_data);
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 void WebContents::OnGetPlatformSuggestionsComplete(
     content::ContextMenuParams params,
@@ -2020,6 +2025,7 @@ void WebContents::OnGetPlatformSuggestionsComplete(
   };
   Emit("context-menu", event_data);
 }
+#endif
 #endif
 
 void WebContents::FindReply(content::WebContents* web_contents,
