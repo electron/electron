@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Wed, 26 Aug 2026 19:15:26 -0700
+Subject: Prevent overflow of cc::Layer ID's.
+
+Overflowing a 32-bit integer is pathological so just crash.
+
+Fixed: 523554372
+Change-Id: Iadc3ce18060cce112f161679f9491d1cc4b2f64b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8301512
+Auto-Submit: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1686872}
+
+diff --git a/cc/layers/layer.cc b/cc/layers/layer.cc
+index 76ea286de54a11122fd56b638e1833487587f26b..792d76c928b83f598c5ae9f74e28fbcbca4df17b 100644
+--- a/cc/layers/layer.cc
++++ b/cc/layers/layer.cc
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ 
+ #include <algorithm>
++#include <limits>
+ #include <string>
+ #include <unordered_set>
+ #include <utility>
+@@ -95,7 +96,9 @@ Layer::LayerTreeInputs::~LayerTreeInputs() = default;
+ 
+ int Layer::GetNextLayerId() {
+   // Layer IDs start from 1.
+-  return g_next_layer_id.GetNext() + 1;
++  int prev = g_next_layer_id.GetNext();
++  CHECK_LT(prev, std::numeric_limits<int>::max());
++  return prev + 1;
+ }
+ 
+ scoped_refptr<Layer> Layer::Create() {

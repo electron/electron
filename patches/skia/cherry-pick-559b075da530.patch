@@ -1,0 +1,645 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Phillips <robertphillips@google.com>
+Date: Tue, 1 Sep 2026 15:25:01 -0400
+Subject: [M152] Update GrRenderTask execution error handling
+
+Original change's description:
+> Update GrRenderTask execution error handling
+>
+> GrDrawingManager flush() and executeRenderTasks() were mishandling the status returned from GrRenderTask execute/onExecute. This separates out the "has any task been run" and "has an error occurred" concerns to clarify things.
+>
+> Bug: b/553122373
+> Change-Id: I8f98ffbf97f4598a136811760871f16f91d7067d
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1344836
+> Commit-Queue: Robert Phillips <robertphillips@google.com>
+> Reviewed-by: Thomas Smith <thomsmit@google.com>
+> Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+
+(cherry picked from commit 02c834bed9e038ff1d3a5e81ab6e7a784e574ed7)
+
+Bug: 559036421,b/553122373
+Change-Id: I8f98ffbf97f4598a136811760871f16f91d7067d
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1356816
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/GrBufferTransferRenderTask.cpp b/src/gpu/ganesh/GrBufferTransferRenderTask.cpp
+index 6f33d10dffc1acae2eca842354c08d2ef97541f4..90e3df4de814752445836145337f59043444a859 100644
+--- a/src/gpu/ganesh/GrBufferTransferRenderTask.cpp
++++ b/src/gpu/ganesh/GrBufferTransferRenderTask.cpp
+@@ -39,10 +39,11 @@ GrBufferTransferRenderTask::GrBufferTransferRenderTask(sk_sp<GrGpuBuffer> src,
+ 
+ GrBufferTransferRenderTask::~GrBufferTransferRenderTask() = default;
+ 
+-bool GrBufferTransferRenderTask::onExecute(GrOpFlushState* flushState) {
+-    return flushState->gpu()->transferFromBufferToBuffer(fSrc,
+-                                                         fSrcOffset,
+-                                                         fDst,
+-                                                         fDstOffset,
+-                                                         fSize);
++GrRenderTask::ExecutionResult GrBufferTransferRenderTask::onExecute(GrOpFlushState* flushState) {
++    bool success = flushState->gpu()->transferFromBufferToBuffer(fSrc,
++                                                                 fSrcOffset,
++                                                                 fDst,
++                                                                 fDstOffset,
++                                                                 fSize);
++    return ExecutionResult::Ran(success);
+ }
+diff --git a/src/gpu/ganesh/GrBufferTransferRenderTask.h b/src/gpu/ganesh/GrBufferTransferRenderTask.h
+index 35518fb46bf1eadc01002a2b7815b832da6e1b15..e9f8627657e1b91c3383d755a36954f8e4b71efd 100644
+--- a/src/gpu/ganesh/GrBufferTransferRenderTask.h
++++ b/src/gpu/ganesh/GrBufferTransferRenderTask.h
+@@ -44,7 +44,7 @@ private:
+     ExpectedOutcome onMakeClosed(GrRecordingContext*, SkIRect* targetUpdateBounds) override {
+         return ExpectedOutcome::kTargetUnchanged;  // no target
+     }
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "BufferTransfer"; }
+diff --git a/src/gpu/ganesh/GrBufferUpdateRenderTask.cpp b/src/gpu/ganesh/GrBufferUpdateRenderTask.cpp
+index 4db7256c9a5ed140303d58332faff879d0df78f1..50c82ac6b489e51992894f0af800d104cd8b8d72 100644
+--- a/src/gpu/ganesh/GrBufferUpdateRenderTask.cpp
++++ b/src/gpu/ganesh/GrBufferUpdateRenderTask.cpp
+@@ -31,6 +31,7 @@ GrBufferUpdateRenderTask::GrBufferUpdateRenderTask(sk_sp<SkData> src,
+ 
+ GrBufferUpdateRenderTask::~GrBufferUpdateRenderTask() = default;
+ 
+-bool GrBufferUpdateRenderTask::onExecute(GrOpFlushState* flushState) {
+-    return fDst->updateData(fSrc->data(), fDstOffset, fSrc->size(), /*preserve=*/true);
++GrRenderTask::ExecutionResult GrBufferUpdateRenderTask::onExecute(GrOpFlushState* flushState) {
++    bool success = fDst->updateData(fSrc->data(), fDstOffset, fSrc->size(), /*preserve=*/true);
++    return ExecutionResult::Ran(success);
+ }
+diff --git a/src/gpu/ganesh/GrBufferUpdateRenderTask.h b/src/gpu/ganesh/GrBufferUpdateRenderTask.h
+index 9871b3b10397d44d556b12c9e1183429a2dc02f2..92213c953e84d63bcabe8e71ae0aaf68b6a553ed 100644
+--- a/src/gpu/ganesh/GrBufferUpdateRenderTask.h
++++ b/src/gpu/ganesh/GrBufferUpdateRenderTask.h
+@@ -37,7 +37,7 @@ private:
+     ExpectedOutcome onMakeClosed(GrRecordingContext*, SkIRect* targetUpdateBounds) override {
+         return ExpectedOutcome::kTargetUnchanged;  // no target
+     }
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "BufferUpdate"; }
+diff --git a/src/gpu/ganesh/GrCopyRenderTask.cpp b/src/gpu/ganesh/GrCopyRenderTask.cpp
+index db010ec88bc7ab22262c8f1dc9565da0e2735c14..01272fc89ef3f98c0f2cf3e5d8076511b245b5bd 100644
+--- a/src/gpu/ganesh/GrCopyRenderTask.cpp
++++ b/src/gpu/ganesh/GrCopyRenderTask.cpp
+@@ -85,18 +85,20 @@ GrRenderTask::ExpectedOutcome GrCopyRenderTask::onMakeClosed(GrRecordingContext*
+     return ExpectedOutcome::kTargetDirty;
+ }
+ 
+-bool GrCopyRenderTask::onExecute(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult GrCopyRenderTask::onExecute(GrOpFlushState* flushState) {
+     if (!fSrc) {
+         // Did nothing, just like we're supposed to.
+-        return true;
++        return ExecutionResult::RanAndSucceeded();
+     }
+     GrSurfaceProxy* dstProxy = this->target(0);
+     if (!fSrc->isInstantiated() || !dstProxy->isInstantiated()) {
+-        return false;
++        return ExecutionResult::RanButFailed();
+     }
+     GrSurface* srcSurface = fSrc->peekSurface();
+     GrSurface* dstSurface = dstProxy->peekSurface();
+     SkIRect srcRect = GrNativeRect::MakeIRectRelativeTo(fOrigin, srcSurface->height(), fSrcRect);
+     SkIRect dstRect = GrNativeRect::MakeIRectRelativeTo(fOrigin, dstSurface->height(), fDstRect);
+-    return flushState->gpu()->copySurface(dstSurface, dstRect, srcSurface, srcRect, fFilter);
++    bool success = flushState->gpu()->copySurface(dstSurface, dstRect, srcSurface, srcRect,
++                                                  fFilter);
++    return ExecutionResult::Ran(success);
+ }
+diff --git a/src/gpu/ganesh/GrCopyRenderTask.h b/src/gpu/ganesh/GrCopyRenderTask.h
+index a8d359cda6aeba4d6d2603dd1dc67544624b0af0..2141465f8edf5f80583d342fb9ff3ebbd6a8adf0 100644
+--- a/src/gpu/ganesh/GrCopyRenderTask.h
++++ b/src/gpu/ganesh/GrCopyRenderTask.h
+@@ -51,7 +51,7 @@ private:
+     bool onIsUsed(GrSurfaceProxy* proxy) const override { return proxy == fSrc.get(); }
+     void gatherProxyIntervals(GrResourceAllocator*) const override;
+     ExpectedOutcome onMakeClosed(GrRecordingContext*, SkIRect* targetUpdateBounds) override;
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "Copy"; }
+diff --git a/src/gpu/ganesh/GrDDLTask.cpp b/src/gpu/ganesh/GrDDLTask.cpp
+index 2d9b341fb4b4b181a4dd9b5364875b5df4561ebb..42b76c46412d351ca7de4bfb056b7d9b2a6faad7 100644
+--- a/src/gpu/ganesh/GrDDLTask.cpp
++++ b/src/gpu/ganesh/GrDDLTask.cpp
+@@ -95,15 +95,13 @@ void GrDDLTask::onPrepare(GrOpFlushState* flushState) {
+     }
+ }
+ 
+-bool GrDDLTask::onExecute(GrOpFlushState* flushState) {
+-    bool anyCommandsIssued = false;
++GrRenderTask::ExecutionResult GrDDLTask::onExecute(GrOpFlushState* flushState) {
++    ExecutionResult result;
+     for (auto& task : fDDL->priv().renderTasks()) {
+-        if (task->execute(flushState)) {
+-            anyCommandsIssued = true;
+-        }
++        result.accum(task->execute(flushState));
+     }
+ 
+-    return anyCommandsIssued;
++    return result;
+ }
+ 
+ #if defined(GPU_TEST_UTILS)
+diff --git a/src/gpu/ganesh/GrDDLTask.h b/src/gpu/ganesh/GrDDLTask.h
+index 15b7b28c87e24434da1b0c93910e714462a427df..0337dd43529db1a96d0294caceb9326642705dae 100644
+--- a/src/gpu/ganesh/GrDDLTask.h
++++ b/src/gpu/ganesh/GrDDLTask.h
+@@ -61,7 +61,7 @@ private:
+ 
+     void onPrepare(GrOpFlushState*) override;
+ 
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     void dump(const SkString& label,
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 4be0e63c715e3ed25861f78908211fe4decfe641..985055fa28eb1b224599c68b3618cb86393e16f9 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -176,8 +176,8 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+         preFlushSuccessful &= onFlushCBObject->preFlush(&onFlushProvider);
+     }
+ 
+-    bool cachePurgeNeeded = false;
+-    bool flushSuccessful = false;
++    GrRenderTask::ExecutionResult result { /* fAnyTaskExecuted= */false,
++                                           /* fAllTasksSuccessful= */false };
+ 
+     if (preFlushSuccessful) {
+         bool usingReorderedDAG = false;
+@@ -209,14 +209,14 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+         }
+ 
+         if (!resourceAllocator.failedInstantiation()) {
+-            cachePurgeNeeded = this->executeRenderTasks(&flushState);
+-            flushSuccessful = true;
++            result = this->executeRenderTasks(&flushState);
+         }
+     }
+     this->removeRenderTasks();
+ 
+     gpu->executeFlushInfo(proxies, access, info, std::move(timerQuery), newState);
+ 
++    bool cachePurgeNeeded = result.fAnyTaskExecuted;
+     // Give the cache a chance to purge resources that become purgeable due to flushing.
+     if (cachePurgeNeeded) {
+         resourceCache->purgeAsNeeded();
+@@ -230,8 +230,7 @@ bool GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> proxies,
+         resourceCache->purgeAsNeeded();
+     }
+     fFlushing = false;
+-
+-    return flushSuccessful;
++    return result.fAllTasksSuccessful;
+ }
+ 
+ bool GrDrawingManager::submitToGpu() {
+@@ -247,7 +246,7 @@ bool GrDrawingManager::submitToGpu() {
+     return gpu->submitToGpu();
+ }
+ 
+-bool GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
+ #if GR_FLUSH_TIME_OP_SPEW
+     SkDebugf("Flushing %d opsTasks\n", fDAG.size());
+     for (int i = 0; i < fDAG.size(); ++i) {
+@@ -259,8 +258,6 @@ bool GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
+     }
+ #endif
+ 
+-    bool anyRenderTasksExecuted = false;
+-
+     for (const auto& renderTask : fDAG) {
+         if (!renderTask || !renderTask->isInstantiated()) {
+              continue;
+@@ -285,6 +282,7 @@ bool GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
+     // Unlike kMaxRenderTasksBeforeFlush, this is a global limit.
+     static constexpr int kMaxRenderPassesBeforeFlush = 100;
+ 
++    GrRenderTask::ExecutionResult result;
+     // Execute the normal op lists.
+     for (const auto& renderTask : fDAG) {
+         SkASSERT(renderTask);
+@@ -292,12 +290,12 @@ bool GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
+             continue;
+         }
+ 
+-        if (renderTask->execute(flushState)) {
+-            anyRenderTasksExecuted = true;
+-        }
++        result.accum(renderTask->execute(flushState));
++
+         if (++numRenderTasksExecuted >= kMaxRenderTasksBeforeFlush ||
+             flushState->gpu()->getCurrentSubmitRenderPassCount() >= kMaxRenderPassesBeforeFlush) {
+-            flushState->gpu()->submitToGpu();
++            bool success = flushState->gpu()->submitToGpu();
++            result.fAllTasksSuccessful &= success;
+             numRenderTasksExecuted = 0;
+         }
+     }
+@@ -310,7 +308,7 @@ bool GrDrawingManager::executeRenderTasks(GrOpFlushState* flushState) {
+     // resources are the last to be purged by the resource cache.
+     flushState->reset();
+ 
+-    return anyRenderTasksExecuted;
++    return result;
+ }
+ 
+ void GrDrawingManager::removeRenderTasks() {
+diff --git a/src/gpu/ganesh/GrDrawingManager.h b/src/gpu/ganesh/GrDrawingManager.h
+index 6caf142b9d756803fe1489bd4622d14e2dfcace8..95d60d8833be574aad71f54f542ae434448b1e54 100644
+--- a/src/gpu/ganesh/GrDrawingManager.h
++++ b/src/gpu/ganesh/GrDrawingManager.h
+@@ -202,6 +202,7 @@ public:
+ 
+     // This is public so it can be called by an SkImage factory (in SkImages namespace).
+     // It is not meant to be directly called in other situations.
++    // It returns true on success; false on failure
+     bool flush(SkSpan<GrSurfaceProxy*> proxies,
+                SkSurfaces::BackendSurfaceAccess access,
+                const GrFlushInfo&,
+@@ -216,8 +217,7 @@ private:
+ 
+     void closeActiveOpsTask();
+ 
+-    // return true if any GrRenderTasks were actually executed; false otherwise
+-    bool executeRenderTasks(GrOpFlushState*);
++    GrRenderTask::ExecutionResult executeRenderTasks(GrOpFlushState*);
+ 
+     void removeRenderTasks();
+ 
+diff --git a/src/gpu/ganesh/GrRenderTask.h b/src/gpu/ganesh/GrRenderTask.h
+index 71f36e2b9912a7231f24441c635c2df6dd210854..4268e001fa18312a08caa20e67960414c7d95a3a 100644
+--- a/src/gpu/ganesh/GrRenderTask.h
++++ b/src/gpu/ganesh/GrRenderTask.h
+@@ -50,7 +50,27 @@ public:
+ 
+     // These two methods are only invoked at flush time
+     void prepare(GrOpFlushState* flushState);
+-    bool execute(GrOpFlushState* flushState) { return this->onExecute(flushState); }
++
++    // ExecutionResult is used to return and aggregate the results of GrRenderTask
++    // execution. In general, if execution gets into a leaf onExecute call, 'fAnyTaskExecuted'
++    // will be true while 'fAllTasksSuccessful' will depend on the success of the call.
++    // The aggregating call sites (i.e., GrDDLTask::onExecute, GrDrawingManager::executeRenderTasks)
++    // will then combine the results with 'accum'.
++    struct ExecutionResult {
++        static ExecutionResult RanButFailed() { return { true, false }; }
++        static ExecutionResult RanAndSucceeded() { return { true, true }; }
++        static ExecutionResult Ran(bool success) { return { true, success }; }
++
++        bool fAnyTaskExecuted = false;
++        bool fAllTasksSuccessful = true;
++
++        void accum(ExecutionResult newResult) {
++            fAnyTaskExecuted |= newResult.fAnyTaskExecuted;
++            fAllTasksSuccessful &= newResult.fAllTasksSuccessful;
++        }
++    };
++
++    ExecutionResult execute(GrOpFlushState* flushState) { return this->onExecute(flushState); }
+ 
+     virtual bool requiresExplicitCleanup() const { return false; }
+ 
+@@ -278,7 +298,8 @@ private:
+     virtual void onMakeSkippable() {}
+     virtual void onPrePrepare(GrRecordingContext*) {} // Only OpsTask currently overrides this
+     virtual void onPrepare(GrOpFlushState*) {} // OpsTask and GrDDLTask override this
+-    virtual bool onExecute(GrOpFlushState* flushState) = 0;
++
++    virtual ExecutionResult onExecute(GrOpFlushState* flushState) = 0;
+ 
+     const uint32_t         fUniqueID;
+     uint32_t               fFlags;
+diff --git a/src/gpu/ganesh/GrTextureResolveRenderTask.cpp b/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
+index d7fdfd64005750d18302d27bbc92f8adb0b1a050..9af5cda3624ddc4629eb50ec23938dbcacedae86 100644
+--- a/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
++++ b/src/gpu/ganesh/GrTextureResolveRenderTask.cpp
+@@ -90,7 +90,7 @@ void GrTextureResolveRenderTask::gatherProxyIntervals(GrResourceAllocator* alloc
+     alloc->incOps();
+ }
+ 
+-bool GrTextureResolveRenderTask::onExecute(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult GrTextureResolveRenderTask::onExecute(GrOpFlushState* flushState) {
+     // Resolve all msaa back-to-back, before regenerating mipmaps.
+     SkASSERT(fResolves.size() == this->numTargets());
+     for (int i = 0; i < fResolves.size(); ++i) {
+@@ -112,12 +112,14 @@ bool GrTextureResolveRenderTask::onExecute(GrOpFlushState* flushState) {
+             GrTexture* texture = this->target(i)->peekTexture();
+             if (texture && (!texture->mipmapsAreDirty() ||
+                             flushState->gpu()->regenerateMipMapLevels(texture))) {
++                // If mipmap regeneration fails we do not count it as an error but
++                // will downgrade the sampling later on.
+                 resolve.fFlags &= ~GrSurfaceProxy::ResolveFlags::kMipMaps;
+             }
+         }
+     }
+ 
+-    return true;
++    return ExecutionResult::RanAndSucceeded();
+ }
+ 
+ void GrTextureResolveRenderTask::endFlush(GrDrawingManager* drawingMgr) {
+diff --git a/src/gpu/ganesh/GrTextureResolveRenderTask.h b/src/gpu/ganesh/GrTextureResolveRenderTask.h
+index 7d56470d8f2f7e6fa4fea9626185a61f302a8f16..369e1341b6dabcc366ba55441e405ece26f657c8 100644
+--- a/src/gpu/ganesh/GrTextureResolveRenderTask.h
++++ b/src/gpu/ganesh/GrTextureResolveRenderTask.h
+@@ -42,7 +42,7 @@ private:
+         return ExpectedOutcome::kTargetUnchanged;
+     }
+ 
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+     // addProxy() optimistically marks the proxy resolved/clean at recording time. If the flush
+     // is dropped before this task executes (or a per-target operation fails) we must restore the
+diff --git a/src/gpu/ganesh/GrTransferFromRenderTask.cpp b/src/gpu/ganesh/GrTransferFromRenderTask.cpp
+index e2eb76d49b7035bb1db55b73abd45e8d945a0d77..b1b8ee70fe59782978657c78760c6c89a9f7c0d9 100644
+--- a/src/gpu/ganesh/GrTransferFromRenderTask.cpp
++++ b/src/gpu/ganesh/GrTransferFromRenderTask.cpp
+@@ -21,16 +21,18 @@ void GrTransferFromRenderTask::gatherProxyIntervals(GrResourceAllocator* alloc)
+     alloc->incOps();
+ }
+ 
+-bool GrTransferFromRenderTask::onExecute(GrOpFlushState* flushState) {
+-    SkASSERT(!fExecuted); // These are one-time tasks
++GrRenderTask::ExecutionResult GrTransferFromRenderTask::onExecute(GrOpFlushState* flushState) {
++    SkASSERT(!fWasExecuted); // These are one-time tasks
++    SkDEBUGCODE(fWasExecuted = true;)
++
+     if (!fSrcProxy->isInstantiated()) {
+-        return false;
++        return ExecutionResult::RanButFailed();
+     }
+-    fExecuted = flushState->gpu()->transferPixelsFrom(fSrcProxy->peekSurface(),
+-                                                      fSrcRect,
+-                                                      fSurfaceColorType,
+-                                                      fDstColorType,
+-                                                      fDstBuffer,
+-                                                      fDstOffset);
+-    return fExecuted;
++    fExecutionSuccess = flushState->gpu()->transferPixelsFrom(fSrcProxy->peekSurface(),
++                                                              fSrcRect,
++                                                              fSurfaceColorType,
++                                                              fDstColorType,
++                                                              fDstBuffer,
++                                                              fDstOffset);
++    return ExecutionResult::Ran(fExecutionSuccess);
+ }
+diff --git a/src/gpu/ganesh/GrTransferFromRenderTask.h b/src/gpu/ganesh/GrTransferFromRenderTask.h
+index 6b8079b68ba6112c78169f1888b7731a846e3c95..9039a2a9fabef8864e944e884ef0972981c287f8 100644
+--- a/src/gpu/ganesh/GrTransferFromRenderTask.h
++++ b/src/gpu/ganesh/GrTransferFromRenderTask.h
+@@ -41,7 +41,7 @@ public:
+             , fDstBuffer(std::move(dstBuffer))
+             , fDstOffset(dstOffset) {}
+ 
+-    bool wasExecuted() const { return fExecuted; }
++    bool executionSuccessful() const { return fExecutionSuccess; }
+ 
+ private:
+     bool onIsUsed(GrSurfaceProxy* proxy) const override {
+@@ -54,7 +54,7 @@ private:
+         return ExpectedOutcome::kTargetUnchanged;
+     }
+ 
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "TransferFrom"; }
+@@ -72,7 +72,8 @@ private:
+     sk_sp<GrGpuBuffer> fDstBuffer;
+     size_t fDstOffset;
+ 
+-    bool fExecuted = false;
++    bool fExecutionSuccess = false;
++    SkDEBUGCODE(bool fWasExecuted = false;)
+ };
+ 
+ #endif
+diff --git a/src/gpu/ganesh/GrWaitRenderTask.cpp b/src/gpu/ganesh/GrWaitRenderTask.cpp
+index 79e6246afa979476a91aa664cc6577e43a7a07ac..733558a3202ed7224abf6c56d42aed355d16a164 100644
+--- a/src/gpu/ganesh/GrWaitRenderTask.cpp
++++ b/src/gpu/ganesh/GrWaitRenderTask.cpp
+@@ -24,7 +24,7 @@ void GrWaitRenderTask::gatherProxyIntervals(GrResourceAllocator* alloc) const {
+     alloc->incOps();
+ }
+ 
+-bool GrWaitRenderTask::onExecute(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult GrWaitRenderTask::onExecute(GrOpFlushState* flushState) {
+     for (int i = 0; i < fNumSemaphores; ++i) {
+         // If we don't have a semaphore here it means we failed to wrap it. That happens if the
+         // client didn't give us a valid semaphore to begin with. Therefore, it is fine to not wait
+@@ -33,5 +33,5 @@ bool GrWaitRenderTask::onExecute(GrOpFlushState* flushState) {
+             flushState->gpu()->waitSemaphore(fSemaphores[i].get());
+         }
+     }
+-    return true;
++    return ExecutionResult::RanAndSucceeded();
+ }
+diff --git a/src/gpu/ganesh/GrWaitRenderTask.h b/src/gpu/ganesh/GrWaitRenderTask.h
+index 76eed73a1ba4acd51f0c346a97d3f6227b9d72b6..4039f9817c8787b263b703f2dfaf84eb63923a54 100644
+--- a/src/gpu/ganesh/GrWaitRenderTask.h
++++ b/src/gpu/ganesh/GrWaitRenderTask.h
+@@ -43,7 +43,7 @@ private:
+         return ExpectedOutcome::kTargetUnchanged;
+     }
+ 
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "Wait"; }
+diff --git a/src/gpu/ganesh/GrWritePixelsRenderTask.cpp b/src/gpu/ganesh/GrWritePixelsRenderTask.cpp
+index 0a4ee9655414afb42740f16471bb7718424aa84a..ed563f66b5c8a85d823f69ea4a261e66b6f63ae4 100644
+--- a/src/gpu/ganesh/GrWritePixelsRenderTask.cpp
++++ b/src/gpu/ganesh/GrWritePixelsRenderTask.cpp
+@@ -63,16 +63,17 @@ GrRenderTask::ExpectedOutcome GrWritePixelsTask::onMakeClosed(GrRecordingContext
+     return ExpectedOutcome::kTargetDirty;
+ }
+ 
+-bool GrWritePixelsTask::onExecute(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult GrWritePixelsTask::onExecute(GrOpFlushState* flushState) {
+     GrSurfaceProxy* dstProxy = this->target(0);
+     if (!dstProxy->isInstantiated()) {
+-        return false;
++        return ExecutionResult::RanButFailed();
+     }
+     GrSurface* dstSurface = dstProxy->peekSurface();
+-    return flushState->gpu()->writePixels(dstSurface,
+-                                          fRect,
+-                                          fDstColorType,
+-                                          fSrcColorType,
+-                                          fLevels.get(),
+-                                          fLevels.count());
++    bool success = flushState->gpu()->writePixels(dstSurface,
++                                                  fRect,
++                                                  fDstColorType,
++                                                  fSrcColorType,
++                                                  fLevels.get(),
++                                                  fLevels.count());
++    return ExecutionResult::Ran(success);
+ }
+diff --git a/src/gpu/ganesh/GrWritePixelsRenderTask.h b/src/gpu/ganesh/GrWritePixelsRenderTask.h
+index c08c2f1fcc4a1b0254240a813150f4b88686a6a7..e79d03c03015645ab5356c8fa8886d2087ca38fb 100644
+--- a/src/gpu/ganesh/GrWritePixelsRenderTask.h
++++ b/src/gpu/ganesh/GrWritePixelsRenderTask.h
+@@ -43,7 +43,7 @@ private:
+     bool onIsUsed(GrSurfaceProxy* proxy) const override { return false; }
+     void gatherProxyIntervals(GrResourceAllocator*) const override;
+     ExpectedOutcome onMakeClosed(GrRecordingContext*, SkIRect* targetUpdateBounds) override;
+-    bool onExecute(GrOpFlushState*) override;
++    ExecutionResult onExecute(GrOpFlushState*) override;
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "WritePixels"; }
+diff --git a/src/gpu/ganesh/SurfaceContext.cpp b/src/gpu/ganesh/SurfaceContext.cpp
+index 83f0a2d738f68d7cf5651f1193d31fb3879d2ef2..c05c8cfd9d86df23ffdfe0b027f18167540e26dd 100644
+--- a/src/gpu/ganesh/SurfaceContext.cpp
++++ b/src/gpu/ganesh/SurfaceContext.cpp
+@@ -752,7 +752,7 @@ struct SurfaceContext::AsyncReadPixelContext {
+                 if (!transfer->fTransferBuffer) {
+                     break; // Reached end of the planes being copied
+                 }
+-                if (!transfer->fTransferTask || !transfer->fTransferTask->wasExecuted()) {
++                if (!transfer->fTransferTask || !transfer->fTransferTask->executionSuccessful()) {
+                     success = false;
+                     break;
+                 }
+diff --git a/src/gpu/ganesh/mock/GrMockRenderTask.h b/src/gpu/ganesh/mock/GrMockRenderTask.h
+index ad0f29519791915cb42562b6f207f8e23eafd918..325d20f4c37ec9385b3f82b57247291026ecc720 100644
+--- a/src/gpu/ganesh/mock/GrMockRenderTask.h
++++ b/src/gpu/ganesh/mock/GrMockRenderTask.h
+@@ -48,7 +48,9 @@ public:
+         }
+         return false;
+     }
+-    bool onExecute(GrOpFlushState*) override { return true; }
++    ExecutionResult onExecute(GrOpFlushState*) override {
++        return ExecutionResult::RanAndSucceeded();
++    }
+ 
+ #if defined(GPU_TEST_UTILS)
+     const char* name() const final { return "Mock"; }
+diff --git a/src/gpu/ganesh/ops/AtlasRenderTask.cpp b/src/gpu/ganesh/ops/AtlasRenderTask.cpp
+index 1a60d20757d4ff37eb440b466e8e8017659fa86c..36f0f8b9ff2b722c3c2eee4307c9505107f82faf 100644
+--- a/src/gpu/ganesh/ops/AtlasRenderTask.cpp
++++ b/src/gpu/ganesh/ops/AtlasRenderTask.cpp
+@@ -204,9 +204,10 @@ void AtlasRenderTask::addAtlasDrawOp(GrOp::Owner op, const GrCaps& caps) {
+     this->recordOp(std::move(op), true/*usesMSAA*/, processorAnalysis, nullptr, nullptr, caps);
+ }
+ 
+-bool AtlasRenderTask::onExecute(GrOpFlushState* flushState) {
+-    if (!this->OpsTask::onExecute(flushState)) {
+-        return false;
++GrRenderTask::ExecutionResult AtlasRenderTask::onExecute(GrOpFlushState* flushState) {
++    ExecutionResult result = this->OpsTask::onExecute(flushState);
++    if (!result.fAllTasksSuccessful) {
++        return result;
+     }
+     if (this->target(0)->requiresManualMSAAResolve()) {
+         // Since atlases don't get closed until they are done being built, the drawingManager
+@@ -216,8 +217,9 @@ bool AtlasRenderTask::onExecute(GrOpFlushState* flushState) {
+                 this->target(0)->backingStoreDimensions().height(),
+                 SkIRect::MakeSize(fDynamicAtlas->drawBounds()));
+         flushState->gpu()->resolveRenderTarget(this->target(0)->peekRenderTarget(), nativeRect);
++        result.accum(ExecutionResult::RanAndSucceeded());
+     }
+-    return true;
++    return result;
+ }
+ 
+ }  // namespace skgpu::ganesh
+diff --git a/src/gpu/ganesh/ops/AtlasRenderTask.h b/src/gpu/ganesh/ops/AtlasRenderTask.h
+index 0e480a60754c78e61407334cac6c342b3917de72..bf5e654ad50a87c2a48178d61d8eead7653a3252 100644
+--- a/src/gpu/ganesh/ops/AtlasRenderTask.h
++++ b/src/gpu/ganesh/ops/AtlasRenderTask.h
+@@ -78,7 +78,7 @@ private:
+     void addAtlasDrawOp(GrOp::Owner, const GrCaps&);
+ 
+     // Executes the OpsTask and resolves msaa if needed.
+-    bool onExecute(GrOpFlushState* flushState) override;
++    ExecutionResult onExecute(GrOpFlushState* flushState) override;
+ 
+     const std::unique_ptr<GrDynamicAtlas> fDynamicAtlas;
+ 
+diff --git a/src/gpu/ganesh/ops/OpsTask.cpp b/src/gpu/ganesh/ops/OpsTask.cpp
+index 9f8984b69fe340b1bd34ba15ed1b380c02e9c83f..c5871348a0db3b780d97d4ee878e80e931267ace 100644
+--- a/src/gpu/ganesh/ops/OpsTask.cpp
++++ b/src/gpu/ganesh/ops/OpsTask.cpp
+@@ -555,14 +555,14 @@ void OpsTask::onPrepare(GrOpFlushState* flushState) {
+ // TODO: this is where GrOp::renderTarget is used (which is fine since it
+ // is at flush time). However, we need to store the RenderTargetProxy in the
+ // Ops and instantiate them here.
+-bool OpsTask::onExecute(GrOpFlushState* flushState) {
++GrRenderTask::ExecutionResult OpsTask::onExecute(GrOpFlushState* flushState) {
+     SkASSERT(this->numTargets() == 1);
+     GrRenderTargetProxy* proxy = this->target(0)->asRenderTargetProxy();
+     SkASSERT(proxy);
+     SK_AT_SCOPE_EXIT(proxy->clearArenas());
+ 
+     if (this->isColorNoOp() || fClippedContentBounds.isEmpty()) {
+-        return false;
++        return ExecutionResult::RanAndSucceeded();
+     }
+     TRACE_EVENT0_ALWAYS("skia.gpu", TRACE_FUNC);
+ 
+@@ -580,7 +580,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+         if (!flushState->resourceProvider()->attachStencilAttachment(renderTarget,
+                                                                      fUsesMSAASurface)) {
+             SkDebugf("WARNING: failed to attach a stencil buffer. Rendering will be skipped.\n");
+-            return false;
++            return ExecutionResult::RanButFailed();
+         }
+         stencil = renderTarget->getStencilAttachment(fUsesMSAASurface);
+     }
+@@ -684,7 +684,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+                                                      fRenderPassXferBarriers);
+ 
+     if (!renderPass) {
+-        return false;
++        return ExecutionResult::RanButFailed();
+     }
+     if (updateClearedStencilArea) {
+         stencil->markAreaCleared(boundsRequiredByStencil);
+@@ -717,7 +717,7 @@ bool OpsTask::onExecute(GrOpFlushState* flushState) {
+     flushState->gpu()->submit(renderPass);
+     flushState->setOpsRenderPass(nullptr);
+ 
+-    return true;
++    return ExecutionResult::RanAndSucceeded();
+ }
+ 
+ void OpsTask::setColorLoadOp(GrLoadOp op, std::array<float, 4> color) {
+diff --git a/src/gpu/ganesh/ops/OpsTask.h b/src/gpu/ganesh/ops/OpsTask.h
+index 29a524cdb0a15eb0148c2ed1bb4c126e2ea14de9..a27b25b79c478532be8ed15cc222826285d0a7f8 100644
+--- a/src/gpu/ganesh/ops/OpsTask.h
++++ b/src/gpu/ganesh/ops/OpsTask.h
+@@ -65,11 +65,10 @@ public:
+ 
+     void onPrePrepare(GrRecordingContext*) override;
+     /**
+-     * Together these two functions flush all queued up draws to GrCommandBuffer. The return value
+-     * of onExecute() indicates whether any commands were actually issued to the GPU.
++     * Together these two functions flush all queued up draws to GrCommandBuffer.
+      */
+     void onPrepare(GrOpFlushState* flushState) override;
+-    bool onExecute(GrOpFlushState* flushState) override;
++    ExecutionResult onExecute(GrOpFlushState* flushState) override;
+ 
+     void addSampledTexture(GrSurfaceProxy* proxy) {
+         // This function takes a GrSurfaceProxy because all subsequent uses of the proxy do not

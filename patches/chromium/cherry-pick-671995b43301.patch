@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Sat, 12 Sep 2026 11:35:35 -0700
+Subject: [M152] [PDF] Prevent page unloading in
+ PDFiumPage::PopulateAnnotationLinks()
+
+Original change's description:
+> [PDF] Prevent page unloading in PDFiumPage::PopulateAnnotationLinks()
+>
+> PDFiumPage::PopulateAnnotationLinks() can trigger JS embedded in PDFs,
+> which can in turn trigger page unloads. Avoid this with a
+> ScopedPageUnloadPreventer.
+>
+> Bug: 558036280
+> Change-Id: I8944a1ea5879029be30051edb1a80d1d557de3a1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393364
+> Reviewed-by: Andy Phan <andyphan@chromium.org>
+> Commit-Queue: Lei Zhang <thestig@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1696369}
+
+(cherry picked from commit 8ff0627e42eba19d9b72207b0b22dcfc60f3860c)
+
+Bug: 560483896,558036280
+Change-Id: I8944a1ea5879029be30051edb1a80d1d557de3a1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8396353
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2650}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/pdf/pdfium/pdfium_page.cc b/pdf/pdfium/pdfium_page.cc
+index 605829226bed86f2cd5ed1219fd85f6fea3900f7..93adddcb25b1142d081e900af73d1a92427e7911 100644
+--- a/pdf/pdfium/pdfium_page.cc
++++ b/pdf/pdfium/pdfium_page.cc
+@@ -1576,6 +1576,8 @@ void PDFiumPage::PopulateAnnotationLinks() {
+   int start_pos = 0;
+   FPDF_LINK link_annot;
+   FPDF_PAGE page = GetPage();
++  // Make sure `page` stays valid for the duration of the loop.
++  ScopedPageUnloadPreventer scoped_unload_preventer(this);
+   while (FPDFLink_Enumerate(page, &start_pos, &link_annot)) {
+     Link link;
+     Area area = GetLinkTarget(link_annot, &link.target);
