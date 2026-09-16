@@ -272,6 +272,9 @@ class WebContents final : public ExclusiveAccessContext,
   void SetDevToolsWebContents(const WebContents* devtools);
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
+  // Runs the wrapper's JS _init and announces it as app
+  // 'web-contents-created'.
+  void InitializeJS(v8::Isolate* isolate);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin::Arguments* args);

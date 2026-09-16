@@ -4,8 +4,11 @@
 
 #include "shell/browser/lib/bluetooth_chooser.h"
 
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/node_includes.h"
 
 namespace gin {
 
@@ -31,6 +34,36 @@ BluetoothChooser::BluetoothChooser(api::WebContents* contents,
 
 BluetoothChooser::~BluetoothChooser() {
   event_handler_.Reset();
+}
+
+// 'select-bluetooth-device'. With nobody listening the request is cancelled
+// (an empty device id), which counts as handled.
+bool BluetoothChooser::EmitSelectBluetoothDevice() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> web_contents;
+  if (!api_web_contents_->GetWrapper(isolate).ToLocal(&web_contents))
+    return false;
+  // One callback scope over the count and the emit so that pending ticks and
+  // microtasks (which may run the chooser callback and delete |this|) run
+  // once at the end, as they did at the end of the single emit; nothing of
+  // |this| is touched after it closes.
+  node::CallbackScope callback_scope(isolate, web_contents,
+                                     node::async_context{0, 0});
+  int listeners = 0;
+  gin::ConvertFromV8(
+      isolate,
+      gin_helper::CallMethod(isolate, web_contents, "listenerCount",
+                             "select-bluetooth-device"),
+      &listeners);
+  if (listeners == 0) {
+    OnDeviceChosen("");
+    return true;
+  }
+  return api_web_contents_->Emit(
+      "select-bluetooth-device", GetDeviceList(),
+      base::BindOnce(&BluetoothChooser::OnDeviceChosen,
+                     weak_ptr_factory_.GetWeakPtr()));
 }
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
@@ -75,10 +108,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   // The handler may run the callback synchronously, which runs
   // |event_handler_| and destroys |this|.
   base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
-  bool prevent_default =
-      api_web_contents_->Emit("select-bluetooth-device", GetDeviceList(),
-                              base::BindOnce(&BluetoothChooser::OnDeviceChosen,
-                                             weak_ptr_factory_.GetWeakPtr()));
+  bool prevent_default = EmitSelectBluetoothDevice();
   if (!weak_this)
     return;
   if (!prevent_default && idle_state) {
@@ -116,10 +146,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
     // The handler may run the callback synchronously, which runs
     // |event_handler_| and destroys |this|.
     base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
-    bool prevent_default = api_web_contents_->Emit(
-        "select-bluetooth-device", GetDeviceList(),
-        base::BindOnce(&BluetoothChooser::OnDeviceChosen,
-                       weak_ptr_factory_.GetWeakPtr()));
+    bool prevent_default = EmitSelectBluetoothDevice();
     if (!weak_this)
       return;
 

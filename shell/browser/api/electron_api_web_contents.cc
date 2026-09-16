@@ -21,6 +21,7 @@
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
 #include "base/containers/map_util.h"
+#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -90,6 +91,7 @@
 #include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
+#include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "media/base/mime_util.h"
 #include "mojo/public/cpp/base/big_buffer.h"
@@ -102,6 +104,7 @@
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -155,6 +158,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/osr_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
@@ -1350,10 +1354,9 @@ void WebContents::OnDidAddMessageToConsole(
   dict.Set("lineNumber", line_no);
   dict.Set("sourceId", source_id);
 
-  // TODO(samuelmaddock): Delete when deprecated arguments are fully removed.
-  dict.Set("_level", static_cast<int32_t>(level));
-
-  EmitWithoutEvent("-console-message", event_object);
+  // TODO(samuelmaddock): remove the deprecated positional arguments.
+  EmitWithoutEvent("console-message", event_object, static_cast<int32_t>(level),
+                   message, line_no, source_id);
 }
 
 void WebContents::OnCreateWindow(
@@ -1662,9 +1665,14 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool* proceed_to_fire_unload) {
   // Note that Chromium does not emit this for navigations.
 
-  // Emit returns true if preventDefault() was called, so !Emit will be true if
-  // the event should proceed.
-  *proceed_to_fire_unload = !Emit("-before-unload-fired", proceed);
+  // Only the types a user may be looking at get to veto the unload; every
+  // other type unloads regardless of |proceed|. The event is internal (specs
+  // watch it); preventing it vetoes too.
+  const bool interactive = type_ == Type::kBrowserWindow ||
+                           type_ == Type::kOffScreen ||
+                           type_ == Type::kBrowserView;
+  const bool prevented = Emit("-before-unload-fired", proceed);
+  *proceed_to_fire_unload = !prevented && (proceed || !interactive);
 }
 
 void WebContents::SetContentsBounds(content::WebContents* source,
@@ -1892,9 +1900,11 @@ void WebContents::RendererUnresponsive(
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(render_widget_host);
-  dict.Set("rendererInitialized", rwh_impl->renderer_initialized());
+  const bool renderer_initialized = rwh_impl->renderer_initialized();
+  dict.Set("rendererInitialized", renderer_initialized);
 
-  EmitWithoutEvent("-unresponsive", event_object);
+  if (!should_ignore && visible && renderer_initialized)
+    EmitWithoutEvent("unresponsive", event_object);
 }
 
 bool WebContents::SaveFrame(const GURL& url,
@@ -2306,7 +2316,46 @@ void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
   details.Set("exitCode", exit_code);
-  Emit("render-process-gone", details);
+
+  v8::Local<v8::Object> wrapper;
+  v8::Local<v8::Object> app;
+  if (!GetWrapper(isolate).ToLocal(&wrapper) ||
+      !App::Get()->GetWrapper(isolate).ToLocal(&app)) {
+    return;
+  }
+  v8::Local<v8::Object> event = gin_helper::internal::Event::New(isolate)
+                                    ->GetWrapper(isolate)
+                                    .ToLocalChecked();
+  // app first: it always was the WebContents' first listener. Its listeners
+  // may destroy |this|. One callback scope around both emits so that ticks
+  // and microtasks run once, after both, as when one emit nested the other.
+  base::WeakPtr<WebContents> weak_this = GetWeakPtr();
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
+  gin_helper::EmitEvent(isolate, app, "render-process-gone", event, wrapper,
+                        details);
+  if (base::Environment::Create()->HasVar("ELECTRON_ENABLE_LOGGING") ||
+      base::CommandLine::ForCurrentProcess()->HasSwitch("enable-logging")) {
+    // A hint for people debugging renderer crashes.
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Value> console;
+    if (context->Global()
+            ->Get(context, gin::StringToV8(isolate, "console"))
+            .ToLocal(&console) &&
+        console->IsObject()) {
+      gin_helper::CallMethod(
+          isolate, console.As<v8::Object>(), "info",
+          base::StrCat(
+              {"Renderer process ",
+               gin::V8ToString(isolate, gin::ConvertToV8(isolate, status)),
+               " - see "
+               "https://www.electronjs.org/docs/tutorial/"
+               "application-debugging for potential debugging "
+               "information."}));
+    }
+  }
+  if (weak_this)
+    EmitWithoutEvent("render-process-gone", event, details);
 }
 
 void WebContents::MediaStartedPlaying(const MediaPlayerInfo& video_type,
@@ -2468,7 +2517,27 @@ bool WebContents::EmitNavigationEvent(
 void WebContents::OnFirstNonEmptyLayout(
     content::RenderFrameHost* render_frame_host) {
   if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
+    auto weak_this = GetWeakPtr();
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Object> wrapper;
+    if (!GetWrapper(isolate).ToLocal(&wrapper))
+      return;
+    // One callback scope around both emits: the window's listeners run before
+    // microtasks queued by the WebContents', as when it was a nextTick.
+    node::CallbackScope callback_scope(isolate, wrapper,
+                                       node::async_context{0, 0});
+    // The owner as it is before any listener runs, as the first listener saw.
+    v8::Local<v8::Value> owner =
+        owner_window() ? BrowserWindow::From(isolate, owner_window())
+                       : v8::Local<v8::Value>(v8::Null(isolate));
+    const bool notify_owner =
+        owner->IsObject() &&
+        !gin_helper::Destroyable::IsDestroyed(owner.As<v8::Object>());
     Emit("ready-to-show");
+    // Then the window showing it, as BrowserWindow documents.
+    if (notify_owner)
+      gin_helper::EmitEvent(isolate, owner.As<v8::Object>(), "ready-to-show");
   }
 }
 
@@ -2747,7 +2816,18 @@ void WebContents::DidUpdateFaviconURL(
 }
 
 void WebContents::DevToolsReloadPage() {
-  Emit("devtools-reload-page");
+  auto weak_this = GetWeakPtr();
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  // reload() used to run from the event's first listener: same scope.
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
+  Reload();
+  if (weak_this && web_contents())
+    Emit("devtools-reload-page");
 }
 
 void WebContents::DevToolsFocused() {
@@ -5321,12 +5401,33 @@ gin_helper::Handle<WebContents> WebContents::New(
     const gin_helper::Dictionary& options) {
   gin_helper::Handle<WebContents> handle =
       gin_helper::CreateHandle(isolate, new WebContents(isolate, options));
-  v8::TryCatch try_catch(isolate);
-  gin_helper::CallMethod(isolate, handle.get(), "_init");
-  if (try_catch.HasCaught()) {
-    node::errors::TriggerUncaughtException(isolate, try_catch);
-  }
+  handle->InitializeJS(isolate);
   return handle;
+}
+
+void WebContents::InitializeJS(v8::Isolate* isolate) {
+  base::WeakPtr<WebContents> weak_this = GetWeakPtr();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  // 'web-contents-created' used to be emitted from inside _init: same scope.
+  node::CallbackScope callback_scope(isolate, wrapper,
+                                     node::async_context{0, 0});
+  {
+    v8::TryCatch try_catch(isolate);
+    gin_helper::CallMethod(isolate, this, "_init");
+    if (try_catch.HasCaught())
+      node::errors::TriggerUncaughtException(isolate, try_catch);
+  }
+  v8::Local<v8::Object> app;
+  if (!weak_this || !App::Get()->GetWrapper(isolate).ToLocal(&app))
+    return;
+  v8::Local<v8::Object> event = gin_helper::internal::Event::New(isolate)
+                                    ->GetWrapper(isolate)
+                                    .ToLocalChecked();
+  gin::Dictionary(isolate, event).Set("sender", wrapper);
+  gin_helper::EmitEvent(isolate, app, "web-contents-created", event, wrapper);
 }
 
 // static
@@ -5336,11 +5437,7 @@ gin_helper::Handle<WebContents> WebContents::CreateAndTake(
     Type type) {
   gin_helper::Handle<WebContents> handle = gin_helper::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
-  v8::TryCatch try_catch(isolate);
-  gin_helper::CallMethod(isolate, handle.get(), "_init");
-  if (try_catch.HasCaught()) {
-    node::errors::TriggerUncaughtException(isolate, try_catch);
-  }
+  handle->InitializeJS(isolate);
   return handle;
 }
 
@@ -5360,11 +5457,7 @@ gin_helper::Handle<WebContents> WebContents::FromOrCreate(
   WebContents* api_web_contents = From(web_contents);
   if (!api_web_contents) {
     api_web_contents = new WebContents(isolate, web_contents);
-    v8::TryCatch try_catch(isolate);
-    gin_helper::CallMethod(isolate, api_web_contents, "_init");
-    if (try_catch.HasCaught()) {
-      node::errors::TriggerUncaughtException(isolate, try_catch);
-    }
+    api_web_contents->InitializeJS(isolate);
   }
   return gin_helper::CreateHandle(isolate, api_web_contents);
 }

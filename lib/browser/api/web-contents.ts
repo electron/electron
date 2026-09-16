@@ -441,12 +441,6 @@ WebContents.prototype._callWindowOpenHandler = function (
   }
 };
 
-const commandLine = process._linkedBinding('electron_common_command_line');
-const environment = process._linkedBinding('electron_common_environment');
-
-const loggingEnabled = () => {
-  return environment.hasVar('ELECTRON_ENABLE_LOGGING') || commandLine.hasSwitch('enable-logging');
-};
 // Deprecation warnings for navigation related APIs.
 const canGoBackDeprecated = deprecate.warnOnce('webContents.canGoBack', 'webContents.navigationHistory.canGoBack');
 WebContents.prototype.canGoBack = function () {
@@ -574,34 +568,6 @@ WebContents.prototype._init = function () {
     },
     writable: false,
     enumerable: true
-  });
-
-  this.on('render-process-gone', (event, details) => {
-    app.emit('render-process-gone', event, this, details);
-
-    // Log out a hint to help users better debug renderer crashes.
-    if (loggingEnabled()) {
-      console.info(
-        `Renderer process ${details.reason} - see https://www.electronjs.org/docs/tutorial/application-debugging for potential debugging information.`
-      );
-    }
-  });
-
-  this.on('-before-unload-fired', function (this: Electron.WebContents, event, proceed) {
-    const type = this.getType();
-    // These are the "interactive" types, i.e. ones a user might be looking at.
-    // All other types should ignore the "proceed" signal and unload
-    // regardless.
-    if (type === 'window' || type === 'offscreen' || type === 'browserView') {
-      if (!proceed) {
-        return event.preventDefault();
-      }
-    }
-  });
-
-  // The devtools requests the webContents to reload.
-  this.on('devtools-reload-page', function (this: Electron.WebContents) {
-    this.reload();
   });
 
   if (this.getType() !== 'remote') {
@@ -757,27 +723,6 @@ WebContents.prototype._init = function () {
     );
   }
 
-  this.on('login', (event, ...args) => {
-    app.emit('login', event, this, ...args);
-  });
-
-  this.on('ready-to-show', () => {
-    const owner = this.getOwnerBrowserWindow();
-    if (owner && !owner.isDestroyed()) {
-      process.nextTick(() => {
-        owner.emit('ready-to-show');
-      });
-    }
-  });
-
-  this.on('select-bluetooth-device', (event, devices, callback) => {
-    if (this.listenerCount('select-bluetooth-device') === 1) {
-      // Cancel it if there are no handlers
-      event.preventDefault();
-      callback('');
-    }
-  });
-
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
   this.on('-run-dialog', async (info, callback) => {
@@ -835,9 +780,11 @@ WebContents.prototype._init = function () {
     openDialogs.clear();
   });
 
-  this.on('newListener' as any, (eventName: string | symbol) => {
-    if (eventName === 'console-message' && !this.isDestroyed()) {
-      this._setConsoleMessageObserved(true);
+  (this as NodeJS.EventEmitter).on('newListener', (eventName: string | symbol, listener: (...args: any[]) => void) => {
+    if (eventName === 'console-message') {
+      // TODO(samuelmaddock): remove deprecated 'console-message' arguments
+      if (listener.length > 1) consoleMessageDeprecated();
+      if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
   });
   this.on('removeListener' as any, (eventName: string | symbol) => {
@@ -845,34 +792,6 @@ WebContents.prototype._init = function () {
       this._setConsoleMessageObserved(false);
     }
   });
-  // TODO(samuelmaddock): remove deprecated 'console-message' arguments
-  this.on('-console-message' as any, (event: Electron.Event<Electron.WebContentsConsoleMessageEventParams>) => {
-    const hasDeprecatedListener = this.listeners('console-message').some((listener) => listener.length > 1);
-    if (hasDeprecatedListener) {
-      consoleMessageDeprecated();
-    }
-    this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
-  });
-
-  this.on('-unresponsive' as any, (event: Electron.Event<any>) => {
-    const shouldEmit = !event.shouldIgnore && event.visible && event.rendererInitialized;
-    if (shouldEmit) {
-      this.emit('unresponsive', event);
-    }
-  });
-
-  app.emit(
-    'web-contents-created',
-    {
-      sender: this,
-      preventDefault() {},
-      get defaultPrevented() {
-        return false;
-      }
-    },
-    this
-  );
-
   // Properties
 
   Object.defineProperty(this, 'audioMuted', {
