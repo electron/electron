@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Wed, 9 Sep 2026 16:58:35 +0200
+Subject: [M154] [turbofan] Fix UseCount bailout in
+ DuplicateStateValuesAndRename
+
+Original change's description:
+> [turbofan] Fix UseCount bailout in DuplicateStateValuesAndRename
+>
+> In JSInliningHeuristic::TryReuseDispatch, when duplicating and
+> specializing frame states for inlined polymorphic call branches,
+> DuplicateStateValuesAndRename recursively traversed StateValues trees.
+> However, it bailed out early if state_values->UseCount() > 1.
+>
+> When a StateValues node has more than 8 inputs, it is split into a tree
+> of nested StateValues nodes. When renaming in an earlier child subtree,
+> the parent StateValues is cloned via CloneNode, which immediately
+> increments the UseCount of all sibling child subtrees from 1 to 2.
+> Subsequent recursive calls encountered UseCount() > 1 and bailed out
+> without renaming the callee Phi in the sibling subtrees. When the callee
+> Phi was later killed, the cloned FrameState retained dangling references
+> to the dead node, causing verifier check failures.
+>
+> This CL removes the premature UseCount() > 1 early return from
+> DuplicateStateValuesAndRename and ensures that kChangeInPlace only
+> mutates when UseCount() <= 1, falling back to cloning (copy-on-write)
+> otherwise.
+>
+> Note that removing this early return does not cause unnecessary copying
+> for StateValues subtrees that already had UseCount() > 1 initially (e.g.
+> shared with other frame states): if such a subtree contained the callee,
+> CollectStateValuesOwnedUses would have skipped it, causing subsequent
+> validation in TryReuseDispatch to abort before cloning began. Therefore,
+> any subtree with UseCount() > 1 initially is guaranteed not to contain
+> the callee, so DuplicateStateValuesAndRename visits its inputs, finds no
+> matches, and returns the original node without copying.
+>
+> Fixed: 558734727
+> TAG=agy
+> CONV=cc6d3524-1bd6-4a59-892f-3bae5a2cc132
+>
+> Change-Id: I09116bd7eed39def19a5d15f9919db2f302c13c4
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8378907
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Patrick Thier <pthier@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109756}
+
+(cherry picked from commit 1926a0d990ffa5db0c27cfa1130eba651e1a9ffb)
+
+Bug: 559989668,558734727
+Change-Id: I09116bd7eed39def19a5d15f9919db2f302c13c4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8396658
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.4@{#13}
+Cr-Branched-From: df65d5c8f2932045c5af72cd7ecd0c8002fa631e-refs/heads/15.4.80@{#1}
+Cr-Branched-From: 80bc5f0e75b24b5af485e0e46b1ffd7f561f323f-refs/heads/main@{#109578}
+
+diff --git a/src/compiler/js-inlining-heuristic.cc b/src/compiler/js-inlining-heuristic.cc
+index fd43d7a95ae64620e8d067d64f6a5f72d8dd25aa..b6d9a3f0fd85400f5da21f06bfc8e399a86623fb 100644
+--- a/src/compiler/js-inlining-heuristic.cc
++++ b/src/compiler/js-inlining-heuristic.cc
+@@ -423,8 +423,9 @@ Node* JSInliningHeuristic::DuplicateStateValuesAndRename(Node* state_values,
+                                                          StateCloneMode mode) {
+   // Only rename in states that are not shared with other users. This needs to
+   // be in sync with the condition in {CollectStateValuesOwnedUses}.
+-  if (state_values->UseCount() > 1) return state_values;
+-  Node* copy = mode == kChangeInPlace ? state_values : nullptr;
++  Node* copy = (mode == kChangeInPlace && state_values->UseCount() <= 1)
++                   ? state_values
++                   : nullptr;
+   for (int i = 0; i < state_values->InputCount(); i++) {
+     Node* input = state_values->InputAt(i);
+     Node* processed;
+diff --git a/test/mjsunit/compiler/regress-558734727.js b/test/mjsunit/compiler/regress-558734727.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4642ee510de98904afd2479ec73aea9a899f8d41
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-558734727.js
+@@ -0,0 +1,30 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --turbofan --allow-natives-syntax
++
++function f1(a, b) { return a + b + 1; }
++function f2(a, b) { return a + b + 2; }
++
++function test(cond) {
++  var f = cond ? f1 : f2;
++  var v0 = f;
++  var v1 = 1, v2 = 2, v3 = 3, v4 = 4, v5 = 5, v6 = 6, v7 = 7;
++  var v8 = (v1 ? f : f);
++  var v9 = 9, v10 = 10, v11 = 11, v12 = 12, v13 = 13, v14 = 14, v15 = 15;
++  var res = f(v1, v15);
++  var temp0 = v0;
++  temp0 = 0;
++  var temp8 = v8;
++  return res + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v9 + v10 + v11 + v12 + v13 + v14 + v15;
++}
++
++%PrepareFunctionForOptimization(f1);
++%PrepareFunctionForOptimization(f2);
++%PrepareFunctionForOptimization(test);
++assertEquals(129, test(true));
++assertEquals(130, test(false));
++%OptimizeFunctionOnNextCall(test);
++assertEquals(129, test(true));
++assertEquals(130, test(false));
