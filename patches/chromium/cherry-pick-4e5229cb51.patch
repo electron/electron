@@ -1,0 +1,198 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Fri, 11 Sep 2026 13:40:33 -0700
+Subject: [M152] Prevent UAF during re-entrant destruction in IME callouts.
+
+Original change's description:
+> Prevent UAF during re-entrant destruction in IME callouts.
+>
+> During IME callouts (such as SetVirtualKeyboardVisibilityIfEnabled or
+> NotifySelectionBoundsChanged), the RenderWidgetHostViewAura or the
+> updated view can be re-entrantly destroyed or unregistered. This CL adds
+> weak pointer checks and re-fetches the text input state after these
+> callouts to prevent accessing freed memory. A unit test is added to
+> verify the fix when destruction occurs during virtual keyboard
+> visibility updates.
+>
+> Bug: 553133215
+> Change-Id: I4a6fc2c50133c731dad652c07906e6aa597c82dc
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8351288
+> Reviewed-by: Kartar Singh <kartarsingh@google.com>
+> Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1694603}
+
+(cherry picked from commit 77d3b674597221f343a95f95caaf04f1c1a66ea8)
+
+Bug: 559510415,553133215
+Change-Id: I4a6fc2c50133c731dad652c07906e6aa597c82dc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8379105
+Owners-Override: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: David Bokan <bokan@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2645}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 11f3aa60db1ebc1aa7cf7eeb21fcf5ec313171dc..799e3d5b1dd09cf5860c9f3a97b4c2bae6129720 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -3465,15 +3465,26 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+     bool did_update_state) {
+   CHECK_EQ(text_input_manager_, text_input_manager);
+ 
+-  if (!GetInputMethod())
++  if (!GetInputMethod()) {
+     return;
++  }
+ 
+   auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  base::WeakPtr<RenderWidgetHostViewBase> weak_updated_view =
++      updated_view ? updated_view->GetWeakPtr() : nullptr;
++
++  auto check_alive = [&]() -> bool {
++    if (!weak_this || !weak_updated_view || !text_input_manager_ ||
++        !text_input_manager_->IsRegistered(updated_view)) {
++      // `this` or `updated_view` may have been deleted inside the IME callout.
++      return false;
++    }
++    return true;
++  };
+ 
+   if (did_update_state) {
+     GetInputMethod()->OnTextInputTypeChanged(this);
+-    if (!weak_this) {
+-      // `this` may have been deleted inside the IME callout.
++    if (!check_alive()) {
+       return;
+     }
+   }
+@@ -3490,6 +3501,12 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+                ui::mojom::VirtualKeyboardVisibilityRequest::HIDE) {
+       GetInputMethod()->SetVirtualKeyboardVisibilityIfEnabled(false);
+     }
++    if (!check_alive()) {
++      return;
++    }
++    // The IME callout may have re-entrantly updated or unregistered the
++    // active view's state, freeing the object `state` points to.
++    state = text_input_manager_->GetTextInputState();
+   }
+ #endif
+ 
+@@ -3500,6 +3517,12 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+     if (state->show_ime_if_needed &&
+         GetInputMethod()->GetTextInputClient() == this) {
+       GetInputMethod()->SetVirtualKeyboardVisibilityIfEnabled(true);
++      if (!check_alive()) {
++        return;
++      }
++      // The IME callout may have re-entrantly updated or unregistered the
++      // active view's state, freeing the object `state` points to.
++      state = text_input_manager_->GetTextInputState();
+     }
+ // TODO(crbug.com/40110609): Remove this once TSF fix for input pane policy
+ // is serviced
+@@ -3511,6 +3534,12 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+                                                            GetInputMethod());
+       }
+       virtual_keyboard_controller_win_->UpdateTextInputState(state);
++      if (!check_alive()) {
++        return;
++      }
++      // The IME callout may have re-entrantly updated or unregistered the
++      // active view's state, freeing the object `state` points to.
++      state = text_input_manager_->GetTextInputState();
+     }
+ #endif
+   }
+@@ -3518,10 +3547,12 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(
+   // Ensure that selection bounds changes are sent to the IME.
+   if (state && state->type != ui::TEXT_INPUT_TYPE_NONE) {
+     text_input_manager->NotifySelectionBoundsChanged(updated_view);
+-    if (!weak_this) {
+-      // `this` may have been deleted inside the IME callout.
++    if (!check_alive()) {
+       return;
+     }
++    // The IME callout may have re-entrantly updated or unregistered the
++    // active view's state, freeing the object `state` points to.
++    state = text_input_manager_->GetTextInputState();
+   }
+ 
+   if (auto* render_widget_host = updated_view->host()) {
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index baa23fc3dbb6d9decf5782812e9718c69e6f13d1..ef1b0a593e961484ac1544ae12c0a7de9fd6b6d5 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -7027,6 +7027,13 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     }
+   }
+ 
++  void SetVirtualKeyboardVisibilityIfEnabled(bool should_show) override {
++    ui::MockInputMethod::SetVirtualKeyboardVisibilityIfEnabled(should_show);
++    if (on_set_virtual_keyboard_visibility_if_enabled_) {
++      std::move(on_set_virtual_keyboard_visibility_if_enabled_).Run();
++    }
++  }
++
+   void set_on_caret_bounds_changed(base::OnceClosure closure) {
+     on_caret_bounds_changed_ = std::move(closure);
+   }
+@@ -7035,9 +7042,15 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     on_text_input_type_changed_ = std::move(closure);
+   }
+ 
++  void set_on_set_virtual_keyboard_visibility_if_enabled(
++      base::OnceClosure closure) {
++    on_set_virtual_keyboard_visibility_if_enabled_ = std::move(closure);
++  }
++
+  private:
+   base::OnceClosure on_caret_bounds_changed_;
+   base::OnceClosure on_text_input_type_changed_;
++  base::OnceClosure on_set_virtual_keyboard_visibility_if_enabled_;
+ };
+ 
+ class RenderWidgetHostViewAuraReentrantDestructionIME
+@@ -7125,6 +7138,41 @@ TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
+   GetTextInputManager(view_)->UpdateTextInputState(view_, state);
+ }
+ 
++// RWHVA::OnUpdateTextInputStateCalled() calls
++// GetInputMethod()->SetVirtualKeyboardVisibilityIfEnabled(true) when the state
++// indicates that the virtual keyboard should be shown. If an observer or
++// virtual keyboard controller pumps messages and the view is destroyed
++// re-entrantly (e.g. on ChromeOS where KeyboardUIController runs the keyboard
++// show/hide cascade), on unwind the function must not dereference freed view
++// pointers or stale text input state.
++TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
++       DestroyDuringSetVirtualKeyboardVisibilityIfEnabled) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  // `view_` shares the root window (and thus the InputMethod) with
++  // `parent_view_`.
++  ASSERT_EQ(static_cast<ui::InputMethod*>(input_method_.get()),
++            GetInputMethod());
++
++  // The virtual-keyboard branch requires the view to be the InputMethod's
++  // focused text input client.
++  input_method_->SetFocusedTextInputClient(view_.get());
++
++  // Arrange for the view to be synchronously destroyed inside
++  // SetVirtualKeyboardVisibilityIfEnabled.
++  input_method_->set_on_set_virtual_keyboard_visibility_if_enabled(
++      base::BindLambdaForTesting([&]() {
++        widget_host_ = nullptr;
++        view_.ExtractAsDangling()->Destroy();
++      }));
++
++  ui::mojom::TextInputState state;
++  state.type = ui::TEXT_INPUT_TYPE_TEXT;
++  state.mode = ui::TEXT_INPUT_MODE_TEXT;
++  state.show_ime_if_needed = true;
++  GetTextInputManager(view_.get())->UpdateTextInputState(view_.get(), state);
++}
++
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+ class MockVirtualKeyboardController final
+     : public ui::VirtualKeyboardController {

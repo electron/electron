@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Wed, 9 Sep 2026 22:54:35 +0800
+Subject: m152: Metal: Avoid using stale render target in
+ TextureMtl::getRenderTarget
+
+Previously, TextureMtl::getRenderTarget skipped calling rtt.set() if
+rtt.getTexture() was already non-null. When a texture image was
+redefined with a new image, this caused mRenderTargets to retain a stale
+render target pointing to the old image, diverting subsequent render or
+copy operations to the stale render target instead of the newly defined
+image.
+
+Update TextureMtl::getRenderTarget to always set rtt with the current
+imageDef.image and add CHECK(imageDef.image).
+
+Bug: chromium:523470135
+Fixed: chromium:560484038
+Change-Id: I7a49e2206cb33eaf5b6818bd1e4b65a9620a345d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8377204
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+(cherry picked from commit 9ebe6aecc5d8f9119c78fcb5804f6ba31f4d02e2)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8397949
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index 367e49c9a29857dba1d2476243048c4e0cf317d8..7833cd878850313f72b9bd73396d7aab3e9829b2 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -1419,21 +1419,15 @@ uint32_t height(GLuint glLevel) const
+ 
+     GLuint layer         = GetImageLayerIndexFrom(imageIndex);
+     RenderTargetMtl &rtt = mRenderTargets[imageIndex][renderToTextureIndex];
+-    if (!rtt.getTexture())
++    CHECK(imageDef.image);
++    if (imageIndex.getType() == gl::TextureType::CubeMap)
+     {
+-        // Lazy initialization of render target:
+-        if (imageDef.image)
+-        {
+-            if (imageIndex.getType() == gl::TextureType::CubeMap)
+-            {
+-                // Cube map is special, the image is already the view of its layer
+-                rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, 0, format);
+-            }
+-            else
+-            {
+-                rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, layer, format);
+-            }
+-        }
++        // Cube map is special, the image is already the view of its layer
++        rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, 0, format);
++    }
++    else
++    {
++        rtt.set(imageDef.image, mtl::kZeroNativeMipLevel, layer, format);
+     }
+ 
+     if (implicitSamples > 1 && !rtt.getImplicitMSTexture())
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index b1c4e26180c9bc98d7eb284526591cfb56dc714b..155314f232425201feb22f25810290428662d7e2 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -4353,6 +4353,158 @@ void main()
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Tests that glCopyTexSubImage2D into a cubemap face of mismatched size, followed by
++// redefining the face to match the cubemap size, and copying into it with full coverage,
++// correctly updates the face and does not leave uninitialized data when sampled.
++TEST_P(RobustResourceInitTestES3, CubeMapCopySubImageMismatchedFaceRedefine)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr GLint kFaceSize = 16;
++    constexpr GLint kHalfSize = 8;
++
++    // Copy sources: green HxH and white SxS read framebuffers.
++    std::vector<GLColor> greenColors(kHalfSize * kHalfSize, GLColor::green);
++    GLTexture srcGreenTex;
++    glBindTexture(GL_TEXTURE_2D, srcGreenTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kHalfSize, kHalfSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 greenColors.data());
++    GLFramebuffer srcGreenFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcGreenFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcGreenTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    std::vector<GLColor> whiteColors(kFaceSize * kFaceSize, GLColor::white);
++    GLTexture srcWhiteTex;
++    glBindTexture(GL_TEXTURE_2D, srcWhiteTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 whiteColors.data());
++    GLFramebuffer srcWhiteFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcWhiteFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcWhiteTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Destination framebuffer to sample cubemap into.
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    GLFramebuffer dstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Program to sample cubemap face.
++    constexpr char kVS[] = R"(#version 300 es
++in vec4 aPosition;
++void main()
++{
++    gl_Position = aPosition;
++})";
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++precision highp int;
++uniform highp samplerCube uCube;
++uniform int uFace;
++uniform vec2 uSize;
++out vec4 fragColor;
++void main()
++{
++    vec2 st = gl_FragCoord.xy / uSize;
++    float sc = st.x * 2.0 - 1.0;
++    float tc = st.y * 2.0 - 1.0;
++    vec3 d;
++    if (uFace == 0)      d = vec3( 1.0, -tc, -sc);
++    else if (uFace == 1) d = vec3(-1.0, -tc,  sc);
++    else if (uFace == 2) d = vec3(  sc,  1.0,  tc);
++    else if (uFace == 3) d = vec3(  sc, -1.0, -tc);
++    else if (uFace == 4) d = vec3(  sc, -tc,  1.0);
++    else                 d = vec3( -sc, -tc, -1.0);
++    fragColor = texture(uCube, d);
++})";
++
++    ANGLE_GL_PROGRAM(sampleProg, kVS, kFS);
++    glUseProgram(sampleProg);
++    GLint cubeLoc = glGetUniformLocation(sampleProg, "uCube");
++    ASSERT_NE(cubeLoc, -1);
++    glUniform1i(cubeLoc, 0);
++    GLint faceLoc = glGetUniformLocation(sampleProg, "uFace");
++    ASSERT_NE(faceLoc, -1);
++    GLint sizeLoc = glGetUniformLocation(sampleProg, "uSize");
++    ASSERT_NE(sizeLoc, -1);
++    glUniform2f(sizeLoc, static_cast<float>(kFaceSize), static_cast<float>(kFaceSize));
++
++    // (a) Define cubemap with mismatched face sizes: +X is S x S, -X is H x H.
++    GLTexture cubeTex;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA8, kHalfSize, kHalfSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    // (b) Full-coverage glCopyTexSubImage2D into -X (H x H).
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcGreenFbo);
++    glCopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 0, 0, 0, 0, kHalfSize, kHalfSize);
++    ASSERT_GL_NO_ERROR();
++
++    // (c) Redefine -X to S x S with null data.
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    // (d) Full-coverage glCopyTexSubImage2D (WHITE) into -X (S x S).
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcWhiteFbo);
++    glCopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, 0, 0, 0, 0, kFaceSize, kFaceSize);
++    ASSERT_GL_NO_ERROR();
++
++    // (e) Complete the cubemap with null data.
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA8, kFaceSize, kFaceSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    // Sample each cube face and verify contents.
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glViewport(0, 0, kFaceSize, kFaceSize);
++    glUseProgram(sampleProg);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTex);
++
++    // Face 1 (-X) was fully overwritten with white, so it must be white.
++    glUniform1i(faceLoc, 1);
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    drawQuad(sampleProg, "aPosition", 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_RECT_EQ(0, 0, kFaceSize, kFaceSize, GLColor::white);
++
++    // Remaining faces (+X, +Y, -Y, +Z, -Z) were initialized with null data and never written,
++    // so robust resource init must ensure they are transparent black.
++    for (int face : {0, 2, 3, 4, 5})
++    {
++        glUniform1i(faceLoc, face);
++        glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++        glClear(GL_COLOR_BUFFER_BIT);
++        drawQuad(sampleProg, "aPosition", 0.5f);
++        EXPECT_GL_NO_ERROR();
++        EXPECT_PIXEL_RECT_EQ(0, 0, kFaceSize, kFaceSize, GLColor::transparentBlack);
++    }
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     RobustResourceInitTest,
+     ES3_METAL().enable(Feature::EmulateDontCareLoadWithRandomClear),
