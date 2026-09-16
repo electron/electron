@@ -16,8 +16,10 @@
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/time/time.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/child_process_termination_info.h"
@@ -51,6 +53,7 @@
 #include "v8/include/cppgc/allocation.h"
 
 #if BUILDFLAG(IS_POSIX)
+#include <signal.h>
 #include <unistd.h>
 
 #include "base/posix/eintr_wrapper.h"
@@ -93,6 +96,11 @@ UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
 }
 
 constexpr uint32_t kLaunchFailureExitCode = 1;
+
+#if BUILDFLAG(IS_POSIX)
+// How long Kill() waits for the child to honour SIGTERM before SIGKILL.
+constexpr base::TimeDelta kKillGracePeriod = base::Seconds(2);
+#endif
 
 }  // namespace
 
@@ -328,14 +336,12 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 #if BUILDFLAG(IS_POSIX)
     // UtilityProcessWrapper::Kill relies on base::Process::Terminate
     // to gracefully shutdown the process which is performed by sending
-    // SIGTERM signal. When listening for exit events via ServiceProcessHost
-    // observers, the exit code on posix is obtained via
-    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
-    // on waitpid to extract the exit signal. If the process is unavailable,
-    // then the exit_code will be set to 0, otherwise we get the signal that
-    // was sent during the base::Process::Terminate call. For a user, this is
-    // still a graceful shutdown case so lets' convert the exit code to the
-    // expected value.
+    // SIGTERM signal (escalating to SIGKILL in ForceKill). When listening
+    // for exit events via ServiceProcessHost observers, the exit code on
+    // posix is obtained via BrowserChildProcessHostImpl::GetTerminationInfo
+    // which in turn relies on waitpid to extract the exit signal, so we get
+    // the signal that was sent. For a user, this is still a graceful
+    // shutdown case so let's convert the exit code to the expected value.
     if (exit_code == SIGTERM || exit_code == SIGKILL) {
       exit_code = 0;
     }
@@ -460,17 +466,36 @@ bool UtilityProcessWrapper::Kill() {
     return false;
   base::Process process = base::Process::Open(pid_);
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
-  // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
-  // Currently utility process is not sandboxed which
-  // means Zygote is not used on linux, refs
-  // content::UtilitySandboxedProcessLauncherDelegate::GetZygote.
-  // If sandbox feature is enabled for the utility process, then the
-  // process reap should be signaled through the zygote via
-  // content::ZygoteCommunication::EnsureProcessTerminated.
+#if BUILDFLAG(IS_WIN)
   base::EnsureProcessTerminated(std::move(process));
+#else
+  // content's BrowserChildProcessHost reaps the child once its mojo pipe
+  // drops (GetKnownDeadTerminationStatus). Reaping it here as well, as
+  // base::EnsureProcessTerminated does on POSIX, wins that race and makes
+  // content's kill()/waitpid() fail (ESRCH/ECHILD). Only escalate to SIGKILL
+  // if the child is still around after a grace period.
+  content::GetUIThreadTaskRunner({})->PostDelayedTask(
+      FROM_HERE,
+      base::BindOnce(&UtilityProcessWrapper::ForceKill,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         JavascriptEnvironment::GetIsolate()
+                             ->GetCppHeap()
+                             ->GetAllocationHandle()))),
+      kKillGracePeriod);
+#endif
   killed_ = result;
   return result;
 }
+
+#if BUILDFLAG(IS_POSIX)
+void UtilityProcessWrapper::ForceKill() {
+  // pid_ is cleared in HandleTermination, which runs on this thread after
+  // content has reaped the process, so a reused pid can't be hit here.
+  if (terminated_ || pid_ == base::kNullProcessId)
+    return;
+  kill(pid_, SIGKILL);
+}
+#endif
 
 v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
     v8::Isolate* isolate) const {

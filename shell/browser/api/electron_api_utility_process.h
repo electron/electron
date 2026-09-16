@@ -105,6 +105,10 @@ class UtilityProcessWrapper final
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
+#if BUILDFLAG(IS_POSIX)
+  // Sends SIGKILL if the child ignored the SIGTERM sent by Kill().
+  void ForceKill();
+#endif
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   // mojo::MessageReceiver
