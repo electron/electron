@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 7 Sep 2026 14:19:53 +0200
+Subject: [M150-LTS][feedback-vector] Check length in FeedbackVector::SizeFor
+
+Add FeedbackVector::kMaxLength and CHECK that the vector length
+is non-negative and does not exceed kMaxLength in SizeFor().
+Also add a length check in FeedbackVectorVerify().
+
+TAG=agy
+CONV=5e1a1d9b-ed48-4b56-91fb-9d3ead86c7d2
+
+Fixed: 556715288
+Change-Id: Ib88573d9bef7c364663538aa3801a5ded7eef182
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8366705
+Reviewed-by: Patrick Thier <pthier@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109703}
+(cherry picked from commit 714b5478d3c4ff055570eebe0ee9194e518ad21e)
+
+diff --git a/src/diagnostics/objects-debug.cc b/src/diagnostics/objects-debug.cc
+index f328df950f75ead1fae8c7b090a2c87f6abe68e6..7bca65a97247ef5bec7569db04d4e111fe2c9c0b 100644
+--- a/src/diagnostics/objects-debug.cc
++++ b/src/diagnostics/objects-debug.cc
+@@ -1012,6 +1012,7 @@ void FeedbackVector::FeedbackVectorVerify(Isolate* isolate) {
+   CHECK(IsFeedbackCell(parent_feedback_cell()));
+   // Variable-length maybe-weak tail.
+   const int len = length();
++  CHECK_LE(len, static_cast<int>(kMaxLength));
+   for (int i = 0; i < len; ++i) {
+     Tagged<MaybeObject> value = raw_feedback_slots()[i].Relaxed_Load();
+     Object::VerifyMaybeObjectPointer(isolate, value);
+diff --git a/src/objects/feedback-vector.h b/src/objects/feedback-vector.h
+index 97df92c292c064edb09e21b65cee7ded48c70d7a..17550efc44ef0d25a4a2f9ab6bc7af6bfec82d8f 100644
+--- a/src/objects/feedback-vector.h
++++ b/src/objects/feedback-vector.h
+@@ -506,6 +506,7 @@ V8_OBJECT class FeedbackVector : public HeapObject {
+ 
+   static const int kHeaderSize;
+   static const int kRawFeedbackSlotsOffset;
++  static const int kMaxLength;
+ 
+   static constexpr int SizeFor(int length);
+   static constexpr int OffsetOfElementAt(int index);
+@@ -558,8 +559,12 @@ inline constexpr int FeedbackVector::kHeaderSize =
+     OFFSET_OF_DATA_START(FeedbackVector);
+ inline constexpr int FeedbackVector::kRawFeedbackSlotsOffset =
+     OFFSET_OF_DATA_START(FeedbackVector);
++inline constexpr int FeedbackVector::kMaxLength =
++    (kMaxInt - kHeaderSize) / kTaggedSize;
+ 
+ constexpr int FeedbackVector::SizeFor(int length) {
++  CHECK_GE(length, 0);
++  CHECK_LE(length, kMaxLength);
+   return OFFSET_OF_DATA_START(FeedbackVector) + length * kTaggedSize;
+ }
+ constexpr int FeedbackVector::OffsetOfElementAt(int index) {
+diff --git a/test/unittests/objects/feedback-vector-unittest.cc b/test/unittests/objects/feedback-vector-unittest.cc
+index 8bf91f75cbc40598f8b1269182a4a8decf79efb5..45f4acdce4cf39b90501f0ff73fe62f2d2c33518 100644
+--- a/test/unittests/objects/feedback-vector-unittest.cc
++++ b/test/unittests/objects/feedback-vector-unittest.cc
+@@ -770,5 +770,26 @@ TEST_F(FeedbackVectorTest, DefineNamedOwnIC) {
+   CHECK_EQ(InlineCacheState::MONOMORPHIC, nexus.ic_state());
+ }
+ 
++TEST_F(FeedbackVectorTest, MaxLengthAndSizeFor) {
++  static_assert(FeedbackVector::SizeFor(0) == FeedbackVector::kHeaderSize);
++  static_assert(FeedbackVector::SizeFor(10) ==
++                FeedbackVector::kHeaderSize + 10 * kTaggedSize);
++  static_assert(FeedbackVector::SizeFor(FeedbackVector::kMaxLength) ==
++                FeedbackVector::kHeaderSize +
++                    FeedbackVector::kMaxLength * kTaggedSize);
++
++  EXPECT_EQ(FeedbackVector::kHeaderSize, FeedbackVector::SizeFor(0));
++  EXPECT_EQ(FeedbackVector::kHeaderSize + 10 * kTaggedSize,
++            FeedbackVector::SizeFor(10));
++  EXPECT_EQ(
++      FeedbackVector::kHeaderSize + FeedbackVector::kMaxLength * kTaggedSize,
++      FeedbackVector::SizeFor(FeedbackVector::kMaxLength));
++
++  ASSERT_DEATH_IF_SUPPORTED({ FeedbackVector::SizeFor(-1); }, ".*");
++  ASSERT_DEATH_IF_SUPPORTED(
++      { FeedbackVector::SizeFor(FeedbackVector::kMaxLength + 1); }, ".*");
++  ASSERT_DEATH_IF_SUPPORTED({ FeedbackVector::SizeFor(1 << 30); }, ".*");
++}
++
+ }  // namespace internal
+ }  // namespace v8
