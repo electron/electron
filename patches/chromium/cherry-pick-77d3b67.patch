@@ -19,7 +19,7 @@ Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1694603}
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 3a75fbf82a10ab42bb2e6add79915c92d37c04c4..e2552527f592a0956018cc8783242d42db144595 100644
+index e253fbcb8d5fa74298831136e80f2f41fca67a3a..e2822d0691dcacb33849a711811cd5514db4ae9a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -3503,15 +3503,26 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(

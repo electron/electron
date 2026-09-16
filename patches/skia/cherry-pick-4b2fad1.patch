@@ -476,7 +476,7 @@ index 3d39d228227275c595f2aa5f3c42d0d1d7790218..d8f78f7fae77839b6c27f1c381e697b6
              SkSurfaces::BackendSurfaceAccess access = SkSurfaces::BackendSurfaceAccess::kNoAccess,
              const GrFlushInfo& info = {},
 diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
-index 7c3ff6aac00ad9a6c774958f44733db5734ffc4e..91b21d0a5df83d7681b186fa55603bb82d042723 100644
+index 2db3557da7c9a2325c4008ef2437c2e69bff5974..4de8af0758b3f56434bd1dbb027eb488beb0bbea 100644
 --- a/src/gpu/ganesh/GrDrawingManager.cpp
 +++ b/src/gpu/ganesh/GrDrawingManager.cpp
 @@ -95,10 +95,10 @@ void GrDrawingManager::freeGpuResources() {
@@ -552,7 +552,7 @@ index 7c3ff6aac00ad9a6c774958f44733db5734ffc4e..91b21d0a5df83d7681b186fa55603bb8
  }
  
  bool GrDrawingManager::submitToGpu() {
-@@ -517,10 +519,11 @@ static void resolve_and_mipmap(GrGpu* gpu, GrSurfaceProxy* proxy) {
+@@ -520,10 +522,11 @@ static void resolve_and_mipmap(GrGpu* gpu, GrSurfaceProxy* proxy) {
      }
  }
  
@@ -568,7 +568,7 @@ index 7c3ff6aac00ad9a6c774958f44733db5734ffc4e..91b21d0a5df83d7681b186fa55603bb8
      if (this->wasAbandoned()) {
          if (info.fSubmittedProc) {
              info.fSubmittedProc(info.fSubmittedContext, false);
-@@ -528,7 +531,7 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
+@@ -531,7 +534,7 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
          if (info.fFinishedProc) {
              info.fFinishedProc(info.fFinishedContext);
          }
@@ -577,7 +577,7 @@ index 7c3ff6aac00ad9a6c774958f44733db5734ffc4e..91b21d0a5df83d7681b186fa55603bb8
      }
      SkDEBUGCODE(this->validate());
  
-@@ -541,8 +544,8 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
+@@ -544,8 +547,8 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
      // TODO: It is important to upgrade the drawingmanager to just flushing the
      // portion of the DAG required by 'proxies' in order to restore some of the
      // semantics of this method.
@@ -588,7 +588,7 @@ index 7c3ff6aac00ad9a6c774958f44733db5734ffc4e..91b21d0a5df83d7681b186fa55603bb8
          // Only resolve/regen mips if the flush actually executed the render tasks.
          for (GrSurfaceProxy* proxy : proxies) {
              resolve_and_mipmap(gpu, proxy);
-@@ -551,10 +554,7 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
+@@ -554,10 +557,7 @@ GrSemaphoresSubmitted GrDrawingManager::flushSurfaces(SkSpan<GrSurfaceProxy*> pr
  
      SkDEBUGCODE(this->validate());
  
