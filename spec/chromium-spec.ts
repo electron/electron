@@ -5695,6 +5695,26 @@ describe('navigator.usb', () => {
       }
     }
   });
+
+  it('does not crash when the requesting webContents is destroyed from the select-usb-device handler', async () => {
+    const guest = (webContents as typeof ElectronInternal.WebContents).create({
+      type: 'webview',
+      embedder: w.webContents
+    });
+    await guest.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+    const selectFired = new Promise<void>((resolve) => {
+      w.webContents.session.once('select-usb-device', () => {
+        guest.destroy();
+        resolve();
+      });
+    });
+    guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
+    await selectFired;
+    await setTimeout();
+    expect(guest.isDestroyed()).to.be.true();
+  });
 });
 
 describe('iframe sandbox external protocols', () => {
