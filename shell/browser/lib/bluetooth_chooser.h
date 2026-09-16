@@ -43,6 +43,7 @@ class BluetoothChooser : public content::BluetoothChooser {
 
   void OnDeviceChosen(const std::string& device_id);
   std::vector<DeviceInfo> GetDeviceList();
+  bool EmitSelectBluetoothDevice();
 
  private:
   absl::flat_hash_map<std::string, std::u16string> device_id_to_name_map_;
