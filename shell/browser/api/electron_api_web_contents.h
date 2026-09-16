@@ -33,6 +33,7 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/load_url_promises.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
@@ -207,7 +208,8 @@ class WebContents final : public ExclusiveAccessContext,
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
   v8::Local<v8::Value> Clone(v8::Isolate* isolate);
-  void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
+  // webContents.loadURL(url[, options]); see LoadURLPromises for the promise.
+  v8::Local<v8::Promise> LoadURL(gin::Arguments* args, const std::string& url);
   void LoadURLWithParams(content::NavigationController::LoadURLParams params);
   void Reload();
   void ReloadIgnoringCache();
@@ -230,10 +232,11 @@ class WebContents final : public ExclusiveAccessContext,
   bool RemoveNavigationEntryAtIndex(int index);
   std::vector<content::NavigationEntry*> GetHistory() const;
   void ClearHistory();
-  void RestoreHistory(v8::Isolate* isolate,
-                      gin_helper::ErrorThrower thrower,
-                      int index,
-                      const std::vector<v8::Local<v8::Value>>& entries);
+  v8::Local<v8::Promise> RestoreHistory(
+      v8::Isolate* isolate,
+      gin_helper::ErrorThrower thrower,
+      int index,
+      const std::vector<v8::Local<v8::Value>>& entries);
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
@@ -426,6 +429,13 @@ class WebContents final : public ExclusiveAccessContext,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+  // 'did-fail-load'; the frame ids are omitted from the event when -1.
+  void EmitDidFailLoad(int error_code,
+                       std::string_view error_description,
+                       const GURL& url,
+                       bool is_main_frame,
+                       int frame_process_id = -1,
+                       int frame_routing_id = -1);
 
   WebContents* embedder() { return embedder_; }
 
@@ -906,6 +916,11 @@ class WebContents final : public ExclusiveAccessContext,
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
   raw_ptr<ElectronBrowserContext> browser_context_;
+
+  // Pending loadURL()/restore() promises. Declared before
+  // |inspectable_web_contents_|, whose destruction emits 'destroyed', which
+  // settles them.
+  LoadURLPromises load_url_promises_;
 
   // The stored InspectableWebContents object.
   // Notice that inspectable_web_contents_ must be placed after

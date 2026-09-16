@@ -276,109 +276,6 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   );
 };
 
-type LoadError = { errorCode: number; errorDescription: string; url: string };
-
-function _awaitNextLoad(this: Electron.WebContents, navigationUrl: string) {
-  return new Promise<void>((resolve, reject) => {
-    const resolveAndCleanup = () => {
-      removeListeners();
-      resolve();
-    };
-    let error: LoadError | undefined;
-    const rejectAndCleanup = ({ errorCode, errorDescription, url }: LoadError) => {
-      const err = new Error(
-        `${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`
-      );
-      Object.assign(err, { errno: errorCode, code: errorDescription, url });
-      removeListeners();
-      reject(err);
-    };
-    const finishListener = () => {
-      if (error) {
-        rejectAndCleanup(error);
-      } else {
-        resolveAndCleanup();
-      }
-    };
-
-    let navigationStarted = false;
-    let browserInitiatedInPageNavigation = false;
-    const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
-      if (isMainFrame) {
-        if (navigationStarted && !isSameDocument) {
-          // the webcontents has started another unrelated navigation in the
-          // main frame (probably from the app calling `loadURL` again); reject
-          // the promise
-          // We should only consider the request aborted if the "navigation" is
-          // actually navigating and not simply transitioning URL state in the
-          // current context.  E.g. pushState and `location.hash` changes are
-          // considered navigation events but are triggered with isSameDocument.
-          // We can ignore these to allow virtual routing on page load as long
-          // as the routing does not leave the document
-          return rejectAndCleanup({ errorCode: -3, errorDescription: 'ERR_ABORTED', url });
-        }
-        browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
-        navigationStarted = true;
-      }
-    };
-    const failListener = (
-      event: Electron.Event,
-      errorCode: number,
-      errorDescription: string,
-      validatedURL: string,
-      isMainFrame: boolean
-    ) => {
-      if (!error && isMainFrame) {
-        error = { errorCode, errorDescription, url: validatedURL };
-      }
-      if (!navigationStarted && isMainFrame) {
-        finishListener();
-      }
-    };
-    const stopLoadingListener = () => {
-      // By the time we get here, either 'finish' or 'fail' should have fired
-      // if the navigation occurred. However, in some situations (e.g. when
-      // attempting to load a page with a bad scheme), loading will stop
-      // without emitting finish or fail. In this case, we reject the promise
-      // with a generic failure.
-      // TODO(jeremy): enumerate all the cases in which this can happen. If
-      // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
-      // would be more appropriate.
-      if (!error) {
-        error = { errorCode: -2, errorDescription: 'ERR_FAILED', url: navigationUrl };
-      }
-      finishListener();
-    };
-    const finishListenerWhenUserInitiatedNavigation = () => {
-      if (!browserInitiatedInPageNavigation) {
-        finishListener();
-      }
-    };
-    const removeListeners = () => {
-      this.removeListener('did-finish-load', finishListener);
-      this.removeListener('did-fail-load', failListener);
-      this.removeListener('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
-      this.removeListener('did-start-navigation', navigationListener);
-      this.removeListener('did-stop-loading', stopLoadingListener);
-      this.removeListener('destroyed', stopLoadingListener);
-    };
-    this.on('did-finish-load', finishListener);
-    this.on('did-fail-load', failListener);
-    this.on('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
-    this.on('did-start-navigation', navigationListener);
-    this.on('did-stop-loading', stopLoadingListener);
-    this.on('destroyed', stopLoadingListener);
-  });
-}
-
-WebContents.prototype.loadURL = function (url, options) {
-  const p = _awaitNextLoad.call(this, url);
-  // Add a no-op rejection handler to silence the unhandled rejection error.
-  p.catch(() => {});
-  this._loadURL(url, options ?? {});
-  return p;
-};
-
 WebContents.prototype.copyVideoFrameAt = function (x: number, y: number) {
   this.mainFrame.copyVideoFrameAt(x, y);
 };
@@ -554,16 +451,11 @@ WebContents.prototype._init = function () {
           );
         }
 
-        const p = _awaitNextLoad.call(this, entries[index].url);
-        p.catch(() => {});
-
         try {
-          this._restoreHistory(index, entries);
+          return this._restoreHistory(index, entries);
         } catch (error) {
           return Promise.reject(error);
         }
-
-        return p;
       }
     },
     writable: false,

@@ -2417,8 +2417,10 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   // ⚠️WARNING!⚠️
   // Emit() triggers JS which can call destroy() on |this|. It's not safe to
   // assume that |this| points to valid memory at this point.
-  if (is_main_frame && weak_this && web_contents())
+  if (is_main_frame && weak_this && web_contents()) {
+    load_url_promises_.DidFinishLoad();
     Emit("did-finish-load");
+  }
 }
 
 void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
@@ -2438,8 +2440,25 @@ void WebContents::DidFailLoad(content::RenderFrameHost* render_frame_host,
   int32_t frame_process_id =
       render_frame_host->GetProcess()->GetID().GetUnsafeValue();
   int frame_routing_id = render_frame_host->GetRoutingID();
-  Emit("did-fail-load", error_code, "", url, is_main_frame, frame_process_id,
-       frame_routing_id);
+  EmitDidFailLoad(error_code, "", url, is_main_frame, frame_process_id,
+                  frame_routing_id);
+}
+
+void WebContents::EmitDidFailLoad(int error_code,
+                                  std::string_view error_description,
+                                  const GURL& url,
+                                  bool is_main_frame,
+                                  int frame_process_id,
+                                  int frame_routing_id) {
+  const std::string& spec = url.possibly_invalid_spec();
+  load_url_promises_.DidFailLoad(error_code, error_description, spec,
+                                 is_main_frame);
+  if (frame_process_id == -1) {
+    Emit("did-fail-load", error_code, error_description, spec, is_main_frame);
+  } else {
+    Emit("did-fail-load", error_code, error_description, url, is_main_frame,
+         frame_process_id, frame_routing_id);
+  }
 }
 
 void WebContents::DidStartLoading() {
@@ -2463,6 +2482,7 @@ void WebContents::DidStopLoading() {
            ->GetProcess()
            ->IsInitializedAndNotDead();
   base::AutoReset<bool> defer(&in_renderer_teardown_, in_renderer_teardown);
+  load_url_promises_.DidStopLoading();
   Emit("did-stop-loading");
 }
 
@@ -2592,6 +2612,9 @@ SkRegion* WebContents::draggable_region() {
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
+  load_url_promises_.DidStartNavigation(
+      navigation_handle->GetURL().possibly_invalid_spec(),
+      navigation_handle->IsSameDocument(), navigation_handle->IsInMainFrame());
   EmitNavigationEvent("did-start-navigation", navigation_handle);
 }
 
@@ -2715,6 +2738,7 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
+      load_url_promises_.DidNavigateInPage();
       Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
            frame_routing_id);
     } else {
@@ -2763,8 +2787,8 @@ void WebContents::DidFinishNavigation(
           base::StrCat({"Failed to load URL: ", url.possibly_invalid_spec(),
                         " with error: ", description}),
           "electron");
-      Emit("did-fail-load", code, description, url, is_main_frame,
-           frame_process_id, frame_routing_id);
+      EmitDidFailLoad(code, description, url, is_main_frame, frame_process_id,
+                      frame_routing_id);
     }
   }
 }
@@ -2950,6 +2974,7 @@ void WebContents::WebContentsDestroyed() {
     guest_delegate_->WillDestroy();
 
   Observe(nullptr);
+  load_url_promises_.DidStopLoading();
   Emit("destroyed");
 }
 
@@ -3058,13 +3083,18 @@ GURL WebContents::GetURL() const {
   return web_contents()->GetLastCommittedURL();
 }
 
-void WebContents::LoadURL(const GURL& url,
-                          const gin_helper::Dictionary& options) {
+v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
+                                            const std::string& url_string) {
+  v8::Local<v8::Promise> promise =
+      load_url_promises_.Add(args->isolate(), url_string);
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
+  args->GetNext(&options);
+
+  GURL url(url_string);
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
-    Emit("did-fail-load", static_cast<int>(net::ERR_INVALID_URL),
-         net::ErrorToShortString(net::ERR_INVALID_URL),
-         url.possibly_invalid_spec(), true);
-    return;
+    EmitDidFailLoad(net::ERR_INVALID_URL,
+                    net::ErrorToShortString(net::ERR_INVALID_URL), url, true);
+    return promise;
   }
 
   content::NavigationController::LoadURLParams params(url);
@@ -3111,19 +3141,19 @@ void WebContents::LoadURL(const GURL& url,
   auto& ctrl_impl = static_cast<content::NavigationControllerImpl&>(
       web_contents()->GetController());
   if (!is_safe_to_delete_ || ctrl_impl.in_navigate_to_pending_entry()) {
-    Emit("did-fail-load", static_cast<int>(net::ERR_FAILED),
-         net::ErrorToShortString(net::ERR_FAILED), url.possibly_invalid_spec(),
-         true);
-    return;
+    EmitDidFailLoad(net::ERR_FAILED, net::ErrorToShortString(net::ERR_FAILED),
+                    url, true);
+    return promise;
   }
 
   if (in_renderer_teardown_) {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE, base::BindOnce(&WebContents::LoadURLWithParams, GetWeakPtr(),
                                   std::move(params)));
-    return;
+    return promise;
   }
   LoadURLWithParams(std::move(params));
+  return promise;
 }
 
 void WebContents::LoadURLWithParams(
@@ -3311,11 +3341,18 @@ std::vector<content::NavigationEntry*> WebContents::GetHistory() const {
   return history;
 }
 
-void WebContents::RestoreHistory(
+v8::Local<v8::Promise> WebContents::RestoreHistory(
     v8::Isolate* isolate,
     gin_helper::ErrorThrower thrower,
     int index,
     const std::vector<v8::Local<v8::Value>>& entries) {
+  // What loadURL() would return for the entry being restored.
+  std::string url;
+  if (index >= 0 && static_cast<size_t>(index) < entries.size() &&
+      entries[index]->IsObject()) {
+    gin::Dictionary(isolate, entries[index].As<v8::Object>()).Get("url", &url);
+  }
+  v8::Local<v8::Promise> promise = load_url_promises_.Add(isolate, url);
   if (!web_contents()
            ->GetController()
            .GetLastCommittedEntry()
@@ -3323,7 +3360,7 @@ void WebContents::RestoreHistory(
     thrower.ThrowError(
         "Cannot restore history on webContents that have previously loaded "
         "a page.");
-    return;
+    return promise;
   }
 
   auto navigation_entries =
@@ -3343,7 +3380,7 @@ void WebContents::RestoreHistory(
           "Failed to restore navigation history: Invalid navigation entry at "
           "index " +
           base::NumberToString(index) + ".");
-      return;
+      return promise;
     }
 
     nav_entry->SetIsOverridingUserAgent(
@@ -3357,6 +3394,7 @@ void WebContents::RestoreHistory(
         index, content::RestoreType::kRestored, &navigation_entries);
     web_contents()->GetController().LoadIfNecessary();
   }
+  return promise;
 }
 
 void WebContents::ClearHistory() {
@@ -4706,10 +4744,9 @@ void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
   bool default_prevented = Emit("will-prevent-unload");
 
   if (pending_unload_url_.has_value() && !default_prevented) {
-    Emit("did-fail-load", static_cast<int>(net::ERR_ABORTED),
-         net::ErrorToShortString(net::ERR_ABORTED),
-         pending_unload_url_.value().possibly_invalid_spec(), true);
-    pending_unload_url_.reset();
+    GURL url = std::exchange(pending_unload_url_, std::nullopt).value();
+    EmitDidFailLoad(net::ERR_ABORTED, net::ErrorToShortString(net::ERR_ABORTED),
+                    url, true);
   }
 
   std::move(callback).Run(default_prevented, std::u16string());
@@ -5245,7 +5282,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("clone", &WebContents::Clone)
       .SetMethod("_setConsoleMessageObserved",
                  &WebContents::SetConsoleMessageObserved)
-      .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
