@@ -2358,10 +2358,8 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   // Emit() triggers JS which can call destroy() on |this|. It's not safe to
   // assume that |this| points to valid memory at this point.
   if (is_main_frame && weak_this && web_contents()) {
-    const LoadURLPromises::Mark mark = load_url_promises_.mark();
+    load_url_promises_.DidFinishLoad();
     Emit("did-finish-load");
-    if (weak_this && web_contents())
-      load_url_promises_.DidFinishLoad(mark);
   }
 }
 
@@ -2392,18 +2390,14 @@ void WebContents::EmitDidFailLoad(int error_code,
                                   bool is_main_frame,
                                   int frame_process_id,
                                   int frame_routing_id) {
-  const LoadURLPromises::Mark mark = load_url_promises_.mark();
-  auto weak_this = GetWeakPtr();
   const std::string& spec = url.possibly_invalid_spec();
+  load_url_promises_.DidFailLoad(error_code, error_description, spec,
+                                 is_main_frame);
   if (frame_process_id == -1) {
     Emit("did-fail-load", error_code, error_description, spec, is_main_frame);
   } else {
     Emit("did-fail-load", error_code, error_description, url, is_main_frame,
          frame_process_id, frame_routing_id);
-  }
-  if (weak_this && web_contents()) {
-    load_url_promises_.DidFailLoad(mark, error_code, error_description, spec,
-                                   is_main_frame);
   }
 }
 
@@ -2428,11 +2422,8 @@ void WebContents::DidStopLoading() {
            ->GetProcess()
            ->IsInitializedAndNotDead();
   base::AutoReset<bool> defer(&in_renderer_teardown_, in_renderer_teardown);
-  const LoadURLPromises::Mark mark = load_url_promises_.mark();
-  auto weak_this = GetWeakPtr();
+  load_url_promises_.DidStopLoading();
   Emit("did-stop-loading");
-  if (weak_this && web_contents())
-    load_url_promises_.DidStopLoading(mark);
 }
 
 bool WebContents::PostNavigationInRendererTeardown(base::OnceClosure navigate) {
@@ -2542,15 +2533,10 @@ SkRegion* WebContents::draggable_region() {
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
-  const LoadURLPromises::Mark mark = load_url_promises_.mark();
-  auto weak_this = GetWeakPtr();
+  load_url_promises_.DidStartNavigation(
+      navigation_handle->GetURL().possibly_invalid_spec(),
+      navigation_handle->IsSameDocument(), navigation_handle->IsInMainFrame());
   EmitNavigationEvent("did-start-navigation", navigation_handle);
-  if (weak_this && web_contents()) {
-    load_url_promises_.DidStartNavigation(
-        mark, navigation_handle->GetURL().possibly_invalid_spec(),
-        navigation_handle->IsSameDocument(),
-        navigation_handle->IsInMainFrame());
-  }
 }
 
 void WebContents::DidRedirectNavigation(
@@ -2673,13 +2659,9 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
-      const LoadURLPromises::Mark mark = load_url_promises_.mark();
-      auto weak_this = GetWeakPtr();
+      load_url_promises_.DidNavigateInPage();
       Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
            frame_routing_id);
-      if (!weak_this || !web_contents())
-        return;
-      load_url_promises_.DidNavigateInPage(mark);
     } else {
       const net::HttpResponseHeaders* http_response =
           navigation_handle->GetResponseHeaders();
@@ -2902,9 +2884,8 @@ void WebContents::WebContentsDestroyed() {
     guest_delegate_->WillDestroy();
 
   Observe(nullptr);
-  const LoadURLPromises::Mark mark = load_url_promises_.mark();
+  load_url_promises_.DidStopLoading();
   Emit("destroyed");
-  load_url_promises_.DidStopLoading(mark);
 }
 
 void WebContents::NavigationEntryCommitted(
