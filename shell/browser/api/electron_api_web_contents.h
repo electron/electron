@@ -35,7 +35,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 #include "components/spellcheck/common/spellcheck_common.h"
