@@ -1766,9 +1766,12 @@ describe('<webview> tag', function () {
         // <webview>; it must not be able to drive it through the internal IPC.
         const call = (frame: Electron.WebFrameMain) =>
           frame.executeJavaScript(`(async () => {
-            const { ipc } = { ipc: process._linkedBinding('electron_renderer_ipc').createForRenderFrame() };
-            const { error, result } = await ipc.invoke(true, 'GUEST_VIEW_MANAGER_CALL', [${guestId}, 'executeJavaScript', ['6 * 7']]);
-            return error ? 'error:' + error : result;
+            const { ipcRendererInternal } = process._linkedBinding('electron_renderer_ipc');
+            try {
+              return await ipcRendererInternal.invoke('GUEST_VIEW_MANAGER_CALL', ${guestId}, 'executeJavaScript', ['6 * 7']);
+            } catch (error) {
+              return 'error:' + error.message;
+            }
           })()`);
         expect(await call(iframe)).to.match(/^error:.*Access denied/);
         expect(await call(embedder.webContents.mainFrame)).to.equal(42);

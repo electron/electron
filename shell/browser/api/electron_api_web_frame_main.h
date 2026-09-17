@@ -129,6 +129,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   // prior to accessing it.
   bool CheckRenderFrame() const;
 
+  v8::Local<v8::Promise> TransferSharedTexture(v8::Isolate* isolate,
+                                               v8::Local<v8::Value> transfer,
+                                               const std::string& texture_id,
+                                               v8::Local<v8::Value> args);
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
   v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
