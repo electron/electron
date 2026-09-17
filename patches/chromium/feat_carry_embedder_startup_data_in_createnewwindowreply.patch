@@ -148,10 +148,10 @@ index 72c4d2f042afd428f2bf945bf54de873f256ca21..492694475e63e441a09a264cbbb2fc4f
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 1202be7b50db7071e6658e8a99c1f0e0429d7475..6ee1d36db8ee09f6c8b1a39bd51f6c546e20d1a9 100644
+index e890ad7d11361ac06c51e65e0de83a464658c171..ac175a70ffd8550bb7be758660f08a733ad9ede3 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7061,6 +7061,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7062,6 +7062,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  

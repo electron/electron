@@ -219,14 +219,13 @@ index fb69f961bfe1a81626d5e42931df9a5ed4c291bd..2404a0bf705d65fb5dccbb3d042fcbbb
  
  }  // namespace gles2
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index d79db9935d160dc372ae78310fda1987e3ec7005..17578aaf40b455a5ee4eedb9f445b715bc3351bd 100644
+index 0de500d583d8fe7dc6ae4df6098335608e142701..484f2487c1d7e23cea5b41ff9727ae5874cf8869 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
-@@ -3871,6 +3871,19 @@
-       "features": [
+@@ -3872,6 +3872,19 @@
          "flush_queries_before_deleting_or_unbinding_fbo"
        ]
-+    },
+     },
 +    {
 +      "id": 493,
 +      "cr_bugs": [546252753],
@@ -239,9 +238,10 @@ index d79db9935d160dc372ae78310fda1987e3ec7005..17578aaf40b455a5ee4eedb9f445b715
 +      "features": [
 +        "finish_before_blit_framebuffer_multi_attachment"
 +      ]
-     }
-   ]
- }
++    },
+     {
+       "id": 496,
+       "cr_bugs": [556870863],
 diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
 index fe6a89f7906335c0d0035093b8f4f47bde9ea2c0..2d52b313997b79c9a2f5204aec7874be280875db 100644
 --- a/gpu/config/gpu_workaround_list.txt
