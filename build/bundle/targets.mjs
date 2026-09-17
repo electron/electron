@@ -6,8 +6,9 @@
 //   The bundle runs inside a Node.js environment and is called with Node's
 //   `process` and internal `require` (see shell/common/js2c_bundle_ids.h), so
 //   Node.js built-in and `internal/*` modules are left as runtime require()
-//   calls. Bundles without it must be fully self-contained; `process` and
-//   `events` come from the browser polyfills in node_modules.
+//   calls. Bundles without it must be fully self-contained; `process` comes
+//   from the browser polyfill in node_modules and `events` is a native
+//   EventEmitter (lib/common/node-events.ts).
 // loadElectronFromAlternateTarget:
 //   Resolve `require('electron')` to lib/<alternate>/api/exports/electron.ts
 //   instead of the target's own module list.

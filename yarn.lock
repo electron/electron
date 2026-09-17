@@ -398,7 +398,6 @@ __metadata:
     "@types/temp": "npm:^0.9.4"
     "@xmldom/xmldom": "npm:^0.9.10"
     check-for-leaks: "npm:^1.2.1"
-    events: "npm:^3.2.0"
     folder-hash: "npm:^4.1.2"
     got: "npm:^11.8.5"
     husky: "npm:^9.1.7"
@@ -4125,7 +4124,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"events@npm:^3.0.0, events@npm:^3.2.0, events@npm:^3.3.0":
+"events@npm:^3.0.0, events@npm:^3.3.0":
   version: 3.3.0
   resolution: "events@npm:3.3.0"
   checksum: 10c0/d6b6f2adbccbcda74ddbab52ed07db727ef52e31a61ed26db9feb7dc62af7fc8e060defa65e5f8af9449b86b52cc1a1f6a79f2eafcf4e62add2b7a1fa4a432f6

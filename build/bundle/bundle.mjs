@@ -89,13 +89,17 @@ const buildflagPlugin = {
 };
 
 // `electron` and its process-specific entry points all resolve to this
-// target's API module list.
+// target's API module list; bundles without Node.js get a native EventEmitter
+// for `events`.
 const exactAliases = new Map(
   ['electron', 'electron/main', 'electron/renderer', 'electron/common', 'electron/utility'].map((id) => [
     id,
     electronAPIFile
   ])
 );
+if (!target.alwaysHasNode) {
+  exactAliases.set('events', path.resolve(libDir, 'common', 'node-events.ts'));
+}
 const aliasPlugin = {
   name: 'electron-alias',
   resolveId: {
@@ -146,10 +150,6 @@ const define = target.alwaysHasNode ? {} : { global: 'globalThis' };
 // the bundle; routing it through a one-line CommonJS shim instead keeps the
 // require() lazy, so a built-in is only loaded once the (lazily evaluated)
 // module importing it actually runs, as it was with webpack.
-//
-// Bundles without Node.js resolve the same ids (events, url, buffer, ...) to
-// the browser polyfill packages in node_modules instead, and fail to build if
-// there is none.
 const nodeModules = new Set(builtinModules);
 const nodeShimPrefix = '\0electron-node-external:';
 const nodeExternalsPlugin = {
@@ -157,10 +157,12 @@ const nodeExternalsPlugin = {
   resolveId: {
     filter: { id: /^[a-z0-9_:/]+$/ },
     handler(source, importer, { kind }) {
-      if (!target.alwaysHasNode) return null;
       // That require knows nothing of the node: scheme.
       const id = source.replace(/^node:/, '');
       if (!nodeModules.has(id) && !id.startsWith('internal/')) return null;
+      if (!target.alwaysHasNode) {
+        this.error(`'${id}' imported by ${path.relative(electronRoot, importer)} is not available without Node.js`);
+      }
       if (kind === 'require-call') return { id, external: true };
       return { id: `${nodeShimPrefix}${id}`, moduleSideEffects: false };
     }
