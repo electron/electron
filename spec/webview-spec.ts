@@ -60,9 +60,24 @@ async function loadWebViewAndWaitForEvent(
     document.body.appendChild(webview)
   })`);
 }
+// Resolves with the first console message from the page, ignoring the
+// "Electron Security Warning" messages the guest logs when it finishes
+// loading (the fixtures have no CSP).
 async function loadWebViewAndWaitForMessage(w: WebContents, attributes: Record<string, string>): Promise<string> {
-  const { message } = await loadWebViewAndWaitForEvent(w, attributes, 'console-message');
-  return message;
+  return await w.executeJavaScript(`new Promise((resolve, reject) => {
+    const webview = new WebView()
+    webview.id = 'webview'
+    for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
+      webview.setAttribute(k, v)
+    }
+    const onMessage = (e) => {
+      if (e.message.startsWith('Electron Security Warning')) return
+      webview.removeEventListener('console-message', onMessage)
+      resolve(e.message)
+    }
+    webview.addEventListener('console-message', onMessage)
+    document.body.appendChild(webview)
+  })`);
 }
 
 describe('<webview> tag', function () {
