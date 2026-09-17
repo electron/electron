@@ -174,7 +174,7 @@ void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
-    __block std::optional<int> id = std::move(settings.id);
+    __block std::optional<int> id = settings.id;
     __block int cancel_id = settings.cancel_id;
     scoped_refptr<base::SequencedTaskRunner> task_runner =
         base::SequencedTaskRunner::GetCurrentDefault();
