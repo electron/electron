@@ -357,6 +357,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
     app_package.Set("path", package->path);
     app_package.Set("main", package->main);
     app_package.Set("esm", package->esm);
+    if (!package->v8_flags.empty())
+      app_package.Set("v8Flags", package->v8_flags);
     env_context->Global()
         ->SetPrivate(env_context,
                      v8::Private::ForApi(

@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import * as path from 'path';
 
 import type * as url from 'url';
+import type * as v8 from 'v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 
@@ -57,10 +58,10 @@ require('@electron/internal/browser/rpc-server');
 require('@electron/internal/browser/guest-view-manager');
 
 // The app's package.json has already been found and applied (name, version,
-// desktopName, v8Flags); what is left is where to load the entry script from.
+// desktopName); what is left is the entry script and any v8Flags for it.
 const appPackage = process
   ._linkedBinding('electron_common_v8_util')
-  .getHiddenValue<{ path: string; main: string; esm: boolean }>(global, 'appPackage');
+  .getHiddenValue<{ path: string; main: string; esm: boolean; v8Flags?: string }>(global, 'appPackage');
 
 if (!appPackage) {
   process.nextTick(function () {
@@ -96,6 +97,11 @@ app.on('window-all-closed', () => {
 
 const { appCodeLoaded } = process;
 delete process.appCodeLoaded;
+
+// Applied only now so that everything above still matched its code cache.
+if (appPackage.v8Flags) {
+  (require('v8') as typeof v8).setFlagsFromString(appPackage.v8Flags);
+}
 
 // Finally load app's main script and transfer control to C++.
 if (appPackage.esm) {
