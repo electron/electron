@@ -101,22 +101,14 @@ process.parentPort.once('message', (e) => {
 
 #### `child.kill()`
 
-<!--
-```YAML history
-changes:
-  - pr-url: https://github.com/electron/electron/pull/53992
-    description: "`kill()` no longer force-kills a child that handles `SIGTERM`; it now matches `child_process.kill()`."
-```
--->
-
 Returns `boolean`
 
 Terminates the process gracefully. On POSIX, it sends `SIGTERM`; on Windows,
 it terminates the process. Like Node's
 [`child_process.kill()`](https://nodejs.org/api/child_process.html#subprocesskillsignal),
 this delivers the signal but does not guarantee that the process exits: a
-child that handles `SIGTERM` decides when, or whether, to exit. The child is
-reaped by Electron once it exits. Returns `true` if the signal was delivered,
+child that handles `SIGTERM` decides when, or whether, to exit. On POSIX, the child
+is reaped by Electron once it exits. Returns `true` if the signal was delivered,
 and `false` otherwise.
 
 ### Instance Properties

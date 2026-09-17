@@ -16,6 +16,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
+
+`child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the
+child had not exited. It now matches Node's `child_process.kill()`: it sends
+`SIGTERM` on POSIX (or terminates the process on Windows) and returns, and a
+child that handles `SIGTERM` decides when, or whether, to exit. A child that
+ignores `SIGTERM` is no longer terminated by `kill()`; have it exit from its
+`SIGTERM` handler instead.
+
 ### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
 
 The synchronous `safeStorage` methods, deprecated in Electron 45, have been
