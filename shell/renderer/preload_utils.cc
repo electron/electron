@@ -253,56 +253,20 @@ v8::Local<v8::Value> BuildVersions(v8::Isolate* isolate) {
 
 }  // namespace
 
-v8::MaybeLocal<v8::Value> BuildStartupData(
-    v8::Isolate* isolate,
-    const mojom::RendererStartupDataPtr& data) {
-  if (!data)
-    return {};
-
-  auto out = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  // preloadScripts: [{ id, type, filePath, contents, error }]
-  v8::LocalVector<v8::Value> scripts(isolate);
-  scripts.reserve(data->preload_scripts.size());
-  for (const auto& ps : data->preload_scripts) {
-    auto entry = gin_helper::Dictionary::CreateEmpty(isolate);
-    entry.Set("id", ps->id);
-    entry.Set("filePath", ps->file_path);
-    // The contents are not marshaled to V8 — createPreloadScript() looks them
-    // up from the mojo-cached startup data by id, avoiding a ~150 KB heap
-    // allocation per preload per navigation. JS only needs to know whether
-    // there is anything to run.
-    base::span<const uint8_t> bytes = ps->contents;
-    entry.Set("hasContents", !bytes.empty());
-    // Match the legacy IPC handler shape: `error` is an Error object when the
-    // file read failed (the legacy path serialized the fs.readFile error
-    // through the IPC), and absent otherwise.
-    if (ps->error) {
-      entry.Set("error", v8::Local<v8::Value>(v8::Exception::Error(
-                             gin::StringToV8(isolate, *ps->error))));
-    }
-    scripts.push_back(entry.GetHandle());
-  }
-  out.Set("preloadScripts",
-          v8::Array::New(isolate, scripts.data(), scripts.size()));
-
-  // process: { arch, platform, env, version, versions, execPath } — same shape
-  // as the legacy BROWSER_SANDBOX_LOAD reply. arch/platform/version/versions
-  // are filled from this binary's compiled-in metadata instead of being
-  // shipped over the wire (they are identical in browser and renderer).
-  auto proc = gin_helper::Dictionary::CreateEmpty(isolate);
-  proc.Set("arch", node::per_process::metadata.arch);
-  proc.Set("platform", node::per_process::metadata.platform);
-  proc.Set("version", "v" + node::per_process::metadata.versions.node);
-  proc.Set("versions", BuildVersions(isolate));
+void SetProcessProperties(v8::Isolate* isolate,
+                          gin_helper::Dictionary* process,
+                          const mojom::RendererStartupDataPtr& data) {
+  process->Set("arch", node::per_process::metadata.arch);
+  process->Set("platform", node::per_process::metadata.platform);
+  process->Set("version", "v" + node::per_process::metadata.versions.node);
+  process->Set("versions", BuildVersions(isolate));
   auto env = gin_helper::Dictionary::CreateEmpty(isolate);
-  for (const auto& [k, v] : data->environment)
-    env.Set(k, v);
-  proc.Set("env", env);
-  proc.Set("execPath", data->helper_exec_path);
-  out.Set("process", proc);
-
-  return out.GetHandle();
+  if (data) {
+    for (const auto& [k, v] : data->environment)
+      env.Set(k, v);
+  }
+  process->Set("env", env);
+  process->Set("execPath", data ? data->helper_exec_path : std::string());
 }
 
 }  // namespace electron::preload_utils
