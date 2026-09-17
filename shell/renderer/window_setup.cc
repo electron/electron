@@ -77,10 +77,12 @@ class GuestFocusListener final : public blink::NativeEventListener {
   void Invoke(blink::ExecutionContext* execution_context,
               blink::Event* event) override {
     auto* window = blink::DynamicTo<blink::LocalDOMWindow>(execution_context);
+    // The window may already be detached from its frame during teardown.
     blink::WebLocalFrame* web_frame =
-        window ? blink::WebLocalFrame::FromFrameToken(
-                     window->GetFrame()->GetLocalFrameToken())
-               : nullptr;
+        window && window->GetFrame()
+            ? blink::WebLocalFrame::FromFrameToken(
+                  window->GetFrame()->GetLocalFrameToken())
+            : nullptr;
     content::RenderFrame* render_frame =
         web_frame ? content::RenderFrame::FromWebFrame(web_frame) : nullptr;
     if (!render_frame)
