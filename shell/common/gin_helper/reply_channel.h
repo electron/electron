@@ -53,12 +53,15 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
 
   void EnsureReplySent();
 
- private:
-  static bool SendReplyImpl(v8::Isolate* isolate,
-                            InvokeCallback callback,
-                            v8::Local<v8::Value> arg);
-
+  // False if |arg| cannot be serialized (the channel stays usable) or a
+  // reply was already sent.
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
+
+ private:
+  // |callback| is left untouched if |arg| cannot be serialized.
+  static bool SendReplyImpl(v8::Isolate* isolate,
+                            InvokeCallback& callback,
+                            v8::Local<v8::Value> arg);
 
   InvokeCallback callback_;
 };

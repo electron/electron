@@ -60,9 +60,24 @@ async function loadWebViewAndWaitForEvent(
     document.body.appendChild(webview)
   })`);
 }
+// Resolves with the first console message from the page, ignoring the
+// "Electron Security Warning" messages the guest logs when it finishes
+// loading (the fixtures have no CSP).
 async function loadWebViewAndWaitForMessage(w: WebContents, attributes: Record<string, string>): Promise<string> {
-  const { message } = await loadWebViewAndWaitForEvent(w, attributes, 'console-message');
-  return message;
+  return await w.executeJavaScript(`new Promise((resolve, reject) => {
+    const webview = new WebView()
+    webview.id = 'webview'
+    for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
+      webview.setAttribute(k, v)
+    }
+    const onMessage = (e) => {
+      if (e.message.startsWith('Electron Security Warning')) return
+      webview.removeEventListener('console-message', onMessage)
+      resolve(e.message)
+    }
+    webview.addEventListener('console-message', onMessage)
+    document.body.appendChild(webview)
+  })`);
 }
 
 describe('<webview> tag', function () {
@@ -167,45 +182,39 @@ describe('<webview> tag', function () {
     });
   });
 
-  // FIXME(deepak1556): Ch69 follow up.
-  xdescribe('document.visibilityState/hidden', () => {
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
 
     afterEach(closeAllWindows);
 
-    it('updates when the window is shown after the ready-to-show event', async () => {
-      const w = new BrowserWindow({ show: false });
-      const readyToShowSignal = once(w, 'ready-to-show');
-      const pongSignal1 = once(ipcMain, 'pong');
+    it('follows the embedder window when it is hidden and shown again', async () => {
+      const w = new BrowserWindow({
+        width: 100,
+        height: 100,
+        webPreferences: { webviewTag: true, nodeIntegration: true, contextIsolation: false }
+      });
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
-      await pongSignal1;
-      const pongSignal2 = once(ipcMain, 'pong');
-      await readyToShowSignal;
-      w.show();
-
-      const [, visibilityState, hidden] = await pongSignal2;
-      expect(visibilityState).to.equal('visible');
-      expect(hidden).to.be.false();
-    });
-
-    it('inherits the parent window visibility state and receives visibilitychange events', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
-      const [, visibilityState, hidden] = await once(ipcMain, 'pong');
-      expect(visibilityState).to.equal('hidden');
-      expect(hidden).to.be.true();
-
-      // We have to start waiting for the event
-      // before we ask the webContents to resize.
-      const getResponse = once(ipcMain, 'pong');
-      w.webContents.emit('-window-visibility-change', 'visible');
-
-      return getResponse.then(([, visibilityState, hidden]) => {
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false();
-      });
+      }
+
+      w.hide();
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        expect(visibilityState).to.equal('hidden');
+        expect(hidden).to.be.true();
+      }
+
+      w.show();
+      {
+        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        expect(visibilityState).to.equal('visible');
+        expect(hidden).to.be.false();
+      }
     });
   });
 
@@ -314,17 +323,12 @@ describe('<webview> tag', function () {
           webContents.on('devtools-opened', function () {
             const showPanelIntervalId = setInterval(function () {
               if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
-                webContents.devToolsWebContents.executeJavaScript(
-                  '(' +
-                    function () {
-                      const { EUI } = window as any;
-                      const instance = EUI.InspectorView.InspectorView.instance();
-                      const tabs = instance.tabbedPane.tabs;
-                      const lastPanelId: any = tabs[tabs.length - 1].id;
-                      instance.showPanel(lastPanelId);
-                    }.toString() +
-                    ')()'
-                );
+                webContents.devToolsWebContents.executeJavaScript(`(async () => {
+                  const { InspectorView } = await import('./ui/legacy/legacy.js');
+                  const instance = InspectorView.InspectorView.instance();
+                  const tabs = instance.tabbedPane.tabs;
+                  instance.showPanel(tabs[tabs.length - 1].id);
+                })()`);
               } else {
                 clearInterval(showPanelIntervalId);
               }
@@ -1417,7 +1421,7 @@ describe('<webview> tag', function () {
         expect(message).to.be.not.equal('Window script is loaded before preload script');
       });
 
-      it('preload script can still use "process" and "Buffer" when nodeintegration is off', async () => {
+      it('preload script can still use "process" but not "Buffer" when sandboxed', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
           preload: `${fixtures}/module/preload-node-off.js`,
           src: `file://${fixtures}/api/blank.html`
@@ -1426,7 +1430,9 @@ describe('<webview> tag', function () {
         const types = JSON.parse(message);
         expect(types).to.include({
           process: 'object',
-          Buffer: 'function'
+          setImmediate: 'undefined',
+          global: 'object',
+          Buffer: 'undefined'
         });
       });
 
@@ -1875,9 +1881,12 @@ describe('<webview> tag', function () {
         // <webview>; it must not be able to drive it through the internal IPC.
         const call = (frame: Electron.WebFrameMain) =>
           frame.executeJavaScript(`(async () => {
-            const { ipc } = { ipc: process._linkedBinding('electron_renderer_ipc').createForRenderFrame() };
-            const { error, result } = await ipc.invoke(true, 'GUEST_VIEW_MANAGER_CALL', [${guestId}, 'executeJavaScript', ['6 * 7']]);
-            return error ? 'error:' + error : result;
+            const { ipcRendererInternal } = process._linkedBinding('electron_renderer_ipc');
+            try {
+              return await ipcRendererInternal.invoke('GUEST_VIEW_MANAGER_CALL', ${guestId}, 'executeJavaScript', ['6 * 7']);
+            } catch (error) {
+              return 'error:' + error.message;
+            }
           })()`);
         expect(await call(iframe)).to.match(/^error:.*Access denied/);
         expect(await call(embedder.webContents.mainFrame)).to.equal(42);

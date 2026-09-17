@@ -252,7 +252,10 @@ app
     // 1. test completes,
     // 2. `defer()`-ed methods run, in reverse order,
     // 3. regular `afterEach` hooks run.
-    const { runCleanupFunctions } = require('./lib/spec-helpers');
+    const { runCleanupFunctions, isTestingBindingAvailable } = require('./lib/spec-helpers');
+    if (process.env.ELECTRON_REQUIRE_TESTING_BINDINGS === '1' && !isTestingBindingAvailable()) {
+      throw new Error('Testing build expected, but testing bindings are unavailable');
+    }
     mocha.suite.on('suite', function attach(suite) {
       suite.afterEach('cleanup', runCleanupFunctions);
       suite.on('suite', attach);
@@ -360,7 +363,13 @@ app
         fs.writeFileSync(
           path.join(artifactsDir, 'spec-timings.json'),
           JSON.stringify(
-            { platform: process.platform, arch: process.arch, mas: !!process.mas, files: timings },
+            {
+              platform: process.platform,
+              arch: process.arch,
+              mas: !!process.mas,
+              sanitizer: process.env.IS_ASAN === 'true' ? 'asan' : process.env.IS_UBSAN === 'true' ? 'ubsan' : null,
+              files: timings
+            },
             null,
             2
           )

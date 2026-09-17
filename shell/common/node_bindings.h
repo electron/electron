@@ -12,6 +12,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -33,6 +34,10 @@ struct node_module;
 }  // namespace node
 
 namespace electron {
+
+// <bundle>/Contents/Resources on macOS, <assets dir>/resources elsewhere;
+// process.resourcesPath.
+base::FilePath GetResourcesPath();
 
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
@@ -60,10 +65,12 @@ template <typename T,
               std::is_same<T, uv_udp_t>::value>::type* = nullptr>
 class UvHandle {
  public:
-  UvHandle() : t_{new T} {}
+  // Value-initialized so a handle that never reaches uv_*_init() reads as
+  // UV_UNKNOWN_HANDLE instead of garbage.
+  UvHandle() : t_{new T{}} {}
   ~UvHandle() { reset(); }
 
-  explicit UvHandle(UvHandle&& that) {
+  UvHandle(UvHandle&& that) {
     t_ = that.t_;
     that.t_ = nullptr;
   }
@@ -91,8 +98,15 @@ class UvHandle {
   void reset() {
     auto* h = handle();
     if (h != nullptr) {
-      DCHECK_EQ(0, uv_is_closing(h));
-      uv_close(h, OnClosed);
+      if (uv_handle_get_type(h) == UV_UNKNOWN_HANDLE) {
+        // Never initialized, so it is on no loop and there is nothing to
+        // close, e.g. NodeBindings::dummy_uv_handle_ when a frame goes away
+        // before PrepareEmbedThread() runs.
+        delete t_;
+      } else {
+        DCHECK_EQ(0, uv_is_closing(h));
+        uv_close(h, OnClosed);
+      }
       t_ = nullptr;
     }
   }

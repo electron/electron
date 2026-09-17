@@ -44,7 +44,7 @@ runs:
     env:
       TARGET_PLATFORM: ${{ inputs.target-platform }}
     run: |
-      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=$TARGET_PLATFORM&getAccountName=true" > sas-token
+      curl --unix-socket /var/run/sas/sas.sock --fail --retry 5 --retry-delay 2 "http://foo/$CACHE_FILE?platform=$TARGET_PLATFORM&getAccountName=true" > sas-token
   - name: Save SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4

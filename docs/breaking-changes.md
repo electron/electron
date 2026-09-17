@@ -16,6 +16,34 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods, deprecated in Electron 45, have been
+removed along with Chromium's synchronous OSCrypt backend. Use
+`safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync()`
+and `safeStorage.decryptStringAsync()` instead. They use the same per-platform
+key stores, so data encrypted with `safeStorage.encryptString()` by earlier
+versions of Electron decrypts with `safeStorage.decryptStringAsync()`.
+
+### Behavior Changed: captured page images have the page's scale factor
+
+The [`NativeImage`](api/native-image.md) returned by `webContents.capturePage()`
+(and `win.capturePage()` / `<webview>.capturePage()`), passed to the offscreen
+`paint` event, and passed to the `webContents.beginFrameSubscription()`
+callback now has the page's device scale factor. These images used to always
+be marked as 1x, so on a HiDPI display, or with
+`webPreferences.offscreen.deviceScaleFactor`, `image.getSize()` returned pixels.
+It now returns DIPs, and `image.crop()` and `image.resize()` take DIPs. The
+pixel data returned by `toBitmap()`, `toPNG()`, `toJPEG()` and `toDataURL()` is
+unchanged.
+
+```js
+const image = await win.webContents.capturePage()
+const [scaleFactor] = image.getScaleFactors()
+const { width, height } = image.getSize() // DIPs
+console.log(width * scaleFactor, height * scaleFactor) // pixels, as before
+```
+
 ### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
 
 With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
@@ -33,6 +61,44 @@ when it is a top-level frame or is hosted inside the DevTools front-end (a
 treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
 ## Breaking API Changes (45.0)
+
+### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
+
+Sandboxed preload scripts (the default since Electron 20) and service worker preload
+scripts no longer have access to the `events`, `timers` and `url` Node.js module
+shims through `require`, and are no longer run with `Buffer`, `setImmediate` and
+`clearImmediate` in scope. These were browser polyfills bundled into every sandboxed
+renderer rather than the Node.js implementations. `require` in a sandboxed preload
+now only loads `electron` (and `electron/renderer`, `electron/common`); `process`
+and `global` are still provided.
+
+Use the equivalent Web APIs instead, or bundle the polyfill you need into your
+preload script:
+
+| Removed | Use instead |
+| --- | --- |
+| `require('events')` / `EventEmitter` | `EventTarget` and `Event`, or bundle the `events` package |
+| `require('timers')`, `setImmediate`, `clearImmediate` | `setTimeout` / `clearTimeout`, `queueMicrotask` |
+| `require('url')` | `URL`, `URLSearchParams` |
+| `Buffer` | `Uint8Array`, `TextEncoder` / `TextDecoder`, `atob` / `btoa`, or bundle the `buffer` package |
+
+`ipcRenderer` and the preload's `process` object keep their `EventEmitter` methods
+(`on`, `once`, `off`, `emit`, `removeListener`, `removeAllListeners`, ...).
+Preload scripts for renderers with `sandbox: false` are unaffected and continue to
+have the full Node.js environment.
+
+### Behavior Changed: `ipcRenderer` and `process` in sandboxed preload scripts use a native `EventEmitter`
+
+In sandboxed preload scripts and service worker preload scripts, `ipcRenderer`,
+`webFrame` and the preload's `process` object now inherit from an `EventEmitter`
+implemented natively by Electron instead of one from a bundled copy of the `events`
+npm package. It provides the same instance API as before (`on`, `once`, `off`,
+`emit`, `addListener`, `removeListener`, `removeAllListeners`, `prependListener`,
+`prependOnceListener`, `listeners`, `rawListeners`, `listenerCount`, `eventNames`,
+`setMaxListeners`, `getMaxListeners`, the `newListener` / `removeListener` events and
+the max-listener warning) with the same behavior. The static helpers that were only
+reachable through `require('events')` (`once`, `listenerCount`, `init`) are not
+provided.
 
 ### Removed: `contentTracing.enableHeapProfiling()`
 
@@ -138,6 +204,28 @@ win.webContents.setWindowOpenHandler(() => ({
 
 Setting `nodeIntegration: true` in the override also makes the child unsandboxed and has
 the same effect.
+
+### Deprecated: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods are deprecated and will be removed in
+Electron 46, following Chromium's removal of the synchronous OSCrypt backend
+they are built on. Use the asynchronous methods instead, which use the same
+per-platform key stores. Data encrypted with `safeStorage.encryptString()` can
+be decrypted with `safeStorage.decryptStringAsync()`.
+
+```js
+// Deprecated
+if (safeStorage.isEncryptionAvailable()) {
+  const encrypted = safeStorage.encryptString('secret')
+  const decrypted = safeStorage.decryptString(encrypted)
+}
+
+// Replace with
+if (await safeStorage.isAsyncEncryptionAvailable()) {
+  const encrypted = await safeStorage.encryptStringAsync('secret')
+  const { result: decrypted } = await safeStorage.decryptStringAsync(encrypted)
+}
+```
 
 ## Breaking API Changes (44.0)
 

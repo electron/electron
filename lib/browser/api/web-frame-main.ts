@@ -1,6 +1,5 @@
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-import { printToPDF } from '@electron/internal/browser/print-to-pdf';
 
 const { WebFrameMain, fromId, fromFrameToken } = process._linkedBinding('electron_browser_web_frame_main');
 
@@ -34,10 +33,6 @@ WebFrameMain.prototype._sendInternal = function (channel, ...args) {
   } catch (e) {
     console.error('Error sending from webFrameMain: ', e);
   }
-};
-
-WebFrameMain.prototype.printToPDF = async function (options) {
-  return printToPDF(this, options);
 };
 
 WebFrameMain.prototype.postMessage = function (...args) {

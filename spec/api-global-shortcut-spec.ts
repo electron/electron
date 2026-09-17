@@ -14,6 +14,18 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
     globalShortcut.unregisterAll();
   });
 
+  describe('events', () => {
+    it('is an event emitter', () => {
+      expect(globalShortcut.on).to.be.a('function');
+      expect(globalShortcut.removeListener).to.be.a('function');
+      const listener = () => {};
+      globalShortcut.on('registration-resolved', listener);
+      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(1);
+      globalShortcut.removeListener('registration-resolved', listener);
+      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(0);
+    });
+  });
+
   describe('register', () => {
     it('can register and unregister single accelerators', () => {
       const combinations = [...singleModifierCombinations, ...doubleModifierCombinations];

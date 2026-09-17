@@ -40,10 +40,11 @@ const certPath = path.join(fixturesPath, 'certificates');
 describe('reporting api', () => {
   it('sends a report for an intervention', async () => {
     const reporting = new EventEmitter();
+    const ses = session.fromPartition(`reporting-${Math.random()}`);
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
-    session.defaultSession.setCertificateVerifyProc((req, cb) => {
+    ses.setCertificateVerifyProc((req, cb) => {
       cb(0);
     });
 
@@ -77,17 +78,18 @@ describe('reporting api', () => {
     });
 
     await listen(server);
-    const bw = new BrowserWindow({ show: false });
+    const bw = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    const pageUrl = `https://localhost:${(server.address() as AddressInfo).port}/a`;
 
     try {
       const reportGenerated = once(reporting, 'report');
-      await bw.loadURL(`https://localhost:${(server.address() as AddressInfo).port}/a`);
+      await bw.loadURL(pageUrl);
 
       const [reports] = await reportGenerated;
       expect(reports).to.be.an('array').with.lengthOf(1);
       const { type, url, body } = reports[0];
       expect(type).to.equal('intervention');
-      expect(url).to.equal(url);
+      expect(url).to.equal(pageUrl);
       expect(body.id).to.equal('NavigatorVibrate');
       expect(body.message).to.match(
         /Blocked call to navigator.vibrate because user hasn't tapped on the frame or any embedded frame yet/
@@ -95,7 +97,7 @@ describe('reporting api', () => {
     } finally {
       bw.destroy();
       server.close();
-      session.defaultSession.setCertificateVerifyProc(null);
+      ses.setCertificateVerifyProc(null);
     }
   });
 });
@@ -576,6 +578,7 @@ describe('command line switches', () => {
       if (printEnv) {
         args.push('--print-env');
       }
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       appProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -621,7 +624,9 @@ describe('command line switches', () => {
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -643,7 +648,9 @@ describe('command line switches', () => {
     });
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+      const args = ['--remote-debugging-pipe', '--remote-debugging-port=0'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'pipe', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       let stderr = '';
@@ -668,7 +675,9 @@ describe('command line switches', () => {
     });
     it('should shut down Electron upon Browser.close CDP command', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -688,7 +697,9 @@ describe('command line switches', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      const args = ['--remote-debugging-port='];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args);
       appProcess.stdout.on('data', (data) => {
         console.log(data);
       });
@@ -946,7 +957,9 @@ describe('chromium features', () => {
 
     it('loads first party sets', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'base');
-      const fpsProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
       fpsProcess.stdout.on('data', (data) => {
@@ -960,6 +973,7 @@ describe('chromium features', () => {
     it('loads sets from the command line', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'command-line');
       const args = [appPath, `--use-first-party-set=${fps}`];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -2004,7 +2018,9 @@ describe('chromium features', () => {
     it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
 
-      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(process.execPath, args);
 
       const [code] = await once(appProcess, 'exit');
       expect(code).to.equal(0);
@@ -2673,7 +2689,7 @@ describe('chromium features', () => {
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal(
-        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}'
+        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"undefined"}'
       );
     });
 
@@ -5678,6 +5694,26 @@ describe('navigator.usb', () => {
         }
       }
     }
+  });
+
+  it('does not crash when the requesting webContents is destroyed from the select-usb-device handler', async () => {
+    const guest = (webContents as typeof ElectronInternal.WebContents).create({
+      type: 'webview',
+      embedder: w.webContents
+    });
+    await guest.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+    const selectFired = new Promise<void>((resolve) => {
+      w.webContents.session.once('select-usb-device', () => {
+        guest.destroy();
+        resolve();
+      });
+    });
+    guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
+    await selectFired;
+    await setTimeout();
+    expect(guest.isDestroyed()).to.be.true();
   });
 });
 

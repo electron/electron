@@ -40,6 +40,14 @@ class ElectronWebContentsUtilityHandlerImpl
   void OnFirstNonEmptyLayout() override;
   void SetTemporaryZoomLevel(double level,
                              SetTemporaryZoomLevelCallback callback) override;
+  void CloseWindow() override;
+  void NotifyGuestFocusChange(bool focus) override;
+  void GetFrameRoutingIdDeprecated(
+      const blink::LocalFrameToken& frame_token,
+      GetFrameRoutingIdDeprecatedCallback callback) override;
+  void GetFrameTokenDeprecated(
+      int32_t routing_id,
+      GetFrameTokenDeprecatedCallback callback) override;
   void CanAccessClipboardDeprecated(
       mojom::PermissionName name,
       const blink::LocalFrameToken& frame_token,

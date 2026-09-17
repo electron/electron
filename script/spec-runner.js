@@ -722,6 +722,25 @@ function getNativeAddonToolchainEnv() {
     );
     return null;
   }
+  const targetArch = process.env.npm_config_arch || process.env.NPM_CONFIG_ARCH || process.arch;
+  const targetFlags = [];
+  if (targetArch !== process.arch) {
+    const target = {
+      arm: ['arm-linux-gnueabihf', 'bullseye_armhf'],
+      arm64: ['aarch64-linux-gnu', 'bullseye_arm64'],
+      ia32: ['i686-linux-gnu', 'bullseye_i386'],
+      x64: ['x86_64-linux-gnu', 'bullseye_amd64']
+    }[targetArch];
+    if (!target) {
+      throw new Error(`Unsupported native addon target architecture: ${targetArch}`);
+    }
+    const [triple, sysrootName] = target;
+    const sysroot = path.resolve(BASE, 'build', 'linux', require('./sysroots.json')[sysrootName].SysrootDir);
+    if (!fs.existsSync(sysroot)) {
+      throw new Error(`Missing sysroot for ${targetArch} native addons: ${sysroot}`);
+    }
+    targetFlags.push(`--target=${triple}`, `--sysroot="${sysroot}"`);
+  }
   const ldflags = ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxLibDir}"`];
   // Sanitizer builds compile libc++abi into the electron executable and export
   // it from there (export_libcxxabi_from_executables in Chromium's
@@ -735,8 +754,10 @@ function getNativeAddonToolchainEnv() {
     CC: path.join(clangDir, 'clang'),
     CXX: path.join(clangDir, 'clang++'),
     LD: path.join(clangDir, 'lld'),
-    CFLAGS: '-Wno-trigraphs -fPIC',
+    npm_config_arch: targetArch,
+    CFLAGS: [process.env.CFLAGS, '-Wno-trigraphs -fPIC', ...targetFlags].filter(Boolean).join(' '),
     CXXFLAGS: [
+      process.env.CXXFLAGS,
       '-Wno-trigraphs',
       '-nostdinc++',
       `-isystem "${libcxxConfigDir}"`,
@@ -745,9 +766,12 @@ function getNativeAddonToolchainEnv() {
       '-fvisibility-inlines-hidden',
       '-fPIC',
       '-D_LIBCPP_ABI_NAMESPACE=Cr',
-      '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE'
-    ].join(' '),
-    LDFLAGS: ldflags.join(' ')
+      '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE',
+      ...targetFlags
+    ]
+      .filter(Boolean)
+      .join(' '),
+    LDFLAGS: [process.env.LDFLAGS, ...ldflags, ...targetFlags].filter(Boolean).join(' ')
   };
 }
 

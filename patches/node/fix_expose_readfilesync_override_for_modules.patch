@@ -8,10 +8,10 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index ccf11e66e53eab80e7a80f5ebb414abcd146a6ff..ba56c4a4bacab66eb10b0ac8ef0c1f5f5b4cc6ca 100644
+index 36e1f920979377ae191347b70958850a58607c1d..f85e0892133c5f97c676276751063c872e9f06b3 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
-@@ -501,6 +501,7 @@
+@@ -517,6 +517,7 @@
    V(maybe_cache_generated_source_map, v8::Function)                            \
    V(messaging_deserialize_create_object, v8::Function)                         \
    V(message_port, v8::Object)                                                  \
@@ -20,7 +20,7 @@ index ccf11e66e53eab80e7a80f5ebb414abcd146a6ff..ba56c4a4bacab66eb10b0ac8ef0c1f5f
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 5000ab66381cf06e2b75b3bb8c6637bc94ad435a..5b3f55c8111b96d310b7cf3fb25cbaa5eba14500 100644
+index f45d7ba91d98b58d495b67f07b761f4ba687c9d3..fa5f5a7c0eed19a7d88bd9d0e7862dfe68303c5e 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,12 +23,14 @@ namespace modules {
@@ -46,18 +46,18 @@ index 5000ab66381cf06e2b75b3bb8c6637bc94ad435a..5b3f55c8111b96d310b7cf3fb25cbaa5
    auto binding_data = realm->GetBindingData<BindingData>();
  
    auto cache_entry = binding_data->package_configs_.find(path.data());
-@@ -111,8 +114,48 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -111,8 +114,47 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
  
    PackageConfig package_config{};
    package_config.file_path = path;
 +
 +  Local<Function> modules_read_file_sync = realm->modules_read_file_sync();
 +
-+  int read_err = -1;
++  int read_error = UV_ENOENT;
    // No need to exclude BOM since simdjson will skip it.
--  if (ReadFileSync(&package_config.raw_json, path.data()) < 0) {
+-  int read_error = ReadFileSync(&package_config.raw_json, path.data());
 +  if (modules_read_file_sync.IsEmpty()) {
-+    read_err = ReadFileSync(&package_config.raw_json, path.data());
++    read_error = ReadFileSync(&package_config.raw_json, path.data());
 +  } else if (realm->env()->can_call_into_js()) {
 +    v8::TryCatch try_catch(isolate);
 +    Local<Value> args[] = {
@@ -82,21 +82,20 @@ index 5000ab66381cf06e2b75b3bb8c6637bc94ad435a..5b3f55c8111b96d310b7cf3fb25cbaa5
 +    Local<Value> result = maybe_result.ToLocalChecked();
 +    if (result->IsUndefined()) {
 +      // Fallback
-+      read_err = ReadFileSync(&package_config.raw_json, path.data());
++      read_error = ReadFileSync(&package_config.raw_json, path.data());
 +    } else if (result->IsFalse()) {
 +      // Not found
-+      read_err = -1;
++      read_error = UV_ENOENT;
 +    } else {
 +      BufferValue data(isolate, result);
 +      package_config.raw_json = data.ToString();
-+      read_err = 0;
++      read_error = 0;
 +    }
 +  }
-+  if (read_err < 0) {
-     // Add `nullopt` to the package config cache so that we don't
-     // need to open and attempt to read this path again
-     binding_data->package_configs_.insert({std::string(path), std::nullopt});
-@@ -254,6 +297,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+   if (read_error < 0) {
+     // No file at this path, a path component that is not a directory, or a
+     // "package.json" that is itself a directory all mean there is no package
+@@ -270,6 +312,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
    return &*cached.first->second;
  }
  
@@ -109,7 +108,7 @@ index 5000ab66381cf06e2b75b3bb8c6637bc94ad435a..5b3f55c8111b96d310b7cf3fb25cbaa5
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -680,6 +729,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -696,6 +744,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -118,7 +117,7 @@ index 5000ab66381cf06e2b75b3bb8c6637bc94ad435a..5b3f55c8111b96d310b7cf3fb25cbaa5
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -759,6 +810,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -775,6 +825,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {

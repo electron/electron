@@ -40,3 +40,16 @@ index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96a
  const { hasOpenSSL } = require('../common/crypto');
  
  const assert = require('assert');
+diff --git a/test/parallel/test-openssl-unreadable-config.js b/test/parallel/test-openssl-unreadable-config.js
+index 99681e0ecba0706c899928908723bae2e41ad34a..a22de41d9591816eb48f2a3ec711a2ef4ffb7ec8 100644
+--- a/test/parallel/test-openssl-unreadable-config.js
++++ b/test/parallel/test-openssl-unreadable-config.js
+@@ -14,6 +14,8 @@ if (!common.isLinux)
+   common.skip('linux only');
+ if (process.config.variables.node_shared_openssl)
+   common.skip('shared openssl may read a different configuration file');
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL does not load a default configuration file');
+ 
+ // Replace /etc/ssl with an empty tmpfs in a private mount namespace, where
+ // openssl.cnf is a symlink loop: opening it then fails with ELOOP instead of

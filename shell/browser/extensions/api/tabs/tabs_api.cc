@@ -101,7 +101,7 @@ bool CanAccessPrivilegedTabFields(const Extension* extension,
 
 }  // namespace
 
-ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
+ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() = default;
 
 ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() = default;
 

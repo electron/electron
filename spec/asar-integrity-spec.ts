@@ -14,7 +14,6 @@ import * as path from 'node:path';
 import { copyApp } from './lib/fs-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const plist = require('plist');
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {

@@ -85,7 +85,7 @@ void NotifyIcon::HandleClickEvent(int modifiers,
     NotifyMiddleClicked(bounds, modifiers);
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr());
+      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr(), {});
     else
       NotifyRightClicked(bounds, modifiers);
   }
@@ -209,7 +209,8 @@ void NotifyIcon::Focus() {
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  base::WeakPtr<ElectronMenuModel> menu_model) {
+                                  base::WeakPtr<ElectronMenuModel> menu_model,
+                                  base::ScopedClosureRunner retain_menu) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -228,9 +229,11 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
     rect.set_origin(display::Screen::Get()->GetCursorScreenPoint());
 
   if (menu_model) {
+    popup_menu_retain_ = std::move(retain_menu);
     menu_runner_ = std::make_unique<views::MenuRunner>(
         menu_model.get(), views::MenuRunner::HAS_MNEMONICS);
   } else {
+    popup_menu_retain_.RunAndReset();
     menu_runner_ = std::make_unique<views::MenuRunner>(
         menu_model_, views::MenuRunner::HAS_MNEMONICS);
   }

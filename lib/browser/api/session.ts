@@ -1,5 +1,4 @@
 import { fetchWithSession } from '@electron/internal/browser/api/net-fetch';
-import { addIpcDispatchListeners } from '@electron/internal/browser/ipc-dispatch';
 import * as deprecate from '@electron/internal/common/deprecate';
 
 import { net, type UtilityProcess } from 'electron/main';
@@ -23,8 +22,6 @@ systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
 
 Session.prototype._init = function () {
-  addIpcDispatchListeners(this);
-
   if (this.extensions) {
     const rerouteExtensionEvent = (eventName: string) => {
       const warn = deprecate.warnOnce(`${eventName} event`, `session.extensions ${eventName} event`);

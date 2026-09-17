@@ -49,6 +49,22 @@ describe('node feature', () => {
         const [msg] = await once(child, 'message');
         expect(msg.length).to.equal(2);
       });
+
+      ifit(process.platform === 'darwin')(
+        'does not start an app instance when the helper is executed without a process type',
+        () => {
+          const { status, stderr } = childProcess.spawnSync(
+            process.helperExecPath,
+            [path.join(fixtures, 'module', 'ping.js')],
+            {
+              encoding: 'utf-8',
+              timeout: 20000
+            }
+          );
+          expect(status).to.equal(64);
+          expect(stderr).to.include('requires a --type argument');
+        }
+      );
     });
   });
 
@@ -590,6 +606,33 @@ describe('node feature', () => {
         expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
       }
       expect(errors).to.deep.equal([]);
+    });
+
+    // Regression test for https://github.com/electron/electron/issues/53789.
+    it('does not crash when a node-integrated iframe is removed before its loop first runs', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegrationInSubFrames: true,
+          preload: path.join(fixtures, 'module', 'preload-remove-own-frame.js')
+        }
+      });
+      const gone = once(w.webContents, 'render-process-gone') as Promise<
+        [Electron.Event, Electron.RenderProcessGoneDetails]
+      >;
+      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      const removed = w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const frames = Array.from({ length: 10 }, () => {
+          const frame = document.createElement('iframe');
+          frame.src = 'base-page.html';
+          return document.body.appendChild(frame);
+        });
+        const check = () => frames.some((frame) => frame.isConnected) ? setTimeout(check, 10) : resolve(frames.length);
+        check();
+      })`);
+      const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
+      expect(result).to.equal(10);
     });
   });
 
@@ -1523,7 +1566,7 @@ describe('Node.js startup snapshot', () => {
     delete values.constants.crypto.defaultCipherList;
     return values;
   };
-  // eslint-disable-next-line no-eval
+  // oxlint-disable-next-line no-eval
   const fromThisProcess = () => comparable(eval(collect));
 
   const fromFreshEnvironment = async () => {

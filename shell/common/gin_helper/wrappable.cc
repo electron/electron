@@ -6,7 +6,7 @@
 
 #include "base/task/sequenced_task_runner.h"
 #include "gin/object_template_builder.h"
-#include "gin/public/isolate_holder.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "v8/include/v8-function.h"
 
@@ -67,6 +67,8 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   wrapper_.SetWeak(this, FirstWeakCallback,
                    v8::WeakCallbackType::kInternalFields);
 
+  OnWrapped(isolate);
+
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
@@ -88,7 +90,7 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  if (gin::IsolateHolder::DestroyedMicrotasksRunner()) {
+  if (CleanedUpAtExit::DidStartCleanup()) {
     return;
   }
   // Defer destruction to a posted task. V8's second-pass weak callbacks run
@@ -140,7 +142,7 @@ void DeprecatedWrappableBase::FirstWeakCallback(
 
 void DeprecatedWrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
-  if (gin::IsolateHolder::DestroyedMicrotasksRunner())
+  if (CleanedUpAtExit::DidStartCleanup())
     return;
   // See WrappableBase::SecondWeakCallback for why deletion is posted: V8's
   // second-pass weak callbacks run inside a DisallowJavascriptExecutionScope,

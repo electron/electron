@@ -2,7 +2,6 @@ import LanguageModelUtility from '@electron/internal/utility/api/language-model-
 import { ParentPort } from '@electron/internal/utility/parent-port';
 
 import { EventEmitter } from 'events';
-import { ReadableStream } from 'stream/web';
 import { pathToFileURL } from 'url';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -11,7 +10,13 @@ const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScrip
 process.argv.splice(1, 0, entryScript);
 
 // These are used by C++ to more easily identify these objects.
-v8Util.setHiddenValue(global, 'isReadableStream', (val: unknown) => val instanceof ReadableStream);
+// `stream/web` is required on first use rather than at startup: it evaluates
+// all of Node's WHATWG streams.
+v8Util.setHiddenValue(
+  global,
+  'isReadableStream',
+  (val: unknown) => val instanceof (require('stream/web') as typeof import('stream/web')).ReadableStream
+);
 v8Util.setHiddenValue(global, 'isLanguageModel', (val: unknown) => val instanceof LanguageModelUtility);
 v8Util.setHiddenValue(
   global,

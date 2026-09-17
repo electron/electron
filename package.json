@@ -20,8 +20,6 @@
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@xmldom/xmldom": "^0.9.12",
-    "buffer": "^6.0.3",
-    "events": "^3.2.0",
     "folder-hash": "^4.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
@@ -31,14 +29,12 @@
     "oxfmt": "^0.42.0",
     "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
-    "process": "^0.11.10",
     "semver": "^7.6.3",
     "stream-json": "^1.9.1",
     "tap-xunit": "^2.4.1",
     "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
-    "url": "^0.11.4",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
     "yaml": "^2.8.1"
@@ -115,8 +111,7 @@
     ],
     "docs/api/**/*.md": [
       "ts-node script/gen-filenames.ts",
-      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix",
-      "git add filenames.auto.gni"
+      "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
@@ -125,12 +120,10 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
       "node script/gen-libc++-filenames.js",
-      "node script/gen-siso-revision.js",
-      "git add build/siso_revision"
+      "node script/gen-siso-revision.js"
     ],
     ".github/workflows/pipeline-segment-electron-build.yml": [
-      "node script/copy-pipeline-segment-publish.js",
-      "git add .github/workflows/pipeline-segment-electron-publish.yml"
+      "node script/copy-pipeline-segment-publish.js"
     ]
   },
   "resolutions": {

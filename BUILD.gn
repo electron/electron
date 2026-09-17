@@ -1,7 +1,6 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
-import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//content/public/common/features.gni")
@@ -244,13 +243,13 @@ webpack_build("electron_worker_bundle") {
   out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
+webpack_build("electron_webview_bundle") {
   deps = [ ":build_electron_definitions" ]
 
-  inputs = auto_filenames.sandbox_bundle_deps
+  inputs = auto_filenames.webview_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
+  config_file = "//electron/build/webpack/webpack.config.webview.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
 webpack_build("electron_isolated_renderer_bundle") {
@@ -280,24 +279,14 @@ webpack_build("electron_utility_bundle") {
   out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
-}
-
 action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
@@ -306,10 +295,9 @@ action("electron_js2c") {
     "$root_gen_dir/internal/electron/js2c/browser_init.js",
     "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
     "$root_gen_dir/internal/electron/js2c/node_init.js",
-    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
     "$root_gen_dir/internal/electron/js2c/renderer_init.js",
-    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
     "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
     "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
@@ -331,10 +319,6 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
-
-  if (v8_cppgc_microtask_queue) {
-    args += [ "--v8-enable-cppgc-microtask-queue" ]
-  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -539,7 +523,6 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
-    "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -592,6 +575,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//tools/v8_context_snapshot:buildflags",
     "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
@@ -905,10 +889,6 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
-
-  if (allow_runtime_configurable_key_storage) {
-    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
-  }
 }
 
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
@@ -1745,6 +1725,10 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
+
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
@@ -1800,6 +1784,20 @@ if (is_mac) {
       if (is_linux) {
         deps += [ "//sandbox/linux:chrome_sandbox" ]
       }
+    }
+  }
+
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
     }
   }
 

@@ -11,9 +11,14 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/draggable_region_provider.h"
+#include "shell/browser/native_window_observer.h"
 
 namespace gin_helper {
 class Dictionary;
+}
+
+namespace electron {
+class NativeWindow;
 }
 
 namespace electron::api {
@@ -22,6 +27,7 @@ class WebContents;
 
 class WebContentsView : public View,
                         private content::WebContentsObserver,
+                        private NativeWindowObserver,
                         public DraggableRegionProvider {
  public:
   // Create a new instance of WebContentsView.
@@ -56,14 +62,26 @@ class WebContentsView : public View,
   void OnViewAddedToWidget(views::View* view) override;
   void OnViewRemovedFromWidget(views::View* view) override;
 
+  // NativeWindowObserver
+  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
+
  private:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   void ApplyBorderRadius();
+  void StopObservingWindow();
+  void OnContentsBoundsChanging();
+  bool HasLivePage();
+  void ScheduleWindowControlsOverlayUpdate();
+  void SendWindowControlsOverlay();
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;
+  base::WeakPtr<NativeWindow> observed_window_;
+  bool window_controls_overlay_update_pending_ = false;
+
+  base::WeakPtrFactory<WebContentsView> weak_factory_{this};
 };
 
 }  // namespace electron::api
