@@ -149,8 +149,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() const = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                              const std::string& level = "floating",
-                              int relativeLevel = 0) = 0;
+                              const std::string& level,
+                              int relativeLevel) = 0;
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
@@ -223,10 +223,9 @@ class NativeWindow : public views::WidgetDelegate {
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(
-      bool visible,
-      bool visibleOnFullScreen = false,
-      bool skipTransformProcessType = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen,
+                                         bool skipTransformProcessType) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() const = 0;
 

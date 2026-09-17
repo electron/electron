@@ -149,7 +149,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-  std::string GetChildProcessSuffix(int child_flags) override;
+  base::FilePath GetChildProcessPath(int child_flags) override;
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
 #endif

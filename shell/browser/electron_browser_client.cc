@@ -210,6 +210,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/apple/foundation_util.h"
 #include "content/browser/mac_helpers.h"
 #include "content/public/browser/child_process_host.h"
 #endif
@@ -804,7 +805,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   //
   // Only the about:blank document needs this. A popup that navigates
   // (window.open(url)) does not run the preload on its initial document and
-  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // gets a normal ElectronFrame push at ReadyToCommitNavigation, so
   // building the data here for it would be pure waste.
   if (!target_url.is_empty() && !target_url.IsAboutBlank())
     return std::nullopt;
@@ -812,8 +813,6 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(new_window_main_frame);
   if (!web_contents)
-    return std::nullopt;
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
 
   mojom::RendererStartupDataPtr data;
@@ -2131,13 +2130,31 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
-  if (child_flags ==
+base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+  if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
-    return kElectronMacHelperSuffixPlugin;
+    return base::FilePath();
   }
-  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+  if (!base::apple::AmIBundled()) {
+    return base::FilePath();
+  }
+
+  base::FilePath child_path;
+  if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+    return base::FilePath();
+  }
+
+  std::string child_base_name =
+      child_path.BaseName().value() + kElectronMacHelperSuffixPlugin;
+  return child_path.DirName()
+      .DirName()
+      .DirName()
+      .DirName()
+      .Append(child_base_name + ".app")
+      .Append("Contents")
+      .Append("MacOS")
+      .Append(child_base_name);
 }
 
 device::GeolocationSystemPermissionManager*

@@ -105,11 +105,9 @@ void MenuViews::OnClosed(int32_t window_id, base::OnceClosure callback) {
 }
 
 // static
-Menu* Menu::New(gin::Arguments* args) {
-  v8::Isolate* const isolate = args->isolate();
+Menu* Menu::Create(v8::Isolate* isolate, gin::Arguments* args) {
   Menu* menu = cppgc::MakeGarbageCollected<MenuViews>(
       isolate->GetCppHeap()->GetAllocationHandle(), args);
-  gin_helper::CallMethod(isolate, menu, "_init");
   return menu;
 }
 

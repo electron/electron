@@ -29,6 +29,7 @@ class Dictionary : public gin::Dictionary {
 
   // Allow implicitly converting from gin::Dictionary, as it is absolutely
   // safe in this case.
+  // NOLINTNEXTLINE(google-explicit-constructor)
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 

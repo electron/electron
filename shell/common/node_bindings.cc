@@ -73,6 +73,7 @@
   V(electron_browser_desktop_capturer)    \
   V(electron_browser_dialog)              \
   V(electron_browser_event_emitter)       \
+  V(electron_browser_ipc_dispatch)        \
   V(electron_browser_global_shortcut)     \
   V(electron_browser_image_view)          \
   V(electron_browser_in_app_purchase)     \
@@ -109,6 +110,7 @@
   V(electron_common_command_line)     \
   V(electron_common_crashpad_support) \
   V(electron_common_environment)      \
+  V(electron_common_events)           \
   V(electron_common_features)         \
   V(electron_common_native_image)     \
   V(electron_common_shared_texture)   \
@@ -527,8 +529,6 @@ void SetNodeOptions(base::Environment* env) {
 
 namespace electron {
 
-namespace {
-
 base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
@@ -539,7 +539,6 @@ base::FilePath GetResourcesPath() {
   return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
-}  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
@@ -762,11 +761,10 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     exit(result->exit_code());
 
 #if BUILDFLAG(IS_WIN)
-  // uv_init overrides error mode to suppress the default crash dialog, bring
-  // it back if user wants to show it.
-  if (browser_env_ == BrowserEnvironment::kBrowser ||
-      env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
-    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+  // libuv sets SEM_NOGPFAULTERRORBOX, which stops Windows Error Reporting
+  // from handling crashes that bypass crashpad's in-process handler (see
+  // electron_wer.dll). Clear it in every process type, as Chromium does.
+  SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
   g_is_initialized = true;
@@ -865,27 +863,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   std::unique_ptr<gin::ContextHolder> gin_context_holder;
   auto set_up_context = [&](v8::Local<v8::Context> ctx,
                             node::IsolateData* iso_data) {
-    if (browser_env_ == BrowserEnvironment::kBrowser) {
-      const std::vector<std::string> search_paths = {"app.asar", "app",
-                                                     "default_app.asar"};
-      const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate,
-              gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()
-                               ? app_asar_search_paths
-                               : search_paths));
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
-                           .As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
-    }
     ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                          static_cast<void*>(iso_data),
                                          v8::kEmbedderDataTypeTagDefault);

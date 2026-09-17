@@ -188,10 +188,12 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
 
   // The type of file dialog last shown. This is SELECT_NONE if an
   // instance is created through the public EnumerateDirectory().
-  ui::SelectFileDialog::Type dialog_type_;
+  ui::SelectFileDialog::Type dialog_type_ =
+      ui::SelectFileDialog::SELECT_OPEN_FILE;
 
   // The mode of file dialog last shown.
-  blink::mojom::FileChooserParams::Mode dialog_mode_;
+  blink::mojom::FileChooserParams::Mode dialog_mode_ =
+      blink::mojom::FileChooserParams::Mode::kOpen;
 
   // The enumeration root directory for EnumerateDirectory() and
   // RunFileChooser with kUploadFolder.

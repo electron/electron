@@ -225,7 +225,8 @@ const LINTERS = [
         }
 
         // Read the patch list
-        const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
+        const patchList = fs.readFileSync(dotPatchesPath, 'utf8').trim();
+        const patchFileList = patchList ? patchList.split('\n') : [];
         const patchFileSet = new Set(patchFileList);
         patchFileList.reduce((seen, file) => {
           if (seen.has(file)) {
@@ -569,7 +570,7 @@ async function findFiles(args, linter) {
 
   for (const ignoreRoot of linter.ignoreRoots || []) {
     const ignorePath = path.join(ELECTRON_ROOT, ignoreRoot);
-    if (!fs.existsSync(ignorePath)) continue;
+    if (!fs.existsSync(ignorePath) || !fs.statSync(ignorePath).isDirectory()) continue;
 
     const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test));
     filenames = filenames.filter((fileName) => !ignoreFiles.has(fileName));

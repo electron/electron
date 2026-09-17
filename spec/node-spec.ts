@@ -49,6 +49,22 @@ describe('node feature', () => {
         const [msg] = await once(child, 'message');
         expect(msg.length).to.equal(2);
       });
+
+      ifit(process.platform === 'darwin')(
+        'does not start an app instance when the helper is executed without a process type',
+        () => {
+          const { status, stderr } = childProcess.spawnSync(
+            process.helperExecPath,
+            [path.join(fixtures, 'module', 'ping.js')],
+            {
+              encoding: 'utf-8',
+              timeout: 20000
+            }
+          );
+          expect(status).to.equal(64);
+          expect(stderr).to.include('requires a --type argument');
+        }
+      );
     });
   });
 
@@ -1600,7 +1616,7 @@ describe('Node.js startup snapshot', () => {
     delete values.constants.crypto.defaultCipherList;
     return values;
   };
-  // eslint-disable-next-line no-eval
+  // oxlint-disable-next-line no-eval
   const fromThisProcess = () => comparable(eval(collect));
 
   const fromFreshEnvironment = async () => {

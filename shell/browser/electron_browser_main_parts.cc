@@ -13,7 +13,6 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
-#include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -24,10 +23,6 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/sync/key_storage_config_linux.h"
-#include "components/os_crypt/sync/key_storage_util_linux.h"
-#include "components/os_crypt/sync/os_crypt.h"
-#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
@@ -47,6 +42,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_utility_process.h"
+#include "shell/browser/app_package.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -59,9 +55,12 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/platform_util.h"
 #include "shell/common/v8_util.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
@@ -99,6 +98,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/win/chrome_select_file_dialog_factory.h"
+#include "components/os_crypt/async/browser/os_crypt_win.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -346,6 +346,24 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Add Electron extended APIs.
   electron_bindings_->BindTo(isolate, node_env_->process_object());
 
+  // Find the app and apply its package.json; lib/browser/init.ts loads the
+  // entry script from what is left here.
+  if (std::optional<AppPackage> package = LoadAppPackage()) {
+    v8::Local<v8::Context> env_context = node_env_->context();
+    gin_helper::Dictionary app_package = gin::Dictionary::CreateEmpty(isolate);
+    app_package.Set("path", package->path);
+    app_package.Set("main", package->main);
+    app_package.Set("esm", package->esm);
+    if (!package->v8_flags.empty())
+      app_package.Set("v8Flags", package->v8_flags);
+    env_context->Global()
+        ->SetPrivate(env_context,
+                     v8::Private::ForApi(
+                         isolate, gin::StringToSymbol(isolate, "appPackage")),
+                     gin::ConvertToV8(isolate, app_package))
+        .Check();
+  }
+
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
 
@@ -477,7 +495,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   return 0;
 }
 
-void ElectronBrowserMainParts::PostCreateThreads() {
+int ElectronBrowserMainParts::PostCreateThreads() {
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
@@ -492,6 +510,7 @@ void ElectronBrowserMainParts::PostCreateThreads() {
   for (const auto& plugin : plugins)
     plugin_service->RegisterInternalPlugin(plugin);
 #endif
+  return 0;
 }
 
 void ElectronBrowserMainParts::PostDestroyThreads() {
@@ -600,6 +619,16 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
     DevToolsManagerDelegate::StartHttpHandler();
   }
 
+#if BUILDFLAG(IS_LINUX)
+  // Read by media/audio/pulse in this process and inherited by the audio
+  // service, so PulseAudio shows the app's name and icon.
+  auto env = base::Environment::Create();
+  env->SetVar("ELECTRON_PA_APP_NAME", GetPossiblyOverriddenApplicationName());
+  env->SetVar("ELECTRON_PA_ICON_NAME",
+              platform_util::GetXdgAppId().value_or(
+                  command_line->GetProgram().BaseName().value()));
+#endif
+
   fake_browser_process_->PreMainMessageLoopRun();
 
 #if !BUILDFLAG(IS_MAC)
@@ -627,9 +656,6 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
-  std::string app_name = electron::Browser::Get()->GetName();
-#endif
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       base::BindOnce(&ExitOnSessionLoss),
@@ -639,36 +665,9 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
-
-  // Set up crypt config. This needs to be done before anything starts the
-  // network service, as the raw encryption key needs to be shared with the
-  // network service for encrypted cookie storage.
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-  std::unique_ptr<os_crypt::Config> config =
-      std::make_unique<os_crypt::Config>();
-  // Forward to os_crypt the flag to use a specific password store.
-  config->store =
-      command_line.GetSwitchValueASCII(password_manager::kPasswordStore);
-  config->product_name = app_name;
-  config->application_name = app_name;
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-  config->should_use_preference =
-      command_line.HasSwitch(password_manager::kEnableEncryptionSelection);
-  base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
-
-  bool use_backend = !config->should_use_preference ||
-                     os_crypt::GetBackendUse(config->user_data_path);
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::nix::DesktopEnvironment desktop_env =
-      base::nix::GetDesktopEnvironment(env.get());
-  os_crypt::SelectedLinuxBackend selected_backend =
-      os_crypt::SelectBackend(config->store, use_backend, desktop_env);
-  fake_browser_process_->SetLinuxStorageBackend(selected_backend);
-  OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_MAC)
+  std::string app_name = electron::Browser::Get()->GetName();
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";
   KeychainPassword::GetAccountName() = app_name;
 #endif
@@ -758,7 +757,7 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
   auto* local_state = g_browser_process->local_state();
   DCHECK(local_state);
 
-  bool os_crypt_init = OSCrypt::Init(local_state);
+  bool os_crypt_init = os_crypt_async::Init(local_state);
   DCHECK(os_crypt_init);
 #endif
 }

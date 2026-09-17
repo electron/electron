@@ -50,8 +50,8 @@ const nodeHeaderSources = Array.from(
 const main = async () => {
   const webpackTargets = [
     {
-      name: 'sandbox_bundle_deps',
-      config: 'webpack.config.sandboxed_renderer.js'
+      name: 'webview_bundle_deps',
+      config: 'webpack.config.webview.js'
     },
     {
       name: 'isolated_bundle_deps',
@@ -76,10 +76,6 @@ const main = async () => {
     {
       name: 'utility_bundle_deps',
       config: 'webpack.config.utility.js'
-    },
-    {
-      name: 'preload_realm_bundle_deps',
-      config: 'webpack.config.preload_realm.js'
     }
   ];
 

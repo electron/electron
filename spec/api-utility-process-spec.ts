@@ -316,6 +316,17 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
+
+    ifit(process.platform !== 'win32')('lets a child that handles SIGTERM decide its own exit', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'sigterm-handler.js'));
+      deferKillUtilityProcess(child);
+      const [msg] = await once(child, 'message');
+      expect(msg).to.equal('ready');
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      const [code] = await exit;
+      expect(code).to.equal(42);
+    });
   });
 
   describe('esm', () => {
@@ -575,13 +586,14 @@ describe('utilityProcess module', () => {
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
       deferKillUtilityProcess(child);
-      // The fixture prints dns.getDefaultResultOrder() and exits on its own.
-      const output = await outputUntil(child, /ipv4first|verbatim/);
-      expect(output).to.contain('ipv4first', 'default verbatim should be ipv4first');
+      await once(child, 'spawn');
+      const result = once(child, 'message');
+      child.postMessage('get-default-result-order');
+      const [order] = await result;
+      expect(order).to.equal('ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {

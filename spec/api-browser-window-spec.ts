@@ -100,7 +100,7 @@ describe('BrowserWindow module', () => {
           show: false,
           // apparently void 0 had different behaviour from undefined in the
           // issue that this test is supposed to catch.
-          webContents: void 0 // eslint-disable-line no-void
+          webContents: void 0 // oxlint-disable-line no-void
         } as any);
         w.destroy();
       }).not.to.throw();
@@ -125,7 +125,7 @@ describe('BrowserWindow module', () => {
       const w1 = new BrowserWindow({ show: false, name: 'duplicate-name' });
 
       expect(() => {
-        // eslint-disable-next-line no-new
+        // oxlint-disable-next-line no-new
         new BrowserWindow({ show: false, name: 'duplicate-name' });
       }).to.throw("Window name 'duplicate-name' is already in use. Window names must be unique.");
 
@@ -136,7 +136,7 @@ describe('BrowserWindow module', () => {
       const base = new BaseWindow({ show: false, name: 'shared-name' });
 
       expect(() => {
-        // eslint-disable-next-line no-new
+        // oxlint-disable-next-line no-new
         new BrowserWindow({ show: false, name: 'shared-name' });
       }).to.throw("Window name 'shared-name' is already in use. Window names must be unique.");
 
@@ -553,15 +553,24 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
-    // changed and adjust the test.
     it('should emit did-fail-load event for files that do not exist', async () => {
-      const didFailLoad = once(w.webContents, 'did-fail-load');
-      w.loadURL('file://a.txt');
-      const [, code, desc, , isMainFrame] = await didFailLoad;
-      expect(code).to.equal(-6);
-      expect(desc).to.equal('ERR_FILE_NOT_FOUND');
-      expect(isMainFrame).to.equal(true);
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-'));
+      const url = nodeUrl.pathToFileURL(path.join(tempDir, 'missing.txt')).toString();
+
+      try {
+        const didFailLoad = once(w.webContents, 'did-fail-load');
+        const loadURL = w.loadURL(url);
+        const didFailLoadEvent = didFailLoad.then(([, code, desc, eventURL, isMainFrame]) => {
+          expect(eventURL).to.equal(url);
+          expect(code).to.equal(-6);
+          expect(desc).to.equal('ERR_FILE_NOT_FOUND');
+          expect(isMainFrame).to.equal(true);
+        });
+
+        await Promise.all([expect(loadURL).to.be.rejected, didFailLoadEvent]);
+      } finally {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
     });
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -672,11 +681,10 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    // FIXME(#43730): fix underlying bug and re-enable asap
-    it.skip('should support base url for data urls', async () => {
-      await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
-        .catch((e) => console.log(e));
+    it('should support base url for data urls', async () => {
+      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+        baseURLForDataURL: 'other://'
+      });
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
 
@@ -4057,11 +4065,11 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {
       expect(() => {
-        /* eslint-disable-next-line no-new */
+        /* oxlint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group1'
         });
-        /* eslint-disable-next-line no-new */
+        /* oxlint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group2',
           frame: false
@@ -4118,6 +4126,67 @@ describe('BrowserWindow module', () => {
         sandbox: true,
         contextIsolation: true
       });
+      describe('delivery of the preload list', () => {
+        for (const sandbox of [false, true]) {
+          it(`runs session and window preloads in order for every navigation (sandbox: ${sandbox})`, async () => {
+            const tag = (name: string) => path.join(fixtures, 'module', `preload-order-${name}.js`);
+            for (const name of ['a', 'b']) {
+              fs.writeFileSync(tag(name), `require('electron').ipcRenderer.send('preload-order', '${name}');`);
+              defer(() => fs.rmSync(tag(name), { force: true }));
+            }
+            const ses = session.fromPartition(`preload-order-${sandbox}`);
+            ses.registerPreloadScript({ type: 'frame', id: 'order-a', filePath: tag('a') });
+            ses.registerPreloadScript({ type: 'frame', id: 'order-b', filePath: tag('b') });
+            defer(() => {
+              ses.unregisterPreloadScript('order-a');
+              ses.unregisterPreloadScript('order-b');
+            });
+            const order: string[] = [];
+            ipcMain.on('preload-order', (_e, name: string) => order.push(name));
+            ipcMain.on('preload-location', () => order.push('window'));
+            defer(() => {
+              ipcMain.removeAllListeners('preload-order');
+              ipcMain.removeAllListeners('preload-location');
+            });
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, session: ses, preload: path.join(fixtures, 'module', 'preload-location.js') }
+            });
+            await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+            await w.loadURL('about:blank');
+            expect(order).to.deep.equal(['a', 'b', 'window', 'a', 'b', 'window']);
+          });
+
+          it(`runs preloads in a context created on the initial empty document (sandbox: ${sandbox})`, async function () {
+            // Only the Node.js renderer receives its preload list at frame
+            // creation so far; the sandboxed one still needs a committed
+            // navigation.
+            if (sandbox) return this.skip();
+            const server = http.createServer((request, response) => {
+              response.writeHead(302, { Location: '/elsewhere' });
+              response.end();
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, preload: path.join(fixtures, 'module', 'preload-location.js') }
+            });
+            // Strand the frame on its initial empty document...
+            w.webContents.once('will-redirect', (event) => event.preventDefault());
+            await expect(w.loadURL(`${url}/redirect`)).to.eventually.be.rejected();
+            expect(locations).to.be.empty();
+            // ...then force a script context onto it.
+            await w.webContents.mainFrame.executeJavaScript('void 0');
+            await waitUntil(() => locations.length > 0);
+            expect(locations).to.deep.equal(['about:blank']);
+          });
+        }
+      });
+
       it('does not leak any node globals on the window object with nodeIntegration is disabled', async () => {
         let w = new BrowserWindow({
           webPreferences: {
@@ -4622,7 +4691,7 @@ describe('BrowserWindow module', () => {
           expect(message).to.equal('preload-stack-trace-marker');
           // The throw is on line 9 of preload-stack-trace.js (see the marker
           // comment in that fixture).
-          expect(stack).to.match(/preload-stack-trace\.js:9:\d+/, `stack should reference line 9, got:\n${stack}`);
+          expect(stack).to.match(/preload-stack-trace\.js:8:\d+/, `stack should reference line 8, got:\n${stack}`);
         });
       }
     });
@@ -4725,7 +4794,7 @@ describe('BrowserWindow module', () => {
         expect(url).to.equal(expectedUrl);
       });
 
-      it('exposes full EventEmitter object to preload script', async () => {
+      it('exposes ipcRenderer with the full EventEmitter API to preload script', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -4736,12 +4805,7 @@ describe('BrowserWindow module', () => {
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
         const { EventEmitter } = require('node:events');
-        const emitter = new EventEmitter();
-        const browserEventEmitterProperties = [];
-        let currentObj = emitter;
-        do {
-          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
-        } while ((currentObj = Object.getPrototypeOf(currentObj)));
+        const browserEventEmitterProperties = Object.getOwnPropertyNames(EventEmitter.prototype).sort();
         expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
@@ -5024,9 +5088,11 @@ describe('BrowserWindow module', () => {
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
         expect(test.contextId).to.be.a('string');
-        expect(test.nodeEvents).to.equal(true);
-        expect(test.nodeTimers).to.equal(true);
-        expect(test.nodeUrl).to.equal(true);
+        expect(test.requirableNodeModules).to.deep.equal([]);
+        expect(test.typeofBuffer).to.equal('undefined');
+        expect(test.typeofSetImmediate).to.equal('undefined');
+        expect(test.typeofClearImmediate).to.equal('undefined');
+        expect(test.typeofGlobal).to.equal('object');
 
         if (process.platform === 'linux' && test.osSandbox) {
           expect(test.creationTime).to.be.null('creation time');
@@ -5995,7 +6061,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'darwin')('sheet-begin event emits when window opens a sheet', async () => {
       const w = new BrowserWindow();
       const sheetBegin = once(w, 'sheet-begin');
-      // eslint-disable-next-line no-new
+      // oxlint-disable-next-line no-new
       new BrowserWindow({
         modal: true,
         parent: w
@@ -6953,26 +7019,27 @@ describe('BrowserWindow module', () => {
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
-        const enterFullScreen = once(w, 'enter-full-screen');
-        const leaveFullScreen = once(w, 'leave-full-screen');
+        for (const menuBarVisible of [true, false]) {
+          w.setMenuBarVisibility(menuBarVisible);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible before fullscreen (menuBarVisible=${menuBarVisible})`
+          );
 
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
+          const enterFullScreen = once(w, 'enter-full-screen');
+          await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+          await enterFullScreen;
 
-        expect(w.isFullScreen()).to.be.false('is fullscreen');
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+          const leaveFullScreen = once(w, 'leave-full-screen');
+          await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+          await leaveFullScreen;
 
-        w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
-
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+          expect(w.isFullScreen()).to.be.false(`isFullScreen after exit (menuBarVisible=${menuBarVisible})`);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible after fullscreen exit (menuBarVisible=${menuBarVisible})`
+          );
+        }
       });
 
       for (const frame of [true, false]) {

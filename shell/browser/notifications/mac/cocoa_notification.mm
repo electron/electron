@@ -292,14 +292,14 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
 
 void CocoaNotification::NotificationActivated(int actionIndex) {
   if (delegate())
-    delegate()->NotificationAction(actionIndex);
+    delegate()->NotificationAction(actionIndex, -1);
 
   this->LogAction("button clicked");
 }
 
 void CocoaNotification::NotificationDismissed() {
   if (delegate())
-    delegate()->NotificationClosed();
+    delegate()->NotificationClosed("");
 
   this->LogAction("dismissed");
 }

@@ -33,6 +33,13 @@ export const isWayland =
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
 
+// macos-x64 CI runner VMs have no Metal-capable GPU, and SwiftShader's Vulkan
+// backend fails to initialize there too, so every GPU process launch fails
+// until Chromium falls back to software compositing with GL disabled. Start
+// spawned apps in that end state directly so they skip the failed launches.
+export const ciGpuArgs: string[] =
+  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
+
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions() {
@@ -94,7 +101,14 @@ class RemoteControlApp {
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
+  // Register cleanup before awaiting the port so a stalled startup that trips
+  // mocha's timeout doesn't leak the child into the in-job retry.
+  defer(() => {
+    if (appProcess.exitCode === null && appProcess.signalCode === null) {
+      appProcess.kill('SIGINT');
+    }
+  });
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
@@ -105,9 +119,6 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
         resolve(Number(m[1]));
       }
     });
-  });
-  defer(() => {
-    appProcess.kill('SIGINT');
   });
   return new RemoteControlApp(appProcess, port);
 }
@@ -294,7 +305,7 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
 
   let runFn: any = it;
   if (type === 'only') {
-    // eslint-disable-next-line no-only-tests/no-only-tests
+    // oxlint-disable-next-line no-only-tests/no-only-tests
     runFn = it.only;
   } else if (type === 'skip') {
     runFn = it.skip;

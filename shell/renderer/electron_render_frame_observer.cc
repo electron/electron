@@ -18,6 +18,7 @@
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/renderer_client_base.h"
+#include "shell/renderer/window_setup.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
@@ -180,6 +181,10 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  if ((is_main_world(world_id) || is_isolated_world(world_id)) &&
+      renderer_client_->ShouldLoadPreload(isolate, context, render_frame_)) {
+    SetUpWindow(render_frame_, context);
+  }
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(isolate, context, render_frame_);
 
@@ -194,7 +199,8 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames);
+      (is_main_frame || allow_node_in_sub_frames) &&
+      renderer_client_->HasScriptsToInject(render_frame_);
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();

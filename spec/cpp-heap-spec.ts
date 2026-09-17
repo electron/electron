@@ -129,15 +129,15 @@ describe('cpp heap', () => {
       const [usedBefore, usedAfter] = await remotely(async () => {
         const { safeStorage } = require('electron');
         const { getCppHeapStatistics } = require('node:v8');
-        console.log(typeof safeStorage.isEncryptionAvailable);
+        console.log(typeof safeStorage.isAsyncEncryptionAvailable);
         const heapStatsBefore = getCppHeapStatistics('brief');
         {
           const { safeStorage } = require('electron');
-          console.log(typeof safeStorage.encryptString);
+          console.log(typeof safeStorage.encryptStringAsync);
         }
         {
           const { safeStorage } = require('electron');
-          console.log(typeof safeStorage.decryptString);
+          console.log(typeof safeStorage.decryptStringAsync);
         }
         const heapStatsAfter = getCppHeapStatistics('brief');
         return [heapStatsBefore.used_size_bytes, heapStatsAfter.used_size_bytes];
@@ -152,7 +152,7 @@ describe('cpp heap', () => {
           const { safeStorage } = require('electron');
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
-          console.log(typeof safeStorage.isEncryptionAvailable);
+          console.log(typeof safeStorage.isAsyncEncryptionAvailable);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
         },
         path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
@@ -554,7 +554,7 @@ describe('cpp heap', () => {
       await rc.remotely(
         async (fixturesDir: string, setupWorker: string) => {
           const { app } = require('electron');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 
@@ -577,7 +577,7 @@ describe('cpp heap', () => {
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 
@@ -613,7 +613,7 @@ describe('cpp heap', () => {
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 

@@ -18,11 +18,11 @@ app.whenReady().then(() => {
   // collection lands in a foreground GC task during app.quit()'s uv_run
   // drain. Three is enough for the crash to reproduce 10/10 on a Linux
   // testing build before the fix.
-  // eslint-disable-next-line no-new
+  // oxlint-disable-next-line no-new
   new WebContentsView();
-  // eslint-disable-next-line no-new
+  // oxlint-disable-next-line no-new
   new WebContentsView();
-  // eslint-disable-next-line no-new
+  // oxlint-disable-next-line no-new
   new WebContentsView();
 
   app.quit();

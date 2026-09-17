@@ -4,12 +4,15 @@
 
 #include "shell/browser/api/electron_api_web_frame_main.h"
 
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "base/containers/map_util.h"
 #include "base/feature_list.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
@@ -21,6 +24,7 @@
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
@@ -315,19 +319,35 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+v8::Local<v8::Promise> WebFrameMain::PrintToPDF(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
 #if BUILDFLAG(ENABLE_PRINTING)
-v8::Local<v8::Promise> WebFrameMain::PrintToPDF(const base::Value& settings) {
-  if (!HasRenderFrame()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    v8::Local<v8::Promise> handle = promise.GetHandle();
-    promise.RejectWithErrorMessage(
-        "Render frame was disposed before WebFrameMain could be accessed");
-    return handle;
-  }
-  return PrintFrameToPDF(render_frame_host(), settings);
-}
+  v8::Local<v8::Value> options;
+  args->GetNext(&options);
+  // Jobs queue per frame tree, keyed by its top frame (or this one if that is
+  // already gone).
+  const int frame_tree =
+      HasRenderFrame()
+          ? render_frame_host()->GetMainFrame()->GetFrameTreeNodeId().value()
+          : FrameTreeNodeID().value();
+  return electron::PrintToPDF(
+      isolate, frame_tree,
+      base::BindRepeating(
+          [](cppgc::WeakPersistent<WebFrameMain> self)
+              -> content::RenderFrameHost* {
+            return self && self->HasRenderFrame() ? self->render_frame_host()
+                                                  : nullptr;
+          },
+          cppgc::WeakPersistent<WebFrameMain>(this)),
+      {"Render frame was disposed before WebFrameMain could be accessed"},
+      options);
+#else
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  promise.RejectWithErrorMessage("Printing feature is disabled");
+  return handle;
 #endif
+}
 
 void WebFrameMain::CopyVideoFrameAt(int x, int y) {
   if (!CheckRenderFrame())
@@ -410,8 +430,77 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   }
 }
 
+// static
+base::OnceCallback<void(bool, electron::SerializedValue, const std::string&)>
+WebFrameMain::BindPromiseToReply(
+    gin_helper::Promise<v8::Local<v8::Value>> promise) {
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise, bool replied,
+         bool success, electron::SerializedValue result,
+         const std::string& error) {
+        if (!replied) {
+          promise.RejectWithErrorMessage(kFrameDisposedError);
+          return;
+        }
+        if (!success && !error.empty()) {
+          promise.RejectWithErrorMessage(error);
+          return;
+        }
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Context::Scope context_scope(promise.GetContext());
+        v8::Local<v8::Value> value = gin::ConvertToV8(isolate, result);
+        if (success)
+          promise.Resolve(value);
+        else
+          promise.Reject(value);
+      },
+      std::move(promise)));
+  return mojo::WrapCallbackWithDropHandler(
+      base::BindOnce(std::move(on_reply), true),
+      base::BindOnce(std::move(on_drop), false, false,
+                     electron::SerializedValue(), std::string()));
+}
+
+v8::Local<v8::Promise> WebFrameMain::TransferSharedTexture(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> transfer,
+    const std::string& texture_id,
+    v8::Local<v8::Value> args) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  electron::SerializedValue serialized_transfer, serialized_args;
+  if (!electron::SerializeV8Value(isolate, transfer, &serialized_transfer) ||
+      !electron::SerializeV8Value(isolate, args, &serialized_args)) {
+    promise.RejectWithErrorMessage("Failed to serialize arguments");
+    return handle;
+  }
+  mojom::ElectronFrame* frame = GetFrameApi();
+  if (!frame) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+  frame->ReceiveSharedTexture(std::move(serialized_transfer), texture_id,
+                              std::move(serialized_args),
+                              BindPromiseToReply(std::move(promise)));
+  return handle;
+}
+
+mojom::ElectronFrame* WebFrameMain::GetFrameApi() {
+  if (!HasRenderFrame() || !render_frame_host()->IsRenderFrameLive())
+    return nullptr;
+  if (!frame_api_ || !frame_api_.is_connected()) {
+    frame_api_.reset();
+    render_frame_host()->GetRemoteAssociatedInterfaces()->GetInterface(
+        &frame_api_);
+  }
+  return frame_api_.get();
+}
+
 void WebFrameMain::TeardownMojoConnection() {
   renderer_api_.reset();
+  frame_api_.reset();
   pending_receiver_.reset();
 }
 
@@ -712,14 +801,13 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("collectJavaScriptCallStack",
                  &WebFrameMain::CollectDocumentJSCallStack)
-#if BUILDFLAG(ENABLE_PRINTING)
-      .SetMethod("_printToPDF", &WebFrameMain::PrintToPDF)
-#endif
+      .SetMethod("printToPDF", &WebFrameMain::PrintToPDF)
       .SetMethod("copyVideoFrameAt", &WebFrameMain::CopyVideoFrameAt)
       .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
+      .SetMethod("_transferSharedTexture", &WebFrameMain::TransferSharedTexture)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)

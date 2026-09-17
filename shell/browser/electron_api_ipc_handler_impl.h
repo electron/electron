@@ -24,6 +24,10 @@ class WeakCell;
 }  // namespace gin
 
 namespace electron {
+
+namespace api {
+class IpcMainEvent;
+}  // namespace api
 class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                                   private content::WebContentsObserver {
  public:
@@ -72,7 +76,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   content::RenderFrameHost* GetRenderFrameHost();
   gin::WeakCell<api::Session>* GetSession();
 
-  gin_helper::internal::Event* MakeIPCEvent(
+  api::IpcMainEvent* MakeIPCEvent(
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,

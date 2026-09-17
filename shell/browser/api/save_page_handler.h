@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
 #define ELECTRON_SHELL_BROWSER_API_SAVE_PAGE_HANDLER_H_
 
+#include "base/memory/weak_ptr.h"
 #include "components/download/public/common/download_item.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/save_page_type.h"
@@ -28,9 +29,9 @@ class SavePageHandler : private content::DownloadManager::Observer,
   explicit SavePageHandler(gin_helper::Promise<void> promise);
   ~SavePageHandler() override;
 
-  bool Handle(const base::FilePath& full_path,
+  void Handle(const base::FilePath& full_path,
               const content::SavePageType& save_type,
-              content::WebContents* web_contents);
+              base::WeakPtr<content::WebContents> web_contents);
 
  private:
   void Destroy(download::DownloadItem* item);

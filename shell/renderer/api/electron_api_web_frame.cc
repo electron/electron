@@ -25,6 +25,7 @@
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -32,10 +33,12 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
@@ -204,7 +207,10 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
+  // Promise results are not awaited here (kDoNotWait), so |rejections| is
+  // always empty: a returned promise is handed to the caller as the result.
+  void Completed(const std::vector<v8::Local<v8::Value>>& result,
+                 const std::vector<v8::Local<v8::Value>>& rejections) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
@@ -377,19 +383,20 @@ class WebFrameRenderer final
         .SetMethod("getIsolatedWorlds", &WebFrameRenderer::GetIsolatedWorlds)
         .SetMethod("setIsolatedWorldInfo",
                    &WebFrameRenderer::SetIsolatedWorldInfo)
-        .SetMethod("_setIsolatedWorldCreationCallback",
-                   &WebFrameRenderer::SetIsolatedWorldCreationCallback)
         .SetMethod("getResourceUsage", &WebFrameRenderer::GetResourceUsage)
         .SetMethod("clearCache", &WebFrameRenderer::ClearCache)
         .SetMethod("setSpellCheckProvider",
                    &WebFrameRenderer::SetSpellCheckProvider)
         // Frame navigators
         .SetMethod("findFrameByToken", &WebFrameRenderer::FindFrameByToken)
+        .SetMethod("findFrameByRoutingId",
+                   &WebFrameRenderer::FindFrameByRoutingId)
         .SetMethod("getFrameForSelector",
                    &WebFrameRenderer::GetFrameForSelector)
         .SetMethod("findFrameByName", &WebFrameRenderer::FindFrameByName)
         .SetMethod("_findFrameByWindow", &WebFrameRenderer::FindFrameByWindow)
         .SetProperty("frameToken", &WebFrameRenderer::GetFrameToken)
+        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId)
         .SetProperty("opener", &WebFrameRenderer::GetOpener)
         .SetProperty("parent", &WebFrameRenderer::GetFrameParent)
         .SetProperty("top", &WebFrameRenderer::GetTop)
@@ -427,7 +434,49 @@ class WebFrameRenderer final
   // object.
   void Dispose() { content::RenderFrameObserver::Dispose(); }
 
+  // Starts emitting 'isolated-world-created' on |wrapper| (this object) the
+  // first time something listens for it, so that frame objects nobody listens
+  // to are not wired into the observer.
+  void EnsureIsolatedWorldCreatedEvent(v8::Isolate* isolate,
+                                       v8::Local<v8::Object> wrapper) {
+    if (emits_isolated_world_created_)
+      return;
+    content::RenderFrame* render_frame;
+    std::string unused;
+    if (!MaybeGetRenderFrame(&unused, "on", &render_frame))
+      return;
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    if (!observer)
+      return;
+    emits_isolated_world_created_ = true;
+    // Held for the document's lifetime, as the JavaScript listener closure
+    // that used to be registered here was.
+    auto handle = std::make_shared<v8::Global<v8::Object>>(isolate, wrapper);
+    observer->SetIsolatedWorldCreatedCallback(base::BindRepeating(
+        [](v8::Isolate* isolate, std::shared_ptr<v8::Global<v8::Object>> self,
+           int world_id) {
+          v8::HandleScope handle_scope(isolate);
+          v8::Local<v8::Object> wrapper = self->Get(isolate);
+          v8::Local<v8::Context> context;
+          if (!wrapper->GetCreationContext(isolate).ToLocal(&context))
+            return;
+          v8::MicrotasksScope microtasks_scope(
+              context, v8::MicrotasksScope::kRunMicrotasks);
+          v8::Context::Scope context_scope(context);
+          v8::TryCatch try_catch(isolate);
+          try_catch.SetVerbose(true);
+          std::array<v8::Local<v8::Value>, 1> args{
+              v8::Integer::New(isolate, world_id)};
+          gin_helper::EmitEvent(
+              isolate, wrapper,
+              gin::StringToV8(isolate, "isolated-world-created"), args);
+        },
+        base::Unretained(isolate), std::move(handle)));
+  }
+
  private:
+  bool emits_isolated_world_created_ = false;
+
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
                            const std::string_view method_name,
                            content::RenderFrame** render_frame_ptr) {
@@ -697,7 +746,7 @@ class WebFrameRenderer final
         blink::BackForwardCacheAware::kAllow,
         blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait,
-        /*is_injected_extension_script=*/false);
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
   }
@@ -780,7 +829,7 @@ class WebFrameRenderer final
         blink::BackForwardCacheAware::kPossiblyDisallow,
         blink::mojom::WantResultOption::kWantResult,
         blink::mojom::PromiseResultOption::kDoNotWait,
-        /*is_injected_extension_script=*/false);
+        /*script_injector_id=*/blink::WebString());
 
     return handle;
   }
@@ -792,20 +841,6 @@ class WebFrameRenderer final
 
     auto* observer = ElectronRenderFrameObserver::Get(render_frame);
     return observer ? observer->GetIsolatedWorlds() : std::vector<int>{};
-  }
-
-  void SetIsolatedWorldCreationCallback(
-      v8::Isolate* isolate,
-      base::RepeatingCallback<void(int)> callback) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "_setIsolatedWorldCreationCallback",
-                             &render_frame)) {
-      return;
-    }
-
-    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
-    if (observer)
-      observer->SetIsolatedWorldCreatedCallback(std::move(callback));
   }
 
   void SetIsolatedWorldInfo(v8::Isolate* isolate,
@@ -911,6 +946,56 @@ class WebFrameRenderer final
         .ToLocalChecked();
   }
 
+  // Deprecated: the browser keeps the routing ID mapping.
+  int GetRoutingId(v8::Isolate* isolate) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      electron::util::EmitDeprecationWarning(
+          isolate,
+          "webFrame.routingId is deprecated. Use webFrame.frameToken instead.",
+          "electron");
+    }
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "routingId", &render_frame))
+      return 0;
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> utility;
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&utility);
+    int32_t routing_id = 0;
+    utility->GetFrameRoutingIdDeprecated(
+        render_frame->GetWebFrame()->GetLocalFrameToken(), &routing_id);
+    return routing_id;
+  }
+
+  v8::Local<v8::Value> FindFrameByRoutingId(v8::Isolate* isolate,
+                                            int routing_id) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      electron::util::EmitDeprecationWarning(
+          isolate,
+          "webFrame.findFrameByRoutingId is deprecated. Use "
+          "webFrame.findFrameByToken instead.",
+          "electron");
+    }
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "findFrameByRoutingId", &render_frame))
+      return v8::Null(isolate);
+    mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> utility;
+    render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&utility);
+    std::optional<blink::LocalFrameToken> token;
+    utility->GetFrameTokenDeprecated(routing_id, &token);
+    blink::WebLocalFrame* web_frame =
+        token ? blink::WebLocalFrame::FromFrameToken(*token) : nullptr;
+    content::RenderFrame* found =
+        web_frame ? content::RenderFrame::FromWebFrame(web_frame) : nullptr;
+    if (!found)
+      return v8::Null(isolate);
+    return WebFrameRenderer::Create(isolate, found)
+        ->GetWrapper(isolate)
+        .ToLocalChecked();
+  }
+
   std::string GetFrameToken(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
     if (!MaybeGetRenderFrame(isolate, "frameToken", &render_frame))
@@ -1007,6 +1092,69 @@ gin::WrapperInfo WebFrameRenderer::kWrapperInfo =
 
 namespace {
 
+// WebFrame.prototype.on() and friends: register for 'isolated-world-created'
+// on first use, then defer to the EventEmitter.prototype method of the same
+// name, which is |data|.
+void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  using electron::api::WebFrameRenderer;
+  v8::Isolate* isolate = info.GetIsolate();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Object> self;
+  if (!info.This()->ToObject(context).ToLocal(&self))
+    return;
+  if (info.Length() > 0 && info[0]->IsString() &&
+      gin::V8ToString(isolate, info[0]) == "isolated-world-created") {
+    WebFrameRenderer* frame = nullptr;
+    if (gin::ConvertFromV8(isolate, self, &frame) && frame)
+      frame->EnsureIsolatedWorldCreatedEvent(isolate, self);
+  }
+  v8::Local<v8::Function> method = info.Data().As<v8::Function>();
+  v8::LocalVector<v8::Value> args(isolate);
+  for (int i = 0; i < info.Length(); ++i)
+    args.push_back(info[i]);
+  v8::Local<v8::Value> result;
+  if (method->Call(context, self, static_cast<int>(args.size()), args.data())
+          .ToLocal(&result)) {
+    info.GetReturnValue().Set(result);
+  }
+}
+
+// Makes WebFrame an EventEmitter subclass in |context|.
+void MakeEventEmitter(v8::Local<v8::Context> context,
+                      v8::Local<v8::Function> constructor) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> proto_value;
+  if (!constructor->Get(context, gin::StringToSymbol(isolate, "prototype"))
+           .ToLocal(&proto_value) ||
+      !proto_value->IsObject()) {
+    return;
+  }
+  v8::Local<v8::Object> proto = proto_value.As<v8::Object>();
+  v8::Local<v8::Function> emitter =
+      gin_helper::GetNodeEventEmitterConstructor(context);
+  v8::Local<v8::Value> emitter_proto =
+      emitter->Get(context, gin::StringToSymbol(isolate, "prototype"))
+          .ToLocalChecked();
+  // Already done for this context (the templates are cached per context).
+  v8::Local<v8::Value> current = proto->GetPrototype();
+  if (current == emitter_proto)
+    return;
+  proto->SetPrototype(context, emitter_proto).Check();
+  for (const char* name : {"on", "addListener", "once", "prependListener",
+                           "prependOnceListener"}) {
+    v8::Local<v8::String> key = gin::StringToSymbol(isolate, name);
+    v8::Local<v8::Value> method;
+    CHECK(emitter_proto.As<v8::Object>()->Get(context, key).ToLocal(&method) &&
+          method->IsFunction());
+    v8::Local<v8::Function> hook =
+        v8::Function::New(context, ListenHook, method, 2,
+                          v8::ConstructorBehavior::kThrow)
+            .ToLocalChecked();
+    hook->SetName(key);
+    proto->Set(context, key, hook).Check();
+  }
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -1015,8 +1163,10 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(
-                           isolate, context, &WebFrameRenderer::kWrapperInfo));
+  v8::Local<v8::Function> constructor = WebFrameRenderer::GetConstructor(
+      isolate, context, &WebFrameRenderer::kWrapperInfo);
+  MakeEventEmitter(context, constructor);
+  dict.Set("WebFrame", constructor);
   dict.Set("mainFrame",
            WebFrameRenderer::Create(
                isolate, electron::GetRenderFrame(isolate, exports)));
