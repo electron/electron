@@ -65,7 +65,7 @@ index 27ddb8ea3824e454dd8ef1cb8c7355bf5962832d..68ea74535cc2d01e36953da60de3c8d6
        kWorkerUrl, blink::mojom::ScriptType::kClassic,
        network::mojom::CredentialsMode::kSameOrigin, "name", storage_key,
 diff --git a/content/browser/locks/lock_manager.h b/content/browser/locks/lock_manager.h
-index 955f6e25a10d9da63ad7ef38327953f927fdce32..0baeb7240d589efdd63b5df5949746b80d3e4496 100644
+index b64da175d04916e728a5b66bfe3d8bb6c973a5b5..e224f9fc073c4e1c21fdb0b13688169b5574b54a 100644
 --- a/content/browser/locks/lock_manager.h
 +++ b/content/browser/locks/lock_manager.h
 @@ -119,7 +119,7 @@ class CONTENT_EXPORT LockManager : public blink::mojom::LockManager {
@@ -78,10 +78,10 @@ index 955f6e25a10d9da63ad7ef38327953f927fdce32..0baeb7240d589efdd63b5df5949746b8
    SEQUENCE_CHECKER(sequence_checker_);
    base::WeakPtrFactory<LockManager> weak_ptr_factory_{this};
 diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
-index 8917db95e177af70c10583f48e060d36752c509b..e7a3e0d20d29583b3f1d80369e9ff17b3050543f 100644
+index 03f9f0aa0070e69c163b37ddfb3533e2b593929f..ec04cbda0b53b7937b7e9b4a66effa406d5393e5 100644
 --- a/content/browser/worker_host/shared_worker_host.cc
 +++ b/content/browser/worker_host/shared_worker_host.cc
-@@ -225,6 +225,10 @@ SharedWorkerHost::~SharedWorkerHost() {
+@@ -226,6 +226,10 @@ SharedWorkerHost::~SharedWorkerHost() {
      }
    }
  
@@ -92,7 +92,7 @@ index 8917db95e177af70c10583f48e060d36752c509b..e7a3e0d20d29583b3f1d80369e9ff17b
    if (site_instance_->HasProcess()) {
      // Send any final reports and allow the reporting configuration to be
      // removed.
-@@ -237,10 +241,6 @@ SharedWorkerHost::~SharedWorkerHost() {
+@@ -238,10 +242,6 @@ SharedWorkerHost::~SharedWorkerHost() {
  
      GetProcessHost()->RemoveObserver(this);
  
@@ -103,7 +103,7 @@ index 8917db95e177af70c10583f48e060d36752c509b..e7a3e0d20d29583b3f1d80369e9ff17b
      GetStoragePartitionImpl()->ClearNetworkRestrictionsAfterDelay({
          network_restrictions_id_,
      });
-@@ -622,7 +622,7 @@ void SharedWorkerHost::CreateLockManager(
+@@ -623,7 +623,7 @@ void SharedWorkerHost::CreateLockManager(
    GetStoragePartitionImpl()->BindLockManager(
        GetWorkerStorageKey(), token().value(), std::move(receiver));
    GetStoragePartitionImpl()->GetLockManager()->AddLockObserver(token().value(),
@@ -112,7 +112,7 @@ index 8917db95e177af70c10583f48e060d36752c509b..e7a3e0d20d29583b3f1d80369e9ff17b
  }
  
  bool SharedWorkerHost::OnLockContention() {
-@@ -967,8 +967,7 @@ void SharedWorkerHost::RenderProcessHostDestroyed(RenderProcessHost* host) {
+@@ -969,8 +969,7 @@ void SharedWorkerHost::RenderProcessHostDestroyed(RenderProcessHost* host) {
  }
  
  StoragePartitionImpl* SharedWorkerHost::GetStoragePartitionImpl() {

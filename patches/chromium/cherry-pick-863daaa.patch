@@ -108,7 +108,7 @@ index 3e00775bc8d51da494d3a874c880ed7e234c691a..14a8efdda0aedd8ae88284fda2520506
    Image image_;
  
 diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
-index 51a41116a83c0ffa2aa5dbcf4f624439481bb760..74224412d9f764c9145920cbcdfbc8853147c077 100644
+index d644576c364b8bb6a026aa8c9d35823489a7b956..c723443f8cac54d710557754cbdcf4b4556609f5 100644
 --- a/gpu/command_buffer/service/shared_context_state.cc
 +++ b/gpu/command_buffer/service/shared_context_state.cc
 @@ -4,6 +4,7 @@

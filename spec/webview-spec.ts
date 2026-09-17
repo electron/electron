@@ -314,17 +314,12 @@ describe('<webview> tag', function () {
           webContents.on('devtools-opened', function () {
             const showPanelIntervalId = setInterval(function () {
               if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
-                webContents.devToolsWebContents.executeJavaScript(
-                  '(' +
-                    function () {
-                      const { EUI } = window as any;
-                      const instance = EUI.InspectorView.InspectorView.instance();
-                      const tabs = instance.tabbedPane.tabs;
-                      const lastPanelId: any = tabs[tabs.length - 1].id;
-                      instance.showPanel(lastPanelId);
-                    }.toString() +
-                    ')()'
-                );
+                webContents.devToolsWebContents.executeJavaScript(`(async () => {
+                  const { InspectorView } = await import('./ui/legacy/legacy.js');
+                  const instance = InspectorView.InspectorView.instance();
+                  const tabs = instance.tabbedPane.tabs;
+                  instance.showPanel(tabs[tabs.length - 1].id);
+                })()`);
               } else {
                 clearInterval(showPanelIntervalId);
               }

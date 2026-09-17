@@ -17,7 +17,7 @@ Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1696429}
 
 diff --git a/chrome/browser/ui/browser_browsertest.cc b/chrome/browser/ui/browser_browsertest.cc
-index 805887a78d771d92038f285e0fb33aff7ce7d345..5207ad6e2791146b14ceb86188c86792ff4e5cd0 100644
+index 638feca251a02bc40895be7be07fd213f69b6121..89ea0b9e9e5037867bbae5a3123a6270a815c67c 100644
 --- a/chrome/browser/ui/browser_browsertest.cc
 +++ b/chrome/browser/ui/browser_browsertest.cc
 @@ -28,6 +28,7 @@
@@ -56,7 +56,7 @@ index 805887a78d771d92038f285e0fb33aff7ce7d345..5207ad6e2791146b14ceb86188c86792
      EXPECT_TRUE(handle->IsWaitingToCommit());
    }
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 77beb2697fe84415af285b6448c9710404e39d09..5530d7bfc74504d56ecf7c0448fe5834820594b8 100644
+index cbfc619583e793e5dff05588207f32bfc50d3863..1493ba6849bd628049d95411619d6bfa23d16f8f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -737,9 +737,16 @@ class JavaScriptDialogDismissNotifier {
@@ -80,7 +80,7 @@ index 77beb2697fe84415af285b6448c9710404e39d09..5530d7bfc74504d56ecf7c0448fe5834
  
    void NotifyOnDismiss(base::OnceClosure callback) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index ba132cdffe870503e54499941745e8941cb6bdab..c36cd688e220606bf9f163e1b7bc56bc586e9b43 100644
+index 7ed2aab64b14ed39fb3b032a11698310e03a51be..4ce547a75b14eabf64909ee19e702b584215f353 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1589,10 +1589,15 @@ class CONTENT_EXPORT WebContentsImpl
@@ -100,7 +100,7 @@ index ba132cdffe870503e54499941745e8941cb6bdab..c36cd688e220606bf9f163e1b7bc56bc
  
    bool has_persistent_video() { return has_persistent_video_; }
 diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
-index 9ba98e1053e5035c15ccb8ce8a5f9aca305b2f0a..90168e90d882550edf462e62355f210b8c749e21 100644
+index 23da0401b518a2c907810318b05c3a30faeb1205..2b397451dabf1b569711245f3fddf544249a2b07 100644
 --- a/content/browser/web_contents/web_contents_impl_browsertest.cc
 +++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
 @@ -8,6 +8,7 @@

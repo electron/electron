@@ -275,6 +275,9 @@ class InspectableWebContents
 
   void SendMessageAck(int request_id, const base::Value* arg1);
 
+  // dock_state_ in the encoding of the frontend's currentDockState setting.
+  std::string DockStateSetting() const;
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();
 #endif

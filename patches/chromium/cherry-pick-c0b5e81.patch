@@ -16,10 +16,10 @@ Commit-Queue: Takashi Nakayama <tnak@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1695233}
 
 diff --git a/content/browser/service_worker/service_worker_browsertest.cc b/content/browser/service_worker/service_worker_browsertest.cc
-index 1b2af4c821f281c33cfd77572a05cce051dbc795..055de61e412c744fc4cd9860b78fbec596e8f99d 100644
+index 42aaa11160291bace5ed3b36c5cea5bdee4ece95..01c4800ba7fb32039797a006bc3e8c27b1dbc491 100644
 --- a/content/browser/service_worker/service_worker_browsertest.cc
 +++ b/content/browser/service_worker/service_worker_browsertest.cc
-@@ -3400,7 +3400,10 @@ class CacheStorageSideDataSizeChecker
+@@ -3399,7 +3399,10 @@ class CacheStorageSideDataSizeChecker
  class ServiceWorkerV8CodeCacheForCacheStorageTest
      : public ServiceWorkerBrowserTest {
   public:
@@ -31,7 +31,7 @@ index 1b2af4c821f281c33cfd77572a05cce051dbc795..055de61e412c744fc4cd9860b78fbec5
  
    ServiceWorkerV8CodeCacheForCacheStorageTest(
        const ServiceWorkerV8CodeCacheForCacheStorageTest&) = delete;
-@@ -3475,6 +3478,8 @@ class ServiceWorkerV8CodeCacheForCacheStorageTest
+@@ -3474,6 +3477,8 @@ class ServiceWorkerV8CodeCacheForCacheStorageTest
          partition->GetCacheStorageControl(), embedded_test_server()->base_url(),
          std::string("cache_name"), embedded_test_server()->GetURL(kScriptUrl));
    }
@@ -273,10 +273,10 @@ index ba13a0e259c2b022ba06460714cd67331d75a2bd..a4320bb8b398b94ef32ab0ca5e1ab0d7
  }  // namespace
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 52b223b26ce4692f12725aaf75a048acdee1b961..e025ad66b39ce95e4d08bbe13b9095c0c573c86a 100644
+index 1165042ad0e918678409c42c1825a3ff4bf0abba..d9a063641a1678fcdf8ff152ee01474595ef6db4 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -5655,6 +5655,10 @@
+@@ -5681,6 +5681,10 @@
        name: "ServiceWorkerClientLifecycleState",
        status: "experimental",
      },

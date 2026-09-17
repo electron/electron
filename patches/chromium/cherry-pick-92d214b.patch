@@ -36,10 +36,10 @@ Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1693615}
 
 diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
-index bf56800508aa5b6f66282e74e396b98379f0ffe6..4c39b48f500e6c9156a9316b634e5812e43408dc 100644
+index 17b155766a320621349ca4427194ca661dbaa47b..ac9efb69bac1a5ee3d494ab96066caf7466b406b 100644
 --- a/content/browser/loader/navigation_url_loader_impl.cc
 +++ b/content/browser/loader/navigation_url_loader_impl.cc
-@@ -1420,8 +1420,19 @@ void NavigationURLLoaderImpl::OnReceiveResponse(
+@@ -1426,8 +1426,19 @@ void NavigationURLLoaderImpl::OnReceiveResponse(
    TRACE_EVENT("navigation", "NavigationURLLoaderImpl::OnReceiveResponse",
                perfetto::Flow::FromPointer(this));
    DCHECK(!cached_metadata);
@@ -61,7 +61,7 @@ index bf56800508aa5b6f66282e74e396b98379f0ffe6..4c39b48f500e6c9156a9316b634e5812
    LogQueueTimeHistogram("Navigation.QueueTime.OnReceiveResponse",
                          resource_request().is_outermost_main_frame);
  
-@@ -1562,44 +1573,50 @@ void NavigationURLLoaderImpl::CallOnReceivedResponse(
+@@ -1568,44 +1579,50 @@ void NavigationURLLoaderImpl::CallOnReceivedResponse(
  void NavigationURLLoaderImpl::OnReceiveRedirect(
      const net::RedirectInfo& redirect_info,
      network::mojom::URLResponseHeadPtr head) {
@@ -142,7 +142,7 @@ index bf56800508aa5b6f66282e74e396b98379f0ffe6..4c39b48f500e6c9156a9316b634e5812
      }
    }
    if (error != net::OK) {
-@@ -1614,8 +1631,9 @@ void NavigationURLLoaderImpl::OnReceiveRedirect(
+@@ -1620,8 +1637,9 @@ void NavigationURLLoaderImpl::OnReceiveRedirect(
            error, std::string_view(base::NumberToString(error)));
      } else {
        // TODO(https://crbug.com/434182226): Turn this to `CHECK()`.
@@ -155,10 +155,10 @@ index bf56800508aa5b6f66282e74e396b98379f0ffe6..4c39b48f500e6c9156a9316b634e5812
        // on the original `url_loader_`.
        OnComplete(network::URLLoaderCompletionStatus(error));
 diff --git a/content/browser/loader/navigation_url_loader_impl_unittest.cc b/content/browser/loader/navigation_url_loader_impl_unittest.cc
-index df925305ced5f90a3837c643b55a5911662d8507..14a484a90a3fe517779743323497e0f26344a003 100644
+index 059f589a7840f3f278d098b8447a2503c043468b..5b34dc6b6c54e2b805cab94461b0601623a72306 100644
 --- a/content/browser/loader/navigation_url_loader_impl_unittest.cc
 +++ b/content/browser/loader/navigation_url_loader_impl_unittest.cc
-@@ -774,6 +774,86 @@ class TestRedirectInterceptor final : public NavigationLoaderInterceptor {
+@@ -776,6 +776,86 @@ class TestRedirectInterceptor final : public NavigationLoaderInterceptor {
    mojo::Remote<network::mojom::URLLoaderClient> client_;
  };
  
@@ -245,8 +245,8 @@ index df925305ced5f90a3837c643b55a5911662d8507..14a484a90a3fe517779743323497e0f2
  // This sets the timeout timer but doesn't expect the timer is fired
  // automatically. If needed, the timer should be fired explicitly e.g. via
  // `TriggerTimeoutForTesting()`.
-@@ -1787,4 +1867,129 @@ TEST_F(NavigationURLLoaderImplTest, StorageAccessApiStatus_None_CrossOrigin) {
-             net::StorageAccessApiStatus::kNone);
+@@ -1816,4 +1896,129 @@ TEST_F(NavigationURLLoaderImplTest, EarlyHintsIgnoredForNonHttpSchemes) {
+   }
  }
  
 +// Regression test for b/553115724: Receiving a second OnReceiveRedirect
