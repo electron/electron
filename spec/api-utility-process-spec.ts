@@ -316,6 +316,17 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
+
+    ifit(process.platform !== 'win32')('lets a child that handles SIGTERM decide its own exit', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'sigterm-handler.js'));
+      deferKillUtilityProcess(child);
+      const [msg] = await once(child, 'message');
+      expect(msg).to.equal('ready');
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      const [code] = await exit;
+      expect(code).to.equal(42);
+    });
   });
 
   describe('esm', () => {
