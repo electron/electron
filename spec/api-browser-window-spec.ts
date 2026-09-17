@@ -672,11 +672,10 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    // FIXME(#43730): fix underlying bug and re-enable asap
-    it.skip('should support base url for data urls', async () => {
-      await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
-        .catch((e) => console.log(e));
+    it('should support base url for data urls', async () => {
+      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+        baseURLForDataURL: 'other://'
+      });
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
 
