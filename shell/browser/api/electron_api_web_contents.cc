@@ -425,7 +425,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 

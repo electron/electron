@@ -234,6 +234,11 @@ WebRequest::RequestFilter::RequestFilter(
       exclude_url_patterns_(std::move(exclude_url_patterns)),
       types_(std::move(types)) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
+WebRequest::RequestFilter::RequestFilter(RequestFilter&&) = default;
+WebRequest::RequestFilter& WebRequest::RequestFilter::operator=(
+    const RequestFilter&) = default;
+WebRequest::RequestFilter& WebRequest::RequestFilter::operator=(
+    RequestFilter&&) = default;
 WebRequest::RequestFilter::RequestFilter() = default;
 WebRequest::RequestFilter::~RequestFilter() = default;
 
@@ -954,7 +959,7 @@ WebRequest* WebRequest::Create(
     base::PassKey<Session> passkey,
     base::WeakPtr<ElectronBrowserContext> browser_context) {
   return cppgc::MakeGarbageCollected<WebRequest>(
-      isolate->GetCppHeap()->GetAllocationHandle(), std::move(passkey),
+      isolate->GetCppHeap()->GetAllocationHandle(), passkey,
       std::move(browser_context));
 }
 

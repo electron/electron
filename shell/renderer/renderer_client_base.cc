@@ -403,7 +403,7 @@ bool RendererClientBase::OverrideCreatePlugin(
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
-    *plugin = pdf::CreateInternalPlugin(std::move(params), render_frame, {});
+    *plugin = pdf::CreateInternalPlugin(params, render_frame, {});
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)

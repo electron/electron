@@ -935,7 +935,7 @@ bool BaseWindow::GetWindowButtonVisibility() const {
 }
 
 void BaseWindow::SetWindowButtonPosition(std::optional<gfx::Point> position) {
-  window_->SetWindowButtonPosition(std::move(position));
+  window_->SetWindowButtonPosition(position);
 }
 
 std::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
@@ -963,7 +963,7 @@ void BaseWindow::RefreshTouchBarItem(const std::string& item_id) {
 }
 
 void BaseWindow::SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) {
-  window_->SetEscapeTouchBarItem(std::move(item));
+  window_->SetEscapeTouchBarItem(item);
 }
 
 void BaseWindow::SelectPreviousTab() {

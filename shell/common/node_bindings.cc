@@ -967,7 +967,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kRenderer) {
     if (on_app_code_ready) {
-      process.SetMethod("appCodeLoaded", std::move(*on_app_code_ready));
+      process.SetMethod("appCodeLoaded", *on_app_code_ready);
     } else {
       process.SetMethod("appCodeLoaded",
                         base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
