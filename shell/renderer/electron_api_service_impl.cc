@@ -10,6 +10,7 @@
 
 #include "gin/converter.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "shell/common/api/electron_api_shared_texture.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -436,26 +437,18 @@ void ElectronApiServiceImpl::ReceiveSharedTexture(
 
   // imported = sharedTexture.subtle.finishTransferSharedTexture({...transfer,
   // id})
-  v8::Local<v8::Value> binding = preload_utils::GetBinding(
-      isolate, gin::StringToV8(isolate, "electron_common_shared_texture"));
-  v8::Local<v8::Value> finish, transfer_value, imported;
-  if (try_catch.HasCaught() ||
-      !get(binding, "finishTransferSharedTexture", &finish) ||
-      !finish->IsFunction()) {
-    return reply_error();
-  }
-  transfer_value = gin::ConvertToV8(isolate, transfer);
+  v8::Local<v8::Value> transfer_value = gin::ConvertToV8(isolate, transfer);
   if (!transfer_value->IsObject() ||
       transfer_value.As<v8::Object>()
           ->Set(context, gin::StringToSymbol(isolate, "id"),
                 gin::StringToV8(isolate, texture_id))
-          .IsNothing() ||
-      !finish.As<v8::Function>()
-           ->Call(context, binding, 1, &transfer_value)
-           .ToLocal(&imported) ||
-      !imported->IsObject()) {
+          .IsNothing()) {
     return reply_error();
   }
+  v8::Local<v8::Value> imported =
+      api::shared_texture::FinishTransferSharedTexture(isolate, transfer_value);
+  if (try_catch.HasCaught() || imported.IsEmpty() || !imported->IsObject())
+    return reply_error();
 
   // Reply with imported.getFrameCreationSyncToken().
   v8::Local<v8::Value> get_sync_token, sync_token;

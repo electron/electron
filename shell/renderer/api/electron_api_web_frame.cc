@@ -1093,8 +1093,8 @@ gin::WrapperInfo WebFrameRenderer::kWrapperInfo =
 namespace {
 
 // WebFrame.prototype.on() and friends: register for 'isolated-world-created'
-// on first use, then defer to EventEmitter.prototype's method of the same
-// name (looked up at call time). |data| is the method name.
+// on first use, then defer to the EventEmitter.prototype method of the same
+// name, which is |data|.
 void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
   using electron::api::WebFrameRenderer;
   v8::Isolate* isolate = info.GetIsolate();
@@ -1108,21 +1108,12 @@ void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (gin::ConvertFromV8(isolate, self, &frame) && frame)
       frame->EnsureIsolatedWorldCreatedEvent(isolate, self);
   }
-  v8::Local<v8::Value> proto =
-      gin_helper::GetNodeEventEmitterConstructor(context)
-          ->Get(context, gin::StringToSymbol(isolate, "prototype"))
-          .ToLocalChecked();
-  v8::Local<v8::Value> method;
-  if (!proto.As<v8::Object>()->Get(context, info.Data()).ToLocal(&method) ||
-      !method->IsFunction()) {
-    return;
-  }
+  v8::Local<v8::Function> method = info.Data().As<v8::Function>();
   v8::LocalVector<v8::Value> args(isolate);
   for (int i = 0; i < info.Length(); ++i)
     args.push_back(info[i]);
   v8::Local<v8::Value> result;
-  if (method.As<v8::Function>()
-          ->Call(context, self, static_cast<int>(args.size()), args.data())
+  if (method->Call(context, self, static_cast<int>(args.size()), args.data())
           .ToLocal(&result)) {
     info.GetReturnValue().Set(result);
   }
@@ -1152,8 +1143,11 @@ void MakeEventEmitter(v8::Local<v8::Context> context,
   for (const char* name : {"on", "addListener", "once", "prependListener",
                            "prependOnceListener"}) {
     v8::Local<v8::String> key = gin::StringToSymbol(isolate, name);
+    v8::Local<v8::Value> method;
+    CHECK(emitter_proto.As<v8::Object>()->Get(context, key).ToLocal(&method) &&
+          method->IsFunction());
     v8::Local<v8::Function> hook =
-        v8::Function::New(context, ListenHook, key, 2,
+        v8::Function::New(context, ListenHook, method, 2,
                           v8::ConstructorBehavior::kThrow)
             .ToLocalChecked();
     hook->SetName(key);
