@@ -20,7 +20,6 @@
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@xmldom/xmldom": "^0.9.12",
-    "buffer": "^6.0.3",
     "events": "^3.2.0",
     "folder-hash": "^4.1.2",
     "husky": "^9.1.7",
@@ -38,7 +37,6 @@
     "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
-    "url": "^0.11.4",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
     "yaml": "^2.8.1"
