@@ -3242,7 +3242,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 

@@ -8,6 +8,7 @@
 #include <array>
 #include <cmath>
 #include <string>
+#include <utility>
 
 #include "base/check.h"
 #include "base/memory/ptr_util.h"
@@ -222,7 +223,7 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
       scaled.eraseColor(SK_ColorTRANSPARENT);
       bitmap.pixmap().scalePixels(
           scaled.pixmap(), SkSamplingOptions(SkCubicResampler::Mitchell()));
-      bitmap = scaled;
+      bitmap = std::move(scaled);
     }
 
     return gfx::ImageSkiaRep(bitmap, scale);
