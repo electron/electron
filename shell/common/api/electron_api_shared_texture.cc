@@ -837,6 +837,13 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   return CreateImportedSharedTextureFromSharedImage(isolate, imported);
 }
 
+void SetSharedTextureReceiver(v8::Isolate* isolate,
+                              v8::Local<v8::Function> receiver) {
+  gin_helper::Dictionary global(isolate,
+                                isolate->GetCurrentContext()->Global());
+  global.SetHidden("sharedTextureReceiver", receiver.As<v8::Value>());
+}
+
 v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                  v8::Local<v8::Value> options) {
   ImportSharedTextureInfo partial{};
@@ -904,6 +911,10 @@ void Initialize(v8::Local<v8::Object> exports,
                  &electron::api::shared_texture::ImportSharedTexture);
   dict.SetMethod("finishTransferSharedTexture",
                  &electron::api::shared_texture::FinishTransferSharedTexture);
+  // Renderer: the callback ElectronApiServiceImpl::ReceiveSharedTexture()
+  // hands textures sent with sharedTexture.sendSharedTexture() to.
+  dict.SetMethod("setSharedTextureReceiver",
+                 &electron::api::shared_texture::SetSharedTextureReceiver);
 }
 
 }  // namespace

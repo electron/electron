@@ -42,6 +42,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_utility_process.h"
+#include "shell/browser/app_package.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -54,6 +55,8 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -342,6 +345,24 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(isolate, node_env_->process_object());
+
+  // Find the app and apply its package.json; lib/browser/init.ts loads the
+  // entry script from what is left here.
+  if (std::optional<AppPackage> package = LoadAppPackage()) {
+    v8::Local<v8::Context> env_context = node_env_->context();
+    gin_helper::Dictionary app_package = gin::Dictionary::CreateEmpty(isolate);
+    app_package.Set("path", package->path);
+    app_package.Set("main", package->main);
+    app_package.Set("esm", package->esm);
+    if (!package->v8_flags.empty())
+      app_package.Set("v8Flags", package->v8_flags);
+    env_context->Global()
+        ->SetPrivate(env_context,
+                     v8::Private::ForApi(
+                         isolate, gin::StringToSymbol(isolate, "appPackage")),
+                     gin::ConvertToV8(isolate, app_package))
+        .Check();
+  }
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();

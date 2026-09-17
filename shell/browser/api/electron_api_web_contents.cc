@@ -24,6 +24,7 @@
 #include "base/containers/map_util.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/functional/callback_helpers.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/numerics/safe_conversions.h"
@@ -98,6 +99,7 @@
 #include "media/base/mime_util.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
@@ -159,6 +161,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/osr_converter.h"
+#include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -2797,7 +2800,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
   // is ordered before anything else on the frame. The renderer's
   // ElectronApiServiceImpl — created in RenderFrameCreated, before any
   // navigation — will have cached it by the time DidCreateScriptContext fires.
-  mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
+  mojo::AssociatedRemote<mojom::ElectronFrame> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));
 }
@@ -5051,6 +5054,128 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
+mojom::ElectronFrame* WebContents::MainFrameRenderer(
+    v8::Isolate* isolate,
+    gin_helper::PromiseBase& promise) {
+  content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
+  WebFrameMain* frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
+  mojom::ElectronFrame* api = frame ? frame->GetFrameApi() : nullptr;
+  if (!api) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+  }
+  return api;
+}
+
+namespace {
+
+// A renderer acknowledgement that resolves |promise|, or rejects it if the
+// frame goes away before replying.
+base::OnceClosure AckCallback(gin_helper::Promise<void> promise) {
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<void> promise, bool replied) {
+        if (replied)
+          promise.Resolve();
+        else
+          promise.RejectWithErrorMessage(WebFrameMain::kFrameDisposedError);
+      },
+      std::move(promise)));
+  return mojo::WrapCallbackWithDropHandler(
+      base::BindOnce(std::move(on_reply), true),
+      base::BindOnce(std::move(on_drop), false));
+}
+
+}  // namespace
+
+v8::Local<v8::Promise> WebContents::ExecuteJavaScriptInRenderer(
+    v8::Isolate* isolate,
+    int world_id,
+    const std::vector<gin_helper::Dictionary>& sources,
+    bool has_user_gesture) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  std::vector<mojom::ScriptSourcePtr> script_sources;
+  script_sources.reserve(sources.size());
+  for (const auto& source : sources) {
+    auto script = mojom::ScriptSource::New();
+    if (!source.Get("code", &script->code)) {
+      promise.RejectWithErrorMessage("Invalid 'code'");
+      return handle;
+    }
+    source.Get("url", &script->url);
+    script_sources.push_back(std::move(script));
+  }
+
+  if (auto* renderer = MainFrameRenderer(isolate, promise)) {
+    renderer->ExecuteJavaScript(
+        world_id, std::move(script_sources), has_user_gesture,
+        WebFrameMain::BindPromiseToReply(std::move(promise)));
+  }
+  return handle;
+}
+
+v8::Local<v8::Promise> WebContents::InsertCSS(gin::Arguments* args,
+                                              const std::string& css) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<std::u16string> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  std::string css_origin;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("cssOrigin", &css_origin);
+  mojom::ElectronFrame* renderer = MainFrameRenderer(isolate, promise);
+  if (!renderer)
+    return handle;
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<std::u16string> promise, bool replied,
+         const std::u16string& key) {
+        if (replied)
+          promise.Resolve(key);
+        else
+          promise.RejectWithErrorMessage(WebFrameMain::kFrameDisposedError);
+      },
+      std::move(promise)));
+  renderer->InsertCSS(
+      css, css_origin,
+      mojo::WrapCallbackWithDropHandler(
+          base::BindOnce(std::move(on_reply), true),
+          base::BindOnce(std::move(on_drop), false, std::u16string())));
+  return handle;
+}
+
+v8::Local<v8::Promise> WebContents::RemoveInsertedCSS(
+    v8::Isolate* isolate,
+    const std::u16string& key) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (auto* renderer = MainFrameRenderer(isolate, promise))
+    renderer->RemoveInsertedCSS(key, AckCallback(std::move(promise)));
+  return handle;
+}
+
+v8::Local<v8::Promise> WebContents::InsertText(v8::Isolate* isolate,
+                                               const std::string& text) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (auto* renderer = MainFrameRenderer(isolate, promise))
+    renderer->InsertText(text, AckCallback(std::move(promise)));
+  return handle;
+}
+
+v8::Local<v8::Promise> WebContents::SetVisualZoomLevelLimits(
+    v8::Isolate* isolate,
+    double min_level,
+    double max_level) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (auto* renderer = MainFrameRenderer(isolate, promise)) {
+    renderer->SetVisualZoomLevelLimits(min_level, max_level,
+                                       AckCallback(std::move(promise)));
+  }
+  return handle;
+}
+
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
                                       const gfx::Size& pref_size) {
   Emit("preferred-size-changed", pref_size);
@@ -5603,6 +5728,13 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
+      .SetMethod("_executeJavaScript",
+                 &WebContents::ExecuteJavaScriptInRenderer)
+      .SetMethod("insertCSS", &WebContents::InsertCSS)
+      .SetMethod("removeInsertedCSS", &WebContents::RemoveInsertedCSS)
+      .SetMethod("insertText", &WebContents::InsertText)
+      .SetMethod("setVisualZoomLevelLimits",
+                 &WebContents::SetVisualZoomLevelLimits)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
       .SetMethod("_getProcessMemoryInfo", &WebContents::GetProcessMemoryInfo)

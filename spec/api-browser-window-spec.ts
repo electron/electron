@@ -672,11 +672,10 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    // FIXME(#43730): fix underlying bug and re-enable asap
-    it.skip('should support base url for data urls', async () => {
-      await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
-        .catch((e) => console.log(e));
+    it('should support base url for data urls', async () => {
+      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+        baseURLForDataURL: 'other://'
+      });
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
 
@@ -4786,7 +4785,7 @@ describe('BrowserWindow module', () => {
         expect(url).to.equal(expectedUrl);
       });
 
-      it('exposes full EventEmitter object to preload script', async () => {
+      it('exposes ipcRenderer with the full EventEmitter API to preload script', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -4797,12 +4796,7 @@ describe('BrowserWindow module', () => {
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
         const { EventEmitter } = require('node:events');
-        const emitter = new EventEmitter();
-        const browserEventEmitterProperties = [];
-        let currentObj = emitter;
-        do {
-          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
-        } while ((currentObj = Object.getPrototypeOf(currentObj)));
+        const browserEventEmitterProperties = Object.getOwnPropertyNames(EventEmitter.prototype).sort();
         expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
@@ -5085,9 +5079,11 @@ describe('BrowserWindow module', () => {
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
         expect(test.contextId).to.be.a('string');
-        expect(test.nodeEvents).to.equal(true);
-        expect(test.nodeTimers).to.equal(true);
-        expect(test.nodeUrl).to.equal(true);
+        expect(test.requirableNodeModules).to.deep.equal([]);
+        expect(test.typeofBuffer).to.equal('undefined');
+        expect(test.typeofSetImmediate).to.equal('undefined');
+        expect(test.typeofClearImmediate).to.equal('undefined');
+        expect(test.typeofGlobal).to.equal('object');
 
         if (process.platform === 'linux' && test.osSandbox) {
           expect(test.creationTime).to.be.null('creation time');
@@ -7014,26 +7010,27 @@ describe('BrowserWindow module', () => {
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
-        const enterFullScreen = once(w, 'enter-full-screen');
-        const leaveFullScreen = once(w, 'leave-full-screen');
+        for (const menuBarVisible of [true, false]) {
+          w.setMenuBarVisibility(menuBarVisible);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible before fullscreen (menuBarVisible=${menuBarVisible})`
+          );
 
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
+          const enterFullScreen = once(w, 'enter-full-screen');
+          await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+          await enterFullScreen;
 
-        expect(w.isFullScreen()).to.be.false('is fullscreen');
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+          const leaveFullScreen = once(w, 'leave-full-screen');
+          await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+          await leaveFullScreen;
 
-        w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
-
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+          expect(w.isFullScreen()).to.be.false(`isFullScreen after exit (menuBarVisible=${menuBarVisible})`);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible after fullscreen exit (menuBarVisible=${menuBarVisible})`
+          );
+        }
       });
 
       for (const frame of [true, false]) {

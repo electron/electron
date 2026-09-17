@@ -1,6 +1,6 @@
 const { ipcRenderer, webFrame } = require('electron');
 
-setImmediate(function () {
+setTimeout(function () {
   if (window.location.toString() === 'bar://page/') {
     const windowOpenerIsNull = window.opener == null;
     ipcRenderer.send('answer', {

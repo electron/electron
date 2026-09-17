@@ -49,8 +49,6 @@ const getOrCreateArchive = (archivePath: string) => {
   }
 };
 
-process._getOrCreateArchive = getOrCreateArchive;
-
 const { getValidatedPath, getOptions, getDirent, getStatsFromBinding } = __non_webpack_require__(
   'internal/fs/utils'
 ) as typeof import('@node/lib/internal/fs/utils');

@@ -103,9 +103,13 @@ process.parentPort.once('message', (e) => {
 
 Returns `boolean`
 
-Terminates the process gracefully. On POSIX, it uses SIGTERM
-but will ensure the process is reaped on exit. This function returns
-true if the kill is successful, and false otherwise.
+Terminates the process gracefully. On POSIX, it sends `SIGTERM`; on Windows,
+it terminates the process. Like Node's
+[`child_process.kill()`](https://nodejs.org/api/child_process.html#subprocesskillsignal),
+this delivers the signal but does not guarantee that the process exits: a
+child that handles `SIGTERM` decides when, or whether, to exit. On POSIX, the child
+is reaped by Electron once it exits. Returns `true` if the signal was delivered,
+and `false` otherwise.
 
 ### Instance Properties
 

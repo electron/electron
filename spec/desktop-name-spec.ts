@@ -2,8 +2,9 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { defaultDesktopName } from '../lib/browser/desktop-name';
 import { ifdescribe } from './lib/spec-helpers';
+
+const { defaultDesktopName } = process._linkedBinding('electron_browser_app');
 
 ifdescribe(process.platform === 'linux')('defaultDesktopName', () => {
   it("derives an appropriate .desktop name from the app's human readable name", () => {

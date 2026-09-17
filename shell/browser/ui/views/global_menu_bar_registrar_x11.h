@@ -26,16 +26,16 @@ class GlobalMenuBarRegistrarX11 {
   void OnWindowMapped(x11::Window window);
   void OnWindowUnmapped(x11::Window window);
 
+  // disable copy
+  GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
+  GlobalMenuBarRegistrarX11& operator=(const GlobalMenuBarRegistrarX11&) =
+      delete;
+
  private:
   friend struct base::DefaultSingletonTraits<GlobalMenuBarRegistrarX11>;
 
   GlobalMenuBarRegistrarX11();
   ~GlobalMenuBarRegistrarX11();
-
-  // disable copy
-  GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
-  GlobalMenuBarRegistrarX11& operator=(const GlobalMenuBarRegistrarX11&) =
-      delete;
 
   // Sends the actual message.
   void RegisterXWindow(x11::Window window);

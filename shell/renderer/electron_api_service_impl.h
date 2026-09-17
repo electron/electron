@@ -27,7 +27,7 @@ class RendererClientBase;
 
 class ElectronApiServiceImpl
     : public mojom::ElectronRenderer,
-      public mojom::ElectronFrameStartup,
+      public mojom::ElectronFrame,
       public content::RenderFrameObserver,
       public content::RenderFrameObserverTracker<ElectronApiServiceImpl> {
  public:
@@ -40,8 +40,8 @@ class ElectronApiServiceImpl
   ElectronApiServiceImpl& operator=(const ElectronApiServiceImpl&) = delete;
 
   void BindTo(mojo::PendingReceiver<mojom::ElectronRenderer> receiver);
-  void BindFrameStartupReceiver(
-      mojo::PendingAssociatedReceiver<mojom::ElectronFrameStartup> receiver);
+  void BindFrameReceiver(
+      mojo::PendingAssociatedReceiver<mojom::ElectronFrame> receiver);
 
   // mojom::ElectronRenderer
   void Message(bool internal,
@@ -53,8 +53,27 @@ class ElectronApiServiceImpl
                         TakeHeapSnapshotCallback callback) override;
   void ProcessPendingMessages();
 
-  // mojom::ElectronFrameStartup
+  // mojom::ElectronFrame
   void SetStartupData(mojom::RendererStartupDataPtr data) override;
+  void ExecuteJavaScript(int32_t world_id,
+                         std::vector<mojom::ScriptSourcePtr> sources,
+                         bool has_user_gesture,
+                         ExecuteJavaScriptCallback callback) override;
+  void InsertCSS(const std::string& css,
+                 const std::string& css_origin,
+                 InsertCSSCallback callback) override;
+  void RemoveInsertedCSS(const std::u16string& key,
+                         RemoveInsertedCSSCallback callback) override;
+  void InsertText(const std::string& text,
+                  InsertTextCallback callback) override;
+  void SetVisualZoomLevelLimits(
+      double min_level,
+      double max_level,
+      SetVisualZoomLevelLimitsCallback callback) override;
+  void ReceiveSharedTexture(electron::SerializedValue transfer,
+                            const std::string& texture_id,
+                            electron::SerializedValue args,
+                            ReceiveSharedTextureCallback callback) override;
 
   // The data pushed by the browser ahead of CommitNavigation, or null if it
   // has not arrived (the initial empty document of a fresh RenderFrame, or a
@@ -92,8 +111,7 @@ class ElectronApiServiceImpl
 
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
   mojo::Receiver<mojom::ElectronRenderer> receiver_{this};
-  mojo::AssociatedReceiver<mojom::ElectronFrameStartup> frame_startup_receiver_{
-      this};
+  mojo::AssociatedReceiver<mojom::ElectronFrame> frame_receiver_{this};
 
   // The most recent RendererStartupData pushed by the browser, consumed by the
   // sandboxed renderer client at DidCreateScriptContext time.
