@@ -38,6 +38,7 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
                                 v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
   // content::ContentRendererClient:
+  bool HasScriptsToInject(content::RenderFrame* render_frame) const override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;

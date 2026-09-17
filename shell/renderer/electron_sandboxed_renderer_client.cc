@@ -20,6 +20,7 @@
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "v8/include/v8-function.h"
@@ -109,6 +110,16 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   b.Set("startupData", startup_data);
 }
 
+bool ElectronSandboxedRendererClient::HasScriptsToInject(
+    content::RenderFrame* render_frame) const {
+  // The <webview> element is implemented by the bundle in the embedder.
+  if (render_frame->GetBlinkPreferences().webview_tag)
+    return true;
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  return api_service && api_service->startup_data() &&
+         !api_service->startup_data()->preload_scripts.empty();
+}
+
 void ElectronSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new ElectronRenderFrameObserver(render_frame, this);
@@ -136,8 +147,10 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  if (!ShouldLoadPreload(isolate, context, render_frame))
+  if (!ShouldLoadPreload(isolate, context, render_frame) ||
+      !HasScriptsToInject(render_frame)) {
     return;
+  }
 
   injected_frames_.insert(render_frame);
 
