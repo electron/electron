@@ -291,6 +291,7 @@ declare namespace NodeJS {
       getCrashpadHandlerPID(): number;
     };
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
+    _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
     _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
