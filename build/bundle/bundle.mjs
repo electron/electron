@@ -89,17 +89,13 @@ const buildflagPlugin = {
 };
 
 // `electron` and its process-specific entry points all resolve to this
-// target's API module list; bundles without Node.js get a `timers` shim that
-// does not rely on window.postMessage.
+// target's API module list.
 const exactAliases = new Map(
   ['electron', 'electron/main', 'electron/renderer', 'electron/common', 'electron/utility'].map((id) => [
     id,
     electronAPIFile
   ])
 );
-if (!target.alwaysHasNode) {
-  exactAliases.set('timers', path.resolve(libDir, 'common', 'timers-shim.ts'));
-}
 const aliasPlugin = {
   name: 'electron-alias',
   resolveId: {
@@ -136,11 +132,8 @@ if (target.targetDeletesNodeGlobals) {
   });
 }
 if (!target.alwaysHasNode) {
-  // There is no Node.js in these contexts; use the browser polyfills.
-  Object.assign(inject, {
-    Buffer: ['buffer', 'Buffer'],
-    process: ['process/browser', 'default']
-  });
+  // There is no Node.js in these contexts; use the browser polyfill.
+  inject.process = ['process/browser', 'default'];
 }
 
 // There is no Node.js `global` in a sandboxed renderer, but code shared with

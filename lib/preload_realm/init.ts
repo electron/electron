@@ -1,11 +1,8 @@
 import '@electron/internal/sandboxed_renderer/pre-init';
 import {
   createPreloadProcessObject,
-  defineLazyBufferGlobal,
   executeSandboxedPreloadScripts
 } from '@electron/internal/sandboxed_renderer/preload';
-
-import * as events from 'events';
 
 declare const binding: {
   get: (name: string) => any;
@@ -27,14 +24,7 @@ const electron = require('electron');
 
 const loadedModules = new Map<string, any>([
   ['electron', electron],
-  ['electron/common', electron],
-  ['events', events],
-  ['node:events', events]
-]);
-
-const loadableModules = new Map<string, Function>([
-  ['url', () => require('url')],
-  ['node:url', () => require('url')]
+  ['electron/common', electron]
 ]);
 
 const preloadProcess = createPreloadProcessObject();
@@ -46,14 +36,9 @@ Object.assign(process, processProps);
 
 require('@electron/internal/renderer/ipc-native-setup');
 
-// The preload realm's global is private to preloads; `Buffer` is materialised
-// there on first use.
-defineLazyBufferGlobal(globalThis);
-
 executeSandboxedPreloadScripts(
   {
     loadedModules,
-    loadableModules,
     process: preloadProcess,
     createPreloadScript: binding.createPreloadScript,
     exposeGlobals: {
