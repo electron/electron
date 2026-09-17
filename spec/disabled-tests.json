@@ -1,6 +1,5 @@
 [
   "// NOTE: this file is used to disable tests in our test suite by their full title.",
-  "BrowserWindow module BrowserWindow.loadURL(url) should emit did-fail-load event for files that do not exist",
   "Menu module Menu.setApplicationMenu unsets a menu with null",
   "process module main process process.takeHeapSnapshot() returns true on success",
   "session module ses.cookies should set cookie for standard scheme",
