@@ -10,6 +10,7 @@
 
 #include "base/containers/map_util.h"
 #include "base/feature_list.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
@@ -21,6 +22,7 @@
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
@@ -424,6 +426,38 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   if (pending_receiver_ && rfh && rfh->IsRenderFrameLive()) {
     rfh->GetRemoteInterfaces()->GetInterface(std::move(pending_receiver_));
   }
+}
+
+// static
+base::OnceCallback<void(bool, electron::SerializedValue, const std::string&)>
+WebFrameMain::BindPromiseToReply(
+    gin_helper::Promise<v8::Local<v8::Value>> promise) {
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise, bool replied,
+         bool success, electron::SerializedValue result,
+         const std::string& error) {
+        if (!replied) {
+          promise.RejectWithErrorMessage(kFrameDisposedError);
+          return;
+        }
+        if (!success && !error.empty()) {
+          promise.RejectWithErrorMessage(error);
+          return;
+        }
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Context::Scope context_scope(promise.GetContext());
+        v8::Local<v8::Value> value = gin::ConvertToV8(isolate, result);
+        if (success)
+          promise.Resolve(value);
+        else
+          promise.Reject(value);
+      },
+      std::move(promise)));
+  return mojo::WrapCallbackWithDropHandler(
+      base::BindOnce(std::move(on_reply), true),
+      base::BindOnce(std::move(on_drop), false, false,
+                     electron::SerializedValue(), std::string()));
 }
 
 mojom::ElectronFrame* WebFrameMain::GetFrameApi() {

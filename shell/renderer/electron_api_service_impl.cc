@@ -36,9 +36,7 @@
 #include "url/gurl.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-exception.h"
-#include "v8/include/v8-external.h"
 #include "v8/include/v8-function.h"
-#include "v8/include/v8-promise.h"
 
 namespace electron {
 
@@ -58,99 +56,57 @@ mojom::RendererStartupDataPtr* GetPendingNewWindowStartupData() {
 
 namespace {
 
-// Replies to an ExecuteJavaScript() call with the script's completion value,
-// awaiting it first if it is a thenable, or with the error. Owns itself.
-class ScriptReply {
- public:
-  using Callback = mojom::ElectronFrame::ExecuteJavaScriptCallback;
+// Replies to an ExecuteJavaScript() call with the script's completion value
+// (Blink has already awaited it if it was a thenable) or with what it threw.
+// Failures that have no value to report go back as a message so that nothing
+// here touches V8 when Blink calls back while tearing the context down.
+void ReplyWithScriptResult(
+    mojom::ElectronFrame::ExecuteJavaScriptCallback callback,
+    const std::vector<v8::Local<v8::Value>>& results,
+    const std::vector<v8::Local<v8::Value>>& rejections) {
+  if (results.empty()) {
+    std::move(callback).Run(
+        false, electron::SerializedValue(),
+        "WebFrame was removed before script could run. This normally means "
+        "the underlying frame was destroyed");
+    return;
+  }
+  bool success = false;
+  v8::Local<v8::Value> value;
+  if (!rejections.empty() && !rejections[0].IsEmpty()) {
+    value = rejections[0];
+  } else if (results[0].IsEmpty()) {
+    std::move(callback).Run(
+        false, electron::SerializedValue(),
+        "Script failed to execute, this normally means an error was thrown. "
+        "Check the renderer console for the error.");
+    return;
+  } else {
+    success = true;
+    value = results[0];
+  }
 
-  explicit ScriptReply(Callback callback) : callback_(std::move(callback)) {}
-  ScriptReply(const ScriptReply&) = delete;
-  ScriptReply& operator=(const ScriptReply&) = delete;
-
-  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
-    if (result.empty()) {
-      return Fail(
-          "WebFrame was removed before script could run. This normally means "
-          "the underlying frame was destroyed");
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::TryCatch try_catch(isolate);
+  electron::SerializedValue serialized;
+  if (!electron::SerializeV8Value(isolate, value, &serialized)) {
+    std::string error = "An object could not be cloned.";
+    v8::Local<v8::Value> message;
+    if (try_catch.HasCaught() && !try_catch.HasTerminated() &&
+        try_catch.Exception()->IsObject() &&
+        try_catch.Exception()
+            .As<v8::Object>()
+            ->Get(isolate->GetCurrentContext(),
+                  gin::StringToSymbol(isolate, "message"))
+            .ToLocal(&message) &&
+        message->IsString()) {
+      gin::ConvertFromV8(isolate, message, &error);
     }
-    v8::Local<v8::Value> value = result[0];
-    if (value.IsEmpty()) {
-      return Fail(
-          "Script failed to execute, this normally means an error was thrown. "
-          "Check the renderer console for the error.");
-    }
-    if (!value->IsPromise())
-      return Settle(true, value);
-
-    // Wait for the promise; the two handlers share ownership of |this| through
-    // the External and whichever runs first deletes it.
-    v8::Local<v8::Promise> promise = value.As<v8::Promise>();
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    v8::Local<v8::Context> context =
-        promise->GetCreationContextChecked(isolate);
-    v8::Context::Scope context_scope(context);
-    v8::Local<v8::External> self =
-        v8::External::New(isolate, this, v8::kExternalPointerTypeTagDefault);
-    v8::Local<v8::Function> on_fulfilled, on_rejected;
-    if (!v8::Function::New(context, &ScriptReply::OnFulfilled, self, 1,
-                           v8::ConstructorBehavior::kThrow)
-             .ToLocal(&on_fulfilled) ||
-        !v8::Function::New(context, &ScriptReply::OnRejected, self, 1,
-                           v8::ConstructorBehavior::kThrow)
-             .ToLocal(&on_rejected) ||
-        promise->Then(context, on_fulfilled, on_rejected).IsEmpty()) {
-      return Fail("Failed to await the script's result");
-    }
+    std::move(callback).Run(false, electron::SerializedValue(), error);
+    return;
   }
-
- private:
-  ~ScriptReply() = default;
-
-  static void OnFulfilled(const v8::FunctionCallbackInfo<v8::Value>& info) {
-    Take(info)->Settle(true, info[0]);
-  }
-  static void OnRejected(const v8::FunctionCallbackInfo<v8::Value>& info) {
-    Take(info)->Settle(false, info[0]);
-  }
-  static ScriptReply* Take(const v8::FunctionCallbackInfo<v8::Value>& info) {
-    return static_cast<ScriptReply*>(info.Data().As<v8::External>()->Value(
-        v8::kExternalPointerTypeTagDefault));
-  }
-
-  void Fail(std::string_view message) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    Settle(false, v8::Exception::Error(gin::StringToV8(isolate, message)));
-  }
-
-  void Settle(bool success, v8::Local<v8::Value> value) {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-    electron::SerializedValue serialized;
-    bool ok;
-    {
-      v8::TryCatch try_catch(isolate);
-      ok = electron::SerializeV8Value(isolate, value, &serialized);
-      if (!ok) {
-        success = false;
-        v8::Local<v8::Value> error =
-            try_catch.HasCaught() && !try_catch.HasTerminated()
-                ? try_catch.Exception()
-                : v8::Exception::Error(gin::StringToV8(
-                      isolate, "An object could not be cloned."));
-        try_catch.Reset();
-        ok = electron::SerializeV8Value(isolate, error, &serialized);
-      }
-    }
-    if (!ok) {
-      serialized = electron::SerializedValue();
-      success = false;
-    }
-    std::move(callback_).Run(success, std::move(serialized));
-    delete this;
-  }
-
-  Callback callback_;
-};
+  std::move(callback).Run(success, std::move(serialized), std::string());
+}
 
 }  // namespace
 
@@ -319,18 +275,17 @@ void ElectronApiServiceImpl::ExecuteJavaScript(
     web_sources.emplace_back(blink::WebString::FromUtf16(source->code),
                              blink::WebURL(GURL(source->url)));
   }
-  auto* reply = new ScriptReply(std::move(callback));
   frame->RequestExecuteScript(
       world_id, web_sources,
       has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                        : blink::mojom::UserActivationOption::kDoNotActivate,
       blink::mojom::EvaluationTiming::kSynchronous,
       blink::mojom::LoadEventBlockingOption::kDoNotBlock, base::NullCallback(),
-      base::BindOnce(&ScriptReply::Completed, base::Unretained(reply)),
+      base::BindOnce(&ReplyWithScriptResult, std::move(callback)),
       blink::BackForwardCacheAware::kAllow,
       blink::mojom::WantResultOption::kWantResult,
-      blink::mojom::PromiseResultOption::kDoNotWait,
-      /*is_injected_extension_script=*/false);
+      blink::mojom::PromiseResultOption::kAwait,
+      /*script_injector_id=*/blink::WebString());
 }
 
 void ElectronApiServiceImpl::InsertCSS(const std::string& css,

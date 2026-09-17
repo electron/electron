@@ -24,6 +24,7 @@
 #include "base/containers/map_util.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/functional/callback_helpers.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/numerics/safe_conversions.h"
@@ -5068,23 +5069,20 @@ mojom::ElectronFrame* WebContents::MainFrameRenderer(
 
 namespace {
 
-constexpr char kFrameDisposed[] =
-    "Render frame was disposed before the request completed";
-
-// A renderer acknowledgement that settles |promise|, rejecting it if the frame
-// goes away first. The promise is shared because only one of the two paths
-// runs.
+// A renderer acknowledgement that resolves |promise|, or rejects it if the
+// frame goes away before replying.
 base::OnceClosure AckCallback(gin_helper::Promise<void> promise) {
-  auto shared = std::make_shared<gin_helper::Promise<void>>(std::move(promise));
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<void> promise, bool replied) {
+        if (replied)
+          promise.Resolve();
+        else
+          promise.RejectWithErrorMessage(WebFrameMain::kFrameDisposedError);
+      },
+      std::move(promise)));
   return mojo::WrapCallbackWithDropHandler(
-      base::BindOnce(
-          [](std::shared_ptr<gin_helper::Promise<void>> p) { p->Resolve(); },
-          shared),
-      base::BindOnce(
-          [](std::shared_ptr<gin_helper::Promise<void>> p) {
-            p->RejectWithErrorMessage(kFrameDisposed);
-          },
-          shared));
+      base::BindOnce(std::move(on_reply), true),
+      base::BindOnce(std::move(on_drop), false));
 }
 
 }  // namespace
@@ -5109,31 +5107,11 @@ v8::Local<v8::Promise> WebContents::ExecuteJavaScriptInRenderer(
     script_sources.push_back(std::move(script));
   }
 
-  mojom::ElectronFrame* renderer = MainFrameRenderer(isolate, promise);
-  if (!renderer)
-    return handle;
-  auto shared = std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
-      std::move(promise));
-  renderer->ExecuteJavaScript(
-      world_id, std::move(script_sources), has_user_gesture,
-      mojo::WrapCallbackWithDropHandler(
-          base::BindOnce(
-              [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> p,
-                 bool success, electron::SerializedValue result) {
-                v8::Isolate* isolate = p->isolate();
-                v8::HandleScope handle_scope(isolate);
-                v8::Local<v8::Value> value = gin::ConvertToV8(isolate, result);
-                if (success)
-                  p->Resolve(value);
-                else
-                  p->Reject(value);
-              },
-              shared),
-          base::BindOnce(
-              [](std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> p) {
-                p->RejectWithErrorMessage(kFrameDisposed);
-              },
-              shared)));
+  if (auto* renderer = MainFrameRenderer(isolate, promise)) {
+    renderer->ExecuteJavaScript(
+        world_id, std::move(script_sources), has_user_gesture,
+        WebFrameMain::BindPromiseToReply(std::move(promise)));
+  }
   return handle;
 }
 
@@ -5149,20 +5127,20 @@ v8::Local<v8::Promise> WebContents::InsertCSS(gin::Arguments* args,
   mojom::ElectronFrame* renderer = MainFrameRenderer(isolate, promise);
   if (!renderer)
     return handle;
-  auto shared =
-      std::make_shared<gin_helper::Promise<std::u16string>>(std::move(promise));
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<std::u16string> promise, bool replied,
+         const std::u16string& key) {
+        if (replied)
+          promise.Resolve(key);
+        else
+          promise.RejectWithErrorMessage(WebFrameMain::kFrameDisposedError);
+      },
+      std::move(promise)));
   renderer->InsertCSS(
       css, css_origin,
       mojo::WrapCallbackWithDropHandler(
-          base::BindOnce(
-              [](std::shared_ptr<gin_helper::Promise<std::u16string>> p,
-                 const std::u16string& key) { p->Resolve(key); },
-              shared),
-          base::BindOnce(
-              [](std::shared_ptr<gin_helper::Promise<std::u16string>> p) {
-                p->RejectWithErrorMessage(kFrameDisposed);
-              },
-              shared)));
+          base::BindOnce(std::move(on_reply), true),
+          base::BindOnce(std::move(on_drop), false, std::u16string())));
   return handle;
 }
 

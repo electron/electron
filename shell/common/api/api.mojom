@@ -54,11 +54,12 @@ interface ElectronFrame {
 
   // webContents.executeJavaScript() and friends. |result| is the script's
   // completion value (a thenable is awaited first) when |success|, otherwise
-  // the error. |world_id| 0 is the main world.
+  // the value it threw or rejected with, unless |error| describes a failure
+  // that produced no value. |world_id| 0 is the main world.
   ExecuteJavaScript(int32 world_id,
                     array<ScriptSource> sources,
                     bool has_user_gesture)
-      => (bool success, SerializedValue result);
+      => (bool success, SerializedValue result, string error);
   InsertCSS(string css, string css_origin) => (mojo_base.mojom.String16 key);
   RemoveInsertedCSS(mojo_base.mojom.String16 key) => ();
   InsertText(string text) => ();

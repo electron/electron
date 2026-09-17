@@ -25,6 +25,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/serialized_value.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
@@ -54,6 +55,17 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static WebFrameMain* New(v8::Isolate* isolate);
+
+  static constexpr char kFrameDisposedError[] =
+      "Render frame was disposed before the request completed";
+
+  // A mojom::ElectronFrame reply callback of the (success, value, error)
+  // shape: resolves |promise| with the deserialized value, rejects it with the
+  // value or with an Error carrying |error|, or rejects it if the renderer
+  // goes away before replying.
+  static base::OnceCallback<
+      void(bool, electron::SerializedValue, const std::string&)>
+  BindPromiseToReply(gin_helper::Promise<v8::Local<v8::Value>> promise);
 
   static WebFrameMain* From(v8::Isolate* isolate,
                             content::RenderFrameHost* render_frame_host);
