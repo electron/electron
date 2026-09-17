@@ -4,10 +4,8 @@ import {
   parseContentTypeFormat
 } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import { app, session, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
@@ -56,20 +54,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   return true;
 };
 
-// Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
-  | 'insertCSS'
-  | 'insertText'
-  | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
-)[];
-
-for (const method of webFrameMethods) {
-  WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
-  };
-}
-
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
@@ -84,24 +68,12 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScript',
-    String(code),
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(0, [{ code: String(code) }], !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
+  if (!Number.isInteger(worldId)) throw new TypeError('worldId must be an integer');
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScriptInIsolatedWorld',
-    worldId,
-    code,
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(worldId, code, !!hasUserGesture);
 };
 
 WebContents.prototype.loadFile = function (filePath, options = {}) {

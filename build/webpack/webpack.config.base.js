@@ -85,14 +85,18 @@ module.exports = ({
       );
     }
 
-    // Webpack 5 no longer polyfills process or Buffer.
+    const alias = {};
+
+    // Webpack 5 no longer polyfills process.
     if (!alwaysHasNode) {
       plugins.push(
         new webpack.ProvidePlugin({
-          Buffer: ['buffer', 'Buffer'],
-          process: 'process/browser'
+          process: [path.resolve(electronRoot, 'lib', 'webview', 'process.ts'), 'default']
         })
       );
+      // No Node.js `events` in these bundles; EventEmitter is implemented
+      // natively instead.
+      alias.events$ = path.resolve(electronRoot, 'lib', 'common', 'node-events.ts');
     }
 
     plugins.push(
@@ -147,21 +151,15 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       },
       resolve: {
         alias: {
+          ...alias,
           '@electron/internal': path.resolve(electronRoot, 'lib'),
           electron$: electronAPIFile,
           'electron/main$': electronAPIFile,
           'electron/renderer$': electronAPIFile,
           'electron/common$': electronAPIFile,
-          'electron/utility$': electronAPIFile,
-          // Force timers to resolve to our own shim that doesn't use window.postMessage
-          timers: path.resolve(electronRoot, 'lib', 'common', 'timers-shim.ts')
+          'electron/utility$': electronAPIFile
         },
-        extensions: ['.ts', '.js'],
-        fallback: {
-          // We provide our own "timers" import above, any usage of setImmediate inside
-          // one of our renderer bundles should import it from the 'timers' package
-          setImmediate: false
-        }
+        extensions: ['.ts', '.js']
       },
       module: {
         rules: [

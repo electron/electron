@@ -62,6 +62,11 @@ def get_repo_root(path):
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     committer_name=None, committer_email=None, keep_cr=True,
     output_prefix=None):
+  if not patch_data:
+    sys.stderr.write(
+      f'{output_prefix or ""}No patches to apply in {repo}\n'
+    )
+    return
   # --keep-non-patch prevents stripping leading bracketed strings on the subject line
   args = ['--keep-non-patch']
   if threeway:

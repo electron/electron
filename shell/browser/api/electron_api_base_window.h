@@ -77,6 +77,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   BaseWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BaseWindow() override;
 
+  // gin_helper::WrappableBase:
+  void OnWrapped(v8::Isolate* isolate) override;
+
   // TrackableObject:
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
 

@@ -243,13 +243,13 @@ webpack_build("electron_worker_bundle") {
   out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
+webpack_build("electron_webview_bundle") {
   deps = [ ":build_electron_definitions" ]
 
-  inputs = auto_filenames.sandbox_bundle_deps
+  inputs = auto_filenames.webview_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
+  config_file = "//electron/build/webpack/webpack.config.webview.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
 webpack_build("electron_isolated_renderer_bundle") {
@@ -279,24 +279,14 @@ webpack_build("electron_utility_bundle") {
   out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
-}
-
 action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
@@ -305,10 +295,9 @@ action("electron_js2c") {
     "$root_gen_dir/internal/electron/js2c/browser_init.js",
     "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
     "$root_gen_dir/internal/electron/js2c/node_init.js",
-    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
     "$root_gen_dir/internal/electron/js2c/renderer_init.js",
-    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
     "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
     "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 

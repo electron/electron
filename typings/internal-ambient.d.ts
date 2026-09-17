@@ -30,17 +30,9 @@ declare namespace NodeJS {
     isRunAsNodeEnabled(): boolean;
   }
 
-  interface IpcRendererImpl {
-    send(internal: boolean, channel: string, args: any[]): void;
-    sendSync(internal: boolean, channel: string, args: any[]): any;
-    sendToHost(channel: string, args: any[]): void;
-    invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string; result: T }>;
-    postMessage(channel: string, message: any, transferables: MessagePort[]): void;
-  }
-
   interface IpcRendererBinding {
-    createForRenderFrame(): IpcRendererImpl;
-    createForServiceWorker(): IpcRendererImpl;
+    ipcRenderer: Electron.IpcRenderer;
+    ipcRendererInternal: ElectronInternal.IpcRendererInternal;
   }
 
   interface V8UtilBinding {
@@ -291,13 +283,20 @@ declare namespace NodeJS {
       getCrashpadHandlerPID(): number;
     };
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
+    _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
-    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
+    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle & {
+      setSharedTextureReceiver: Electron.SharedTexture['setSharedTextureReceiver'];
+    };
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
-    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App; App: Function };
+    _linkedBinding(name: 'electron_browser_app'): {
+      app: Electron.App;
+      App: Function;
+      defaultDesktopName(name: string | undefined): string;
+    };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
@@ -336,6 +335,11 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
+    _linkedBinding(name: 'electron_renderer_context_bridge'): {
+      executeInWorld(worldId: number, script: { func: Function; args?: any[] }): any;
+      exposeAPIInWorld(worldId: number, key: string, api: any): void;
+      contextBridge: Electron.ContextBridge;
+    };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
@@ -348,7 +352,6 @@ declare namespace NodeJS {
 
     // Additional properties
     _serviceStartupScript: string;
-    _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;

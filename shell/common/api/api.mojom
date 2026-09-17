@@ -39,10 +39,42 @@ struct SerializedValue {
   uint64 size;
 };
 
-// Per-frame associated interface ordered against content.mojom.Frame, so
-// SetStartupData() arrives before the CommitNavigation that follows it.
-interface ElectronFrameStartup {
+struct ScriptSource {
+  mojo_base.mojom.String16 code;
+  string url;
+};
+
+// Per-frame interface associated with content.mojom.Frame, so its messages and
+// replies are ordered with navigation and the frame's other host messages:
+// SetStartupData() arrives before the CommitNavigation that follows it, and a
+// reply is seen after anything the frame told its host while handling the
+// request.
+interface ElectronFrame {
   SetStartupData(RendererStartupData data);
+
+  // webContents.executeJavaScript() and friends. |result| is the script's
+  // completion value (a thenable is awaited first) when |success|, otherwise
+  // the value it threw or rejected with, unless |error| describes a failure
+  // that produced no value. |world_id| 0 is the main world.
+  ExecuteJavaScript(int32 world_id,
+                    array<ScriptSource> sources,
+                    bool has_user_gesture)
+      => (bool success, SerializedValue result, string error);
+  InsertCSS(string css, string css_origin) => (mojo_base.mojom.String16 key);
+  RemoveInsertedCSS(mojo_base.mojom.String16 key) => ();
+  InsertText(string text) => ();
+  SetVisualZoomLevelLimits(double min_level, double max_level) => ();
+
+  // sharedTexture.sendSharedTexture(): imports |transfer| (the result of
+  // startTransferSharedTexture() in the browser) in the frame's Electron
+  // context and hands it to the receiver registered with
+  // sharedTexture.setSharedTextureReceiver() along with |args|. |result| is
+  // the imported texture's frame creation sync token when |success|, otherwise
+  // the error thrown, or |error| describes the failure.
+  ReceiveSharedTexture(SerializedValue transfer,
+                       string texture_id,
+                       SerializedValue args)
+      => (bool success, SerializedValue result, string error);
 };
 
 interface ElectronRenderer {

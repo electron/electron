@@ -248,7 +248,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetOpacity(val);
 
   if (bool val; options.Get(options::kAlwaysOnTop, &val) && val)
-    SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
+    SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow, "floating", 0);
 
   bool fullscreenable = true;
   bool fullscreen = false;
