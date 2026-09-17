@@ -15,6 +15,7 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/process/process.h"
 #include "base/strings/strcat.h"
+#include "base/strings/string_util.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/renderer/render_frame.h"
 #include "crypto/hash.h"
@@ -142,6 +143,15 @@ v8::Local<v8::Value> CreatePreloadScript(
            .ToLocal(&body)) {
     return {};
   }
+  // V8 validates a code cache against the source but not against the
+  // parameter names, and the sandboxed preload's parameter list depends on
+  // whether it runs in an isolated world. Name the parameters in a trailing
+  // comment so a cache made for one list is rejected (and rebuilt) rather
+  // than run against another.
+  body = v8::String::Concat(
+      isolate, body,
+      gin::StringToV8(isolate, "\n//# electronPreloadParameters=" +
+                                   base::JoinString(param_name_strings, ",")));
 
   std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data;
   if (ps->code_cache) {
