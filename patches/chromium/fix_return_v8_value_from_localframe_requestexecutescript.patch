@@ -4,7 +4,8 @@ Date: Mon, 5 Sep 2022 19:07:54 +0900
 Subject: fix: return v8::Value from LocalFrame::RequestExecuteScript
 
 Allows api::WebFrame::ExecuteJavaScript(InIsolateWorld) to work with
-v8::Value instead of base::Value.
+v8::Value instead of base::Value, and reports the rejection reason of an
+awaited promise result to that callback instead of dropping it.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
@@ -32,7 +33,7 @@ index 5bf29ef3337282d8d019ff164194ffcf79901528..c865e4fca0fe80470d78f55aaa5649a9
                                      mojom::WantResultOption,
                                      mojom::PromiseResultOption,
 diff --git a/third_party/blink/public/web/web_script_execution_callback.h b/third_party/blink/public/web/web_script_execution_callback.h
-index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd4344bbcbf0 100644
+index cba373664bec3a32abad6fe0396bd67b53b7e67f..13284f693f406cea171e450af7784a4425c8d690 100644
 --- a/third_party/blink/public/web/web_script_execution_callback.h
 +++ b/third_party/blink/public/web/web_script_execution_callback.h
 @@ -14,6 +14,12 @@ class TimeTicks;
@@ -48,12 +49,17 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  namespace blink {
  
  // Non-nullopt `base::Value` is passed to the callback if
-@@ -43,6 +49,9 @@ namespace blink {
+@@ -43,6 +49,14 @@ namespace blink {
  using WebScriptExecutionCallback =
      base::OnceCallback<void(std::optional<base::Value>, base::TimeTicks)>;
  
-+using WebScriptExecutionCallbackUnmodified =
-+    base::OnceCallback<void(const std::vector<v8::Local<v8::Value>>&)>;
++// Receives the scripts' v8 completion values without conversion. When
++// promise results are awaited, a script whose promise was rejected has an
++// empty value in `results` and the rejection reason at the same index of
++// `rejections`; otherwise `rejections` holds empty values.
++using WebScriptExecutionCallbackUnmodified = base::OnceCallback<void(
++    const std::vector<v8::Local<v8::Value>>& results,
++    const std::vector<v8::Local<v8::Value>>& rejections)>;
 +
  }  // namespace blink
  
@@ -105,7 +111,7 @@ index d0b9b0815dbf3bbf39a4a1fbf9b886b45bac0da9..1a6d94940886b8fc0a1a42e8ab3c2997
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9dd873db16 100644
+index b47588db64b635eb48addd92ab074aaa455804aa..40d66f2f3f570d46040fa756c61f399bab4761fd 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -10,6 +10,7 @@
@@ -116,7 +122,73 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
  #include "base/logging.h"
  #include "base/numerics/safe_conversions.h"
  #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-blink.h"
-@@ -249,7 +250,7 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -43,13 +44,19 @@ namespace {
+ // then-able).
+ class PromiseAggregator : public GarbageCollected<PromiseAggregator> {
+  public:
+-  using Callback = base::OnceCallback<void(const v8::LocalVector<v8::Value>&)>;
++  // Receives the fulfilled values and, for each value that was rejected
++  // instead, the rejection reason at the same index of the second vector.
++  using Callback = base::OnceCallback<void(const v8::LocalVector<v8::Value>&,
++                                           const v8::LocalVector<v8::Value>&)>;
+ 
+   PromiseAggregator(ScriptState* script_state,
+                     const v8::LocalVector<v8::Value>& values,
+                     Callback callback);
+ 
+-  void Trace(Visitor* visitor) const { visitor->Trace(results_); }
++  void Trace(Visitor* visitor) const {
++    visitor->Trace(results_);
++    visitor->Trace(rejections_);
++  }
+ 
+  private:
+   // A helper class that handles a result from a single promise value.
+@@ -71,6 +78,9 @@ class PromiseAggregator : public GarbageCollected<PromiseAggregator> {
+       if (was_fulfilled_) {
+         aggregator_->results_[index_].Reset(script_state->GetIsolate(),
+                                             value.V8Value());
++      } else {
++        aggregator_->rejections_[index_].Reset(script_state->GetIsolate(),
++                                               value.V8Value());
+       }
+ 
+       if (--aggregator_->outstanding_ == 0) {
+@@ -94,6 +104,8 @@ class PromiseAggregator : public GarbageCollected<PromiseAggregator> {
+ 
+   // The accumulated vector of results from the promises.
+   HeapVector<TraceWrapperV8Reference<v8::Value>> results_;
++  // The rejection reasons of the promises that were rejected.
++  HeapVector<TraceWrapperV8Reference<v8::Value>> rejections_;
+   // The number of outstanding promises we're waiting on.
+   wtf_size_t outstanding_ = 0;
+   // The callback to invoke when all promises are settled.
+@@ -104,6 +116,7 @@ PromiseAggregator::PromiseAggregator(ScriptState* script_state,
+                                      const v8::LocalVector<v8::Value>& values,
+                                      Callback callback)
+     : results_(static_cast<wtf_size_t>(values.size())),
++      rejections_(static_cast<wtf_size_t>(values.size())),
+       callback_(std::move(callback)) {
+   for (wtf_size_t i = 0; i < values.size(); ++i) {
+     if (values[i].IsEmpty())
+@@ -128,10 +141,14 @@ PromiseAggregator::PromiseAggregator(ScriptState* script_state,
+ void PromiseAggregator::OnAllSettled(v8::Isolate* isolate) {
+   DCHECK_EQ(0u, outstanding_);
+   v8::LocalVector<v8::Value> converted_results(isolate, results_.size());
+-  for (wtf_size_t i = 0; i < results_.size(); ++i)
++  v8::LocalVector<v8::Value> converted_rejections(isolate, results_.size());
++  for (wtf_size_t i = 0; i < results_.size(); ++i) {
+     converted_results[i] = results_[i].Get(isolate);
++    converted_rejections[i] = rejections_[i].Get(isolate);
++  }
+ 
+-  std::move(callback_).Run(std::move(converted_results));
++  std::move(callback_).Run(std::move(converted_results),
++                           std::move(converted_rejections));
+ }
+ 
+ class WebScriptExecutor : public PausableScriptExecutor::Executor {
+@@ -249,7 +266,7 @@ void PausableScriptExecutor::CreateAndRun(
            script_state, mojom::blink::UserActivationOption::kDoNotActivate,
            mojom::blink::LoadEventBlockingOption::kDoNotBlock,
            want_result_option, mojom::blink::PromiseResultOption::kDoNotWait,
@@ -125,7 +197,7 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
            MakeGarbageCollected<V8FunctionExecutor>(isolate, function, receiver,
                                                     argc, argv),
            /*script_injector_id=*/String());
-@@ -266,10 +267,11 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -266,10 +283,11 @@ void PausableScriptExecutor::CreateAndRun(
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
      WebScriptExecutionCallback callback,
@@ -138,7 +210,7 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
        MakeGarbageCollected<WebScriptExecutor>(std::move(sources),
                                                execute_script_policy),
        script_injector_id);
-@@ -292,6 +294,14 @@ void PausableScriptExecutor::ContextDestroyed() {
+@@ -292,6 +310,16 @@ void PausableScriptExecutor::ContextDestroyed() {
      ScriptState::Scope script_scope(script_state_);
      std::move(callback_).Run({}, {});
    }
@@ -148,12 +220,14 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
 +    // is permitted. Ensure a valid scope is present for the callback.
 +    // See https://crbug.com/840719.
 +    ScriptState::Scope script_scope(script_state_);
-+    std::move(raw_callback_).Run(std::vector<v8::Local<v8::Value>>());
++    std::move(raw_callback_)
++        .Run(std::vector<v8::Local<v8::Value>>(),
++             std::vector<v8::Local<v8::Value>>());
 +  }
    Dispose();
  }
  
-@@ -302,11 +312,13 @@ PausableScriptExecutor::PausableScriptExecutor(
+@@ -302,11 +330,13 @@ PausableScriptExecutor::PausableScriptExecutor(
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
      WebScriptExecutionCallback callback,
@@ -167,7 +241,26 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
        user_activation_option_(user_activation_option),
        blocking_option_(blocking_option),
        want_result_option_(want_result_option),
-@@ -446,6 +458,13 @@ void PausableScriptExecutor::HandleResults(
+@@ -401,13 +431,16 @@ void PausableScriptExecutor::ExecuteAndDestroySelf() {
+       break;
+ 
+     case mojom::blink::PromiseResultOption::kDoNotWait:
+-      HandleResults(results);
++      HandleResults(results,
++                    v8::LocalVector<v8::Value>(script_state_->GetIsolate(),
++                                               results.size()));
+       break;
+   }
+ }
+ 
+ void PausableScriptExecutor::HandleResults(
+-    const v8::LocalVector<v8::Value>& results) {
++    const v8::LocalVector<v8::Value>& results,
++    const v8::LocalVector<v8::Value>& rejections) {
+   // The script may have removed the frame, in which case ContextDestroyed()
+   // will have handled the disposal/callback.
+   if (!script_state_->ContextIsValid())
+@@ -446,6 +479,15 @@ void PausableScriptExecutor::HandleResults(
      std::move(callback_).Run(std::move(value), start_time_);
    }
  
@@ -175,14 +268,16 @@ index b47588db64b635eb48addd92ab074aaa455804aa..9d0c4e6098b4bf1c2f15d5800a9a4e9d
 +    // TODO: use `v8::LocalVector` instead of `std::vector<v8::Local<...>>`
 +    // (see https://crbug.com/40272194)
 +    std::move(raw_callback_)
-+        .Run(std::vector<v8::Local<v8::Value>>(results.begin(), results.end()));
++        .Run(std::vector<v8::Local<v8::Value>>(results.begin(), results.end()),
++             std::vector<v8::Local<v8::Value>>(rejections.begin(),
++                                               rejections.end()));
 +  }
 +
    Dispose();
  }
  
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.h b/third_party/blink/renderer/core/frame/pausable_script_executor.h
-index 4ed8807eadcbdef7c77cb06fa072f90e216b9d2d..2fe2f089abe1a4b5b2fd9d90caf59fc52f602c5b 100644
+index 4ed8807eadcbdef7c77cb06fa072f90e216b9d2d..d12223bb29774d75e78380887299e831a6d4fa4f 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.h
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.h
 @@ -48,6 +48,7 @@ class CORE_EXPORT PausableScriptExecutor final
@@ -201,7 +296,13 @@ index 4ed8807eadcbdef7c77cb06fa072f90e216b9d2d..2fe2f089abe1a4b5b2fd9d90caf59fc5
                           Executor*,
                           const String& script_injector_id);
    ~PausableScriptExecutor() override;
-@@ -84,6 +86,7 @@ class CORE_EXPORT PausableScriptExecutor final
+@@ -80,10 +82,12 @@ class CORE_EXPORT PausableScriptExecutor final
+   void ExecuteAndDestroySelf();
+   void Dispose();
+ 
+-  void HandleResults(const v8::LocalVector<v8::Value>& results);
++  void HandleResults(const v8::LocalVector<v8::Value>& results,
++                     const v8::LocalVector<v8::Value>& rejections);
  
    Member<ScriptState> script_state_;
    WebScriptExecutionCallback callback_;

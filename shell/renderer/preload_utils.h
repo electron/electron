@@ -42,7 +42,7 @@ v8::Local<v8::Value> CreatePreloadScript(
 
 double Uptime();
 
-// Converts the startup data the browser delivered (via ElectronFrameStartup
+// Converts the startup data the browser delivered (via ElectronFrame
 // for frames, or EmbeddedWorkerStartParams for service workers) into the
 // `{ preloadScripts, process }` shape that
 // lib/sandboxed_renderer/init.ts and lib/preload_realm/init.ts expect — the
