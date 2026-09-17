@@ -15,6 +15,7 @@
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/gpu_memory_buffer_handle.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace {
@@ -31,6 +32,28 @@ media::VideoPixelFormat GetTargetPixelFormatFromOption(
 
   // Use ARGB as default.
   return media::PIXEL_FORMAT_ARGB;
+}
+
+// Formats a shared texture paint event can describe.
+bool IsSupportedSharedTextureFormat(media::VideoPixelFormat format) {
+  return format == media::PIXEL_FORMAT_ARGB ||
+         format == media::PIXEL_FORMAT_ABGR ||
+         format == media::PIXEL_FORMAT_RGBAF16 ||
+         format == media::PIXEL_FORMAT_NV12;
+}
+
+// Whether |handle| is the kind of GPU buffer the capturer produces on this
+// platform.
+bool IsPlatformSharedTextureHandle(const gfx::GpuMemoryBufferHandle& handle) {
+#if BUILDFLAG(IS_WIN)
+  return handle.type == gfx::DXGI_SHARED_HANDLE;
+#elif BUILDFLAG(IS_APPLE)
+  return handle.type == gfx::IO_SURFACE_BUFFER;
+#elif BUILDFLAG(IS_LINUX)
+  return handle.type == gfx::NATIVE_PIXMAP;
+#else
+  return false;
+#endif
 }
 
 }  // namespace
@@ -105,10 +128,15 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   // Offscreen using GPU shared texture
   if (view_->offscreen_use_shared_texture()) {
-    CHECK(data->is_gpu_memory_buffer_handle());
+    if (!data->is_gpu_memory_buffer_handle() ||
+        !IsSupportedSharedTextureFormat(info->pixel_format)) {
+      return;
+    }
 
     auto& orig_handle = data->get_gpu_memory_buffer_handle();
-    CHECK(!orig_handle.is_null());
+    if (!IsPlatformSharedTextureHandle(orig_handle)) {
+      return;
+    }
 
     // Clone the handle to support keep the handle alive after the callback
     auto gmb_handle = orig_handle.Clone();
@@ -151,7 +179,13 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     return;
   }
 
-  // Regular shared texture capture using shared memory
+  // Regular shared texture capture using shared memory. The bitmap below is
+  // N32, so only 4-byte-per-pixel frames can back it.
+  if (!data->is_read_only_shmem_region() ||
+      (info->pixel_format != media::PIXEL_FORMAT_ARGB &&
+       info->pixel_format != media::PIXEL_FORMAT_ABGR)) {
+    return;
+  }
   const auto& data_region = data->get_read_only_shmem_region();
 
   if (!data_region.IsValid()) {
