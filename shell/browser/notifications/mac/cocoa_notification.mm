@@ -203,6 +203,8 @@ void CocoaNotification::ScheduleNotification(
     LOG(INFO) << "Notification created (" << [identifier UTF8String] << ")";
   }
 
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   scoped_refptr<base::SequencedTaskRunner> task_runner =
       base::SequencedTaskRunner::GetCurrentDefault();
   auto weak_self = GetWeakPtr();

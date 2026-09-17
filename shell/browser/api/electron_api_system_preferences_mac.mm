@@ -247,6 +247,8 @@ int SystemPreferences::DoSubscribeNotification(
     const NotificationCallback& callback,
     NotificationCenterKind kind) {
   int request_id = g_next_id++;
+  // A copy is needed: the block below would capture a reference by reference.
+  // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
   __block NotificationCallback copied_callback = callback;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();

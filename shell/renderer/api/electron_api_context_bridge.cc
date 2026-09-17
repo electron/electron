@@ -858,7 +858,7 @@ void OverrideGlobalValueFromIsolatedWorld(
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   gin_helper::Dictionary global(isolate, main_context->Global());
 
-  const std::string final_key = key_path[key_path.size() - 1];
+  const std::string& final_key = key_path[key_path.size() - 1];
   auto maybe_target_object =
       TraceKeyPath(global, key_path, allow_silent_failure);
   if (!maybe_target_object.has_value())
@@ -895,7 +895,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
   gin_helper::Dictionary global(isolate, main_context->Global());
 
-  const std::string final_key = key_path[key_path.size() - 1];
+  const std::string& final_key = key_path[key_path.size() - 1];
   auto target_dict = TraceKeyPath(global, key_path, false);
   v8::Local<v8::Object> target_object = target_dict.value().GetHandle();
 

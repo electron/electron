@@ -2918,8 +2918,8 @@ void WebContents::NotifyPageTitleUpdated(
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;

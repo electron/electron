@@ -630,7 +630,7 @@ void Browser::UpdateBadgeContents(
     const std::string& badge_alt_string) {
   SkBitmap badge;
   if (badge_content) {
-    std::string content = badge_content.value();
+    const std::string& content = badge_content.value();
     constexpr int kOverlayIconSize = 16;
     // This is the color used by the Windows 10 Badge API, for platform
     // consistency.

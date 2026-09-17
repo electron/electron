@@ -451,11 +451,8 @@ bool NotificationCallbackWrapper(
   if (Browser::Get()->is_ready()) {
     callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-        base::SingleThreadTaskRunner::GetCurrentDefault());
-
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
                                   cwd, std::move(additional_data)));
   }
