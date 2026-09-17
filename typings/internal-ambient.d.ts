@@ -297,7 +297,11 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
-    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App; App: Function };
+    _linkedBinding(name: 'electron_browser_app'): {
+      app: Electron.App;
+      App: Function;
+      defaultDesktopName(name: string | undefined): string;
+    };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
@@ -348,7 +352,6 @@ declare namespace NodeJS {
 
     // Additional properties
     _serviceStartupScript: string;
-    _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;

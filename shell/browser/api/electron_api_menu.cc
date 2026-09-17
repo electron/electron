@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
@@ -388,6 +389,11 @@ void Menu::SetApplicationMenuFromJS(gin::Arguments* args) {
       return;
     }
   }
+  ChangeApplicationMenu(menu);
+}
+
+// static
+void Menu::ChangeApplicationMenu(Menu* menu) {
   g_application_menu_was_set = true;
   if (menu)
     ApplicationMenu() = cppgc::Persistent<Menu>(menu);
@@ -422,8 +428,37 @@ v8::Local<v8::Value> Menu::GetApplicationMenu(v8::Isolate* isolate) {
 }
 
 // static
-bool Menu::ApplicationMenuWasSet() {
-  return g_application_menu_was_set;
+Menu* Menu::application_menu() {
+  return ApplicationMenu().Get();
+}
+
+// static
+void Menu::InstallDefaultApplicationMenu(v8::Isolate* isolate) {
+  if (g_application_menu_was_set)
+    return;
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::LocalVector<v8::Value> entries(isolate);
+  for (std::string_view role : {
+#if BUILDFLAG(IS_MAC)
+           "appMenu",
+#endif
+           "fileMenu", "editMenu", "viewMenu", "windowMenu"}) {
+    gin_helper::Dictionary entry = gin::Dictionary::CreateEmpty(isolate);
+    entry.Set("role", role);
+    entries.push_back(entry.GetHandle());
+  }
+  v8::TryCatch try_catch(isolate);
+  v8::Local<v8::Value> built = BuildFromTemplate(
+      gin_helper::ErrorThrower(isolate),
+      v8::Array::New(isolate, entries.data(), entries.size()));
+  Menu* menu = nullptr;
+  if (built.IsEmpty() || !gin::ConvertFromV8(isolate, built, &menu) || !menu) {
+    LOG(ERROR) << "Failed to build the default application menu";
+    return;
+  }
+  v8::Context::Scope context_scope(context);
+  ChangeApplicationMenu(menu);
 }
 
 void Menu::ActivateForTesting(int command_id) {
@@ -532,7 +567,6 @@ void Initialize(v8::Local<v8::Object> exports,
   statics.SetMethod("buildFromTemplate", &Menu::BuildFromTemplate);
   statics.SetMethod("setApplicationMenu", &Menu::SetApplicationMenuFromJS);
   statics.SetMethod("getApplicationMenu", &Menu::GetApplicationMenu);
-  statics.SetMethod("_applicationMenuWasSet", &Menu::ApplicationMenuWasSet);
   statics.SetMethod("_roleDefaults", &electron::api::menu_roles::Defaults);
 #if BUILDFLAG(IS_MAC)
   statics.SetMethod("sendActionToFirstResponder",
