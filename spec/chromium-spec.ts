@@ -4340,14 +4340,14 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await once(w, 'leave-full-screen');
   });
 
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
-    const fullscreenChange = once(ipcMain, 'fullscreenChange');
-    w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
-    await fullscreenChange;
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentDocument.querySelector('video').requestFullscreen()",
+      true
+    );
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(fullscreenWidth > 0).to.true();
@@ -4355,6 +4355,32 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await w.webContents.executeJavaScript('document.exitFullscreen()');
     const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(width).to.equal(0);
+  });
+
+  it('emits fullscreenchange on the parent document for in-process iframes', async () => {
+    if (process.platform === 'darwin') await once(w, 'enter-full-screen');
+
+    w.webContents.setBackgroundThrottling(false);
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    const fullscreenElementIsIframe = await w.webContents.executeJavaScript(
+      `(async () => {
+        const iframe = document.querySelector('iframe');
+        const fullscreenChange = new Promise(resolve => {
+          document.addEventListener('fullscreenchange', () => {
+            resolve(document.fullscreenElement === iframe);
+          }, { once: true });
+        });
+        const [isFullscreen] = await Promise.all([
+          fullscreenChange,
+          iframe.contentDocument.querySelector('video').requestFullscreen()
+        ]);
+        return isFullscreen;
+      })()`,
+      true
+    );
+    expect(fullscreenElementIsIframe).to.be.true('parent document fullscreenElement is the iframe');
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
   });
 });
 
