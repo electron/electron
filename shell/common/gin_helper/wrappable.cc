@@ -67,6 +67,8 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
   wrapper_.SetWeak(this, FirstWeakCallback,
                    v8::WeakCallbackType::kInternalFields);
 
+  OnWrapped(isolate);
+
   // Call object._init if we have one.
   v8::Local<v8::Function> init;
   if (Dictionary(isolate, wrapper).Get("_init", &init))
