@@ -22,6 +22,16 @@ if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
   app.disableHardwareAcceleration();
 }
 
+// macos-x64 CI runner VMs have no Metal-capable GPU, and SwiftShader's Vulkan
+// backend fails to initialize there too, so every GPU process launch fails
+// until Chromium falls back to software compositing with GL disabled. Start in
+// that end state directly to skip the failed launches. Mirrors `ciGpuArgs`
+// (--disable-gpu) in spec/lib/spec-helpers.ts, which cannot be required here
+// because ts-node is registered only after app is ready.
+if (process.env.CI && process.platform === 'darwin' && process.arch === 'x64') {
+  app.disableHardwareAcceleration();
+}
+
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 // Prevent the spec runner quitting when the first window closes
