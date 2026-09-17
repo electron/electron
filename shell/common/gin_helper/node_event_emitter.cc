@@ -923,11 +923,11 @@ void OnceWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   };
   if (field(kOnceFired)->IsTrue())
     return;
-  state->SetInternalField(kOnceFired, v8::True(s.isolate()));
 
   Receiver target(s, field(kOnceTarget).As<v8::Object>());
   if (!CallRemoveListener(s, target, field(kOnceType), field(kOnceWrapFn)))
     return;
+  state->SetInternalField(kOnceFired, v8::True(s.isolate()));
   v8::LocalVector<v8::Value> argv(s.isolate());
   argv.reserve(info.Length());
   for (int i = 0; i < info.Length(); ++i)
@@ -1063,43 +1063,57 @@ bool RemoveListenerCore(const State& s,
   if (!list->IsArray())
     return true;
 
+  // Search from the back without copying the list, so that removing the
+  // most recently added listener (what once() wrappers and
+  // removeAllListeners() do) stays cheap however long the list is.
   v8::Local<v8::Array> arr = list.As<v8::Array>();
-  v8::LocalVector<v8::Value> items(isolate);
-  if (!ReadArray(s, arr, &items))
-    return false;
-  int position = -1;
-  for (int i = static_cast<int>(items.size()) - 1; i >= 0; --i) {
-    if (!MatchesListener(s, items[i], listener, &matches))
+  uint32_t length = arr->Length();
+  uint32_t position = length;
+  v8::Local<v8::Value> matched;
+  for (uint32_t i = length; i > 0; --i) {
+    v8::Local<v8::Value> item;
+    if (!arr->Get(s.context(), i - 1).ToLocal(&item) ||
+        !MatchesListener(s, item, listener, &matches)) {
       return false;
+    }
     if (matches) {
-      position = i;
+      position = i - 1;
+      matched = item;
       break;
     }
   }
-  if (position < 0)
+  if (position == length)
     return true;
 
   // spliceOne(list, position), in place so the array (and its `warned`
   // marker) stays the same object.
-  size_t new_length = items.size() - 1;
-  for (size_t i = position; i < new_length; ++i) {
-    if (!arr->Set(s.context(), static_cast<uint32_t>(i), items[i + 1])
-             .IsJust()) {
+  uint32_t new_length = length - 1;
+  for (uint32_t i = position; i < new_length; ++i) {
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Value> next;
+    if (!arr->Get(s.context(), i + 1).ToLocal(&next) ||
+        !arr->Set(s.context(), i, next).IsJust()) {
       return false;
     }
   }
   if (!SetProp(s, arr, s.Key(kKeyLength),
-               v8::Integer::NewFromUnsigned(
-                   isolate, static_cast<uint32_t>(new_length)))) {
+               v8::Integer::NewFromUnsigned(isolate, new_length))) {
     return false;
   }
-  if (new_length == 1 &&
-      !SetProp(s, events, type, items[position == 0 ? 1 : 0])) {
-    return false;
+  if (new_length == 1) {
+    v8::Local<v8::Value> remaining;
+    if (!arr->Get(s.context(), 0).ToLocal(&remaining) ||
+        !SetProp(s, events, type, remaining)) {
+      return false;
+    }
   }
 
   if (emit_remove) {
-    v8::Local<v8::Value> argv[] = {s.Key(kKeyRemoveListener), type, listener};
+    // Report the listener that was registered, not a once() wrapper.
+    v8::Local<v8::Value> original;
+    if (!UnwrapListener(s, matched, &original))
+      return false;
+    v8::Local<v8::Value> argv[] = {s.Key(kKeyRemoveListener), type, original};
     return CallEmit(s, self, argv);
   }
   return true;

@@ -266,6 +266,33 @@ describe('native EventEmitter (electron_common_events)', () => {
       });
     });
 
+    // events@3, which sandboxed preloads used before, reports the function that
+    // was registered when a once() wrapper is removed from a multi-listener
+    // event; current Node.js reports the wrapper there, so this is checked
+    // against the native implementation only.
+    it("when a once() listener's removal is observed alongside other listeners", () => {
+      const e = new (NativeEventEmitter as unknown as Impl)();
+      const seen: any[][] = [];
+      const onceHandler = () => seen.push(['once']);
+      const other = () => seen.push(['other']);
+      e.on('removeListener', (name: string, fn: Function) =>
+        seen.push(['removed', name, fn === onceHandler, fn === other])
+      );
+      e.on('x', other);
+      e.once('x', onceHandler);
+      e.emit('x');
+      e.emit('x');
+      e.removeListener('x', other);
+      expect(seen).to.deep.equal([
+        ['other'],
+        ['removed', 'x', true, false],
+        ['once'],
+        ['other'],
+        ['removed', 'x', false, true]
+      ]);
+      expect(e.listenerCount('x')).to.equal(0);
+    });
+
     it('when removing every listener of a large event', () => {
       sameAsNode((EventEmitter, log) => {
         const e = new EventEmitter();
