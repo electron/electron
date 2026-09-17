@@ -29,10 +29,9 @@ v8::Local<v8::Object> GetIpcObject(v8::Isolate* const isolate,
   auto global_object = context->Global();
   auto value =
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
-  if (value.IsEmpty() || !value->IsObject()) {
-    LOG(ERROR) << "Attempted to get the 'ipcNative' object but it was missing";
+  // Nothing in this context listens for IPC (no preload script ran here).
+  if (value.IsEmpty() || !value->IsObject())
     return {};
-  }
   return value.As<v8::Object>();
 }
 
