@@ -24,7 +24,7 @@ not corrupted on Windows.
 This should be upstreamed.
 
 diff --git a/content/browser/tracing/tracing_controller_impl.cc b/content/browser/tracing/tracing_controller_impl.cc
-index c5f2beca9cd20ce2f9e41eb2a32fbf74b1cc63f3..73de24675c3cb5c85c7f314a3c6e580a48d98ef4 100644
+index 9300a20814d0fb7fe20299e7050ba5e379cb3fe3..2968d2640f0ace099590e5bc57984a67c4da6e58 100644
 --- a/content/browser/tracing/tracing_controller_impl.cc
 +++ b/content/browser/tracing/tracing_controller_impl.cc
 @@ -230,11 +230,15 @@ bool TracingControllerImpl::GetTrackEventDescriptor(
@@ -33,7 +33,7 @@ index c5f2beca9cd20ce2f9e41eb2a32fbf74b1cc63f3..73de24675c3cb5c85c7f314a3c6e580a
      StartTracingDoneCallback callback,
 -    bool privacy_filtering_enabled) {
 +    StartTracingOptions options) {
-   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   CHECK_CURRENTLY_ON(BrowserThread::UI, base::NotFatalUntil::M159);
    // TODO(chiniforooshan): The actual value should be received by callback and
    // this function should return void.
    if (IsTracing()) {
@@ -77,7 +77,7 @@ index c5f2beca9cd20ce2f9e41eb2a32fbf74b1cc63f3..73de24675c3cb5c85c7f314a3c6e580a
 +      (output_format_ == TraceDataFormat::kProtobuf && !agent_label.empty())) {
      return false;
 +  }
-   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   CHECK_CURRENTLY_ON(BrowserThread::UI, base::NotFatalUntil::M159);
  
 +  stop_requested_ = true;
    trace_data_endpoint_ = std::move(trace_data_endpoint);
