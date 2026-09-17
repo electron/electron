@@ -1,5 +1,4 @@
 import ipcMain from '@electron/internal/browser/api/ipc-main';
-import * as ipcMainInternalUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import { randomUUID } from 'crypto';
@@ -133,14 +132,7 @@ async function sendSharedTexture(options: Electron.SendSharedTextureOptions, ...
     throw new Error('`frame` should be provided');
   }
 
-  const invokePromise: Promise<Electron.SharedTextureSyncToken> =
-    ipcMainInternalUtils.invokeInWebFrameMain<Electron.SharedTextureSyncToken>(
-      targetFrame,
-      IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER,
-      transfer,
-      imported.textureId,
-      ...args
-    );
+  const invokePromise = targetFrame._transferSharedTexture(transfer, imported.textureId, args);
 
   try {
     const syncToken = await Promise.race([invokePromise, timeoutPromise]);
