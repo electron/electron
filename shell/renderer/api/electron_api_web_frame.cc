@@ -204,7 +204,10 @@ class ScriptExecutionCallback {
     }
   }
 
-  void Completed(const std::vector<v8::Local<v8::Value>>& result) {
+  // Promise results are not awaited here (kDoNotWait), so |rejections| is
+  // always empty: a returned promise is handed to the caller as the result.
+  void Completed(const std::vector<v8::Local<v8::Value>>& result,
+                 const std::vector<v8::Local<v8::Value>>& rejections) {
     v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {

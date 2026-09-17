@@ -94,7 +94,7 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("type", "renderer");
 
   // The browser pushed the preload script set + process info via
-  // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered
+  // ElectronFrame, ordered ahead of the CommitNavigation that triggered
   // this DidCreateScriptContext. The push always lands first (associated mojo
   // ordering); the only documents that reach here without it are ones that
   // ShouldLoadPreload() filters out (initial empty doc, webview frames), so

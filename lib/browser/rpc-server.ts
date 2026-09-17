@@ -31,7 +31,7 @@ ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (e
 });
 
 // Sandboxed renderers receive their preload scripts and process info via the
-// browser-pushed ElectronFrameStartup mojo interface for frames, or
+// browser-pushed ElectronFrame mojo interface for frames, or
 // EmbeddedWorkerStartParams for service workers (see
 // electron_api_web_contents.cc and electron_browser_client.cc), not over
 // sync IPC. This handler is only used by non-sandboxed renderers, which read

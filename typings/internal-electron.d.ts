@@ -117,6 +117,7 @@ declare namespace Electron {
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
+    _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
