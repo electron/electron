@@ -552,15 +552,24 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
-    // changed and adjust the test.
     it('should emit did-fail-load event for files that do not exist', async () => {
-      const didFailLoad = once(w.webContents, 'did-fail-load');
-      w.loadURL('file://a.txt');
-      const [, code, desc, , isMainFrame] = await didFailLoad;
-      expect(code).to.equal(-6);
-      expect(desc).to.equal('ERR_FILE_NOT_FOUND');
-      expect(isMainFrame).to.equal(true);
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-'));
+      const url = nodeUrl.pathToFileURL(path.join(tempDir, 'missing.txt')).toString();
+
+      try {
+        const didFailLoad = once(w.webContents, 'did-fail-load');
+        const loadURL = w.loadURL(url);
+        const didFailLoadEvent = didFailLoad.then(([, code, desc, eventURL, isMainFrame]) => {
+          expect(eventURL).to.equal(url);
+          expect(code).to.equal(-6);
+          expect(desc).to.equal('ERR_FILE_NOT_FOUND');
+          expect(isMainFrame).to.equal(true);
+        });
+
+        await Promise.all([expect(loadURL).to.be.rejected, didFailLoadEvent]);
+      } finally {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
     });
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
