@@ -57,14 +57,13 @@ const libTypecheckSources = [
 ].sort();
 
 const bundleTargets = [
-  { name: 'sandbox_bundle_deps', target: 'sandboxed_renderer' },
+  { name: 'webview_bundle_deps', target: 'webview' },
   { name: 'isolated_bundle_deps', target: 'isolated_renderer' },
   { name: 'browser_bundle_deps', target: 'browser' },
   { name: 'renderer_bundle_deps', target: 'renderer' },
   { name: 'worker_bundle_deps', target: 'worker' },
   { name: 'node_bundle_deps', target: 'node' },
-  { name: 'utility_bundle_deps', target: 'utility' },
-  { name: 'preload_realm_bundle_deps', target: 'preload_realm' }
+  { name: 'utility_bundle_deps', target: 'utility' }
 ];
 
 const main = async () => {

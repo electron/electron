@@ -136,8 +136,7 @@ if (target.targetDeletesNodeGlobals) {
   });
 }
 if (!target.alwaysHasNode) {
-  // There is no Node.js in these contexts; use the browser polyfill.
-  inject.process = ['process/browser', 'default'];
+  inject.process = ['@electron/internal/webview/process', 'default'];
 }
 
 // There is no Node.js `global` in a sandboxed renderer, but code shared with
