@@ -1,30 +1,11 @@
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
-import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
 
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const webviewTag = mainFrame.getWebPreference('webviewTag');
-const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const isWebView = mainFrame.getWebPreference('isWebView');
 
 require('@electron/internal/renderer/ipc-native-setup');
-
-switch (window.location.protocol) {
-  case 'devtools:': {
-    break;
-  }
-  case 'chrome-extension:': {
-    break;
-  }
-  case 'chrome:': {
-    break;
-  }
-  default: {
-    // Override default web functions.
-    const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, isHiddenPage);
-  }
-}
 
 // Load webview tag implementation.
 if (process.isMainFrame) {

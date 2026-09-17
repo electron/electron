@@ -16,6 +16,13 @@ interface ElectronWebContentsUtility {
 
   SetTemporaryZoomLevel(double zoom_level);
 
+  // window.close() from the top-level document of a renderer with Node.js
+  // integration closes its BrowserWindow regardless of who opened it.
+  CloseWindow();
+
+  // A <webview> guest's window gained or lost focus.
+  NotifyGuestFocusChange(bool focus);
+
   [Sync]
   CanAccessClipboardDeprecated(
       PermissionName name,
