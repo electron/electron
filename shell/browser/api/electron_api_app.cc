@@ -60,6 +60,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/api/process_metric.h"
+#include "shell/browser/app_package.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
@@ -617,6 +618,7 @@ void App::OnActivate(bool has_visible_windows) {
 }
 
 void App::OnWillFinishLaunching() {
+  Menu::InstallDefaultApplicationMenu(JavascriptEnvironment::GetIsolate());
   Emit("will-finish-launching");
 }
 
@@ -2102,6 +2104,14 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Get());
+#if BUILDFLAG(IS_LINUX)
+  // For desktop-name-spec.
+  dict.SetMethod(
+      "defaultDesktopName",
+      base::BindRepeating([](std::optional<std::u16string> name) {
+        return electron::DefaultDesktopName(name.value_or(std::u16string()));
+      }));
+#endif
 }
 
 }  // namespace

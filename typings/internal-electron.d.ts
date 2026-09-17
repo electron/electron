@@ -31,7 +31,6 @@ declare namespace Electron {
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
   interface BaseWindow {
-    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
@@ -172,7 +171,6 @@ declare namespace Electron {
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   namespace Menu {
-    function _applicationMenuWasSet(): boolean;
     function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
   }
 

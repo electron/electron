@@ -528,8 +528,6 @@ void SetNodeOptions(base::Environment* env) {
 
 namespace electron {
 
-namespace {
-
 base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
@@ -540,7 +538,6 @@ base::FilePath GetResourcesPath() {
   return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
-}  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
@@ -865,27 +862,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   std::unique_ptr<gin::ContextHolder> gin_context_holder;
   auto set_up_context = [&](v8::Local<v8::Context> ctx,
                             node::IsolateData* iso_data) {
-    if (browser_env_ == BrowserEnvironment::kBrowser) {
-      const std::vector<std::string> search_paths = {"app.asar", "app",
-                                                     "default_app.asar"};
-      const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate,
-              gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()
-                               ? app_asar_search_paths
-                               : search_paths));
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
-                           .As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
-    }
     ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                          static_cast<void*>(iso_data),
                                          v8::kEmbedderDataTypeTagDefault);

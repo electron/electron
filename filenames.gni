@@ -371,6 +371,8 @@ filenames = {
     "shell/browser/api/ui_event.h",
     "shell/browser/api/views/electron_api_image_view.cc",
     "shell/browser/api/views/electron_api_image_view.h",
+    "shell/browser/app_package.cc",
+    "shell/browser/app_package.h",
     "shell/browser/auto_updater.cc",
     "shell/browser/auto_updater.h",
     "shell/browser/background_throttling_source.h",
