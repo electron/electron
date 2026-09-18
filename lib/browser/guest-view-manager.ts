@@ -316,6 +316,10 @@ handleMessage(
 );
 
 handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event, guestInstanceId: number) {
+  // Removing a <webview> from the DOM tears down its internal iframe, which
+  // destroys the guest and drops it from |guestInstances|, before the element's
+  // disconnectedCallback sends this IPC. There is nothing left to detach then.
+  if (!guestInstances.has(guestInstanceId)) return;
   getGuestForFrame(guestInstanceId, event);
   return detachGuest(event.sender, guestInstanceId);
 });

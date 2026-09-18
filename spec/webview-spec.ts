@@ -139,6 +139,45 @@ describe('<webview> tag', function () {
       await once(ipcMain, 'pong');
     });
 
+    // Regression test for https://github.com/electron/electron/issues/53989
+    it('can be removed from the DOM and re-inserted after its guest has loaded', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const { error, firstId, secondId } = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const webview = new WebView();
+        webview.setAttribute('src', 'data:text/html,<h1>guest</h1>');
+        webview.addEventListener('did-finish-load', () => {
+          const firstId = webview.getWebContentsId();
+          // disconnectedCallback runs as a custom element reaction inside
+          // remove(); anything it throws is reported to window 'error'.
+          let error = null;
+          const onError = (e) => { error = e.message; };
+          window.addEventListener('error', onError);
+          webview.remove();
+          window.removeEventListener('error', onError);
+          if (error) {
+            resolve({ error });
+            return;
+          }
+          // Putting the element back creates a fresh guest.
+          webview.addEventListener('did-finish-load', () => {
+            resolve({ error, firstId, secondId: webview.getWebContentsId() });
+          }, { once: true });
+          document.body.appendChild(webview);
+        }, { once: true });
+        document.body.appendChild(webview);
+      })`);
+      expect(error).to.be.null();
+      expect(secondId).to.be.a('number');
+      expect(secondId).to.not.equal(firstId);
+    });
+
     it('works with Trusted Types', async () => {
       const w = new BrowserWindow({
         show: false,
