@@ -1106,6 +1106,12 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
+    // These tests toggle a process-wide AXMode. Turn it back off so the rest of
+    // the suite doesn't run with renderer accessibility enabled.
+    afterEach(() => {
+      app.setAccessibilitySupportEnabled(false);
+    });
+
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
