@@ -174,3 +174,4 @@ cherry-pick-c595c64.patch
 cherry-pick-46c64c0.patch
 cherry-pick-e062572.patch
 cherry-pick-f32b64b.patch
+fix_restore_snap-compatible_dbusmenu_object_path.patch
