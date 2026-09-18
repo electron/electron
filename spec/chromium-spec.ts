@@ -28,6 +28,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { emittedUntil } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
@@ -5783,7 +5784,13 @@ describe('iframe sandbox external protocols', () => {
   });
 
   it('blocks navigation to external protocol from a sandboxed iframe', async () => {
-    const consoleMessage = once(w.webContents, 'console-message');
+    // The page has no CSP, so the main frame also logs an "Electron Security
+    // Warning" when it finishes loading, which can arrive first.
+    const consoleMessage = emittedUntil(
+      w.webContents,
+      'console-message',
+      ({ message }: { message: string }) => !message.startsWith('Electron Security Warning')
+    );
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
     const [{ message }] = await consoleMessage;
     expect(message).to.match(/external protocol blocked by sandbox/);
