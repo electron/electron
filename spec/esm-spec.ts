@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { spawnAndWait } from './lib/spec-helpers';
+import { spawnAndWait } from './lib/spec-helpers.ts';
 
 const fixtureTimeout = 20000;
 const fixtureKillTimeout = 5000;
@@ -22,7 +22,7 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   });
 };
 
-const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');
+const fixturePath = path.resolve(import.meta.dirname, 'fixtures', 'esm');
 
 describe('esm', () => {
   describe('main process', () => {
@@ -173,7 +173,9 @@ describe('esm', () => {
         );
 
         const packageJson = await webContents.executeJavaScript('window.packageJson');
-        expect(packageJson).to.deep.equal(require('./fixtures/esm/package/package.json'));
+        expect(packageJson).to.deep.equal(
+          JSON.parse(fs.readFileSync(path.join(fixturePath, 'package', 'package.json'), 'utf8'))
+        );
       });
 
       const hostsUrl = pathToFileURL(

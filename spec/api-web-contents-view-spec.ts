@@ -5,9 +5,9 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
-import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('WebContentsView', () => {
   afterEach(async () => {

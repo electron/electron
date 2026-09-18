@@ -5,15 +5,15 @@ import {
   app,
   Menu,
   MenuItem,
-  MenuItemConstructorOptions
+  type MenuItemConstructorOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { ifit, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+import { ifit, ifdescribe } from './lib/spec-helpers.ts';
+import { closeAllWindows, cleanupWebContents } from './lib/window-helpers.ts';
 
 const roleList: Record<string, { label: string; accelerator?: string }> = Menu._roleDefaults();
 

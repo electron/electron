@@ -4,15 +4,15 @@ import {
   webFrameMain,
   BrowserWindow,
   ipcMain,
-  WebContents,
-  Extension,
-  Session,
-  ServiceWorkerInfo,
-  ServiceWorkersRunningStatusChangedEventParams
+  type WebContents,
+  type Extension,
+  type Session,
+  type ServiceWorkerInfo,
+  type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -21,12 +21,12 @@ import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
-import { expectWarningMessages } from './lib/warning-helpers';
-import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
+import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { expectWarningMessages } from './lib/warning-helpers.ts';
+import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
-const fixtures = path.join(__dirname, 'fixtures');
+const fixtures = path.join(import.meta.dirname, 'fixtures');
 
 describe('chrome extensions', () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
@@ -35,7 +35,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   let port: number;
-  let wss: WebSocket.Server;
+  let wss: WebSocketServer;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -44,7 +44,7 @@ describe('chrome extensions', () => {
       res.end(emptyPage);
     });
 
-    wss = new WebSocket.Server({ noServer: true });
+    wss = new WebSocketServer({ noServer: true });
     wss.on('connection', function connection(ws) {
       ws.on('message', function incoming(message) {
         if (message.toString() === 'foo') {
@@ -716,7 +716,7 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome extension content scripts', () => {
-    const fixtures = path.resolve(__dirname, 'fixtures');
+    const fixtures = path.resolve(import.meta.dirname, 'fixtures');
     const extensionPath = path.resolve(fixtures, 'extensions');
 
     const addExtension = (name: string) =>
