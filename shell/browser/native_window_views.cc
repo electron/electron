@@ -11,6 +11,8 @@
 
 #include "shell/browser/native_window_views.h"
 
+#include "shell/common/bench_stamp.h"
+
 #if BUILDFLAG(IS_WIN)
 #include <dwmapi.h>
 #include <wrl/client.h>
@@ -207,6 +209,7 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
                                      const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow{base_window_id, options, parent} {
+  BenchStamp("nativewindowviews.ctor.begin");
   if (std::string val; options.Get(options::kTitle, &val))
     SetTitle(val);
 

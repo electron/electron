@@ -4,6 +4,8 @@
 
 #include "shell/app/electron_main_delegate.h"
 
+#include "shell/common/bench_stamp.h"
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -215,6 +217,7 @@ ElectronMainDelegate::GetNonWildcardDomainNonPortSchemes() {
 
 std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  BenchStamp("delegate.basic_startup_complete", GetProcessType().c_str());
 
 #if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();
@@ -286,6 +289,7 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = GetProcessType();
+  BenchStamp("delegate.pre_sandbox_startup.begin", process_type.c_str());
 
   base::FilePath user_data_dir =
       command_line->GetSwitchValuePath(::switches::kUserDataDir);
@@ -374,9 +378,11 @@ void ElectronMainDelegate::PreSandboxStartup() {
     ui::OzonePlatform::PreSandboxStartup();
 #endif  // BUILDFLAG(IS_OZONE)
   }
+  BenchStamp("delegate.pre_sandbox_startup.end", process_type.c_str());
 }
 
 void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
+  BenchStamp("delegate.sandbox_initialized", process_type.c_str());
 #if BUILDFLAG(IS_WIN)
   logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
                                /* is_preinit = */ process_type.empty());
@@ -384,6 +390,7 @@ void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 }
 
 std::optional<int> ElectronMainDelegate::PreBrowserMain() {
+  BenchStamp("delegate.pre_browser_main.begin");
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
@@ -406,11 +413,13 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   auto env = base::Environment::Create();
   base::nix::ExtractXdgActivationTokenFromEnv(*env);
 #endif
+  BenchStamp("delegate.pre_browser_main.end");
   return std::nullopt;
 }
 
 std::optional<int> ElectronMainDelegate::PostEarlyInitialization(
     InvokedIn invoked_in) {
+  BenchStamp("delegate.post_early_initialization", GetProcessType().c_str());
   // Start memory observation as early as possible so it can start recording
   // memory allocations.
   InitializeMemorySystem();
@@ -446,6 +455,7 @@ ElectronMainDelegate::CreateContentBrowserClient() {
 }
 
 content::ContentGpuClient* ElectronMainDelegate::CreateContentGpuClient() {
+  BenchStamp("delegate.create_gpu_client", "gpu");
   gpu_client_ = std::make_unique<ElectronGpuClient>();
   return gpu_client_.get();
 }
@@ -453,6 +463,7 @@ content::ContentGpuClient* ElectronMainDelegate::CreateContentGpuClient() {
 content::ContentRendererClient*
 ElectronMainDelegate::CreateContentRendererClient() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  BenchStamp("delegate.create_renderer_client", "renderer");
 
   if (IsSandboxEnabled(command_line)) {
     renderer_client_ = std::make_unique<ElectronSandboxedRendererClient>();
@@ -465,6 +476,7 @@ ElectronMainDelegate::CreateContentRendererClient() {
 
 content::ContentUtilityClient*
 ElectronMainDelegate::CreateContentUtilityClient() {
+  BenchStamp("delegate.create_utility_client", "utility");
   utility_client_ = std::make_unique<ElectronContentUtilityClient>();
   return utility_client_.get();
 }
@@ -508,6 +520,10 @@ bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
 
 #if BUILDFLAG(IS_LINUX)
 void ElectronMainDelegate::ZygoteForked() {
+  BenchStamp("delegate.zygote_forked",
+             base::CommandLine::ForCurrentProcess()
+                 ->GetSwitchValueASCII(::switches::kProcessType)
+                 .c_str());
   // Needs to be called after we have DIR_USER_DATA.  BrowserMain sets
   // this up for the browser process in a different manner.
   ElectronCrashReporterClient::Create();

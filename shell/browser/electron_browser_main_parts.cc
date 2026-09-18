@@ -4,6 +4,9 @@
 
 #include "shell/browser/electron_browser_main_parts.h"
 
+#include "content/public/browser/spare_render_process_host_manager.h"
+#include "shell/common/bench_stamp.h"
+
 #include <memory>
 #include <optional>
 #include <string>
@@ -274,6 +277,7 @@ int ElectronBrowserMainParts::GetExitCode() const {
 }
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
+  BenchStamp("bmp.pre_early_initialization");
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif
@@ -288,6 +292,7 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 }
 
 void ElectronBrowserMainParts::PostEarlyInitialization() {
+  BenchStamp("bmp.post_early_initialization.begin");
   // A workaround was previously needed because there was no ThreadTaskRunner
   // set.  If this check is failing we may need to re-add that workaround
   DCHECK(base::SingleThreadTaskRunner::HasCurrentDefault());
@@ -305,6 +310,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // The ProxyResolverV8 has setup a complete V8 environment, in order to
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
+  BenchStamp("bmp.js_env_created");
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope(isolate);
@@ -315,6 +321,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
   node_bindings_->Initialize(isolate, context);
+  BenchStamp("bmp.node_initialized");
 
 #if BUILDFLAG(IS_LINUX)
   // Runs during Node.js environment creation and is joined before any app
@@ -330,6 +337,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_env_ = node_bindings_->CreateEnvironment(
       isolate, context, js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes());
+  BenchStamp("bmp.node_env_created");
 
   // Enter the snapshot-deserialized main context (it was created inside
   // CreateEnvironment, not in JavascriptEnvironment's ctor).
@@ -371,14 +379,19 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->set_uv_env(node_env_.get());
 
 #if BUILDFLAG(IS_LINUX)
+  BenchStamp("bmp.join_fontconfig.begin");
   JoinSystemFontConfigInit();
+  BenchStamp("bmp.join_fontconfig.end");
 #endif
 
   // Load everything.
+  BenchStamp("bmp.load_environment.begin");
   node_bindings_->LoadEnvironment(node_env_.get());
+  BenchStamp("bmp.load_environment.end");
 
   // Wait for app
   node_bindings_->JoinAppCode();
+  BenchStamp("bmp.join_app_code.end");
 
 #if BUILDFLAG(IS_LINUX)
   // Reload if the app's main script changed the FontConfig environment.
@@ -407,9 +420,11 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();
+  BenchStamp("bmp.post_early_initialization.end");
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
+  BenchStamp("bmp.pre_create_threads.begin");
   if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
   }
@@ -496,6 +511,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 }
 
 int ElectronBrowserMainParts::PostCreateThreads() {
+  BenchStamp("bmp.post_create_threads");
   content::GetIOThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&tracing::TracingSamplerProfiler::CreateOnChildThread));
@@ -525,8 +541,9 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
   fake_browser_process_->PostDestroyThreads();
 }
 
-void ElectronBrowserMainParts::ToolkitInitialized() {
+void ElectronBrowserMainParts::InitializeLinuxUi() {
 #if BUILDFLAG(IS_LINUX)
+  BenchStamp("bmp.linux_ui_init.begin");
   auto* linux_ui = ui::GetDefaultLinuxUi();
   CHECK(linux_ui);
   linux_ui_getter_ = std::make_unique<LinuxUiGetterImpl>();
@@ -548,7 +565,14 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
   // implementation). Start observing them once it's initialized.
   ui::CursorFactory::GetInstance()->ObserveThemeChanges();
+  BenchStamp("bmp.linux_ui_init.end");
 #endif
+}
+
+void ElectronBrowserMainParts::ToolkitInitialized() {
+  BenchStamp("bmp.toolkit_initialized.begin");
+  if (!getenv("ELECTRON_EXP_LATE_LINUXUI"))
+    InitializeLinuxUi();
 
 #if defined(USE_AURA)
   wm_state_ = std::make_unique<wm::WMState>();
@@ -576,6 +600,9 @@ void ElectronBrowserMainParts::JoinSystemFontConfigInit() {
 #endif  // BUILDFLAG(IS_LINUX)
 
 int ElectronBrowserMainParts::PreMainMessageLoopRun() {
+  BenchStamp("bmp.pre_main_message_loop_run.begin");
+  if (getenv("ELECTRON_EXP_LATE_LINUXUI"))
+    InitializeLinuxUi();
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareEmbedThread();
@@ -633,8 +660,16 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 #if !BUILDFLAG(IS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
+  if (getenv("ELECTRON_EXP_EARLY_SPARE")) {
+    BenchStamp("bmp.early_spare.begin");
+    content::SpareRenderProcessHostManager::Get().WarmupSpare(
+        ElectronBrowserContext::GetDefaultBrowserContext({}));
+    BenchStamp("bmp.early_spare.end");
+  }
+  BenchStamp("bmp.will_finish_launching");
   Browser::Get()->WillFinishLaunching();
   Browser::Get()->DidFinishLaunching(base::DictValue());
+  BenchStamp("bmp.did_finish_launching.end");
 #endif
 
   // Notify observers that main thread message loop was initialized.
@@ -656,6 +691,7 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
+  BenchStamp("bmp.post_create_main_message_loop.begin");
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       base::BindOnce(&ExitOnSessionLoss),
@@ -742,6 +778,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
 #if !BUILDFLAG(IS_MAC)
 void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
+  BenchStamp("bmp.pre_create_main_message_loop");
   PreCreateMainMessageLoopCommon();
 }
 #endif

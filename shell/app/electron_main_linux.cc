@@ -19,6 +19,7 @@
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #include "shell/app/node_main.h"
 #include "shell/app/uv_stdio_fix.h"
+#include "shell/common/bench_stamp.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/uv_includes.h"
@@ -47,6 +48,11 @@ void PreallocateFileDescriptorTable() {
 }  // namespace
 
 int main(int argc, char* argv[]) {
+  electron::BenchStamp(
+      "main.enter",
+      UNSAFE_BUFFERS(argc > 1 && strncmp(argv[1], "--type=", 7) == 0
+                         ? argv[1] + 7
+                         : "browser"));
   FixStdioStreams();
 
   // Chromium expects the original argv in its original memory location
@@ -67,5 +73,6 @@ int main(int argc, char* argv[]) {
   content::ContentMainParams params{&delegate};
   params.argc = argc;
   params.argv = original_argv;
+  electron::BenchStamp("main.content_main");
   return content::ContentMain(std::move(params));
 }

@@ -4,6 +4,8 @@
 
 #include "shell/browser/javascript_environment.h"
 
+#include "shell/common/bench_stamp.h"
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -205,6 +207,7 @@ JavascriptEnvironment::JavascriptEnvironment(
           Initialize(event_loop, setup_wasm_streaming, tracing_controller),
           &max_young_generation_size_)},
       locker_{std::in_place, isolate()} {
+  BenchStamp("jsenv.isolate_created");
   v8::Isolate* const isolate = this->isolate();
   isolate->Enter();
 
@@ -253,6 +256,7 @@ v8::Isolate* JavascriptEnvironment::Initialize(
     uv_loop_t* event_loop,
     bool setup_wasm_streaming,
     v8::TracingController* tracing_controller) {
+  BenchStamp("jsenv.initialize.begin");
   auto* cmd = base::CommandLine::ForCurrentProcess();
   // --js-flags.
   std::string js_flags = "--no-freeze-flags-after-init ";

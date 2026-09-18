@@ -106,6 +106,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void PostEarlyInitialization() override;
   int PreCreateThreads() override;
   void ToolkitInitialized() override;
+  void InitializeLinuxUi();
   int PreMainMessageLoopRun() override;
   void WillRunMainMessageLoop(
       std::unique_ptr<base::RunLoop>& run_loop) override;

@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_base_window.h"
 
+#include "shell/common/bench_stamp.h"
+
 #include <algorithm>
 #include <string>
 #include <utility>
@@ -101,6 +103,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
+  BenchStamp("basewindow.ctor.begin");
   // make sure we don't override title on back/forward navigation
   // if the title is provided
   if (std::string title; options.Get(options::kTitle, &title))
@@ -146,6 +149,7 @@ void BaseWindow::OnWrapped(v8::Isolate* isolate) {
 BaseWindow::BaseWindow(gin::Arguments* args,
                        const gin_helper::Dictionary& options)
     : BaseWindow(args->isolate(), options) {
+  BenchStamp("basewindow.native_created");
   InitWithArgs(args);
   // Init window after everything has been setup.
   window()->InitFromOptions(options);

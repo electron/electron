@@ -4,6 +4,8 @@
 
 #include "shell/renderer/renderer_client_base.h"
 
+#include "shell/common/bench_stamp.h"
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -227,6 +229,7 @@ bool RendererClientBase::ShouldLoadPreload(
 }
 
 void RendererClientBase::RenderThreadStarted() {
+  BenchStamp("renderer.render_thread_started", "renderer");
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
   // Enable MessagePort close event by default.
@@ -335,6 +338,7 @@ void RendererClientBase::SetPendingCreateNewWindowStartupData(
 
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
+  BenchStamp("renderer.render_frame_created", "renderer");
 #if defined(TOOLKIT_VIEWS)
   new AutofillAgent(render_frame,
                     render_frame->GetAssociatedInterfaceRegistry());
