@@ -5,20 +5,47 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { defer } from './spec-helpers';
+
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures', 'api', 'autoupdater', 'msix');
 const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.xml');
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
+const powershellTimeout = 30_000;
+
+function runPowerShell(args: string[]): Promise<{ status: number; stdout: string; stderr: string }> {
+  const result = new Promise<{ status: number; stdout: string; stderr: string }>((resolve, reject) => {
+    const child = cp.execFile(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', ...args],
+      { timeout: powershellTimeout, killSignal: 'SIGKILL' },
+      (error, stdout, stderr) => {
+        if (!error) {
+          resolve({ status: 0, stdout, stderr });
+        } else if (!error.killed && !error.signal && typeof error.code === 'number') {
+          resolve({ status: error.code, stdout, stderr });
+        } else {
+          reject(
+            new Error(`PowerShell failed (timeout: ${powershellTimeout} ms): ${error.message}\n${stderr || stdout}`, {
+              cause: error
+            })
+          );
+        }
+      }
+    );
+    defer(async () => {
+      if (child.pid && child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+        await result.catch(() => {});
+      }
+    });
+  });
+  return result;
+}
 
 // Install the signing certificate for MSIX test packages to the Trusted People store
 // This is required to install self-signed MSIX packages
 export async function installMsixCertificate(): Promise<void> {
-  const result = cp.spawnSync('powershell', [
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-File',
-    installCertScriptPath
-  ]);
+  const result = await runPowerShell(['-ExecutionPolicy', 'Bypass', '-File', installCertScriptPath]);
 
   if (result.status !== 0) {
     throw new Error(`Failed to install MSIX certificate: ${result.stderr.toString() || result.stdout.toString()}`);
@@ -59,26 +86,26 @@ export async function registerExecutableWithIdentity(executablePath: string): Pr
 
   fs.copyFileSync(manifestFixturePath, manifestPath);
 
-  const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', psCommand]);
-  if (result.status !== 0) {
-    const errorMsg = result.stderr.toString() || result.stdout.toString();
+  try {
+    const result = await runPowerShell(['-Command', psCommand]);
+    if (result.status !== 0) {
+      const errorMsg = result.stderr.toString() || result.stdout.toString();
+      throw new Error(`Failed to register executable with identity: ${errorMsg}`);
+    }
+  } catch (error) {
     try {
       fs.unlinkSync(manifestPath);
     } catch {
       // Ignore cleanup errors
     }
-    throw new Error(`Failed to register executable with identity: ${errorMsg}`);
+    throw error;
   }
 }
 
 // Unregister the Electron Dev MSIX package
 // This removes the sparse package registration created by registerExecutableWithIdentity
 export async function unregisterExecutableWithIdentity(): Promise<void> {
-  const result = cp.spawnSync('powershell', [
-    '-NoProfile',
-    '-Command',
-    ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage'
-  ]);
+  const result = await runPowerShell(['-Command', ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage']);
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
     throw new Error(
@@ -107,10 +134,7 @@ export function getMsixFixturePath(version: 'v1' | 'v2'): string {
 // Install MSIX package
 export async function installMsixPackage(msixPath: string): Promise<void> {
   // Use Add-AppxPackage PowerShell cmdlet
-  const result = cp.spawnSync('powershell', [
-    '-Command',
-    `Add-AppxPackage -Path "${msixPath}" -ForceApplicationShutdown`
-  ]);
+  const result = await runPowerShell(['-Command', `Add-AppxPackage -Path "${msixPath}" -ForceApplicationShutdown`]);
   if (result.status !== 0) {
     throw new Error(`Failed to install MSIX package: ${result.stderr.toString()}`);
   }
@@ -118,7 +142,7 @@ export async function installMsixPackage(msixPath: string): Promise<void> {
 
 // Uninstall MSIX package by  name
 export async function uninstallMsixPackage(name: string): Promise<void> {
-  const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', `Get-AppxPackage ${name} | Remove-AppxPackage`]);
+  const result = await runPowerShell(['-Command', `Get-AppxPackage ${name} | Remove-AppxPackage`]);
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
     throw new Error(`Failed to uninstall MSIX package: ${result.stderr.toString() || result.stdout.toString()}`);
@@ -128,7 +152,7 @@ export async function uninstallMsixPackage(name: string): Promise<void> {
 // Get version of installed MSIX package by name
 export async function getMsixPackageVersion(name: string): Promise<string | null> {
   const psCommand = `(Get-AppxPackage -Name '${name}').Version`;
-  const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', psCommand]);
+  const result = await runPowerShell(['-Command', psCommand]);
   if (result.status !== 0) {
     return null;
   }
