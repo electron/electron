@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Lehmann <dlehmann@chromium.org>
+Date: Thu, 17 Sep 2026 15:50:35 +0200
+Subject: [objects] Forbid adding private symbols to Wasm objects
+
+Wasm objects have a fixed layout and must not transition their maps.
+Harden LookupIterator::ExtendingNonExtensible by generally disallowing
+map transitions for Wasm objects. This matches the existing check for
+shared objects. This causes private symbol stores on Wasm objects to
+throw a TypeError instead of transitioning their map.
+
+R=jkummerow@chromium.org, leszeks@chromium.org
+TAG=agy
+CONV=c66784a6-5c96-4c98-9763-0148a1c0b03d
+
+Bug: 560121552
+Change-Id: I2c569670746901123359a9abce04fbbd55f1719d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8421259
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Daniel Lehmann <dlehmann@chromium.org>
+Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109922}
+
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index 88b76a31d252c479a580855473a1e804069229aa..f1603763286f45b9230cfd762b9c4bcd4c94ab35 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -289,6 +289,13 @@ bool LookupIterator::ExtendingNonExtensible(DirectHandle<JSReceiver> receiver) {
+   if (IsAlwaysSharedSpaceJSObjectMap(receiver_map)) {
+     return true;
+   }
++#if V8_ENABLE_WEBASSEMBLY
++  // Wasm objects have a fixed layout and must never transition their map.
++  if (IsWasmObjectMap(receiver_map)) {
++    return true;
++  }
++#endif  // V8_ENABLE_WEBASSEMBLY
++
+   // Extending non-extensible objects with private fields is currently allowed,
+   // but we're disallowing it soon.
+   DCHECK(!receiver_map->is_extensible());
+diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
+index f50bc81e20c904afbd68068079bea7c498f4f7de..c5d3b7059507ce3caeab56780a0ba15655c318f1 100644
+--- a/src/objects/lookup.cc
++++ b/src/objects/lookup.cc
+@@ -667,6 +667,9 @@ void LookupIterator::PrepareTransitionToDataProperty(
+   DCHECK_IMPLIES(!receiver.is_identical_to(GetStoreTarget<JSReceiver>()),
+                  name()->IsAnyPrivateName());
+   DCHECK(!IsAlwaysSharedSpaceJSObject(*receiver));
++#if V8_ENABLE_WEBASSEMBLY
++  DCHECK(!IsWasmObject(*receiver));
++#endif
+   if (state_ == TRANSITION) return;
+ 
+   if (!IsElement() && name()->IsAnyPrivate()) {
+diff --git a/test/mjsunit/wasm/gc-js-interop-private-symbols.js b/test/mjsunit/wasm/gc-js-interop-private-symbols.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9215406f51c0fc2e571a5de5fd90b9ab0093c0d2
+--- /dev/null
++++ b/test/mjsunit/wasm/gc-js-interop-private-symbols.js
+@@ -0,0 +1,83 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++// Wasm objects are opaque and have a fixed layout; their maps must never
++// transition and no properties may be added to them.
++
++const builder = new WasmModuleBuilder();
++const $struct = builder.addStruct([makeField(kWasmI64, true)]);
++const $array = builder.addArray(kWasmI64);
++
++builder.addFunction('makeStruct', makeSig([], [wasmRefType($struct)]))
++    .exportFunc()
++    .addBody([
++      ...wasmI64Const(0),
++      kGCPrefix, kExprStructNew, $struct,
++    ]);
++
++builder.addFunction('makeArray', makeSig([], [wasmRefType($array)]))
++    .exportFunc()
++    .addBody([
++      ...wasmI64Const(0),
++      ...wasmI32Const(1),
++      kGCPrefix, kExprArrayNew, $array,
++    ]);
++
++builder.addFunction('isStruct', makeSig([kWasmExternRef], [kWasmI32]))
++    .exportFunc()
++    .addBody([
++      kExprLocalGet, 0,
++      kGCPrefix, kExprAnyConvertExtern,
++      kGCPrefix, kExprRefTest, $struct,
++    ]);
++
++builder.addFunction('isArray', makeSig([kWasmExternRef], [kWasmI32]))
++    .exportFunc()
++    .addBody([
++      kExprLocalGet, 0,
++      kGCPrefix, kExprAnyConvertExtern,
++      kGCPrefix, kExprRefTest, $array,
++    ]);
++
++const instance = builder.instantiate();
++const privateSymbol = %CreatePrivateSymbol('private');
++
++// Structs and arrays must retain their type identity after failed assignment.
++const wasmStruct = instance.exports.makeStruct();
++assertEquals(1, instance.exports.isStruct(wasmStruct));
++assertThrows(() => wasmStruct[privateSymbol] = 1, TypeError);
++assertEquals(1, instance.exports.isStruct(wasmStruct));
++
++const wasmArray = instance.exports.makeArray();
++assertEquals(1, instance.exports.isArray(wasmArray));
++assertThrows(() => wasmArray[privateSymbol] = 1, TypeError);
++assertEquals(1, instance.exports.isArray(wasmArray));
++
++// Standard JS private fields (#field) on class return-override must also throw
++// and preserve type identity.
++class Base {
++  constructor(o) {
++    return o;
++  }
++}
++class DerivedWithPrivateField extends Base {
++  #field = 42;
++}
++
++assertThrows(() => new DerivedWithPrivateField(wasmStruct), TypeError);
++assertEquals(1, instance.exports.isStruct(wasmStruct));
++
++assertThrows(() => new DerivedWithPrivateField(wasmArray), TypeError);
++assertEquals(1, instance.exports.isArray(wasmArray));
++
++// Identity hashes used by WeakMap/WeakSet must continue to work.
++const wm = new WeakMap();
++wm.set(wasmStruct, 'struct-value');
++wm.set(wasmArray, 'array-value');
++assertEquals('struct-value', wm.get(wasmStruct));
++assertEquals('array-value', wm.get(wasmArray));

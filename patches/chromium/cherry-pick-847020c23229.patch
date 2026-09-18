@@ -1,0 +1,316 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rohan Raja <roraja@microsoft.com>
+Date: Wed, 1 Jul 2026 17:05:32 -0700
+Subject: Bound Windows clipboard/drag text reads by HGLOBAL GlobalSize
+
+The Windows clipboard/drag readers in clipboard_util_win.cc built
+strings directly from a locked HGLOBAL pointer (data.data()) and passed
+it to string / UTF constructors that NUL-scan to find the end. An
+untrusted IDataObject payload that omits a NUL terminator therefore
+drives the scan past the allocation, leaking adjacent browser-process
+heap to a web page (CWE-125- out-of-bounds read).
+
+Treat GlobalSize() as authoritative: bound every text/URL/filename read
+by data.size() and truncate at the first embedded NUL, mirroring the
+already hardened CF_HTML path. Two centralized helpers,
+HGlobalAsWideString and HGlobalAsString, cover the six text/URL sites
+(handling the byte->char width conversion and the null-lock check); the
+four filename sites are bounded inline.
+
+Bug: 520521197
+Change-Id: I3a21d4428296572451c2efcecfdc35ee62d44308
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8016986
+Commit-Queue: Rohan Raja <roraja@microsoft.com>
+Reviewed-by: Jesse McKenna <jessemckenna@google.com>
+Cr-Commit-Position: refs/heads/main@{#1655827}
+
+diff --git a/ui/base/clipboard/clipboard_util_win.cc b/ui/base/clipboard/clipboard_util_win.cc
+index 3a699e6c8841f60d1fbbe7322f03cbd5359c1c4b..a05eb62f72826c0a1fd5f1d4459f1b50d3f20b7f 100644
+--- a/ui/base/clipboard/clipboard_util_win.cc
++++ b/ui/base/clipboard/clipboard_util_win.cc
+@@ -50,6 +50,37 @@ namespace {
+ constexpr STGMEDIUM kNullStorageMedium = {.tymed = TYMED_NULL,
+                                           .pUnkForRelease = nullptr};
+ 
++// Returns the locked HGLOBAL contents as UTF-16, bounded by size() and
++// truncated at the first embedded NUL. Untrusted external sources may omit a
++// NUL terminator, so size() is authoritative; reading via data() alone would
++// scan past the allocation.
++std::u16string HGlobalAsWideString(base::win::ScopedHGlobal<wchar_t*>& data) {
++  if (!data.data()) {
++    return std::u16string();
++  }
++  std::u16string out = base::WideToUTF16(
++      std::wstring_view(data.data(), data.size() / sizeof(wchar_t)));
++  if (size_t pos = out.find(u'\0'); pos != std::u16string::npos) {
++    out.resize(pos);
++  }
++  return out;
++}
++
++// Returns the locked HGLOBAL contents as UTF-16, decoding the bytes as UTF-8
++// and bounded by size(), truncated at the first embedded NUL. Untrusted
++// external sources may omit a NUL terminator, so size() is authoritative;
++// reading via data() alone would scan past the allocation.
++std::u16string HGlobalAsString(base::win::ScopedHGlobal<char*>& data) {
++  if (!data.data()) {
++    return std::u16string();
++  }
++  std::string out(data.data(), data.size());
++  if (size_t pos = out.find('\0'); pos != std::string::npos) {
++    out.resize(pos);
++  }
++  return base::UTF8ToUTF16(out);
++}
++
+ // Result type for virtual file extraction: pairs of (temp_file_path,
+ // display_name).
+ using VirtualFileResults =
+@@ -703,7 +734,7 @@ bool GetUrlInfos(IDataObject* data_object,
+   if (GetData(data_object, ClipboardFormatType::BookmarkListType(), &store)) {
+     {
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      ParseBookmarkListData(base::WideToUTF16(data.data()), url_infos);
++      ParseBookmarkListData(HGlobalAsWideString(data), url_infos);
+     }
+     ReleaseStgMedium(&store);
+     return !url_infos.empty();
+@@ -716,7 +747,7 @@ bool GetUrlInfos(IDataObject* data_object,
+       GetData(data_object, ClipboardFormatType::UrlType(), &store)) {
+     {
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      SplitUrlAndTitle(base::WideToUTF16(data.data()), &url, &title);
++      SplitUrlAndTitle(HGlobalAsWideString(data), &url, &title);
+       url_infos.emplace_back(url, title);
+     }
+     ReleaseStgMedium(&store);
+@@ -727,7 +758,7 @@ bool GetUrlInfos(IDataObject* data_object,
+   if (GetData(data_object, ClipboardFormatType::UrlAType(), &store)) {
+     {
+       base::win::ScopedHGlobal<char*> data(store.hGlobal);
+-      SplitUrlAndTitle(base::UTF8ToUTF16(data.data()), &url, &title);
++      SplitUrlAndTitle(HGlobalAsString(data), &url, &title);
+       url_infos.emplace_back(url, title);
+     }
+     ReleaseStgMedium(&store);
+@@ -793,7 +824,9 @@ bool GetFilenames(IDataObject* data_object,
+       // filename using Unicode
+       base::win::ScopedHGlobal<wchar_t*> data(medium.hGlobal);
+       if (data.data() && data.data()[0]) {
+-        filenames->push_back(data.data());
++        std::wstring filename(data.data(), data.size() / sizeof(wchar_t));
++        filename.resize(std::min(filename.size(), filename.find(L'\0')));
++        filenames->push_back(std::move(filename));
+       }
+     }
+     ReleaseStgMedium(&medium);
+@@ -805,7 +838,9 @@ bool GetFilenames(IDataObject* data_object,
+       // filename using ASCII
+       base::win::ScopedHGlobal<char*> data(medium.hGlobal);
+       if (data.data() && data.data()[0]) {
+-        filenames->push_back(base::SysNativeMBToWide(data.data()));
++        std::string mb(data.data(), data.size());
++        mb.resize(std::min(mb.size(), mb.find('\0')));
++        filenames->push_back(base::SysNativeMBToWide(mb));
+       }
+     }
+     ReleaseStgMedium(&medium);
+@@ -996,7 +1031,7 @@ bool GetPlainText(IDataObject* data_object, std::u16string* plain_text) {
+     {
+       // Unicode text
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      plain_text->assign(base::as_u16cstr(data.data()));
++      plain_text->assign(HGlobalAsWideString(data));
+     }
+     ReleaseStgMedium(&store);
+     return true;
+@@ -1006,7 +1041,7 @@ bool GetPlainText(IDataObject* data_object, std::u16string* plain_text) {
+     {
+       // ASCII text
+       base::win::ScopedHGlobal<char*> data(store.hGlobal);
+-      plain_text->assign(base::UTF8ToUTF16(data.data()));
++      plain_text->assign(HGlobalAsString(data));
+     }
+     ReleaseStgMedium(&store);
+     return true;
+@@ -1052,7 +1087,7 @@ bool GetHtml(IDataObject* data_object,
+   {
+     // text/html
+     base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-    html->assign(base::as_u16cstr(data.data()));
++    html->assign(HGlobalAsWideString(data));
+   }
+   ReleaseStgMedium(&store);
+   return true;
+diff --git a/ui/base/clipboard/clipboard_util_win_unittest.cc b/ui/base/clipboard/clipboard_util_win_unittest.cc
+index c92ed03c2b5f22d91f9fdbbd7629b0cd06c7c609..b921b6a879610e69a73c21204d3962cd8c22aa8c 100644
+--- a/ui/base/clipboard/clipboard_util_win_unittest.cc
++++ b/ui/base/clipboard/clipboard_util_win_unittest.cc
+@@ -11,6 +11,7 @@
+ #include "base/containers/span.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
++#include "base/strings/utf_string_conversions.h"
+ #include "base/win/scoped_hglobal.h"
+ #include "base/win/shlwapi.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -204,6 +205,130 @@ class MockVirtualFilesDataObject
+   IFACEMETHODIMP EnumDAdvise(IEnumSTATDATA**) override { return E_NOTIMPL; }
+ };
+ 
++// Emits a FILEGROUPDESCRIPTORW that allocates room for `allocated_items`
++// descriptors but reports `claimed_items` in cItems. Callers decide what those
++// counts represent.
++class MockMalformedVirtualFilesDataObject
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IDataObject> {
++ public:
++  MockMalformedVirtualFilesDataObject(size_t allocated_items,
++                                      unsigned int claimed_items)
++      : allocated_items_(allocated_items), claimed_items_(claimed_items) {}
++
++  IFACEMETHODIMP GetData(FORMATETC* format_etc, STGMEDIUM* medium) override {
++    if (!format_etc || !medium) {
++      return E_INVALIDARG;
++    }
++    if (format_etc->cfFormat ==
++        ClipboardFormatType::FileDescriptorType().ToFormatEtc().cfFormat) {
++      size_t fgd_size = sizeof(FILEGROUPDESCRIPTORW) +
++                        allocated_items_ * sizeof(FILEDESCRIPTORW);
++      HGLOBAL hglobal = ::GlobalAlloc(GHND, fgd_size);
++      auto* fgd = static_cast<FILEGROUPDESCRIPTORW*>(::GlobalLock(hglobal));
++      fgd->cItems = claimed_items_;
++      ::GlobalUnlock(hglobal);
++      medium->tymed = TYMED_HGLOBAL;
++      medium->hGlobal = hglobal;
++      medium->pUnkForRelease = nullptr;
++      return S_OK;
++    }
++    return DV_E_FORMATETC;
++  }
++
++  IFACEMETHODIMP QueryGetData(FORMATETC* format_etc) override {
++    if (!format_etc) {
++      return E_INVALIDARG;
++    }
++    if (format_etc->cfFormat ==
++        ClipboardFormatType::FileDescriptorType().ToFormatEtc().cfFormat) {
++      return S_OK;
++    }
++    return DV_E_FORMATETC;
++  }
++
++  IFACEMETHODIMP GetDataHere(FORMATETC*, STGMEDIUM*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP GetCanonicalFormatEtc(FORMATETC*, FORMATETC*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP SetData(FORMATETC*, STGMEDIUM*, BOOL) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP EnumFormatEtc(DWORD, IEnumFORMATETC**) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP DAdvise(FORMATETC*, DWORD, IAdviseSink*, DWORD*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP DUnadvise(DWORD) override { return E_NOTIMPL; }
++  IFACEMETHODIMP EnumDAdvise(IEnumSTATDATA**) override { return E_NOTIMPL; }
++
++ private:
++  const size_t allocated_items_;
++  const unsigned int claimed_items_;
++};
++
++// Serves CF_UNICODETEXT from an HGLOBAL holding the supplied wide text with
++// NO trailing NUL, mimicking an untrusted external source.
++class MockUnterminatedTextDataObject
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IDataObject> {
++ public:
++  explicit MockUnterminatedTextDataObject(std::wstring text)
++      : text_(std::move(text)) {}
++
++  IFACEMETHODIMP GetData(FORMATETC* format_etc, STGMEDIUM* medium) override {
++    if (!format_etc || !medium) {
++      return E_INVALIDARG;
++    }
++    if (format_etc->cfFormat == CF_UNICODETEXT) {
++      HGLOBAL hGlobal = ::GlobalAlloc(GHND, text_.size() * sizeof(wchar_t));
++      auto* dst = static_cast<wchar_t*>(::GlobalLock(hGlobal));
++      // SAFETY: `hGlobal` holds exactly `text_.size()` wchar_t elements.
++      UNSAFE_BUFFERS(base::span(dst, text_.size()))
++          .copy_from(base::span(text_));
++      ::GlobalUnlock(hGlobal);
++      medium->tymed = TYMED_HGLOBAL;
++      medium->hGlobal = hGlobal;
++      medium->pUnkForRelease = nullptr;
++      return S_OK;
++    }
++    return DV_E_FORMATETC;
++  }
++
++  IFACEMETHODIMP QueryGetData(FORMATETC* format_etc) override {
++    if (!format_etc) {
++      return E_INVALIDARG;
++    }
++    return format_etc->cfFormat == CF_UNICODETEXT ? S_OK : DV_E_FORMATETC;
++  }
++
++  IFACEMETHODIMP GetDataHere(FORMATETC*, STGMEDIUM*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP GetCanonicalFormatEtc(FORMATETC*, FORMATETC*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP SetData(FORMATETC*, STGMEDIUM*, BOOL) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP EnumFormatEtc(DWORD, IEnumFORMATETC**) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP DAdvise(FORMATETC*, DWORD, IAdviseSink*, DWORD*) override {
++    return E_NOTIMPL;
++  }
++  IFACEMETHODIMP DUnadvise(DWORD) override { return E_NOTIMPL; }
++  IFACEMETHODIMP EnumDAdvise(IEnumSTATDATA**) override { return E_NOTIMPL; }
++
++ private:
++  std::wstring text_;
++};
++
+ using ClipboardUtilWinTest = PlatformTest;
+ 
+ TEST_F(ClipboardUtilWinTest, EmptyHtmlToCFHtml) {
+@@ -320,5 +445,28 @@ TEST_F(ClipboardUtilWinTest, GetFileContents) {
+   EXPECT_EQ(base::span(file_contents), base::byte_span_from_cstring("test"));
+ }
+ 
++TEST_F(ClipboardUtilWinTest, GetVirtualFilenamesRejectsOversizedItemCount) {
++  // Buffer holds one descriptor but claims twenty, modeling a malicious OLE
++  // drag source; must be rejected with no out-of-bounds read.
++  Microsoft::WRL::ComPtr<IDataObject> data_object =
++      Microsoft::WRL::Make<MockMalformedVirtualFilesDataObject>(
++          /*allocated_items=*/1u, /*claimed_items=*/20u);
++
++  std::optional<std::vector<base::FilePath>> filenames =
++      clipboard_util::GetVirtualFilenames(data_object.Get());
++
++  EXPECT_FALSE(filenames.has_value());
++}
++
++TEST_F(ClipboardUtilWinTest, GetPlainTextBoundsToHGlobalSize) {
++  const std::wstring text(64, L'a');
++  Microsoft::WRL::ComPtr<IDataObject> data_object =
++      Microsoft::WRL::Make<MockUnterminatedTextDataObject>(text);
++
++  std::u16string out;
++  ASSERT_TRUE(clipboard_util::GetPlainText(data_object.Get(), &out));
++  EXPECT_EQ(out, base::WideToUTF16(text));
++}
++
+ }  // namespace
+ }  // namespace ui
