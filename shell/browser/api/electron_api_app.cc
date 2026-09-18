@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -55,6 +56,7 @@
 #include "sandbox/policy/switches.h"
 #include "services/network/network_service.h"
 #include "shell/app/command_line_args.h"
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -2116,7 +2118,14 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("app", electron::api::App::Get());
+  electron::api::App* app = electron::api::App::Get();
+  v8::Local<v8::Object> wrapper;
+  if (app->GetWrapper(isolate).ToLocal(&wrapper)) {
+    // app is an EventEmitter.
+    std::ignore = wrapper->SetPrototype(
+        context, electron::GetEventEmitterPrototype(isolate));
+  }
+  dict.Set("app", app);
 #if BUILDFLAG(IS_LINUX)
   // For desktop-name.spec.
   dict.SetMethod(
