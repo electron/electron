@@ -1,0 +1,425 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Reis <creis@chromium.org>
+Date: Wed, 16 Sep 2026 13:52:46 -0700
+Subject: Reland: Prevent PDF processes from binding BlobURLStore
+
+This reverts commit 7445311d483b3e6b3f572c84e7327f94438f0c12.
+
+PDF renderer processes should have no need for creating or accessing
+blob URLs. This CL prevents binding to BlobURLStore via the associated
+(frame) and non-associated (worklet) interfaces, killing the renderer if
+this is attempted.
+
+Note that sandboxed frames (with opaque origins) are legitimately
+allowed to create blob URLs with null origins, so
+CanAccessDataForOrigin() cannot be used directly here.
+
+The diff from PS1 addresses renderer kills that were encountered in the
+wild after the fix initially landed. Non-compromised PDF renderer
+processes now cleanly fail blob creation if it is attempted via features
+like DevTools or extensions, rather than triggering a renderer kill.
+There is also a kEnforcePdfBlobRestrictions killswitch in case further
+regressions are encountered.
+
+This CL was mostly written by Gemini.
+
+Fixed: 540051167
+Change-Id: Ib4ecdd2429999a58b9d7fe46d1704b24536eda15
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8396769
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Charlie Reis <creis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699247}
+
+Electron adaptation notes (44-x-y):
+This reland is a revert-of-a-revert whose 3-way base is far from M152, so
+several hunks were hand-resolved:
+- bad_message.h / stability enums.xml: the two new BadMessageReason values
+  are numbered 366/367 (next free on this branch) instead of upstream's
+  372/373; the intermediate upstream enum entries are not present here.
+- public_url_manager.cc: the is_stopped_ checks and the pending_remote
+  validity check were applied onto M152's include set (added features.h,
+  local_frame.h, local_frame_client.h); other include-list drift ignored.
+- url_file_api.cc: this branch calls DOMURL::CreatePublicURL (upstream
+  renamed it to URL::CreatePublicURL); only the explanatory comment was
+  added and it names the M152 function.
+- Test-only files chrome/browser/site_isolation/
+  chrome_site_per_process_browsertest.cc and public_url_manager_test.cc
+  were dropped (Electron does not build chrome/; the blink unit test's
+  include set diverged). blob_url_browsertest.cc applied cleanly.
+The browser-side checks, the blink feature flag, local_frame.cc and
+worklet_global_scope.* hunks are verbatim upstream.
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index a3fa183d014838cf78093a2c54ad786019b574a2..8fa9c07158f4a562acf5611e9f6050d2a82a5373 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -391,6 +391,8 @@ enum BadMessageReason {
+   RFH_FORM_SUBMISSION_FROM_SANDBOXED_FRAME = 363,
+   RFPH_FORM_SUBMISSION_FROM_SANDBOXED_FRAME = 364,
+   INSTALLED_APP_PROVIDER_FACTORY_INVALID_FRAME = 365,
++  RFH_BLOB_URL_STORE_ASSOCIATED_PDF_PROCESS_BLOCKED = 366,
++  RFH_BLOB_URL_STORE_RECEIVER_PDF_PROCESS_BLOCKED = 367,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/blob_storage/blob_url_browsertest.cc b/content/browser/blob_storage/blob_url_browsertest.cc
+index 8e96df818ac4a7ee2af2f62d30817ca6aeb45f9c..d75587b44903e39deec12343b7c58c7a49c2e169 100644
+--- a/content/browser/blob_storage/blob_url_browsertest.cc
++++ b/content/browser/blob_storage/blob_url_browsertest.cc
+@@ -12,12 +12,14 @@
+ #include "base/test/values_test_util.h"
+ #include "base/test/with_feature_override.h"
+ #include "build/build_config.h"
++#include "content/browser/bad_message.h"
+ #include "content/browser/devtools/render_frame_devtools_agent_host.h"
+ #include "content/browser/permissions/permission_controller_impl.h"
+ #include "content/browser/renderer_host/render_frame_host_impl.h"
+ #include "content/browser/storage_partition_impl.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/public/browser/browser_context.h"
++#include "content/public/browser/navigation_controller.h"
+ #include "content/public/common/content_switches.h"
+ #include "content/public/common/url_constants.h"
+ #include "content/public/test/browser_test.h"
+@@ -750,4 +752,118 @@ IN_PROC_BROWSER_TEST_P(BlobURLBrowserTestP,
+   EXPECT_FALSE(handle_null);
+ }
+ 
++// Verifies that PDF processes cannot bind to BlobURLStore, using the associated
++// interface that is used by frames. See https://crbug.com/540051167.
++IN_PROC_BROWSER_TEST_F(BlobUrlBrowserTest, BlobUrlBlockedForPdfProcess) {
++  WebContentsImpl* tab = static_cast<WebContentsImpl*>(shell()->web_contents());
++  GURL url = embedded_test_server()->GetURL("a.test", "/empty.html");
++
++  // Commit `url` as PDF content so that the resulting frame runs in a process
++  // whose SiteInfo has `is_pdf` set.
++  NavigationController::LoadURLParams params(url);
++  params.transition_type = ui::PageTransitionFromInt(
++      ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
++  params.is_pdf = true;
++  NavigateToURLBlockUntilNavigationsComplete(
++      tab, params, 1, /*ignore_uncommitted_navigations=*/false);
++  ASSERT_TRUE(IsLastCommittedEntryOfPageType(tab, PAGE_TYPE_NORMAL));
++  ASSERT_EQ(url, tab->GetLastCommittedURL());
++
++  // The SiteInstance and RenderProcessHost are treated as PDFs. However, the
++  // renderer process will not realize that blob creation should fail gracefully
++  // because ContentBrowserClient::IsDomStorageDisabled() defaults to false, and
++  // the PDF check in the renderer is implemented in the chrome/ layer. This
++  // happens to make testing the renderer kill easier below.
++  RenderFrameHostImpl* frame =
++      static_cast<RenderFrameHostImpl*>(tab->GetPrimaryMainFrame());
++  ASSERT_TRUE(frame->GetSiteInstance()->GetSiteInfo().is_pdf());
++  ASSERT_TRUE(frame->GetProcess()->IsPdf());
++
++  // Listen for the renderer kill and bad message reason.
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(frame->GetProcess());
++
++  // Executing `URL.createObjectURL` triggers PublicURLManager in the renderer
++  // to bind blink.mojom.BlobURLStore via the associated interface on
++  // RenderFrameHost. The browser must reject this and terminate the process.
++  std::ignore = ExecJs(frame, "URL.createObjectURL(new Blob(['payload']))");
++
++  EXPECT_EQ(bad_message::RFH_BLOB_URL_STORE_ASSOCIATED_PDF_PROCESS_BLOCKED,
++            kill_waiter.Wait());
++}
++
++// Verifies that PDF processes cannot bind to BlobURLStore, using the interface
++// broker that is used by threaded worklets. See https://crbug.com/540051167.
++IN_PROC_BROWSER_TEST_F(BlobUrlBrowserTest,
++                       BlobUrlWorkletReceiverBlockedForPdfProcess) {
++  WebContentsImpl* tab = static_cast<WebContentsImpl*>(shell()->web_contents());
++  // AudioWorklet requires a secure context (e.g., localhost).
++  GURL url = embedded_test_server()->GetURL("localhost", "/empty.html");
++
++  NavigationController::LoadURLParams params(url);
++  params.transition_type = ui::PageTransitionFromInt(
++      ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
++  params.is_pdf = true;
++  NavigateToURLBlockUntilNavigationsComplete(
++      tab, params, 1, /*ignore_uncommitted_navigations=*/false);
++  ASSERT_TRUE(IsLastCommittedEntryOfPageType(tab, PAGE_TYPE_NORMAL));
++  ASSERT_EQ(url, tab->GetLastCommittedURL());
++
++  // The SiteInstance and RenderProcessHost are treated as PDFs. However, the
++  // renderer process will not realize that blob creation should fail gracefully
++  // because ContentBrowserClient::IsDomStorageDisabled() defaults to false, and
++  // the PDF check in the renderer is implemented in the chrome/ layer. This
++  // happens to make testing the renderer kill easier below.
++  RenderFrameHostImpl* frame =
++      static_cast<RenderFrameHostImpl*>(tab->GetPrimaryMainFrame());
++  ASSERT_TRUE(frame->GetSiteInstance()->GetSiteInfo().is_pdf());
++  ASSERT_TRUE(frame->GetProcess()->IsPdf());
++
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(frame->GetProcess());
++
++  // Creating an AudioWorklet triggers the renderer to request
++  // blink.mojom.BlobURLStore for the worklet via the BrowserInterfaceBroker.
++  std::ignore =
++      ExecJs(frame,
++             "const context = new OfflineAudioContext(1, 1, 44100);"
++             "context.audioWorklet.addModule('data:text/javascript,');");
++
++  EXPECT_EQ(bad_message::RFH_BLOB_URL_STORE_RECEIVER_PDF_PROCESS_BLOCKED,
++            kill_waiter.Wait());
++}
++
++class BlobUrlPdfKillswitchDisabledBrowserTest : public BlobUrlBrowserTest {
++ public:
++  BlobUrlPdfKillswitchDisabledBrowserTest() {
++    feature_list_.InitAndDisableFeature(
++        blink::features::kEnforcePdfBlobRestrictions);
++  }
++
++ private:
++  base::test::ScopedFeatureList feature_list_;
++};
++
++IN_PROC_BROWSER_TEST_F(BlobUrlPdfKillswitchDisabledBrowserTest,
++                       BlobUrlAllowedForPdfProcess) {
++  WebContentsImpl* tab = static_cast<WebContentsImpl*>(shell()->web_contents());
++  GURL url = embedded_test_server()->GetURL("a.test", "/empty.html");
++
++  NavigationController::LoadURLParams params(url);
++  params.transition_type = ui::PageTransitionFromInt(
++      ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
++  params.is_pdf = true;
++  NavigateToURLBlockUntilNavigationsComplete(
++      tab, params, 1, /*ignore_uncommitted_navigations=*/false);
++  ASSERT_TRUE(IsLastCommittedEntryOfPageType(tab, PAGE_TYPE_NORMAL));
++  ASSERT_EQ(url, tab->GetLastCommittedURL());
++
++  RenderFrameHostImpl* frame =
++      static_cast<RenderFrameHostImpl*>(tab->GetPrimaryMainFrame());
++  ASSERT_TRUE(frame->GetSiteInstance()->GetSiteInfo().is_pdf());
++
++  // Executing `URL.createObjectURL` should not kill the renderer when the
++  // EnforcePdfBlobRestrictions killswitch is disabled.
++  EXPECT_TRUE(ExecJs(frame, "URL.createObjectURL(new Blob(['payload']))"));
++  EXPECT_TRUE(frame->IsRenderFrameLive());
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 8561e057a47c914b9be9a632aa63ad74d0a1c657..c805f09d8ccf0f27bf075ce2e55b753b4ac6bc62 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -13550,6 +13550,19 @@ bool RenderFrameHostImpl::IsFullCookieAccessAllowed() {
+ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
+     mojo::PendingAssociatedReceiver<blink::mojom::BlobURLStore> receiver) {
+   CHECK_CURRENTLY_ON(BrowserThread::UI);
++  // Do not allow PDF renderers to access blob URLs, since they should never
++  // need them. Note that is_sandboxed() processes are legitimately allowed to
++  // create blob URLs with null origins, so CanAccessDataForOrigin() can't be
++  // used here. See also BindBlobUrlStoreReceiver.
++  if (base::FeatureList::IsEnabled(
++          blink::features::kEnforcePdfBlobRestrictions) &&
++      GetSiteInstance()->GetSiteInfo().is_pdf()) {
++    bad_message::ReceivedBadMessage(
++        GetProcess(),
++        bad_message::RFH_BLOB_URL_STORE_ASSOCIATED_PDF_PROCESS_BLOCKED);
++    return;
++  }
++
+   auto* storage_partition_impl =
+       static_cast<StoragePartitionImpl*>(GetStoragePartition());
+ 
+@@ -13592,6 +13605,17 @@ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
+ void RenderFrameHostImpl::BindBlobUrlStoreReceiver(
+     mojo::PendingReceiver<blink::mojom::BlobURLStore> receiver) {
+   CHECK_CURRENTLY_ON(BrowserThread::UI);
++  // Do not bind blink.mojom.BlobURLStore for PDF renderers (see comment in
++  // BindBlobUrlStoreAssociatedReceiver).
++  if (base::FeatureList::IsEnabled(
++          blink::features::kEnforcePdfBlobRestrictions) &&
++      GetSiteInstance()->GetSiteInfo().is_pdf()) {
++    bad_message::ReceivedBadMessage(
++        GetProcess(),
++        bad_message::RFH_BLOB_URL_STORE_RECEIVER_PDF_PROCESS_BLOCKED);
++    return;
++  }
++
+   auto* storage_partition_impl =
+       static_cast<StoragePartitionImpl*>(GetStoragePartition());
+ 
+diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
+index 6e2c2f0a85fd96bb0ad4af166a03543671204347..cb4e97084580bd09981b8829347d1b96328c8f01 100644
+--- a/third_party/blink/common/features.cc
++++ b/third_party/blink/common/features.cc
+@@ -721,6 +721,10 @@ BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
+ BASE_FEATURE(kEnforceNoopenerOnBlobURLNavigation,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// Killswitch for restrictions on blob URL creation in PDF processes, in case
++// regressions are encountered in the wild. See https://crbug.com/540051167.
++BASE_FEATURE(kEnforcePdfBlobRestrictions, base::FEATURE_ENABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kEventTimingIgnorePresentationTimeFromUnexpectedFrameSource,
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
+index 081baf96070a0b66cf42d2132199fa74bd6b09c5..db4e2a86574d3cee9f15a6843c63f407ae8b605a 100644
+--- a/third_party/blink/public/common/features.h
++++ b/third_party/blink/public/common/features.h
+@@ -460,6 +460,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+     kEnableDevtoolsDeepLinkViaExtensibilityApi);
+ 
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kEnforceNoopenerOnBlobURLNavigation);
++BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kEnforcePdfBlobRestrictions);
+ 
+ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+     kEventTimingIgnorePresentationTimeFromUnexpectedFrameSource);
+diff --git a/third_party/blink/renderer/core/fileapi/public_url_manager.cc b/third_party/blink/renderer/core/fileapi/public_url_manager.cc
+index 85f178d7c1bd8b449f3f1c22cd3cb51b3ebdff8b..e5fe8a3627b942a0119d11f010449398da1c8c6f 100644
+--- a/third_party/blink/renderer/core/fileapi/public_url_manager.cc
++++ b/third_party/blink/renderer/core/fileapi/public_url_manager.cc
+@@ -32,6 +32,7 @@
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "net/base/features.h"
+ #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
++#include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/blob/blob_utils.h"
+ #include "third_party/blink/public/mojom/blob/blob_registry.mojom-blink.h"
+ #include "third_party/blink/public/mojom/blob/blob_url_store.mojom-blink.h"
+@@ -39,6 +40,8 @@
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/fileapi/url_registry.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
++#include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/frame/local_frame_client.h"
+ #include "third_party/blink/renderer/core/workers/worker_global_scope.h"
+ #include "third_party/blink/renderer/core/workers/worklet_global_scope.h"
+ #include "third_party/blink/renderer/platform/blob/blob_data.h"
+@@ -69,7 +72,21 @@ PublicURLManager::PublicURLManager(ExecutionContext* execution_context)
+       worker_url_store_(execution_context) {
+   if (auto* window = DynamicTo<LocalDOMWindow>(execution_context)) {
+     LocalFrame* frame = window->GetFrame();
+-    if (!frame) {
++    // In PDF processes, DOM storage and Blob URLs are disabled to avoid
++    // accessing or registering data for the origin that served the PDF (see
++    // ChildProcessSecurityPolicyImpl::IsAccessAllowedForPdfProcess).
++    // Marking PublicURLManager as stopped ensures we do not bind
++    // frame_url_store_ (which would trigger a bad message renderer kill in the
++    // browser process) and causes URL.createObjectURL to return an empty
++    // string. An empty string was chosen rather than throwing a SecurityError
++    // to match the W3C File API specification when a blob URL cannot be
++    // generated, as well as the behavior of DOM storage in PDF processes (where
++    // localStorage returns null instead of throwing) and to avoid breaking
++    // extensions or scripts that do not expect createObjectURL to throw an
++    // exception.
++    if (!frame ||
++        (base::FeatureList::IsEnabled(features::kEnforcePdfBlobRestrictions) &&
++         frame->Client()->IsDomStorageDisabled())) {
+       is_stopped_ = true;
+       return;
+     }
+@@ -98,7 +115,9 @@ PublicURLManager::PublicURLManager(ExecutionContext* execution_context)
+ 
+     if (worklet_global_scope->IsMainThreadWorkletGlobalScope()) {
+       LocalFrame* frame = worklet_global_scope->GetFrame();
+-      if (!frame) {
++      if (!frame || (base::FeatureList::IsEnabled(
++                         features::kEnforcePdfBlobRestrictions) &&
++                     frame->Client()->IsDomStorageDisabled())) {
+         is_stopped_ = true;
+         return;
+       }
+@@ -112,7 +131,12 @@ PublicURLManager::PublicURLManager(ExecutionContext* execution_context)
+       // this worklet.
+       mojo::PendingRemote<mojom::blink::BlobURLStore> pending_remote =
+           worklet_global_scope->TakeBlobUrlStorePendingRemote();
+-      DCHECK(pending_remote.is_valid());
++      // The BlobURLStore remote may be invalid if blobs are not allowed in
++      // this process (e.g., in PDF processes where DOM storage is disabled).
++      if (!pending_remote.is_valid()) {
++        is_stopped_ = true;
++        return;
++      }
+       worker_url_store_.Bind(
+           std::move(pending_remote),
+           execution_context->GetTaskRunner(TaskType::kFileReading));
+diff --git a/third_party/blink/renderer/core/fileapi/url_file_api.cc b/third_party/blink/renderer/core/fileapi/url_file_api.cc
+index 67559e67fa86259adc797bd9eb8de2a1a80c7d8a..c0eefbaedadbd257f1aa2dc7cb2adc30135da6a3 100644
+--- a/third_party/blink/renderer/core/fileapi/url_file_api.cc
++++ b/third_party/blink/renderer/core/fileapi/url_file_api.cc
+@@ -24,6 +24,14 @@ String URLFileAPI::createObjectURL(ScriptState* script_state,
+   DCHECK(execution_context);
+ 
+   UseCounter::Count(execution_context, WebFeature::kCreateObjectURLBlob);
++  // Note: If blob URL creation is disabled in this context (such as in PDF
++  // processes where LocalFrameClient::IsDomStorageDisabled() is true),
++  // PublicURLManager is stopped and DOMURL::CreatePublicURL() returns an empty
++  // string. An empty string was chosen rather than throwing a SecurityError to
++  // match the W3C File API specification when a blob URL cannot be generated,
++  // as well as the behavior of DOM storage in PDF processes (where localStorage
++  // returns null instead of throwing) and to avoid breaking extensions or
++  // scripts that do not expect createObjectURL to throw an exception.
+   return DOMURL::CreatePublicURL(execution_context, blob);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
+index fd5e0fb25d84feb7410430fd03d1eeca0d1322cf..445572b11e6f4daa0ab74ad88f9086cec1f86b19 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -4077,6 +4077,10 @@ void LocalFrame::WriteIntoTrace(perfetto::TracedValue ctx) const {
+ 
+ mojo::PendingRemote<mojom::blink::BlobURLStore>
+ LocalFrame::GetBlobUrlStorePendingRemote() {
++  if (base::FeatureList::IsEnabled(features::kEnforcePdfBlobRestrictions) &&
++      Client()->IsDomStorageDisabled()) {
++    return mojo::NullRemote();
++  }
+   mojo::PendingRemote<mojom::blink::BlobURLStore> pending_remote;
+   GetBrowserInterfaceBroker().GetInterface(
+       pending_remote.InitWithNewPipeAndPassReceiver());
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+index 483c959bb17c3ceb350d606f709097cb2aa92e38..5f2348f2291c498bad09ba7ad87edb3ad8c647e7 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+@@ -373,7 +373,6 @@ ukm::SourceId WorkletGlobalScope::UkmSourceID() const {
+ 
+ mojo::PendingRemote<mojom::blink::BlobURLStore>
+ WorkletGlobalScope::TakeBlobUrlStorePendingRemote() {
+-  DCHECK(blob_url_store_pending_remote_.is_valid());
+   return std::move(blob_url_store_pending_remote_);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+index 47ceea11ec9db6b67cef6945d165f46c868f4ca5..dfc393c0893c72f04f5501bb5b2a8982b52ede72 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+@@ -83,7 +83,9 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+ 
+   // Returns `blob_url_store_pending_remote_` for use when instantiating the
+   // PublicURLManager in threaded worklet contexts. This method should only be
+-  // called once. See `blob_url_store_pending_remote_` for more details.
++  // called once. The returned remote may be invalid if blob storage is
++  // disabled for the creating frame (e.g., in PDF processes). See
++  // `blob_url_store_pending_remote_` for more details.
+   mojo::PendingRemote<mojom::blink::BlobURLStore>
+   TakeBlobUrlStorePendingRemote();
+ 
+@@ -232,6 +234,8 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+   // parent frame's BrowserInterfaceBroker and used when instantiating the
+   // worklet's PublicURLManager. This remote is used for Blob URL related
+   // functionality such as registering, revoking, and navigating to Blob URLs.
++  // It may be invalid if blob storage is disabled for the creating frame
++  // (e.g., in PDF processes).
+   mojo::PendingRemote<mojom::blink::BlobURLStore>
+       blob_url_store_pending_remote_;
+ };
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index 60262a8cd66f804ebd111f84f48262acf518681d..296c32978d4371cdbc61ea54bea48bc3678da1a2 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -541,6 +541,8 @@ Called by update_bad_message_reasons.py.-->
+   <int value="363" label="RFH_FORM_SUBMISSION_FROM_SANDBOXED_FRAME"/>
+   <int value="364" label="RFPH_FORM_SUBMISSION_FROM_SANDBOXED_FRAME"/>
+   <int value="365" label="INSTALLED_APP_PROVIDER_FACTORY_INVALID_FRAME"/>
++  <int value="366" label="RFH_BLOB_URL_STORE_ASSOCIATED_PDF_PROCESS_BLOCKED"/>
++  <int value="367" label="RFH_BLOB_URL_STORE_RECEIVER_PDF_PROCESS_BLOCKED"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonExtensions">

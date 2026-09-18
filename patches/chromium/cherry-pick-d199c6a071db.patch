@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mingyu Lei <leimy@chromium.org>
+Date: Wed, 5 Aug 2026 04:41:47 -0700
+Subject: FSA: Wait for pending writes before closing the file writer
+
+FileSystemAccessFileWriterImpl::CloseImpl started the safe-move of the
+swap file (including hashing it for the after-write check) without
+verifying that previously dispatched WriteStream or Truncate operations
+had completed. The renderer-side FileSystemUnderlyingSink already
+enforces this ordering, but the browser side did not.
+
+Track the number of in-flight operations and defer starting the
+safe-move until all of them have finished, so that the after-write hash
+and the file that is moved into place always reflect the final swap file
+contents.
+
+Bug: 498411599
+TAG=agy
+CONV=e6e19b22-86cc-4787-b702-90949cb1e27f
+
+Change-Id: Ibc5467def0333e183b61511949eb166a85b68dcc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8200284
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1674036}
+
+diff --git a/content/browser/file_system_access/file_system_access_file_writer_impl.cc b/content/browser/file_system_access/file_system_access_file_writer_impl.cc
+index 69c43ae597ff0bb5c40a65b223e6cbe9420c8eb9..3314bb0f277aadc267405d71f15b43c384aa7981 100644
+--- a/content/browser/file_system_access/file_system_access_file_writer_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_writer_impl.cc
+@@ -180,8 +180,8 @@ void FileSystemAccessFileWriterImpl::WriteImpl(
+     mojo::ScopedDataPipeConsumerHandle stream,
+     WriteCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK_EQ(GetEffectiveWritePermissionStatus(),
+-            blink::mojom::PermissionStatus::GRANTED);
++  CHECK_EQ(GetEffectiveWritePermissionStatus(),
++           blink::mojom::PermissionStatus::GRANTED);
+ 
+   if (is_close_pending()) {
+     std::move(callback).Run(
+@@ -192,6 +192,7 @@ void FileSystemAccessFileWriterImpl::WriteImpl(
+     return;
+   }
+ 
++  ++pending_operations_;
+   manager()->DoFileSystemOperation(
+       FROM_HERE, &FileSystemOperationRunner::WriteStream,
+       base::BindRepeating(&FileSystemAccessFileWriterImpl::DidWrite,
+@@ -206,20 +207,23 @@ void FileSystemAccessFileWriterImpl::DidWrite(WriteState* state,
+                                               bool complete) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-  DCHECK(state);
++  CHECK(state);
+   state->bytes_written += bytes;
+   if (complete) {
++    CHECK_GT(pending_operations_, 0);
++    --pending_operations_;
+     std::move(state->callback)
+         .Run(file_system_access_error::FromFileError(result),
+              state->bytes_written);
++    MaybeStartClose();
+   }
+ }
+ 
+ void FileSystemAccessFileWriterImpl::TruncateImpl(uint64_t length,
+                                                   TruncateCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK_EQ(GetEffectiveWritePermissionStatus(),
+-            blink::mojom::PermissionStatus::GRANTED);
++  CHECK_EQ(GetEffectiveWritePermissionStatus(),
++           blink::mojom::PermissionStatus::GRANTED);
+ 
+   if (is_close_pending()) {
+     std::move(callback).Run(file_system_access_error::FromStatus(
+@@ -228,21 +232,27 @@ void FileSystemAccessFileWriterImpl::TruncateImpl(uint64_t length,
+     return;
+   }
+ 
++  ++pending_operations_;
+   manager()->DoFileSystemOperation(
+       FROM_HERE, &FileSystemOperationRunner::Truncate,
+-      base::BindOnce(
+-          [](TruncateCallback callback, base::File::Error result) {
+-            std::move(callback).Run(
+-                file_system_access_error::FromFileError(result));
+-          },
+-          std::move(callback)),
++      base::BindOnce(&FileSystemAccessFileWriterImpl::DidTruncate,
++                     weak_factory_.GetWeakPtr(), std::move(callback)),
+       swap_url(), length);
+ }
+ 
++void FileSystemAccessFileWriterImpl::DidTruncate(TruncateCallback callback,
++                                                 base::File::Error result) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  CHECK_GT(pending_operations_, 0);
++  --pending_operations_;
++  std::move(callback).Run(file_system_access_error::FromFileError(result));
++  MaybeStartClose();
++}
++
+ void FileSystemAccessFileWriterImpl::CloseImpl(CloseCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK_EQ(GetEffectiveWritePermissionStatus(),
+-            blink::mojom::PermissionStatus::GRANTED);
++  CHECK_EQ(GetEffectiveWritePermissionStatus(),
++           blink::mojom::PermissionStatus::GRANTED);
+   if (is_close_pending()) {
+     std::move(callback).Run(file_system_access_error::FromStatus(
+         FileSystemAccessStatus::kInvalidState,
+@@ -251,6 +261,16 @@ void FileSystemAccessFileWriterImpl::CloseImpl(CloseCallback callback) {
+   }
+ 
+   close_callback_ = std::move(callback);
++  MaybeStartClose();
++}
++
++void FileSystemAccessFileWriterImpl::MaybeStartClose() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (!is_close_pending() || did_start_close_ || pending_operations_ > 0) {
++    return;
++  }
++
++  did_start_close_ = true;
+ 
+   auto file_system_access_safe_move_helper =
+       std::make_unique<FileSystemAccessSafeMoveHelper>(
+diff --git a/content/browser/file_system_access/file_system_access_file_writer_impl.h b/content/browser/file_system_access/file_system_access_file_writer_impl.h
+index 58d09867b3b962f4fb72c27d96f797f32ca1f765..fa4eb7774f3f6b25b6d5f9f2babe3d366db534cb 100644
+--- a/content/browser/file_system_access/file_system_access_file_writer_impl.h
++++ b/content/browser/file_system_access/file_system_access_file_writer_impl.h
+@@ -102,7 +102,9 @@ class CONTENT_EXPORT FileSystemAccessFileWriterImpl
+                 int64_t bytes,
+                 bool complete);
+   void TruncateImpl(uint64_t length, TruncateCallback callback);
++  void DidTruncate(TruncateCallback callback, base::File::Error result);
+   void CloseImpl(CloseCallback callback);
++  void MaybeStartClose();
+   void AbortImpl(AbortCallback callback);
+   void DidReplaceSwapFile(
+       std::unique_ptr<content::FileSystemAccessSafeMoveHelper>
+@@ -146,6 +148,9 @@ class CONTENT_EXPORT FileSystemAccessFileWriterImpl
+   bool should_purge_swap_file_on_destruction_
+       GUARDED_BY_CONTEXT(sequence_checker_) = true;
+ 
++  int pending_operations_ GUARDED_BY_CONTEXT(sequence_checker_) = 0;
++  bool did_start_close_ GUARDED_BY_CONTEXT(sequence_checker_) = false;
++
+   base::WeakPtr<FileSystemAccessHandleBase> AsWeakPtr() override;
+ 
+   base::WeakPtrFactory<FileSystemAccessFileWriterImpl> weak_factory_
+diff --git a/content/browser/file_system_access/file_system_access_file_writer_impl_unittest.cc b/content/browser/file_system_access/file_system_access_file_writer_impl_unittest.cc
+index 65e472aacaa44a80101775892ac4d4d7b12c5e03..c8b2e49b474f47e4d37ce2de99cf3630d8c08618 100644
+--- a/content/browser/file_system_access/file_system_access_file_writer_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_file_writer_impl_unittest.cc
+@@ -121,7 +121,8 @@ class TestFileSystemBackend : public storage::TestFileSystemBackend {
+ class FileSystemAccessFileWriterImplTestBase : public testing::Test {
+  public:
+   FileSystemAccessFileWriterImplTestBase()
+-      : task_environment_(base::test::TaskEnvironment::MainThreadType::IO) {}
++      : task_environment_(base::test::TaskEnvironment::TimeSource::MOCK_TIME,
++                          base::test::TaskEnvironment::MainThreadType::IO) {}
+ 
+   virtual FileSystemAccessPermissionContext* permission_context() {
+     return nullptr;
+@@ -848,6 +849,66 @@ TEST_F(FileSystemAccessFileWriterAfterWriteChecksTest,
+   EXPECT_TRUE(std::ranges::contains(quarantine_.paths, test_file_url_.path()));
+ }
+ 
++TEST_F(FileSystemAccessFileWriterAfterWriteChecksTest,
++       CloseWaitsForPendingWrite) {
++  mojo::ScopedDataPipeProducerHandle producer_handle;
++  mojo::ScopedDataPipeConsumerHandle consumer_handle;
++  EXPECT_EQ(mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle),
++            MOJO_RESULT_OK);
++
++  std::string expected_hash;
++  EXPECT_TRUE(base::HexStringToString(
++      "BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD",
++      &expected_hash));
++
++  EXPECT_CALL(
++      permission_context_,
++      PerformAfterWriteChecks_(
++          AllOf(
++              Field(&FileSystemAccessWriteItem::target_file_path,
++                    Eq(test_file_url_.path())),
++              Field(&FileSystemAccessWriteItem::full_path,
++                    Eq(test_swap_url_.path())),
++              Field(&FileSystemAccessWriteItem::sha256_hash, Eq(expected_hash)),
++              Field(&FileSystemAccessWriteItem::size, Eq(3)),
++              Field(&FileSystemAccessWriteItem::frame_url, Eq(kTestURL)),
++              Field(&FileSystemAccessWriteItem::initiating_frame_id,
++                    Eq(kFrameId)),
++              Field(&FileSystemAccessWriteItem::has_user_gesture, Eq(false))),
++          kFrameId, _))
++      .WillOnce(base::test::RunOnceCallback<2>(
++          FileSystemAccessPermissionContext::AfterWriteCheckResult::kAllow));
++  EXPECT_CALL(permission_context_, NotifyEntryModified(_, _)).Times(1);
++
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr, uint64_t>
++      write_future;
++  handle_->Write(0, std::move(consumer_handle), write_future.GetCallback());
++
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr> close_future;
++  handle_->Close(close_future.GetCallback());
++
++  // Ensure that Close defers after-write checks and swap file replacement
++  // until all pending write operations have completed.
++  task_environment_.FastForwardBy(base::Seconds(1));
++  EXPECT_FALSE(write_future.IsReady());
++  EXPECT_FALSE(close_future.IsReady());
++
++  EXPECT_EQ(producer_handle->WriteAllData(base::byte_span_from_cstring("abc")),
++            MOJO_RESULT_OK);
++  producer_handle.reset();
++
++  EXPECT_EQ(write_future.Get<0>()->status, FileSystemAccessStatus::kOk);
++  EXPECT_EQ(write_future.Get<1>(), 3u);
++  EXPECT_EQ(close_future.Get()->status, FileSystemAccessStatus::kOk);
++
++  EXPECT_FALSE(storage::AsyncFileTestHelper::FileExists(
++      file_system_context_.get(), test_swap_url_,
++      storage::AsyncFileTestHelper::kDontCheckSize));
++  EXPECT_TRUE(storage::AsyncFileTestHelper::FileExists(
++      file_system_context_.get(), test_file_url_, 3));
++  EXPECT_EQ(ReadFile(test_file_url_), "abc");
++}
++
+ struct WriteModeTestParams {
+   const char* test_name_suffix;
+   bool is_feature_enabled;
