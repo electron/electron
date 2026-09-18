@@ -11,16 +11,19 @@
 #include "base/containers/span.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
 
 using content::DevToolsAgentHost;
@@ -30,29 +33,91 @@ namespace electron::api {
 gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
 
-Debugger::Debugger(content::WebContents* web_contents)
-    : content::WebContentsObserver{web_contents} {}
+class Debugger::AgentHostClient final
+    : public content::DevToolsAgentHostClient,
+      public gin::PerIsolateData::DisposeObserver {
+ public:
+  AgentHostClient(v8::Isolate* isolate, Debugger* debugger)
+      : isolate_(isolate), debugger_(debugger) {
+    gin::PerIsolateData::From(isolate_)->AddDisposeObserver(this);
+  }
 
-Debugger::~Debugger() {
-  // The host holds a raw client pointer to us. Clear |agent_host_| first so
-  // messages dispatched during detach are dropped, not emitted from a dtor.
-  if (scoped_refptr<DevToolsAgentHost> agent_host = std::move(agent_host_))
-    agent_host->DetachClient(this);
-}
+  ~AgentHostClient() override {
+    StopObserving();
+    Detach();
+  }
 
-void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
-  DCHECK(agent_host == agent_host_);
-  agent_host_ = nullptr;
+  bool Attach(scoped_refptr<DevToolsAgentHost> agent_host) {
+    DCHECK(!agent_host_);
+    agent_host_ = std::move(agent_host);
+    if (agent_host_->AttachClient(this))
+      return true;
+    agent_host_ = nullptr;
+    return false;
+  }
+
+  bool Detach() {
+    scoped_refptr<DevToolsAgentHost> agent_host = std::move(agent_host_);
+    return agent_host && agent_host->DetachClient(this);
+  }
+
+  DevToolsAgentHost* agent_host() const { return agent_host_.get(); }
+
+  bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
+
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {
+    debugger_.Clear();
+    StopObserving();
+    Detach();
+  }
+
+  void OnDisposed() override {}
+
+  void AgentHostClosed(DevToolsAgentHost* agent_host) override {
+    DCHECK_EQ(agent_host, agent_host_.get());
+    if (agent_host != agent_host_.get())
+      return;
+    agent_host_ = nullptr;
+    if (auto* debugger = debugger_.Get())
+      debugger->AgentHostClosed();
+  }
+
+  void DispatchProtocolMessage(DevToolsAgentHost* agent_host,
+                               base::span<const uint8_t> message) override {
+    if (agent_host != agent_host_.get())
+      return;
+    if (auto* debugger = debugger_.Get())
+      debugger->DispatchProtocolMessage(message);
+  }
+
+ private:
+  void StopObserving() {
+    if (!is_observing_)
+      return;
+    gin::PerIsolateData::From(isolate_)->RemoveDisposeObserver(this);
+    is_observing_ = false;
+  }
+
+  raw_ptr<v8::Isolate> isolate_;
+  cppgc::WeakPersistent<Debugger> debugger_;
+  scoped_refptr<DevToolsAgentHost> agent_host_;
+  bool is_observing_ = true;
+};
+
+Debugger::Debugger(v8::Isolate* isolate, content::WebContents* web_contents)
+    : content::WebContentsObserver{web_contents},
+      agent_host_client_(std::make_unique<AgentHostClient>(isolate, this)) {}
+
+Debugger::~Debugger() = default;
+
+void Debugger::AgentHostClosed() {
   ClearPendingRequests();
   Emit("detach", "target closed");
 }
 
-void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
-                                       base::span<const uint8_t> message) {
-  // Null while detaching from the destructor; see ~Debugger().
-  if (agent_host != agent_host_)
-    return;
-
+void Debugger::DispatchProtocolMessage(base::span<const uint8_t> message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
@@ -96,7 +161,8 @@ void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
   // so if the new_rfh is not the primary main frame, we don't want to
   // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
   // that already has a DevToolsAgentHost associated with it.
-  if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
+  DevToolsAgentHost* agent_host = agent_host_client_->agent_host();
+  if (!agent_host || !new_rfh->IsInPrimaryMainFrame())
     return;
 
   auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
@@ -110,18 +176,18 @@ void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
   // changes on every navigation, so this dropped requests for every page load
   // whenever a debugger was attached. Only reconnect when the WebContents
   // actually changed, which the agent host does not track on its own.
-  if (agent_host_->GetWebContents() == web_contents)
+  if (agent_host->GetWebContents() == web_contents)
     return;
 
-  agent_host_->DisconnectWebContents();
-  agent_host_->ConnectWebContents(web_contents);
+  agent_host->DisconnectWebContents();
+  agent_host->ConnectWebContents(web_contents);
 }
 
 void Debugger::Attach(gin::Arguments* args) {
   std::string protocol_version;
   args->GetNext(&protocol_version);
 
-  if (agent_host_) {
+  if (agent_host_client_->agent_host()) {
     args->ThrowTypeError("Debugger is already attached to the target");
     return;
   }
@@ -139,24 +205,25 @@ void Debugger::Attach(gin::Arguments* args) {
     return;
   }
 
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents());
-  if (!agent_host_) {
+  scoped_refptr<DevToolsAgentHost> agent_host =
+      DevToolsAgentHost::GetOrCreateFor(web_contents());
+  if (!agent_host) {
     args->ThrowTypeError("No target available");
     return;
   }
 
-  agent_host_->AttachClient(this);
+  if (!agent_host_client_->Attach(std::move(agent_host)))
+    args->ThrowTypeError("Failed to attach debugger to the target");
 }
 
 bool Debugger::IsAttached() {
-  return agent_host_ && agent_host_->IsAttached();
+  return agent_host_client_->IsAttached();
 }
 
 void Debugger::Detach() {
-  if (!agent_host_)
+  if (!agent_host_client_->Detach())
     return;
-  agent_host_->DetachClient(this);
-  AgentHostClosed(agent_host_.get());
+  AgentHostClosed();
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
@@ -164,7 +231,8 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   gin_helper::Promise<base::DictValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (!agent_host_) {
+  DevToolsAgentHost* agent_host = agent_host_client_->agent_host();
+  if (!agent_host) {
     promise.RejectWithErrorMessage("No target available");
     return handle;
   }
@@ -198,7 +266,8 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   }
 
   const auto json_args = base::WriteJson(request).value_or("");
-  agent_host_->DispatchProtocolMessage(this, base::as_byte_span(json_args));
+  agent_host->DispatchProtocolMessage(agent_host_client_.get(),
+                                      base::as_byte_span(json_args));
 
   return handle;
 }
@@ -213,7 +282,7 @@ void Debugger::ClearPendingRequests() {
 Debugger* Debugger::Create(v8::Isolate* isolate,
                            content::WebContents* web_contents) {
   return cppgc::MakeGarbageCollected<Debugger>(
-      isolate->GetCppHeap()->GetAllocationHandle(), web_contents);
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, web_contents);
 }
 
 gin::ObjectTemplateBuilder Debugger::GetObjectTemplateBuilder(

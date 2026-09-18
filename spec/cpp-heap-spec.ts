@@ -1360,6 +1360,38 @@ describe('cpp heap', () => {
   });
 
   describe('webContents module', () => {
+    it('drops debugger protocol messages after its wrapper is collected', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--stress-incremental-marking']);
+      const collected = await remotely(async () => {
+        const { webContents } = require('electron');
+
+        const debuggerRef = await (async () => {
+          const contents = webContents.create();
+          await contents.loadURL(
+            'data:text/html,<script>setInterval(() => console.log("protocol traffic"), 10)</script>'
+          );
+          contents.debugger.attach();
+          await contents.debugger.sendCommand('Runtime.enable');
+          return new WeakRef(contents.debugger);
+        })();
+
+        const pressure: object[][] = [];
+        for (let attempt = 0; attempt < 200; ++attempt) {
+          pressure.push(
+            Array.from({ length: 5000 }, (_, index) => ({
+              value: `${attempt}:${index}`
+            }))
+          );
+          if (pressure.length > 8) pressure.shift();
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return !debuggerRef.deref();
+      });
+
+      expect(collected).to.equal(true);
+    });
+
     it('detaches a retained debugger before collecting it with an unowned WebContents', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
