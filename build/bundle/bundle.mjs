@@ -236,7 +236,16 @@ if (!target.alwaysHasNode && chunk.imports.length + chunk.dynamicImports.length)
 if (printGraph) {
   console.log(JSON.stringify([...graphFiles].sort()));
 } else {
-  let code = chunk.code;
+  // The bundle is compiled as a function body (by Electron with the parameters
+  // in shell/common/js2c_bundle_ids.h, and by node_mksnapshot with Node's
+  // built-in module parameters: exports, require, module, process,
+  // internalBinding, primordials), so keep the hoisted top-level declarations
+  // of lib/ in their own scope rather than let one of them redeclare a
+  // parameter.
+  let code = `(() => {
+${chunk.code}
+})();
+`;
 
   if (target.wrapInitWithProfilingTimeout) {
     code = `function ___electron_init__() {
