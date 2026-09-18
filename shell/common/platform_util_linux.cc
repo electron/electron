@@ -414,7 +414,8 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
     if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
         desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
       trash = "kioclient5";
-    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
+    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3 ||
+        desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE6) {
       trash = "kioclient";
     }
   }
