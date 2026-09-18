@@ -53,63 +53,85 @@ In your `api_name.h` file:
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_{API_NAME}_H_
 
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 
 namespace electron {
 
 namespace api {
 
-class ApiName : public gin::DeprecatedWrappable<ApiName>  {
+class ApiName final : public gin::Wrappable<ApiName> {
  public:
-  static gin::Handle<ApiName> Create(v8::Isolate* isolate);
+  static ApiName* Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor* visitor) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
-} // namespace api
-} // namespace electron
+  const char* GetHumanReadableName() const override;
+
+  // Public for cppgc::MakeGarbageCollected.
+  ApiName();
+  ~ApiName() override;
+
+  void MethodName();
+};
+
+}  // namespace api
+}  // namespace electron
 ```
 
 In your `api_name.cc` file:
 
 ```cpp title='api_name.cc'
-#include "shell/browser/api/electron_api_safe_storage.h"
+#include "shell/browser/api/electron_api_api_name.h"
 
-#include "shell/browser/browser.h"
-#include "shell/common/gin_converters/base_converter.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/platform_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron {
 
 namespace api {
 
-gin::DeprecatedWrapperInfo ApiName::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo ApiName::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronApiName);
+
+ApiName::ApiName() = default;
+ApiName::~ApiName() = default;
+
+// static
+ApiName* ApiName::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<ApiName>(
+      isolate->GetCppHeap()->GetAllocationHandle());
+}
+
+void ApiName::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<ApiName>::Trace(visitor);
+}
+
+const gin::WrapperInfo* ApiName::wrapper_info() const {
+  return &kWrapperInfo;
+}
 
 gin::ObjectTemplateBuilder ApiName::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::ObjectTemplateBuilder(isolate)
-      .SetMethod("methodName", &ApiName::methodName);
+  return gin::Wrappable<ApiName>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("methodName", &ApiName::MethodName);
 }
 
-const char* ApiName::GetTypeName() {
-  return "ApiName";
+const char* ApiName::GetHumanReadableName() const {
+  return "Electron / ApiName";
 }
 
-// static
-gin::Handle<ApiName> ApiName::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new ApiName());
-}
+void ApiName::MethodName() {}
 
-} // namespace api
+}  // namespace api
 
-} // namespace electron
+}  // namespace electron
 
 namespace {
 
@@ -124,6 +146,10 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 ```
+
+Add a unique `kElectronApiName` value to
+[`shell/common/gin_helper/wrappable_pointer_tags.h`](../../shell/common/gin_helper/wrappable_pointer_tags.h)
+for the API's `gin::WrapperInfo`.
 
 ## Link your Electron API with Node
 

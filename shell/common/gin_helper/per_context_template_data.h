@@ -15,9 +15,9 @@
 
 namespace gin_helper {
 
-// Templates containing cppgc callback wrappers retain their creation context.
-// Release these roots when PerContextData detaches, rather than at isolate
-// exit.
+// Function templates containing cppgc callback wrappers retain their creation
+// context. Release these roots when PerContextData detaches, rather than at
+// isolate exit.
 class PerContextTemplateData : public base::SupportsUserData::Data {
  public:
   PerContextTemplateData();
@@ -37,9 +37,7 @@ class PerContextTemplateData : public base::SupportsUserData::Data {
     }
     return templates;
   }
-
   v8::Global<v8::FunctionTemplate> function_template;
-  v8::Global<v8::ObjectTemplate> object_template;
 };
 
 }  // namespace gin_helper
