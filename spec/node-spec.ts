@@ -684,6 +684,26 @@ describe('node feature', () => {
         'page'
       ]);
     });
+
+    // about:blank finishes loading inside the task that creates the frame's
+    // environment, so the callbacks the preload queued are still pending when
+    // the document-start hook runs instead of at a later checkpoint.
+    it('runs preload promise reactions and nextTick callbacks in a document that loads synchronously', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          contextIsolation: false,
+          preload: path.join(fixtures, 'module', 'preload-task-order.js')
+        }
+      });
+      await w.loadURL('about:blank');
+      expect(await w.webContents.executeJavaScript('window.taskOrder')).to.have.members([
+        'preload',
+        'microtask',
+        'nextTick'
+      ]);
+    });
   });
 
   describe('native addons', () => {

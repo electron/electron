@@ -96,6 +96,14 @@ void ElectronRendererClient::RunScriptsAtDocumentStart(
   node::Environment* env = GetEnvironment(render_frame);
   if (env) {
     v8::Context::Scope context_scope(env->context());
+    // A document Blink finishes inside the commit (about:blank, a media or
+    // plain-text response) gets here in the same task that created the
+    // environment, before any microtask checkpoint, so the process.nextTick()
+    // callbacks queued during setup are still pending; EmitEvent's callback
+    // scope runs them, and must do so inside a MicrotasksScope.
+    v8::MicrotasksScope microtasks_scope(env->isolate(),
+                                         env->context()->GetMicrotaskQueue(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     gin_helper::EmitEvent(env->isolate(), env->process_object(),
                           "document-start");
   }
