@@ -35,7 +35,6 @@
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/api/load_url_promises.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
@@ -901,11 +900,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   const scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_ =
       base::MakeRefCounted<DevToolsFileSystemIndexer>();
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
-
-  // Pending loadURL()/restore() promises.
-  LoadURLPromises load_url_promises_;
-
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 
   // Maps url to file path, used by the file requests sent from devtools.
@@ -936,9 +930,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   bool in_renderer_teardown_ = false;
 
   std::optional<SkRegion> draggable_region_;
-
-  // Registered on every widget of this WebContents; see HandleNewRenderFrame.
-  content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
 
   // Owns native resources and weakly forwards callbacks; deferred on GC so
   // native teardown never runs during sweeping.

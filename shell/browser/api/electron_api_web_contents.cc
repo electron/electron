@@ -115,6 +115,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/frame_subscriber.h"
+#include "shell/browser/api/load_url_promises.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/browser.h"
@@ -1456,8 +1457,11 @@ class WebContents::NativeLifecycle final
     DetachCallbacks();
     if (inspectable_web_contents_ && externally_owned_)
       inspectable_web_contents_->ReleaseWebContents();
-    if (auto* contents = contents_.Get())
+    if (auto* contents = contents_.Get()) {
       contents->WebContentsDestroyed();
+    } else {
+      load_url_promises_.DidStopLoading();
+    }
     owner_window_ = nullptr;
     Observe(nullptr);
   }
@@ -1566,6 +1570,12 @@ class WebContents::NativeLifecycle final
     }
   }
 
+  bool OnMouseEvent(const blink::WebMouseEvent& event) {
+    if (auto* contents = contents_.Get())
+      return contents->OnMouseEvent(event);
+    return false;
+  }
+
   void ReconcileCaretBrowsingCount(bool enabled) {
     if (caret_browsing_counted_ == enabled)
       return;
@@ -1614,6 +1624,8 @@ class WebContents::NativeLifecycle final
       isolate_ = nullptr;
     }
     DetachCallbacks();
+    if (!contents_.Get())
+      load_url_promises_.DidStopLoading();
     // These helpers observe the inspectable contents or its views.
     draggable_region_debugger_.reset();
     frame_subscriber_.reset();
@@ -1639,6 +1651,7 @@ class WebContents::NativeLifecycle final
 
   raw_ptr<v8::Isolate> isolate_;
   cppgc::WeakPersistent<WebContents> contents_;
+  LoadURLPromises load_url_promises_;
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
@@ -1656,6 +1669,7 @@ class WebContents::NativeLifecycle final
   bool caret_browsing_counted_ = false;
   bool externally_owned_ = false;
   bool disposed_ = false;
+  content::RenderWidgetHost::MouseEventCallback mouse_event_callback_;
   base::WeakPtrFactory<NativeLifecycle> weak_factory_{this};
 };
 
@@ -2999,16 +3013,18 @@ void WebContents::HandleNewRenderFrame(
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
   if (rwh_impl) {
     rwh_impl->disable_hidden_ = !background_throttling_;
-    if (!mouse_event_callback_) {
-      mouse_event_callback_ = base::BindRepeating(
-          [](WebContents* contents, const blink::WebMouseEvent& event) {
-            return contents && contents->OnMouseEvent(event);
+    if (!native_lifecycle_->mouse_event_callback_) {
+      native_lifecycle_->mouse_event_callback_ = base::BindRepeating(
+          [](base::WeakPtr<NativeLifecycle> lifecycle,
+             const blink::WebMouseEvent& event) {
+            return lifecycle && lifecycle->OnMouseEvent(event);
           },
-          WeakRef());
+          native_lifecycle_->GetWeakPtr());
     }
     // Frames in one local root share a widget, so re-registering is expected.
-    rwh_impl->RemoveMouseEventCallback(mouse_event_callback_);
-    rwh_impl->AddMouseEventCallback(mouse_event_callback_);
+    rwh_impl->RemoveMouseEventCallback(
+        native_lifecycle_->mouse_event_callback_);
+    rwh_impl->AddMouseEventCallback(native_lifecycle_->mouse_event_callback_);
   }
 
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
@@ -3245,7 +3261,7 @@ void WebContents::DidFinishLoad(content::RenderFrameHost* render_frame_host,
   // Emit() triggers JS which can call destroy() on |this|. It's not safe to
   // assume that |this| points to valid memory at this point.
   if (is_main_frame && weak_this->Get() && web_contents()) {
-    load_url_promises_.DidFinishLoad();
+    native_lifecycle_->load_url_promises_.DidFinishLoad();
     Emit("did-finish-load");
   }
 }
@@ -3278,8 +3294,8 @@ void WebContents::EmitDidFailLoad(int error_code,
                                   int frame_process_id,
                                   int frame_routing_id) {
   const std::string& spec = url.possibly_invalid_spec();
-  load_url_promises_.DidFailLoad(error_code, error_description, spec,
-                                 is_main_frame);
+  native_lifecycle_->load_url_promises_.DidFailLoad(
+      error_code, error_description, spec, is_main_frame);
   if (frame_process_id == -1) {
     Emit("did-fail-load", error_code, error_description, spec, is_main_frame);
   } else {
@@ -3309,7 +3325,7 @@ void WebContents::DidStopLoading() {
            ->GetProcess()
            ->IsInitializedAndNotDead();
   base::AutoReset<bool> defer(&in_renderer_teardown_, in_renderer_teardown);
-  load_url_promises_.DidStopLoading();
+  native_lifecycle_->load_url_promises_.DidStopLoading();
   Emit("did-stop-loading");
 }
 
@@ -3442,7 +3458,7 @@ SkRegion* WebContents::draggable_region() {
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
-  load_url_promises_.DidStartNavigation(
+  native_lifecycle_->load_url_promises_.DidStartNavigation(
       navigation_handle->GetURL().possibly_invalid_spec(),
       navigation_handle->IsSameDocument(), navigation_handle->IsInMainFrame());
   EmitNavigationEvent("did-start-navigation", navigation_handle);
@@ -3566,7 +3582,7 @@ void WebContents::DidFinishNavigation(
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
-      load_url_promises_.DidNavigateInPage();
+      native_lifecycle_->load_url_promises_.DidNavigateInPage();
       Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
            frame_routing_id);
     } else {
@@ -3792,8 +3808,10 @@ void WebContents::WebContentsDestroyed() {
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
     v8::Object::Wrap(isolate, wrapper, nullptr,
                      static_cast<v8::CppHeapPointerTag>(kElectronWebContents));
-    load_url_promises_.DidStopLoading();
+    native_lifecycle_->load_url_promises_.DidStopLoading();
     Emit("destroyed");
+  } else {
+    native_lifecycle_->load_url_promises_.DidStopLoading();
   }
 }
 
@@ -3910,7 +3928,7 @@ GURL WebContents::GetURL() const {
 v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
                                             const std::string& url_string) {
   v8::Local<v8::Promise> promise =
-      load_url_promises_.Add(args->isolate(), url_string);
+      native_lifecycle_->load_url_promises_.Add(args->isolate(), url_string);
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
@@ -4176,7 +4194,8 @@ v8::Local<v8::Promise> WebContents::RestoreHistory(
       entries[index]->IsObject()) {
     gin::Dictionary(isolate, entries[index].As<v8::Object>()).Get("url", &url);
   }
-  v8::Local<v8::Promise> promise = load_url_promises_.Add(isolate, url);
+  v8::Local<v8::Promise> promise =
+      native_lifecycle_->load_url_promises_.Add(isolate, url);
   if (!web_contents()
            ->GetController()
            .GetLastCommittedEntry()
