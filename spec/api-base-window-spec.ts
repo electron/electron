@@ -344,6 +344,18 @@ describe('BaseWindow module', () => {
         expect(bounds).to.deep.equal({ x: 441, y: 225, width: 500, height: 401 });
       });
 
+      it('throws on non-finite bounds', () => {
+        expect(() => {
+          w.setBounds({ x: Number.NaN, y: 0, width: 100, height: 100 });
+        }).to.throw(/must be finite numbers/);
+        expect(() => {
+          w.setBounds({ x: 0, y: Number.POSITIVE_INFINITY, width: 100, height: 100 });
+        }).to.throw(/must be finite numbers/);
+        expect(() => {
+          w.setBounds({ x: 0, y: 0, width: Number.NEGATIVE_INFINITY, height: 100 });
+        }).to.throw(/must be finite numbers/);
+      });
+
       it('does not emit the resize event for move-only changes', async () => {
         const { x, y, width, height } = w.getBounds();
 

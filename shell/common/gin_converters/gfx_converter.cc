@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_converters/gfx_converter.h"
 
+#include <cmath>
 #include <string>
 
 #include "gin/data_object_builder.h"
@@ -38,6 +39,11 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
   double x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
     return false;
+  if (!std::isfinite(x) || !std::isfinite(y)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "x and y must be finite numbers");
+    return false;
+  }
   *out = gfx::Point(static_cast<int>(std::round(x)),
                     static_cast<int>(std::round(y)));
   return true;
@@ -106,6 +112,13 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
       !dict.Get("height", &height))
     return false;
 
+  if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(width) ||
+      !std::isfinite(height)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "x, y, width and height must be finite numbers");
+    return false;
+  }
+
   *out = ToRoundedRect(gfx::RectF(x, y, width, height));
   return true;
 }
@@ -135,6 +148,12 @@ bool Converter<gfx::Insets>::FromV8(v8::Isolate* isolate,
     return false;
   if (!dict.Get("right", &right))
     return false;
+  if (!std::isfinite(top) || !std::isfinite(left) || !std::isfinite(bottom) ||
+      !std::isfinite(right)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "top, left, bottom and right must be finite numbers");
+    return false;
+  }
   *out = gfx::Insets::TLBR(top, left, bottom, right);
   return true;
 }
