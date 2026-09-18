@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Albin Bernhardsson <albin.bernhardsson@arm.com>
+Date: Mon, 22 Jun 2026 09:55:52 -0700
+Subject: Vulkan: Fix device loss handling
+
+Always wait for the device work to finish and destroy its objects before
+destroying the device, even when the device is lost. This is required in
+Vulkan according to spec.
+
+Bug: 500417361
+Change-Id: I89cedcd15b660a1a4e9a62099fc22e56c1c37a37
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314796
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: David Neto <dneto@google.com>
+Commit-Queue: David Neto <dneto@google.com>
+
+Electron adaptation notes (42-x-y):
+- This branch predates the upstream device-cleanup refactor
+  (dawn 302578 / 309569): DeviceBase::Destroy() still treats
+  State::BeingDisconnected as unreachable and HandleError() performs
+  the wait-for-idle teardown inline for unexpected errors. The
+  upstream hunk (move a lost device to BeingDisconnected and let
+  Destroy() wait) therefore has no deferred path to attach to.
+- Ported inline instead: on a real (non-injected) DeviceLost,
+  HandleError() now transitions Alive -> BeingDisconnected and runs
+  the same WaitForIdleForDestruction()/TickImpl()/
+  AssumeCommandsComplete() sequence the branch already uses for
+  unexpected errors before settling on State::Disconnected, instead
+  of jumping straight to Disconnected without waiting. The
+  ErrorInjector (fuzzer-only) path and the unexpected-error path are
+  unchanged.
+- Toggles.h/Toggles.cpp: context drift only (the branch carries a
+  later-merged toggle at the insertion point); QueueVk.cpp include
+  spelled "dawn/utils/SystemUtils.h" to match this branch's include
+  roots. Device.h, PhysicalDeviceVk.cpp and the QueueVk.cpp code
+  hunk applied as upstream.
+
+diff --git a/src/dawn/native/Device.cpp b/src/dawn/native/Device.cpp
+index e9be296cebf058df921f0daa942acac7d3fbc94f..1a09baca9fa6c1e91aa417c3681964f76a76611c 100644
+--- a/src/dawn/native/Device.cpp
++++ b/src/dawn/native/Device.cpp
+@@ -696,19 +696,31 @@ void DeviceBase::HandleError(std::unique_ptr<ErrorData> error,
+         InternalErrorType::Validation | InternalErrorType::DeviceLost | additionalAllowedErrors;
+ 
+     if (type == InternalErrorType::DeviceLost) {
+-        mState = State::Disconnected;
+-
+-        // If the ErrorInjector is enabled, then the device loss might be fake and the device
+-        // still be executing commands. Force a wait for idle in this case, with State being
+-        // Disconnected so we can detect this case in WaitForIdleForDestruction.
+         if (ErrorInjectorEnabled()) {
++            // If the ErrorInjector is enabled, then the device loss might be fake and the device
++            // still be executing commands. Force a wait for idle in this case, with State being
++            // Disconnected so we can detect this case in WaitForIdleForDestruction.
++            mState = State::Disconnected;
+             IgnoreErrors(mQueue->WaitForIdleForDestruction());
+             IgnoreErrors(TickImpl());
++            mQueue->AssumeCommandsComplete();
++        } else {
++            // A real device lost happened. Always wait for the device work to finish and destroy
++            // its objects before disconnecting, even when the device is lost. This is required in
++            // Vulkan according to spec. Transition to a non-alive state if we are currently alive
++            // so that the application can no longer use the device.
++            State prev = State::Alive;
++            if (mState.compare_exchange_strong(prev, State::BeingDisconnected,
++                                               std::memory_order::acq_rel)) {
++                // Ignore errors so that we can continue with destruction
++                // Assume all commands are complete after WaitForIdleForDestruction (because they
++                // were)
++                IgnoreErrors(mQueue->WaitForIdleForDestruction());
++                IgnoreErrors(TickImpl());
++                mQueue->AssumeCommandsComplete();
++                mState = State::Disconnected;
++            }
+         }
+-
+-        // A real device lost happened. Set the state to disconnected as the device cannot be
+-        // used. Also tags all commands as completed since the device stopped running.
+-        mQueue->AssumeCommandsComplete();
+     } else if (!(allowedErrors & type)) {
+         // If we receive an error which we did not explicitly allow, assume the backend can't
+         // recover and proceed with device destruction. We first wait for all previous commands to
+diff --git a/src/dawn/native/Device.h b/src/dawn/native/Device.h
+index 0f7cc6f891c40b11aafe611ed2756598f077e5b1..e541ba7b611725ce9f30df1e960fb575560b98ff 100644
+--- a/src/dawn/native/Device.h
++++ b/src/dawn/native/Device.h
+@@ -343,7 +343,7 @@ class DeviceBase : public ErrorSink,
+     //   - Alive: the device is usable and might have work happening on the GPU timeline.
+     //   - BeingDisconnected: the device is no longer usable because we are waiting for all
+     //     work on the GPU timeline to finish. (this is to make validation prevent the
+-    //     application from adding more work during the transition from Available to
++    //     application from adding more work during the transition from Alive to
+     //     Disconnected)
+     //   - Disconnected: there is no longer work happening on the GPU timeline and the CPU data
+     //     structures can be safely destroyed without additional synchronization.
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 74a7f102f28fef9a400ee13ca0fd22a7dccaa124..446ead4b1d80ade7da2d2c5a42b4228c4bb1938f 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -796,6 +796,10 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "Reject NPOT depth/stencil textures with mipLevelCount > 1. Workaround for mip level "
+       "miscomputation in PowerVR proprietary driver.",
+       "https://crbug.com/540087398", ToggleStage::Device}},
++    {Toggle::VulkanSleepAfterLostDeviceWait,
++     {"vulkan_sleep_after_lost_device_wait",
++      "Insert an arbitrary sleep after WaitIdle functions on device loss.",
++      "https://crbug.com/500417361", ToggleStage::Device}},
+     {Toggle::WaitIsThreadSafe,
+      {"wait_is_thread_safe",
+       "WaitFor* functions are thread-safe and can be called without the device-lock if implicit "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 54a664f172a3d6b69d3b410575ee3c7ce084dcc1..eb903397dfa86b8a463dbf95a57c0c67f9525691 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -190,6 +190,7 @@ enum class Toggle {
+     VulkanForceStaticSamplersForExternalTextures,
+     MetalFixU32DivMod,
+     VulkanDisallowNPOTDepthStencilMipmaps,
++    VulkanSleepAfterLostDeviceWait,
+ 
+     // Once all backends have been updated to be thread safe for waiting, we can remove this toggle.
+     WaitIsThreadSafe,
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 3d5a8a062d9dd5490a28fd3fe031afeefec74b15..5fb144c11f52208d30285fc0d8f2ce82d7822565 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1077,6 +1077,10 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         // instructions as matrix elements instead of a source/dest pointee elements.
+         // See crbug.com/460209126
+         deviceToggles->Default(Toggle::VulkanCooperativeMatrixStrideIsMatrixElements, true);
++
++        // dawn:500417361
++        // TODO: Add details once available.
++        deviceToggles->Default(Toggle::VulkanSleepAfterLostDeviceWait, true);
+     }
+ 
+     if (IsAndroidSamsung() || IsAndroidQualcomm() || IsAndroidHuawei()) {
+diff --git a/src/dawn/native/vulkan/QueueVk.cpp b/src/dawn/native/vulkan/QueueVk.cpp
+index 512a28f2cdcbddffb1aa3f930f271f06f8dd7933..94f975c999c4933db51970358a8e7304f1ab02de 100644
+--- a/src/dawn/native/vulkan/QueueVk.cpp
++++ b/src/dawn/native/vulkan/QueueVk.cpp
+@@ -46,6 +46,7 @@
+ #include "dawn/native/vulkan/VulkanError.h"
+ #include "dawn/platform/DawnPlatform.h"
+ #include "dawn/platform/tracing/TraceEvent.h"
++#include "dawn/utils/SystemUtils.h"
+ #include "partition_alloc/pointers/raw_ptr.h"
+ 
+ namespace dawn::native::vulkan {
+@@ -174,8 +175,12 @@ MaybeError Queue::WaitForIdleForDestructionImpl() {
+     // Ignore the result of QueueWaitIdle: it can return OOM which we can't really do anything
+     // about, Device lost, which means workloads running on the GPU are no longer accessible
+     // (so they are as good as waited on) or success.
+-    [[maybe_unused]] VkResult waitIdleResult =
+-        VkResult::WrapUnsafe(device->fn.QueueWaitIdle(mQueue));
++    VkResult waitIdleResult = VkResult::WrapUnsafe(device->fn.QueueWaitIdle(mQueue));
++
++    if (waitIdleResult == VK_ERROR_DEVICE_LOST &&
++        GetDevice()->IsToggleEnabled(Toggle::VulkanSleepAfterLostDeviceWait)) {
++        dawn::utils::USleep(1000);
++    }
+ 
+     DAWN_TRY(WaitForQueueSerial(GetLastSubmittedCommandSerial(),
+                                 std::numeric_limits<Nanoseconds>::max()));

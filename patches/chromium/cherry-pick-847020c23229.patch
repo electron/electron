@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rohan Raja <roraja@microsoft.com>
+Date: Wed, 1 Jul 2026 17:05:32 -0700
+Subject: Bound Windows clipboard/drag text reads by HGLOBAL GlobalSize
+
+The Windows clipboard/drag readers in clipboard_util_win.cc built
+strings directly from a locked HGLOBAL pointer (data.data()) and passed
+it to string / UTF constructors that NUL-scan to find the end. An
+untrusted IDataObject payload that omits a NUL terminator therefore
+drives the scan past the allocation, leaking adjacent browser-process
+heap to a web page (CWE-125- out-of-bounds read).
+
+Treat GlobalSize() as authoritative: bound every text/URL/filename read
+by data.size() and truncate at the first embedded NUL, mirroring the
+already hardened CF_HTML path. Two centralized helpers,
+HGlobalAsWideString and HGlobalAsString, cover the six text/URL sites
+(handling the byte->char width conversion and the null-lock check); the
+four filename sites are bounded inline.
+
+Bug: 520521197
+Change-Id: I3a21d4428296572451c2efcecfdc35ee62d44308
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8016986
+Commit-Queue: Rohan Raja <roraja@microsoft.com>
+Reviewed-by: Jesse McKenna <jessemckenna@google.com>
+Cr-Commit-Position: refs/heads/main@{#1655827}
+
+Electron adaptation notes (42-x-y):
+- clipboard_util_win_unittest.cc: the new regression test depends on
+  unittest scaffolding this branch does not have (3-way merge pulled
+  in unrelated upstream mocks), so the test-only hunk is dropped and
+  the branch's file is kept. clipboard_util_win.cc applied as
+  upstream.
+
+diff --git a/ui/base/clipboard/clipboard_util_win.cc b/ui/base/clipboard/clipboard_util_win.cc
+index 4c62bdd457d6c95e5e9cca16c536ecca25902be2..d9709dfb60d93c7cf8125384f464895bf6ca429f 100644
+--- a/ui/base/clipboard/clipboard_util_win.cc
++++ b/ui/base/clipboard/clipboard_util_win.cc
+@@ -48,6 +48,37 @@ namespace {
+ constexpr STGMEDIUM kNullStorageMedium = {.tymed = TYMED_NULL,
+                                           .pUnkForRelease = nullptr};
+ 
++// Returns the locked HGLOBAL contents as UTF-16, bounded by size() and
++// truncated at the first embedded NUL. Untrusted external sources may omit a
++// NUL terminator, so size() is authoritative; reading via data() alone would
++// scan past the allocation.
++std::u16string HGlobalAsWideString(base::win::ScopedHGlobal<wchar_t*>& data) {
++  if (!data.data()) {
++    return std::u16string();
++  }
++  std::u16string out = base::WideToUTF16(
++      std::wstring_view(data.data(), data.size() / sizeof(wchar_t)));
++  if (size_t pos = out.find(u'\0'); pos != std::u16string::npos) {
++    out.resize(pos);
++  }
++  return out;
++}
++
++// Returns the locked HGLOBAL contents as UTF-16, decoding the bytes as UTF-8
++// and bounded by size(), truncated at the first embedded NUL. Untrusted
++// external sources may omit a NUL terminator, so size() is authoritative;
++// reading via data() alone would scan past the allocation.
++std::u16string HGlobalAsString(base::win::ScopedHGlobal<char*>& data) {
++  if (!data.data()) {
++    return std::u16string();
++  }
++  std::string out(data.data(), data.size());
++  if (size_t pos = out.find('\0'); pos != std::string::npos) {
++    out.resize(pos);
++  }
++  return base::UTF8ToUTF16(out);
++}
++
+ // Result type for virtual file extraction: pairs of (temp_file_path,
+ // display_name).
+ using VirtualFileResults =
+@@ -666,7 +697,7 @@ bool GetUrlInfos(IDataObject* data_object,
+   if (GetData(data_object, ClipboardFormatType::BookmarkListType(), &store)) {
+     {
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      ParseBookmarkListData(base::WideToUTF16(data.data()), url_infos);
++      ParseBookmarkListData(HGlobalAsWideString(data), url_infos);
+     }
+     ReleaseStgMedium(&store);
+     return !url_infos.empty();
+@@ -679,7 +710,7 @@ bool GetUrlInfos(IDataObject* data_object,
+       GetData(data_object, ClipboardFormatType::UrlType(), &store)) {
+     {
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      SplitUrlAndTitle(base::WideToUTF16(data.data()), &url, &title);
++      SplitUrlAndTitle(HGlobalAsWideString(data), &url, &title);
+       url_infos.emplace_back(url, title);
+     }
+     ReleaseStgMedium(&store);
+@@ -690,7 +721,7 @@ bool GetUrlInfos(IDataObject* data_object,
+   if (GetData(data_object, ClipboardFormatType::UrlAType(), &store)) {
+     {
+       base::win::ScopedHGlobal<char*> data(store.hGlobal);
+-      SplitUrlAndTitle(base::UTF8ToUTF16(data.data()), &url, &title);
++      SplitUrlAndTitle(HGlobalAsString(data), &url, &title);
+       url_infos.emplace_back(url, title);
+     }
+     ReleaseStgMedium(&store);
+@@ -756,7 +787,9 @@ bool GetFilenames(IDataObject* data_object,
+       // filename using Unicode
+       base::win::ScopedHGlobal<wchar_t*> data(medium.hGlobal);
+       if (data.data() && data.data()[0]) {
+-        filenames->push_back(data.data());
++        std::wstring filename(data.data(), data.size() / sizeof(wchar_t));
++        filename.resize(std::min(filename.size(), filename.find(L'\0')));
++        filenames->push_back(std::move(filename));
+       }
+     }
+     ReleaseStgMedium(&medium);
+@@ -768,7 +801,9 @@ bool GetFilenames(IDataObject* data_object,
+       // filename using ASCII
+       base::win::ScopedHGlobal<char*> data(medium.hGlobal);
+       if (data.data() && data.data()[0]) {
+-        filenames->push_back(base::SysNativeMBToWide(data.data()));
++        std::string mb(data.data(), data.size());
++        mb.resize(std::min(mb.size(), mb.find('\0')));
++        filenames->push_back(base::SysNativeMBToWide(mb));
+       }
+     }
+     ReleaseStgMedium(&medium);
+@@ -959,7 +994,7 @@ bool GetPlainText(IDataObject* data_object, std::u16string* plain_text) {
+     {
+       // Unicode text
+       base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-      plain_text->assign(base::as_u16cstr(data.data()));
++      plain_text->assign(HGlobalAsWideString(data));
+     }
+     ReleaseStgMedium(&store);
+     return true;
+@@ -969,7 +1004,7 @@ bool GetPlainText(IDataObject* data_object, std::u16string* plain_text) {
+     {
+       // ASCII text
+       base::win::ScopedHGlobal<char*> data(store.hGlobal);
+-      plain_text->assign(base::UTF8ToUTF16(data.data()));
++      plain_text->assign(HGlobalAsString(data));
+     }
+     ReleaseStgMedium(&store);
+     return true;
+@@ -1015,7 +1050,7 @@ bool GetHtml(IDataObject* data_object,
+   {
+     // text/html
+     base::win::ScopedHGlobal<wchar_t*> data(store.hGlobal);
+-    html->assign(base::as_u16cstr(data.data()));
++    html->assign(HGlobalAsWideString(data));
+   }
+   ReleaseStgMedium(&store);
+   return true;

@@ -1,0 +1,300 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 2 Sep 2026 15:40:50 -0400
+Subject: [ganesh] Prevent silent updateData failure
+
+* Under high memory pressure scenarios, most notably flushCpuData(),
+  updateData() can fail silently, enabling an attacker to potentially
+  draw stale data from a buffer.
+
+* Pipes out the result from updateData() in several places, dropping
+  the draw if a failure occurs.
+
+Bug: b/553130676
+Change-Id: Id281f53d9f6e4d79d0737fa7b54a102e59ab5f00
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1339637
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/ganesh/GrBufferAllocPool.cpp b/src/gpu/ganesh/GrBufferAllocPool.cpp
+index 1bb7a9519cda88e3945f31362787879ce695046a..14946bd3a00b86be368f28eecd3283dc4e67ac31 100644
+--- a/src/gpu/ganesh/GrBufferAllocPool.cpp
++++ b/src/gpu/ganesh/GrBufferAllocPool.cpp
+@@ -120,9 +120,10 @@ void GrBufferAllocPool::reset() {
+     VALIDATE();
+ }
+ 
+-void GrBufferAllocPool::unmap() {
++bool GrBufferAllocPool::unmap() {
+     VALIDATE();
+ 
++    bool success = true;
+     if (fBufferPtr) {
+         BufferBlock& block = fBlocks.back();
+         GrBuffer* buffer = block.fBuffer.get();
+@@ -131,12 +132,13 @@ void GrBufferAllocPool::unmap() {
+                 UNMAP_BUFFER(block);
+             } else {
+                 size_t flushSize = block.fBuffer->size() - block.fBytesFree;
+-                this->flushCpuData(fBlocks.back(), flushSize);
++                success = this->flushCpuData(fBlocks.back(), flushSize);
+             }
+         }
+         fBufferPtr = nullptr;
+     }
+     VALIDATE();
++    return success;
+ }
+ 
+ #ifdef SK_DEBUG
+@@ -338,7 +340,11 @@ bool GrBufferAllocPool::createBlock(size_t requestSize) {
+             if (static_cast<GrGpuBuffer*>(buffer)->isMapped()) {
+                 UNMAP_BUFFER(prev);
+             } else {
+-                this->flushCpuData(prev, prev.fBuffer->size() - prev.fBytesFree);
++                if (!this->flushCpuData(prev, prev.fBuffer->size() - prev.fBytesFree)) {
++                    fBufferPtr = nullptr;
++                    this->destroyBlock();
++                    return false;
++                }
+             }
+         }
+         fBufferPtr = nullptr;
+@@ -390,7 +396,7 @@ void GrBufferAllocPool::resetCpuData(size_t newSize) {
+                                         : GrCpuBuffer::Make(newSize);
+ }
+ 
+-void GrBufferAllocPool::flushCpuData(const BufferBlock& block, size_t flushSize) {
++bool GrBufferAllocPool::flushCpuData(const BufferBlock& block, size_t flushSize) {
+     SkASSERT(block.fBuffer.get());
+     SkASSERT(!block.fBuffer.get()->isCpuBuffer());
+     GrGpuBuffer* buffer = static_cast<GrGpuBuffer*>(block.fBuffer.get());
+@@ -405,11 +411,12 @@ void GrBufferAllocPool::flushCpuData(const BufferBlock& block, size_t flushSize)
+         if (data) {
+             memcpy(data, fBufferPtr, flushSize);
+             UNMAP_BUFFER(block);
+-            return;
++            return true;
+         }
+     }
+-    buffer->updateData(fBufferPtr, /*offset=*/0, flushSize, /*preserve=*/false);
++    bool result = buffer->updateData(fBufferPtr, /*offset=*/0, flushSize, /*preserve=*/false);
+     VALIDATE(true);
++    return result;
+ }
+ 
+ sk_sp<GrBuffer> GrBufferAllocPool::getBuffer(size_t size) {
+diff --git a/src/gpu/ganesh/GrBufferAllocPool.h b/src/gpu/ganesh/GrBufferAllocPool.h
+index ee6b06448bea2363248ccb6a5faa6dd0853149df..1f09d419487def9f834472e005b0f6725a31492e 100644
+--- a/src/gpu/ganesh/GrBufferAllocPool.h
++++ b/src/gpu/ganesh/GrBufferAllocPool.h
+@@ -68,7 +68,7 @@ public:
+      * Ensures all buffers are unmapped and have all data written to them.
+      * Call before drawing using buffers from the pool.
+      */
+-    void unmap();
++    [[nodiscard]] bool unmap();
+ 
+     /**
+      *  Invalidates all the data in the pool, unrefs non-preallocated buffers.
+@@ -162,7 +162,7 @@ private:
+     bool createBlock(size_t requestSize);
+     void destroyBlock();
+     void deleteBlocks();
+-    void flushCpuData(const BufferBlock& block, size_t flushSize);
++    [[nodiscard]] bool flushCpuData(const BufferBlock& block, size_t flushSize);
+     void resetCpuData(size_t newSize);
+ #ifdef SK_DEBUG
+     void validate(bool unusedBlockAllowed = false) const;
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 3aa397bad87f6cf672eb01fd4e47800687cc81ba..1279739676a02bb99594114a0d61e9c5322c6dc1 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -271,7 +271,10 @@ GrRenderTask::ExecutionResult GrDrawingManager::executeRenderTasks(GrOpFlushStat
+     }
+ 
+     // Upload all data to the GPU
+-    flushState->preExecuteDraws();
++    if (!flushState->preExecuteDraws()) {
++        flushState->reset();
++        return { /* fAnyTaskExecuted= */false, /* fAllTasksSuccessful= */false };
++    }
+ 
+     // For Vulkan, if we have too many oplists to be flushed we end up allocating a lot of resources
+     // for each command buffer associated with the oplists. If this gets too large we can cause the
+diff --git a/src/gpu/ganesh/GrGpuBuffer.h b/src/gpu/ganesh/GrGpuBuffer.h
+index 6d20670c2ab6379c266186ffce09f4163dc361aa..976a331d438ae4e1c6936ffa0801bcdb95da9eca 100644
+--- a/src/gpu/ganesh/GrGpuBuffer.h
++++ b/src/gpu/ganesh/GrGpuBuffer.h
+@@ -94,7 +94,7 @@ public:
+      *
+      * @return returns true if the update succeeds, false otherwise.
+      */
+-    bool updateData(const void* src, size_t offset, size_t size, bool preserve);
++    [[nodiscard]] bool updateData(const void* src, size_t offset, size_t size, bool preserve);
+ 
+     GrGpuBufferType intendedType() const { return fIntendedType; }
+ 
+diff --git a/src/gpu/ganesh/GrOpFlushState.cpp b/src/gpu/ganesh/GrOpFlushState.cpp
+index 68cb7d55d5c61cf8a184efca752f4904c1950f09..c334cf9349ee2c65c2497904d01ca6c0a1d29f80 100644
+--- a/src/gpu/ganesh/GrOpFlushState.cpp
++++ b/src/gpu/ganesh/GrOpFlushState.cpp
+@@ -93,10 +93,14 @@ void GrOpFlushState::executeDrawsAndUploadsForMeshDrawOp(
+     }
+ }
+ 
+-void GrOpFlushState::preExecuteDraws() {
+-    fVertexPool.unmap();
+-    fIndexPool.unmap();
+-    fDrawIndirectPool.unmap();
++bool GrOpFlushState::preExecuteDraws() {
++    if (!fVertexPool.unmap() ||
++        !fIndexPool.unmap() ||
++        !fDrawIndirectPool.unmap()) {
++        fCurrDraw = fDraws.end();
++        fCurrUpload = fInlineUploads.end();
++        return false;
++    }
+     for (auto& upload : fASAPUploads) {
+         this->doUpload(upload);
+     }
+@@ -104,6 +108,7 @@ void GrOpFlushState::preExecuteDraws() {
+     fCurrDraw = fDraws.begin();
+     fCurrUpload = fInlineUploads.begin();
+     fGpu->willExecute();
++    return true;
+ }
+ 
+ void GrOpFlushState::reset() {
+diff --git a/src/gpu/ganesh/GrOpFlushState.h b/src/gpu/ganesh/GrOpFlushState.h
+index a8e229cfac18a14c65b86ecb00aa365a2406f38a..8919ab1d9e898d9c5dd718947eb2662d7495227d 100644
+--- a/src/gpu/ganesh/GrOpFlushState.h
++++ b/src/gpu/ganesh/GrOpFlushState.h
+@@ -67,7 +67,7 @@ public:
+ 
+     /** This is called after each op has a chance to prepare its draws and before the draws are
+         executed. */
+-    void preExecuteDraws();
++    [[nodiscard]] bool preExecuteDraws();
+ 
+     /** Called to upload data to a texture using the GrDeferredTextureUploadFn. If the uploaded
+         surface needs to be prepared for being sampled in a draw after the upload, the caller
+diff --git a/src/gpu/ganesh/GrResourceProvider.cpp b/src/gpu/ganesh/GrResourceProvider.cpp
+index b10b0a358eb0fe9769e9a1af248304bfa304e2c6..f57ce940e95188a69a50ae9669a7ffd5f7ecefc4 100644
+--- a/src/gpu/ganesh/GrResourceProvider.cpp
++++ b/src/gpu/ganesh/GrResourceProvider.cpp
+@@ -478,8 +478,6 @@ sk_sp<const GrGpuBuffer> GrResourceProvider::findOrMakeStaticBuffer(
+     SkASSERT(buffer->size() == size);
+     SkASSERT(!buffer->resourcePriv().getScratchKey().isValid());
+ 
+-    buffer->resourcePriv().setUniqueKey(uniqueKey);
+-
+     // Map the buffer. Use a staging buffer on the heap if mapping isn't supported.
+     skgpu::VertexWriter vertexWriter = {buffer->map(), size};
+     AutoTMalloc<char> stagingBuffer;
+@@ -493,9 +491,13 @@ sk_sp<const GrGpuBuffer> GrResourceProvider::findOrMakeStaticBuffer(
+     if (buffer->isMapped()) {
+         buffer->unmap();
+     } else {
+-        buffer->updateData(stagingBuffer, /*offset=*/0, size, /*preserve=*/false);
++        if (!buffer->updateData(stagingBuffer, /*offset=*/0, size, /*preserve=*/false)) {
++            return nullptr;
++        }
+     }
+ 
++    buffer->resourcePriv().setUniqueKey(uniqueKey);
++
+     return buffer;
+ }
+ 
+diff --git a/src/gpu/ganesh/gl/GrGLGpu.cpp b/src/gpu/ganesh/gl/GrGLGpu.cpp
+index de3893acadec362df17903e7f53bbd1d25f6968b..a3cc8796c0c1b30b3480af76c7247691279de9e4 100644
+--- a/src/gpu/ganesh/gl/GrGLGpu.cpp
++++ b/src/gpu/ganesh/gl/GrGLGpu.cpp
+@@ -3314,14 +3314,13 @@ bool GrGLGpu::createCopyProgram(GrTexture* srcTex) {
+                                                    sizeof(vdata),
+                                                    GrGpuBufferType::kVertex,
+                                                    kStatic_GrAccessPattern);
+-        if (fCopyProgramArrayBuffer) {
+-            fCopyProgramArrayBuffer->updateData(
+-                    vdata, /*offset=*/0, sizeof(vdata), /*preserve=*/false);
++        if (!fCopyProgramArrayBuffer ||
++            !fCopyProgramArrayBuffer->updateData(
++                    vdata, /*offset=*/0, sizeof(vdata), /*preserve=*/false)) {
++            fCopyProgramArrayBuffer.reset();
++            return false;
+         }
+     }
+-    if (!fCopyProgramArrayBuffer) {
+-        return false;
+-    }
+ 
+     SkASSERT(!fCopyPrograms[progIdx].fProgram);
+     GL_CALL_RET(fCopyPrograms[progIdx].fProgram, CreateProgram());
+@@ -3813,13 +3812,12 @@ bool GrGLGpu::onRegenerateMipMapLevels(GrTexture* texture) {
+                                                      sizeof(vdata),
+                                                      GrGpuBufferType::kVertex,
+                                                      kStatic_GrAccessPattern);
+-        fMipmapProgramArrayBuffer->updateData(vdata, /*offset=*/0,
+-
+-                                              sizeof(vdata),
+-                                              /*preserve=*/false);
+-    }
+-    if (!fMipmapProgramArrayBuffer) {
+-        return false;
++        if (!fMipmapProgramArrayBuffer ||
++            !fMipmapProgramArrayBuffer->updateData(vdata, /*offset=*/0,sizeof(vdata),
++                                                   /*preserve=*/false)) {
++            fMipmapProgramArrayBuffer.reset();
++            return false;
++        }
+     }
+ 
+     fHWVertexArrayState.setVertexArrayID(this, 0);
+diff --git a/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp b/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
+index ce194c7159cb4d0b0363a6a9ba653dcf8455c6c7..68f297bf2cc83a0e6a27fdf8c2241053555d9ff7 100644
+--- a/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
++++ b/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
+@@ -177,11 +177,25 @@ public:
+         if (fCanMapVB) {
+             fVertexBuffer->unmap();
+         } else {
+-            fVertexBuffer->updateData(fVertices,
+-                                      /*offset=*/0,
+-                                      /*size=*/actualCount*fLockStride,
+-                                      /*preserve=*/false);
+-            sk_free(fVertices);
++            if (fVertexBuffer->updateData(fVertices,
++                                          /*offset=*/0,
++                                          /*size=*/actualCount*fLockStride,
++                                          /*preserve=*/false)) {
++                sk_free(fVertices);
++            } else {
++                // If we fail the upload, the most likely issue is GPU memory pressure. Instead of
++                // discarding the triangulation work, shrink the fVertices allocation and use it to
++                // create CPU-backed VertexData. This stores the CPU vertices in the thread-safe
++                // cache so that subsequent draws can attempt to instantiate the GPU buffer in
++                // createNonAAMesh().
++                fVertexBuffer.reset();
++                fVertices = sk_realloc_throw(fVertices, actualCount * fLockStride);
++                fVertexData =
++                        GrThreadSafeCache::MakeVertexData(fVertices, actualCount, fLockStride);
++                fVertices = nullptr;
++                fLockStride = 0;
++                return;
++            }
+         }
+ 
+         fVertexData = GrThreadSafeCache::MakeVertexData(std::move(fVertexBuffer),
+@@ -383,7 +397,10 @@ private:
+                 sk_make_sp<UniqueKeyInvalidator>(key, target->contextUniqueID()));
+         }
+ 
+-        fMesh = CreateMesh(target, fVertexData->refGpuBuffer(), 0, fVertexData->numVertices());
++        // If buffer upload failed in unlock(), fMesh remains null and the draw is skipped.
++        if (fVertexData->gpuBuffer()) {
++            fMesh = CreateMesh(target, fVertexData->refGpuBuffer(), 0, fVertexData->numVertices());
++        }
+     }
+ 
+     void createAAMesh(GrMeshDrawTarget* target) {
