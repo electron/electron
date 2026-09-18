@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 27 Aug 2026 09:05:06 -0700
+Subject: GPU: Clamp max_texture_image_units to 13 on PowerVR GPUs
+
+Limit max_texture_image_units to 13 on PowerVR GPUs via workaround
+max_texture_image_units_13 across ContextGroup, GLCapabilities,
+and the Passthrough command decoder.
+
+Bug: 548085797
+Change-Id: I38766bde1399d6f40f32840439f415ee7fda8e77
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8297925
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1687286}
+
+Electron adaptation notes (42-x-y):
+- gpu_driver_bug_list.json: the branch already carries later
+  workaround entries (ids 492/493 via merges), so the new id 491
+  entry is appended after them instead of after id 490.
+- webgl2_conformance_expectations.txt: context drift only; both the
+  branch's and the upstream expectation lines are kept.
+
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+index a0579480316326329543dc37576facb28e35121e..d91edc1e7514e0187fa6fd7d3a15b843803b5205 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+@@ -896,6 +896,7 @@ crbug.com/446122639 [ android android-pixel-10 imagination-technologies ] WebglE
+ crbug.com/446122639 [ android android-pixel-10 ] WebglExtension_OES_texture_float_linear [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/context/context-size-change.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/glsl/functions/glsl-function-cross.html [ Failure ]
++crbug.com/551573368 [ android android-pixel-10 ] conformance/glsl/variables/glsl-built-ins.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/ogles/GL/build/build_009_to_016.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/rendering/gl-scissor-fbo-test.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/textures/canvas/tex-2d-rgb-rgb-unsigned_byte.html [ Failure ]
+@@ -927,6 +928,8 @@ crbug.com/446941342 [ android android-pixel-10 ] conformance2/textures/misc/copy
+ crbug.com/446941342 [ android android-pixel-10 ] conformance2/textures/misc/tex-mipmap-levels.html [ Failure ]
+ crbug.com/446941342 [ android android-pixel-10 ] conformance2/textures/misc/texel-fetch-undefined.html [ Failure ]
+ crbug.com/446941342 [ android android-pixel-10 ] conformance2/textures/video/tex-2d-rg8-rg-unsigned_byte.html [ RetryOnFailure ]
++crbug.com/551573368 [ android android-pixel-10 ] deqp/functional/gles3/integerstatequery.html [ Failure ]
++crbug.com/551573368 [ android android-pixel-10 ] deqp/functional/gles3/shaderbuiltinvar.html [ Failure ]
+ crbug.com/446941342 [ android android-pixel-10 ] deqp/functional/gles3/shaderstruct.html [ Failure ]
+ 
+ ############################
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
+index 874cad42dd8e2173ee46306f64acc7eeef6a197f..ae29712665eae7a561a040253c4af11056155d10 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
+@@ -609,6 +609,7 @@ crbug.com/446122639 [ android android-pixel-10 ] conformance/extensions/oes-text
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/extensions/oes-texture-half-float-with-video.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/extensions/webgl-blend-func-extended.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/glsl/functions/glsl-function-cross.html [ Failure ]
++crbug.com/551573368 [ android android-pixel-10 ] conformance/glsl/variables/glsl-built-ins.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/ogles/GL/build/build_009_to_016.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/rendering/gl-scissor-fbo-test.html [ Failure ]
+ crbug.com/446122639 [ android android-pixel-10 ] conformance/textures/canvas/tex-2d-rgb-rgb-unsigned_byte.html [ Failure ]
+diff --git a/gpu/command_buffer/service/context_group.cc b/gpu/command_buffer/service/context_group.cc
+index 4a3a68b4415b6cc05eab01f98b1a0afffe73afc9..a643edb0d72a5ef783d8076026198e16936c2e79 100644
+--- a/gpu/command_buffer/service/context_group.cc
++++ b/gpu/command_buffer/service/context_group.cc
+@@ -410,6 +410,9 @@ ContextGroup::InitializeWithCompleteFramebufferForWorkarounds(
+     return was_lost ? gpu::ContextResult::kTransientFailure
+                     : gpu::ContextResult::kFatalFailure;
+   }
++  if (feature_info_->workarounds().max_texture_image_units_13) {
++    max_texture_image_units_ = std::min(max_texture_image_units_, 13u);
++  }
+   if (!QueryGLFeatureU(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+                        kMinVertexTextureImageUnits,
+                        &max_vertex_texture_image_units_)) {
+diff --git a/gpu/command_buffer/service/context_group_unittest.cc b/gpu/command_buffer/service/context_group_unittest.cc
+index 10305fe4e2414a90120b862b436b3797eebd0ff1..c5ab75b96f9a4da48528c7481bf6f7f38458f9dd 100644
+--- a/gpu/command_buffer/service/context_group_unittest.cc
++++ b/gpu/command_buffer/service/context_group_unittest.cc
+@@ -109,6 +109,26 @@ TEST_F(ContextGroupTest, InitializeNoExtensions) {
+   EXPECT_TRUE(group_->shader_manager() == nullptr);
+ }
+ 
++TEST_F(ContextGroupTest, MaxTextureImageUnits13Workaround) {
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.max_texture_image_units_13 = true;
++  auto feature_info =
++      base::MakeRefCounted<FeatureInfo>(workarounds, GpuFeatureInfo());
++  auto group = base::MakeRefCounted<ContextGroup>(
++      gpu_preferences_, /*memory_tracker=*/nullptr,
++      /*shader_translator_cache=*/nullptr,
++      /*framebuffer_completeness_cache=*/nullptr, feature_info,
++      /*progress_reporter=*/nullptr, GpuFeatureInfo(), &shared_image_manager_);
++
++  TestHelper::SetupContextGroupInitExpectations(
++      gl_.get(), "ANGLE", "OpenGL ES 2.0", CONTEXT_TYPE_OPENGLES2);
++  group->Initialize(decoder_.get(), CONTEXT_TYPE_OPENGLES2);
++  EXPECT_EQ(static_cast<uint32_t>(TestHelper::kMaxTextureImageUnits),
++            group->max_texture_image_units());
++
++  group->Destroy(decoder_.get(), false);
++}
++
+ TEST_F(ContextGroupTest, MultipleContexts) {
+   FakeCommandBufferServiceBase command_buffer_service2;
+   FakeDecoderClient client2;
+diff --git a/gpu/command_buffer/service/gl_utils.cc b/gpu/command_buffer/service/gl_utils.cc
+index 006715076eb245a895dabc75f86cb47f882ced50..903f897ff32829227675bc4fb392a46f32fd323d 100644
+--- a/gpu/command_buffer/service/gl_utils.cc
++++ b/gpu/command_buffer/service/gl_utils.cc
+@@ -167,6 +167,9 @@ void PopulateGLCapabilities(GLCapabilities* caps,
+                 &caps->max_fragment_uniform_vectors);
+   glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &caps->max_renderbuffer_size);
+   glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &caps->max_texture_image_units);
++  if (feature_info->workarounds().max_texture_image_units_13) {
++    caps->max_texture_image_units = std::min(caps->max_texture_image_units, 13);
++  }
+   glGetIntegerv(GL_MAX_VARYING_VECTORS, &caps->max_varying_vectors);
+   glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &caps->max_vertex_attribs);
+   glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS,
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+index 99e58c921f34e98760c27b9687eb2b1d49a107f0..234b4d2fbef535074496b4d6c3bfd2458ddda468 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+@@ -1693,11 +1693,18 @@ error::Error GLES2DecoderPassthroughImpl::DoGetIntegerv(GLenum pname,
+                                                         GLsizei bufsize,
+                                                         GLsizei* length,
+                                                         GLint* params) {
+-  return GetNumericHelper(
++  error::Error result = GetNumericHelper(
+       pname, bufsize, length, params,
+       [this](GLenum pname, GLsizei bufsize, GLsizei* length, GLint* params) {
+         api()->glGetIntegervRobustANGLEFn(pname, bufsize, length, params);
+       });
++  if (result == error::kNoError && pname == GL_MAX_TEXTURE_IMAGE_UNITS &&
++      feature_info_->workarounds().max_texture_image_units_13) {
++    if (bufsize >= 1 && params) {
++      params[0] = std::min(params[0], 13);
++    }
++  }
++  return result;
+ }
+ 
+ error::Error GLES2DecoderPassthroughImpl::DoGetInternalformativ(GLenum target,
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 1e1e35f77fd949a2a19d33724a32b9f586f5402f..a04bdb9b2ed8e464db49fa6cc0a012373c192a4e 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3870,6 +3870,18 @@
+       "features": [
+         "finish_before_blit_framebuffer_multi_attachment"
+       ]
++    },
++    {
++      "id": 491,
++      "cr_bugs": [548085797],
++      "description": "Limit max texture image units to 13 on PowerVR GPUs.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "max_texture_image_units_13"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index cbe084117bdcce1a3b0153c51b960e5a2d130457..f83d44119398ebe73de2d701a6a7c2cdb75eb6c8 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -108,6 +108,7 @@ max_3d_array_texture_size_1024
+ max_msaa_sample_count_2
+ max_msaa_sample_count_4
+ max_num_hw_video_decoders_10
++max_texture_image_units_13
+ msaa_is_slow
+ msaa_is_slow_2
+ multisample_renderbuffer_resize_emulation
