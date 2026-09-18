@@ -315,19 +315,35 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+v8::Local<v8::Promise> WebFrameMain::PrintToPDF(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
 #if BUILDFLAG(ENABLE_PRINTING)
-v8::Local<v8::Promise> WebFrameMain::PrintToPDF(const base::Value& settings) {
-  if (!HasRenderFrame()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    v8::Local<v8::Promise> handle = promise.GetHandle();
-    promise.RejectWithErrorMessage(
-        "Render frame was disposed before WebFrameMain could be accessed");
-    return handle;
-  }
-  return PrintFrameToPDF(render_frame_host(), settings);
-}
+  v8::Local<v8::Value> options;
+  args->GetNext(&options);
+  // Jobs queue per frame tree, keyed by its top frame (or this one if that is
+  // already gone).
+  const int frame_tree =
+      HasRenderFrame()
+          ? render_frame_host()->GetMainFrame()->GetFrameTreeNodeId().value()
+          : FrameTreeNodeID().value();
+  return electron::PrintToPDF(
+      isolate, frame_tree,
+      base::BindRepeating(
+          [](cppgc::WeakPersistent<WebFrameMain> self)
+              -> content::RenderFrameHost* {
+            return self && self->HasRenderFrame() ? self->render_frame_host()
+                                                  : nullptr;
+          },
+          cppgc::WeakPersistent<WebFrameMain>(this)),
+      {"Render frame was disposed before WebFrameMain could be accessed"},
+      options);
+#else
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  promise.RejectWithErrorMessage("Printing feature is disabled");
+  return handle;
 #endif
+}
 
 void WebFrameMain::CopyVideoFrameAt(int x, int y) {
   if (!CheckRenderFrame())
@@ -712,9 +728,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("collectJavaScriptCallStack",
                  &WebFrameMain::CollectDocumentJSCallStack)
-#if BUILDFLAG(ENABLE_PRINTING)
-      .SetMethod("_printToPDF", &WebFrameMain::PrintToPDF)
-#endif
+      .SetMethod("printToPDF", &WebFrameMain::PrintToPDF)
       .SetMethod("copyVideoFrameAt", &WebFrameMain::CopyVideoFrameAt)
       .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
       .SetMethod("reload", &WebFrameMain::Reload)
