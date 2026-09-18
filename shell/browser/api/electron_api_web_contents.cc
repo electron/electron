@@ -4940,12 +4940,12 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
       isolate,
       self->web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
       base::BindRepeating(
-          [](base::WeakPtr<WebContents> self) -> content::RenderFrameHost* {
-            if (!self || !self->web_contents())
+          [](WebContents* self) -> content::RenderFrameHost* {
+            if (!self->web_contents())
               return nullptr;
             return GetRenderFrameHostToUse(self->web_contents());
           },
-          self->GetWeakPtr()),
+          self->WeakRef()),
       {"Object has been destroyed", /*type_error=*/true}, options);
 }
 

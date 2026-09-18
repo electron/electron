@@ -52,21 +52,22 @@ bool BluetoothChooser::EmitSelectBluetoothDevice() {
   node::CallbackScope callback_scope{isolate, web_contents,
                                      node::async_context{0, 0}};
   base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
-  base::WeakPtr<api::WebContents> weak_web_contents =
-      api_web_contents_->GetWeakPtr();
   int listeners = 0;
   gin::ConvertFromV8(
       isolate,
       gin_helper::CallMethod(isolate, web_contents, "listenerCount",
                              "select-bluetooth-device"),
       &listeners);
-  if (!weak_this || !weak_web_contents)
+  if (!weak_this)
+    return true;
+  api::WebContents* api_web_contents = api_web_contents_.Get();
+  if (!api_web_contents || api_web_contents->IsDestroyed())
     return true;
   if (listeners == 0) {
     OnDeviceChosen("");
     return true;
   }
-  return api_web_contents_->Emit(
+  return api_web_contents->Emit(
       "select-bluetooth-device", GetDeviceList(),
       base::BindOnce(&BluetoothChooser::OnDeviceChosen,
                      weak_ptr_factory_.GetWeakPtr()));
