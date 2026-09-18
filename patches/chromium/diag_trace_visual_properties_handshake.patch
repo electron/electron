@@ -11,7 +11,7 @@ both behaviours. Used to investigate
 https://github.com/electron/electron/issues/54025.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3f7db75de 100644
+index 5024a05f7cc2b2b0ca22e32952d1aef72e147ef4..22f589c4d80c2ced11a288edc23943f1d6d6f6bc 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -11,6 +11,9 @@
@@ -81,7 +81,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
    if (is_hidden_) {
      return;
    }
-@@ -896,6 +928,8 @@ void RenderWidgetHostImpl::WasShown(
+@@ -898,6 +930,8 @@ void RenderWidgetHostImpl::WasShown(
    // The page should never be visible during prerendering.
    CHECK(!frame_tree_ || !frame_tree_->is_prerendering());
  
@@ -90,7 +90,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
    if (!is_hidden_) {
      return;
    }
-@@ -1035,6 +1069,13 @@ void RenderWidgetHostImpl::RemoveImeInputEventObserver(
+@@ -1037,6 +1071,13 @@ void RenderWidgetHostImpl::RemoveImeInputEventObserver(
  
  blink::VisualProperties RenderWidgetHostImpl::GetInitialVisualProperties() {
    blink::VisualProperties initial_props = GetVisualProperties();
@@ -104,7 +104,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
  
    // A RenderWidget being created in the renderer means the browser should
    // reset any state that may be set for the previous RenderWidget but which
-@@ -1291,6 +1332,7 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1293,6 +1334,7 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    // because there is no frames associated with the RenderWidget when it is
    // inactive, so there is no focused node, or anything to scroll and display.
    if (owner_delegate_ && !owner_delegate_->IsMainFrameActive()) {
@@ -112,7 +112,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
      return false;
    }
    // Sending VisualProperties are deferred until we have a connection to a
-@@ -1298,16 +1340,25 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1300,16 +1342,25 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    // renderer to show (aka Init()) the widget then we defer sending updates
    // until the renderer is ready.
    if (!renderer_widget_created_ || waiting_for_init_) {
@@ -138,7 +138,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
      return false;
    }
  
-@@ -1318,6 +1369,11 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1320,6 +1371,11 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    if (!GetProcess()->IsInitializedAndNotDead() || !view_->HasSize() ||
        !delegate_ || surface_id_allocation_suppressed_ ||
        !view_->CanSynchronizeVisualProperties()) {
@@ -150,7 +150,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
      return false;
    }
  
-@@ -1325,6 +1381,10 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1327,6 +1383,10 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    *visual_properties = GetVisualProperties();
    if (!StoredVisualPropertiesNeedsUpdate(old_visual_properties_,
                                           *visual_properties)) {
@@ -161,7 +161,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
      return false;
    }
  
-@@ -1374,6 +1434,17 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1376,6 +1436,17 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    }
    visual_properties_ack_pending_ =
        DoesVisualPropertiesNeedAck(old_visual_properties_, *visual_properties);
@@ -179,7 +179,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
    old_visual_properties_ = std::move(visual_properties);
  
    // Warning: |visual_properties| invalid after this point.
-@@ -1580,6 +1651,17 @@ void RenderWidgetHostImpl::DidNavigate() {
+@@ -1582,6 +1653,17 @@ void RenderWidgetHostImpl::DidNavigate() {
    // Resize messages before navigation are not acked, so reset
    // |visual_properties_ack_pending_| and make sure the next resize will be
    // acked if the last resize before navigation was supposed to be acked.
@@ -197,7 +197,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
    visual_properties_ack_pending_ = false;
    if (view_) {
      view_->DidNavigate();
-@@ -2982,6 +3064,13 @@ void RenderWidgetHostImpl::OnLocalSurfaceIdChanged(
+@@ -2984,6 +3066,13 @@ void RenderWidgetHostImpl::OnLocalSurfaceIdChanged(
    // Update our knowledge of the RenderWidget's size.
    CHECK(!metadata.viewport_size_in_pixels.IsEmpty());
  
@@ -212,7 +212,7 @@ index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3
  
    for (auto& observer : observers_) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index acbb39a595c5a88af1d0d97d5629359b24384351..892b5d33a30f613b050d504973b488bd3d233971 100644
+index 9c033218517a24dbc7fe1a1ad1deefcd9e7c2d8f..37f73c3db28ab59eac742bfd70b8e07619d571d8 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -10,6 +10,9 @@
@@ -225,7 +225,7 @@ index acbb39a595c5a88af1d0d97d5629359b24384351..892b5d33a30f613b050d504973b488bd
  #include "base/auto_reset.h"
  #include "base/command_line.h"
  #include "base/feature_list.h"
-@@ -3646,7 +3649,29 @@ void RenderWidgetHostViewAura::DidNavigate() {
+@@ -3678,7 +3681,29 @@ void RenderWidgetHostViewAura::DidNavigate() {
    // the next VisualProperties update is sent without a LocalSurfaceId and the
    // renderer stops producing frames until the view is shown. This matches
    // RenderWidgetHostViewMac, which keys this off the host's visibility.
