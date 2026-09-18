@@ -81,8 +81,6 @@ class Constructible {
       constructor->Inherit(
           gin_helper::internal::GetEventEmitterTemplate(isolate));
     }
-    constructor->InstanceTemplate()->SetInternalFieldCount(
-        gin::kNumberOfInternalFields);
     constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
     T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
     if constexpr (requires { &T::FillInstanceTemplate; }) {
