@@ -173,7 +173,7 @@ describe('net module', () => {
           url: serverUrl
         });
         await new Promise<void>((resolve, reject) => {
-          urlRequest.write(bodyData, (error?: Error | null) => (error ? reject(error) : resolve()));
+          urlRequest.write(bodyData, undefined, (error?: Error | null) => (error ? reject(error) : resolve()));
         });
         bodyData.fill(0);
         const response = await getResponse(urlRequest);
