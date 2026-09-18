@@ -89,8 +89,8 @@ const buildflagPlugin = {
 };
 
 // `electron` and its process-specific entry points all resolve to this
-// target's API module list; bundles without Node.js get a `timers` shim that
-// does not rely on window.postMessage.
+// target's API module list; bundles without Node.js get a native EventEmitter
+// for `events`.
 const exactAliases = new Map(
   ['electron', 'electron/main', 'electron/renderer', 'electron/common', 'electron/utility'].map((id) => [
     id,
@@ -98,7 +98,7 @@ const exactAliases = new Map(
   ])
 );
 if (!target.alwaysHasNode) {
-  exactAliases.set('timers', path.resolve(libDir, 'common', 'timers-shim.ts'));
+  exactAliases.set('events', path.resolve(libDir, 'common', 'node-events.ts'));
 }
 const aliasPlugin = {
   name: 'electron-alias',
@@ -136,11 +136,7 @@ if (target.targetDeletesNodeGlobals) {
   });
 }
 if (!target.alwaysHasNode) {
-  // There is no Node.js in these contexts; use the browser polyfills.
-  Object.assign(inject, {
-    Buffer: ['buffer', 'Buffer'],
-    process: ['process/browser', 'default']
-  });
+  inject.process = ['@electron/internal/webview/process', 'default'];
 }
 
 // There is no Node.js `global` in a sandboxed renderer, but code shared with
@@ -153,10 +149,6 @@ const define = target.alwaysHasNode ? {} : { global: 'globalThis' };
 // the bundle; routing it through a one-line CommonJS shim instead keeps the
 // require() lazy, so a built-in is only loaded once the (lazily evaluated)
 // module importing it actually runs, as it was with webpack.
-//
-// Bundles without Node.js resolve the same ids (events, url, buffer, ...) to
-// the browser polyfill packages in node_modules instead, and fail to build if
-// there is none.
 const nodeModules = new Set(builtinModules);
 const nodeShimPrefix = '\0electron-node-external:';
 const nodeExternalsPlugin = {
@@ -164,10 +156,12 @@ const nodeExternalsPlugin = {
   resolveId: {
     filter: { id: /^[a-z0-9_:/]+$/ },
     handler(source, importer, { kind }) {
-      if (!target.alwaysHasNode) return null;
       // That require knows nothing of the node: scheme.
       const id = source.replace(/^node:/, '');
       if (!nodeModules.has(id) && !id.startsWith('internal/')) return null;
+      if (!target.alwaysHasNode) {
+        this.error(`'${id}' imported by ${path.relative(electronRoot, importer)} is not available without Node.js`);
+      }
       if (kind === 'require-call') return { id, external: true };
       return { id: `${nodeShimPrefix}${id}`, moduleSideEffects: false };
     }

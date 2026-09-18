@@ -6,9 +6,9 @@
 //   The bundle runs inside a Node.js environment and is called with Node's
 //   `process` and internal `require` (see shell/common/js2c_bundle_ids.h), so
 //   Node.js built-in and `internal/*` modules are left as runtime require()
-//   calls. Bundles without it must be fully self-contained; `process`,
-//   `Buffer`, `events` and friends come from the browser polyfills in
-//   node_modules and `timers` from lib/common/timers-shim.ts.
+//   calls. Bundles without it must be fully self-contained; they get a minimal
+//   `process` shim (lib/webview/process.ts) and a native EventEmitter in place
+//   of `events` (lib/common/node-events.ts).
 // loadElectronFromAlternateTarget:
 //   Resolve `require('electron')` to lib/<alternate>/api/exports/electron.ts
 //   instead of the target's own module list.
@@ -36,9 +36,9 @@ export const targets = {
     targetDeletesNodeGlobals: true,
     wrapInitWithTryCatch: true
   },
-  sandboxed_renderer: {
+  webview: {
     alwaysHasNode: false,
-    wrapInitWithProfilingTimeout: true,
+    loadElectronFromAlternateTarget: 'renderer',
     wrapInitWithTryCatch: true
   },
   isolated_renderer: {
@@ -50,10 +50,5 @@ export const targets = {
   },
   utility: {
     alwaysHasNode: true
-  },
-  preload_realm: {
-    alwaysHasNode: false,
-    wrapInitWithProfilingTimeout: true,
-    wrapInitWithTryCatch: true
   }
 };

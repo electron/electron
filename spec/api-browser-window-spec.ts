@@ -4787,7 +4787,7 @@ describe('BrowserWindow module', () => {
         expect(url).to.equal(expectedUrl);
       });
 
-      it('exposes full EventEmitter object to preload script', async () => {
+      it('exposes ipcRenderer with the full EventEmitter API to preload script', async () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -4798,12 +4798,7 @@ describe('BrowserWindow module', () => {
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
         const { EventEmitter } = require('node:events');
-        const emitter = new EventEmitter();
-        const browserEventEmitterProperties = [];
-        let currentObj = emitter;
-        do {
-          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
-        } while ((currentObj = Object.getPrototypeOf(currentObj)));
+        const browserEventEmitterProperties = Object.getOwnPropertyNames(EventEmitter.prototype).sort();
         expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
@@ -5086,9 +5081,11 @@ describe('BrowserWindow module', () => {
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
         expect(test.contextId).to.be.a('string');
-        expect(test.nodeEvents).to.equal(true);
-        expect(test.nodeTimers).to.equal(true);
-        expect(test.nodeUrl).to.equal(true);
+        expect(test.requirableNodeModules).to.deep.equal([]);
+        expect(test.typeofBuffer).to.equal('undefined');
+        expect(test.typeofSetImmediate).to.equal('undefined');
+        expect(test.typeofClearImmediate).to.equal('undefined');
+        expect(test.typeofGlobal).to.equal('object');
 
         if (process.platform === 'linux' && test.osSandbox) {
           expect(test.creationTime).to.be.null('creation time');

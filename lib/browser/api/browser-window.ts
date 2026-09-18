@@ -65,22 +65,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
     unresponsiveEvent = null;
   });
 
-  // Subscribe to visibilityState changes and pass to renderer process.
-  let isVisible = this.isVisible() && !this.isMinimized();
-  const visibilityChanged = () => {
-    const newState = this.isVisible() && !this.isMinimized();
-    if (isVisible !== newState) {
-      isVisible = newState;
-      const visibilityState = isVisible ? 'visible' : 'hidden';
-      this.webContents.emit('-window-visibility-change', visibilityState);
-    }
-  };
-
-  const visibilityEvents = ['show', 'hide', 'minimize', 'maximize', 'restore'];
-  for (const event of visibilityEvents) {
-    this.on(event as any, visibilityChanged);
-  }
-
   this._browserViews = [];
 
   this.on('closed', () => {
