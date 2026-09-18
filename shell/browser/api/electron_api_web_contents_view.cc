@@ -4,11 +4,16 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_widget_host_view.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
@@ -33,6 +38,40 @@
 #include "ui/views/widget/widget.h"
 
 namespace electron::api {
+
+namespace {
+
+// DIAGNOSTIC ONLY (electron/electron#54025). ELECTRON_DIAG_WCO is a set of
+// single-letter switches that alter how the Window Controls Overlay rect is
+// pushed to the renderer, so one build can bisect the behaviour change from
+// #53639:
+//   l  log every decision to stderr
+//   b  do not push from InspectableWebContentsView::OnBoundsChanged
+//   s  push synchronously from the NativeWindowObserver callback (no PostTask)
+//   a  do not schedule a push when the view is added to a widget
+//   u  send the window's rect unclipped/untranslated (pre-#53639 value)
+//   h  ignore the HasLivePage() gate
+//   o  full pre-#53639 behaviour: only the observer callback pushes, it does so
+//      synchronously with the raw rect, and nothing else pushes
+bool DiagFlag(char c) {
+  static const base::NoDestructor<std::string> flags([] {
+    const char* v = std::getenv("ELECTRON_DIAG_WCO");
+    return std::string(v ? v : "");
+  }());
+  return flags->find(c) != std::string::npos;
+}
+
+}  // namespace
+
+#define WCO_DIAG_LOG(...)                  \
+  do {                                     \
+    if (DiagFlag('l')) {                   \
+      std::fprintf(stderr, "[wco-diag] "); \
+      std::fprintf(stderr, __VA_ARGS__);   \
+      std::fprintf(stderr, "\n");          \
+      std::fflush(stderr);                 \
+    }                                      \
+  } while (0)
 
 WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin_helper::Handle<WebContents> web_contents)
@@ -146,6 +185,10 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   observed_window_ = native_window->GetWeakPtr();
   native_window->AddObserver(this);
   ApplyBorderRadius();
+  WCO_DIAG_LOG("OnViewAddedToWidget live=%d view=%s", HasLivePage(),
+               view()->bounds().ToString().c_str());
+  if (DiagFlag('a') || DiagFlag('o'))
+    return;
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }
@@ -167,11 +210,29 @@ void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
 // resize in a single VisualProperties update, rather than trailing it (where it
 // could sit behind the resize's pending ack).
 void WebContentsView::OnContentsBoundsChanging() {
+  WCO_DIAG_LOG("OnContentsBoundsChanging live=%d view=%s rwhv=%s",
+               HasLivePage(), view()->bounds().ToString().c_str(),
+               DescribeRWHV().c_str());
+  if (DiagFlag('b') || DiagFlag('o'))
+    return;
   if (HasLivePage())
     SendWindowControlsOverlay();
 }
 
+std::string WebContentsView::DescribeRWHV() {
+  if (!web_contents())
+    return "no-webcontents";
+  content::RenderWidgetHostView* rwhv =
+      web_contents()->GetRenderWidgetHostView();
+  if (!rwhv)
+    return "null";
+  return rwhv->GetViewBounds().ToString() +
+         (rwhv->IsShowing() ? " showing" : " not-showing");
+}
+
 bool WebContentsView::HasLivePage() {
+  if (DiagFlag('h'))
+    return observed_window_ && web_contents();
   // Before the first navigation there is nothing to update; the window
   // notifies us again from WebContents::DidFinishNavigation.
   return observed_window_ && web_contents() &&
@@ -183,10 +244,28 @@ bool WebContentsView::HasLivePage() {
 // current layout pass has finished to avoid clipping against stale bounds.
 void WebContentsView::UpdateWindowControlsOverlay(
     const gfx::Rect& bounding_rect) {
+  WCO_DIAG_LOG(
+      "observer UpdateWindowControlsOverlay rect=%s live=%d view=%s "
+      "rwhv=%s",
+      bounding_rect.ToString().c_str(), HasLivePage(),
+      view()->bounds().ToString().c_str(), DescribeRWHV().c_str());
+  if (DiagFlag('o')) {
+    if (web_contents()) {
+      WCO_DIAG_LOG("  -> old-path UpdateWindowControlsOverlay(%s)",
+                   bounding_rect.ToString().c_str());
+      web_contents()->UpdateWindowControlsOverlay(bounding_rect);
+    }
+    return;
+  }
+  if (DiagFlag('s')) {
+    SendWindowControlsOverlay();
+    return;
+  }
   ScheduleWindowControlsOverlayUpdate();
 }
 
 void WebContentsView::ScheduleWindowControlsOverlayUpdate() {
+  WCO_DIAG_LOG("Schedule pending=%d", window_controls_overlay_update_pending_);
   if (window_controls_overlay_update_pending_)
     return;
   window_controls_overlay_update_pending_ = true;
@@ -200,18 +279,36 @@ void WebContentsView::ScheduleWindowControlsOverlayUpdate() {
 // don't cover) the titlebar report the right env(titlebar-area-*) values.
 void WebContentsView::SendWindowControlsOverlay() {
   window_controls_overlay_update_pending_ = false;
-  if (!api_web_contents_ || !observed_window_)
+  if (!api_web_contents_ || !observed_window_) {
+    WCO_DIAG_LOG("Send: skipped (api_web_contents=%d window=%d)",
+                 !!api_web_contents_, !!observed_window_);
     return;
+  }
   const auto bounding_rect = observed_window_->GetWindowControlsOverlayRect();
-  if (!bounding_rect)
+  if (!bounding_rect) {
+    WCO_DIAG_LOG("Send: skipped (no overlay rect)");
     return;
+  }
   views::View* window_view = observed_window_->GetContentsView();
-  if (!window_view || !window_view->Contains(view()))
+  if (!window_view || !window_view->Contains(view())) {
+    WCO_DIAG_LOG("Send: skipped (window_view=%d contains=%d)", !!window_view,
+                 window_view && window_view->Contains(view()));
     return;
+  }
 
   gfx::Rect local_rect =
       views::View::ConvertRectToTarget(window_view, view(), *bounding_rect);
   local_rect.Intersect(view()->GetLocalBounds());
+  if (DiagFlag('u'))
+    local_rect = *bounding_rect;
+  WCO_DIAG_LOG(
+      "Send: window_rect=%s window_view=%s view=%s local=%s rwhv=%s "
+      "live=%d",
+      bounding_rect->ToString().c_str(),
+      window_view->bounds().ToString().c_str(),
+      view()->bounds().ToString().c_str(), local_rect.ToString().c_str(),
+      DescribeRWHV().c_str(),
+      web_contents()->GetPrimaryMainFrame()->IsRenderFrameLive());
   web_contents()->UpdateWindowControlsOverlay(local_rect);
 }
 

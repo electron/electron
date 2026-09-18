@@ -358,6 +358,9 @@ jobs:
           fi
         fi
 
+        # diag-54025: this branch only runs the diagnostic probe.
+        tests_files="spec/diag-54025-spec.ts"
+
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"

@@ -1,0 +1,199 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Fri, 18 Sep 2026 08:30:00 +0000
+Subject: diag: trace VisualProperties handshake
+
+DIAGNOSTIC ONLY, not for merge. Logs the RenderWidgetHostImpl
+VisualProperties send/skip/ack decisions for top-level widgets to stderr
+when ELECTRON_DIAG_WCO contains 'l'. Used to investigate
+https://github.com/electron/electron/issues/54025.
+
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -11,6 +11,9 @@
+ #include <set>
+ #include <tuple>
+ #include <utility>
++
++#include <cstdio>
++#include <cstdlib>
+ #include <vector>
+ 
+ #include "base/auto_reset.h"
+@@ -40,6 +43,28 @@
+ #include "base/time/time.h"
+ #include "base/trace_event/optional_trace_event.h"
+ #include "base/trace_event/trace_event.h"
++
++// DIAGNOSTIC ONLY (electron/electron#54025): trace the VisualProperties
++// handshake for top-level widgets when ELECTRON_DIAG_WCO contains 'l'.
++namespace {
++bool WcoDiagEnabled() {
++  static const bool enabled = [] {
++    const char* v = std::getenv("ELECTRON_DIAG_WCO");
++    return v && std::string(v).find('l') != std::string::npos;
++  }();
++  return enabled;
++}
++}  // namespace
++#define WCO_DIAG(...)                            \
++  do {                                           \
++    if (WcoDiagEnabled() && !self_owned_ &&      \
++        !(view_ && view_->IsRenderWidgetHostViewChildFrame())) { \
++      std::fprintf(stderr, "[wco-diag] rwh%p ", static_cast<void*>(this)); \
++      std::fprintf(stderr, __VA_ARGS__);         \
++      std::fprintf(stderr, "\n");                \
++      std::fflush(stderr);                       \
++    }                                            \
++  } while (0)
+ #include "build/build_config.h"
+ #include "cc/base/switches.h"
+ #include "cc/input/browser_controls_offset_tag_modifications.h"
+@@ -767,6 +792,9 @@ void RenderWidgetHostImpl::RendererWidgetCreated(bool for_frame_widget) {
+   CHECK(GetProcess()->IsInitializedAndNotDead());
+ 
+   renderer_widget_created_ = true;
++  WCO_DIAG("RendererWidgetCreated for_frame=%d hidden=%d view=%d "
++           "waiting_for_init=%d",
++           for_frame_widget, is_hidden_, !!view_, waiting_for_init_);
+ 
+   mojo::PendingRemote<blink::mojom::RenderInputRouterClient> browser_remote;
+   blink_widget_->SetupBrowserRenderInputRouterConnections(
+@@ -804,6 +832,7 @@ void RenderWidgetHostImpl::Init() {
+ 
+   CHECK(waiting_for_init_);
+   waiting_for_init_ = false;
++  WCO_DIAG("Init");
+ 
+   // These two methods avoid running while we are `waiting_for_init_`, so we
+   // run them here after we clear it.
+@@ -843,6 +872,8 @@ void RenderWidgetHostImpl::SimulateUserInteraction(const WebInputEvent& event) {
+ }
+ 
+ void RenderWidgetHostImpl::WasHidden() {
++  WCO_DIAG("WasHidden is_hidden=%d disable_hidden=%d ack_pending=%d",
++           is_hidden_, disable_hidden_, visual_properties_ack_pending_);
+   if (is_hidden_) {
+     return;
+   }
+@@ -896,6 +927,8 @@ void RenderWidgetHostImpl::WasShown(
+   // The page should never be visible during prerendering.
+   CHECK(!frame_tree_ || !frame_tree_->is_prerendering());
+ 
++  WCO_DIAG("WasShown is_hidden=%d ack_pending=%d", is_hidden_,
++           visual_properties_ack_pending_);
+   if (!is_hidden_) {
+     return;
+   }
+@@ -1035,6 +1068,13 @@ void RenderWidgetHostImpl::RemoveImeInputEventObserver(
+ 
+ blink::VisualProperties RenderWidgetHostImpl::GetInitialVisualProperties() {
+   blink::VisualProperties initial_props = GetVisualProperties();
++  WCO_DIAG("InitialVisualProperties size=%s wco=%s lsid=%s hidden=%d",
++           initial_props.new_size_device_px.ToString().c_str(),
++           initial_props.window_controls_overlay_rect.ToString().c_str(),
++           initial_props.local_surface_id
++               ? initial_props.local_surface_id->ToString().c_str()
++               : "none",
++           is_hidden_);
+ 
+   // A RenderWidget being created in the renderer means the browser should
+   // reset any state that may be set for the previous RenderWidget but which
+@@ -1291,6 +1331,7 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+   // because there is no frames associated with the RenderWidget when it is
+   // inactive, so there is no focused node, or anything to scroll and display.
+   if (owner_delegate_ && !owner_delegate_->IsMainFrameActive()) {
++    WCO_DIAG("Sync: skip (main frame inactive)");
+     return false;
+   }
+   // Sending VisualProperties are deferred until we have a connection to a
+@@ -1298,16 +1339,25 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+   // renderer to show (aka Init()) the widget then we defer sending updates
+   // until the renderer is ready.
+   if (!renderer_widget_created_ || waiting_for_init_) {
++    WCO_DIAG("Sync: skip (widget_created=%d waiting_for_init=%d)",
++             renderer_widget_created_, waiting_for_init_);
+     return false;
+   }
+   // TODO(danakj): The `renderer_widget_created_` flag is set to true for
+   // widgets owned by inactive RenderViewHosts, even though there is no widget
+   // created. In that case the `view_` will not be created.
+   if (!view_) {
++    WCO_DIAG("Sync: skip (no view)");
+     return false;
+   }
+   // Throttle to one update at a time.
+   if (visual_properties_ack_pending_) {
++    WCO_DIAG("Sync: skip (ack pending) view_size=%s wco=%s",
++             view_->GetRequestedRendererSizeDevicePx().ToString().c_str(),
++             delegate_ ? delegate_->GetWindowsControlsOverlayRect()
++                             .ToString()
++                             .c_str()
++                       : "?");
+     return false;
+   }
+ 
+@@ -1318,6 +1368,11 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+   if (!GetProcess()->IsInitializedAndNotDead() || !view_->HasSize() ||
+       !delegate_ || surface_id_allocation_suppressed_ ||
+       !view_->CanSynchronizeVisualProperties()) {
++    WCO_DIAG("Sync: skip (process=%d has_size=%d delegate=%d suppressed=%d "
++             "can_sync=%d)",
++             GetProcess()->IsInitializedAndNotDead(), view_->HasSize(),
++             !!delegate_, surface_id_allocation_suppressed_,
++             view_->CanSynchronizeVisualProperties());
+     return false;
+   }
+ 
+@@ -1325,6 +1380,10 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+   *visual_properties = GetVisualProperties();
+   if (!StoredVisualPropertiesNeedsUpdate(old_visual_properties_,
+                                          *visual_properties)) {
++    WCO_DIAG("Sync: skip (no change) size=%s wco=%s",
++             visual_properties->new_size_device_px.ToString().c_str(),
++             visual_properties->window_controls_overlay_rect.ToString()
++                 .c_str());
+     return false;
+   }
+ 
+@@ -1374,6 +1433,17 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+   }
+   visual_properties_ack_pending_ =
+       DoesVisualPropertiesNeedAck(old_visual_properties_, *visual_properties);
++  WCO_DIAG("Sync: SENT size=%s visible_viewport=%s compositor_viewport=%s "
++           "wco=%s lsid=%s needs_ack=%d hidden=%d propagate=%d",
++           visual_properties->new_size_device_px.ToString().c_str(),
++           visual_properties->visible_viewport_size_device_px.ToString()
++               .c_str(),
++           visual_properties->compositor_viewport_pixel_rect.ToString().c_str(),
++           visual_properties->window_controls_overlay_rect.ToString().c_str(),
++           visual_properties->local_surface_id
++               ? visual_properties->local_surface_id->ToString().c_str()
++               : "none",
++           visual_properties_ack_pending_, is_hidden_, propagate);
+   old_visual_properties_ = std::move(visual_properties);
+ 
+   // Warning: |visual_properties| invalid after this point.
+@@ -1580,6 +1650,7 @@ void RenderWidgetHostImpl::DidNavigate() {
+   // Resize messages before navigation are not acked, so reset
+   // |visual_properties_ack_pending_| and make sure the next resize will be
+   // acked if the last resize before navigation was supposed to be acked.
++  WCO_DIAG("DidNavigate ack_pending=%d", visual_properties_ack_pending_);
+   visual_properties_ack_pending_ = false;
+   if (view_) {
+     view_->DidNavigate();
+@@ -2982,6 +3053,13 @@ void RenderWidgetHostImpl::OnLocalSurfaceIdChanged(
+   // Update our knowledge of the RenderWidget's size.
+   CHECK(!metadata.viewport_size_in_pixels.IsEmpty());
+ 
++  WCO_DIAG("DidUpdateVisualProperties (ack) viewport=%s lsid=%s "
++           "was_pending=%d",
++           metadata.viewport_size_in_pixels.ToString().c_str(),
++           metadata.local_surface_id ? metadata.local_surface_id->ToString()
++                                           .c_str()
++                                     : "none",
++           visual_properties_ack_pending_);
+   visual_properties_ack_pending_ = false;
+ 
+   for (auto& observer : observers_) {

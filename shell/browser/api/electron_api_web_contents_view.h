@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_
 
 #include <optional>
+#include <string>
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -72,6 +73,7 @@ class WebContentsView : public View,
   void StopObservingWindow();
   void OnContentsBoundsChanging();
   bool HasLivePage();
+  std::string DescribeRWHV();
   void ScheduleWindowControlsOverlayUpdate();
   void SendWindowControlsOverlay();
 

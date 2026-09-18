@@ -1,0 +1,77 @@
+# Throwaway diagnostic for https://github.com/electron/electron/issues/54025.
+# Runs spec/fixtures/diag-54025 against released win32-x64 builds to confirm
+# the report and bracket the release that regressed. Not intended for merge.
+name: diag-54025
+
+on:
+  push:
+    branches:
+      - claude/project-thread-izy6wq
+    paths:
+      - .github/workflows/diag-54025.yml
+      - spec/fixtures/diag-54025/**
+
+permissions: {}
+
+jobs:
+  released-build:
+    name: ${{ matrix.version }}
+    runs-on: windows-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - 44.1.1
+          - 44.3.0
+          - 44.4.0
+          - 44.4.2
+          - 45.0.0-alpha.5
+          - 45.0.0-alpha.6
+          - 45.0.0-alpha.8
+          - 46.0.0-nightly.20260909
+          - 46.0.0-nightly.20260910
+          - 46.0.0-nightly.20260911
+          - 46.0.0-nightly.20260917
+    steps:
+      - name: Checkout fixture
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            spec/fixtures/diag-54025
+          sparse-checkout-cone-mode: true
+      - name: Download Electron
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -euo pipefail
+          repo=electron/electron
+          case "$VERSION" in *nightly*) repo=electron/nightlies ;; esac
+          url="https://github.com/${repo}/releases/download/v${VERSION}/electron-v${VERSION}-win32-x64.zip"
+          echo "Fetching $url"
+          curl -fsSL --retry 3 -o electron.zip "$url"
+          7z x electron.zip -oelectron-bin >/dev/null
+          ./electron-bin/electron.exe --version
+      - name: Run probe
+        shell: bash
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -uo pipefail
+          run() {
+            local tag="$1"; shift
+            echo "::group::${VERSION} ${tag}"
+            ./electron-bin/electron.exe spec/fixtures/diag-54025 --tag="${tag}" "$@" 2>&1 | tee -a probe.log
+            echo "::endgroup::"
+          }
+          for i in 1 2 3; do run "hidden-overlay-${i}"; done
+          run hidden-no-overlay --no-overlay
+          run hidden-overlay-default-style --no-hidden-style
+          run hidden-overlay-bgthrottle --bg-throttle
+          run shown-overlay --show
+          echo "===== SUMMARY ${VERSION} ====="
+          grep '^RESULT ' probe.log | sed "s/^RESULT /RESULT v${VERSION} /"
