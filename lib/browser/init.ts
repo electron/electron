@@ -22,7 +22,8 @@ process.on('uncaughtException', function (error) {
   // We can't import { dialog } at the top of this file as this file is
   // responsible for setting up the require hook for the "electron" module
   // so we import it inside the handler down here
-  import('electron').then(({ dialog }) => {
+  Promise.resolve().then(() => {
+    const { dialog } = require('electron') as typeof import('electron');
     const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
     const message = 'Uncaught Exception:\n' + stack;
     dialog.showErrorBox('A JavaScript error occurred in the main process', message);
@@ -105,9 +106,8 @@ if (appPackage.v8Flags) {
 
 // Finally load app's main script and transfer control to C++.
 if (appPackage.esm) {
-  const { runEntryPointWithESMLoader } = __non_webpack_require__(
-    'internal/modules/run_main'
-  ) as typeof import('@node/lib/internal/modules/run_main');
+  const { runEntryPointWithESMLoader } =
+    require('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
   const main = (require('url') as typeof url).pathToFileURL(path.join(appPackage.path, appPackage.main));
   runEntryPointWithESMLoader(async (cascadedLoader: any) => {
     try {

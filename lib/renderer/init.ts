@@ -29,9 +29,9 @@ Module._load = function (request: string) {
 // "Module.wrapper" we can force Node to use the old code path to wrap module
 // code with JavaScript.
 //
-// Note 3: We provide the equivalent extra variables internally through the
-// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
-// variables to this wrapper please ensure to update that plugin as well.
+// Note 3: We provide the equivalent extra variables internally by injecting
+// lib/common/node-globals.ts (see `inject` in build/bundle/bundle.mjs). If you
+// add any extra variables to this wrapper please ensure to update that as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
     // By running the code in a new closure, it would be possible for the module
@@ -63,9 +63,8 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__(
-    'internal/modules/helpers'
-  ) as typeof import('@node/lib/internal/modules/helpers');
+  const { makeRequireFunction } =
+    require('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
   global.module = new Module('internal/electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module) as NodeRequire;
 
@@ -162,9 +161,8 @@ if (cjsPreloads.length) {
   }
 }
 if (esmPreloads.length) {
-  const { runEntryPointWithESMLoader } = __non_webpack_require__(
-    'internal/modules/run_main'
-  ) as typeof import('@node/lib/internal/modules/run_main');
+  const { runEntryPointWithESMLoader } =
+    require('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 
   runEntryPointWithESMLoader(async (cascadedLoader: any) => {
     // Load the preload scripts.

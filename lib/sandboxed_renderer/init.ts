@@ -5,7 +5,7 @@ import {
 } from '@electron/internal/sandboxed_renderer/preload';
 
 import * as events from 'events';
-import { setImmediate, clearImmediate } from 'timers';
+import * as timers from 'timers';
 
 declare const binding: {
   process: NodeJS.Process;
@@ -28,12 +28,12 @@ const loadedModules = new Map<string, any>([
   ['electron/common', electron],
   ['electron/renderer', electron],
   ['events', events],
-  ['node:events', events]
+  ['node:events', events],
+  ['timers', timers],
+  ['node:timers', timers]
 ]);
 
 const loadableModules = new Map<string, Function>([
-  ['timers', () => require('timers')],
-  ['node:timers', () => require('timers')],
   ['url', () => require('url')],
   ['node:url', () => require('url')]
 ]);
@@ -69,11 +69,9 @@ executeSandboxedPreloadScripts(
     createPreloadScript: binding.createPreloadScript,
     exposeGlobals: {
       Buffer,
-      // FIXME(samuelmaddock): workaround webpack bug replacing this with just
-      // `__webpack_require__.g,` which causes script error
       global: globalThis,
-      setImmediate,
-      clearImmediate
+      setImmediate: timers.setImmediate,
+      clearImmediate: timers.clearImmediate
     }
   },
   preloadScripts

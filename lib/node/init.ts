@@ -48,9 +48,7 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
 // both with the normalized file and envPairs.
 if (process.platform === 'linux') {
   const { getCrashdumpSignalFD, getCrashpadHandlerPID } = process._linkedBinding('electron_common_crashpad_support');
-  const childProcess = __non_webpack_require__(
-    'internal/child_process'
-  ) as typeof import('@node/lib/internal/child_process');
+  const childProcess = require('internal/child_process') as typeof import('@node/lib/internal/child_process');
   // Invalid options are left for Node's own validation to reject.
   const addCrashpadEnv = (options: any) => {
     if (

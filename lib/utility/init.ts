@@ -50,16 +50,15 @@ parentPort.on('removeListener', (name: string) => {
 });
 
 // Finally load entry script.
-const { runEntryPointWithESMLoader } = __non_webpack_require__(
-  'internal/modules/run_main'
-) as typeof import('@node/lib/internal/modules/run_main');
+const { runEntryPointWithESMLoader } =
+  require('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 const mainEntry = pathToFileURL(entryScript);
 
 runEntryPointWithESMLoader(async (cascadedLoader: any) => {
   try {
     await cascadedLoader.import(mainEntry.toString(), undefined, Object.create(null));
   } catch (err) {
-    const { internalBinding } = __non_webpack_require__('internal/bootstrap/realm') as {
+    const { internalBinding } = require('internal/bootstrap/realm') as {
       internalBinding: (name: string) => any;
     };
     internalBinding('errors').triggerUncaughtException(err);
