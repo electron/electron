@@ -46,7 +46,7 @@ class Debugger::AgentHostLifecycle final
                      Debugger* debugger,
                      content::WebContents* web_contents)
       : content::WebContentsObserver(web_contents),
-                       per_isolate_data_(gin::PerIsolateData::From(isolate)),
+        per_isolate_data_(gin::PerIsolateData::From(isolate)),
         debugger_(debugger) {
     per_isolate_data_->AddDisposeObserver(this);
   }
