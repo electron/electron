@@ -74,6 +74,7 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    executable: boolean;
     integrity?: {
       algorithm: 'SHA256';
       hash: string;
@@ -84,12 +85,14 @@ declare namespace NodeJS {
     size: number;
     offset: number;
     type: number;
+    executable: boolean;
   };
 
   interface AsarArchive {
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
+    readdirWithTypes(path: string): [names: string[], types: number[]] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
@@ -97,15 +100,10 @@ declare namespace NodeJS {
 
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
-    splitPath(path: string):
-      | {
-          isAsar: false;
-        }
-      | {
-          isAsar: true;
-          asarPath: string;
-          filePath: string;
-        };
+    // Length of the leading part of |path| that names an archive file, -1 if
+    // none, or -2 if |requireNormalized| and the path has "."/".."/empty
+    // components (normalize and ask again).
+    splitPath(path: string, requireNormalized: boolean): number;
   }
 
   interface NetBinding {
