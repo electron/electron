@@ -53,22 +53,27 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 
 WebContentsView::~WebContentsView() {
   StopObservingWindow();
-  if (api_web_contents_)  // destroy() called without closing WebContents
-    api_web_contents_->Destroy();
+  if (auto* web_contents = GetLiveWebContents())
+    web_contents->Destroy();
 }
 
 WebContents* WebContentsView::GetWebContents() {
   return api_web_contents_.Get();
 }
 
+WebContents* WebContentsView::GetLiveWebContents() const {
+  WebContents* web_contents = api_web_contents_.Get();
+  return web_contents && !web_contents->IsDestroyed() ? web_contents : nullptr;
+}
+
 void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   View::SetBackgroundColor(color);
-  if (api_web_contents_) {
-    api_web_contents_->SetBackgroundColor(color);
+  if (auto* web_contents = GetLiveWebContents()) {
+    web_contents->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
     // on the next load URL call
     auto* web_preferences =
-        WebContentsPreferences::From(api_web_contents_->web_contents());
+        WebContentsPreferences::From(web_contents->web_contents());
     if (web_preferences) {
       web_preferences->SetBackgroundColor(color);
     }
@@ -81,8 +86,9 @@ void WebContentsView::SetBorderRadius(int radius) {
 }
 
 void WebContentsView::ApplyBorderRadius() {
-  if (border_radius().has_value() && api_web_contents_ && view()->GetWidget()) {
-    auto* view = api_web_contents_->inspectable_web_contents()->GetView();
+  if (auto* web_contents = GetLiveWebContents();
+      border_radius().has_value() && web_contents && view()->GetWidget()) {
+    auto* view = web_contents->inspectable_web_contents()->GetView();
     view->SetCornerRadii(gfx::RoundedCornersF(border_radius().value()));
   }
 }
@@ -90,8 +96,8 @@ void WebContentsView::ApplyBorderRadius() {
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (!view() || !view()->GetVisible())
     return HTNOWHERE;
-  if (api_web_contents_) {
-    auto* iwc = api_web_contents_->inspectable_web_contents();
+  if (auto* web_contents = GetLiveWebContents()) {
+    auto* iwc = web_contents->inspectable_web_contents();
     if (!iwc)
       return HTNOWHERE;
     // Convert the point to the contents view's coordinate space rather than
@@ -105,9 +111,9 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
     auto* contents_view = inspectable_view->GetContentsView();
     gfx::Point local_point(point);
     views::View::ConvertPointFromWidget(contents_view, &local_point);
-    SkRegion* region = api_web_contents_->draggable_region();
+    SkRegion* region = web_contents->draggable_region();
     if (region) {
-      auto* debugger = api_web_contents_->draggable_region_debugger();
+      auto* debugger = web_contents->draggable_region_debugger();
       std::optional<base::ElapsedTimer> timer;
       if (debugger)
         timer.emplace();
@@ -132,10 +138,13 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   NativeWindow* native_window = NativeWindow::FromWidget(view()->GetWidget());
   if (!native_window)
     return;
+  WebContents* web_contents = GetLiveWebContents();
+  if (!web_contents)
+    return;
 
   // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
   // because that's handled in the WebContents dtor called prior.
-  api_web_contents_->SetOwnerWindow(native_window);
+  web_contents->SetOwnerWindow(native_window);
   native_window->AddDraggableRegionProvider(this);
   StopObservingWindow();
   observed_window_ = native_window->GetWeakPtr();
@@ -195,7 +204,8 @@ void WebContentsView::ScheduleWindowControlsOverlayUpdate() {
 // don't cover) the titlebar report the right env(titlebar-area-*) values.
 void WebContentsView::SendWindowControlsOverlay() {
   window_controls_overlay_update_pending_ = false;
-  if (!api_web_contents_ || !observed_window_)
+  WebContents* api_web_contents = GetLiveWebContents();
+  if (!api_web_contents || !observed_window_)
     return;
   const auto bounding_rect = observed_window_->GetWindowControlsOverlayRect();
   if (!bounding_rect)
@@ -207,7 +217,7 @@ void WebContentsView::SendWindowControlsOverlay() {
   gfx::Rect local_rect =
       views::View::ConvertRectToTarget(window_view, view(), *bounding_rect);
   local_rect.Intersect(view()->GetLocalBounds());
-  web_contents()->UpdateWindowControlsOverlay(local_rect);
+  api_web_contents->web_contents()->UpdateWindowControlsOverlay(local_rect);
 }
 
 void WebContentsView::StopObservingWindow() {

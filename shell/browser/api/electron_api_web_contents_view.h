@@ -67,6 +67,7 @@ class WebContentsView : public View,
  private:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
+  WebContents* GetLiveWebContents() const;
   void ApplyBorderRadius();
   void StopObservingWindow();
   void OnContentsBoundsChanging();
