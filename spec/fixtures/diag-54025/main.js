@@ -20,7 +20,8 @@ const opts = {
   hiddenStyle: !has('--no-hidden-style'),
   bgThrottle: has('--bg-throttle'),
   retitle: has('--retitle'),
-  zoomOnNavigate: has('--zoom-on-navigate')
+  zoomOnNavigate: has('--zoom-on-navigate'),
+  zoomOnDomReady: has('--zoom-on-dom-ready')
 };
 
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'diag-54025-'));
@@ -67,10 +68,19 @@ app.whenReady().then(async () => {
       log('setZoomLevel');
     });
   }
+  if (opts.zoomOnDomReady) {
+    // #51972: a zoom change between navigation commit and first paint.
+    w.webContents.once('dom-ready', () => {
+      w.webContents.setZoomFactor(1.25);
+      log('setZoomFactor');
+    });
+  }
   w.webContents.on('render-process-gone', (_e, d) => log('render-process-gone', JSON.stringify(d)));
 
   const html =
     '<!doctype html><title>t</title><body style="margin:0;background:#123456;color:#fff">' +
+    '<script>window.__initialRect = navigator.windowControlsOverlay ? (() => { const r = navigator.windowControlsOverlay.getTitlebarAreaRect(); return [r.x, r.y, r.width, r.height]; })() : null;' +
+    'window.__geoEvents = []; if (navigator.windowControlsOverlay) navigator.windowControlsOverlay.ongeometrychange = (e) => { const r = e.titlebarAreaRect; window.__geoEvents.push([Math.round(performance.now()), r.width, r.height]); };</script>' +
     '<h1>diag 54025</h1><p>' +
     'lorem ipsum '.repeat(300) +
     '</p></body>';
@@ -91,7 +101,9 @@ app.whenReady().then(async () => {
         visibility: document.visibilityState,
         wcoVisible: navigator.windowControlsOverlay ? navigator.windowControlsOverlay.visible : null,
         wcoRect: navigator.windowControlsOverlay ? (() => { const r = navigator.windowControlsOverlay.getTitlebarAreaRect(); return [r.x, r.y, r.width, r.height]; })() : null,
-        raf: false
+        raf: false,
+        initialRect: window.__initialRect,
+        geoEvents: window.__geoEvents
       };
       const done = () => resolve(JSON.stringify(info));
       const timer = setTimeout(done, 1500);

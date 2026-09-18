@@ -3681,6 +3681,12 @@ describe('BrowserWindow module', () => {
     await shown;
   };
 
+  // The overlay geometry may already be in place when the page's scripts run,
+  // in which case no initial geometrychange event is dispatched, so poll for
+  // it rather than waiting for that event.
+  const waitForOverlay = (w: BrowserWindow) =>
+    waitUntil(() => w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+
   describe('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
@@ -3695,17 +3701,9 @@ describe('BrowserWindow module', () => {
         titleBarOverlay: true
       });
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
       expect(overlayRect.y).to.equal(0);
       if (process.platform === 'darwin') {
@@ -3811,17 +3809,9 @@ describe('BrowserWindow module', () => {
       });
 
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -4007,17 +3997,11 @@ describe('BrowserWindow module', () => {
     });
 
     it('correctly updates the height of the overlay', async () => {
-      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
+      const testOverlay = async (w: BrowserWindow, size: Number) => {
         const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-        const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
         await showWindowForWayland(w);
-        if (firstRun) {
-          await overlayReady;
-        }
-
-        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-        expect(overlayEnabled).to.be.true('overlayEnabled');
+        await waitForOverlay(w);
 
         const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
         expect(preMaxHeight).to.equal(size);
@@ -4054,13 +4038,13 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      await testOverlay(w, INITIAL_SIZE, true);
+      await testOverlay(w, INITIAL_SIZE);
 
       w.setTitleBarOverlay({
         height: INITIAL_SIZE + 10
       });
 
-      await testOverlay(w, INITIAL_SIZE + 10, false);
+      await testOverlay(w, INITIAL_SIZE + 10);
     });
   });
 
