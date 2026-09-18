@@ -3,3 +3,5 @@ build_warn_instead_of_abort_on_builtin_pgo_profile_mismatch.patch
 src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
 cppgc_support_stackstartmarker_on_msvc.patch
 cherry-pick-1c47e0e96eef.patch
+cherry-pick-3bb7dcb28db2.patch
+cherry-pick-22e5290486f4.patch
