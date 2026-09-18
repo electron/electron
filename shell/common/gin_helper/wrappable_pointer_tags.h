@@ -60,6 +60,10 @@ enum ElectronWrappablePointerTag : uint16_t {
   kLastElectronPointerTag = kElectronWebSocket,
 };
 
+constexpr v8::CppHeapPointerTagRange kElectronWrappableTagRange(
+    static_cast<v8::CppHeapPointerTag>(kElectronApp),
+    static_cast<v8::CppHeapPointerTag>(kLastElectronPointerTag));
+
 // Constructs a gin::WrapperInfo from an ElectronWrappablePointerTag,
 constexpr gin::WrapperInfo MakeWrapperInfo(ElectronWrappablePointerTag tag) {
   return {{gin::kEmbedderNativeGin},
@@ -77,6 +81,10 @@ static_assert(
     "The defined Electron type tags exceed the range of allowed tags. "
     "Reduce the number of tags or adjust gin::kFirstPointerTag so that "
     "all values fit.");
+
+static_assert(
+    v8::kObjectWrappableTagRange.Contains(kElectronWrappableTagRange),
+    "Electron tags must stay within the V8 object wrappable tag range.");
 
 // Electron's tags extend gin's range (they start at gin::kLastPointerTag + 1),
 // so the combined gin + Electron tag range must stay below the tag Node.js
