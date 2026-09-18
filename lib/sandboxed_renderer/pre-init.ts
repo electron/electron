@@ -20,7 +20,7 @@ Object.assign(process, binding.process);
 // deserialize Buffer instances sent from browser process.
 v8Util.setHiddenValue(global, 'Buffer', Buffer);
 
-// The process object created by webpack is not an event emitter, fix it so
+// The bundled process polyfill is not an event emitter, fix it so
 // the API is more compatible with non-sandboxed renderers.
 for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)[]) {
   if (Object.hasOwn(process, prop)) {

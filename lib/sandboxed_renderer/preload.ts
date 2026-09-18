@@ -71,7 +71,7 @@ function preloadRequire(context: PreloadContext, module: string) {
 // - `require`: The `preloadRequire` function
 // - `process`: The `preloadProcess` object
 // - `Buffer`: Shim of `Buffer` implementation
-// - `global`: The window object, which is aliased to `global` by webpack.
+// - `global`: The window object, which is aliased to `global` by the bundler.
 function runPreloadScript(context: PreloadContext, script: ElectronInternal.PreloadScript) {
   const globalVariables = [];
   const fnParameters = [];

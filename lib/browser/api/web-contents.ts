@@ -9,16 +9,14 @@ import { parseFeatures } from '@electron/internal/browser/parse-features-string'
 import * as deprecate from '@electron/internal/common/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, session, webFrameMain, dialog } from 'electron/main';
+import { app, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
-
-// session is not used here, the purpose is to make sure session is initialized
-// before the webContents module.
-// eslint-disable-next-line no-unused-expressions
-session;
+// session is not used here, the purpose of the import is to make sure session
+// is initialized before the webContents module.
+import '@electron/internal/browser/api/session';
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');

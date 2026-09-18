@@ -69,8 +69,6 @@ executeSandboxedPreloadScripts(
     createPreloadScript: binding.createPreloadScript,
     exposeGlobals: {
       Buffer,
-      // FIXME(samuelmaddock): workaround webpack bug replacing this with just
-      // `__webpack_require__.g,` which causes script error
       global: globalThis,
       setImmediate,
       clearImmediate
