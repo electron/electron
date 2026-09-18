@@ -1,6 +1,6 @@
 import { createTokenAuth } from '@octokit/auth-token';
 
-import { ElectronReleaseRepo } from './types';
+import type { ElectronReleaseRepo } from './types.mts';
 
 const cachedTokens = Object.create(null);
 
