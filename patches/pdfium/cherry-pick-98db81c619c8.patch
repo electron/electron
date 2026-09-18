@@ -1,0 +1,336 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Tue, 15 Sep 2026 12:12:14 -0700
+Subject: [M153] Improve error handling in libjpeg encoding
+
+Original change's description:
+> Improve error handling in libjpeg encoding
+>
+> Avoid ignoring fatal errors during Windows JPEG compression by using
+> longjmp to catch failures in libjpeg C wrapper functions, matching the
+> decompression architecture.
+>
+> -- use modern memory ownership model.
+> -- avoid array of [1].
+>
+> TAG=agy
+> CONV=2e125a78-6471-43e2-9eed-d2106f60cbec
+>
+> Bug: 556853443
+> Change-Id: I2e5eadc41d277f2098ebc91be91d67578c10301f
+> Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/157030
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+(cherry picked from commit 0edc2c51443c64b3589c2a919a0c1076c9d5547b)
+
+Bug: 559509694,556853443
+Change-Id: I2e5eadc41d277f2098ebc91be91d67578c10301f
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/157671
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+Electron adaptation notes (43-x-y):
+- core/fxcodec/jpeg/jpegmodule.cpp: this branch predates the split of the
+  decoder into libjpeg_scanline_decoder.h / skia_scanline_decoder.h, so
+  the include block was merged against the branch's include list, adding
+  only core/fxcrt/fx_memory.h and core/fxcrt/fx_memory_wrappers.h
+  (FxFreeDeleter). <type_traits> was dropped with the removed
+  static_assert, as upstream did. The ScopedJpegCompressCommon helper and
+  the JpegEncode() changes applied as upstream.
+
+diff --git a/core/fxcodec/jpeg/jpeg_common.c b/core/fxcodec/jpeg/jpeg_common.c
+index d2798f688f38b7bebfc38f9399fa942a89751483..9f06ecf514352c17f49ccdb089f95a9466ee5e7e 100644
+--- a/core/fxcodec/jpeg/jpeg_common.c
++++ b/core/fxcodec/jpeg/jpeg_common.c
+@@ -88,6 +88,63 @@ void jpeg_common_error_fatal(j_common_ptr cinfo) {
+ }
+ 
+ #if BUILDFLAG(IS_WIN)
++boolean jpeg_common_create_compress(JpegCompressCommon* jpeg_compress) {
++  if (setjmp(jpeg_compress->jmpbuf) == -1) {
++    return FALSE;
++  }
++  jpeg_compress->cinfo.err = &jpeg_compress->error_mgr;
++  jpeg_compress->cinfo.client_data = jpeg_compress;
++  jpeg_compress->error_mgr.error_exit = jpeg_common_error_fatal;
++  jpeg_compress->error_mgr.emit_message = jpeg_common_error_do_nothing_int;
++  jpeg_compress->error_mgr.output_message = jpeg_common_error_do_nothing;
++  jpeg_compress->error_mgr.format_message = jpeg_common_error_do_nothing_char;
++  jpeg_compress->error_mgr.reset_error_mgr = jpeg_common_error_do_nothing;
++  jpeg_create_compress(&jpeg_compress->cinfo);
++  jpeg_compress->dest_mgr.init_destination = jpeg_common_dest_do_nothing;
++  jpeg_compress->dest_mgr.term_destination = jpeg_common_dest_do_nothing;
++  jpeg_compress->dest_mgr.empty_output_buffer = jpeg_common_dest_empty;
++  jpeg_compress->cinfo.dest = &jpeg_compress->dest_mgr;
++  return TRUE;
++}
++
++void jpeg_common_destroy_compress(JpegCompressCommon* jpeg_compress) {
++  jpeg_destroy_compress(&jpeg_compress->cinfo);
++}
++
++boolean jpeg_common_set_defaults(JpegCompressCommon* jpeg_compress) {
++  if (setjmp(jpeg_compress->jmpbuf) == -1) {
++    return FALSE;
++  }
++  jpeg_set_defaults(&jpeg_compress->cinfo);
++  return TRUE;
++}
++
++boolean jpeg_common_start_compress(JpegCompressCommon* jpeg_compress,
++                                   boolean write_all_tables) {
++  if (setjmp(jpeg_compress->jmpbuf) == -1) {
++    return FALSE;
++  }
++  jpeg_start_compress(&jpeg_compress->cinfo, write_all_tables);
++  return TRUE;
++}
++
++int jpeg_common_write_scanlines(JpegCompressCommon* jpeg_compress,
++                                JSAMPROW* scanlines,
++                                unsigned int num_lines) {
++  if (setjmp(jpeg_compress->jmpbuf) == -1) {
++    return -1;
++  }
++  return (int)jpeg_write_scanlines(&jpeg_compress->cinfo, scanlines, num_lines);
++}
++
++boolean jpeg_common_finish_compress(JpegCompressCommon* jpeg_compress) {
++  if (setjmp(jpeg_compress->jmpbuf) == -1) {
++    return FALSE;
++  }
++  jpeg_finish_compress(&jpeg_compress->cinfo);
++  return TRUE;
++}
++
+ void jpeg_common_dest_do_nothing(j_compress_ptr cinfo) {}
+ 
+ boolean jpeg_common_dest_empty(j_compress_ptr cinfo) {
+diff --git a/core/fxcodec/jpeg/jpeg_common.h b/core/fxcodec/jpeg/jpeg_common.h
+index b82ea604c3f7975e64519e0cdab865073cbff3ed..88b3331556fd17285cbbf3918752409400a8e05e 100644
+--- a/core/fxcodec/jpeg/jpeg_common.h
++++ b/core/fxcodec/jpeg/jpeg_common.h
+@@ -62,6 +62,24 @@ void jpeg_common_error_do_nothing_char(j_common_ptr cinfo, char* arg);
+ void jpeg_common_error_fatal(j_common_ptr cinfo);
+ 
+ #if BUILDFLAG(IS_WIN)
++struct JpegCompressCommon {
++  jmp_buf jmpbuf;
++  struct jpeg_compress_struct cinfo;
++  struct jpeg_error_mgr error_mgr;
++  struct jpeg_destination_mgr dest_mgr;
++};
++typedef struct JpegCompressCommon JpegCompressCommon;
++
++boolean jpeg_common_create_compress(JpegCompressCommon* jpeg_compress);
++void jpeg_common_destroy_compress(JpegCompressCommon* jpeg_compress);
++boolean jpeg_common_set_defaults(JpegCompressCommon* jpeg_compress);
++boolean jpeg_common_start_compress(JpegCompressCommon* jpeg_compress,
++                                   boolean write_all_tables);
++int jpeg_common_write_scanlines(JpegCompressCommon* jpeg_compress,
++                                JSAMPROW* scanlines,
++                                unsigned int num_lines);
++boolean jpeg_common_finish_compress(JpegCompressCommon* jpeg_compress);
++
+ void jpeg_common_dest_do_nothing(j_compress_ptr cinfo);
+ boolean jpeg_common_dest_empty(j_compress_ptr cinfo);
+ #endif  // BUILDFLAG(IS_WIN)
+diff --git a/core/fxcodec/jpeg/jpegmodule.cpp b/core/fxcodec/jpeg/jpegmodule.cpp
+index 02b60f95d773ec655b916c2d256ebc8cda3720ad..f4a7977bd35bf95e949bad0d45df531d61b2c73e 100644
+--- a/core/fxcodec/jpeg/jpegmodule.cpp
++++ b/core/fxcodec/jpeg/jpegmodule.cpp
+@@ -8,7 +8,6 @@
+ 
+ #include <memory>
+ #include <optional>
+-#include <type_traits>
+ #include <utility>
+ 
+ #include "build/build_config.h"
+@@ -19,6 +18,8 @@
+ #include "core/fxcrt/check_op.h"
+ #include "core/fxcrt/compiler_specific.h"
+ #include "core/fxcrt/data_vector.h"
++#include "core/fxcrt/fx_memory.h"
++#include "core/fxcrt/fx_memory_wrappers.h"
+ #include "core/fxcrt/fx_safe_types.h"
+ #include "core/fxcrt/raw_span.h"
+ #include "core/fxge/dib/cfx_dibbase.h"
+@@ -348,6 +349,22 @@ pdfium::span<uint8_t> JpegDecoder::GetWritableSrcData() {
+ 
+ }  // namespace
+ 
++#if BUILDFLAG(IS_WIN)
++namespace {
++
++struct ScopedJpegCompressCommon {
++  ~ScopedJpegCompressCommon() {
++    if (created) {
++      jpeg_common_destroy_compress(&common);
++    }
++  }
++  JpegCompressCommon common = {};
++  bool created = false;
++};
++
++}  // namespace
++#endif  // BUILDFLAG(IS_WIN)
++
+ // static
+ std::unique_ptr<ScanlineDecoder> JpegModule::CreateDecoder(
+     pdfium::span<const uint8_t> src_span,
+@@ -380,17 +397,6 @@ std::optional<JpegModule::ImageInfo> JpegModule::LoadInfo(
+ bool JpegModule::JpegEncode(const RetainPtr<const CFX_DIBBase>& pSource,
+                             uint8_t** dest_buf,
+                             size_t* dest_size) {
+-  jpeg_error_mgr jerr;
+-  jerr.error_exit = jpeg_common_error_do_nothing;
+-  jerr.emit_message = jpeg_common_error_do_nothing_int;
+-  jerr.output_message = jpeg_common_error_do_nothing;
+-  jerr.format_message = jpeg_common_error_do_nothing_char;
+-  jerr.reset_error_mgr = jpeg_common_error_do_nothing;
+-
+-  jpeg_compress_struct cinfo = {};  // Aggregate initialization.
+-  static_assert(std::is_aggregate_v<decltype(cinfo)>);
+-  cinfo.err = &jerr;
+-  jpeg_create_compress(&cinfo);
+   const int bytes_per_pixel = pSource->GetBPP() / 8;
+   uint32_t nComponents = bytes_per_pixel >= 3 ? 3 : 1;
+   uint32_t pitch = pSource->GetPitch();
+@@ -404,48 +410,57 @@ bool JpegModule::JpegEncode(const RetainPtr<const CFX_DIBBase>& pSource,
+     return false;
+   }
+ 
++  static constexpr uint32_t kMinTryBufLen = 1024;
+   uint32_t dest_buf_length = safe_buf_len.ValueOrDie();
+-  *dest_buf = FX_TryAlloc(uint8_t, dest_buf_length);
+-  const int MIN_TRY_BUF_LEN = 1024;
+-  while (!(*dest_buf) && dest_buf_length > MIN_TRY_BUF_LEN) {
+-    dest_buf_length >>= 1;
+-    *dest_buf = FX_TryAlloc(uint8_t, dest_buf_length);
++  std::unique_ptr<uint8_t, FxFreeDeleter> local_dest;
++  for (; dest_buf_length >= kMinTryBufLen; dest_buf_length >>= 1) {
++    local_dest.reset(FX_TryAlloc(uint8_t, dest_buf_length));
++    if (local_dest) {
++      break;
++    }
+   }
+-  if (!(*dest_buf)) {
++  if (!local_dest) {
+     return false;
+   }
+ 
+-  jpeg_destination_mgr dest;
+-  dest.init_destination = jpeg_common_dest_do_nothing;
+-  dest.term_destination = jpeg_common_dest_do_nothing;
+-  dest.empty_output_buffer = jpeg_common_dest_empty;
+-  dest.next_output_byte = *dest_buf;
+-  dest.free_in_buffer = dest_buf_length;
+-  cinfo.dest = &dest;
+-  cinfo.image_width = width;
+-  cinfo.image_height = height;
+-  cinfo.input_components = nComponents;
++  ScopedJpegCompressCommon compress_common;
++  compress_common.created =
++      jpeg_common_create_compress(&compress_common.common);
++  if (!compress_common.created) {
++    return false;
++  }
++
++  compress_common.common.dest_mgr.next_output_byte = local_dest.get();
++  compress_common.common.dest_mgr.free_in_buffer = dest_buf_length;
++  compress_common.common.cinfo.image_width = width;
++  compress_common.common.cinfo.image_height = height;
++  compress_common.common.cinfo.input_components = nComponents;
+   if (nComponents == 1) {
+-    cinfo.in_color_space = JCS_GRAYSCALE;
++    compress_common.common.cinfo.in_color_space = JCS_GRAYSCALE;
+   } else if (nComponents == 3) {
+-    cinfo.in_color_space = JCS_RGB;
++    compress_common.common.cinfo.in_color_space = JCS_RGB;
+   } else {
+-    cinfo.in_color_space = JCS_CMYK;
++    compress_common.common.cinfo.in_color_space = JCS_CMYK;
+   }
+-  uint8_t* line_buf = nullptr;
++
++  std::unique_ptr<uint8_t, FxFreeDeleter> line_buf;
+   if (nComponents > 1) {
+-    line_buf = FX_Alloc2D(uint8_t, width, nComponents);
++    line_buf.reset(FX_Alloc2D(uint8_t, width, nComponents));
+   }
+ 
+-  jpeg_set_defaults(&cinfo);
+-  jpeg_start_compress(&cinfo, TRUE);
+-  JSAMPROW row_pointer[1];
++  if (!jpeg_common_set_defaults(&compress_common.common) ||
++      !jpeg_common_start_compress(&compress_common.common, TRUE)) {
++    return false;
++  }
++
++  JSAMPROW row_pointer;
+   JDIMENSION row;
+-  while (cinfo.next_scanline < cinfo.image_height) {
++  while (compress_common.common.cinfo.next_scanline <
++         compress_common.common.cinfo.image_height) {
+     pdfium::span<const uint8_t> src_scan =
+-        pSource->GetScanline(cinfo.next_scanline);
++        pSource->GetScanline(compress_common.common.cinfo.next_scanline);
+     if (nComponents > 1) {
+-      uint8_t* dest_scan = line_buf;
++      uint8_t* dest_scan = line_buf.get();
+       if (nComponents == 3) {
+         UNSAFE_TODO({
+           for (uint32_t i = 0; i < width; i++) {
+@@ -462,29 +477,36 @@ bool JpegModule::JpegEncode(const RetainPtr<const CFX_DIBBase>& pSource,
+           }
+         });
+       }
+-      row_pointer[0] = line_buf;
++      row_pointer = line_buf.get();
+     } else {
+-      row_pointer[0] = const_cast<uint8_t*>(src_scan.data());
++      row_pointer = const_cast<uint8_t*>(src_scan.data());
++    }
++    row = compress_common.common.cinfo.next_scanline;
++    if (jpeg_common_write_scanlines(&compress_common.common, &row_pointer, 1) <
++        0) {
++      return false;
+     }
+-    row = cinfo.next_scanline;
+-    jpeg_write_scanlines(&cinfo, row_pointer, 1);
+     UNSAFE_TODO({
+-      if (cinfo.next_scanline == row) {
++      if (compress_common.common.cinfo.next_scanline == row) {
+         static constexpr size_t kJpegBlockSize = 1048576;
+-        *dest_buf =
+-            FX_Realloc(uint8_t, *dest_buf, dest_buf_length + kJpegBlockSize);
+-        dest.next_output_byte =
+-            *dest_buf + dest_buf_length - dest.free_in_buffer;
++        local_dest.reset(FX_Realloc(uint8_t, local_dest.release(),
++                                    dest_buf_length + kJpegBlockSize));
++        compress_common.common.dest_mgr.next_output_byte =
++            local_dest.get() + dest_buf_length -
++            compress_common.common.dest_mgr.free_in_buffer;
+         dest_buf_length += kJpegBlockSize;
+-        dest.free_in_buffer += kJpegBlockSize;
++        compress_common.common.dest_mgr.free_in_buffer += kJpegBlockSize;
+       }
+     });
+   }
+-  jpeg_finish_compress(&cinfo);
+-  jpeg_destroy_compress(&cinfo);
+-  FX_Free(line_buf);
+-  *dest_size = dest_buf_length - static_cast<size_t>(dest.free_in_buffer);
++  if (!jpeg_common_finish_compress(&compress_common.common)) {
++    return false;
++  }
+ 
++  *dest_size =
++      dest_buf_length -
++      static_cast<size_t>(compress_common.common.dest_mgr.free_in_buffer);
++  *dest_buf = local_dest.release();
+   return true;
+ }
+ #endif  // BUILDFLAG(IS_WIN)

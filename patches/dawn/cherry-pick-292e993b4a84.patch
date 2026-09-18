@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Albin Bernhardsson <albin.bernhardsson@arm.com>
+Date: Mon, 22 Jun 2026 09:55:52 -0700
+Subject: Vulkan: Fix device loss handling
+
+Always wait for the device work to finish and destroy its objects before
+destroying the device, even when the device is lost. This is required in
+Vulkan according to spec.
+
+Bug: 500417361
+Change-Id: I89cedcd15b660a1a4e9a62099fc22e56c1c37a37
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314796
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: David Neto <dneto@google.com>
+Commit-Queue: David Neto <dneto@google.com>
+
+diff --git a/src/dawn/native/Device.cpp b/src/dawn/native/Device.cpp
+index 9d38791dff75683c243784b0d182a450bd9d1bee..4b431c05bc5c785291102b24711b856adda15431 100644
+--- a/src/dawn/native/Device.cpp
++++ b/src/dawn/native/Device.cpp
+@@ -668,14 +668,8 @@ void DeviceBase::HandleError(std::unique_ptr<ErrorData> error,
+         AppendDeviceLostMessage(error.get());
+     }
+ 
+-    // If ErrorInjectorEnabled() then this may be an injected DeviceLost, not a real one.
+-    bool deviceDefinitelyStopped = type == InternalErrorType::DeviceLost && !ErrorInjectorEnabled();
+-    if (deviceDefinitelyStopped) {
+-        // If the device was lost naturally, the backend device has already stopped.
+-        mState = State::Disconnected;
+-    }
+-
+     InternalErrorType allowedErrors = InternalErrorType::Validation | additionalAllowedErrors;
++
+     if (!(allowedErrors & type)) {
+         // If we receive an error which we did not explicitly allow, assume the backend can't
+         // recover and lose the device now. Cleanup for the device will be deferred until the last
+@@ -684,9 +678,14 @@ void DeviceBase::HandleError(std::unique_ptr<ErrorData> error,
+                              allowedErrors);
+ 
+         // Handle the remainder of this error as if it caused a device lost.
++        type = InternalErrorType::DeviceLost;
++    }
++
++    if (type == InternalErrorType::DeviceLost) {
++        // Transition to a non-alive state if we are currently alive so that the application can no
++        // longer use the device.
+         State prev = State::Alive;
+         mState.compare_exchange_strong(prev, State::BeingDisconnected, std::memory_order::acq_rel);
+-        type = InternalErrorType::DeviceLost;
+     }
+ 
+     // Re-enable validation on device loss or OOM to avoid unpredictable behaviors afterwards.
+diff --git a/src/dawn/native/Device.h b/src/dawn/native/Device.h
+index 5d4a5cbe8dec4d5d5b4aee34e3bc3814e6671056..1689ea283cfea8c86c6abcf4dda007a5b92919be 100644
+--- a/src/dawn/native/Device.h
++++ b/src/dawn/native/Device.h
+@@ -344,7 +344,7 @@ class DeviceBase : public ErrorSink,
+     //   - Alive: the device is usable and might have work happening on the GPU timeline.
+     //   - BeingDisconnected: the device is no longer usable because we are waiting for all
+     //     work on the GPU timeline to finish. (this is to make validation prevent the
+-    //     application from adding more work during the transition from Available to
++    //     application from adding more work during the transition from Alive to
+     //     Disconnected)
+     //   - Disconnected: there is no longer work happening on the GPU timeline and the CPU data
+     //     structures can be safely destroyed without additional synchronization.
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 6c1f9387e9350bd0ca736b85d9de31514afae0f4..ea6b3f482d086eef135446dfc7a2e1f44ceb3966 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -805,6 +805,10 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "Reject NPOT depth/stencil textures with mipLevelCount > 1. Workaround for mip level "
+       "miscomputation in PowerVR proprietary driver.",
+       "https://crbug.com/540087398", ToggleStage::Device}},
++    {Toggle::VulkanSleepAfterLostDeviceWait,
++     {"vulkan_sleep_after_lost_device_wait",
++      "Insert an arbitrary sleep after WaitIdle functions on device loss.",
++      "https://crbug.com/500417361", ToggleStage::Device}},
+     {Toggle::WaitIsThreadSafe,
+      {"wait_is_thread_safe",
+       "WaitFor* functions are thread-safe and can be called without the device-lock if implicit "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 6110f00c4d6616cb51b441b79002fe9ff23d31a0..1aa52072c54d1295eed3929750f45c456e5935c2 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -192,6 +192,7 @@ enum class Toggle {
+     D3D12UseHLSL2021,
+     MetalFixU32DivMod,
+     VulkanDisallowNPOTDepthStencilMipmaps,
++    VulkanSleepAfterLostDeviceWait,
+ 
+     // Once all backends have been updated to be thread safe for waiting, we can remove this toggle.
+     WaitIsThreadSafe,
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 02c5f50fc65699332c492707327b78cac128b04e..bb7aa15e3f290f09f9d0efe02433de268162cf21 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1086,6 +1086,10 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         // instructions as matrix elements instead of a source/dest pointee elements.
+         // See crbug.com/460209126
+         deviceToggles->Default(Toggle::VulkanCooperativeMatrixStrideIsMatrixElements, true);
++
++        // dawn:500417361
++        // TODO: Add details once available.
++        deviceToggles->Default(Toggle::VulkanSleepAfterLostDeviceWait, true);
+     }
+ 
+     if (IsAndroidSamsung() || IsAndroidQualcomm() || IsAndroidHuawei()) {
+diff --git a/src/dawn/native/vulkan/QueueVk.cpp b/src/dawn/native/vulkan/QueueVk.cpp
+index deb4a899567e83b464d8115d32618e28e8851402..e5d683ddda97fe246a6f274abd86211e09628e1b 100644
+--- a/src/dawn/native/vulkan/QueueVk.cpp
++++ b/src/dawn/native/vulkan/QueueVk.cpp
+@@ -49,6 +49,7 @@
+ #include "src/dawn/native/vulkan/VulkanError.h"
+ #include "src/dawn/platform/metrics/HistogramMacros.h"
+ #include "src/dawn/platform/tracing/TraceEvent.h"
++#include "src/dawn/utils/SystemUtils.h"
+ #include "src/utils/compiler.h"
+ 
+ namespace dawn::native::vulkan {
+@@ -177,8 +178,12 @@ MaybeError Queue::WaitForIdleForDestructionImpl() {
+     // Ignore the result of QueueWaitIdle: it can return OOM which we can't really do anything
+     // about, Device lost, which means workloads running on the GPU are no longer accessible
+     // (so they are as good as waited on) or success.
+-    [[maybe_unused]] VkResult waitIdleResult =
+-        VkResult::WrapUnsafe(device->fn.QueueWaitIdle(mQueue));
++    VkResult waitIdleResult = VkResult::WrapUnsafe(device->fn.QueueWaitIdle(mQueue));
++
++    if (waitIdleResult == VK_ERROR_DEVICE_LOST &&
++        GetDevice()->IsToggleEnabled(Toggle::VulkanSleepAfterLostDeviceWait)) {
++        dawn::utils::USleep(1000);
++    }
+ 
+     DAWN_TRY(WaitForQueueSerial(GetLastSubmittedCommandSerial(),
+                                 std::numeric_limits<Nanoseconds>::max()));
