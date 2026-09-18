@@ -73,6 +73,11 @@ on:
         required: false
         type: boolean
         default: false
+      full-macos-tests:
+        description: 'Run the whole spec suite on every macOS test leg; see pipeline-segment-electron-test.yml'
+        required: false
+        type: boolean
+        default: true
     secrets:
       # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
       # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
@@ -156,6 +161,7 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
+      full-macos-tests: ${{ inputs.full-macos-tests }}
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets:
