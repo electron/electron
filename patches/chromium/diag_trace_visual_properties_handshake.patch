@@ -5,10 +5,13 @@ Subject: diag: trace VisualProperties handshake
 
 DIAGNOSTIC ONLY, not for merge. Logs the RenderWidgetHostImpl
 VisualProperties send/skip/ack decisions for top-level widgets to stderr
-when ELECTRON_DIAG_WCO contains 'l'. Used to investigate
+when ELECTRON_DIAG_WCO contains 'l', and lets 'z' restore the upstream
+RenderWidgetHostViewAura::DidNavigate condition so one build can compare
+both behaviours. Used to investigate
 https://github.com/electron/electron/issues/54025.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 193b6c317588d3f20fab9d828d2d955de87e46ba..da426c5e6a8c84b728a045dceaf756a3f7db75de 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -11,6 +11,9 @@
@@ -21,10 +24,11 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
  #include <vector>
  
  #include "base/auto_reset.h"
-@@ -40,6 +43,28 @@
+@@ -40,6 +43,29 @@
  #include "base/time/time.h"
  #include "base/trace_event/optional_trace_event.h"
  #include "base/trace_event/trace_event.h"
++#include "base/debug/stack_trace.h"
 +
 +// DIAGNOSTIC ONLY (electron/electron#54025): trace the VisualProperties
 +// handshake for top-level widgets when ELECTRON_DIAG_WCO contains 'l'.
@@ -50,7 +54,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
  #include "build/build_config.h"
  #include "cc/base/switches.h"
  #include "cc/input/browser_controls_offset_tag_modifications.h"
-@@ -767,6 +792,9 @@ void RenderWidgetHostImpl::RendererWidgetCreated(bool for_frame_widget) {
+@@ -767,6 +793,9 @@ void RenderWidgetHostImpl::RendererWidgetCreated(bool for_frame_widget) {
    CHECK(GetProcess()->IsInitializedAndNotDead());
  
    renderer_widget_created_ = true;
@@ -60,7 +64,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
  
    mojo::PendingRemote<blink::mojom::RenderInputRouterClient> browser_remote;
    blink_widget_->SetupBrowserRenderInputRouterConnections(
-@@ -804,6 +832,7 @@ void RenderWidgetHostImpl::Init() {
+@@ -804,6 +833,7 @@ void RenderWidgetHostImpl::Init() {
  
    CHECK(waiting_for_init_);
    waiting_for_init_ = false;
@@ -68,7 +72,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
  
    // These two methods avoid running while we are `waiting_for_init_`, so we
    // run them here after we clear it.
-@@ -843,6 +872,8 @@ void RenderWidgetHostImpl::SimulateUserInteraction(const WebInputEvent& event) {
+@@ -843,6 +873,8 @@ void RenderWidgetHostImpl::SimulateUserInteraction(const WebInputEvent& event) {
  }
  
  void RenderWidgetHostImpl::WasHidden() {
@@ -77,7 +81,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
    if (is_hidden_) {
      return;
    }
-@@ -896,6 +927,8 @@ void RenderWidgetHostImpl::WasShown(
+@@ -896,6 +928,8 @@ void RenderWidgetHostImpl::WasShown(
    // The page should never be visible during prerendering.
    CHECK(!frame_tree_ || !frame_tree_->is_prerendering());
  
@@ -86,7 +90,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
    if (!is_hidden_) {
      return;
    }
-@@ -1035,6 +1068,13 @@ void RenderWidgetHostImpl::RemoveImeInputEventObserver(
+@@ -1035,6 +1069,13 @@ void RenderWidgetHostImpl::RemoveImeInputEventObserver(
  
  blink::VisualProperties RenderWidgetHostImpl::GetInitialVisualProperties() {
    blink::VisualProperties initial_props = GetVisualProperties();
@@ -100,7 +104,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
  
    // A RenderWidget being created in the renderer means the browser should
    // reset any state that may be set for the previous RenderWidget but which
-@@ -1291,6 +1331,7 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1291,6 +1332,7 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    // because there is no frames associated with the RenderWidget when it is
    // inactive, so there is no focused node, or anything to scroll and display.
    if (owner_delegate_ && !owner_delegate_->IsMainFrameActive()) {
@@ -108,7 +112,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
      return false;
    }
    // Sending VisualProperties are deferred until we have a connection to a
-@@ -1298,16 +1339,25 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1298,16 +1340,25 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    // renderer to show (aka Init()) the widget then we defer sending updates
    // until the renderer is ready.
    if (!renderer_widget_created_ || waiting_for_init_) {
@@ -134,7 +138,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
      return false;
    }
  
-@@ -1318,6 +1368,11 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1318,6 +1369,11 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    if (!GetProcess()->IsInitializedAndNotDead() || !view_->HasSize() ||
        !delegate_ || surface_id_allocation_suppressed_ ||
        !view_->CanSynchronizeVisualProperties()) {
@@ -146,7 +150,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
      return false;
    }
  
-@@ -1325,6 +1380,10 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1325,6 +1381,10 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    *visual_properties = GetVisualProperties();
    if (!StoredVisualPropertiesNeedsUpdate(old_visual_properties_,
                                           *visual_properties)) {
@@ -157,7 +161,7 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
      return false;
    }
  
-@@ -1374,6 +1433,17 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
+@@ -1374,6 +1434,17 @@ bool RenderWidgetHostImpl::SynchronizeVisualProperties(
    }
    visual_properties_ack_pending_ =
        DoesVisualPropertiesNeedAck(old_visual_properties_, *visual_properties);
@@ -175,15 +179,25 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
    old_visual_properties_ = std::move(visual_properties);
  
    // Warning: |visual_properties| invalid after this point.
-@@ -1580,6 +1650,7 @@ void RenderWidgetHostImpl::DidNavigate() {
+@@ -1580,6 +1651,17 @@ void RenderWidgetHostImpl::DidNavigate() {
    // Resize messages before navigation are not acked, so reset
    // |visual_properties_ack_pending_| and make sure the next resize will be
    // acked if the last resize before navigation was supposed to be acked.
 +  WCO_DIAG("DidNavigate ack_pending=%d", visual_properties_ack_pending_);
++  {
++    static const bool trace = [] {
++      const char* v = std::getenv("ELECTRON_DIAG_WCO");
++      return v && std::string(v).find('t') != std::string::npos;
++    }();
++    if (trace) {
++      WCO_DIAG("DidNavigate stack:\n%s",
++               base::debug::StackTrace().ToString().c_str());
++    }
++  }
    visual_properties_ack_pending_ = false;
    if (view_) {
      view_->DidNavigate();
-@@ -2982,6 +3053,13 @@ void RenderWidgetHostImpl::OnLocalSurfaceIdChanged(
+@@ -2982,6 +3064,13 @@ void RenderWidgetHostImpl::OnLocalSurfaceIdChanged(
    // Update our knowledge of the RenderWidget's size.
    CHECK(!metadata.viewport_size_in_pixels.IsEmpty());
  
@@ -197,3 +211,48 @@ diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/
    visual_properties_ack_pending_ = false;
  
    for (auto& observer : observers_) {
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index acbb39a595c5a88af1d0d97d5629359b24384351..892b5d33a30f613b050d504973b488bd3d233971 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -10,6 +10,9 @@
+ #include <string_view>
+ #include <utility>
+ 
++#include <cstdio>
++#include <cstdlib>
++
+ #include "base/auto_reset.h"
+ #include "base/command_line.h"
+ #include "base/feature_list.h"
+@@ -3646,7 +3649,29 @@ void RenderWidgetHostViewAura::DidNavigate() {
+   // the next VisualProperties update is sent without a LocalSurfaceId and the
+   // renderer stops producing frames until the view is shown. This matches
+   // RenderWidgetHostViewMac, which keys this off the host's visibility.
+-  if (!IsShowing() && host()->IsHidden()) {
++  // DIAG(54025): ELECTRON_DIAG_WCO containing 'z' restores the upstream
++  // condition so one build can compare both behaviours.
++  static const bool diag_upstream_didnavigate = [] {
++    const char* v = std::getenv("ELECTRON_DIAG_WCO");
++    return v && std::string(v).find('z') != std::string::npos;
++  }();
++  static const bool diag_log = [] {
++    const char* v = std::getenv("ELECTRON_DIAG_WCO");
++    return v && std::string(v).find('l') != std::string::npos;
++  }();
++  const bool treat_as_hidden = diag_upstream_didnavigate
++                                   ? !IsShowing()
++                                   : (!IsShowing() && host()->IsHidden());
++  if (diag_log) {
++    std::fprintf(stderr,
++                 "[wco-diag] RWHVA::DidNavigate showing=%d host_hidden=%d "
++                 "first=%d upstream=%d -> %s\n",
++                 IsShowing(), host()->IsHidden(), is_first_navigation_,
++                 diag_upstream_didnavigate,
++                 treat_as_hidden ? "invalidate lsid" : "keep/sync");
++    std::fflush(stderr);
++  }
++  if (treat_as_hidden) {
+     // Navigating while hidden should not allocate a new LocalSurfaceID. Once
+     // sizes are ready, or we begin to Show, we can then allocate the new
+     // LocalSurfaceId.

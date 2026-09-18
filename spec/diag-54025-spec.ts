@@ -49,23 +49,29 @@ describe('diag 54025: ready-to-show with titleBarOverlay on a hidden window', fu
 
   it('probes each variant', async () => {
     const variants: [string, string, string[]][] = [
-      ['current-1', 'l', []],
-      ['current-2', 'l', []],
-      ['current-3', 'l', []],
-      ['current-no-overlay', 'l', ['--no-overlay']],
-      ['current-shown', 'l', ['--show']],
-      ['current-default-titlebar', 'l', ['--no-hidden-style']],
-      ['current-bgthrottle', 'l', ['--bg-throttle']],
-      ['no-bounds-push', 'lb', []],
-      ['sync-notify', 'ls', []],
-      ['no-attach-push', 'la', []],
-      ['unclipped-rect', 'lu', []],
-      ['ignore-live-gate', 'lh', []],
-      ['no-bounds-push+sync-notify', 'lbs', []],
-      ['no-bounds-push+no-attach-push', 'lba', []],
-      ['old-behaviour-1', 'lo', []],
-      ['old-behaviour-2', 'lo', []],
-      ['old-behaviour-no-overlay', 'lo', ['--no-overlay']]
+      // 'z' restores the upstream RenderWidgetHostViewAura::DidNavigate
+      // condition (the behaviour that shipped in 44.4.x); without it the build
+      // carries the fix.
+      ['upstream-1', 'lz', []],
+      ['upstream-2', 'lz', []],
+      ['upstream-3', 'lz', []],
+      ['upstream-4', 'lz', []],
+      ['upstream-5', 'lz', []],
+      ['upstream-no-overlay', 'lz', ['--no-overlay']],
+      ['upstream-shown', 'lz', ['--show']],
+      ['upstream-bgthrottle', 'lz', ['--bg-throttle']],
+      ['upstream-retitle', 'lz', ['--retitle']],
+      ['upstream-old-wcv-behaviour-1', 'lzo', []],
+      ['upstream-old-wcv-behaviour-2', 'lzo', []],
+      ['upstream-seed-early-1', 'lzh', []],
+      ['upstream-seed-early-2', 'lzh', []],
+      ['fixed-1', 'l', []],
+      ['fixed-2', 'l', []],
+      ['fixed-3', 'l', []],
+      ['fixed-4', 'l', []],
+      ['fixed-5', 'l', []],
+      ['fixed-bgthrottle', 'l', ['--bg-throttle']],
+      ['fixed-retitle', 'l', ['--retitle']]
     ];
     const runs: Run[] = [];
     for (const [tag, env, args] of variants) {

@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <string>
 
+#include "base/debug/stack_trace.h"
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/task/sequenced_task_runner.h"
@@ -244,6 +245,10 @@ bool WebContentsView::HasLivePage() {
 // current layout pass has finished to avoid clipping against stale bounds.
 void WebContentsView::UpdateWindowControlsOverlay(
     const gfx::Rect& bounding_rect) {
+  if (DiagFlag('t')) {
+    WCO_DIAG_LOG("observer stack:\n%s",
+                 base::debug::StackTrace().ToString().c_str());
+  }
   WCO_DIAG_LOG(
       "observer UpdateWindowControlsOverlay rect=%s live=%d view=%s "
       "rwhv=%s",

@@ -3,7 +3,8 @@
 // `titleBarOverlay` (Windows, 44.4.x).
 //
 // Usage: electron spec/fixtures/diag-54025 [--show] [--no-overlay]
-//   [--no-hidden-style] [--bg-throttle] [--tag=<label>]
+//   [--no-hidden-style] [--bg-throttle] [--retitle] [--zoom-on-navigate]
+//   [--tag=<label>]
 // Prints timestamped events and a final single-line `RESULT {...}` JSON.
 const { app, BrowserWindow } = require('electron');
 const path = require('node:path');
@@ -17,7 +18,9 @@ const opts = {
   show: has('--show'),
   overlay: !has('--no-overlay'),
   hiddenStyle: !has('--no-hidden-style'),
-  bgThrottle: has('--bg-throttle')
+  bgThrottle: has('--bg-throttle'),
+  retitle: has('--retitle'),
+  zoomOnNavigate: has('--zoom-on-navigate')
 };
 
 const userData = fs.mkdtempSync(path.join(os.tmpdir(), 'diag-54025-'));
@@ -56,6 +59,14 @@ app.whenReady().then(async () => {
   w.webContents.once('did-start-loading', () => log('did-start-loading'));
   w.webContents.once('dom-ready', () => log('dom-ready'));
   w.webContents.once('did-finish-load', () => log('did-finish-load'));
+  if (opts.zoomOnNavigate) {
+    // Any VisualProperties push between navigation commit and the first frame
+    // is suspect, not just the overlay rect; zoom is an easy one to trigger.
+    w.webContents.once('did-navigate', () => {
+      w.webContents.setZoomLevel(1);
+      log('setZoomLevel');
+    });
+  }
   w.webContents.on('render-process-gone', (_e, d) => log('render-process-gone', JSON.stringify(d)));
 
   const html =
@@ -96,6 +107,16 @@ app.whenReady().then(async () => {
   };
   const probeHidden = await probe('hidden');
 
+  // Change the overlay geometry on the already-loaded hidden window and see
+  // whether main frames keep flowing.
+  let probeRetitle = null;
+  if (opts.retitle && opts.overlay && !opts.show) {
+    w.setTitleBarOverlay({ color: '#303030', symbolColor: '#ffffff', height: 64 });
+    log('called-setTitleBarOverlay');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    probeRetitle = await probe('after-retitle');
+  }
+
   // Does showing the window un-stick it?
   const rtsBeforeShow = readyToShow;
   if (!opts.show) {
@@ -123,6 +144,13 @@ app.whenReady().then(async () => {
         return JSON.parse(probeHidden);
       } catch {
         return probeHidden;
+      }
+    })(),
+    probeRetitle: (() => {
+      try {
+        return JSON.parse(probeRetitle);
+      } catch {
+        return probeRetitle;
       }
     })(),
     probeShown: (() => {

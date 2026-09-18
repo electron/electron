@@ -358,9 +358,6 @@ jobs:
           fi
         fi
 
-        # diag-54025: this branch only runs the diagnostic probe.
-        tests_files="spec/diag-54025-spec.ts"
-
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
@@ -369,7 +366,19 @@ jobs:
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          # diag-54025: this branch only runs the diagnostic probe and the new
+          # regression tests, the latter once with the upstream DidNavigate
+          # behaviour (expected to fail) and once with the fix (must pass).
+          set +e
+          node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files spec/diag-54025-spec.ts
+          echo "DIAG54025 probe spec exit=$?"
+          export MOCHA_GREP='on a window that is never shown'
+          ELECTRON_DIAG_WCO=z node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files spec/api-browser-window-spec.ts
+          echo "DIAG54025 regression spec WITHOUT fix exit=$?"
+          node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files spec/api-browser-window-spec.ts
+          rc=$?
+          echo "DIAG54025 regression spec WITH fix exit=$rc"
+          exit $rc
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
