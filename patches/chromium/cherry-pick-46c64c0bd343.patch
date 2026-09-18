@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Nguyen <tungnh@chromium.org>
+Date: Thu, 17 Sep 2026 01:02:26 -0700
+Subject: Reland "[permissions] Remove cached permission status computation"
+
+This is a reland of commit ba2f55f04eb4a9ce2ed77c127445054e4e8d7d13.
+
+The cached permission status computation was wrong, because it was
+computed for the source document of the navigation. Let's remove it for
+now.
+
+Fixed: 515493668
+Fixed: 514321719
+Bug: 534615429
+Change-Id: Ib94f0d78073836e3954daf2fb817e41085edc05e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8411465
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Auto-Submit: Thomas Nguyen <tungnh@chromium.org>
+Commit-Queue: Thomas Nguyen <tungnh@chromium.org>
+Reviewed-by: Antonio Sartori <antoniosartori@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699587}
+
+Electron adaptation notes (44-x-y):
+M152 already carries the original CL and its revert, so this reland
+re-applies the same removal. The render_frame_host_impl.h hunk was resolved
+by hand because its upstream context line (GetStorageAccessApiStatus) does
+not exist on this branch; only the CachedPermissionMap declaration was
+removed. No semantic changes.
+
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index b02d351c569ca1b361019de5b5975296e5cf15ee..64fd6d75b33fe87ccdea33eee0324e1532d13c15 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -4782,7 +4782,7 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
+           /*lcpp_hint=*/nullptr, blink::CreateDefaultRendererContentSettings(),
+           /*visited_link_salt=*/std::nullopt,
+           /*local_surface_id=*/std::nullopt,
+-          node->current_frame_host()->GetCachedPermissionStatuses(),
++          /*initial_permission_statuses=*/std::nullopt,
+           /*should_skip_screentshot=*/false,
+           /*force_new_document_sequence_number=*/false,
+           /*navigation_metrics_token=*/base::UnguessableToken::Create(),
+@@ -4980,8 +4980,6 @@ NavigationControllerImpl::CreateNavigationRequestFromEntry(
+           frame_tree_node->AncestorOrSelfHasCSPEE(),
+           soft_navigation_heuristics_task_id);
+   commit_params->post_content_type = post_content_type;
+-  commit_params->initial_permission_statuses =
+-      frame_tree_node->current_frame_host()->GetCachedPermissionStatuses();
+ 
+   if (common_params->url.IsAboutSrcdoc()) {
+     // TODO(wjmaclean): initialize this in NavigationRequest's constructor
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index e582ef356b240f5e7bf3d62b7249334716bb5bb1..494f4233a8e48ee28b1d4d766d61391f70042f6f 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -1411,7 +1411,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+           /*lcpp_hint=*/nullptr, blink::CreateDefaultRendererContentSettings(),
+           /*visited_link_salt=*/std::nullopt,
+           /*local_surface_id=*/std::nullopt,
+-          frame_tree_node->current_frame_host()->GetCachedPermissionStatuses(),
++          /*initial_permission_statuses=*/std::nullopt,
+           /*should_skip_screenshot=*/false,
+           /*force_new_document_sequence_number=*/false,
+           /*navigation_metrics_token=*/base::UnguessableToken::Create(),
+@@ -1584,7 +1584,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+           /*lcpp_hint=*/nullptr, blink::CreateDefaultRendererContentSettings(),
+           /*visited_link_salt=*/std::nullopt,
+           /*local_surface_id=*/std::nullopt,
+-          render_frame_host->GetCachedPermissionStatuses(),
++          /*initial_permission_statuses=*/std::nullopt,
+           /*should_skip_screenshot=*/false,
+           /*force_new_document_sequence_number=*/false,
+           /*navigation_metrics_token=*/base::UnguessableToken::Create(),
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 5771f93167f2036737f2e044ee8929dcac08e908..8561e057a47c914b9be9a632aa63ad74d0a1c657 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -20172,51 +20172,6 @@ void RenderFrameHostImpl::GetBoundInterfacesForTesting(
+       out);
+ }
+ 
+-std::optional<base::flat_map<blink::mojom::PermissionName,
+-                             blink::mojom::PermissionStatus>>
+-RenderFrameHostImpl::GetCachedPermissionStatuses() {
+-  using blink::PermissionType;
+-  using blink::mojom::PermissionName;
+-  static constexpr auto kPermissions =
+-      std::to_array<std::pair<PermissionName, PermissionType>>(
+-          {{PermissionName::VIDEO_CAPTURE, PermissionType::VIDEO_CAPTURE},
+-           {PermissionName::AUDIO_CAPTURE, PermissionType::AUDIO_CAPTURE},
+-#if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+-           // `WEB_APP_INSTALLATION` is only registered for desktop platforms
+-           // via `WebsiteSettingsRegistry::DESKTOP`.
+-           {PermissionName::WEB_APP_INSTALLATION,
+-            PermissionType::WEB_APP_INSTALLATION},
+-#endif
+-           {PermissionName::GEOLOCATION, PermissionType::GEOLOCATION}});
+-
+-  base::flat_map<PermissionName, PermissionStatus> permission_map;
+-  for (const auto& permission : kPermissions) {
+-    PermissionStatus status = GetCombinedPermissionStatus(permission.second);
+-    // Default value is ASK, we don't need add the permission status in this
+-    // case.
+-    if (status != PermissionStatus::ASK) {
+-      permission_map.emplace(permission.first, status);
+-    }
+-  }
+-
+-  return permission_map;
+-}
+-
+-blink::mojom::PermissionStatus RenderFrameHostImpl::GetCombinedPermissionStatus(
+-    blink::PermissionType permission_type) {
+-  auto descriptor = content::PermissionDescriptorUtil::
+-      CreatePermissionDescriptorForPermissionType(permission_type);
+-  if (PermissionUtil::IsDevicePermission(descriptor)) {
+-    return GetBrowserContext()
+-        ->GetPermissionController()
+-        ->GetCombinedPermissionAndDeviceStatus(descriptor, this);
+-  }
+-  return GetBrowserContext()
+-      ->GetPermissionController()
+-      ->GetPermissionResultForCurrentDocument(descriptor, this)
+-      .status;
+-}
+-
+ media::PictureInPictureEventsInfo::AutoPipReasonCallback
+ RenderFrameHostImpl::CreateAutoPipReasonCallback() {
+   return base::BindRepeating(
+diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
+index 8d0334ca4249bf24448d76a9471e957dd72ee580..c85b75f85e308f0107d4ad9ffeb474bc5d905e6f 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.h
++++ b/content/browser/renderer_host/render_frame_host_impl.h
+@@ -327,10 +327,6 @@ typedef base::RepeatingCallback<
+     void(RenderFrameHostImpl*, ax::mojom::Event, int)>
+     AccessibilityCallbackForTesting;
+ 
+-using CachedPermissionMap =
+-    std::optional<base::flat_map<blink::mojom::PermissionName,
+-                                 blink::mojom::PermissionStatus>>;
+-
+ class CONTENT_EXPORT RenderFrameHostImpl
+     : public RenderFrameHost,
+       public base::SupportsUserData,
+@@ -3306,12 +3302,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // this instance's AXNodeIdDelegate implementation.
+   size_t GetAxUniqueIdCountForTesting() const { return ax_unique_ids_.size(); }
+ 
+-  // Query necessary permission statues in order to propagate to the renderer.
+-  // Right now, we're only caring about permissions for Geolocation, Camera, and
+-  // Microphone. The permission statuses already take into account the device's
+-  // status.
+-  CachedPermissionMap GetCachedPermissionStatuses();
+-
+   // Allows tests to disable the unload event timer to simulate bugs that
+   // happen before it fires (to avoid flakiness).
+   void DisableUnloadTimerForTesting();
