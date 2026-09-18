@@ -177,6 +177,94 @@ than they ideally should be.
 * This extra code, particularly the compare and branch before every memory reference,
 incurs a significant runtime cost.
 
+### `deviceBoundSessions`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.EnableDeviceBoundSessions`
+
+The `deviceBoundSessions` fuse toggles support for
+[Device Bound Session Credentials](https://w3c.github.io/webappsec-dbsc/) (DBSC). DBSC lets a website
+bind a session to a key that lives in the device's secure hardware (a TPM on Windows, the Secure
+Enclave on macOS) and keep its cookies short-lived, so that a stolen cookie is useless on another
+machine. It is driven by the website: the page starts a session with a `Secure-Session-Registration`
+response header, and Electron refreshes its cookies in the background by proving possession of the key.
+
+When this fuse is enabled, Electron turns DBSC on for every [`session`](../api/session.md), stores the
+sessions of persistent partitions on disk (in a `Device Bound Sessions` database that sits next to
+the partition's cookie database) so they survive a restart, and shows them in DevTools under _Application >
+Background Services > Device bound sessions_. When it is disabled, DBSC is off and websites cannot
+register sessions.
+
+Clearing an app's cookies with [`ses.clearStorageData({ storages: ['cookies'] })`](../api/session.md#sesclearstoragedataoptions)
+or [`ses.clearData({ dataTypes: ['cookies'] })`](../api/session.md#sescleardataoptions) also ends its device bound
+sessions, because a session would otherwise refresh the cookies that were just cleared. Removing individual cookies
+with [`ses.cookies.remove()`](../api/cookies.md#cookiesremoveurl-name) does not end a session, so the website can
+issue such a cookie again. To log a user out, clear cookies with one of the first two methods.
+
+The fuse only turns on the client half. A website that relies on DBSC must decide what to do when a
+client does not register a session, for instance by refusing to issue long-lived credentials, because
+Electron does not tell it why registration did not happen.
+
+#### Hardware keys are required
+
+When this fuse is enabled, sessions can only be bound to hardware-backed keys. If the device has no
+usable key provider, or a key operation fails, no session is registered and the website falls back to
+whatever it does for a client without DBSC. Electron never falls back to keys that are stored in
+software, and it ignores any attempt to enable them with the
+`EnableBoundSessionCredentialsSoftwareKeysForManualTesting` feature on the command line, so a
+packaged app cannot be downgraded at runtime.
+
+Electron logs why DBSC is unavailable, for instance a missing entitlement on macOS. Run your app with
+[`--enable-logging`](../api/command-line-switches.md#--enable-loggingfile) to see those messages.
+
+* **Windows:** Keys are stored in the TPM through CNG, so the device needs a TPM 2.0. No further
+  configuration is needed.
+* **macOS:** See [Configuring macOS](#configuring-macos) below.
+* **Linux:** Upstream Chromium has no hardware key provider for Linux yet, so enabling the fuse has
+  no effect on Linux.
+
+#### Configuring macOS
+
+On macOS the keys live in the Keychain, backed by the Secure Enclave, and macOS only hands them to an
+app that is signed with the keychain access group they were created under. Electron uses the group
+`<TEAM_ID>.<BUNDLE_ID>.unexportable-keys`, built from your app's Apple Developer Team ID and its
+`CFBundleIdentifier`, and your app must:
+
+* be [code signed](./code-signing.md#macos-apis-that-require-code-signing) with a real identity.
+  Unsigned and ad-hoc signed apps cannot use DBSC.
+* be signed with that group in its `keychain-access-groups` entitlement:
+
+  ```xml
+  <key>keychain-access-groups</key>
+  <array>
+    <string>A1B2C3D4E5.com.example.app.unexportable-keys</string>
+  </array>
+  ```
+
+* embed a provisioning profile that authorizes the entitlement, at `Contents/embedded.provisionprofile`.
+  macOS terminates an app that claims a `keychain-access-groups` entitlement without one.
+  [`@electron/osx-sign`](https://github.com/electron/osx-sign) embeds the profile for you.
+* run on a Mac with a Secure Enclave, which is any Apple silicon Mac or an Intel Mac with a T2 chip.
+
+DBSC is not supported for in-memory sessions on macOS, meaning partitions whose name does not begin
+with `persist:` (see [`session.fromPartition`](../api/session.md#sessionfrompartitionpartition-options)).
+Their keys would stay in the Keychain after the app quits. Use a persistent partition for the sites
+that need DBSC.
+
+#### Testing DBSC in development
+
+Development builds are rarely code signed, Linux has no key provider, and many machines have no
+TPM. To try DBSC anyway, leave the fuse disabled and pass the feature that substitutes mock keys:
+
+```sh
+electron . --enable-features=EnableBoundSessionCredentialsSoftwareKeysForManualTesting
+```
+
+This turns DBSC on with keys that are stored in software and offer no protection at all, so it is
+only good for testing your server's implementation. Once you enable the fuse in a packaged app,
+Electron ignores this flag.
+
 ## How do I flip fuses?
 
 ### The easy way

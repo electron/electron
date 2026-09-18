@@ -11,11 +11,13 @@
 #include <unistd.h>
 
 #include <optional>
+#include <string>
 
 #include "base/apple/foundation_util.h"
 #include "base/apple/mach_logging.h"
 #include "base/apple/osstatus_logging.h"
 #include "base/apple/scoped_cftyperef.h"
+#include "base/strings/sys_string_conversions.h"
 
 namespace electron {
 
@@ -151,6 +153,56 @@ bool ProcessSignatureIsSameWithCurrentApp(audit_token_t audit_token) {
     return false;
   }
   return status == errSecSuccess;
+}
+
+std::optional<bool> CurrentAppIsUnsignedOrAdHocSigned() {
+  base::apple::ScopedCFTypeRef<SecCodeRef> self_code;
+  OSStatus status =
+      SecCodeCopySelf(kSecCSDefaultFlags, self_code.InitializeInto());
+  if (status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySelf";
+    return std::nullopt;
+  }
+  return IsUnsignedOrAdHocSigned(self_code.get());
+}
+
+std::optional<std::string> GetCurrentAppTeamIdentifier() {
+  base::apple::ScopedCFTypeRef<SecCodeRef> self_code;
+  OSStatus status =
+      SecCodeCopySelf(kSecCSDefaultFlags, self_code.InitializeInto());
+  if (status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySelf";
+    return std::nullopt;
+  }
+  base::apple::ScopedCFTypeRef<SecStaticCodeRef> static_code;
+  status = SecCodeCopyStaticCode(self_code.get(), kSecCSDefaultFlags,
+                                 static_code.InitializeInto());
+  if (status != errSecSuccess) {
+    // errSecCSUnsigned just means there is no team to report.
+    if (status != errSecCSUnsigned) {
+      OSSTATUS_LOG(ERROR, status) << "SecCodeCopyStaticCode";
+    }
+    return std::nullopt;
+  }
+  base::apple::ScopedCFTypeRef<CFDictionaryRef> signing_info;
+  status =
+      SecCodeCopySigningInformation(static_code.get(), kSecCSSigningInformation,
+                                    signing_info.InitializeInto());
+  if (status != errSecSuccess) {
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySigningInformation";
+    return std::nullopt;
+  }
+  // The key is absent for unsigned, ad-hoc, and team-less signatures.
+  CFStringRef team_id = base::apple::GetValueFromDictionary<CFStringRef>(
+      signing_info.get(), kSecCodeInfoTeamIdentifier);
+  if (!team_id) {
+    return std::nullopt;
+  }
+  std::string result = base::SysCFStringRefToUTF8(team_id);
+  if (result.empty()) {
+    return std::nullopt;
+  }
+  return result;
 }
 
 }  // namespace electron
