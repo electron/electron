@@ -3906,17 +3906,23 @@ describe('BrowserWindow module', () => {
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
         await readyToShow;
         expect(await rendersFrames(w)).to.equal(true, 'not rendering before navigating');
-        // Push new overlay geometry from the navigation itself; this used to
-        // reach the renderer without a surface id and stall it until show().
-        w.webContents.once('did-navigate', () => w.setTitleBarOverlay({ height: 60 }));
-        await w.loadFile(path.join(fixtures, 'pages', 'b.html'));
-        await waitUntil(async () => {
-          const height = await w.webContents.executeJavaScript(
-            'navigator.windowControlsOverlay.getTitlebarAreaRect().height'
-          );
-          return height === 60;
-        });
-        expect(await rendersFrames(w)).to.equal(true, 'renderer stopped producing frames');
+        // Push new overlay geometry from each navigation; this used to reach
+        // the renderer without a surface id and stall it until show().
+        for (const [page, height] of [
+          ['b.html', 60],
+          ['a.html', 30],
+          ['b.html', 50]
+        ] as const) {
+          w.webContents.once('did-navigate', () => w.setTitleBarOverlay({ height }));
+          await w.loadFile(path.join(fixtures, 'pages', page));
+          await waitUntil(async () => {
+            const current = await w.webContents.executeJavaScript(
+              'navigator.windowControlsOverlay.getTitlebarAreaRect().height'
+            );
+            return current === height;
+          });
+          expect(await rendersFrames(w)).to.equal(true, `renderer stopped producing frames after ${page} @ ${height}`);
+        }
       });
     });
 
