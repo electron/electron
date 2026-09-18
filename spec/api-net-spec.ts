@@ -161,6 +161,26 @@ describe('net module', () => {
         expect(postedBodyData).to.equal(bodyData);
       });
 
+      test('should preserve a buffered body after the write callback', async () => {
+        const bodyData = Buffer.from('Hello World!');
+        let postedBodyData: string = '';
+        const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
+          postedBodyData = await collectStreamBody(request);
+          response.end();
+        });
+        const urlRequest = net.request({
+          method: 'POST',
+          url: serverUrl
+        });
+        await new Promise<void>((resolve, reject) => {
+          urlRequest.write(bodyData, undefined, (error?: Error | null) => (error ? reject(error) : resolve()));
+        });
+        bodyData.fill(0);
+        const response = await getResponse(urlRequest);
+        expect(response.statusCode).to.equal(200);
+        expect(postedBodyData).to.equal('Hello World!');
+      });
+
       test('a 307 redirected POST request preserves the body', async () => {
         const bodyData = 'Hello World!';
         let postedBodyData: string = '';
@@ -1886,6 +1906,24 @@ describe('net module', () => {
             body: 'anchovies'
           });
           expect(await resp.text()).to.equal('anchovies');
+        });
+
+        test('can upload a ReadableStream body', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            request.on('data', (chunk) => response.write(chunk));
+            request.on('end', () => response.end());
+          });
+          const chunks = Array.from({ length: 64 }, (_, i) => `chunk ${i};`);
+          const expected = chunks.join('');
+          const body = new ReadableStream<Uint8Array>({
+            pull(controller) {
+              const chunk = chunks.shift();
+              if (chunk) controller.enqueue(new TextEncoder().encode(chunk));
+              else controller.close();
+            }
+          });
+          const resp = await net.fetch(serverUrl, { method: 'POST', body, duplex: 'half' } as RequestInit);
+          expect(await resp.text()).to.equal(expected);
         });
 
         test('can read response as an array buffer', async () => {
