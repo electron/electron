@@ -123,6 +123,13 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     capacity_ = 0;
   }
 
+  bool HasCustomHostObject(v8::Isolate* isolate) override { return true; }
+
+  v8::Maybe<bool> IsHostObject(v8::Isolate* isolate,
+                               v8::Local<v8::Object> object) override {
+    return v8::Just(object->IsApiWrapper());
+  }
+
   v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,
                                   v8::Local<v8::Object> object) override {
     api::NativeImage* native_image;

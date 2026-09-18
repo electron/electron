@@ -11,12 +11,8 @@
 
 namespace gin_helper {
 
-// You can use gin_helper::Handle on the stack to retain a gin_helper::Wrappable
-// object. Currently we don't have a mechanism for retaining a
-// gin_helper::Wrappable object in the C++ heap because strong references from
-// C++ to V8 can cause memory leaks. Copied from
-// https://chromium-review.googlesource.com/c/chromium/src/+/6734440 Should be
-// removed once https://github.com/electron/electron/issues/47922 is complete.
+// Use gin_helper::Handle on the stack to retain a non-cppgc
+// gin_helper::Wrappable object and its V8 wrapper together.
 //
 // This class must NOT be used with cppgc-managed types (gin::Wrappable).
 // For cppgc types, use T* directly and gin::Converter<T*> for V8 conversion.
@@ -47,16 +43,6 @@ class Handle {
   v8::Local<v8::Value> wrapper_;
   raw_ptr<T> object_;
 };
-
-// This function is a convenient way to create a handle from a raw pointer
-// without having to write out the type of the object explicitly.
-template <typename T>
-gin_helper::Handle<T> CreateHandle(v8::Isolate* isolate, T* object) {
-  v8::Local<v8::Object> wrapper;
-  if (!object->GetWrapper(isolate).ToLocal(&wrapper) || wrapper.IsEmpty())
-    return gin_helper::Handle<T>();
-  return gin_helper::Handle<T>(wrapper, object);
-}
 
 }  // namespace gin_helper
 
