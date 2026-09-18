@@ -75,6 +75,7 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+  WebContents* GetLiveWebContents() const;
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;

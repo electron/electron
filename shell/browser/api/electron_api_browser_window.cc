@@ -102,12 +102,21 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 }
 
 BrowserWindow::~BrowserWindow() {
-  if (api_web_contents_) {
+  if (auto* web_contents = api_web_contents_.Get()) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
-    api_web_contents_->RemoveObserver(this);
-    api_web_contents_->Destroy();
+    web_contents->RemoveObserver(this);
+    if (!web_contents->IsDestroyed() && web_contents->web_contents())
+      web_contents->Destroy();
   }
+}
+
+WebContents* BrowserWindow::GetLiveWebContents() const {
+  WebContents* web_contents = api_web_contents_.Get();
+  return web_contents && !web_contents->IsDestroyed() &&
+                 web_contents->web_contents()
+             ? web_contents
+             : nullptr;
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -152,7 +161,10 @@ void BrowserWindow::OnPageTitleUpdated(
 }
 
 void BrowserWindow::RequestPreferredWidth(int* width) {
-  *width = web_contents()->GetPreferredSize().width();
+  WebContents* api_web_contents = GetLiveWebContents();
+  content::WebContents* contents =
+      api_web_contents ? api_web_contents->web_contents() : nullptr;
+  *width = contents ? contents->GetPreferredSize().width() : 0;
 }
 
 void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
@@ -162,13 +174,14 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   *prevent_default = true;
 
   // Already closed by renderer.
+  WebContents* api_web_contents = GetLiveWebContents();
   content::WebContents* contents =
-      api_web_contents_ ? api_web_contents_->web_contents() : nullptr;
+      api_web_contents ? api_web_contents->web_contents() : nullptr;
   if (!contents)
     return;
 
   // Required to make beforeunload handler work.
-  api_web_contents_->NotifyUserActivation();
+  api_web_contents->NotifyUserActivation();
 
   if (contents->NeedToFireBeforeUnloadOrUnloadEvents()) {
     contents->DispatchBeforeUnload(false /* auto_cancel */);
@@ -178,19 +191,20 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 }
 
 void BrowserWindow::OnWindowBlur() {
-  if (api_web_contents_)
-    web_contents()->StoreFocus();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->StoreFocus();
 
   BaseWindow::OnWindowBlur();
 }
 
 void BrowserWindow::OnWindowFocus() {
   // focus/blur events might be emitted while closing window.
-  if (api_web_contents_) {
-    web_contents()->RestoreFocus();
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    content::WebContents* contents = api_web_contents->web_contents();
+    contents->RestoreFocus();
 #if !BUILDFLAG(IS_MAC)
-    if (!api_web_contents_->IsDevToolsOpened())
-      web_contents()->Focus();
+    if (!api_web_contents->IsDevToolsOpened())
+      contents->Focus();
 #endif
   }
 
@@ -199,17 +213,22 @@ void BrowserWindow::OnWindowFocus() {
 
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #if BUILDFLAG(IS_MAC)
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(is_key);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    auto* rwhv = api_web_contents->web_contents()->GetRenderWidgetHostView();
+    if (rwhv)
+      rwhv->SetActive(is_key);
+  }
   window()->SetActive(is_key);
 #endif
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
-  if (web_contents()->IsFullscreen())
-    web_contents()->ExitFullscreen(true);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    content::WebContents* contents = api_web_contents->web_contents();
+    if (contents->IsFullscreen())
+      contents->ExitFullscreen(true);
+  }
 #endif
   BaseWindow::OnWindowLeaveFullScreen();
 }
@@ -223,14 +242,16 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_ && api_web_contents_->IsOffScreen())
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && api_web_contents->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_ && api_web_contents_->IsOffScreen())
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && api_web_contents->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();
@@ -239,12 +260,12 @@ void BrowserWindow::Blur() {
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
   SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
-  if (api_web_contents_) {
-    api_web_contents_->SetBackgroundColor(color);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
     // on the next load URL call
     auto* web_preferences =
-        WebContentsPreferences::From(api_web_contents_->web_contents());
+        WebContentsPreferences::From(api_web_contents->web_contents());
     if (web_preferences) {
       web_preferences->SetBackgroundColor(color);
     }
@@ -264,11 +285,14 @@ void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
 }
 
 void BrowserWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->GetRenderViewHost()->GetWidget()->Focus();
+  }
 }
 
 void BrowserWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
@@ -278,22 +302,26 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
-  if (!web_contents_shown_) {
-    web_contents()->WasShown();
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && !web_contents_shown_) {
+    api_web_contents->web_contents()->WasShown();
     web_contents_shown_ = true;
   }
   BaseWindow::OnWindowShow();
 }
 
 void BrowserWindow::OnWindowHide() {
-  web_contents()->WasOccluded();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->WasOccluded();
   web_contents_shown_ = false;
   BaseWindow::OnWindowHide();
 }
 
 void BrowserWindow::Show() {
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->WasShown();
+    web_contents_shown_ = true;
+  }
   BaseWindow::Show();
 }
 
@@ -301,8 +329,10 @@ void BrowserWindow::ShowInactive() {
   // This method doesn't make sense for modal window.
   if (IsModal())
     return;
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->WasShown();
+    web_contents_shown_ = true;
+  }
   BaseWindow::ShowInactive();
 }
 
