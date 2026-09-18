@@ -29,14 +29,12 @@
     "oxfmt": "^0.42.0",
     "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
+    "rolldown": "^1.2.8",
     "semver": "^7.6.3",
     "stream-json": "^1.9.1",
     "tap-xunit": "^2.4.1",
-    "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1",
     "yaml": "^2.8.1"
   },
   "private": true,
@@ -75,7 +73,8 @@
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
     "tsc": "tsc",
-    "webpack": "webpack"
+    "bundle": "node build/bundle/bundle.mjs",
+    "typecheck": "node build/bundle/typecheck.mjs"
   },
   "license": "MIT",
   "author": "Electron Community",
@@ -93,7 +92,7 @@
       "node script/lint.js --js --fix --only --",
       "oxfmt --write"
     ],
-    "*.{js,ts,d.ts}": [
+    "*.{js,mjs,ts,d.ts}": [
       "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
