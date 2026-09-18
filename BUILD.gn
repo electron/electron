@@ -18,13 +18,13 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("//v8/gni/v8.gni")
 import("build/asar.gni")
+import("build/bundle/bundle.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -201,7 +201,8 @@ config("electron_lib_config") {
 # the repo-root write is a fixed shared path, instantiating this action in more
 # than one toolchain races two concurrent truncate-then-write generators on it.
 # Generate it once in the default toolchain and forward to that instance
-# everywhere else.
+# everywhere else. The lib/ type check only depends on source files, so there is
+# no point repeating it per toolchain either.
 if (current_toolchain == default_toolchain) {
   npm_action("build_electron_definitions") {
     script = "gn-typescript-definitions"
@@ -210,72 +211,71 @@ if (current_toolchain == default_toolchain) {
 
     outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
   }
+
+  # Type checks lib/ against tsconfig.electron.json for the electron_bundle
+  # targets below, which only strip types.
+  npm_action("electron_lib_typecheck") {
+    deps = [ ":build_electron_definitions" ]
+
+    script = "typecheck"
+    inputs = auto_filenames.lib_typecheck_sources + [ "yarn.lock" ]
+    outputs = [ "$target_gen_dir/electron_lib_typecheck.stamp" ]
+    args = [
+      "--project",
+      rebase_path("tsconfig.electron.json"),
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
 } else {
   group("build_electron_definitions") {
     public_deps = [ ":build_electron_definitions($default_toolchain)" ]
   }
+
+  group("electron_lib_typecheck") {
+    public_deps = [ ":electron_lib_typecheck($default_toolchain)" ]
+  }
 }
 
-webpack_build("electron_browser_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_browser_bundle") {
+  bundle = "browser"
   inputs = auto_filenames.browser_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
   out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_renderer_bundle") {
+  bundle = "renderer"
   inputs = auto_filenames.renderer_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_worker_bundle") {
+  bundle = "worker"
   inputs = auto_filenames.worker_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
   out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_webview_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_webview_bundle") {
+  bundle = "webview"
   inputs = auto_filenames.webview_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.webview.js"
   out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_isolated_renderer_bundle") {
+  bundle = "isolated_renderer"
   inputs = auto_filenames.isolated_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_node_bundle") {
+  bundle = "node"
   inputs = auto_filenames.node_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.node.js"
   out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_utility_bundle") {
+  bundle = "utility"
   inputs = auto_filenames.utility_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
   out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
