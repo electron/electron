@@ -515,6 +515,9 @@ operations will be done via it.
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
+> [!NOTE]
+> Reading this property throws `Object has been destroyed` once the window has been destroyed; see [`win.isDestroyed()`](base-window.md#winisdestroyed).
+
 #### `win.id` _Readonly_
 
 A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
