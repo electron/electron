@@ -63,7 +63,10 @@ WebContents* WebContentsView::GetWebContents() {
 
 WebContents* WebContentsView::GetLiveWebContents() const {
   WebContents* web_contents = api_web_contents_.Get();
-  return web_contents && !web_contents->IsDestroyed() ? web_contents : nullptr;
+  return web_contents && !web_contents->IsDestroyed() &&
+                 web_contents->web_contents()
+             ? web_contents
+             : nullptr;
 }
 
 void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
