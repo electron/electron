@@ -30,7 +30,7 @@
     "pre-flight": "^2.0.0",
     "rolldown": "^1.2.8",
     "semver": "^7.6.3",
-    "stream-json": "^1.9.1",
+    "stream-json": "^3.5.0",
     "tap-xunit": "^2.4.1",
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
