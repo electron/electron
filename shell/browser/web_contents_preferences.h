@@ -107,9 +107,6 @@ class WebContentsPreferences
   bool ShouldUsePreferredSizeMode() const {
     return enable_preferred_size_mode_;
   }
-  void SetIgnoreMenuShortcuts(bool ignore_menu_shortcuts) {
-    ignore_menu_shortcuts_ = ignore_menu_shortcuts;
-  }
   bool ShouldIgnoreMenuShortcuts() const { return ignore_menu_shortcuts_; }
   bool SetImageAnimationPolicy(std::string policy);
   bool ShouldDisableHtmlFullscreenWindowResize() const {
