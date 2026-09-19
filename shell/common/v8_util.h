@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_V8_VALUE_SERIALIZER_H_
 
 #include "base/containers/span.h"
+#include "base/dcheck_is_on.h"
 
 namespace v8 {
 class ArrayBufferView;
@@ -39,6 +40,10 @@ v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         base::span<const uint8_t> data);
 
 void SetUpWebAssemblyTrapHandler();
+
+#if DCHECK_IS_ON()
+void SetIpcSerializationBufferLimitForTesting(size_t limit);
+#endif
 
 namespace util {
 
