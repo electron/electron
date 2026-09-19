@@ -275,8 +275,12 @@ export function setupUpdaterHarness(): UpdaterHarness {
     }
   };
 
-  const shallowSign = async (appPath: string) => {
-    const result = await signApp(appPath, identity, { deep: false });
+  const shallowSign = async (appPath: string, run?: RunState) => {
+    if (run) run.phase = 'signing the app';
+    const result = await signApp(appPath, identity, {
+      deep: false,
+      spawn: run ? (cmd, args) => spawnForRun(run, cmd, args) : undefined
+    });
     if (result.code !== 0) {
       throw new Error(`codesign failed for ${appPath}: ${result.out}`);
     }
@@ -295,27 +299,52 @@ export function setupUpdaterHarness(): UpdaterHarness {
     );
   };
 
-  const prepareApp = async (slot: Slot, dir: string, fixture: string, version: string, preSign?: Mutation) => {
+  const prepareApp = async (
+    run: RunState,
+    slot: Slot,
+    dir: string,
+    fixture: string,
+    version: string,
+    preSign?: Mutation
+  ) => {
+    run.signal.throwIfAborted();
+    run.phase = 'preparing the app';
     const appPath = await copyMacOSFixtureApp(dir, fixture, {
       sourceApp: templateApp,
       bundleId: slot.bundleId,
       appNameSuffix: slot.nameSuffix
     });
+    run.signal.throwIfAborted();
     await setBundleVersion(appPath, version);
+    run.signal.throwIfAborted();
     await preSign?.mutate(appPath);
-    await shallowSign(appPath);
+    await shallowSign(appPath, run);
     return appPath;
   };
 
-  const getUpdateZip = async (slot: Slot, version: string, fixture: string, pre?: Mutation, post?: Mutation) => {
+  const getUpdateZip = async (
+    run: RunState,
+    slot: Slot,
+    version: string,
+    fixture: string,
+    pre?: Mutation,
+    post?: Mutation
+  ) => {
+    run.signal.throwIfAborted();
     const key = `${version}-${fixture}-${pre?.mutationKey || 'no-pre-mutation'}-${post?.mutationKey || 'no-post-mutation'}`;
     if (!slot.zips[key]) {
       const dir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-zip-'));
       zipDirs.push(dir);
-      const appPath = await prepareApp(slot, dir, fixture, version, pre);
+      const appPath = await prepareApp(run, slot, dir, fixture, version, pre);
+      run.signal.throwIfAborted();
       await post?.mutate(appPath);
       const zipPath = path.resolve(dir, 'update.zip');
-      await spawn('zip', ['-0', '-r', '--symlinks', zipPath, './'], { cwd: dir });
+      run.phase = 'creating the update archive';
+      const result = await spawnForRun(run, 'zip', ['-0', '-r', '--symlinks', zipPath, './'], { cwd: dir });
+      run.signal.throwIfAborted();
+      if (result.code !== 0) {
+        throw new Error(`zip failed for ${zipPath} with exit code ${result.code}: ${result.out}`);
+      }
       slot.zips[key] = zipPath;
     }
     return slot.zips[key];
@@ -602,12 +631,12 @@ export function setupUpdaterHarness(): UpdaterHarness {
 
   // Like spawn() from codesign-helpers, but records the child so an
   // overrunning run can kill it.
-  const spawnForRun = (run: RunState, cmd: string, args: string[]) => {
+  const spawnForRun = (run: RunState, cmd: string, args: string[], options: Pick<cp.SpawnOptions, 'cwd'> = {}) => {
     // A body unwinding from an abort must not start anything the stop
     // already ran past.
     if (run.signal.aborted) throw run.signal.reason;
     let out = '';
-    const child = cp.spawn(cmd, args, { detached: true });
+    const child = cp.spawn(cmd, args, { ...options, detached: true });
     run.children.add(child);
     if (child.pid) run.groups.add(child.pid);
     child.stdout.on('data', (chunk: Buffer) => {
@@ -677,17 +706,18 @@ export function setupUpdaterHarness(): UpdaterHarness {
       },
       copySignedApp: async (dir, fixture) => {
         run.phase = 'preparing the app';
-        const appPath = await prepareApp(slot, dir, fixture, '1.0.0');
+        const appPath = await prepareApp(run, slot, dir, fixture, '1.0.0');
         run.appPaths.add(appPath);
         return appPath;
       },
-      getUpdateZip: (version, fixture, pre, post) => getUpdateZip(slot, version, fixture, pre, post),
+      getUpdateZip: (version, fixture, pre, post) => getUpdateZip(run, slot, version, fixture, pre, post),
       withUpdatableApp: async (opts, fn) => {
         await withTempDirectory(async (dir) => {
           run.phase = 'preparing the app and its update';
-          const appPath = await prepareApp(slot, dir, opts.startFixture, '1.0.0', opts.mutateAppPreSign);
+          const appPath = await prepareApp(run, slot, dir, opts.startFixture, '1.0.0', opts.mutateAppPreSign);
           run.appPaths.add(appPath);
           const zipPath = await getUpdateZip(
+            run,
             slot,
             opts.nextVersion,
             opts.endFixture,
