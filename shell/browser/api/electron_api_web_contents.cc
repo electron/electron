@@ -1078,9 +1078,13 @@ void WebContents::InitWithSessionAndOptions(
   // Save the preferences in C++.
   // If there's already a WebContentsPreferences object, we created it as part
   // of the webContents.setWindowOpenHandler path, so don't overwrite it.
-  if (!WebContentsPreferences::From(web_contents())) {
-    new WebContentsPreferences(web_contents(), options);
-  }
+  // WebContentsPreferences transfers ownership to WebContents in its
+  // constructor. NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (!web_preferences)
+    web_preferences = new WebContentsPreferences(web_contents(), options);
+  ignore_menu_shortcuts_ = web_preferences->ShouldIgnoreMenuShortcuts();
+  // NOLINTEND(clang-analyzer-cplusplus.NewDeleteLeaks)
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
@@ -1636,9 +1640,7 @@ bool WebContents::HandleKeyboardEvent(
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
     const input::NativeWebKeyboardEvent& event) {
-  // Check if the webContents has preferences and to ignore shortcuts
-  auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
+  if (ShouldIgnoreMenuShortcutsFor(source))
     return false;
 
   // Let the NativeWindow handle other parts.
@@ -3555,10 +3557,14 @@ void WebContents::InspectServiceWorker() {
   }
 }
 
-void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  DCHECK(web_preferences);
-  web_preferences->SetIgnoreMenuShortcuts(ignore);
+bool WebContents::ShouldIgnoreMenuShortcutsFor(
+    content::WebContents* const source) {
+  const auto* source_contents = From(source);
+  return source_contents && source_contents->ignore_menu_shortcuts_;
+}
+
+void WebContents::SetIgnoreMenuShortcuts(const bool ignore) {
+  ignore_menu_shortcuts_ = ignore;
 }
 
 void WebContents::SetAudioMuted(bool muted) {
@@ -5216,6 +5222,8 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
+      web_contents->SetIgnoreMenuShortcuts(
+          existing_preferences->ShouldIgnoreMenuShortcuts());
       web_contents->SetBackgroundColor(
           existing_preferences->GetBackgroundColor());
 
