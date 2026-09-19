@@ -647,7 +647,7 @@ Returns `string` - The current application directory.
     directory.
   * `temp` Temporary directory.
   * `exe` The current executable file.
-  * `module` The location of the Chromium module. By default this is synonymous with `exe`.
+  * `module` The location of the Chromium module. On Windows, this is the path to `main.dll`.
   * `desktop` The current user's Desktop directory.
   * `documents` Directory for a user's "My Documents".
   * `downloads` Directory for a user's downloads.

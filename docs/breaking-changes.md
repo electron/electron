@@ -16,6 +16,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `app.getPath('module')` returns the DLL path on Windows
+
+On Windows, `app.getPath('module')` now returns the path to `main.dll` instead
+of the application EXE. Use `app.getPath('exe')` or `process.execPath` if your
+application needs the executable path.
+
+Windows distributions now include `main.dll` alongside the EXE. Custom
+packaging, signing, and update workflows must include this file.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the
