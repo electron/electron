@@ -1569,6 +1569,7 @@ describe('chromium features', () => {
     it('denies permission when trying to create a writable file handle', (done) => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const trace = (phase: string) => console.log(`File System denial: ${phase}`);
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1578,8 +1579,15 @@ describe('chromium features', () => {
         }
       });
 
+      w.webContents.on('ipc-message', (_event, channel, message) => {
+        if (channel === 'file-system-progress' || channel === 'file-system-error') {
+          trace(`${channel}: ${message}`);
+        }
+      });
+
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
+          trace(`permission requested: ${JSON.stringify(details)}`);
           const { href } = url.pathToFileURL(writablePath);
           expect(details).to.deep.equal({
             fileAccessType: 'writable',
@@ -1596,6 +1604,10 @@ describe('chromium features', () => {
       });
 
       ipcMain.once('did-create-file-handle', async () => {
+        trace('file handle received');
+        const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
+        trace(`initial permission: ${permission}`);
+        trace('createWritable requested');
         const result = await w.webContents.executeJavaScript(
           `
           new Promise(async (resolve, reject) => {
@@ -1609,15 +1621,20 @@ describe('chromium features', () => {
         `,
           true
         );
+        trace(`createWritable ${result ? 'succeeded' : 'rejected'}`);
         expect(result).to.be.false();
         done();
       });
 
+      trace('loading fixture');
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', async () => {
+        trace('fixture loaded');
         await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+        trace('clipboard written');
         w.webContents.focus();
+        trace('paste requested');
         w.webContents.paste();
       });
     });
