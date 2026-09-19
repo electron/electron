@@ -3857,6 +3857,75 @@ describe('BrowserWindow module', () => {
       await testWindowsOverlayHeight(40);
     });
 
+    // https://github.com/electron/electron/issues/54025: pushing the overlay
+    // rect to a hidden (but painting) window after a navigation sent the
+    // renderer visual properties without a surface id, which stopped it from
+    // producing frames until the window was shown. On Wayland hidden windows
+    // aren't laid out at all, so there's nothing to test there.
+    ifdescribe(!isWayland)('on a window that is never shown', () => {
+      const rendersFrames = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(
+          'new Promise(r => { const t = setTimeout(() => r(false), 2000); requestAnimationFrame(() => { clearTimeout(t); r(true); }); })'
+        );
+      const createWindow = () =>
+        new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: 40 }
+        });
+
+      const runFixtureApp = async (appPath: string) => {
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+        let out = '';
+        appProcess.stdout.on('data', (data) => {
+          out += data;
+        });
+        appProcess.stderr.on('data', (data) => {
+          out += data;
+        });
+        const [code] = await once(appProcess, 'exit');
+        return { code, out };
+      };
+
+      it('emits ready-to-show', async () => {
+        // The first window of a cold process is where the renderer used to
+        // commit its navigation before the frame was laid out, so run a small
+        // app a few times rather than opening windows in this (warm) process.
+        const appPath = path.join(fixtures, 'apps', 'hidden-window-overlay');
+        for (let i = 0; i < 6; i++) {
+          const { code, out } = await runFixtureApp(appPath);
+          expect(code).to.equal(0, `run ${i + 1}: ${out}`);
+        }
+      });
+
+      ifit(process.platform !== 'darwin')('keeps rendering when the overlay changes as it navigates', async () => {
+        const w = createWindow();
+        const readyToShow = once(w, 'ready-to-show', { signal: AbortSignal.timeout(10000) });
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await readyToShow;
+        expect(await rendersFrames(w)).to.equal(true, 'not rendering before navigating');
+        // Push new overlay geometry from each navigation; this used to reach
+        // the renderer without a surface id and stall it until show().
+        for (const [page, height] of [
+          ['b.html', 60],
+          ['a.html', 30],
+          ['b.html', 50]
+        ] as const) {
+          w.webContents.once('did-navigate', () => w.setTitleBarOverlay({ height }));
+          await w.loadFile(path.join(fixtures, 'pages', page));
+          await waitUntil(async () => {
+            const current = await w.webContents.executeJavaScript(
+              'navigator.windowControlsOverlay.getTitlebarAreaRect().height'
+            );
+            return current === height;
+          });
+          expect(await rendersFrames(w)).to.equal(true, `renderer stopped producing frames after ${page} @ ${height}`);
+        }
+      });
+    });
+
     it('propagates the overlay to WebContentsViews in a BaseWindow', async () => {
       const w = new BaseWindow({
         show: false,
