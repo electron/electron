@@ -1567,9 +1567,11 @@ describe('chromium features', () => {
       });
     });
 
-    it('denies permission when trying to create a writable file handle', (done) => {
+    it('denies permission when trying to create a writable file handle', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const trace = (phase: string) => console.log(`File System denial: ${phase}`);
+      const permissionRequests: unknown[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1579,48 +1581,70 @@ describe('chromium features', () => {
         }
       });
 
+      w.webContents.on('ipc-message', (_event, channel, message) => {
+        if (channel === 'file-system-progress' || channel === 'file-system-error') {
+          trace(`${channel}: ${message}`);
+        }
+      });
+
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
-          const { href } = url.pathToFileURL(writablePath);
-          expect(details).to.deep.equal({
-            fileAccessType: 'writable',
-            isDirectory: false,
-            isMainFrame: true,
-            filePath: testFile,
-            requestingUrl: href
-          });
-
-          callback(false);
-          return;
+          trace(`permission requested: ${JSON.stringify(details)}`);
+          permissionRequests.push(details);
         }
         callback(false);
       });
 
-      ipcMain.once('did-create-file-handle', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const writable = await handle.createWritable();
-              resolve(true);
-            } catch {
-              resolve(false);
-            }
-          })
-        `,
-          true
+      trace('loading fixture');
+      await w.loadFile(writablePath);
+      trace('fixture loaded');
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+      trace('clipboard written');
+
+      const handleCreated = emittedUntil(w.webContents, 'ipc-message', (_event: unknown, channel: string) => {
+        return (
+          channel === 'did-create-file-handle' ||
+          channel === 'did-create-directory-handle' ||
+          channel === 'file-system-error'
         );
-        expect(result).to.be.false();
-        done();
       });
+      w.webContents.focus();
+      trace('paste requested');
+      w.webContents.paste();
+      const [, channel, message] = await handleCreated;
+      if (channel === 'file-system-error') {
+        throw new Error(`File handle acquisition failed: ${message}`);
+      }
+      expect(channel).to.equal('did-create-file-handle');
+      trace('file handle received');
 
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
+      trace(`initial permission: ${permission}`);
+      trace('createWritable requested');
+      const writeError = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          try {
+            await handle.createWritable();
+            return null;
+          } catch (error) {
+            return { name: error.name, message: error.message };
+          }
+        })()
+      `,
+        true
+      );
+      trace(`createWritable ${writeError ? `rejected: ${writeError.name}: ${writeError.message}` : 'succeeded'}`);
+      expect(writeError?.name).to.equal('NotAllowedError');
+      expect(permissionRequests).to.deep.equal([
+        {
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: url.pathToFileURL(writablePath).href
+        }
+      ]);
     });
 
     it('calls twice when trying to query a read/write file handle permissions', (done) => {
