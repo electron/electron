@@ -3973,13 +3973,19 @@ describe('webContents module', () => {
       });
 
       return async (expectedInvocations: number) => {
-        contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
-        await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
-          type: 'keyUp',
-          key: 'F13',
-          code: 'F13',
-          windowsVirtualKeyCode: 124
-        });
+        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
+        if (process.platform === 'darwin') {
+          // Native macOS menu input requires kVK_F13 and NSF13FunctionKey.
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+            ...base,
+            type: 'rawKeyDown',
+            nativeVirtualKeyCode: 0x69,
+            text: '\uF710'
+          });
+        } else {
+          contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
+        }
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
         await waitUntil(() => invocations >= expectedInvocations);
         return invocations;
       };
