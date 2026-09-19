@@ -9,7 +9,7 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index d8e99c019dfeb4be75371bdfc879ba3d8dbffa59..7418423de67104d3e6ba7de0557a8a7abb10ac3e 100644
+index e7686baa0d64c5d831a882a2029f44796c5ddfc7..f610e181554f8440523b178e03bf26a10003b9f5 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -3574,6 +3574,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
