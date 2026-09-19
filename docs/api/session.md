@@ -294,6 +294,76 @@ Emitted when a hunspell dictionary file download fails.  For details
 on the failure you should collect a netlog and inspect the download
 request.
 
+#### Event: 'select-bluetooth-device'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53661
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `deviceList` [BluetoothDevice[]](structures/bluetooth-device.md) - Devices discovered so far. Often empty when the event fires; further devices arrive through [`bluetooth-device-added`](#event-bluetooth-device-added).
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame that called `navigator.bluetooth.requestDevice()`.
+* `callback` Function
+  * `deviceId` string
+
+Emitted once when `navigator.bluetooth.requestDevice()` is called in a frame
+of this session and the `bluetooth` [permission check](#sessetpermissioncheckhandlerhandler)
+passed. Call `event.preventDefault()` to take responsibility for answering, then
+call `callback` with a `deviceId` from `deviceList` or a later
+`bluetooth-device-added` event to select that device, or with an empty string
+to cancel. If no listener (here or on the deprecated
+[`webContents` event](web-contents.md#event-select-bluetooth-device))
+calls `event.preventDefault()`, the request is cancelled when discovery
+finishes.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+  const pending = new Map()
+  win.webContents.session.on('select-bluetooth-device', (event, details, callback) => {
+    event.preventDefault()
+    const match = details.deviceList.find((d) => d.deviceName === 'My Sensor')
+    if (match) return callback(match.deviceId)
+    pending.set(details.frame, callback)
+  })
+  win.webContents.session.on('bluetooth-device-added', (event, details) => {
+    const callback = pending.get(details.frame)
+    if (callback && details.device.deviceName === 'My Sensor') {
+      pending.delete(details.frame)
+      callback(details.device.deviceId)
+    }
+  })
+})
+```
+
+#### Event: 'bluetooth-device-added'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53661
+```
+-->
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [BluetoothDevice](structures/bluetooth-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame whose request this device was discovered for.
+
+Emitted after `select-bluetooth-device` while discovery is running, when a new
+device is found or a known device's name becomes available, until the
+`select-bluetooth-device` callback is called.
+
 #### Event: 'select-hid-device'
 
 Returns:
@@ -1199,6 +1269,7 @@ changes:
     * `automatic-fullscreen` - Enter fullscreen without a prior user gesture (Chromium's automatic fullscreen content setting).
     * `background-fetch` - Download resources in the background via the [Background Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Fetch_API).
     * `background-sync` - Defer work until the user has connectivity via the [Background Synchronization API](https://developer.mozilla.org/en-US/docs/Web/API/Background_Synchronization_API).
+    * `bluetooth` - Access Bluetooth devices via the [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API). Checked for the requesting frame on every Web Bluetooth call (`getAvailability()`, `requestDevice()`, `getDevices()` and each GATT operation), so keep the handler cheap; returning `false` makes Web Bluetooth report as unavailable to that frame.
     * `captured-surface-control` - Forward wheel events to, and control the zoom level of, a captured tab via the [Captured Surface Control API](https://developer.mozilla.org/en-US/docs/Web/API/Captured_Surface_Control_API).
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
@@ -1244,7 +1315,7 @@ changes:
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
-    * `securityOrigin` string (optional) - The origin of the requesting frame, for `media`, `hid`, `usb` and `serial` checks.
+    * `securityOrigin` string (optional) - The origin of the requesting frame, for `media`, `hid`, `usb`, `serial` and `bluetooth` checks.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
       `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded. Not provided when the check is not made on behalf of a document (for example for a service worker).

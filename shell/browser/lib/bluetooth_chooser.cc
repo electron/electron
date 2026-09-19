@@ -4,8 +4,15 @@
 
 #include "shell/browser/lib/bluetooth_chooser.h"
 
+#include "base/task/sequenced_task_runner.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
+#include "gin/data_object_builder.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"
@@ -28,48 +35,130 @@ struct Converter<electron::BluetoothChooser::DeviceInfo> {
 
 namespace electron {
 
-BluetoothChooser::BluetoothChooser(api::WebContents* contents,
+namespace {
+
+int ListenerCount(v8::Isolate* isolate, v8::Local<v8::Object> emitter) {
+  int listeners = 0;
+  gin::ConvertFromV8(isolate,
+                     gin_helper::CallMethod(isolate, emitter, "listenerCount",
+                                            "select-bluetooth-device"),
+                     &listeners);
+  return listeners;
+}
+
+}  // namespace
+
+BluetoothChooser::BluetoothChooser(content::RenderFrameHost* render_frame_host,
                                    const EventHandler& event_handler)
-    : api_web_contents_(contents), event_handler_(event_handler) {}
+    : render_frame_host_id_(render_frame_host->GetGlobalId()),
+      event_handler_(event_handler) {}
 
 BluetoothChooser::~BluetoothChooser() {
   event_handler_.Reset();
 }
 
-// 'select-bluetooth-device'. With nobody listening the request is cancelled
-// (an empty device id), which counts as handled.
-bool BluetoothChooser::EmitSelectBluetoothDevice() {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Object> web_contents;
-  if (!api_web_contents_->GetWrapper(isolate).ToLocal(&web_contents))
+void BluetoothChooser::RunEventHandler(content::BluetoothChooserEvent event,
+                                       const std::string& device_id) {
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](base::WeakPtr<BluetoothChooser> self,
+             content::BluetoothChooserEvent event, std::string device_id) {
+            if (self && !self->event_handler_.is_null())
+              self->event_handler_.Run(event, device_id);
+          },
+          weak_ptr_factory_.GetWeakPtr(), event, device_id));
+}
+
+bool BluetoothChooser::EmitSelectEvent(const DeviceInfo* added_or_updated) {
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(render_frame_host_id_);
+  if (!rfh)
     return false;
-  // One callback scope over the count and the emit so that pending ticks and
-  // microtasks (which may run the chooser callback and delete |this|) run
-  // once at the end, as they did at the end of the single emit; nothing of
-  // |this| is touched after it closes. listenerCount itself is app-replaceable
-  // JavaScript, so |this| and the WebContents are re-checked after it too.
-  node::CallbackScope callback_scope{isolate, web_contents,
-                                     node::async_context{0, 0}};
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  gin::WeakCell<api::Session>* session =
+      api::Session::FromBrowserContext(rfh->GetBrowserContext());
+  v8::Local<v8::Object> session_wrapper;
+  const bool have_session =
+      session && session->Get() &&
+      session->Get()->GetWrapper(isolate).ToLocal(&session_wrapper);
+
+  // The WebContents wrapper is looked up each time; it can be torn down
+  // before the document that owns this chooser (e.g. a <webview> guest).
+  api::WebContents* api_web_contents =
+      api::WebContents::From(content::WebContents::FromRenderFrameHost(rfh));
+  v8::Local<v8::Object> web_contents;
+  const bool have_web_contents =
+      api_web_contents &&
+      api_web_contents->GetWrapper(isolate).ToLocal(&web_contents);
+
+  if (!have_session && !have_web_contents)
+    return false;
+
+  // One callback scope over the counts and the emits so that pending ticks
+  // and microtasks (which may run the chooser callback and delete |this|) run
+  // once at the end; nothing of |this| is touched after it closes.
+  // listenerCount itself is app-replaceable JavaScript, so |this| and the
+  // WebContents are re-checked after it too.
+  node::CallbackScope callback_scope{
+      isolate, have_web_contents ? web_contents : session_wrapper,
+      node::async_context{0, 0}};
   base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
   base::WeakPtr<api::WebContents> weak_web_contents =
-      api_web_contents_->GetWeakPtr();
+      have_web_contents ? api_web_contents->GetWeakPtr() : nullptr;
+
   int listeners = 0;
-  gin::ConvertFromV8(
-      isolate,
-      gin_helper::CallMethod(isolate, web_contents, "listenerCount",
-                             "select-bluetooth-device"),
-      &listeners);
-  if (!weak_this || !weak_web_contents)
+  if (have_session)
+    listeners += ListenerCount(isolate, session_wrapper);
+  if (weak_this && weak_web_contents)
+    listeners += ListenerCount(isolate, web_contents);
+  if (!weak_this)
     return true;
+  // With no chooser handler on either the session or the WebContents, cancel
+  // straight away rather than waiting for discovery to finish.
   if (listeners == 0) {
     OnDeviceChosen("");
     return true;
   }
-  return api_web_contents_->Emit(
-      "select-bluetooth-device", GetDeviceList(),
-      base::BindOnce(&BluetoothChooser::OnDeviceChosen,
-                     weak_ptr_factory_.GetWeakPtr()));
+
+  bool prevent_default = false;
+
+  // Session-level events, shaped like select-hid-device / hid-device-added.
+  if (have_session && session->Get()) {
+    if (!session_select_emitted_) {
+      session_select_emitted_ = true;
+      v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                          .Set("deviceList", GetDeviceList())
+                                          .Set("frame", rfh)
+                                          .Build();
+      prevent_default |=
+          session->Get()->Emit("select-bluetooth-device", details,
+                               base::BindOnce(&BluetoothChooser::OnDeviceChosen,
+                                              weak_ptr_factory_.GetWeakPtr()));
+    } else if (added_or_updated) {
+      v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                          .Set("device", *added_or_updated)
+                                          .Set("frame", rfh)
+                                          .Build();
+      session->Get()->Emit("bluetooth-device-added", details);
+    }
+    if (!weak_this)
+      return prevent_default;
+  }
+
+  // WebContents-level event (deprecated): re-emitted with the full list every
+  // time it changes.
+  if (weak_web_contents) {
+    prevent_default |=
+        api_web_contents->Emit("select-bluetooth-device", GetDeviceList(),
+                               base::BindOnce(&BluetoothChooser::OnDeviceChosen,
+                                              weak_ptr_factory_.GetWeakPtr()),
+                               rfh);
+  }
+  return prevent_default;
 }
 
 void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
@@ -77,10 +166,10 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
     case AdapterPresence::ABSENT:
       NOTREACHED();
     case AdapterPresence::POWERED_OFF:
-      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
+      RunEventHandler(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case AdapterPresence::UNAUTHORIZED:
-      event_handler_.Run(content::BluetoothChooserEvent::DENIED_PERMISSION, "");
+      RunEventHandler(content::BluetoothChooserEvent::DENIED_PERMISSION, "");
       break;
     case AdapterPresence::POWERED_ON:
       rescan_ = true;
@@ -93,7 +182,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
       refreshing_ = false;
-      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
+      RunEventHandler(content::BluetoothChooserEvent::CANCELLED, "");
       return;
     case DiscoveryState::IDLE:
       refreshing_ = false;
@@ -114,18 +203,14 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
   // The handler may run the callback synchronously, which runs
   // |event_handler_| and destroys |this|.
   base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
-  bool prevent_default = EmitSelectBluetoothDevice();
+  const bool handled = EmitSelectEvent(nullptr);
   if (!weak_this)
     return;
-  if (!prevent_default && idle_state) {
-    if (device_id_to_name_map_.empty()) {
-      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
-    } else {
-      auto it = device_id_to_name_map_.begin();
-      auto device_id = it->first;
-      event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);
-    }
-  }
+  handled_ |= handled;
+  // Discovery finished and no listener took responsibility for answering:
+  // cancel the request rather than picking a device on the app's behalf.
+  if (idle_state && !handled_)
+    RunEventHandler(content::BluetoothChooserEvent::CANCELLED, "");
 }
 
 void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
@@ -138,38 +223,35 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
   if (refreshing_)
     return;
 
-  // Emit a select-bluetooth-device handler to allow for user to listen for
-  // bluetooth device found. If there's no listener in place, then select the
-  // first device that matches the filters provided.
-  auto [iter, changed] =
+  // Emit select-bluetooth-device / bluetooth-device-added when a device is
+  // first seen or its name actually changes, so the app can pick a device as
+  // soon as it appears. Nothing is selected unless the app calls the callback.
+  auto [iter, inserted] =
       device_id_to_name_map_.try_emplace(device_id, device_name);
-  if (!changed && should_update_name) {
+  bool changed = inserted;
+  if (!inserted && should_update_name && iter->second != device_name) {
     iter->second = device_name;
     changed = true;
   }
+  if (!changed)
+    return;
 
-  if (changed) {
-    // The handler may run the callback synchronously, which runs
-    // |event_handler_| and destroys |this|.
-    base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
-    bool prevent_default = EmitSelectBluetoothDevice();
-    if (!weak_this)
-      return;
-
-    if (!prevent_default)
-      event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);
-  }
+  // The handler may run the callback synchronously, which destroys |this|.
+  base::WeakPtr<BluetoothChooser> weak_this = weak_ptr_factory_.GetWeakPtr();
+  const DeviceInfo info{device_id, iter->second};
+  const bool handled = EmitSelectEvent(&info);
+  if (!weak_this)
+    return;
+  handled_ |= handled;
 }
 
 void BluetoothChooser::OnDeviceChosen(const std::string& device_id) {
   if (event_handler_.is_null())
     return;
 
-  if (device_id.empty()) {
-    event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, device_id);
-  } else {
-    event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);
-  }
+  RunEventHandler(device_id.empty() ? content::BluetoothChooserEvent::CANCELLED
+                                    : content::BluetoothChooserEvent::SELECTED,
+                  device_id);
 }
 
 std::vector<electron::BluetoothChooser::DeviceInfo>
