@@ -2294,51 +2294,65 @@ describe('protocol module', () => {
       defer(() => server.close());
       const { url } = await listen(server);
 
-      const fetchPayload = async () => {
-        const begin = Date.now();
-        const length = await contents.executeJavaScript(`
-          fetch(${JSON.stringify(url)}).then(async response => {
+      let handlerCalls = 0;
+      const fetchPayload = async (intercepted = false) => {
+        const callsBefore = handlerCalls;
+        const { elapsed, length } = await contents.executeJavaScript(`
+          (async () => {
+            const begin = performance.now();
+            const response = await fetch(${JSON.stringify(url)});
             const reader = response.body.getReader();
             let length = 0;
             while (true) {
               const { done, value } = await reader.read();
-              if (done) return length;
+              if (done) return { elapsed: performance.now() - begin, length };
               length += value.byteLength;
             }
-          })
+          })()
         `);
-        const end = Date.now();
         expect(length).to.equal(chunk.byteLength);
-        return end - begin;
+        expect(handlerCalls - callsBefore, intercepted ? 'intercepted fetch' : 'direct fetch').to.equal(
+          intercepted ? 1 : 0
+        );
+        return elapsed;
       };
 
-      const measurePayload = async () => {
-        const samples = [];
-        for (let i = 0; i < 3; i++) {
-          samples.push(await fetchPayload());
+      const measureInterceptedPayload = async () => {
+        protocol.handle('http', async (req) => {
+          handlerCalls++;
+          return net.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+        try {
+          return await fetchPayload(true);
+        } finally {
+          protocol.unhandle('http');
         }
-        samples.sort((a, b) => a - b);
-        return samples[1];
       };
 
       await fetchPayload(); // Warm the direct network path.
-      const rawTime = await measurePayload();
+      await measureInterceptedPayload(); // Warm the protocol handler path.
 
       // Fetching through an intercepted handler should not be too much slower
       // than it would be if the protocol hadn't been intercepted.
+      const samples = [];
+      for (const directFirst of [true, false, true, false]) {
+        let directTime: number;
+        let interceptedTime: number;
+        if (directFirst) {
+          directTime = await fetchPayload();
+          interceptedTime = await measureInterceptedPayload();
+        } else {
+          interceptedTime = await measureInterceptedPayload();
+          directTime = await fetchPayload();
+        }
+        samples.push({ directTime, interceptedTime, ratio: interceptedTime / directTime });
+      }
 
-      protocol.handle('http', async (req) => {
-        return net.fetch(req, { bypassCustomProtocolHandlers: true });
-      });
-      defer(() => {
-        protocol.unhandle('http');
-      });
-
-      await fetchPayload(); // Warm the protocol handler path.
-      const interceptedTime = await measurePayload();
-      // Interception adds another response body pipeline; allow headroom above
-      // its expected ~2x cost while still catching substantial regressions.
-      expect(interceptedTime).to.be.lessThan(rawTime * 3);
+      const ratios = samples.map(({ ratio }) => ratio).sort((a, b) => a - b);
+      const medianRatio = (ratios[1] + ratios[2]) / 2;
+      // Balance pair order to reduce drift and use the median to limit isolated outliers.
+      // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
+      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).to.be.lessThan(3);
     });
   });
 });
