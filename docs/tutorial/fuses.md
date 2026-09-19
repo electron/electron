@@ -177,6 +177,21 @@ than they ideally should be.
 * This extra code, particularly the compare and branch before every memory reference,
 incurs a significant runtime cost.
 
+### `nodeStdioInitialization`
+
+**Default:** Enabled
+
+**@electron/fuses:** `FuseV1Options.EnableNodeStdioInitialization`
+
+The `nodeStdioInitialization` fuse controls whether Node.js initializes the process's standard input,
+output, and error streams. When disabled, Electron skips Node.js stdio and TTY initialization. This is
+equivalent to starting Electron with `--no-stdio-init` and allows packaged applications to opt out at
+package time, including on Windows systems where the `NUL` device is unavailable.
+
+Disabling this fuse means Node.js will not normalize the process's standard file descriptors or TTY
+state. Applications that rely on Node.js managing `stdin`, `stdout`, or `stderr` should leave this fuse
+enabled.
+
 ## How do I flip fuses?
 
 ### The easy way
