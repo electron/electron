@@ -236,7 +236,7 @@ positioning keywords is used.
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { id: '2', label: 'two' },
@@ -256,7 +256,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { type: 'separator' },
@@ -280,7 +280,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one', after: ['3'] },
   { id: '2', label: 'two', before: ['1'] },
