@@ -5,6 +5,7 @@ chrome_200_percent.pak
 d3dcompiler_47.dll
 electron.exe
 electron_wer.dll
+main.dll
 ffmpeg.dll
 icudtl.dat
 dxcompiler.dll
