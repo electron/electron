@@ -24,6 +24,7 @@
 #include "base/containers/map_util.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback_helpers.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
@@ -217,19 +218,16 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
+#include "printing/page_range.h"
 #include "printing/print_job_constants.h"
+#include "printing/units.h"
 #include "shell/browser/api/electron_api_printing.h"
 #include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
-
-#if BUILDFLAG(IS_WIN)
-#include "printing/backend/win_helper.h"
-#endif
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -241,42 +239,6 @@
 #endif
 
 namespace gin {
-
-#if BUILDFLAG(ENABLE_PRINTING)
-template <>
-struct Converter<printing::mojom::MarginType> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     printing::mojom::MarginType* out) {
-    using Val = printing::mojom::MarginType;
-    static constexpr auto Lookup =
-        base::MakeFixedFlatMap<std::string_view, Val>({
-            {"custom", Val::kCustomMargins},
-            {"default", Val::kDefaultMargins},
-            {"none", Val::kNoMargins},
-            {"printableArea", Val::kPrintableAreaMargins},
-        });
-    return FromV8WithLookup(isolate, val, Lookup, out);
-  }
-};
-
-template <>
-struct Converter<printing::mojom::DuplexMode> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     printing::mojom::DuplexMode* out) {
-    using Val = printing::mojom::DuplexMode;
-    static constexpr auto Lookup =
-        base::MakeFixedFlatMap<std::string_view, Val>({
-            {"longEdge", Val::kLongEdge},
-            {"shortEdge", Val::kShortEdge},
-            {"simplex", Val::kSimplex},
-        });
-    return FromV8WithLookup(isolate, val, Lookup, out);
-  }
-};
-
-#endif
 
 template <>
 struct Converter<WindowOpenDisposition> {
@@ -478,24 +440,6 @@ void AdjustCaretBrowsingCount(int delta) {
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
-// Constants we use for printing.
-constexpr char kFrom[] = "from";
-constexpr char kTo[] = "to";
-constexpr char kUseDefaultPrinterPageSize[] = "usePrinterDefaultPageSize";
-constexpr char kSilent[] = "silent";
-constexpr char kHeader[] = "header";
-constexpr char kFooter[] = "footer";
-constexpr char kPageRanges[] = "pageRanges";
-constexpr char kMediaSize[] = "mediaSize";
-constexpr char kDpi[] = "dpi";
-constexpr char kMarginType[] = "marginType";
-constexpr char kMargins[] = "margins";
-constexpr char kPrintBackground[] = "printBackground";
-constexpr char kDuplexMode[] = "duplexMode";
-
-constexpr char kDpiHorizontal[] = "horizontal";
-constexpr char kDpiVertical[] = "vertical";
-
 struct StockMediaSize {
   std::string_view key;  // webContents.print()'s pageSize name
   std::string_view name;
@@ -954,12 +898,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(Type::kRemote),
-      id_(GetAllWebContents().Add(this))
-#if BUILDFLAG(ENABLE_PRINTING)
-      ,
-      print_task_runner_(CreatePrinterHandlerTaskRunner())
-#endif
-{
+      id_(GetAllWebContents().Add(this)) {
   // A Type::kRemote WebContents returns from InitWithExtensionView() before the
   // funnel below, so it takes its caret browsing reference here instead.
   ReconcileCaretBrowsingCount(
@@ -1007,12 +946,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          Type type)
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
-      id_(GetAllWebContents().Add(this))
-#if BUILDFLAG(ENABLE_PRINTING)
-      ,
-      print_task_runner_(CreatePrinterHandlerTaskRunner())
-#endif
-{
+      id_(GetAllWebContents().Add(this)) {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
@@ -1023,12 +957,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
-    : id_(GetAllWebContents().Add(this))
-#if BUILDFLAG(ENABLE_PRINTING)
-      ,
-      print_task_runner_(CreatePrinterHandlerTaskRunner())
-#endif
-{
+    : id_(GetAllWebContents().Add(this)) {
   // Read options.
   options.Get("backgroundThrottling", &background_throttling_);
 
@@ -3940,278 +3869,324 @@ bool WebContents::IsCurrentlyAudible() {
 #if BUILDFLAG(ENABLE_PRINTING)
 namespace {
 
-void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
-                          base::DictValue print_settings,
-                          printing::CompletionCallback print_callback,
-                          // <error, device_name>
-                          std::pair<std::string, std::u16string> info) {
-  // The content::WebContents might be already deleted at this point, and the
-  // PrintViewManagerElectron class does not do null check.
-  if (!web_contents) {
-    if (print_callback)
-      std::move(print_callback).Run(false, "failed");
+PrintViewManagerElectron* GetPrintViewManager(content::WebContents* contents,
+                                              content::RenderFrameHost** rfh) {
+  *rfh = contents ? GetRenderFrameHostToUse(contents) : nullptr;
+  return *rfh ? PrintViewManagerElectron::FromWebContents(
+                    content::WebContents::FromRenderFrameHost(*rfh))
+              : nullptr;
+}
+
+void OnPrinterResolved(base::WeakPtr<content::WebContents> web_contents,
+                       base::DictValue print_settings,
+                       printing::PageRanges page_ranges,
+                       bool silent,
+                       bool use_printer_default_page_size,
+                       PrintViewManagerElectron::PrintCallback print_callback,
+                       base::expected<ResolvedPrinter, std::string> printer) {
+  content::RenderFrameHost* rfh;
+  auto* print_view_manager = GetPrintViewManager(web_contents.get(), &rfh);
+  if (!print_view_manager) {
+    std::move(print_callback).Run(false, "Print job failed");
+    return;
+  }
+  if (!printer.has_value()) {
+    std::move(print_callback).Run(false, printer.error());
     return;
   }
 
-  if (!info.first.empty()) {
-    if (print_callback)
-      std::move(print_callback).Run(false, info.first);
-    return;
-  }
-
-  // Use user-passed deviceName, otherwise default printer.
-  print_settings.Set(printing::kSettingDeviceName, info.second);
+  print_settings.Set(printing::kSettingDeviceName, printer->name);
   if (!print_settings.FindInt(printing::kSettingDpiHorizontal)) {
-    gfx::Size dpi = GetDefaultPrinterDPI(info.second);
+    gfx::Size dpi = printer->dpi;
+    if (dpi.IsEmpty()) {
+#if BUILDFLAG(IS_MAC)
+      dpi = gfx::Size(printing::kDefaultMacDpi, printing::kDefaultMacDpi);
+#else
+      dpi = gfx::Size(printing::kDefaultPdfDpi, printing::kDefaultPdfDpi);
+#endif
+    }
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
     print_settings.Set(printing::kSettingDpiVertical, dpi.height());
   }
-
-  auto make_media_size = [](int height_microns, int width_microns) {
-    return base::DictValue()
-        .Set(printing::kSettingMediaSizeHeightMicrons, height_microns)
-        .Set(printing::kSettingMediaSizeWidthMicrons, width_microns)
-        .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-        .Set(printing::kSettingsImageableAreaTopMicrons, height_microns)
-        .Set(printing::kSettingsImageableAreaRightMicrons, width_microns)
-        .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-        .Set(printing::kSettingMediaSizeIsDefault, true);
-  };
-
-  if (!print_settings.Find(printing::kSettingMediaSize)) {
-    const bool use_default_size =
-        print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
-    std::optional<gfx::Size> paper_size;
-    if (use_default_size)
-      paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
-
+  if (use_printer_default_page_size && !printer->default_paper_um.IsEmpty()) {
+    const gfx::Size& um = printer->default_paper_um;
     print_settings.Set(
         printing::kSettingMediaSize,
-        paper_size ? make_media_size(paper_size->height(), paper_size->width())
-                   : make_media_size(297000, 210000));
+        base::DictValue()
+            .Set(printing::kSettingMediaSizeHeightMicrons, um.height())
+            .Set(printing::kSettingMediaSizeWidthMicrons, um.width())
+            .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+            .Set(printing::kSettingsImageableAreaTopMicrons, um.height())
+            .Set(printing::kSettingsImageableAreaRightMicrons, um.width())
+            .Set(printing::kSettingsImageableAreaBottomMicrons, 0));
   }
 
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
-  if (!rfh)
-    return;
+  print_view_manager->Print(rfh, std::move(print_settings),
+                            std::move(page_ranges), silent,
+                            std::move(print_callback));
+}
 
-  auto* print_view_manager = PrintViewManagerElectron::FromWebContents(
-      content::WebContents::FromRenderFrameHost(rfh));
-  if (!print_view_manager)
-    return;
+// webContents.print(options) with at least one option set, read the way
+// docs/api/web-contents.md describes it: a value of the wrong type, or a
+// number Chromium cannot take as a positive int32, falls back to the default.
+struct PrintRequest {
+  base::DictValue settings;
+  printing::PageRanges page_ranges;
+  std::string device_name;
+  bool silent = false;
+  bool use_printer_default_page_size = false;
+  // Whether ResolvePrinter() needs the printer's DPI / default paper size.
+  bool want_caps = false;
+};
 
-  print_view_manager->PrintNow(rfh, std::move(print_settings),
-                               std::move(print_callback));
+class PrintOptions {
+ public:
+  PrintOptions(v8::Isolate* isolate, v8::Local<v8::Object> object)
+      : isolate_(isolate), object_(object) {}
+
+  v8::Local<v8::Value> Get(std::string_view key) const {
+    v8::Local<v8::Value> value;
+    if (object_.IsEmpty() || !object_
+                                  ->Get(isolate_->GetCurrentContext(),
+                                        gin::StringToV8(isolate_, key))
+                                  .ToLocal(&value)) {
+      return v8::Undefined(isolate_);
+    }
+    return value;
+  }
+  bool Bool(std::string_view key, bool fallback) const {
+    v8::Local<v8::Value> value = Get(key);
+    return value->IsBoolean() ? value.As<v8::Boolean>()->Value() : fallback;
+  }
+  std::string String(std::string_view key) const {
+    v8::Local<v8::Value> value = Get(key);
+    return value->IsString() ? gin::V8ToString(isolate_, value) : std::string();
+  }
+  // Number.isInteger(value) && min <= value < 2**31, else |fallback|.
+  int Int(std::string_view key, int fallback, int min = 1) const {
+    v8::Local<v8::Value> value = Get(key);
+    if (!value->IsNumber())
+      return fallback;
+    double number = value.As<v8::Number>()->Value();
+    if (std::trunc(number) != number || number < min || number >= (1u << 31))
+      return fallback;
+    return static_cast<int>(number);
+  }
+  PrintOptions Object(std::string_view key) const {
+    v8::Local<v8::Value> value = Get(key);
+    return PrintOptions(isolate_, value->IsObject() && !value->IsFunction()
+                                      ? value.As<v8::Object>()
+                                      : v8::Local<v8::Object>());
+  }
+
+ private:
+  raw_ptr<v8::Isolate> isolate_;
+  v8::Local<v8::Object> object_;
+};
+
+PrintRequest ReadPrintRequest(v8::Isolate* isolate,
+                              v8::Local<v8::Object> object,
+                              base::DictValue media_size) {
+  PrintOptions o(isolate, object);
+  PrintRequest request;
+  base::DictValue& settings = request.settings;
+
+  request.silent = o.Bool("silent", false);
+  request.device_name = o.String("deviceName");
+  request.use_printer_default_page_size =
+      o.Bool("usePrinterDefaultPageSize", false);
+
+  settings.Set(printing::kSettingShouldPrintBackgrounds,
+               o.Bool("printBackground", false));
+  settings.Set(printing::kSettingColor,
+               static_cast<int>(o.Bool("color", true)
+                                    ? printing::mojom::ColorModel::kColor
+                                    : printing::mojom::ColorModel::kGray));
+  settings.Set(printing::kSettingLandscape, o.Bool("landscape", false));
+  settings.Set(printing::kSettingScaleFactor, o.Int("scaleFactor", 100));
+  settings.Set(printing::kSettingPagesPerSheet, o.Int("pagesPerSheet", 1));
+  settings.Set(printing::kSettingCollate, o.Bool("collate", true));
+  settings.Set(printing::kSettingCopies, o.Int("copies", 1));
+
+  static constexpr auto kMarginTypes =
+      base::MakeFixedFlatMap<std::string_view, printing::mojom::MarginType>(
+          {{"custom", printing::mojom::MarginType::kCustomMargins},
+           {"default", printing::mojom::MarginType::kDefaultMargins},
+           {"none", printing::mojom::MarginType::kNoMargins},
+           {"printableArea",
+            printing::mojom::MarginType::kPrintableAreaMargins}});
+  PrintOptions margins = o.Object("margins");
+  auto margin_type = kMarginTypes.find(margins.String("marginType"));
+  printing::mojom::MarginType margin =
+      margin_type == kMarginTypes.end()
+          ? printing::mojom::MarginType::kDefaultMargins
+          : margin_type->second;
+  settings.Set(printing::kSettingMarginsType, static_cast<int>(margin));
+  if (margin == printing::mojom::MarginType::kCustomMargins) {
+    settings.Set(
+        printing::kSettingMarginsCustom,
+        base::DictValue()
+            .Set(printing::kSettingMarginTop, margins.Int("top", 0, 0))
+            .Set(printing::kSettingMarginBottom, margins.Int("bottom", 0, 0))
+            .Set(printing::kSettingMarginLeft, margins.Int("left", 0, 0))
+            .Set(printing::kSettingMarginRight, margins.Int("right", 0, 0)));
+  }
+
+  std::string header = o.String("header");
+  std::string footer = o.String("footer");
+  settings.Set(printing::kSettingHeaderFooterEnabled,
+               !header.empty() || !footer.empty());
+  if (!header.empty() || !footer.empty()) {
+    settings.Set(printing::kSettingHeaderFooterTitle, std::move(header));
+    settings.Set(printing::kSettingHeaderFooterURL, std::move(footer));
+  }
+
+  v8::Local<v8::Value> ranges = o.Get("pageRanges");
+  if (ranges->IsArray()) {
+    v8::Local<v8::Array> array = ranges.As<v8::Array>();
+    for (uint32_t i = 0; i < array->Length(); ++i) {
+      v8::Local<v8::Value> item;
+      if (!array->Get(isolate->GetCurrentContext(), i).ToLocal(&item))
+        break;
+      PrintOptions range(isolate, item->IsObject() ? item.As<v8::Object>()
+                                                   : v8::Local<v8::Object>());
+      int from = range.Int("from", -1, 0);
+      int to = range.Int("to", -1, 0);
+      if (from >= 0 && to >= from) {
+        request.page_ranges.push_back({.from = static_cast<uint32_t>(from),
+                                       .to = static_cast<uint32_t>(to)});
+      }
+    }
+  }
+
+  static constexpr auto kDuplexModes =
+      base::MakeFixedFlatMap<std::string_view, printing::mojom::DuplexMode>(
+          {{"longEdge", printing::mojom::DuplexMode::kLongEdge},
+           {"shortEdge", printing::mojom::DuplexMode::kShortEdge},
+           {"simplex", printing::mojom::DuplexMode::kSimplex}});
+  auto duplex = kDuplexModes.find(o.String("duplexMode"));
+  settings.Set(
+      printing::kSettingDuplexMode,
+      static_cast<int>(duplex == kDuplexModes.end()
+                           ? printing::mojom::DuplexMode::kUnknownDuplexMode
+                           : duplex->second));
+
+  // One of the two given fills in for the other; neither leaves it to the
+  // printer's own DPI (OnPrinterResolved).
+  PrintOptions dpi = o.Object("dpi");
+  int horizontal_dpi = dpi.Int("horizontal", 0);
+  int vertical_dpi = dpi.Int("vertical", 0);
+  if (horizontal_dpi || vertical_dpi) {
+    settings.Set(printing::kSettingDpiHorizontal,
+                 horizontal_dpi ? horizontal_dpi : vertical_dpi);
+    settings.Set(printing::kSettingDpiVertical,
+                 vertical_dpi ? vertical_dpi : horizontal_dpi);
+  }
+  request.want_caps = !(horizontal_dpi || vertical_dpi) ||
+                      request.use_printer_default_page_size;
+
+  settings.Set(printing::kSettingMediaSize, std::move(media_size));
+
+  // PrintSettingsFromJobSettings() requires these.
+  settings.Set(printing::kSettingPrinterType,
+               static_cast<int>(printing::mojom::PrinterType::kLocal));
+  settings.Set(printing::kSettingShouldPrintSelectionOnly, false);
+  settings.Set(printing::kSettingRasterizePdf, false);
+  return request;
+}
+
+// Runs once earlier print()/printToPDF() jobs in the frame tree have finished;
+// |done| lets the next one start.
+void StartPrint(base::WeakPtr<content::WebContents> web_contents,
+                std::optional<PrintRequest> request,
+                PrintViewManagerElectron::PrintCallback callback,
+                base::OnceClosure done) {
+  callback = base::BindOnce(
+      [](base::OnceClosure done, PrintViewManagerElectron::PrintCallback cb,
+         bool success, const std::string& failure_reason) {
+        std::move(done).Run();
+        std::move(cb).Run(success, failure_reason);
+      },
+      std::move(done), std::move(callback));
+  if (!request) {
+    content::RenderFrameHost* rfh;
+    auto* print_view_manager = GetPrintViewManager(web_contents.get(), &rfh);
+    if (!print_view_manager) {
+      std::move(callback).Run(false, "Print job failed");
+      return;
+    }
+    print_view_manager->Print(rfh, std::nullopt, {}, /*silent=*/false,
+                              std::move(callback));
+    return;
+  }
+  ResolvePrinter(
+      request->device_name, request->want_caps,
+      base::BindOnce(
+          &OnPrinterResolved, web_contents, std::move(request->settings),
+          std::move(request->page_ranges), request->silent,
+          request->use_printer_default_page_size, std::move(callback)));
 }
 
 }  // namespace
 
 void WebContents::Print(gin::Arguments* const args) {
   v8::Isolate* const isolate = args->isolate();
-  auto options = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  v8::Local<v8::Value> options_value;
-  if (args->GetNext(&options_value) && !options_value->IsUndefined() &&
-      (options_value->IsFunction() ||
-       !gin::ConvertFromV8(isolate, options_value, &options))) {
-    args->ThrowTypeError(
-        "webContents.print(): Invalid print settings specified.");
-    return;
-  }
-
-  // `const {pageSize, usePrinterDefaultPageSize} = options`: a throwing
-  // getter throws out of print() before anything happens.
-  std::optional<base::DictValue> media_size;
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Value> page_size;
-  v8::Local<v8::Value> use_default;
-  if (!options.GetHandle()
-           ->Get(context, gin::StringToV8(isolate, "pageSize"))
-           .ToLocal(&page_size) ||
-      !options.GetHandle()
-           ->Get(context, gin::StringToV8(isolate, kUseDefaultPrinterPageSize))
-           .ToLocal(&use_default)) {
-    return;
-  }
-  if (!page_size->IsUndefined()) {
-    if (!use_default->IsUndefined()) {
-      gin_helper::ErrorThrower(isolate).ThrowError(
-          "usePrinterDefaultPageSize cannot be combined with pageSize");
+
+  v8::Local<v8::Object> options;
+  v8::Local<v8::Value> options_value;
+  if (args->GetNext(&options_value) && !options_value->IsUndefined()) {
+    if (!options_value->IsObject() || options_value->IsFunction()) {
+      args->ThrowTypeError(
+          "webContents.print(): Invalid print settings specified.");
       return;
     }
-    media_size = MediaSizeFromPageSize(isolate, page_size);
-    if (!media_size)
-      return;
+    options = options_value.As<v8::Object>();
   }
 
-  printing::CompletionCallback callback;
+  PrintViewManagerElectron::PrintCallback callback = base::DoNothing();
   v8::Local<v8::Value> callback_value;
-  if (args->GetNext(&callback_value) && callback_value->BooleanValue(isolate) &&
+  if (args->GetNext(&callback_value) && !callback_value->IsUndefined() &&
       !gin::ConvertFromV8(isolate, callback_value, &callback)) {
     args->ThrowTypeError(
         "webContents.print(): Invalid optional callback provided.");
     return;
   }
 
-  base::DictValue settings;
-  if (!media_size && options.IsEmptyObject()) {
-    content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
-    if (!rfh)
+  // print() / print({}) leaves every setting to the system print dialog.
+  std::optional<PrintRequest> request;
+  v8::Local<v8::Array> keys;
+  if (!options.IsEmpty() &&
+      options->GetOwnPropertyNames(context).ToLocal(&keys) &&
+      keys->Length() > 0) {
+    v8::Local<v8::Value> page_size;
+    v8::Local<v8::Value> use_default;
+    if (!options->Get(context, gin::StringToV8(isolate, "pageSize"))
+             .ToLocal(&page_size) ||
+        !options
+             ->Get(context,
+                   gin::StringToV8(isolate, "usePrinterDefaultPageSize"))
+             .ToLocal(&use_default)) {
       return;
-
-    auto* print_view_manager = PrintViewManagerElectron::FromWebContents(
-        content::WebContents::FromRenderFrameHost(rfh));
-    if (!print_view_manager)
+    }
+    std::optional<base::DictValue> media_size;
+    if (page_size->IsUndefined()) {
+      media_size =
+          MediaSizeFromPageSize(isolate, gin::StringToV8(isolate, "A4"));
+    } else if (!use_default->IsUndefined()) {
+      gin_helper::ErrorThrower(isolate).ThrowError(
+          "usePrinterDefaultPageSize cannot be combined with pageSize");
       return;
-
-    print_view_manager->PrintNow(rfh, std::move(settings), std::move(callback));
-    return;
-  }
-
-  // Set optional silent printing.
-  settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
-
-  settings.Set(printing::kSettingShouldPrintBackgrounds,
-               options.ValueOrDefault(
-                   kPrintBackground,
-                   options.ValueOrDefault(
-                       printing::kSettingShouldPrintBackgrounds, false)));
-
-  // Set custom margin settings
-  auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
-  if (options.Get(kMargins, &margins)) {
-    printing::mojom::MarginType margin_type =
-        printing::mojom::MarginType::kDefaultMargins;
-    margins.Get(kMarginType, &margin_type);
-    settings.Set(printing::kSettingMarginsType, static_cast<int>(margin_type));
-
-    if (margin_type == printing::mojom::MarginType::kCustomMargins) {
-      settings.Set(
-          printing::kSettingMarginsCustom,
-          base::DictValue{}
-              .Set(printing::kSettingMarginTop,
-                   margins.ValueOrDefault(printing::kSettingMarginTop, 0))
-              .Set(printing::kSettingMarginBottom,
-                   margins.ValueOrDefault(printing::kSettingMarginBottom, 0))
-              .Set(printing::kSettingMarginLeft,
-                   margins.ValueOrDefault(printing::kSettingMarginLeft, 0))
-              .Set(printing::kSettingMarginRight,
-                   margins.ValueOrDefault(printing::kSettingMarginRight, 0)));
+    } else if (!(media_size = MediaSizeFromPageSize(isolate, page_size))) {
+      return;
     }
-  } else {
-    settings.Set(
-        printing::kSettingMarginsType,
-        static_cast<int>(printing::mojom::MarginType::kDefaultMargins));
+    request = ReadPrintRequest(isolate, options, std::move(*media_size));
   }
 
-  // Set whether to print color or greyscale
-  settings.Set(
-      printing::kSettingColor,
-      static_cast<int>(options.ValueOrDefault(printing::kSettingColor, true)
-                           ? printing::mojom::ColorModel::kColor
-                           : printing::mojom::ColorModel::kGray));
-
-  // Is the orientation landscape or portrait.
-  settings.Set(printing::kSettingLandscape,
-               options.ValueOrDefault(printing::kSettingLandscape, false));
-
-  // We set the default to the system's default printer and only update
-  // if at the Chromium level if the user overrides.
-  // Printer device name as opened by the OS.
-  const auto device_name =
-      options.ValueOrDefault(printing::kSettingDeviceName, std::u16string{});
-
-  settings.Set(printing::kSettingScaleFactor,
-               options.ValueOrDefault(printing::kSettingScaleFactor, 100));
-
-  settings.Set(printing::kSettingPagesPerSheet,
-               options.ValueOrDefault(printing::kSettingPagesPerSheet, 1));
-
-  // True if the user wants to print with collate.
-  settings.Set(printing::kSettingCollate,
-               options.ValueOrDefault(printing::kSettingCollate, true));
-
-  // True if the user wants to print using the printer's default page size.
-  settings.Set(kUseDefaultPrinterPageSize,
-               options.ValueOrDefault(kUseDefaultPrinterPageSize, false));
-
-  // The number of individual copies to print
-  settings.Set(printing::kSettingCopies,
-               options.ValueOrDefault(printing::kSettingCopies, 1));
-  // Strings to be printed as headers and footers if requested by the user.
-  const auto header = options.ValueOrDefault(kHeader, std::string{});
-  const auto footer = options.ValueOrDefault(kFooter, std::string{});
-
-  if (!(header.empty() && footer.empty())) {
-    settings.Set(printing::kSettingHeaderFooterEnabled, true);
-
-    settings.Set(printing::kSettingHeaderFooterTitle, header);
-    settings.Set(printing::kSettingHeaderFooterURL, footer);
-  } else {
-    settings.Set(printing::kSettingHeaderFooterEnabled, false);
-  }
-
-  // We don't want to allow the user to enable these settings
-  // but we need to set them or a CHECK is hit.
-  settings.Set(printing::kSettingPrinterType,
-               static_cast<int>(printing::mojom::PrinterType::kLocal));
-  settings.Set(printing::kSettingShouldPrintSelectionOnly, false);
-  settings.Set(printing::kSettingRasterizePdf, false);
-
-  // Set custom page ranges to print
-  std::vector<gin_helper::Dictionary> page_ranges;
-  if (options.Get(kPageRanges, &page_ranges)) {
-    base::ListValue page_range_list;
-    for (auto& range : page_ranges) {
-      int from, to;
-      if (range.Get(kFrom, &from) && range.Get(kTo, &to)) {
-        base::DictValue range_dict;
-        // Chromium uses 1-based page ranges, so increment each by 1.
-        range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
-        range_dict.Set(printing::kSettingPageRangeTo, to + 1);
-        page_range_list.Append(std::move(range_dict));
-      } else {
-        continue;
-      }
-    }
-    if (!page_range_list.empty())
-      settings.Set(printing::kSettingPageRange, std::move(page_range_list));
-  }
-
-  // Duplex type user wants to use.
-  const auto duplex_mode = options.ValueOrDefault(
-      kDuplexMode,
-      options.ValueOrDefault(printing::kSettingDuplexMode,
-                             printing::mojom::DuplexMode::kUnknownDuplexMode));
-  settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
-
-  // Set custom media size if passed. If none is passed, the media size
-  // will be set in OnGetDeviceNameToUse based on the printer's default
-  // settings where applicable.
-  if (media_size) {
-    settings.Set(printing::kSettingMediaSize, std::move(*media_size));
-  } else if (base::DictValue dict; options.Get(kMediaSize, &dict)) {
-    settings.Set(printing::kSettingMediaSize, std::move(dict));
-  }
-
-  // Set custom dots per inch (dpi)
-  if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
-    // `webContents.print()` exposes `dpi: { horizontal, vertical }` in JS.
-    // Keep backward compatibility with internal key names as a fallback.
-    settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault(
-                     kDpiHorizontal,
-                     dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
-    settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault(
-                     kDpiVertical,
-                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
-  }
-
-  print_task_runner_->PostTaskAndReplyWithResult(
-      FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
-      base::BindOnce(&OnGetDeviceNameToUse, web_contents()->GetWeakPtr(),
-                     std::move(settings), std::move(callback)));
+  EnqueuePrintJob(
+      web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
+      base::BindOnce(&StartPrint, web_contents()->GetWeakPtr(),
+                     std::move(request), std::move(callback)));
 }
 
 // static: a destroyed WebContents rejects rather than throws.
