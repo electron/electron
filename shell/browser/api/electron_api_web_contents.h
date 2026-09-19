@@ -823,6 +823,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   [[nodiscard]] bool CanGoToIndex(int index) const;
 
+  [[nodiscard]] static bool ShouldIgnoreMenuShortcutsFor(
+      content::WebContents* source);
+
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   cppgc::Persistent<api::Debugger> debugger_;
@@ -853,6 +856,8 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  bool ignore_menu_shortcuts_ = false;
 
   // Kept by JS while 'console-message' has listeners.
   bool console_message_observed_ = false;
