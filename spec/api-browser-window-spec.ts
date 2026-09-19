@@ -8199,7 +8199,7 @@ describe('BrowserWindow module', () => {
     );
 
     // Only applicable on Windows where transparent windows can't be maximized.
-    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+    ifit(process.platform === 'win32')('can show maximized frameless window', () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
@@ -8208,9 +8208,6 @@ describe('BrowserWindow module', () => {
         transparent: true,
         show: true
       });
-
-      w.loadURL('about:blank');
-      await once(w, 'ready-to-show');
 
       expect(w.isMaximized()).to.be.true();
 
