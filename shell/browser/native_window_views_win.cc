@@ -6,8 +6,10 @@
 #include <shellapi.h>
 #include <wrl/client.h>
 
+#include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/process/process.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
@@ -18,13 +20,17 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/aura/window.h"
+#include "ui/base/win/internal_constants.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
+#include "ui/gfx/win/hwnd_util.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationClient.h>
@@ -33,6 +39,26 @@
 namespace electron {
 
 namespace {
+
+// The OS's TME_LEAVE tracking is one-shot: after WM_MOUSELEAVE it stays off
+// until TrackMouseEvent() is called again. Chromium only updates its cached
+// tracking state (|active_mouse_tracking_flags_|, |mouse_tracking_enabled_|)
+// from the leave handler that mouse forwarding consumes, so re-arm on its
+// behalf to keep the two in sync.
+void RearmMouseLeaveTracking(HWND hwnd, DWORD flags) {
+  if (!hwnd)
+    return;
+  TRACKMOUSEEVENT tme = {sizeof(TRACKMOUSEEVENT), flags, hwnd, 0};
+  ::TrackMouseEvent(&tme);
+}
+
+// Converts |point| from screen to the window's client space in place, and
+// reports whether it ends up inside the client area.
+bool PointToClientAndInRect(HWND hwnd, POINT* point) {
+  RECT client_rect = {};
+  return ::ScreenToClient(hwnd, point) && ::GetClientRect(hwnd, &client_rect) &&
+         ::PtInRect(&client_rect, *point) != FALSE;
+}
 
 void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color, bool has_frame) {
   HRESULT result;
@@ -296,6 +322,40 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
   }
 
   switch (message) {
+    // A click-through window (see SetForwardMouseMessages) is invisible to
+    // ::WindowFromPoint(), which Chromium uses to tell a genuine mouse leave
+    // from one it reports for a window the cursor never left. While forwarding,
+    // enter/leave comes from the low level mouse hook instead, so drop the OS
+    // reported leave -- but only while the cursor is still inside the window.
+    // Dropping it also strands Chromium's cached tracking state, which
+    // SetForwardMouseMessages() re-arms when it stops.
+    case WM_MOUSELEAVE:
+    case WM_NCMOUSELEAVE: {
+      if (!forwarding_mouse_messages_)
+        return false;
+
+      HWND hwnd = GetAcceleratedWidget();
+      if (!hwnd)
+        return false;
+
+      POINT cursor = {};
+      ::GetCursorPos(&cursor);
+      return PointToClientAndInRect(hwnd, &cursor);
+    }
+
+    case WM_PARENTNOTIFY: {
+      // Chromium creates a dummy window per web content container (see
+      // LegacyRenderWidgetHostHWND), so a window can have several of them; this
+      // is also how the replacements are discovered after a navigation or a
+      // renderer crash.
+      if (LOWORD(w_param) == WM_CREATE) {
+        RememberLegacyWindow(reinterpret_cast<HWND>(l_param));
+      } else if (LOWORD(w_param) == WM_DESTROY) {
+        legacy_windows_.erase(reinterpret_cast<HWND>(l_param));
+      }
+      return false;
+    }
+
     // Screen readers send WM_GETOBJECT in order to get the accessibility
     // object, so take this opportunity to push Chromium into accessible
     // mode if it isn't already, always say we didn't handle the message
@@ -449,19 +509,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // already began its own quit from a session-end handler.
       if (!Browser::Get()->is_quitting())
         base::Process::TerminateCurrentProcessImmediately(0);
-      return false;
-    }
-    case WM_PARENTNOTIFY: {
-      if (LOWORD(w_param) == WM_CREATE) {
-        // Because of reasons regarding legacy drivers and stuff, a window that
-        // matches the client area is created and used internally by Chromium.
-        // This is used when forwarding mouse messages. We only cache the first
-        // occurrence (the webview window) because dev tools also cause this
-        // message to be sent.
-        if (!legacy_window_) {
-          legacy_window_ = reinterpret_cast<HWND>(l_param);
-        }
-      }
       return false;
     }
     case WM_CONTEXTMENU: {
@@ -675,15 +722,126 @@ void NativeWindowViews::SetRoundedCorners(bool rounded) {
     LOG(WARNING) << "Failed to set rounded corners to " << rounded;
 }
 
+void NativeWindowViews::RememberLegacyWindow(HWND legacy_window) {
+  if (!legacy_window || legacy_windows_.contains(legacy_window))
+    return;
+
+  // Only the dummy windows Chromium creates for the web content containers arm
+  // mouse tracking for forwarded messages; see LegacyRenderWidgetHostHWND.
+  if (gfx::GetClassName(legacy_window) !=
+      std::wstring(ui::kLegacyRenderWidgetHostHwnd)) {
+    return;
+  }
+
+  legacy_windows_.insert(legacy_window);
+  if (forwarding_mouse_messages_) {
+    SetWindowSubclass(legacy_window, SubclassProc, 1,
+                      reinterpret_cast<DWORD_PTR>(this));
+  }
+}
+
+void NativeWindowViews::UpdateLegacyWindowSubclasses() {
+  for (auto it = legacy_windows_.begin(); it != legacy_windows_.end();) {
+    // Erasing only invalidates iterators to the erased element, and |it| has
+    // already moved past it.
+    HWND legacy_window = *(it++);
+
+    // A renderer crash takes its legacy windows with it; anything gone by now
+    // can be forgotten.
+    if (!::IsWindow(legacy_window)) {
+      legacy_windows_.erase(legacy_window);
+      continue;
+    }
+
+    if (forwarding_mouse_messages_) {
+      SetWindowSubclass(legacy_window, SubclassProc, 1,
+                        reinterpret_cast<DWORD_PTR>(this));
+    } else {
+      RemoveWindowSubclass(legacy_window, SubclassProc, 1);
+    }
+  }
+}
+
+void NativeWindowViews::OnForwardedMouseMove(const gfx::Point& screen_point) {
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
+    return;
+
+  // The low level hook reports physical pixels on the virtual desktop, while
+  // mouse messages carry the position relative to the client area.
+  POINT client_point = screen_point.ToPOINT();
+  const bool is_inside = PointToClientAndInRect(hwnd, &client_point);
+
+  const gfx::Point point(client_point.x, client_point.y);
+  if (is_inside) {
+    last_forwarded_point_ = point;
+    pending_forwarded_point_ = point;
+  } else {
+    pending_forwarded_point_.reset();
+  }
+
+  // Dispatch from a task rather than inline: this runs inside a low level mouse
+  // hook, which Windows expects to return quickly, and it also lets a burst of
+  // cursor moves collapse into a single dispatch.
+  if (!forwarded_event_pending_) {
+    forwarded_event_pending_ = true;
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, base::BindOnce(&NativeWindowViews::FlushForwardedMouseEvent,
+                                  mouse_forwarding_weak_factory_.GetWeakPtr()));
+  }
+}
+
+void NativeWindowViews::FlushForwardedMouseEvent() {
+  forwarded_event_pending_ = false;
+  if (!forwarding_mouse_messages_ || widget_destroyed_)
+    return;
+
+  aura::Window* window = GetNativeWindow();
+  if (!window)
+    return;
+
+  auto* desktop_window_tree_host =
+      static_cast<ElectronDesktopWindowTreeHostWin*>(window->GetHost());
+  if (!desktop_window_tree_host)
+    return;
+
+  // Update the tracked state before dispatching: the dispatch runs page code,
+  // which is free to destroy this window as a reaction to the event.
+  const bool was_inside = cursor_inside_window_;
+  const gfx::Point point =
+      pending_forwarded_point_.value_or(last_forwarded_point_);
+  cursor_inside_window_ = pending_forwarded_point_.has_value();
+
+  // Dispatching the equivalent of the messages a click-through window never
+  // gets keeps hover state, draggable regions and input routing working.
+  if (cursor_inside_window_) {
+    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSEMOVE,
+                                                            point);
+  } else if (was_inside) {
+    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSELEAVE,
+                                                            point);
+  }
+}
+
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   if (forward && !forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = true;
     forwarding_windows_->insert(this);
 
-    // Subclassing is used to fix some issues when forwarding mouse messages;
-    // see comments in |SubclassProc|.
-    SetWindowSubclass(legacy_window_, SubclassProc, 1,
-                      reinterpret_cast<DWORD_PTR>(this));
+    // The hook's first sample can already be outside the window, in which case
+    // the leave that ends a hover state present when forwarding was enabled
+    // would never be dispatched. Seed the tracked state from the cursor so the
+    // first flush clears it if needed; pending_forwarded_point_ stays empty
+    // until a sample inside the window arrives.
+    pending_forwarded_point_.reset();
+    HWND hwnd = GetAcceleratedWidget();
+    POINT cursor = {};
+    cursor_inside_window_ = hwnd && ::GetCursorPos(&cursor) &&
+                            PointToClientAndInRect(hwnd, &cursor);
+
+    // The OS reports a mouse leave for a click-through window while the cursor
+    // is still inside it, which has to be filtered out; see |SubclassProc|.
+    UpdateLegacyWindowSubclasses();
 
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, nullptr, 0);
@@ -692,7 +850,23 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     forwarding_mouse_messages_ = false;
     forwarding_windows_->erase(this);
 
-    RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
+    // Stop filtering mouse leave messages and forget where the cursor was, so
+    // that the next time forwarding is enabled the state is rebuilt from
+    // scratch.
+    UpdateLegacyWindowSubclasses();
+    pending_forwarded_point_.reset();
+    cursor_inside_window_ = false;
+
+    // The leaves swallowed by the subclasses just removed, and by the filter in
+    // PreHandleMSG, ended the one-shot OS tracking (see
+    // |RearmMouseLeaveTracking|). Re-arm it now that nothing consumes the leave
+    // anymore, otherwise a later genuine leave is never reported and elements
+    // stay stuck in their hovered state after setIgnoreMouseEvents(false).
+    // See https://github.com/electron/electron/issues/51521.
+    RearmMouseLeaveTracking(GetAcceleratedWidget(), TME_LEAVE);
+    for (HWND legacy_window : legacy_windows_) {
+      RearmMouseLeaveTracking(legacy_window, TME_LEAVE);
+    }
 
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
@@ -720,23 +894,18 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  LPARAM l_param,
                                                  UINT_PTR subclass_id,
                                                  DWORD_PTR ref_data) {
-  auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
-  switch (msg) {
-    case WM_MOUSELEAVE: {
-      // When input is forwarded to underlying windows, this message is posted.
-      // If not handled, it interferes with Chromium logic, causing for example
-      // mouseleave events to fire. If those events are used to exit forward
-      // mode, excessive flickering on for example hover items in underlying
-      // windows can occur due to rapidly entering and leaving forwarding mode.
-      // By consuming and ignoring the message, we're essentially telling
-      // Chromium that we have not left the window despite somebody else getting
-      // the messages. As to why this is caught for the legacy window and not
-      // the actual browser window is simply that the legacy window somehow
-      // makes use of these events; posting to the main window didn't work.
-      if (window->forwarding_mouse_messages_) {
-        return 0;
-      }
-      break;
+  if (msg == WM_MOUSELEAVE) {
+    auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
+    // This window is the one that arms mouse tracking for forwarded messages,
+    // and LegacyRenderWidgetHostHWND relays its mouse leave to the parent
+    // without going through PreHandleMSG, so consuming it here is the only way
+    // to keep the renderer from seeing a leave for a window the cursor never
+    // left (see PreHandleMSG for why the OS reports one at all). Unfiltered, it
+    // makes apps that exit forwarding from a mouseleave handler flicker;
+    // enter/leave for the web contents comes from the low level mouse hook
+    // instead, see FlushForwardedMouseEvent.
+    if (window->forwarding_mouse_messages_) {
+      return 0;
     }
   }
 
@@ -750,24 +919,12 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
     return CallNextHookEx(nullptr, n_code, w_param, l_param);
   }
 
-  // Post a WM_MOUSEMOVE message for those windows whose client area contains
-  // the cursor since they are in a state where they would otherwise ignore all
-  // mouse input.
+  // Forwarding windows are click-through, so they get their moves from here.
   if (w_param == WM_MOUSEMOVE) {
+    const POINT& hook_point = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
+    const gfx::Point screen_point(hook_point.x, hook_point.y);
     for (auto* window : *forwarding_windows_) {
-      // At first I considered enumerating windows to check whether the cursor
-      // was directly above the window, but since nothing bad seems to happen
-      // if we post the message even if some other window occludes it I have
-      // just left it as is.
-      RECT client_rect;
-      GetClientRect(window->legacy_window_, &client_rect);
-      POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
-      ScreenToClient(window->legacy_window_, &p);
-      if (PtInRect(&client_rect, p)) {
-        WPARAM w = 0;  // No virtual keys pressed for our purposes
-        LPARAM l = MAKELPARAM(p.x, p.y);
-        PostMessage(window->legacy_window_, WM_MOUSEMOVE, w, l);
-      }
+      window->OnForwardedMouseMove(screen_point);
     }
   }
 
