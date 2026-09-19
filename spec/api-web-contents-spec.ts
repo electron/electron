@@ -7,7 +7,8 @@ import {
   BrowserView,
   WebContents,
   BaseWindow,
-  WebContentsView
+  WebContentsView,
+  Menu
 } from 'electron/main';
 
 import { assert, expect } from 'chai';
@@ -3272,6 +3273,37 @@ describe('webContents module', () => {
 
   describe('setIgnoreMenuShortcuts(ignore)', () => {
     afterEach(closeAllWindows);
+
+    const trackShortcutInvocations = (contents: WebContents) => {
+      const previousMenu = Menu.getApplicationMenu();
+      let invocations = 0;
+      Menu.setApplicationMenu(
+        Menu.buildFromTemplate([
+          {
+            label: 'Test',
+            submenu: [{ label: 'Shortcut', accelerator: 'F13', click: () => invocations++ }]
+          }
+        ])
+      );
+      contents.debugger.attach();
+      defer(() => {
+        Menu.setApplicationMenu(previousMenu);
+        if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
+      });
+
+      return async (expectedInvocations: number) => {
+        contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          key: 'F13',
+          code: 'F13',
+          windowsVirtualKeyCode: 124
+        });
+        await waitUntil(() => invocations >= expectedInvocations);
+        return invocations;
+      };
+    };
+
     it('does not throw', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
@@ -3279,6 +3311,68 @@ describe('webContents module', () => {
         w.webContents.setIgnoreMenuShortcuts(false);
       }).to.not.throw();
     });
+
+    it('honors the initial ignoreMenuShortcuts preference', async () => {
+      const window = new BrowserWindow({
+        show: true,
+        webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
+      });
+      await window.loadURL('about:blank');
+      window.webContents.focus();
+      const sendShortcut = trackShortcutInvocations(window.webContents);
+      expect(await sendShortcut(0)).to.equal(0);
+      window.webContents.setIgnoreMenuShortcuts(false);
+      expect(await sendShortcut(1)).to.equal(1);
+    });
+
+    it('does not crash for detached DevTools without preferences', async () => {
+      const window = new BrowserWindow({ show: false });
+      await window.loadURL('about:blank');
+      const devToolsOpened = once(window.webContents, 'devtools-opened');
+      window.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devToolsOpened;
+
+      const devTools = window.webContents.devToolsWebContents!;
+      expect(devTools.getLastWebPreferences()).to.equal(null);
+      devTools.setIgnoreMenuShortcuts(false);
+      devTools.setIgnoreMenuShortcuts(true);
+      devTools.setIgnoreMenuShortcuts(false);
+    });
+
+    for (const target of ['webview', 'docked DevTools'] as const) {
+      it(`uses the source settings for ${target}`, async () => {
+        const window = new BrowserWindow({ show: true, webPreferences: { webviewTag: true } });
+        let source: WebContents;
+        if (target === 'webview') {
+          const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
+          await window.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
+          [, source] = await attached;
+          await source.loadURL('about:blank');
+        } else {
+          await window.loadURL('about:blank');
+          const devToolsOpened = once(window.webContents, 'devtools-opened');
+          const devToolsFocused = once(window.webContents, 'devtools-focused');
+          window.webContents.openDevTools({ mode: 'right', activate: true });
+          await Promise.all([devToolsOpened, devToolsFocused]);
+          source = window.webContents.devToolsWebContents!;
+          expect(source.getLastWebPreferences()).to.equal(null);
+          source.setIgnoreMenuShortcuts(false);
+        }
+
+        const sendShortcut = trackShortcutInvocations(source);
+        let expectedInvocations = 0;
+        for (const ignore of [true, false, true, false]) {
+          if (target === 'webview') {
+            window.focus();
+            await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          }
+          window.webContents.setIgnoreMenuShortcuts(!ignore);
+          source.setIgnoreMenuShortcuts(ignore);
+          if (!ignore) expectedInvocations++;
+          expect(await sendShortcut(expectedInvocations)).to.equal(expectedInvocations);
+        }
+      });
+    }
   });
 
   const crashPrefs = [
