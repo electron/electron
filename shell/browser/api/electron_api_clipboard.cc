@@ -274,7 +274,7 @@ v8::Local<v8::Promise> Clipboard::ReadText(ui::ClipboardBuffer buffer,
               return;
             }
 #endif
-            promise.Resolve(std::move(result));
+            promise.Resolve(result);
           },
           std::move(promise), buffer));
 

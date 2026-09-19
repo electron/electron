@@ -4,6 +4,8 @@
 
 #include "shell/common/electron_paths.h"
 
+#include <utility>
+
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/path_service.h"
@@ -102,7 +104,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     return false;
   }
 
-  *result = cur;
+  *result = std::move(cur);
 
   return true;
 }

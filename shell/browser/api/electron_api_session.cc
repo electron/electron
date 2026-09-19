@@ -1827,8 +1827,7 @@ Session* Session::FromPath(gin::Arguments* args,
     return nullptr;
   }
 
-  browser_context =
-      ElectronBrowserContext::FromPath(std::move(path), std::move(options));
+  browser_context = ElectronBrowserContext::FromPath(path, std::move(options));
 
   return FromOrCreate(args->isolate(), browser_context);
 }

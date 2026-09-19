@@ -129,11 +129,10 @@ bool ElectronComponentExtensionResourceManager::IsComponentExtensionResource(
     int* resource_id) const {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  base::FilePath directory_path = extension_path;
   base::FilePath resources_dir;
   base::FilePath relative_path;
   if (!base::PathService::Get(chrome::DIR_RESOURCES, &resources_dir) ||
-      !resources_dir.AppendRelativePath(directory_path, &relative_path)) {
+      !resources_dir.AppendRelativePath(extension_path, &relative_path)) {
     return false;
   }
   relative_path = relative_path.Append(resource_path);

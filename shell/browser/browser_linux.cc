@@ -80,7 +80,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
   if (!found)
     return {};
 
-  const auto path = base::FilePath::FromUTF8Unsafe(found);
+  auto path = base::FilePath::FromUTF8Unsafe(found);
   g_free(found);
   return path;
 }

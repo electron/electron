@@ -266,21 +266,21 @@ std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
     text += u"Ctrl";
   if (modifiers & NSEventModifierFlagShift) {
     if (!text.empty())
-      text += u"+";
+      text += u'+';
     text += u"Shift";
   }
   if (modifiers & NSEventModifierFlagOption) {
     if (!text.empty())
-      text += u"+";
+      text += u'+';
     text += u"Alt";
   }
   if (modifiers & NSEventModifierFlagCommand) {
     if (!text.empty())
-      text += u"+";
+      text += u'+';
     text += u"Command";
   }
   if (!text.empty())
-    text += u"+";
+    text += u'+';
   auto key = base::ToUpperASCII(base::SysNSStringToUTF16([item keyEquivalent]));
   if (key == u"\t")
     text += u"Tab";

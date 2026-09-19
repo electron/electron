@@ -452,15 +452,12 @@ bool NotificationCallbackWrapper(
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(std::move(cmd), cwd, std::move(additional_data));
+    callback.Run(std::move(cmd), cwd, additional_data);
   } else {
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-        base::SingleThreadTaskRunner::GetCurrentDefault());
-
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
-                                  cwd, std::move(additional_data)));
+                                  cwd, additional_data));
   }
   // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();
@@ -1045,7 +1042,7 @@ void App::OnSecondInstance(base::CommandLine cmd,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
-      DeserializeV8Value(isolate, std::move(additional_data));
+      DeserializeV8Value(isolate, additional_data);
   Emit("second-instance", cmd.argv(), cwd, data_value);
 }
 

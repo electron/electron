@@ -428,7 +428,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 
@@ -2921,8 +2921,8 @@ void WebContents::NotifyPageTitleUpdated(
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;
@@ -3245,7 +3245,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 

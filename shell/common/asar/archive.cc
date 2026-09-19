@@ -176,6 +176,11 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 IntegrityPayload::IntegrityPayload() = default;
 IntegrityPayload::~IntegrityPayload() = default;
 IntegrityPayload::IntegrityPayload(const IntegrityPayload& other) = default;
+IntegrityPayload::IntegrityPayload(IntegrityPayload&& other) = default;
+IntegrityPayload& IntegrityPayload::operator=(const IntegrityPayload& other) =
+    default;
+IntegrityPayload& IntegrityPayload::operator=(IntegrityPayload&& other) =
+    default;
 
 Archive::FileInfo::FileInfo() = default;
 Archive::FileInfo::~FileInfo() = default;
