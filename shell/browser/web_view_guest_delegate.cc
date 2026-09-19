@@ -74,6 +74,12 @@ void WebViewGuestDelegate::OnZoomChanged(
     const WebContentsZoomController::ZoomChangedEventData& data) {
   if (data.web_contents == GetOwnerWebContents()) {
     auto* zoom_controller = api_web_contents_->GetZoomController();
+    // Guests with a non-default zoom mode manage their own zoom level; only
+    // default-mode guests inherit the embedder's zoom.
+    if (zoom_controller->zoom_mode() !=
+        WebContentsZoomController::ZOOM_MODE_DEFAULT) {
+      return;
+    }
     if (data.temporary) {
       zoom_controller->SetTemporaryZoomLevel(data.new_zoom_level);
     } else {

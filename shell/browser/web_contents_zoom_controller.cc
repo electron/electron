@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -135,8 +136,13 @@ void WebContentsZoomController::SetDefaultZoomFactor(double factor) {
   default_zoom_factor_ = factor;
 }
 
-void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
+double WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // Cannot zoom in disabled mode. Report the level still in effect so callers
+  // such as webFrame.setZoomLevel() stay in sync with the browser.
+  if (zoom_mode_ == ZOOM_MODE_DISABLED)
+    return content::HostZoomMap::GetZoomLevel(web_contents());
+
   content::GlobalRenderFrameHostId old_rfh_id_ =
       web_contents()->GetPrimaryMainFrame()->GetGlobalId();
   host_zoom_map_->SetTemporaryZoomLevel(old_rfh_id_, level);
@@ -145,6 +151,7 @@ void WebContentsZoomController::SetTemporaryZoomLevel(double level) {
   ZoomChangedEventData zoom_change_data(web_contents(), zoom_level_, level,
                                         true /* temporary */, zoom_mode_);
   observers_.Notify(&WebContentsZoomObserver::OnZoomChanged, zoom_change_data);
+  return level;
 }
 
 bool WebContentsZoomController::UsesTemporaryZoomLevel() {
@@ -284,6 +291,49 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   zoom_mode_ = ZOOM_MODE_DEFAULT;
 }
 
+void WebContentsZoomController::PinDisabledZoomModeOnNavigationIfNeeded() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (zoom_mode_ != ZOOM_MODE_DISABLED)
+    return;
+
+  // ZOOM_MODE_DISABLED pins the page to the default zoom level with a
+  // temporary zoom level. Temporary zoom levels are keyed by RenderFrameHost
+  // and dropped when that frame is deleted, so after a cross-site navigation
+  // replaces the primary main frame the new frame would fall back to the
+  // per-host zoom level stored for the new origin. Re-pin the default level
+  // directly rather than via SetTemporaryZoomLevel(), which rejects changes
+  // in this mode.
+  content::GlobalRenderFrameHostId rfh_id =
+      web_contents()->GetPrimaryMainFrame()->GetGlobalId();
+  if (host_zoom_map_->UsesTemporaryZoomLevel(rfh_id))
+    return;
+  host_zoom_map_->SetTemporaryZoomLevel(rfh_id, GetDefaultZoomLevel());
+}
+
+void WebContentsZoomController::SendTemporaryZoomLevelToNewRenderWidget() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  content::RenderFrameHost* rfh = web_contents()->GetPrimaryMainFrame();
+  if (!host_zoom_map_->UsesTemporaryZoomLevel(rfh->GetGlobalId()))
+    return;
+
+  // A temporary zoom level (re-)applied above reaches the renderer through
+  // RenderWidgetHostImpl::SynchronizeVisualProperties(), which
+  // HostZoomMapImpl::SetTemporaryZoomLevel() requests via
+  // WebContentsImpl::UpdateZoom(). When the navigation created a new
+  // RenderWidget, that widget was initialized with the per-host zoom level of
+  // the then-pending URL (WebContentsImpl::GetPendingPageZoomLevel() ignores
+  // temporary levels) and is still waiting for the ack of those initial
+  // visual properties: RenderFrameHostImpl::DidCommitNavigation() only calls
+  // RenderWidgetHostImpl::DidNavigate(), which clears the pending ack, after
+  // the DidFinishNavigation() observers have run. The update requested above
+  // is therefore throttled and dropped. A visible widget re-synchronizes once
+  // it starts producing frames, but a hidden one never does and would keep
+  // rendering at the per-host level while the browser reports the temporary
+  // one. Send the current visual properties, including the zoom level, now.
+  static_cast<content::RenderWidgetHostImpl*>(rfh->GetRenderWidgetHost())
+      ->SynchronizeVisualPropertiesIgnoringPendingAck();
+}
+
 void WebContentsZoomController::ProcessNavigationZoom(
     content::NavigationHandle* navigation_handle) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -301,7 +351,9 @@ void WebContentsZoomController::ProcessNavigationZoom(
 
   if (!navigation_handle->IsSameDocument()) {
     ResetZoomModeOnNavigationIfNeeded(navigation_handle->GetURL());
+    PinDisabledZoomModeOnNavigationIfNeeded();
     SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
+    SendTemporaryZoomLevelToNewRenderWidget();
 
     // If the main frame's content has changed, the new page may have a
     // different zoom level from the old one.
