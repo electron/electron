@@ -135,12 +135,17 @@ win.setThumbarButtons([
   {
     tooltip: 'button1',
     icon: nativeImage.createFromPath(path.join(__dirname, 'button1.png')),
-    click () { console.log('button1 clicked') }
-  }, {
+    click() {
+      console.log('button1 clicked')
+    }
+  },
+  {
     tooltip: 'button2',
     icon: nativeImage.createFromPath(path.join(__dirname, 'button2.png')),
     flags: ['enabled', 'dismissonclick'],
-    click () { console.log('button2 clicked.') }
+    click() {
+      console.log('button2 clicked.')
+    }
   }
 ])
 ```
