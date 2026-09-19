@@ -25,7 +25,6 @@
 #include "components/crash/core/app/crash_switches.h"
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/content_main.h"
-#include "content/public/app/sandbox_helper_win.h"
 #include "electron/fuses.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
@@ -57,6 +56,11 @@ namespace crash_reporter {
 extern const char kCrashpadProcess[];
 }
 
+extern "C" __declspec(dllexport) int ElectronMain(
+    HINSTANCE instance,
+    sandbox::SandboxInterfaceInfo* sandbox_info,
+    const volatile char* fuse_wire);
+
 // In 32-bit builds, the main thread starts with the default (small) stack size.
 // The ARCH_CPU_32_BITS blocks here and below are in support of moving the main
 // thread to a fiber with a larger stack size.
@@ -68,6 +72,8 @@ struct FiberState {
   HINSTANCE instance;
   LPVOID original_fiber;
   int fiber_result;
+  sandbox::SandboxInterfaceInfo* sandbox_info;
+  const volatile char* fuse_wire;
 };
 
 // A PFIBER_START_ROUTINE function run on a large-stack fiber that calls the
@@ -75,17 +81,19 @@ struct FiberState {
 // fiber. |params| must be a pointer to a FiberState struct.
 void WINAPI FiberBinder(void* params) {
   auto* fiber_state = static_cast<FiberState*>(params);
-  // Call the wWinMain routine from the fiber. Reusing the entry point minimizes
-  // confusion when examining call stacks in crash reports - seeing wWinMain on
-  // the stack is a handy hint that this is the main thread of the process.
-  fiber_state->fiber_result =
-      wWinMain(fiber_state->instance, nullptr, nullptr, 0);
+  // Re-enter the runtime with the larger main-thread stack.
+  fiber_state->fiber_result = ElectronMain(
+      fiber_state->instance, fiber_state->sandbox_info, fiber_state->fuse_wire);
   // Switch back to the main thread to exit.
   ::SwitchToFiber(fiber_state->original_fiber);
 }
 #endif  // defined(ARCH_CPU_32_BITS)
 
-int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
+extern "C" __declspec(dllexport) int ElectronMain(
+    HINSTANCE instance,
+    sandbox::SandboxInterfaceInfo* sandbox_info,
+    const volatile char* fuse_wire) {
+  electron::fuses::SetFuseWire(fuse_wire);
 #if defined(ARCH_CPU_32_BITS)
   enum class FiberStatus { kConvertFailed, kCreateFiberFailed, kSuccess };
   FiberStatus fiber_status = FiberStatus::kSuccess;
@@ -99,7 +107,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
     LPVOID original_fiber =
         ::ConvertThreadToFiberEx(nullptr, FIBER_FLAG_FLOAT_SWITCH);
     if (original_fiber) {
-      FiberState fiber_state = {instance, original_fiber};
+      FiberState fiber_state = {instance, original_fiber, 0, sandbox_info,
+                                fuse_wire};
       // Create a fiber with a bigger stack and switch to it. Leak the fiber on
       // exit.
       LPVOID big_stack_fiber = ::CreateFiberEx(
@@ -218,13 +227,11 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (!electron::CheckCommandLineArguments(command_line->argv()))
     return -1;
 
-  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-  content::InitializeSandboxInfo(&sandbox_info);
   electron::ElectronMainDelegate delegate;
 
   content::ContentMainParams params(&delegate);
   params.instance = instance;
-  params.sandbox_info = &sandbox_info;
+  params.sandbox_info = sandbox_info;
   int rc = content::ContentMain(std::move(params));
   // System DLLs loaded into utility processes crash in their DLL_PROCESS_DETACH
   // handlers during CRT exit, so leave the way Chrome does: without running it.

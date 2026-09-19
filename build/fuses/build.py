@@ -104,6 +104,28 @@ impl = impl.replace("{fuse_wire_length}", c_hex(len(fuses)))
 impl = impl.replace("{initial_config}", hex_arr(initial_config))
 impl = impl.replace("{getters}", getters_cc.strip())
 
+# On Windows the wire stays in the executable so existing fuse tools continue
+# to patch the same file. The runtime receives its address at entry.
+if len(sys.argv) == 4:
+  wire_start = impl.index('const volatile char kFuseWire[]')
+  wire_end = impl.index(';', wire_start) + 1
+  wire_definition = impl[wire_start:wire_end]
+  wire_impl = '#include "electron/fuses.h"\n\nnamespace electron::fuses {\n'
+  wire_impl += wire_definition + '\n}  // namespace electron::fuses\n'
+  with open(sys.argv[3], 'w') as f:
+    f.write(wire_impl)
+  header = header.replace('extern const volatile char kFuseWire[];',
+                          'extern const volatile char kFuseWire[];\n'
+                          'void SetFuseWire(const volatile char* wire);')
+  impl = impl[:wire_start] + """namespace {
+const volatile char* g_fuse_wire = nullptr;
+}  // namespace
+
+void SetFuseWire(const volatile char* wire) {
+  g_fuse_wire = wire;
+}""" + impl[wire_end:]
+  impl = impl.replace('return kFuseWire[', 'return g_fuse_wire[')
+
 with open(sys.argv[1], 'w') as f:
   f.write(header)
 
