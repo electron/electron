@@ -98,7 +98,7 @@ submenu, which aligns items horizontally (available on macOS 14 and above)
 > [!TIP]
 > Adjacent `radio` items are at the same level of submenu and not divided by a separator.
 >
-> ```js
+> ```json5
 > [
 >   { type: 'radio', label: 'Adjacent 1' },
 >   { type: 'radio', label: 'Adjacent 2' },
@@ -236,7 +236,7 @@ positioning keywords is used.
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { id: '2', label: 'two' },
@@ -256,7 +256,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { type: 'separator' },
@@ -280,7 +280,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one', after: ['3'] },
   { id: '2', label: 'two', before: ['1'] },

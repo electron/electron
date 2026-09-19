@@ -1382,9 +1382,7 @@ For `infoType` equal to `complete`:
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   auxAttributes:
    {

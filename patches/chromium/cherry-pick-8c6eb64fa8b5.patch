@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 16 Sep 2026 21:47:33 -0700
+Subject: [M152] [HiC] Disallow SVG markers that are outside a canvas subtree
+
+Original change's description:
+> [HiC] Disallow SVG markers that are outside a canvas subtree
+>
+> SVG Markers may contain arbitrary HTML content through a
+> <foreignObject>, not to mention a wide variety of images
+> or filters. As with SVG patterns, we disallow the use of
+> markers defined outside of a canvas subtree, where privacy
+> protections are not available, particularly for visited
+> links and form control autofill.
+>
+> Fixed: 553136980
+> Change-Id: I51dd1ab951949b79824ac00ae27dc134c3bc12c9
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8385141
+> Reviewed-by: Stefan Zager <szager@chromium.org>
+> Commit-Queue: Stephen Chenney <schenney@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1695874}
+
+(cherry picked from commit f32b64bb9703eccac76a8a6c891c90841eaf2ec2)
+
+Bug: 559870160,553136980
+Change-Id: I51dd1ab951949b79824ac00ae27dc134c3bc12c9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8414449
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2681}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/core/paint/svg_shape_painter.cc b/third_party/blink/renderer/core/paint/svg_shape_painter.cc
+index ea10cbf775b73129531c357673ef3dac6ab69630..2e963f51b8f3691e3dc2fd4e4ebcecf84a690360 100644
+--- a/third_party/blink/renderer/core/paint/svg_shape_painter.cc
++++ b/third_party/blink/renderer/core/paint/svg_shape_painter.cc
+@@ -266,6 +266,20 @@ void SVGShapePainter::PaintMarkers(const PaintInfo& paint_info) {
+       *client, style.MarkerMidResource());
+   auto* marker_end = GetSVGResourceAsType<LayoutSVGResourceMarker>(
+       *client, style.MarkerEndResource());
++  if (paint_info.IsPrivacyPreserving()) {
++    if (marker_start && marker_start->GetElement() &&
++        !marker_start->GetElement()->IsInCanvasSubtree()) {
++      marker_start = nullptr;
++    }
++    if (marker_mid && marker_mid->GetElement() &&
++        !marker_mid->GetElement()->IsInCanvasSubtree()) {
++      marker_mid = nullptr;
++    }
++    if (marker_end && marker_end->GetElement() &&
++        !marker_end->GetElement()->IsInCanvasSubtree()) {
++      marker_end = nullptr;
++    }
++  }
+   if (!marker_start && !marker_mid && !marker_end)
+     return;
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-marker-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-marker-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..23111f151fb192fc35ce45a3cbb5d5c157b6b507
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg-marker-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,82 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use SVG markers outside the subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++<body>
++  <svg width="0" height="0">
++    <defs>
++      <marker id="markerOut" markerUnits="userSpaceOnUse" viewBox="0 0 100 100" markerWidth="20" markerHeight="20" refX="50" refY="50">
++        <image href="/images/red-100x100.png" x="0" y="0" width="100" height="100" preserveAspectRatio="none"/>
++      </marker>
++    </defs>
++  </svg>
++
++  <canvas id="canvas" width="100" height="100" layoutsubtree>
++    <svg id=child width="100" height="100">
++      <marker id="markerIn" markerUnits="userSpaceOnUse" viewBox="0 0 100 100" markerWidth="20" markerHeight="20" refX="50" refY="50">
++        <image href="/images/green-100x100.png" x="0" y="0" width="100" height="100" preserveAspectRatio="none"/>
++      </marker>
++      <path d="M 20 20 L 50 20 L 80 20"
++        stroke="black"
++        marker-start="url(#markerOut)"
++        marker-mid="url(#markerOut)"
++        marker-end="url(#markerOut)" />
++      <path d="M 20 40 L 50 40 L 80 40"
++        stroke="black"
++        marker-start="url(#markerIn)"
++        marker-mid="url(#markerIn)"
++        marker-end="url(#markerIn)" />
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        const preloadImage = (url) => new Promise((resolve, reject) => {
++          const img = new Image();
++          img.onload = () => resolve(img);
++          img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
++          img.src = url;
++        });
++
++        const imageEl1 = document.querySelector('#markerOut image');
++        const imageEl2 = document.querySelector('#markerIn image');
++        await Promise.all([
++          preloadImage(imageEl1.getAttribute('href')),
++          preloadImage(imageEl2.getAttribute('href')),
++        ]);
++
++        await waitForCanvasPaint(canvas);
++        var ctx = canvas.getContext('2d');
++        ctx.fillStyle = 'white';
++        ctx.fillRect(0, 0, 100, 100);
++        ctx.drawElementImage(child, 0, 0);
++
++        // The canvas should ignore the marker and draw the line black.
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 15, 25);
++        assert_array_equals(pixel, [255, 255, 255, 255], "External start marker should not draw");
++        pixel = _getPixelFromImageData(imgData, 45, 25);
++        assert_array_equals(pixel, [255, 255, 255, 255], "External mid marker should not draw");
++        pixel = _getPixelFromImageData(imgData, 85, 25);
++        assert_array_equals(pixel, [255, 255, 255, 255], "External end marker should not draw");
++
++        pixel = _getPixelFromImageData(imgData, 15, 45);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal start marker should draw");
++        pixel = _getPixelFromImageData(imgData, 45, 45);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal mid marker should draw");
++        pixel = _getPixelFromImageData(imgData, 85, 45);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Internal end marker should draw");
++      });
++    }
++  </script>
++</body>
++</html>
