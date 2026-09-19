@@ -20,8 +20,7 @@ namespace electron {
 
 class SerialChooserController;
 
-class ElectronSerialDelegate : public content::SerialDelegate,
-                               private SerialChooserContext::PortObserver {
+class ElectronSerialDelegate : public content::SerialDelegate {
  public:
   ElectronSerialDelegate();
   ~ElectronSerialDelegate() override;
@@ -54,16 +53,12 @@ class ElectronSerialDelegate : public content::SerialDelegate,
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
-  // SerialChooserContext::PortObserver:
-  void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
-  void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
-  void OnPortConnectedStateChanged(
-      const device::mojom::SerialPortInfo& port) override {}
-  void OnPortManagerConnectionError() override;
-  void OnPermissionRevoked(const url::Origin& origin) override {}
-  void OnSerialChooserContextShutdown() override;
-
  private:
+  class ContextObservation;
+
+  ContextObservation* GetContextObserver(
+      content::BrowserContext* browser_context);
+
   SerialChooserController* ControllerForFrame(
       content::RenderFrameHost* render_frame_host);
   SerialChooserController* AddControllerForFrame(
@@ -72,10 +67,12 @@ class ElectronSerialDelegate : public content::SerialDelegate,
       std::vector<device::BluetoothUUID> allowed_bluetooth_service_class_ids,
       content::SerialChooser::Callback callback);
 
-  base::ScopedObservation<SerialChooserContext,
-                          SerialChooserContext::PortObserver>
-      port_observation_{this};
-  base::ObserverList<content::SerialDelegate::Observer> observer_list_;
+  // One forwarding observer per browser context, so that every session's
+  // SerialService instances hear about that session's port and permission
+  // events.
+  absl::flat_hash_map<content::BrowserContext*,
+                      std::unique_ptr<ContextObservation>>
+      observations_;
 
   absl::flat_hash_map<content::RenderFrameHost*,
                       std::unique_ptr<SerialChooserController>>

@@ -32,6 +32,10 @@ template <typename T>
 class PendingRemote;
 }  // namespace mojo
 
+namespace content {
+class RenderFrameHost;
+}  // namespace content
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -52,6 +56,9 @@ class HidChooserContext : public KeyedService,
     virtual void OnDeviceRemoved(const device::mojom::HidDeviceInfo&) = 0;
     virtual void OnDeviceChanged(const device::mojom::HidDeviceInfo&) = 0;
     virtual void OnHidManagerConnectionError() = 0;
+    // Called after |origin| lost permission to a device, so that open
+    // connections held by documents of that origin can be re-validated.
+    virtual void OnPermissionRevoked(const url::Origin& origin) {}
 
     // Called when the HidChooserContext is shutting down. Observers must remove
     // themselves before returning.
@@ -77,16 +84,23 @@ class HidChooserContext : public KeyedService,
   // HID-specific interface for granting and checking permissions.
   void GrantDevicePermission(const url::Origin& origin,
                              const device::mojom::HidDeviceInfo& device);
-  void RevokeDevicePermission(const url::Origin& origin,
-                              const device::mojom::HidDeviceInfo& device);
-  bool HasDevicePermission(const url::Origin& origin,
-                           const device::mojom::HidDeviceInfo& device);
+  void RevokeDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
+  bool HasDevicePermission(
+      const url::Origin& origin,
+      const device::mojom::HidDeviceInfo& device,
+      content::RenderFrameHost* render_frame_host = nullptr);
 
   // Returns true if `origin` is allowed to access FIDO reports.
   bool IsFidoAllowedForOrigin(const url::Origin& origin);
 
   // For ScopedObserver.
   void AddDeviceObserver(DeviceObserver* observer);
+
+  void SetHidManagerForTesting(
+      mojo::PendingRemote<device::mojom::HidManager> manager);
   void RemoveDeviceObserver(DeviceObserver* observer);
 
   // Forward HidManager::GetDevices.
@@ -131,6 +145,12 @@ class HidChooserContext : public KeyedService,
       pending_get_devices_requests_;
 
   // Tracks the set of devices to which an origin has access to.
+  void NotifyPermissionRevoked(const url::Origin& origin);
+
+  // Devices (by interface guid) each origin picked in a chooser during this
+  // session. Without ses.setDevicePermissionHandler() this is the grant store
+  // for devices that cannot be stored persistently; with a handler it is only
+  // reported to the handler as details.selected.
   std::map<url::Origin, std::set<std::string>> ephemeral_devices_;
 
   // Map from device GUID to device info.

@@ -10,11 +10,13 @@
 #include "base/command_line.h"
 #include "base/containers/map_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/render_frame_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
@@ -272,22 +274,28 @@ void HidChooserContext::GrantDevicePermission(
     const url::Origin& origin,
     const device::mojom::HidDeviceInfo& device) {
   DCHECK(devices_.contains(device.guid));
-  if (CanStorePersistentEntry(device)) {
-    auto* permission_manager = static_cast<ElectronPermissionManager*>(
-        browser_context_->GetPermissionControllerDelegate());
-
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  // Remember the selection for this session in every case; it is what makes
+  // requestDevice() -> open() work without a persistent identifier and what a
+  // device permission handler sees as details.selected.
+  ephemeral_devices_[origin].insert(device.guid);
+  if (CanStorePersistentEntry(device) &&
+      !permission_manager->HasDevicePermissionHandler()) {
     permission_manager->GrantDevicePermission(blink::PermissionType::HID,
                                               origin, DeviceInfoToValue(device),
                                               browser_context_);
-  } else {
-    ephemeral_devices_[origin].insert(device.guid);
   }
 }
 
 void HidChooserContext::RevokeDevicePermission(
-    const url::Origin& origin,
-    const device::mojom::HidDeviceInfo& device) {
+    const url::Origin& requesting_origin,
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
   DCHECK(devices_.contains(device.guid));
+  // |requesting_origin| may be owned by the frame or service the JS below can
+  // destroy.
+  const url::Origin origin = requesting_origin;
   if (CanStorePersistentEntry(device)) {
     RevokePersistentDevicePermission(origin, device);
   } else {
@@ -301,8 +309,20 @@ void HidChooserContext::RevokeDevicePermission(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("device", device.Clone());
     details.Set("origin", origin.Serialize());
+    details.SetGetter("frame", render_frame_host);
     session->Get()->Emit("hid-device-revoked", details);
   }
+  // Let every HidService for this origin drop connections to devices it no
+  // longer has permission for (content re-checks HasDevicePermission(), which
+  // may run app JS, so do it from a fresh task rather than under the caller).
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&HidChooserContext::NotifyPermissionRevoked,
+                                weak_factory_.GetWeakPtr(), origin));
+}
+
+void HidChooserContext::NotifyPermissionRevoked(const url::Origin& origin) {
+  for (auto& observer : device_observer_list_)
+    observer.OnPermissionRevoked(origin);
 }
 
 void HidChooserContext::RevokePersistentDevicePermission(
@@ -336,22 +356,27 @@ void HidChooserContext::RevokeEphemeralDevicePermission(
 
 bool HidChooserContext::HasDevicePermission(
     const url::Origin& origin,
-    const device::mojom::HidDeviceInfo& device) {
+    const device::mojom::HidDeviceInfo& device,
+    content::RenderFrameHost* render_frame_host) {
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist) &&
       device.is_excluded_by_blocklist)
     return false;
 
   auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() && it->second.contains(device.guid)) {
-    return true;
-  }
+  const bool selected =
+      it != ephemeral_devices_.end() && it->second.contains(device.guid);
 
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context_->GetPermissionControllerDelegate());
+  base::Value value = DeviceInfoToValue(device);
+  // The id select-hid-device reported for this (physical) device, so a handler
+  // can match a selection it recorded whatever interface is being opened.
+  value.GetDict().Set(
+      "deviceId", HidChooserController::PhysicalDeviceIdFromDeviceInfo(device));
   return permission_manager->CheckDevicePermission(
-      blink::PermissionType::HID, origin, DeviceInfoToValue(device),
-      browser_context_);
+      blink::PermissionType::HID, origin, value, browser_context_,
+      render_frame_host, selected);
 }
 
 bool HidChooserContext::IsFidoAllowedForOrigin(const url::Origin& origin) {
@@ -456,6 +481,12 @@ void HidChooserContext::DeviceChanged(device::mojom::HidDeviceInfoPtr device) {
 
   // Notify all observers.
   device_observer_list_.Notify(&DeviceObserver::OnDeviceChanged, *device);
+}
+
+void HidChooserContext::SetHidManagerForTesting(
+    mojo::PendingRemote<device::mojom::HidManager> manager) {
+  OnHidManagerConnectionError();
+  SetUpHidManagerConnection(std::move(manager));
 }
 
 void HidChooserContext::EnsureHidManagerConnection() {
