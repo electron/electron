@@ -242,9 +242,7 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   images: {
     count: 22,
