@@ -21,6 +21,7 @@
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
+#include "components/spellcheck/spellcheck_buildflags.h"
 #include "content/common/frame.mojom-forward.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
@@ -33,6 +34,12 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+#include "components/spellcheck/common/spellcheck_common.h"
+#endif
+#endif
 #include "shell/browser/api/load_url_promises.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -857,6 +864,16 @@ class WebContents final : public ExclusiveAccessContext,
       const content::ContextMenuParams& params,
       content::GlobalRenderFrameHostId render_frame_host_id,
       std::vector<std::u16string> types);
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  void OnGetPlatformSuggestionsComplete(
+      content::ContextMenuParams params,
+      content::GlobalRenderFrameHostId render_frame_host_id,
+      std::vector<std::u16string> types,
+      const spellcheck::PerLanguageSuggestions& platform_suggestions);
+#endif
+#endif
 
   [[nodiscard]] bool CanGoToIndex(int index) const;
 
