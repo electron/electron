@@ -1439,6 +1439,7 @@ class WebContents::NativeLifecycle final
       inspectable_web_contents_->ReleaseWebContents();
     if (auto* contents = contents_.get())
       contents->WebContentsDestroyed();
+    owner_window_ = nullptr;
     Observe(nullptr);
   }
   void NavigationEntryCommitted(
@@ -1542,10 +1543,7 @@ class WebContents::NativeLifecycle final
       if (auto* host = web_contents()->GetRenderViewHost())
         host->GetWidget()->RemoveInputEventObserver(this);
     }
-    if (owner_window_) {
-      owner_window_->RemoveBackgroundThrottlingSource(this);
-      owner_window_ = nullptr;
-    }
+    background_throttling_registration_.RunAndReset();
     // Stop observing the embedder's zoom controller before destroying the
     // guest.
     if (guest_delegate_)
@@ -1569,6 +1567,7 @@ class WebContents::NativeLifecycle final
       inspectable_web_contents_->ReleaseWebContents();
     }
     inspectable_web_contents_.reset();
+    owner_window_ = nullptr;
     Observe(nullptr);
     fullscreen_frame_ = nullptr;
     guest_delegate_.reset();
@@ -1592,6 +1591,7 @@ class WebContents::NativeLifecycle final
   std::unique_ptr<extensions::ScriptExecutor> script_executor_;
 #endif
   base::WeakPtr<NativeWindow> owner_window_;
+  base::ScopedClosureRunner background_throttling_registration_;
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
   bool caret_browsing_counted_ = false;
   bool externally_owned_ = false;
@@ -3699,17 +3699,15 @@ void WebContents::SetOwnerBaseWindow(std::optional<BaseWindow*> owner_window) {
 
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
                                  NativeWindow* owner_window) {
-  if (native_lifecycle_->owner_window_) {
-    native_lifecycle_->owner_window_->RemoveBackgroundThrottlingSource(
-        native_lifecycle_.get());
-  }
+  native_lifecycle_->background_throttling_registration_.RunAndReset();
 
   if (owner_window) {
     native_lifecycle_->owner_window_ = owner_window->GetWeakPtr();
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
-    native_lifecycle_->owner_window_->AddBackgroundThrottlingSource(
-        native_lifecycle_.get());
+    native_lifecycle_->background_throttling_registration_ =
+        owner_window->RegisterBackgroundThrottlingSource(
+            native_lifecycle_.get());
   } else {
     native_lifecycle_->owner_window_ = nullptr;
     web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());

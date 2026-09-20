@@ -3951,8 +3951,12 @@ describe('webContents module', () => {
     it('emits render-view-deleted if any RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let rvhDeletedCount = 0;
+      let ownerDuringDeletion: BrowserWindow | null = null;
+      let windowFromContentsDuringDeletion: BrowserWindow | null = null;
       w.webContents.on('render-view-deleted' as any, () => {
         rvhDeletedCount++;
+        ownerDuringDeletion = w.webContents.getOwnerBrowserWindow();
+        windowFromContentsDuringDeletion = BrowserWindow.fromWebContents(w.webContents);
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
@@ -3965,6 +3969,8 @@ describe('webContents module', () => {
         expectedRenderViewDeletedEventCount,
         "render-view-deleted wasn't emitted the expected nr. of times"
       );
+      expect(ownerDuringDeletion).to.equal(w);
+      expect(windowFromContentsDuringDeletion).to.equal(w);
     });
   });
 

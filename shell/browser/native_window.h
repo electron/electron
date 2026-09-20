@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -427,12 +428,10 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool IsTranslucent() const;
 
-  // Adds |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
-  // Removes |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Registers |source| in |background_throttling_sources_| and returns a token
+  // that unregisters it when reset or destroyed.
+  [[nodiscard]] base::ScopedClosureRunner RegisterBackgroundThrottlingSource(
+      BackgroundThrottlingSource* source);
   // Updates `ui::Compositor` background throttling state based on
   // |background_throttling_sources_|. If at least one of the sources disables
   // throttling, then throttling in the `ui::Compositor` will be disabled.
