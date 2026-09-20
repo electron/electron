@@ -2295,6 +2295,14 @@ describe('session module', () => {
   });
 
   describe('ses.setUserAgentMetadata()', () => {
+    it('accepts partial metadata', () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+
+      ses.setUserAgentMetadata({ platform: 'partial-platform' });
+
+      expect(ses.getUserAgentMetadata().platform).to.equal('partial-platform');
+    });
+
     it('preserves every metadata field', () => {
       const userAgentMetadata = {
         brands: [{ brand: 'Electron', version: '46' }],
