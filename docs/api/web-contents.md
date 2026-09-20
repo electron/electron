@@ -1097,6 +1097,14 @@ Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<i
 
 #### `contents.loadURL(url[, options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added the `userAgentMetadata` option."
+```
+-->
+
 * `url` string
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
@@ -1386,6 +1394,14 @@ win.webContents.on('unresponsive', async () => {
 
 #### `contents.setUserAgent(options)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added support for passing User-Agent metadata through an options object."
+```
+-->
+
 * `options` (Object | string) - If `options` is a string, it is interpreted as
 the user agent string.
   * `userAgent` string - The user agent string.
@@ -1410,6 +1426,13 @@ requests.
 Returns `string` - The user agent for this web page.
 
 #### `contents.getUserAgentMetadata()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
 
 Returns [`UserAgentMetadata`](structures/user-agent-metadata.md) - The user
 agent metadata for this web page.

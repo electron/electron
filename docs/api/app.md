@@ -1781,6 +1781,13 @@ This method can only be called before app is ready.
 
 ### `app.setUserAgentFallback(options)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
+
 * `options` (Object | string) - If `options` is a string, it is interpreted as
 the user agent string.
   * `userAgent` string (optional) - which is the user agent string Electron will use as a global fallback.
@@ -1985,6 +1992,13 @@ app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
 
 ### `app.userAgentMetadataFallback`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
 
 A [`UserAgentMetadata`](structures/user-agent-metadata.md) object.
 

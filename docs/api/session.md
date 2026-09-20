@@ -1485,6 +1485,14 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 #### `ses.setUserAgent(options[, acceptLanguages])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added support for passing User-Agent metadata through an options object."
+```
+-->
+
 * `options` (Object | string) - If `options` is a string, it is interpreted as
 the user agent string.
   * `userAgent` string
@@ -1512,6 +1520,13 @@ Returns `string` - The user agent for this session.
 
 #### `ses.setUserAgentMetadata([userAgentMetadata])`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
+
 * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 
 Overrides the user agent metadata reported as `navigator.userAgentData` for this
@@ -1531,6 +1546,13 @@ subresource requests. It does not change the `Sec-CH-UA*` headers on navigation
 requests.
 
 #### `ses.getUserAgentMetadata()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
 
 Returns `UserAgentMetadata` - The user agent metadata for this session.
 

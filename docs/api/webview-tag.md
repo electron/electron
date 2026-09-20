@@ -276,6 +276,14 @@ webview.addEventListener('dom-ready', () => {
 
 ### `<webview>.loadURL(url[, options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added the `userAgentMetadata` option."
+```
+-->
+
 * `url` URL
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.

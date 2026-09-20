@@ -1272,6 +1272,14 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 #### `win.loadURL(url[, options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added the `userAgentMetadata` option."
+```
+-->
+
 * `url` string
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
