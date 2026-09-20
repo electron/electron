@@ -288,6 +288,14 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
               "options.webContents is already attached to a window");
           return nullptr;
         }
+
+        if (!WebContentsPreferences::From(
+                existing_web_contents->web_contents())) {
+          args->ThrowTypeError(
+              "options.webContents cannot be used with WebContentsView; "
+              "create a new WebContentsView without passing this WebContents");
+          return nullptr;
+        }
       }
     }
   }

@@ -1,8 +1,9 @@
-import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+import { app, BaseWindow, BrowserWindow, session, View, WebContentsView, webContents, screen } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import * as path from 'node:path';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
@@ -42,6 +43,24 @@ describe('WebContentsView', () => {
       currentWebContentsCount + 1,
       'expected only single webcontents to be created'
     );
+  });
+
+  it('should throw when created with extension background page webContents', async () => {
+    const customSession = session.fromPartition(`persist:webcontentsview-extension-${Date.now()}`);
+    const created = once(app, 'web-contents-created') as Promise<[any, Electron.WebContents]>;
+    const extension = await customSession.extensions.loadExtension(
+      path.join(__dirname, 'fixtures', 'extensions', 'persistent-background-page')
+    );
+
+    try {
+      const [, backgroundPage] = await created;
+      expect(backgroundPage.getType()).to.equal('backgroundPage');
+      expect(() => new WebContentsView({ webContents: backgroundPage })).to.throw(
+        'options.webContents cannot be used with WebContentsView; create a new WebContentsView without passing this WebContents'
+      );
+    } finally {
+      customSession.extensions.removeExtension(extension.id);
+    }
   });
 
   it('should throw error when created with already attached webContents to BrowserWindow', () => {
