@@ -450,7 +450,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
                        int frame_process_id = -1,
                        int frame_routing_id = -1);
 
-  WebContents* embedder() { return embedder_; }
+  WebContents* embedder() const;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ScriptExecutor* script_executor();
@@ -850,7 +850,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
   cppgc::Member<api::Debugger> debugger_;
 
   // The host webcontents that may contain this webcontents.
-  cppgc::Member<WebContents> embedder_;
+  cppgc::WeakMember<WebContents> embedder_;
 
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;

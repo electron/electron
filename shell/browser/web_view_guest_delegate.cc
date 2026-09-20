@@ -21,7 +21,8 @@ namespace electron {
 
 WebViewGuestDelegate::WebViewGuestDelegate(content::WebContents* embedder,
                                            api::WebContents* api_web_contents)
-    : embedder_web_contents_(embedder), api_web_contents_(api_web_contents) {}
+    : embedder_web_contents_(embedder ? embedder->GetWeakPtr() : nullptr),
+      api_web_contents_(api_web_contents) {}
 
 WebViewGuestDelegate::~WebViewGuestDelegate() {
   ResetZoomController();
@@ -30,15 +31,15 @@ WebViewGuestDelegate::~WebViewGuestDelegate() {
 void WebViewGuestDelegate::AttachToIframe(
     content::WebContents* embedder_web_contents,
     blink::LocalFrameToken& embedder_frame_token) {
-  embedder_web_contents_ = embedder_web_contents;
+  embedder_web_contents_ = embedder_web_contents->GetWeakPtr();
 
-  int embedder_process_id = embedder_web_contents_->GetPrimaryMainFrame()
+  int embedder_process_id = embedder_web_contents->GetPrimaryMainFrame()
                                 ->GetProcess()
                                 ->GetDeprecatedID();
   auto* embedder_frame = content::RenderFrameHost::FromFrameToken(
       content::GlobalRenderFrameHostToken(embedder_process_id,
                                           embedder_frame_token));
-  DCHECK_EQ(embedder_web_contents_,
+  DCHECK_EQ(embedder_web_contents_.get(),
             content::WebContents::FromRenderFrameHost(embedder_frame));
 
   content::WebContents* guest_web_contents = api_web_contents_->web_contents();
@@ -46,15 +47,19 @@ void WebViewGuestDelegate::AttachToIframe(
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.
-  embedder_web_contents_->AttachInnerWebContents(
+  embedder_web_contents->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
       embedder_frame,
       /*is_full_page=*/false);
 
   ResetZoomController();
 
-  embedder_zoom_controller_ =
-      WebContentsZoomController::FromWebContents(embedder_web_contents_);
+  content::WebContents* owner = embedder_web_contents_.get();
+  if (!owner)
+    return;
+  embedder_zoom_controller_ = WebContentsZoomController::FromWebContents(owner);
+  if (!embedder_zoom_controller_)
+    return;
   embedder_zoom_controller_->AddObserver(this);
   auto* zoom_controller = api_web_contents_->GetZoomController();
   zoom_controller->SetEmbedderZoomController(embedder_zoom_controller_);
@@ -64,10 +69,11 @@ void WebViewGuestDelegate::AttachToIframe(
 
 void WebViewGuestDelegate::WillDestroy() {
   ResetZoomController();
+  embedder_web_contents_.reset();
 }
 
 content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
-  return embedder_web_contents_;
+  return embedder_web_contents_.get();
 }
 
 void WebViewGuestDelegate::OnZoomChanged(
@@ -105,10 +111,14 @@ void WebViewGuestDelegate::ResetZoomController() {
 std::unique_ptr<content::WebContents>
 WebViewGuestDelegate::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
+  content::WebContents* embedder = embedder_web_contents_.get();
+  if (!embedder)
+    return nullptr;
+
   // Code below mirrors what content::WebContentsImpl::CreateNewWindow
   // does for non-guest sources
   content::WebContents::CreateParams guest_params(create_params);
-  guest_params.context = embedder_web_contents_->GetNativeView();
+  guest_params.context = embedder->GetNativeView();
   std::unique_ptr<content::WebContents> guest_contents =
       content::WebContents::Create(guest_params);
   if (!create_params.opener_suppressed) {

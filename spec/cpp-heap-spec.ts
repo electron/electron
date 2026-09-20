@@ -1495,6 +1495,50 @@ describe('cpp heap', () => {
       });
     });
 
+    it('does not retain an attached guest through its embedder', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const state = await (async () => {
+          const embedder = webContents.create();
+          await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+          const guest = (webContents as typeof ElectronInternal.WebContents).create({
+            type: 'webview',
+            embedder
+          });
+          await guest.loadURL('about:blank');
+          guest.attachToIframe(embedder, embedder.mainFrame.frames[0].frameToken);
+          return {
+            embedder: new WeakRef(embedder),
+            embedderId: embedder.id,
+            guest: new WeakRef(guest),
+            guestId: guest.id
+          };
+        })();
+
+        for (let attempt = 0; attempt < 60; ++attempt) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        return {
+          embedderReleased: !state.embedder.deref(),
+          embedderRemovedFromRegistry: webContents.fromId(state.embedderId) === undefined,
+          guestReleased: !state.guest.deref(),
+          guestRemovedFromRegistry: webContents.fromId(state.guestId) === undefined
+        };
+      });
+
+      expect(result).to.deep.equal({
+        embedderReleased: true,
+        embedderRemovedFromRegistry: true,
+        guestReleased: true,
+        guestRemovedFromRegistry: true
+      });
+    });
+
     it('disposes frame wrappers when an attached guest wrapper is destroyed', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(async () => {

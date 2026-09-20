@@ -4774,6 +4774,17 @@ describe('webContents module', () => {
       }
     });
 
+    it('rejects queued jobs when the WebContents is destroyed', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      const first = w.webContents.printToPDF({});
+      const second = w.webContents.printToPDF({});
+      w.webContents.destroy();
+
+      first.catch(() => {});
+      await expect(second).to.eventually.be.rejectedWith('Object has been destroyed');
+    });
+
     it('does not crash when called multiple times in sequence', async () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 

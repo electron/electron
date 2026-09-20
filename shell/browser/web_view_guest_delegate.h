@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_contents_zoom_observer.h"
@@ -54,7 +55,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void ResetZoomController();
 
   // The WebContents that attaches this guest view.
-  raw_ptr<content::WebContents> embedder_web_contents_ = nullptr;
+  base::WeakPtr<content::WebContents> embedder_web_contents_;
 
   // The zoom controller of the embedder that is used
   // to subscribe for zoom changes.

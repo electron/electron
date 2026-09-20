@@ -1822,11 +1822,11 @@ WebContents::WebContents(v8::Isolate* isolate,
                                             GURL("chrome-guest://fake-host"));
     content::WebContents::CreateParams params{browser_context, site_instance};
     native_lifecycle_->guest_delegate_ =
-        std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
+        std::make_unique<WebViewGuestDelegate>(embedder->web_contents(), this);
     params.guest_delegate = native_lifecycle_->guest_delegate_.get();
     params.enable_wake_locks = !disable_wake_locks;
 
-    if (embedder_ && embedder_->IsOffScreen()) {
+    if (embedder->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
@@ -2002,10 +2002,10 @@ void WebContents::InitWithSessionAndOptions(
 
   if (is_guest()) {
     NativeWindow* owner_window = nullptr;
-    if (embedder_) {
+    if (auto* embedder = this->embedder()) {
       // New WebContents's owner_window is the embedder's owner_window.
       auto* relay =
-          NativeWindowRelay::FromWebContents(embedder_->web_contents());
+          NativeWindowRelay::FromWebContents(embedder->web_contents());
       if (relay)
         owner_window = relay->GetNativeWindow();
     }
@@ -2558,9 +2558,10 @@ void WebContents::UpdateTargetURL(content::WebContents* source,
 bool WebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const input::NativeWebKeyboardEvent& event) {
-  if (type_ == Type::kWebView && embedder_) {
+  if (WebContents* embedder = this->embedder();
+      type_ == Type::kWebView && embedder) {
     // Send the unhandled keyboard events back to the embedder.
-    return embedder_->HandleKeyboardEvent(source, event);
+    return embedder->HandleKeyboardEvent(source, event);
   }
 
   // Let DevTools consume shortcuts it has registered for (e.g. F8 to pause)
@@ -4960,7 +4961,7 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(gin::Arguments* args) {
       self->web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),
       base::BindRepeating(
           [](WebContents* self) -> content::RenderFrameHost* {
-            if (!self->web_contents())
+            if (!self || !self->web_contents())
               return nullptr;
             return GetRenderFrameHostToUse(self->web_contents());
           },
@@ -5539,14 +5540,20 @@ v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, wrapper);
 }
 
+WebContents* WebContents::embedder() const {
+  WebContents* embedder = embedder_.Get();
+  return embedder && !embedder->IsDestroyed() && embedder->web_contents()
+             ? embedder
+             : nullptr;
+}
+
 content::WebContents* WebContents::HostWebContents() const {
-  if (!embedder_)
-    return nullptr;
-  return embedder_->web_contents();
+  WebContents* embedder = this->embedder();
+  return embedder ? embedder->web_contents() : nullptr;
 }
 
 void WebContents::SetEmbedder(const WebContents* embedder) {
-  if (embedder) {
+  if (embedder && !embedder->IsDestroyed() && embedder->web_contents()) {
     NativeWindow* owner_window = nullptr;
     auto* relay = NativeWindowRelay::FromWebContents(embedder->web_contents());
     if (relay) {
@@ -6286,8 +6293,8 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
 
   // The embedder WebContents is separated from the frame tree of webview, so
   // we must manually sync their fullscreen states.
-  if (embedder_)
-    embedder_->SetHtmlApiFullscreen(fullscreen);
+  if (auto* embedder = this->embedder())
+    embedder->SetHtmlApiFullscreen(fullscreen);
 
   if (fullscreen) {
     Emit("enter-html-full-screen");
