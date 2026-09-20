@@ -1562,9 +1562,10 @@ class WebContents::NativeLifecycle final
     frame_subscriber_.reset();
     devtools_context_menu_.reset();
     eye_dropper_.reset();
+    if (web_contents() && (externally_owned_ || !inspectable_web_contents_))
+      DisposeWebFrames();
     // Attached guests and extension background pages have an external owner.
     if (inspectable_web_contents_ && externally_owned_) {
-      DisposeWebFrames();
       inspectable_web_contents_->ReleaseWebContents();
     }
     inspectable_web_contents_.reset();
@@ -2024,15 +2025,9 @@ WebContents::~WebContents() {
   native_lifecycle_->draggable_region_debugger_.reset();
   native_lifecycle_->frame_subscriber_.reset();
 
-  if (!native_lifecycle_->inspectable_web_contents_) {
-    WebContentsDestroyed();
-    native_lifecycle_.reset();
-    return;
-  }
-
-  // This event is only for internal use, which is emitted when WebContents is
-  // being destroyed.
-  Emit("will-destroy");
+  // Remote wrappers do not own their native WebContents.
+  if (native_lifecycle_->inspectable_web_contents_)
+    Emit("will-destroy");
 
   // Match the old member destruction order: external weak pointers become
   // invalid before native teardown can emit events from partially destroyed

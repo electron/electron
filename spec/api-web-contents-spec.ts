@@ -94,6 +94,22 @@ describe('webContents module', () => {
       contents.destroy();
       await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
     });
+    it('disposes frames when a remote WebContents is destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      defer(() => w.destroy());
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+
+      const devTools = w.webContents.devToolsWebContents!;
+      const frame = devTools.mainFrame;
+      const destroyed = once(devTools, 'destroyed');
+      devTools.destroy();
+      await destroyed;
+      w.webContents.closeDevTools();
+
+      expect(() => frame.url).to.throw('Render frame was disposed');
+    });
     it('throws when passing invalid argument', async () => {
       let errored = false;
       try {
