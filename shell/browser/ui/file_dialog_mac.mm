@@ -146,7 +146,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
       initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
   NSTextField* label =
-      [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 60, 22)];
+      [[NSTextField alloc] initWithFrame:NSMakeRect(0, 4, 60, 22)];
 
   [label setEditable:NO];
   [label setStringValue:@"Format:"];
@@ -155,7 +155,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [label setDrawsBackground:NO];
 
   NSPopUpButton* popupButton =
-      [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0)
+      [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 6, 140, 22.0)
                                  pullsDown:NO];
   PopUpButtonHandler* popUpButtonHandler =
       [[PopUpButtonHandler alloc] initWithPanel:dialog
