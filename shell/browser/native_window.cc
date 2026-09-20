@@ -805,7 +805,8 @@ base::ScopedClosureRunner NativeWindow::RegisterBackgroundThrottlingSource(
          BackgroundThrottlingSource* source) {
         if (!window)
           return;
-        const size_t removed = window->background_throttling_sources_.erase(source);
+        const size_t removed =
+            window->background_throttling_sources_.erase(source);
         DCHECK_EQ(removed, 1u)
             << "Tried to remove non existing BackgroundThrottlingSource.";
         window->UpdateBackgroundThrottlingState();
