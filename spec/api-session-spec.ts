@@ -2281,6 +2281,17 @@ describe('session module', () => {
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
     });
+
+    it('rejects invalid options without changing the user agent', () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setUserAgent('test-agent');
+
+      expect(() => ses.setUserAgent(42 as any)).to.throw(
+        'Expected options to be a string or an object containing a userAgent string property'
+      );
+      expect(() => ses.setUserAgent({} as any)).to.throw('Expected options.userAgent to be a string');
+      expect(ses.getUserAgent()).to.equal('test-agent');
+    });
   });
 
   describe('ses.setUserAgentMetadata()', () => {
@@ -2303,6 +2314,23 @@ describe('session module', () => {
       ses.setUserAgentMetadata(userAgentMetadata);
 
       expect(ses.getUserAgentMetadata()).to.deep.equal(userAgentMetadata);
+    });
+
+    it('rejects malformed metadata without clearing the override', () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      const userAgentMetadata = ses.getUserAgentMetadata();
+      userAgentMetadata.platform = 'session-validation';
+      ses.setUserAgentMetadata(userAgentMetadata);
+
+      expect(() => ses.setUserAgentMetadata(42 as any)).to.throw();
+      expect(() => ses.setUserAgentMetadata({ platform: 42 } as any)).to.throw();
+      expect(() =>
+        ses.setUserAgent({
+          userAgent: 'test-agent',
+          userAgentMetadata: [] as any
+        })
+      ).to.throw('Expected options.userAgentMetadata to be an object');
+      expect(ses.getUserAgentMetadata().platform).to.equal('session-validation');
     });
   });
 

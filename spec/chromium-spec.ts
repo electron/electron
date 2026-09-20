@@ -4006,6 +4006,33 @@ describe('chromium features', () => {
         expect(platform).to.equal('webcontents-scope');
       });
 
+      it('rejects metadata-only and malformed setUserAgent options without changing the override', () => {
+        const w = new BrowserWindow({ show: false });
+        const originalUserAgent = w.webContents.getUserAgent();
+        const userAgentMetadata = app.userAgentMetadataFallback;
+        userAgentMetadata.platform = 'webcontents-validation';
+
+        expect(() =>
+          w.webContents.setUserAgent({
+            userAgentMetadata
+          } as any)
+        ).to.throw('Expected options.userAgent to be a string');
+        expect(w.webContents.getUserAgent()).to.equal(originalUserAgent);
+
+        w.webContents.setUserAgent({
+          userAgent: 'test-agent',
+          userAgentMetadata
+        });
+        expect(() =>
+          w.webContents.setUserAgent({
+            userAgent: 'replacement-agent',
+            userAgentMetadata: 42 as any
+          })
+        ).to.throw('Expected options.userAgentMetadata to be an object');
+        expect(w.webContents.getUserAgent()).to.equal('test-agent');
+        expect(w.webContents.getUserAgentMetadata().platform).to.equal('webcontents-validation');
+      });
+
       it('does not carry a WebContents-specific override into a child window', async () => {
         const appMetadata = app.userAgentMetadataFallback;
         appMetadata.platform = 'app-scope';
@@ -4016,9 +4043,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         w.webContents.setUserAgent({ userAgent: 'foo', userAgentMetadata });
         await w.loadURL(serverUrl);
-        expect(
-          await w.webContents.executeJavaScript('navigator.userAgentData.platform')
-        ).to.equal('opener-scope');
+        expect(await w.webContents.executeJavaScript('navigator.userAgentData.platform')).to.equal('opener-scope');
 
         const childPromise = once(w.webContents, 'did-create-window');
         w.webContents.executeJavaScript('window.open("about:blank")', true);
@@ -4036,9 +4061,7 @@ describe('chromium features', () => {
         ses.setUserAgent('');
         const w2 = new BrowserWindow({ show: false, webPreferences: { session: ses } });
         await w2.loadURL(serverUrl);
-        expect(
-          await w2.webContents.executeJavaScript('navigator.userAgentData.platform')
-        ).to.not.be.empty();
+        expect(await w2.webContents.executeJavaScript('navigator.userAgentData.platform')).to.not.be.empty();
       });
 
       it('when there is a WebContents-specific UA override at load time', async () => {
@@ -4060,6 +4083,38 @@ describe('chromium features', () => {
         });
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
         expect(platform).to.equal('loadurl-scope');
+      });
+
+      it('applies loadURL metadata without replacing the current user agent', async () => {
+        const userAgentMetadata = app.userAgentMetadataFallback;
+        userAgentMetadata.platform = 'loadurl-metadata-only';
+        const w = new BrowserWindow({ show: false });
+        const userAgent = w.webContents.getUserAgent();
+
+        await w.loadURL(serverUrl, { userAgentMetadata });
+
+        expect(w.webContents.getUserAgent()).to.equal(userAgent);
+        expect(await w.webContents.executeJavaScript('navigator.userAgentData.platform')).to.equal(
+          'loadurl-metadata-only'
+        );
+      });
+
+      it('rejects malformed loadURL metadata without changing the override', () => {
+        const w = new BrowserWindow({ show: false });
+        const userAgentMetadata = app.userAgentMetadataFallback;
+        userAgentMetadata.platform = 'loadurl-validation';
+        w.webContents.setUserAgent({
+          userAgent: 'test-agent',
+          userAgentMetadata
+        });
+
+        expect(() =>
+          w.loadURL(serverUrl, {
+            userAgentMetadata: 42 as any
+          })
+        ).to.throw('Invalid value for userAgentMetadata - must be an object');
+        expect(w.webContents.getUserAgent()).to.equal('test-agent');
+        expect(w.webContents.getUserAgentMetadata().platform).to.equal('loadurl-validation');
       });
     });
 

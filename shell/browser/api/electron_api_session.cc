@@ -1060,9 +1060,25 @@ void Session::SetUserAgent(gin::Arguments* args) {
   if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
     has_user_agent = true;
   } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
-    has_user_agent = opts.Get("userAgent", &user_agent);
-    has_ua_metadata = opts.Get("userAgentMetadata", &ua_metadata);
+    if (!opts.Get("userAgent", &user_agent)) {
+      args->ThrowTypeError("Expected options.userAgent to be a string");
+      return;
+    }
+    has_user_agent = true;
+    if (opts.Has("userAgentMetadata")) {
+      if (!opts.Get("userAgentMetadata", &ua_metadata)) {
+        args->ThrowTypeError(
+            "Expected options.userAgentMetadata to be an object");
+        return;
+      }
+      has_ua_metadata = true;
+    }
     has_accept_lang = opts.Get("acceptLanguages", &accept_lang);
+  } else {
+    args->ThrowTypeError(
+        "Expected options to be a string or an object containing a "
+        "userAgent string property");
+    return;
   }
   if (!has_accept_lang) {
     has_accept_lang = args->GetNext(&accept_lang);

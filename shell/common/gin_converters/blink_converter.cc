@@ -790,21 +790,57 @@ bool Converter<blink::UserAgentMetadata>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     blink::UserAgentMetadata* out) {
+  if (!val->IsObject() || val->IsArray() || val->IsFunction())
+    return false;
+
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
-  dict.Get("brands", &out->brand_version_list);
-  dict.Get("fullVersionList", &out->brand_full_version_list);
-  dict.Get("fullVersion", &out->full_version);
-  dict.Get("platform", &out->platform);
-  dict.Get("platformVersion", &out->platform_version);
-  dict.Get("architecture", &out->architecture);
-  dict.Get("model", &out->model);
-  dict.Get("mobile", &out->mobile);
-  dict.Get("bitness", &out->bitness);
-  dict.Get("wow64", &out->wow64);
-  dict.Get("formFactors", &out->form_factors);
+  if ((dict.Has("brands") && !dict.Get("brands", &out->brand_version_list)) ||
+      (dict.Has("fullVersionList") &&
+       !dict.Get("fullVersionList", &out->brand_full_version_list)) ||
+      (dict.Has("fullVersion") &&
+       !dict.Get("fullVersion", &out->full_version)) ||
+      (dict.Has("platform") && !dict.Get("platform", &out->platform)) ||
+      (dict.Has("platformVersion") &&
+       !dict.Get("platformVersion", &out->platform_version)) ||
+      (dict.Has("architecture") &&
+       !dict.Get("architecture", &out->architecture)) ||
+      (dict.Has("model") && !dict.Get("model", &out->model)) ||
+      (dict.Has("mobile") && !dict.Get("mobile", &out->mobile)) ||
+      (dict.Has("bitness") && !dict.Get("bitness", &out->bitness)) ||
+      (dict.Has("wow64") && !dict.Get("wow64", &out->wow64)) ||
+      (dict.Has("formFactors") &&
+       !dict.Get("formFactors", &out->form_factors))) {
+    return false;
+  }
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<std::optional<blink::UserAgentMetadata>>::ToV8(
+    v8::Isolate* isolate,
+    const std::optional<blink::UserAgentMetadata>& val) {
+  return val ? Converter<blink::UserAgentMetadata>::ToV8(isolate, *val)
+             : v8::Null(isolate);
+}
+
+// static
+bool Converter<std::optional<blink::UserAgentMetadata>>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    std::optional<blink::UserAgentMetadata>* out) {
+  if (val->IsNullOrUndefined()) {
+    out->reset();
+    return true;
+  }
+
+  blink::UserAgentMetadata converted;
+  if (!Converter<blink::UserAgentMetadata>::FromV8(isolate, val, &converted))
+    return false;
+
+  out->emplace(std::move(converted));
   return true;
 }
 

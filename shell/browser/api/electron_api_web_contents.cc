@@ -3211,10 +3211,26 @@ GURL WebContents::GetURL() const {
 
 v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
                                             const std::string& url_string) {
-  v8::Local<v8::Promise> promise =
-      load_url_promises_.Add(args->isolate(), url_string);
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
+
+  std::string user_agent;
+  const bool has_user_agent = options.Has("userAgent");
+  if (has_user_agent && !options.Get("userAgent", &user_agent)) {
+    args->ThrowTypeError("Invalid value for userAgent - must be a string");
+    return {};
+  }
+
+  std::optional<blink::UserAgentMetadata> ua_metadata;
+  const bool has_ua_metadata = options.Has("userAgentMetadata");
+  if (has_ua_metadata && !options.Get("userAgentMetadata", &ua_metadata)) {
+    args->ThrowTypeError(
+        "Invalid value for userAgentMetadata - must be an object");
+    return {};
+  }
+
+  v8::Local<v8::Promise> promise =
+      load_url_promises_.Add(args->isolate(), url_string);
 
   GURL url(url_string);
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
@@ -3233,10 +3249,12 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
                             network::mojom::ReferrerPolicy::kDefault);
   }
 
-  std::string user_agent;
-  if (options.Get("userAgent", &user_agent)) {
-    std::optional<blink::UserAgentMetadata> ua_metadata;
-    options.Get("userAgentMetadata", &ua_metadata);
+  if (has_user_agent || has_ua_metadata) {
+    if (!has_user_agent) {
+      user_agent = GetUserAgent();
+      if (user_agent.empty())
+        user_agent = GetBrowserContext()->GetUserAgent();
+    }
     SetUserAgent(user_agent, std::move(ua_metadata));
   }
 
@@ -3700,13 +3718,20 @@ void WebContents::SetUserAgentForJS(gin::Arguments* args) {
   const auto value = args->PeekNext();
   if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
   } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
-    opts.Get("userAgent", &user_agent);
-    opts.Get("userAgentMetadata", &ua_metadata);
+    if (!opts.Get("userAgent", &user_agent)) {
+      args->ThrowTypeError("Expected options.userAgent to be a string");
+      return;
+    }
+    if (opts.Has("userAgentMetadata") &&
+        !opts.Get("userAgentMetadata", &ua_metadata)) {
+      args->ThrowTypeError(
+          "Expected options.userAgentMetadata to be an object");
+      return;
+    }
   } else {
-    gin_helper::ErrorThrower thrower(args->isolate());
-    thrower.ThrowError(
-        "Expected options to be a string or an object contains a 'userAgent' "
-        "string property.");
+    args->ThrowTypeError(
+        "Expected options to be a string or an object containing a "
+        "userAgent string property");
     return;
   }
   SetUserAgent(user_agent, std::move(ua_metadata));

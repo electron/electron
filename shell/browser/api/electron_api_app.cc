@@ -1674,22 +1674,46 @@ v8::Local<v8::Promise> App::ResolveProxy(gin::Arguments* args) {
 
 void App::SetUserAgentFallback(gin::Arguments* args) {
   std::string user_agent;
+  std::optional<blink::UserAgentMetadata> ua_metadata;
+  bool has_user_agent = false;
+  bool has_ua_metadata = false;
   gin_helper::Dictionary opts;
 
   const auto value = args->PeekNext();
   if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
-    ElectronBrowserClient::Get()->SetUserAgent(user_agent);
-    return;
+    has_user_agent = true;
   } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
-    if (opts.Get("userAgent", &user_agent)) {
-      ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+    if (opts.Has("userAgent")) {
+      if (!opts.Get("userAgent", &user_agent)) {
+        args->ThrowTypeError("Expected options.userAgent to be a string");
+        return;
+      }
+      has_user_agent = true;
     }
-    std::optional<blink::UserAgentMetadata> ua_metadata;
-    if (opts.Get("userAgentMetadata", &ua_metadata)) {
-      ElectronBrowserClient::Get()->SetUserAgentMetadata(
-          std::move(ua_metadata));
+    if (opts.Has("userAgentMetadata")) {
+      if (!opts.Get("userAgentMetadata", &ua_metadata)) {
+        args->ThrowTypeError(
+            "Expected options.userAgentMetadata to be an object");
+        return;
+      }
+      has_ua_metadata = true;
     }
+    if (!has_user_agent && !has_ua_metadata) {
+      args->ThrowTypeError(
+          "Expected options to contain userAgent or userAgentMetadata");
+      return;
+    }
+  } else {
+    args->ThrowTypeError(
+        "Expected options to be a string or an object containing userAgent "
+        "or userAgentMetadata");
+    return;
   }
+
+  if (has_user_agent)
+    ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+  if (has_ua_metadata)
+    ElectronBrowserClient::Get()->SetUserAgentMetadata(std::move(ua_metadata));
 }
 
 void App::SetUserAgentMetadataFallback(
