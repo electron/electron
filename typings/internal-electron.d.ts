@@ -117,6 +117,7 @@ declare namespace Electron {
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
+    _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -144,13 +145,13 @@ declare namespace Electron {
   interface WebFrameMain {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
+    _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
     _lifecycleStateForTesting: string;
   }
 
   interface WebFrame extends NodeJS.EventEmitter {
     _isEvalAllowed(): boolean;
-    _setIsolatedWorldCreationCallback(callback: (worldId: number) => void): void;
     getIsolatedWorlds(): number[];
     on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
     once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
