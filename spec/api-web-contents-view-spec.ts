@@ -44,6 +44,29 @@ describe('WebContentsView', () => {
     );
   });
 
+  it('ignores native updates after an externally owned webContents is destroyed', async () => {
+    const internalWebContents = webContents as typeof ElectronInternal.WebContents;
+    const embedder = internalWebContents.create();
+    defer(() => embedder.destroy());
+    await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+
+    const guest = internalWebContents.create({
+      type: 'webview',
+      embedder
+    });
+    const webContentsView = new WebContentsView({ webContents: guest });
+    await guest.loadURL('about:blank');
+    guest.attachToIframe(embedder, embedder.mainFrame.frames[0].frameToken);
+
+    const destroyed = once(guest, 'destroyed');
+    guest.destroy();
+    await destroyed;
+
+    expect(webContentsView.webContents).to.equal(guest);
+    expect(() => webContentsView.setBackgroundColor('#123456')).not.to.throw();
+    expect(() => webContentsView.setBorderRadius(4)).not.to.throw();
+  });
+
   it('should throw error when created with already attached webContents to BrowserWindow', () => {
     const browserWindow = new BrowserWindow();
     defer(() => browserWindow.webContents.destroy());

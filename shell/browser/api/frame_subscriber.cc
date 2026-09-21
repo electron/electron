@@ -89,8 +89,6 @@ void FrameSubscriber::OnFrameCaptured(
     const gfx::Rect& content_rect,
     mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
         callbacks) {
-  auto& data_region = data->get_read_only_shmem_region();
-
   gfx::Size size = GetRenderViewSize();
   if (size != content_rect.size()) {
     video_capturer_->SetResolutionConstraints(size, size, true);
@@ -100,6 +98,14 @@ void FrameSubscriber::OnFrameCaptured(
 
   mojo::Remote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
       callbacks_remote(std::move(callbacks));
+  // The capturer is configured for ARGB frames in shared memory; drop anything
+  // else instead of interpreting it as such.
+  if (!data->is_read_only_shmem_region() ||
+      info->pixel_format != media::PIXEL_FORMAT_ARGB) {
+    callbacks_remote->Done();
+    return;
+  }
+  const auto& data_region = data->get_read_only_shmem_region();
   if (!data_region.IsValid()) {
     callbacks_remote->Done();
     return;
@@ -112,6 +118,24 @@ void FrameSubscriber::OnFrameCaptured(
   if (mapping.size() <
       media::VideoFrame::AllocationSize(info->pixel_format, info->coded_size)) {
     DLOG(ERROR) << "Shared memory size was less than expected.";
+    return;
+  }
+
+  // |content_rect| and |info->coded_size| arrive over Mojo independently of the
+  // mapping. Only wrap the mapping if every row the bitmap reads fits in it.
+  const size_t row_bytes =
+      media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
+                                  info->pixel_format, info->coded_size.width());
+  const SkImageInfo image_info = SkImageInfo::MakeN32(
+      content_rect.width(), content_rect.height(), kPremul_SkAlphaType);
+  const size_t required_bytes = image_info.computeByteSize(row_bytes);
+  if (!gfx::Rect(info->coded_size).Contains(content_rect) ||
+      SkImageInfo::ByteSizeOverflowed(required_bytes) ||
+      required_bytes > mapping.size()) {
+    DLOG(ERROR) << "content_rect " << content_rect.ToString()
+                << " is not bounded by coded_size "
+                << info->coded_size.ToString() << " / mapping size "
+                << mapping.size();
     return;
   }
 
@@ -132,11 +156,7 @@ void FrameSubscriber::OnFrameCaptured(
 
   SkBitmap bitmap;
   bitmap.installPixels(
-      SkImageInfo::MakeN32(content_rect.width(), content_rect.height(),
-                           kPremul_SkAlphaType),
-      pixels,
-      media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
-                                  info->pixel_format, info->coded_size.width()),
+      image_info, pixels, row_bytes,
       [](void* addr, void* context) {
         delete static_cast<FramePinner*>(context);
       },

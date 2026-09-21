@@ -10,10 +10,10 @@
 
 #include "base/functional/callback_forward.h"
 #include "extensions/common/extension_id.h"
-#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
@@ -22,8 +22,7 @@ namespace electron::api {
 class GlobalShortcut final
     : public gin::Wrappable<GlobalShortcut>,
       public gin_helper::EventEmitterMixin<GlobalShortcut>,
-      private ui::GlobalAcceleratorListener::Observer,
-      public gin::PerIsolateData::DisposeObserver {
+      private ui::GlobalAcceleratorListener::Observer {
  public:
   static GlobalShortcut* Create(v8::Isolate* isolate);
 
@@ -36,10 +35,7 @@ class GlobalShortcut final
       v8::Isolate* isolate) override;
   const char* GetClassName() const { return "GlobalShortcut"; }
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
+  void OnBeforeMicrotasksRunnerDispose();
 
   // Make public for cppgc::MakeGarbageCollected.
   explicit GlobalShortcut(v8::Isolate* isolate);

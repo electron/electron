@@ -28,6 +28,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { emittedUntil } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
@@ -879,6 +880,7 @@ describe('command line switches', () => {
         },
         sessionA
       );
+      await waitUntil(async () => (await innerSize(clientA, sessionA)) === '800x450');
       expect(await innerSize(clientA, sessionA)).to.equal('800x450');
 
       // Drop the TCP connection like a killed client process would.
@@ -1566,9 +1568,11 @@ describe('chromium features', () => {
       });
     });
 
-    it('denies permission when trying to create a writable file handle', (done) => {
+    it('denies permission when trying to create a writable file handle', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const trace = (phase: string) => console.log(`File System denial: ${phase}`);
+      const permissionRequests: unknown[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1578,48 +1582,70 @@ describe('chromium features', () => {
         }
       });
 
+      w.webContents.on('ipc-message', (_event, channel, message) => {
+        if (channel === 'file-system-progress' || channel === 'file-system-error') {
+          trace(`${channel}: ${message}`);
+        }
+      });
+
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
-          const { href } = url.pathToFileURL(writablePath);
-          expect(details).to.deep.equal({
-            fileAccessType: 'writable',
-            isDirectory: false,
-            isMainFrame: true,
-            filePath: testFile,
-            requestingUrl: href
-          });
-
-          callback(false);
-          return;
+          trace(`permission requested: ${JSON.stringify(details)}`);
+          permissionRequests.push(details);
         }
         callback(false);
       });
 
-      ipcMain.once('did-create-file-handle', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const writable = await handle.createWritable();
-              resolve(true);
-            } catch {
-              resolve(false);
-            }
-          })
-        `,
-          true
+      trace('loading fixture');
+      await w.loadFile(writablePath);
+      trace('fixture loaded');
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+      trace('clipboard written');
+
+      const handleCreated = emittedUntil(w.webContents, 'ipc-message', (_event: unknown, channel: string) => {
+        return (
+          channel === 'did-create-file-handle' ||
+          channel === 'did-create-directory-handle' ||
+          channel === 'file-system-error'
         );
-        expect(result).to.be.false();
-        done();
       });
+      w.webContents.focus();
+      trace('paste requested');
+      w.webContents.paste();
+      const [, channel, message] = await handleCreated;
+      if (channel === 'file-system-error') {
+        throw new Error(`File handle acquisition failed: ${message}`);
+      }
+      expect(channel).to.equal('did-create-file-handle');
+      trace('file handle received');
 
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
+      trace(`initial permission: ${permission}`);
+      trace('createWritable requested');
+      const writeError = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          try {
+            await handle.createWritable();
+            return null;
+          } catch (error) {
+            return { name: error.name, message: error.message };
+          }
+        })()
+      `,
+        true
+      );
+      trace(`createWritable ${writeError ? `rejected: ${writeError.name}: ${writeError.message}` : 'succeeded'}`);
+      expect(writeError?.name).to.equal('NotAllowedError');
+      expect(permissionRequests).to.deep.equal([
+        {
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: url.pathToFileURL(writablePath).href
+        }
+      ]);
     });
 
     it('calls twice when trying to query a read/write file handle permissions', (done) => {
@@ -4555,14 +4581,14 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await once(w, 'leave-full-screen');
   });
 
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
-    const fullscreenChange = once(ipcMain, 'fullscreenChange');
-    w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
-    await fullscreenChange;
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentDocument.querySelector('video').requestFullscreen()",
+      true
+    );
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(fullscreenWidth > 0).to.true();
@@ -4570,6 +4596,32 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await w.webContents.executeJavaScript('document.exitFullscreen()');
     const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(width).to.equal(0);
+  });
+
+  it('emits fullscreenchange on the parent document for in-process iframes', async () => {
+    if (process.platform === 'darwin') await once(w, 'enter-full-screen');
+
+    w.webContents.setBackgroundThrottling(false);
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    const fullscreenElementIsIframe = await w.webContents.executeJavaScript(
+      `(async () => {
+        const iframe = document.querySelector('iframe');
+        const fullscreenChange = new Promise(resolve => {
+          document.addEventListener('fullscreenchange', () => {
+            resolve(document.fullscreenElement === iframe);
+          }, { once: true });
+        });
+        const [isFullscreen] = await Promise.all([
+          fullscreenChange,
+          iframe.contentDocument.querySelector('video').requestFullscreen()
+        ]);
+        return isFullscreen;
+      })()`,
+      true
+    );
+    expect(fullscreenElementIsIframe).to.be.true('parent document fullscreenElement is the iframe');
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
   });
 });
 
@@ -5757,7 +5809,13 @@ describe('iframe sandbox external protocols', () => {
   });
 
   it('blocks navigation to external protocol from a sandboxed iframe', async () => {
-    const consoleMessage = once(w.webContents, 'console-message');
+    // The page has no CSP, so the main frame also logs an "Electron Security
+    // Warning" when it finishes loading, which can arrive first.
+    const consoleMessage = emittedUntil(
+      w.webContents,
+      'console-message',
+      ({ message }: { message: string }) => !message.startsWith('Electron Security Warning')
+    );
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
     const [{ message }] = await consoleMessage;
     expect(message).to.match(/external protocol blocked by sandbox/);

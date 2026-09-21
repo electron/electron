@@ -3,6 +3,8 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { ciGpuArgs, defer } from './spec-helpers';
+
 const pdfReaderPath = path.resolve(__dirname, '..', 'fixtures', 'api', 'pdf-reader.mjs');
 
 // Parses a printToPDF result buffer with pdf.js in a subprocess and returns
@@ -12,8 +14,15 @@ export const readPDF = async (data: any) => {
   const pdfPath = path.resolve(tmpDir, 'test.pdf');
   await fs.promises.writeFile(pdfPath, data);
 
-  const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
+  const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath, ...ciGpuArgs], {
     stdio: 'pipe'
+  });
+  // Register cleanup right away so a hung PDF read doesn't leak the child
+  // into the in-job retry when mocha times out.
+  defer(() => {
+    if (result.exitCode === null && result.signalCode === null) {
+      result.kill();
+    }
   });
 
   const stdout: Buffer[] = [];

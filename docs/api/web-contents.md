@@ -94,7 +94,7 @@ When communicating with the [Chrome DevTools Protocol](https://chromedevtools.gi
 it can be useful to lookup a WebContents instance based on its assigned TargetID.
 
 ```js
-async function lookupTargetId (browserWindow) {
+async function lookupTargetId(browserWindow) {
   const wc = browserWindow.webContents
   await wc.debugger.attach('1.3')
   const { targetInfo } = await wc.debugger.sendCommand('Target.getTargetInfo')
@@ -472,7 +472,7 @@ win.webContents.on('will-prevent-unload', (event) => {
     defaultId: 0,
     cancelId: 1
   })
-  const leave = (choice === 0)
+  const leave = choice === 0
   if (leave) {
     event.preventDefault()
   }
@@ -972,7 +972,7 @@ win.webContents.on('paint', async (e, dirty, image) => {
   if (e.texture) {
     // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`
     // to other processes (not `e.texture`, the `e.texture.release` function is not passable through IPC).
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     // You can send the native texture handle to native code for importing into your rendering pipeline.
     // Read more at https://github.com/electron/electron/blob/main/shell/browser/osr/README.md
@@ -1448,7 +1448,8 @@ Code execution will be suspended until web page stop loading.
 ```js
 const win = new BrowserWindow()
 
-win.webContents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+win.webContents
+  .executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
   .then((result) => {
     console.log(result) // Will be the JSON object from the fetch call
   })
@@ -1913,10 +1914,12 @@ const win = new BrowserWindow()
 const options = {
   silent: true,
   deviceName: 'My-Printer',
-  pageRanges: [{
-    from: 0,
-    to: 1
-  }]
+  pageRanges: [
+    {
+      from: 0,
+      to: 1
+    }
+  ]
 }
 win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
@@ -1949,14 +1952,17 @@ app.whenReady().then(() => {
   win.webContents.on('did-finish-load', () => {
     // Use default printing options
     const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
-    win.webContents.printToPDF({}).then(data => {
-      fs.writeFile(pdfPath, data, (error) => {
-        if (error) throw error
-        console.log(`Wrote PDF successfully to ${pdfPath}`)
+    win.webContents
+      .printToPDF({})
+      .then((data) => {
+        fs.writeFile(pdfPath, data, (error) => {
+          if (error) throw error
+          console.log(`Wrote PDF successfully to ${pdfPath}`)
+        })
       })
-    }).catch(error => {
-      console.log(`Failed to write PDF to ${pdfPath}: `, error)
-    })
+      .catch((error) => {
+        console.log(`Failed to write PDF to ${pdfPath}: `, error)
+      })
   })
 })
 ```
@@ -2269,11 +2275,14 @@ const win = new BrowserWindow()
 win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', async () => {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
-    console.log('Page was saved successfully.')
-  }).catch(err => {
-    console.log(err)
-  })
+  win.webContents
+    .savePage('/tmp/test.html', 'HTMLComplete')
+    .then(() => {
+      console.log('Page was saved successfully.')
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 })
 ```
 

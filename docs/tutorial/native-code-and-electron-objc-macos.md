@@ -1105,7 +1105,7 @@ You're so close! We now have working Objective-C and thread-safe ways to expose 
 const EventEmitter = require('node:events')
 
 class ObjcMacosAddon extends EventEmitter {
-  constructor () {
+  constructor() {
     super()
 
     if (process.platform !== 'darwin') {
@@ -1120,19 +1120,19 @@ class ObjcMacosAddon extends EventEmitter {
     })
   }
 
-  helloWorld (input = '') {
+  helloWorld(input = '') {
     return this.addon.helloWorld(input)
   }
 
-  helloGui () {
+  helloGui() {
     this.addon.helloGui()
   }
 
-  destroy () {
+  destroy() {
     this.addon.destroy()
   }
 
-  parse (payload) {
+  parse(payload) {
     const parsed = JSON.parse(payload)
 
     return { ...parsed, date: new Date(parsed.date) }

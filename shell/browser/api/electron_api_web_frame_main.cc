@@ -808,7 +808,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_transferSharedTexture", &WebFrameMain::TransferSharedTexture)
-      .SetMethod("_postMessage", &WebFrameMain::PostMessage)
+      .SetMethod("postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
       .SetProperty("name", &WebFrameMain::Name)

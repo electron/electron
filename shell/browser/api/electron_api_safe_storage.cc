@@ -56,13 +56,12 @@ SafeStorage* SafeStorage::Create(v8::Isolate* isolate) {
 }
 
 SafeStorage::SafeStorage(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 }
 
 SafeStorage::~SafeStorage() = default;
 
-void SafeStorage::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+void SafeStorage::OnBeforeMicrotasksRunnerDispose() {
   weak_factory_.Invalidate();
   pending_availability_checks_.clear();
   pending_encrypts_.clear();

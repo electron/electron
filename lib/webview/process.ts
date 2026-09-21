@@ -3,7 +3,7 @@ declare const binding: {
   contextIsolated: boolean;
 };
 
-// The `process` free variable webpack provides to the modules of the bundles
+// The `process` free variable the bundler injects into the modules of the bundles
 // that run without Node.js (lib/webview and lib/isolated_renderer): just what
 // the shared renderer modules they include use.
 const process = {

@@ -12,6 +12,7 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
+#include "gin/per_context_data.h"
 #include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -44,8 +45,19 @@ MessagePort::~MessagePort() {
 
 // static
 MessagePort* MessagePort::Create(v8::Isolate* isolate) {
+  // The template is otherwise only made when the constructor is first used.
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  gin::PerContextData* data = gin::PerContextData::From(context);
+  if (data && data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
+    GetConstructor(isolate, context, &kWrapperInfo);
   return cppgc::MakeGarbageCollected<MessagePort>(
       isolate->GetCppHeap()->GetAllocationHandle());
+}
+
+// static
+v8::Local<v8::Value> MessagePort::New(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowTypeError("Illegal constructor");
+  return v8::Undefined(thrower.isolate());
 }
 
 bool MessagePort::IsEntangled() const {
@@ -284,12 +296,14 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
   return true;
 }
 
-gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::ObjectTemplateBuilder(isolate, GetClassName())
+// static
+void MessagePort::FillObjectTemplate(v8::Isolate* isolate,
+                                     v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("postMessage", &MessagePort::PostMessage)
       .SetMethod("start", &MessagePort::Start)
-      .SetMethod("close", &MessagePort::Close);
+      .SetMethod("close", &MessagePort::Close)
+      .Build();
 }
 
 const gin::WrapperInfo* MessagePort::wrapper_info() const {

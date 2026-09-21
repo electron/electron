@@ -154,6 +154,45 @@ describe('<webview> tag', function () {
       await once(ipcMain, 'pong');
     });
 
+    // Regression test for https://github.com/electron/electron/issues/53989
+    it('can be removed from the DOM and re-inserted after its guest has loaded', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const { error, firstId, secondId } = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const webview = new WebView();
+        webview.setAttribute('src', 'data:text/html,<h1>guest</h1>');
+        webview.addEventListener('did-finish-load', () => {
+          const firstId = webview.getWebContentsId();
+          // disconnectedCallback runs as a custom element reaction inside
+          // remove(); anything it throws is reported to window 'error'.
+          let error = null;
+          const onError = (e) => { error = e.message; };
+          window.addEventListener('error', onError);
+          webview.remove();
+          window.removeEventListener('error', onError);
+          if (error) {
+            resolve({ error });
+            return;
+          }
+          // Putting the element back creates a fresh guest.
+          webview.addEventListener('did-finish-load', () => {
+            resolve({ error, firstId, secondId: webview.getWebContentsId() });
+          }, { once: true });
+          document.body.appendChild(webview);
+        }, { once: true });
+        document.body.appendChild(webview);
+      })`);
+      expect(error).to.be.null();
+      expect(secondId).to.be.a('number');
+      expect(secondId).to.not.equal(firstId);
+    });
+
     it('works with Trusted Types', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -962,21 +1001,27 @@ describe('<webview> tag', function () {
       session.fromPartition(partition).setPermissionRequestHandler(null);
     });
 
-    // This is disabled because CI machines don't have cameras or microphones,
-    // so Chrome responds with "NotFoundError" instead of
-    // "PermissionDeniedError". It should be re-enabled if we find a way to mock
-    // the presence of a microphone & camera.
-    xit('emits when using navigator.getUserMedia api', async () => {
-      const errorFromRenderer = once(ipcMain, 'message');
-      loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/media.html`,
+    it('emits when using navigator.mediaDevices.getUserMedia api', async () => {
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+      const loaded = loadWebView(w.webContents, {
+        src: url.pathToFileURL(path.join(fixtures, 'pages', 'permissions', 'media.html')).toString(),
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = (await once(app, 'web-contents-created')) as [any, WebContents];
-      setUpRequestHandler(webViewContents.id, 'media');
-      const [, errorName] = await errorFromRenderer;
-      expect(errorName).to.equal('PermissionDeniedError');
+      const [, webViewContents] = await webContentsCreated;
+      // Set up the permission handler and the result listener before
+      // triggering capture so neither can race the guest's request.
+      const permissionRequested = setUpRequestHandler(webViewContents.id, 'media');
+      const resultFromRenderer = once(ipcMain, 'media-permission-test-result');
+      await loaded;
+      webViewContents.send('start-capture');
+      const [resultEvent, result] = await resultFromRenderer;
+      // Fails if the handler was never invoked (e.g. misrouted to the wrong guest).
+      await permissionRequested;
+      expect(resultEvent.sender).to.equal(webViewContents);
+      expect(result).to.not.equal('success', 'media capture should have been denied but succeeded');
+      expect(result).to.equal('NotAllowedError');
     });
 
     it('emits when using navigator.geolocation api', async () => {

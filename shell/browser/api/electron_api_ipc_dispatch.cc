@@ -36,8 +36,7 @@ namespace {
 struct Registry {
   v8::Global<v8::Object> ipc_main;
   v8::Global<v8::Object> ipc_main_internal;
-  v8::Global<v8::Function> message_port_main;  // class MessagePortMain
-  v8::Global<v8::Value> promise_constructor;   // %Promise%
+  v8::Global<v8::Value> promise_constructor;  // %Promise%
 };
 
 Registry& GetRegistry() {
@@ -218,23 +217,6 @@ void ReplyGetter(v8::Local<v8::Name> name,
 void AddReply(v8::Local<v8::Context> context, v8::Local<v8::Object> event) {
   std::ignore = event->SetLazyDataProperty(
       context, Str(JavascriptEnvironment::GetIsolate(), "reply"), ReplyGetter);
-}
-
-// ports.map((p) => new MessagePortMain(p)); empty if a port could not be
-// wrapped.
-v8::Local<v8::Array> WrapPorts(v8::Local<v8::Context> context,
-                               const v8::LocalVector<v8::Value>& ports) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Local<v8::Function> ctor = GetRegistry().message_port_main.Get(isolate);
-  v8::LocalVector<v8::Value> wrapped(isolate);
-  wrapped.reserve(ports.size());
-  for (v8::Local<v8::Value> port : ports) {
-    v8::Local<v8::Object> instance;
-    if (!ctor->NewInstance(context, 1, &port).ToLocal(&instance))
-      return {};
-    wrapped.push_back(instance);
-  }
-  return v8::Array::New(isolate, wrapped.data(), wrapped.size());
 }
 
 // ---- invoke ------------------------------------------------------------
@@ -587,9 +569,7 @@ void CollectServiceWorkerTargets(v8::Local<v8::Context> context,
 
 bool IsReady() {
   const Registry& registry = GetRegistry();
-  return !registry.ipc_main.IsEmpty() &&
-         !registry.ipc_main_internal.IsEmpty() &&
-         !registry.message_port_main.IsEmpty();
+  return !registry.ipc_main.IsEmpty() && !registry.ipc_main_internal.IsEmpty();
 }
 
 // ---- frames ---------------------------------------------------------------
@@ -731,12 +711,9 @@ void PostMessage(v8::Isolate* isolate,
   DispatchScope dispatch_scope(isolate, sender_wrapper);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-  v8::Local<v8::Value> native_ports =
+  v8::Local<v8::Value> ports_array =
       v8::Array::New(isolate, ports.data(), ports.size());
-  v8::Local<v8::Array> wrapped_ports = WrapPorts(context, ports);
-  if (wrapped_ports.IsEmpty())
-    return;
-  ipc_event->SetPorts(isolate, wrapped_ports);
+  ipc_event->SetPorts(isolate, ports_array);
   v8::LocalVector<v8::Object> targets(isolate);
   CollectFrameTargets(context, sender_wrapper, ipc_event->frame_tree_node_id(),
                       &targets);
@@ -747,7 +724,7 @@ void PostMessage(v8::Isolate* isolate,
       return;
   }
   NotifySessionObservers(context, session, "-ipc-ports",
-                         {event, argv[0], message, native_ports});
+                         {event, argv[0], message, ports_array});
 }
 
 void MessageHost(v8::Isolate* isolate,
@@ -880,12 +857,9 @@ void ServiceWorkerPostMessage(v8::Isolate* isolate,
   DispatchScope dispatch_scope(isolate, session_wrapper);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
-  v8::Local<v8::Value> native_ports =
+  v8::Local<v8::Value> ports_array =
       v8::Array::New(isolate, ports.data(), ports.size());
-  v8::Local<v8::Array> wrapped_ports = WrapPorts(context, ports);
-  if (wrapped_ports.IsEmpty())
-    return;
-  ipc_event->SetPorts(isolate, wrapped_ports);
+  ipc_event->SetPorts(isolate, ports_array);
   v8::LocalVector<v8::Object> targets(isolate);
   CollectServiceWorkerTargets(context, session, ipc_event->version_id(),
                               &targets);
@@ -896,7 +870,7 @@ void ServiceWorkerPostMessage(v8::Isolate* isolate,
       return;
   }
   NotifySessionObservers(context, session_wrapper, "-ipc-ports",
-                         {event, argv[0], message, native_ports});
+                         {event, argv[0], message, ports_array});
 }
 
 }  // namespace electron::ipc_dispatch
@@ -906,13 +880,10 @@ namespace {
 void Setup(v8::Isolate* isolate, const gin_helper::Dictionary& options) {
   auto& registry = electron::ipc_dispatch::GetRegistry();
   v8::Local<v8::Object> object;
-  v8::Local<v8::Function> function;
   if (options.Get("ipcMain", &object))
     registry.ipc_main.Reset(isolate, object);
   if (options.Get("ipcMainInternal", &object))
     registry.ipc_main_internal.Reset(isolate, object);
-  if (options.Get("MessagePortMain", &function))
-    registry.message_port_main.Reset(isolate, function);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Promise::Resolver> resolver;
   v8::Local<v8::Value> constructor;

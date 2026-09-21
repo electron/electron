@@ -1,3 +1,4 @@
+import { nativeImage } from 'electron/common';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
@@ -63,6 +64,15 @@ describe('ipc module', () => {
       );
       await w.webContents.executeJavaScript(`(${rendererInvoke})(123)`);
       await done;
+    });
+
+    it('receives a NativeImage response', async () => {
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
+      ipcMain.handleOnce('test', () => image);
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg.result.toPNG()).to.deep.equal(image.toPNG());
     });
 
     it('receives a response from a handler that returns a lazy thenable', async () => {
@@ -688,6 +698,15 @@ describe('ipc module', () => {
         port1.start();
         const [ev] = await once(port1, 'message');
         expect(ev.data).to.equal('hello');
+      });
+
+      it('can send a NativeImage within the process', async () => {
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
+        const { port1, port2 } = new MessageChannelMain();
+        port1.postMessage(image);
+        port2.start();
+        const [event] = await once(port2, 'message');
+        expect(event.data.toPNG()).to.deep.equal(image.toPNG());
       });
 
       it('can pass one end to a WebContents', async () => {

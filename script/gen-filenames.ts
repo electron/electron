@@ -1,6 +1,5 @@
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 
 const rootPath = path.resolve(__dirname, '..');
@@ -16,7 +15,7 @@ const typingFiles = fs.readdirSync(path.resolve(__dirname, '../typings')).map((c
 // Recursively collect files under `dir` matching any of the provided
 // extensions. Paths are returned relative to `rootPath` using forward slashes
 // so they are consumable from BUILD.gn.
-const collectHeaderSources = (dir: string, extensions: readonly string[]): string[] => {
+const collectSources = (dir: string, extensions: readonly string[]): string[] => {
   if (!fs.existsSync(dir)) return [];
   const results: string[] = [];
   const walk = (current: string) => {
@@ -42,65 +41,37 @@ const collectHeaderSources = (dir: string, extensions: readonly string[]): strin
 const nodeHeaderSources = Array.from(
   new Set([
     '../third_party/electron_node/tools/install.py',
-    ...collectHeaderSources(path.resolve(__dirname, '../../third_party/electron_node/src'), ['.h']),
-    ...collectHeaderSources(path.resolve(__dirname, '../../v8/include'), ['.h', '.inc'])
+    ...collectSources(path.resolve(__dirname, '../../third_party/electron_node/src'), ['.h']),
+    ...collectSources(path.resolve(__dirname, '../../v8/include'), ['.h', '.inc'])
   ])
 ).sort();
 
-const main = async () => {
-  const webpackTargets = [
-    {
-      name: 'webview_bundle_deps',
-      config: 'webpack.config.webview.js'
-    },
-    {
-      name: 'isolated_bundle_deps',
-      config: 'webpack.config.isolated_renderer.js'
-    },
-    {
-      name: 'browser_bundle_deps',
-      config: 'webpack.config.browser.js'
-    },
-    {
-      name: 'renderer_bundle_deps',
-      config: 'webpack.config.renderer.js'
-    },
-    {
-      name: 'worker_bundle_deps',
-      config: 'webpack.config.worker.js'
-    },
-    {
-      name: 'node_bundle_deps',
-      config: 'webpack.config.node.js'
-    },
-    {
-      name: 'utility_bundle_deps',
-      config: 'webpack.config.utility.js'
-    }
-  ];
+// Every file the lib/ type check (tsconfig.electron.json) reads from this repo.
+const libTypecheckSources = [
+  ...collectSources(path.resolve(rootPath, 'lib'), ['.ts', '.js']),
+  ...typingFiles,
+  'build/bundle/typecheck.mjs',
+  'package.json',
+  'tsconfig.electron.json',
+  'tsconfig.json'
+].sort();
 
-  const webpackTargetsWithDeps = await Promise.all(
-    webpackTargets.map(async (webpackTarget) => {
-      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'));
-      const child = cp.spawn(
-        'node',
-        [
-          './node_modules/webpack-cli/bin/cli.js',
-          '--config',
-          `./build/webpack/${webpackTarget.config}`,
-          '--stats',
-          'errors-only',
-          '--output-path',
-          tmpDir,
-          '--output-filename',
-          `${webpackTarget.name}.measure.js`,
-          '--env',
-          'PRINT_WEBPACK_GRAPH'
-        ],
-        {
-          cwd: path.resolve(__dirname, '..')
-        }
-      );
+const bundleTargets = [
+  { name: 'webview_bundle_deps', target: 'webview' },
+  { name: 'isolated_bundle_deps', target: 'isolated_renderer' },
+  { name: 'browser_bundle_deps', target: 'browser' },
+  { name: 'renderer_bundle_deps', target: 'renderer' },
+  { name: 'worker_bundle_deps', target: 'worker' },
+  { name: 'node_bundle_deps', target: 'node' },
+  { name: 'utility_bundle_deps', target: 'utility' }
+];
+
+const main = async () => {
+  const bundleTargetsWithDeps = await Promise.all(
+    bundleTargets.map(async (bundleTarget) => {
+      const child = cp.spawn('node', ['./build/bundle/bundle.mjs', '--target', bundleTarget.target, '--print-graph'], {
+        cwd: rootPath
+      });
       let output = '';
       child.stdout.on('data', (chunk) => {
         output += chunk.toString();
@@ -110,31 +81,25 @@ const main = async () => {
         child.on('exit', (code) => {
           if (code !== 0) {
             console.error(output);
-            return reject(new Error(`Failed to list webpack dependencies for entry: ${webpackTarget.name}`));
+            return reject(new Error(`Failed to list bundle dependencies for entry: ${bundleTarget.name}`));
           }
 
           resolve();
         })
       );
 
-      const webpackTargetWithDeps = {
-        ...webpackTarget,
+      return {
+        ...bundleTarget,
         dependencies: (JSON.parse(output) as string[])
-          // Remove whitespace
-          .map((line) => line.trim())
-          // Get the relative path
-          .map((line) => path.relative(rootPath, line).replace(/\\/g, '/'))
           // Only care about files in //electron
           .filter((line) => !line.startsWith('..'))
           // Only care about our own files
           .filter((line) => !line.startsWith('node_modules'))
-          // All webpack builds depend on the tsconfig  and package json files
-          .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json', ...typingFiles])
+          // All bundles depend on the tsconfig and package json files
+          .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json'])
           // Make the generated list easier to read
           .sort()
       };
-      await fs.promises.rm(tmpDir, { force: true, recursive: true });
-      return webpackTargetWithDeps;
     })
   );
 
@@ -148,7 +113,11 @@ ${allDocs.map((doc) => `    "${doc}",`).join('\n')}
 ${nodeHeaderSources.map((src) => `    "${src}",`).join('\n')}
   ]
 
-${webpackTargetsWithDeps
+  lib_typecheck_sources = [
+${libTypecheckSources.map((src) => `    "${src}",`).join('\n')}
+  ]
+
+${bundleTargetsWithDeps
   .map(
     (target) => `  ${target.name} = [
 ${target.dependencies.map((dep) => `    "${dep}",`).join('\n')}

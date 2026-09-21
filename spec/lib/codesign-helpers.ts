@@ -120,10 +120,15 @@ export type SignAppOptions = {
    * clone of an already deep-signed bundle where only outer resources changed.
    */
   deep?: boolean;
+  spawn?: typeof spawn;
 };
 
-export function signApp(appPath: string, identity: string, { deep = true }: SignAppOptions = {}) {
-  return spawn('codesign', ['-s', identity, ...(deep ? ['--deep'] : []), '--force', appPath]);
+export function signApp(
+  appPath: string,
+  identity: string,
+  { deep = true, spawn: spawnProcess = spawn }: SignAppOptions = {}
+) {
+  return spawnProcess('codesign', ['-s', identity, ...(deep ? ['--deep'] : []), '--force', appPath]);
 }
 
 export function unsignApp(appPath: string) {
