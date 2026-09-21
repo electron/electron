@@ -322,10 +322,10 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   {
     v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
+    // After DoCleanup() so that observers created by JS that ran during it
+    // (e.g. a webContents 'destroyed' handler) are notified too.
+    microtasks_runner_->NotifyBeforeDispose();
   }
-  // After DoCleanup() so that observers created by JS that ran during it (e.g.
-  // a webContents 'destroyed' handler) are notified too.
-  gin::PerIsolateData::From(isolate())->NotifyBeforeMicrotasksRunnerDispose();
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   microtasks_runner_.reset();
 }
