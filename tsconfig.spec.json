@@ -3,8 +3,11 @@
   "compilerOptions": {
     "skipLibCheck": true,
     "module": "nodenext",
-    "moduleResolution": "node16",
-    // Keep specs to syntax that Node's built-in type stripping can erase.
+    // Specs are loaded as-is by Node's built-in type stripping, so only
+    // erasable syntax is allowed and imports must name real files. (Type-only
+    // imports are enforced by oxlint rather than verbatimModuleSyntax, which
+    // would reject the CommonJS-scoped lib/ files a couple of specs import.)
+    "allowImportingTsExtensions": true,
     "erasableSyntaxOnly": true,
     "isolatedModules": true,
     "noEmit": true

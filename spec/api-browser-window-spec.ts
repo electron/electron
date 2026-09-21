@@ -26,6 +26,7 @@ import * as crypto from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -33,16 +34,26 @@ import { setTimeout as syncSetTimeout } from 'node:timers';
 import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
-import { emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { randomString } from './lib/net-helpers';
-import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isTestingBindingAvailable } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { emittedUntil, emittedNTimes } from './lib/events-helpers.ts';
+import { randomString } from './lib/net-helpers.ts';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers.ts';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  listen,
+  waitUntil,
+  isWayland,
+  isTestingBindingAvailable
+} from './lib/spec-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
 
-const fixtures = path.resolve(__dirname, 'fixtures');
-const mainFixtures = path.resolve(__dirname, 'fixtures');
+const require = createRequire(import.meta.url);
+
+const fixtures = path.resolve(import.meta.dirname, 'fixtures');
+const mainFixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
 // values?
@@ -237,7 +248,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await once(w.webContents, '-before-unload-fired');
     });
@@ -359,7 +370,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload event', async function () {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, '-before-unload-fired');
     });
@@ -3468,7 +3479,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('can properly open and load a new window from a link', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'open-new-window-from-link');
 
       appProcess = childProcess.spawn(process.execPath, [appPath]);
 
@@ -3701,7 +3712,7 @@ describe('BrowserWindow module', () => {
         },
         titleBarOverlay: true
       });
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
       await w.loadFile(overlayHTML);
       await showWindowForWayland(w);
       await waitForOverlay(w);
@@ -3809,7 +3820,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
       await w.loadFile(overlayHTML);
       await showWindowForWayland(w);
       await waitForOverlay(w);
@@ -3939,7 +3950,7 @@ describe('BrowserWindow module', () => {
       const shown = once(w, 'show');
       w.show();
       await shown;
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
       await topView.webContents.loadFile(overlayHTML);
       await bottomView.webContents.loadFile(overlayHTML);
 
@@ -3999,7 +4010,7 @@ describe('BrowserWindow module', () => {
 
     it('correctly updates the height of the overlay', async () => {
       const testOverlay = async (w: BrowserWindow, size: number) => {
-        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
         await w.loadFile(overlayHTML);
         await showWindowForWayland(w);
         await waitForOverlay(w);
@@ -4761,7 +4772,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('"sandbox" option', () => {
-      const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
+      const preload = path.join(path.resolve(import.meta.dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
       let server: http.Server;
       let serverUrl: string;
@@ -4833,7 +4844,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
+        const htmlPath = path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
         const pageUrl = 'file://' + htmlPath;
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
@@ -4874,7 +4885,7 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open');
+        const htmlPath = path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html?window-open');
         const pageUrl = 'file://' + htmlPath;
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
@@ -4910,7 +4921,9 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'window-open-external' });
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), {
+          search: 'window-open-external'
+        });
 
         // Wait for a message from the main window saying that it's ready.
         await once(ipcMain, 'opener-loaded');
@@ -5051,7 +5064,7 @@ describe('BrowserWindow module', () => {
         });
 
         const done = Promise.all(['parent-answer', 'child-answer'].map((name) => once(ipcMain, name)));
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
         await done;
       });
 
@@ -5093,7 +5106,9 @@ describe('BrowserWindow module', () => {
               'dom-ready'
             ].map((name) => once(w.webContents, name))
           );
-          w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
+          w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), {
+            search: 'webcontents-events'
+          });
           await done;
         });
       });
@@ -5228,7 +5243,7 @@ describe('BrowserWindow module', () => {
         expect(content).to.equal('Hello');
       });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
         {
           const [, content] = await once(ipcMain, 'answer');
           expect(content).to.equal('function');
@@ -5404,28 +5419,28 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('returning undefined would not prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
     });
 
     it('returning false would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
       w.close();
       const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('emits for each close attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const destroyListener = () => {
         expect.fail('Close was not prevented');
@@ -5449,7 +5464,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each reload attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => {
         expect.fail('Reload was not prevented');
@@ -5475,7 +5490,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each navigation attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => {
         expect.fail('Reload was not prevented');
@@ -7650,7 +7665,7 @@ describe('BrowserWindow module', () => {
     it('opens the path in Quick Look on macOS', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
-        w.previewFile(__filename);
+        w.previewFile(import.meta.filename);
         w.closeFilePreview();
       }).to.not.throw();
     });
@@ -7666,7 +7681,7 @@ describe('BrowserWindow module', () => {
         showCalled = true;
       });
 
-      w.previewFile(__filename);
+      w.previewFile(import.meta.filename);
       await setTimeout(500);
       expect(showCalled).to.equal(false, 'should not have called show twice');
       w.closeFilePreview();
@@ -8219,7 +8234,7 @@ describe('BrowserWindow module', () => {
           hasShadow: false
         });
 
-        const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+        const colorFile = path.join(import.meta.dirname, 'fixtures', 'pages', 'half-background-color.html');
         await foregroundWindow.loadFile(colorFile);
 
         // This verifies how the transparent window composites over the window
@@ -8262,7 +8277,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+        foregroundWindow.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'css-transparent.html'));
         await once(ipcMain, 'set-transparent');
 
         // This verifies how the transparent window composites over the window
@@ -8412,7 +8427,7 @@ describe('BrowserWindow module', () => {
     };
 
     describe('save window state', () => {
-      const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
 

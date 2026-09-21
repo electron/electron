@@ -2,7 +2,7 @@ import { screen, desktopCapturer, type NativeImage } from 'electron';
 
 import { AssertionError } from 'chai';
 
-import { createArtifactWithRandomId } from './artifacts';
+import { createArtifactWithRandomId } from './artifacts.ts';
 
 export const HexColors = {
   GREEN: '#00b140',

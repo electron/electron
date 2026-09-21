@@ -13,8 +13,8 @@ import {
   spawn,
   uninstallMsixPackage,
   unregisterExecutableWithIdentity
-} from './lib/msix-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+} from './lib/msix-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 import type * as http from 'node:http';
 import type { AddressInfo } from 'node:net';

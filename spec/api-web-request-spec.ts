@@ -13,11 +13,11 @@ import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
-import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
+import { listen, defer, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 import type { Socket } from 'node:net';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('webRequest module', () => {
   const ses = session.defaultSession;
@@ -550,7 +550,7 @@ describe('webRequest module', () => {
       // Note that we need to do navigation every time after a protocol is
       // registered or unregistered, otherwise the new protocol won't be
       // recognized by current page when NetworkService is used.
-      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
 
       try {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {

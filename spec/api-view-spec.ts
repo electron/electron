@@ -2,7 +2,7 @@ import { BaseWindow, View } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { closeWindow } from './lib/window-helpers';
+import { closeWindow } from './lib/window-helpers.ts';
 
 describe('View', () => {
   let w: BaseWindow;

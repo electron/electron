@@ -14,8 +14,8 @@ import {
   signApp,
   spawn,
   stripFrameworkSymbols
-} from './codesign-helpers';
-import { withTempDirectory } from './fs-helpers';
+} from './codesign-helpers.ts';
+import { withTempDirectory } from './fs-helpers.ts';
 
 import type * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
