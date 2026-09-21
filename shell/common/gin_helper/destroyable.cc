@@ -6,6 +6,8 @@
 
 #include "base/no_destructor.h"
 #include "gin/converter.h"
+#include "gin/wrappable.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-object.h"
@@ -41,6 +43,14 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (IsCppHeapWrappable(holder))
     return;
 
+  // Only gin_helper::Wrappable stores a WrappableBase* in field 0 of a
+  // single-field wrapper; reject foreign receivers like FromV8Impl does.
+  if (holder->InternalFieldCount() != 1) {
+    gin_helper::ErrorThrower(info.GetIsolate())
+        .ThrowTypeError("Illegal invocation");
+    return;
+  }
+
   // TODO(zcbenz): gin_helper::Wrappable will be removed.
   delete static_cast<gin_helper::WrappableBase*>(
       holder->GetAlignedPointerFromInternalField(
@@ -71,6 +81,18 @@ bool Destroyable::IsDestroyed(v8::Local<v8::Object> object) {
   return object->InternalFieldCount() == 0 ||
          object->GetAlignedPointerFromInternalField(
              0, v8::kEmbedderDataTypeTagDefault) == nullptr;
+}
+
+// static
+void Destroyable::MarkDestroyed(v8::Isolate* isolate,
+                                gin::WrappableBase* wrappable) {
+  v8::Local<v8::Object> wrapper;
+  if (!wrappable->GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+
+  v8::Object::Wrap(isolate, wrapper, nullptr,
+                   static_cast<v8::CppHeapPointerTag>(
+                       wrappable->wrapper_info()->pointer_tag));
 }
 
 // static

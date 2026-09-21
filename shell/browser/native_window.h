@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -149,8 +150,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() const = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                              const std::string& level = "floating",
-                              int relativeLevel = 0) = 0;
+                              const std::string& level,
+                              int relativeLevel) = 0;
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
@@ -223,10 +224,9 @@ class NativeWindow : public views::WidgetDelegate {
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(
-      bool visible,
-      bool visibleOnFullScreen = false,
-      bool skipTransformProcessType = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen,
+                                         bool skipTransformProcessType) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() const = 0;
 
@@ -428,12 +428,10 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool IsTranslucent() const;
 
-  // Adds |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
-  // Removes |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Registers |source| in |background_throttling_sources_| and returns a token
+  // that unregisters it when reset or destroyed.
+  [[nodiscard]] base::ScopedClosureRunner RegisterBackgroundThrottlingSource(
+      BackgroundThrottlingSource* source);
   // Updates `ui::Compositor` background throttling state based on
   // |background_throttling_sources_|. If at least one of the sources disables
   // throttling, then throttling in the `ui::Compositor` will be disabled.
@@ -451,6 +449,11 @@ class NativeWindow : public views::WidgetDelegate {
   // Flushes save_window_state_timer_ that was queued by
   // DebouncedSaveWindowState. This does NOT flush the actual disk write.
   void FlushWindowState();
+  // Fires save_window_state_timer_ now if DebouncedSaveWindowState started it,
+  // so the electron_common_testing binding can make the debounced save
+  // deterministic in specs. Unlike FlushWindowState this has no other side
+  // effects, and it does NOT flush the actual disk write either.
+  void FlushPendingWindowStateSaveForTesting();
 
   // Restores window state - bounds first and then display mode.
   void RestoreWindowState(const gin_helper::Dictionary& options);

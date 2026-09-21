@@ -62,10 +62,7 @@ struct FileSelectHelper::ActiveDirectoryEnumeration {
 };
 
 FileSelectHelper::FileSelectHelper()
-    : render_frame_host_(nullptr),
-      web_contents_(nullptr),
-      dialog_type_(ui::SelectFileDialog::SELECT_OPEN_FILE),
-      dialog_mode_(FileChooserParams::Mode::kOpen) {}
+    : render_frame_host_(nullptr), web_contents_(nullptr) {}
 
 FileSelectHelper::~FileSelectHelper() {
   // There may be pending file dialogs, we need to tell them that we've gone

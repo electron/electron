@@ -13,7 +13,7 @@ Refs: https://github.com/nodejs/node/pull/59941
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/6937664
 
 diff --git a/src/node.cc b/src/node.cc
-index 7858efe2b5d970a5b79ff2473bc62a3a771cc8de..5e89ae4e3ac672de13d58908906e2d2a96066f2d 100644
+index c977e31ab87158a527bf76d0e1f7283e6eeb40eb..f303b0c694c4c32863b15cbcabd315b4f435cd5e 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -790,9 +790,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,

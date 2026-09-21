@@ -2,8 +2,8 @@ import { globalShortcut } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   beforeEach(() => {
@@ -12,6 +12,18 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
 
   afterEach(() => {
     globalShortcut.unregisterAll();
+  });
+
+  describe('events', () => {
+    it('is an event emitter', () => {
+      expect(globalShortcut.on).to.be.a('function');
+      expect(globalShortcut.removeListener).to.be.a('function');
+      const listener = () => {};
+      globalShortcut.on('registration-resolved', listener);
+      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(1);
+      globalShortcut.removeListener('registration-resolved', listener);
+      expect(globalShortcut.listenerCount('registration-resolved')).to.equal(0);
+    });
   });
 
   describe('register', () => {

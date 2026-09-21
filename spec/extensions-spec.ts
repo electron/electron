@@ -4,15 +4,15 @@ import {
   webFrameMain,
   BrowserWindow,
   ipcMain,
-  WebContents,
-  Extension,
-  Session,
-  ServiceWorkerInfo,
-  ServiceWorkersRunningStatusChangedEventParams
+  type WebContents,
+  type Extension,
+  type Session,
+  type ServiceWorkerInfo,
+  type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -21,12 +21,12 @@ import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
-import { expectWarningMessages } from './lib/warning-helpers';
-import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
+import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { expectWarningMessages } from './lib/warning-helpers.ts';
+import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
-const fixtures = path.join(__dirname, 'fixtures');
+const fixtures = path.join(import.meta.dirname, 'fixtures');
 
 describe('chrome extensions', () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
@@ -35,7 +35,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   let port: number;
-  let wss: WebSocket.Server;
+  let wss: WebSocketServer;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -44,7 +44,7 @@ describe('chrome extensions', () => {
       res.end(emptyPage);
     });
 
-    wss = new WebSocket.Server({ noServer: true });
+    wss = new WebSocketServer({ noServer: true });
     wss.on('connection', function connection(ws) {
       ws.on('message', function incoming(message) {
         if (message.toString() === 'foo') {
@@ -87,6 +87,57 @@ describe('chrome extensions', () => {
       })();
     `)
     ).to.eventually.have.property('id');
+  });
+
+  describe('Chrome Web Store origin', () => {
+    // The core //extensions feature files expose some APIs to web pages on the
+    // Chrome Web Store origin. Electron does not support chrome.webstorePrivate
+    // and overrides it to be unavailable everywhere; make sure that sticks.
+    const webstoreUrl = 'https://chromewebstore.google.com/category/extensions';
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      customSession = session.fromPartition(`webstore-${randomUUID()}`);
+      // Serve the origin locally so the test does not touch the network.
+      customSession.protocol.handle(
+        'https',
+        () => new Response(emptyPage, { headers: { 'content-type': 'text/html' } })
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+    });
+
+    afterEach(async () => {
+      customSession.protocol.unhandle('https');
+      await closeAllWindows();
+    });
+
+    it('does not expose chrome.webstorePrivate to web pages', async () => {
+      await w.loadURL(webstoreUrl);
+      const type = await w.webContents.executeJavaScript(
+        "typeof chrome === 'undefined' ? 'undefined' : typeof chrome.webstorePrivate"
+      );
+      expect(type).to.equal('undefined');
+    });
+
+    it('does not crash if the page tries to call chrome.webstorePrivate', async () => {
+      await w.loadURL(webstoreUrl);
+      // If bindings were ever exposed again this would reach the browser process,
+      // which must respond with an error rather than crash.
+      const result = await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        try {
+          chrome.webstorePrivate.getReferrerChain(() => resolve(chrome.runtime.lastError ? chrome.runtime.lastError.message : 'ok'));
+        } catch (e) {
+          resolve('threw: ' + e.message);
+        }
+      })`);
+      expect(result)
+        .to.be.a('string')
+        .and.match(/^threw: |not supported/);
+      expect(w.webContents.isCrashed()).to.be.false();
+      // The browser process is still alive if we get here; do a round trip to be sure.
+      expect(await w.webContents.executeJavaScript('1 + 1')).to.equal(2);
+    });
   });
 
   describe('host_permissions', async () => {
@@ -633,15 +684,14 @@ describe('chrome extensions', () => {
             return;
           }
 
-          const showLastPanel = () => {
-            // this is executed in the devtools context, where UI is a global
-            const { EUI } = window as any;
-            const instance = EUI.InspectorView.InspectorView.instance();
+          // Executed in the DevTools page.
+          const showLastPanel = `(async () => {
+            const { InspectorView } = await import('./ui/legacy/legacy.js');
+            const instance = InspectorView.InspectorView.instance();
             const tabs = instance.tabbedPane.tabs;
-            const lastPanelId = tabs[tabs.length - 1].id;
-            instance.showPanel(lastPanelId);
-          };
-          devToolsWebContents.executeJavaScript(`(${showLastPanel})()`, false).then(() => {
+            instance.showPanel(tabs[tabs.length - 1].id);
+          })()`;
+          devToolsWebContents.executeJavaScript(showLastPanel, false).then(() => {
             showPanelTimeoutId = setTimeout(show, 100);
           });
         };
@@ -666,7 +716,7 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome extension content scripts', () => {
-    const fixtures = path.resolve(__dirname, 'fixtures');
+    const fixtures = path.resolve(import.meta.dirname, 'fixtures');
     const extensionPath = path.resolve(fixtures, 'extensions');
 
     const addExtension = (name: string) =>
@@ -1651,7 +1701,9 @@ describe('chrome extensions', () => {
 
   describe('custom protocol', () => {
     async function runFixture(name: string) {
-      const appProcess = spawn(process.execPath, [path.join(fixtures, 'extensions', name, 'main.js')]);
+      const args = [path.join(fixtures, 'extensions', name, 'main.js')];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const appProcess = spawn(process.execPath, args);
 
       let output = '';
       appProcess.stdout.on('data', (data) => {

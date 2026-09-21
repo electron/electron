@@ -5,13 +5,13 @@ import { expect } from 'chai';
 import { on, once } from 'node:events';
 import * as path from 'node:path';
 
-import { deferKillUtilityProcess, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { deferKillUtilityProcess, ifdescribe } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
 
 function getFixturePath(fixtureName: string) {
-  return path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), fixtureName);
+  return path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), fixtureName);
 }
 
 // Await fn and listen for a message of the given type, returning the message once received
@@ -46,7 +46,7 @@ async function waitForMessage(aiHandler: Electron.UtilityProcess, messageType: s
 }
 
 ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   let w: Electron.BrowserWindow;
 
@@ -179,7 +179,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
   });
 
   describe('LanguageModel.create()', () => {
-    async function expectRejectedWithError(message: string | RegExp, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, options?: object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
         await expect(
@@ -404,7 +404,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
   });
 
   describe('LanguageModel.prompt()', () => {
-    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
         await expect(
@@ -584,7 +584,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     const collectStream =
       'async (stream) => { const reader = stream.getReader(); let r = ""; while (true) { const { done, value } = await reader.read(); if (done) return r; r += value; } }';
 
-    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: object) {
       const collectStreamFn = collectStream;
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {

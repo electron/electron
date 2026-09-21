@@ -10,15 +10,19 @@
 #include <utility>
 
 #include "base/functional/bind.h"
+#include "base/location.h"
 #include "base/no_destructor.h"
-#include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
+#include "content/public/browser/child_process_termination_info.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
@@ -46,6 +50,8 @@
 #include "v8/include/cppgc/allocation.h"
 
 #if BUILDFLAG(IS_POSIX)
+#include <unistd.h>
+
 #include "base/posix/eintr_wrapper.h"
 #endif
 
@@ -85,6 +91,8 @@ UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
   return *registry;
 }
 
+constexpr uint32_t kLaunchFailureExitCode = 1;
+
 }  // namespace
 
 namespace api {
@@ -111,6 +119,21 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #elif BUILDFLAG(IS_POSIX)
   base::FileHandleMappingVector fds_to_remap;
 #endif
+  // Nothing else calls HandleTermination() if we bail before launch; post it
+  // so 'exit' fires after JS has attached its listeners.
+  auto fail_launch = [&] {
+#if BUILDFLAG(IS_POSIX)
+    for (const auto& [fd, _] : fds_to_remap)
+      close(fd);
+#endif
+    CloseStdioReadFds();
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            &UtilityProcessWrapper::HandleTermination,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
+            kLaunchFailureExitCode));
+  };
   for (const auto& [io_handle, io_type] : stdio) {
     if (io_handle == IOHandle::STDIN)
       continue;
@@ -131,6 +154,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       // https://source.chromium.org/chromium/chromium/src/+/main:base/process/launch_win.cc;l=303-332
       if (!::CreatePipe(&read, &write, nullptr, 0)) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -148,6 +172,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int pipe_fd[2];
       if (HANDLE_EINTR(pipe(pipe_fd)) < 0) {
         PLOG(ERROR) << "pipe creation failed";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -166,7 +191,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
-        Emit("error", "Failed to create null handle for ignoring stdio");
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -178,6 +203,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       int devnull = open("/dev/null", O_WRONLY);
       if (devnull < 0) {
         PLOG(ERROR) << "failed to open /dev/null";
+        fail_launch();
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -191,6 +217,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   // Watch for service process termination events.
   content::ServiceProcessHost::AddObserver(this);
+  content::BrowserChildProcessObserver::Add(this);
 
   mojo::PendingReceiver<node::mojom::NodeService> receiver =
       node_service_remote_.BindNewPipeAndPassReceiver();
@@ -260,17 +287,21 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
+  if (terminated_)
+    return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().Add(pid_, this);
+  // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
-    EmitWithoutEvent("stdout", stdout_read_fd_);
+    EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
   if (stderr_read_fd_ != -1)
-    EmitWithoutEvent("stderr", stderr_read_fd_);
+    EmitWithoutEvent("stderr", std::exchange(stderr_read_fd_, -1));
   if (url_loader_network_observer_) {
     url_loader_network_observer_->set_process_id(pid_);
   }
@@ -289,19 +320,20 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 
   pid_ = base::kNullProcessId;
   content::ServiceProcessHost::RemoveObserver(this);
+  content::BrowserChildProcessObserver::Remove(this);
   CloseConnectorPort();
+  CloseStdioReadFds();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
     // UtilityProcessWrapper::Kill relies on base::Process::Terminate
     // to gracefully shutdown the process which is performed by sending
     // SIGTERM signal. When listening for exit events via ServiceProcessHost
     // observers, the exit code on posix is obtained via
-    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
-    // on waitpid to extract the exit signal. If the process is unavailable,
-    // then the exit_code will be set to 0, otherwise we get the signal that
-    // was sent during the base::Process::Terminate call. For a user, this is
-    // still a graceful shutdown case so lets' convert the exit code to the
-    // expected value.
+    // BrowserChildProcessHostImpl::GetTerminationInfo which in turn relies
+    // on waitpid to extract the exit signal. A child that exits from the
+    // SIGTERM sent by kill() therefore reports the signal as its exit code.
+    // For a user, this is still a graceful shutdown case so let's convert
+    // the exit code to the expected value.
     if (exit_code == SIGTERM || exit_code == SIGKILL) {
       exit_code = 0;
     }
@@ -316,6 +348,10 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     const std::string& description) {
   if (description == "process_exit_termination") {
     HandleTermination(exit_code);
+  } else if (pid_ == base::kNullProcessId) {
+    // Pipe dropped before launch means the child failed to launch; the host
+    // is deleted without notifying observers, so this is the only signal.
+    HandleTermination(kLaunchFailureExitCode);
   }
 }
 
@@ -325,20 +361,49 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  // A non-zero code from process.exit() arrives first through
+  // OnServiceProcessDisconnected.
+  HandleTermination(0);
 }
 
-void UtilityProcessWrapper::OnServiceProcessCrashed(
-    const content::ServiceProcessInfo& info) {
-  if (!info.IsService<node::mojom::NodeService>() ||
-      info.GetProcess().Pid() != pid_)
-    return;
+bool UtilityProcessWrapper::IsThisProcess(
+    const content::ChildProcessData& data) const {
+  return pid_ != base::kNullProcessId &&
+         data.process_type == content::PROCESS_TYPE_UTILITY &&
+         data.metrics_name == node::mojom::NodeService::Name_ &&
+         data.GetProcess().Pid() == pid_;
+}
 
-  HandleTermination(info.exit_code());
+void UtilityProcessWrapper::BrowserChildProcessCrashed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::BrowserChildProcessKilled(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  if (IsThisProcess(data))
+    HandleTermination(info.exit_code);
+}
+
+void UtilityProcessWrapper::CloseStdioReadFds() {
+  // Read ends not yet handed to JS; on Windows the CRT fd owns the HANDLE.
+  for (int* fd : {&stdout_read_fd_, &stderr_read_fd_}) {
+    if (*fd == -1)
+      continue;
+#if BUILDFLAG(IS_WIN)
+    _close(*fd);
+#else
+    close(*fd);
+#endif
+    *fd = -1;
+  }
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_->is_valid()) {
+  if (!connector_closed_ && connector_ && connector_->is_valid()) {
     host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
     connector_ = nullptr;
     host_port_.Reset();
@@ -392,15 +457,13 @@ bool UtilityProcessWrapper::Kill() {
   if (pid_ == base::kNullProcessId)
     return false;
   base::Process process = base::Process::Open(pid_);
+  // Like Node's child_process.kill(), this delivers the signal (SIGTERM on
+  // POSIX, TerminateProcess on Windows) and does not guarantee that the child
+  // exits. content's BrowserChildProcessHost reaps the child once its mojo
+  // pipe drops; reaping it here as well (as base::EnsureProcessTerminated
+  // did) would race that and make content's kill()/waitpid() fail with
+  // ESRCH/ECHILD.
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
-  // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
-  // Currently utility process is not sandboxed which
-  // means Zygote is not used on linux, refs
-  // content::UtilitySandboxedProcessLauncherDelegate::GetZygote.
-  // If sandbox feature is enabled for the utility process, then the
-  // process reap should be signaled through the zygote via
-  // content::ZygoteCommunication::EnsureProcessTerminated.
-  base::EnsureProcessTerminated(std::move(process));
   killed_ = result;
   return result;
 }

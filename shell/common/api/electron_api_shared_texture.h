@@ -6,11 +6,15 @@
 #define ELECTRON_SHELL_COMMON_API_ELECTRON_API_SHARED_TEXTURE_H_
 
 #include "v8/include/v8-forward.h"
+#include "v8/include/v8-function.h"
 
 namespace electron::api::shared_texture {
 
 v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
                                          v8::Local<v8::Value> options);
+
+void SetSharedTextureReceiver(v8::Isolate* isolate,
+                              v8::Local<v8::Function> receiver);
 
 v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                  v8::Local<v8::Value> options);

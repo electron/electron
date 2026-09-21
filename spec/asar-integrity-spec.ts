@@ -1,5 +1,5 @@
 import { createPackage, getRawHeader } from '@electron/asar';
-import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
+import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 
 import { expect } from 'chai';
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
@@ -7,14 +7,16 @@ import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { copyApp } from './lib/fs-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { copyApp } from './lib/fs-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+const require = createRequire(import.meta.url);
+
 const plist = require('plist');
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {
@@ -218,7 +220,7 @@ describe('fuses', function () {
         });
 
         it('opens normally when unmodified', async () => {
-          const res = await launchApp([path.resolve(__dirname, 'fixtures/apps/hello/hello.js')]);
+          const res = await launchApp([path.resolve(import.meta.dirname, 'fixtures/apps/hello/hello.js')]);
           expect(res.code).to.equal(0);
           expect(res.signal).to.equal(null);
           expect(res.out).to.include('alive');
@@ -268,7 +270,7 @@ describe('fuses', function () {
         });
 
         const fdReadModes = ['fd', 'stream', 'handle', 'copy'];
-        const fdReadsApp = path.resolve(__dirname, 'fixtures/apps/asar-fd-reads/main.js');
+        const fdReadsApp = path.resolve(import.meta.dirname, 'fixtures/apps/asar-fd-reads/main.js');
 
         for (const mode of fdReadModes) {
           it(`serves unmodified files through fs.open-style APIs (${mode})`, async () => {
@@ -295,7 +297,7 @@ describe('fuses', function () {
         }
 
         describe('block validated reads of a multi-block entry', () => {
-          const readsApp = path.resolve(__dirname, 'fixtures/apps/asar-integrity-reads/main.js');
+          const readsApp = path.resolve(import.meta.dirname, 'fixtures/apps/asar-integrity-reads/main.js');
           const runReads = (mode: string) =>
             launchApp([readsApp], { env: { ...process.env, ASAR_INTEGRITY_READS_MODE: mode } });
           const corruptBlock = async (n: number) => {

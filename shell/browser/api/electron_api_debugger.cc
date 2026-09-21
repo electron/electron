@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_debugger.h"
 
+#include <map>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -11,16 +12,20 @@
 #include "base/containers/span.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
+#include "base/memory/raw_ptr.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "shell/browser/javascript_environment.h"
+#include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
 
 using content::DevToolsAgentHost;
@@ -30,41 +35,87 @@ namespace electron::api {
 gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
 
-Debugger::Debugger(content::WebContents* web_contents)
-    : content::WebContentsObserver{web_contents} {}
+class Debugger::AgentHostLifecycle final
+    : public content::DevToolsAgentHostClient,
+      public MicrotasksRunner::Observer,
+      private content::WebContentsObserver {
+ public:
+  using PendingRequestMap = std::map<int, gin_helper::Promise<base::DictValue>>;
 
-Debugger::~Debugger() = default;
+  AgentHostLifecycle(Debugger* debugger, content::WebContents* web_contents)
+      : content::WebContentsObserver(web_contents), debugger_(debugger) {
+    MicrotasksRunner::AddObserver(this);
+  }
 
-void Debugger::AgentHostClosed(DevToolsAgentHost* agent_host) {
-  DCHECK(agent_host == agent_host_);
-  agent_host_ = nullptr;
-  ClearPendingRequests();
-  Emit("detach", "target closed");
-}
+  ~AgentHostLifecycle() override {
+    MicrotasksRunner::RemoveObserver(this);
+    Detach();
+  }
 
-void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
-                                       base::span<const uint8_t> message) {
-  DCHECK(agent_host == agent_host_);
+  bool Attach(scoped_refptr<DevToolsAgentHost> agent_host) {
+    DCHECK(!agent_host_);
+    agent_host_ = std::move(agent_host);
+    if (agent_host_->AttachClient(this))
+      return true;
+    agent_host_ = nullptr;
+    return false;
+  }
 
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
+  bool Detach() {
+    scoped_refptr<DevToolsAgentHost> agent_host = std::move(agent_host_);
+    const bool detached = agent_host && agent_host->DetachClient(this);
+    ClearPendingRequests();
+    return detached;
+  }
 
-  const std::string_view message_str = base::as_string_view(message);
-  std::optional<base::Value> parsed_message = base::JSONReader::Read(
-      message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
-  if (!parsed_message || !parsed_message->is_dict())
-    return;
-  base::DictValue& dict = parsed_message->GetDict();
-  std::optional<int> id = dict.FindInt("id");
-  if (!id) {
-    std::string* method = dict.FindString("method");
-    if (!method)
+  DevToolsAgentHost* agent_host() const { return agent_host_.get(); }
+  content::WebContents* web_contents() const {
+    return content::WebContentsObserver::web_contents();
+  }
+
+  bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
+  void OnBeforeMicrotasksRunnerDispose() override {
+    cppgc::Persistent<Debugger> debugger(debugger_.Get());
+    debugger_.Clear();
+    if (Detach() && debugger)
+      debugger->AgentHostClosed();
+  }
+
+  void AgentHostClosed(DevToolsAgentHost* agent_host) override {
+    DCHECK_EQ(agent_host, agent_host_.get());
+    if (agent_host != agent_host_.get())
       return;
-    std::string* session_id = dict.FindString("sessionId");
-    base::DictValue* params = dict.FindDict("params");
-    Emit("message", *method, params ? std::move(*params) : base::DictValue(),
-         session_id ? *session_id : "");
-  } else {
+    agent_host_ = nullptr;
+    ClearPendingRequests();
+    if (auto* debugger = debugger_.Get())
+      debugger->AgentHostClosed();
+  }
+
+  void DispatchProtocolMessage(DevToolsAgentHost* agent_host,
+                               base::span<const uint8_t> message) override {
+    if (agent_host != agent_host_.get())
+      return;
+
+    const std::string_view message_str = base::as_string_view(message);
+    std::optional<base::Value> parsed_message = base::JSONReader::Read(
+        message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
+    if (!parsed_message || !parsed_message->is_dict())
+      return;
+    base::DictValue& dict = parsed_message->GetDict();
+    std::optional<int> id = dict.FindInt("id");
+    if (!id) {
+      Debugger* debugger = debugger_.Get();
+      std::string* method = dict.FindString("method");
+      if (!debugger || !method)
+        return;
+      std::string* session_id = dict.FindString("sessionId");
+      base::DictValue* params = dict.FindDict("params");
+      debugger->EmitProtocolMessage(
+          *method, params ? std::move(*params) : base::DictValue(),
+          session_id ? *session_id : "");
+      return;
+    }
+
     auto it = pending_requests_.find(*id);
     if (it == pending_requests_.end())
       return;
@@ -72,8 +123,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
     gin_helper::Promise<base::DictValue> promise = std::move(it->second);
     pending_requests_.erase(it);
 
-    base::DictValue* error = dict.FindDict("error");
-    if (error) {
+    if (base::DictValue* error = dict.FindDict("error")) {
       std::string* error_message = error->FindString("message");
       promise.RejectWithErrorMessage(error_message ? *error_message : "");
     } else {
@@ -81,40 +131,82 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       promise.Resolve(result ? std::move(*result) : base::DictValue());
     }
   }
+
+  void SendCommand(std::string method,
+                   base::DictValue command_params,
+                   std::string session_id,
+                   gin_helper::Promise<base::DictValue> promise) {
+    if (!agent_host_) {
+      promise.RejectWithErrorMessage("No target available");
+      return;
+    }
+
+    base::DictValue request;
+    int request_id = ++previous_request_id_;
+    pending_requests_.emplace(request_id, std::move(promise));
+    request.Set("id", request_id);
+    request.Set("method", method);
+    if (!command_params.empty())
+      request.Set("params", std::move(command_params));
+    if (!session_id.empty())
+      request.Set("sessionId", session_id);
+
+    const auto json_args = base::WriteJson(request).value_or("");
+    agent_host_->DispatchProtocolMessage(this, base::as_byte_span(json_args));
+  }
+
+ private:
+  void RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
+                              content::RenderFrameHost* new_rfh) override {
+    if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
+      return;
+
+    auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
+
+    // The agent host already follows primary main-frame changes within the
+    // same WebContents. Reconnecting would tear down the session pipe and can
+    // discard protocol notifications emitted during a RenderDocument swap.
+    if (agent_host_->GetWebContents() == web_contents)
+      return;
+
+    agent_host_->DisconnectWebContents();
+    agent_host_->ConnectWebContents(web_contents);
+  }
+
+  void ClearPendingRequests() {
+    PendingRequestMap pending_requests = std::move(pending_requests_);
+    for (auto& [id, promise] : pending_requests)
+      promise.RejectWithErrorMessage("target closed while handling command");
+  }
+
+  cppgc::WeakPersistent<Debugger> debugger_;
+  scoped_refptr<DevToolsAgentHost> agent_host_;
+  PendingRequestMap pending_requests_;
+  int previous_request_id_ = 0;
+};
+
+Debugger::Debugger(content::WebContents* web_contents)
+    : agent_host_lifecycle_(
+          new AgentHostLifecycle(this, web_contents),
+          base::OnTaskRunnerDeleter(content::GetUIThreadTaskRunner({}))) {}
+
+Debugger::~Debugger() = default;
+
+void Debugger::AgentHostClosed() {
+  Emit("detach", "target closed");
 }
 
-void Debugger::RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
-                                      content::RenderFrameHost* new_rfh) {
-  // ConnectWebContents uses the primary main frame of the webContents,
-  // so if the new_rfh is not the primary main frame, we don't want to
-  // reconnect otherwise we'll end up trying to reconnect to a RenderFrameHost
-  // that already has a DevToolsAgentHost associated with it.
-  if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
-    return;
-
-  auto* web_contents = content::WebContents::FromRenderFrameHost(new_rfh);
-
-  // The DevToolsAgentHost already follows primary main-frame RenderFrameHost
-  // changes within the same WebContents on its own. Disconnecting and
-  // reconnecting here is therefore redundant for such navigations, and is
-  // actively harmful: it tears down and rebinds the DevTools session mojo
-  // pipe, discarding any protocol notifications that the renderer has already
-  // emitted onto the pipe. With RenderDocument enabled the main-frame RFH
-  // changes on every navigation, so this dropped requests for every page load
-  // whenever a debugger was attached. Only reconnect when the WebContents
-  // actually changed, which the agent host does not track on its own.
-  if (agent_host_->GetWebContents() == web_contents)
-    return;
-
-  agent_host_->DisconnectWebContents();
-  agent_host_->ConnectWebContents(web_contents);
+void Debugger::EmitProtocolMessage(const std::string& method,
+                                   base::DictValue params,
+                                   const std::string& session_id) {
+  Emit("message", method, std::move(params), session_id);
 }
 
 void Debugger::Attach(gin::Arguments* args) {
   std::string protocol_version;
   args->GetNext(&protocol_version);
 
-  if (agent_host_) {
+  if (agent_host_lifecycle_->agent_host()) {
     args->ThrowTypeError("Debugger is already attached to the target");
     return;
   }
@@ -125,39 +217,40 @@ void Debugger::Attach(gin::Arguments* args) {
     return;
   }
 
-  // web_contents() is reset to null by WebContentsObserver once the
-  // observed WebContents has been destroyed.
-  if (!web_contents()) {
+  // The native client observes the target and clears this pointer when the
+  // observed WebContents is destroyed.
+  content::WebContents* web_contents = agent_host_lifecycle_->web_contents();
+  if (!web_contents) {
     args->ThrowTypeError("No target available");
     return;
   }
 
-  agent_host_ = DevToolsAgentHost::GetOrCreateFor(web_contents());
-  if (!agent_host_) {
+  scoped_refptr<DevToolsAgentHost> agent_host =
+      DevToolsAgentHost::GetOrCreateFor(web_contents);
+  if (!agent_host) {
     args->ThrowTypeError("No target available");
     return;
   }
 
-  agent_host_->AttachClient(this);
+  if (!agent_host_lifecycle_->Attach(std::move(agent_host)))
+    args->ThrowTypeError("Failed to attach debugger to the target");
 }
 
 bool Debugger::IsAttached() {
-  return agent_host_ && agent_host_->IsAttached();
+  return agent_host_lifecycle_->IsAttached();
 }
 
 void Debugger::Detach() {
-  if (!agent_host_)
+  if (!agent_host_lifecycle_->Detach())
     return;
-  agent_host_->DetachClient(this);
-  AgentHostClosed(agent_host_.get());
+  AgentHostClosed();
 }
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
-  gin_helper::Promise<base::DictValue> promise(isolate);
+  gin_helper::Promise<base::DictValue> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (!agent_host_) {
+  if (!agent_host_lifecycle_->agent_host()) {
     promise.RejectWithErrorMessage("No target available");
     return handle;
   }
@@ -177,29 +270,10 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     return handle;
   }
 
-  base::DictValue request;
-  int request_id = ++previous_request_id_;
-  pending_requests_.emplace(request_id, std::move(promise));
-  request.Set("id", request_id);
-  request.Set("method", method);
-  if (!command_params.empty()) {
-    request.Set("params", std::move(command_params));
-  }
-
-  if (!session_id.empty()) {
-    request.Set("sessionId", session_id);
-  }
-
-  const auto json_args = base::WriteJson(request).value_or("");
-  agent_host_->DispatchProtocolMessage(this, base::as_byte_span(json_args));
-
+  agent_host_lifecycle_->SendCommand(std::move(method),
+                                     std::move(command_params),
+                                     std::move(session_id), std::move(promise));
   return handle;
-}
-
-void Debugger::ClearPendingRequests() {
-  for (auto& it : pending_requests_)
-    it.second.RejectWithErrorMessage("target closed while handling command");
-  pending_requests_.clear();
 }
 
 // static

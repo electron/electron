@@ -5,15 +5,16 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers.ts';
 
-const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
+const fixturePath = path.resolve(import.meta.dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 
 const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
-  const child = cp.spawn(process.execPath, args, {
+  const spawnArgs = process.platform === 'darwin' ? [...args, '--use-mock-keychain'] : args;
+  const child = cp.spawn(process.execPath, spawnArgs, {
     env: {
       ...process.env,
       ...customEnv

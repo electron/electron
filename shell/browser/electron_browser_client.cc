@@ -210,6 +210,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/apple/foundation_util.h"
 #include "content/browser/mac_helpers.h"
 #include "content/public/browser/child_process_host.h"
 #endif
@@ -255,6 +256,15 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+// A GPU cache directory under sessionData, or empty when that path is not
+// available, which content treats as caching being disabled.
+base::FilePath GpuCacheDirectory(base::FilePath::StringViewType name) {
+  base::FilePath session_data;
+  if (!base::PathService::Get(DIR_SESSION_DATA, &session_data))
+    return {};
+  return session_data.Append(name);
+}
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
 const char kAIManagerUserDataKey[] = "ai_manager";
@@ -804,7 +814,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   //
   // Only the about:blank document needs this. A popup that navigates
   // (window.open(url)) does not run the preload on its initial document and
-  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // gets a normal ElectronFrame push at ReadyToCommitNavigation, so
   // building the data here for it would be pure waste.
   if (!target_url.is_empty() && !target_url.IsAboutBlank())
     return std::nullopt;
@@ -812,8 +822,6 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(new_window_main_frame);
   if (!web_contents)
-    return std::nullopt;
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
 
   mojom::RendererStartupDataPtr data;
@@ -1054,6 +1062,9 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 void HandleExternalProtocolInUI(
     const GURL& url,
     content::WeakDocumentPtr document_ptr,
+    const std::optional<WebContentsPermissionHelper::ExternalProtocolRequester>&
+        initiator,
+    const std::optional<url::Origin>& initiating_origin,
     content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture,
     bool is_primary_main_frame,
@@ -1067,12 +1078,32 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
+  // Who is asking to launch |url|:
+  //  * |rfh| is the document that started the navigation, if it still exists;
+  //    it is then the requester, exactly as for any other permission. It can
+  //    be gone by now (the navigation belongs to the navigating frame, e.g. a
+  //    popup, so its initiator can navigate away or be removed while a
+  //    redirect is in flight), and it is null for navigations the browser
+  //    started itself (e.g. webContents.loadURL()).
+  //  * |initiator| is that document's origin and main-frame-ness captured when
+  //    the request reached the browser, for use once the document is gone.
+  //  * |initiating_origin| is what content holds responsible: the origin that
+  //    redirected to |url| if there was a server redirect, otherwise the
+  //    initiator's origin; absent only for direct browser-initiated
+  //    navigations. It is the last resort when neither of the above exists,
+  //    and then isMainFrame describes the navigating frame.
+  // The navigating WebContents' main frame only ever anchors the request in
+  // those fallback cases; it is reported as the requester solely for direct
+  // browser-initiated navigations.
   content::RenderFrameHost* rfh = document_ptr.AsRenderFrameHostIfValid();
+  std::optional<WebContentsPermissionHelper::ExternalProtocolRequester>
+      requester;
   if (!rfh) {
-    // If the render frame host is not valid it means it was a top level
-    // navigation and the frame has already been disposed of.  In this case we
-    // take the current main frame and declare it responsible for the
-    // transition.
+    if (initiator) {
+      requester = initiator;
+    } else if (initiating_origin) {
+      requester.emplace(*initiating_origin, is_primary_main_frame);
+    }
     rfh = web_contents->GetPrimaryMainFrame();
   }
 
@@ -1102,8 +1133,8 @@ void HandleExternalProtocolInUI(
 
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(rfh, std::move(callback),
-                                                   has_user_gesture, url);
+  permission_helper->RequestOpenExternalPermission(
+      rfh, std::move(callback), has_user_gesture, url, requester);
 }
 
 }  // namespace
@@ -1124,12 +1155,18 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
-      base::BindOnce(&HandleExternalProtocolInUI, url,
-                     initiator_document
-                         ? initiator_document->GetWeakDocumentPtr()
-                         : content::WeakDocumentPtr(),
-                     std::move(web_contents_getter), has_user_gesture,
-                     is_primary_main_frame, sandbox_flags));
+      base::BindOnce(
+          &HandleExternalProtocolInUI, url,
+          initiator_document ? initiator_document->GetWeakDocumentPtr()
+                             : content::WeakDocumentPtr(),
+          initiator_document
+              ? std::make_optional<
+                    WebContentsPermissionHelper::ExternalProtocolRequester>(
+                    initiator_document->GetLastCommittedOrigin(),
+                    initiator_document->GetParent() == nullptr)
+              : std::nullopt,
+          initiating_origin, std::move(web_contents_getter), has_user_gesture,
+          is_primary_main_frame, sandbox_flags));
   return true;
 }
 
@@ -1177,6 +1214,28 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
   return {};
+}
+
+// The GPU process asks the browser to persist the shaders it compiles for the
+// display compositor and for Skia, and to load them back on the next launch.
+// Content only does so for the caches whose directory the embedder provides;
+// without these the shaders were compiled again on every launch. The
+// directories sit next to the other Chromium caches under sessionData, which
+// like them has to be set before the app is ready.
+base::FilePath ElectronBrowserClient::GetShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("ShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGrShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GrShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGraphiteDawnDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GraphiteDawnCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGPUPersistentCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GPUPersistentCache"));
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -2102,13 +2161,31 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
-  if (child_flags ==
+base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+  if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
-    return kElectronMacHelperSuffixPlugin;
+    return base::FilePath();
   }
-  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+  if (!base::apple::AmIBundled()) {
+    return base::FilePath();
+  }
+
+  base::FilePath child_path;
+  if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+    return base::FilePath();
+  }
+
+  std::string child_base_name =
+      child_path.BaseName().value() + kElectronMacHelperSuffixPlugin;
+  return child_path.DirName()
+      .DirName()
+      .DirName()
+      .DirName()
+      .Append(child_base_name + ".app")
+      .Append("Contents")
+      .Append("MacOS")
+      .Append(child_base_name);
 }
 
 device::GeolocationSystemPermissionManager*

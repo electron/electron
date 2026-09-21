@@ -1,7 +1,6 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
-import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//content/public/common/features.gni")
@@ -19,13 +18,13 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("//v8/gni/v8.gni")
 import("build/asar.gni")
+import("build/bundle/bundle.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -34,8 +33,8 @@ import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
 declare_args() {
-  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
-  # false an empty stub is compiled and bundles compile from source.
+  # Emit a build-time V8 code cache for the internal/electron/js2c/* bundles.
+  # When false an empty stub is compiled and bundles compile from source.
   #
   # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
   # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
@@ -53,6 +52,16 @@ if (is_mac) {
   assert(
       mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
+
+  # shell/browser/feature_list_mac.mm enables this unexported content feature
+  # by name; fail here rather than silently if a Chromium roll removes it.
+  assert(
+      filter_include(
+              read_file(
+                  "//content/browser/renderer_host/render_widget_host_view_mac.mm",
+                  "list lines"),
+              [ "BASE_FEATURE(kThrottleResizeIpc,*" ]) != [],
+      "kThrottleResizeIpc is gone from render_widget_host_view_mac.mm; update shell/browser/feature_list_mac.mm")
 }
 
 if (is_linux) {
@@ -192,7 +201,8 @@ config("electron_lib_config") {
 # the repo-root write is a fixed shared path, instantiating this action in more
 # than one toolchain races two concurrent truncate-then-write generators on it.
 # Generate it once in the default toolchain and forward to that instance
-# everywhere else.
+# everywhere else. The lib/ type check only depends on source files, so there is
+# no point repeating it per toolchain either.
 if (current_toolchain == default_toolchain) {
   npm_action("build_electron_definitions") {
     script = "gn-typescript-definitions"
@@ -201,82 +211,72 @@ if (current_toolchain == default_toolchain) {
 
     outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
   }
+
+  # Type checks lib/ against tsconfig.electron.json for the electron_bundle
+  # targets below, which only strip types.
+  npm_action("electron_lib_typecheck") {
+    deps = [ ":build_electron_definitions" ]
+
+    script = "typecheck"
+    inputs = auto_filenames.lib_typecheck_sources + [ "yarn.lock" ]
+    outputs = [ "$target_gen_dir/electron_lib_typecheck.stamp" ]
+    args = [
+      "--project",
+      rebase_path("tsconfig.electron.json"),
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
 } else {
   group("build_electron_definitions") {
     public_deps = [ ":build_electron_definitions($default_toolchain)" ]
   }
+
+  group("electron_lib_typecheck") {
+    public_deps = [ ":electron_lib_typecheck($default_toolchain)" ]
+  }
 }
 
-webpack_build("electron_browser_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_browser_bundle") {
+  bundle = "browser"
   inputs = auto_filenames.browser_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
-  out_file = "$target_gen_dir/js2c/browser_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_renderer_bundle") {
+  bundle = "renderer"
   inputs = auto_filenames.renderer_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
-  out_file = "$target_gen_dir/js2c/renderer_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_worker_bundle") {
+  bundle = "worker"
   inputs = auto_filenames.worker_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
-  out_file = "$target_gen_dir/js2c/worker_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.sandbox_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
+electron_bundle("electron_webview_bundle") {
+  bundle = "webview"
+  inputs = auto_filenames.webview_bundle_deps
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_isolated_renderer_bundle") {
+  bundle = "isolated_renderer"
   inputs = auto_filenames.isolated_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
-  out_file = "$target_gen_dir/js2c/isolated_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_node_bundle") {
+  bundle = "node"
   inputs = auto_filenames.node_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.node.js"
-  out_file = "$target_gen_dir/js2c/node_init.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_utility_bundle") {
+  bundle = "utility"
   inputs = auto_filenames.utility_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
-  out_file = "$target_gen_dir/js2c/utility_init.js"
-}
-
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
+  out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
 }
 
 action("electron_js2c") {
@@ -284,23 +284,21 @@ action("electron_js2c") {
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
 
   sources = [
-    "$target_gen_dir/js2c/browser_init.js",
-    "$target_gen_dir/js2c/isolated_bundle.js",
-    "$target_gen_dir/js2c/node_init.js",
-    "$target_gen_dir/js2c/preload_realm_bundle.js",
-    "$target_gen_dir/js2c/renderer_init.js",
-    "$target_gen_dir/js2c/sandbox_bundle.js",
-    "$target_gen_dir/js2c/utility_init.js",
-    "$target_gen_dir/js2c/worker_init.js",
+    "$root_gen_dir/internal/electron/js2c/browser_init.js",
+    "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/node_init.js",
+    "$root_gen_dir/internal/electron/js2c/renderer_init.js",
+    "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
+    "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
   inputs = sources
@@ -321,10 +319,6 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
-
-  if (v8_cppgc_microtask_queue) {
-    args += [ "--v8-enable-cppgc-microtask-queue" ]
-  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -529,7 +523,6 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
-    "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -582,6 +575,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//tools/v8_context_snapshot:buildflags",
     "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
@@ -895,10 +889,6 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
-
-  if (allow_runtime_configurable_key_storage) {
-    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
-  }
 }
 
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
@@ -918,11 +908,11 @@ if (current_toolchain == default_toolchain) {
   }
 }
 
-# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
-# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
-# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
-# the cache it emits is keyed to the target's read-only checksum and flag hash.
-# Cross-OS stays off; see electron_generate_js2c_code_cache.
+# Build-time host tool emitting V8 code caches for the internal/electron/js2c/*
+# framework bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it
+# links V8 with V8_TARGET_ARCH set to the target and reads the target's snapshot
+# blob -- the cache it emits is keyed to the target's read-only checksum and
+# flag hash. Cross-OS stays off; see electron_generate_js2c_code_cache.
 if (electron_generate_js2c_code_cache) {
   if (current_toolchain == v8_snapshot_toolchain) {
     executable("electron_natives_codecache") {
@@ -1735,6 +1725,10 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
+
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
@@ -1790,6 +1784,20 @@ if (is_mac) {
       if (is_linux) {
         deps += [ "//sandbox/linux:chrome_sandbox" ]
       }
+    }
+  }
+
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
     }
   }
 

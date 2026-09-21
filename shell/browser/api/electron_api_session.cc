@@ -19,6 +19,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
@@ -85,6 +86,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -501,6 +503,27 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
+// Runs as its own task because DownloadManager dispatches OnDownloadCreated
+// over a non-reentrant observer list and the caller may be a will-download
+// handler.
+void CreateInterruptedDownloadItem(
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    const base::FilePath& path,
+    const std::vector<GURL>& url_chain,
+    const std::string& mime_type,
+    int64_t offset,
+    int64_t length,
+    const std::string& last_modified,
+    const std::string& etag,
+    const base::Time& start_time) {
+  if (!browser_context)
+    return;
+  auto* download_manager = browser_context->GetDownloadManager();
+  download_manager->GetNextId(base::BindOnce(
+      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
+      length, last_modified, etag, start_time));
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
  private:
@@ -559,8 +582,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
@@ -620,7 +642,10 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle_object, web_contents);
+  content::RenderFrameHost* frame =
+      content::DownloadItemUtils::GetRenderFrameHost(item);
+  bool prevent_default =
+      Emit("will-download", handle_object, web_contents, frame);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1100,11 +1125,12 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager = browser_context()->GetDownloadManager();
-  download_manager->GetNextId(base::BindRepeating(
-      &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
-      length, last_modified, etag,
-      base::Time::FromSecondsSinceUnixEpoch(start_time)));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&CreateInterruptedDownloadItem,
+                     browser_context()->GetWeakPtr(), path, url_chain,
+                     mime_type, offset, length, last_modified, etag,
+                     base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
 std::string Session::RegisterPreloadScript(
@@ -1814,7 +1840,9 @@ void Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
+  // gin_helper::ObjectTemplateBuilder so that a Session made inert at shutdown
+  // throws "Object has been destroyed" rather than gin's conversion error.
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
@@ -1916,9 +1944,7 @@ const char* Session::GetHumanReadableName() const {
   return "Electron / Session";
 }
 
-void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+void Session::OnBeforeMicrotasksRunnerDispose() {
   Dispose();
   weak_factory_.Invalidate();
   browser_context_ = nullptr;

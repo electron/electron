@@ -5,9 +5,9 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
-import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -17,12 +17,12 @@ describe('WebContentsView', () => {
   });
 
   it('can be instantiated with no arguments', () => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView();
   });
 
   it('can be instantiated with no webPreferences', () => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView({});
   });
 
@@ -42,6 +42,29 @@ describe('WebContentsView', () => {
       currentWebContentsCount + 1,
       'expected only single webcontents to be created'
     );
+  });
+
+  it('ignores native updates after an externally owned webContents is destroyed', async () => {
+    const internalWebContents = webContents as typeof ElectronInternal.WebContents;
+    const embedder = internalWebContents.create();
+    defer(() => embedder.destroy());
+    await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+
+    const guest = internalWebContents.create({
+      type: 'webview',
+      embedder
+    });
+    const webContentsView = new WebContentsView({ webContents: guest });
+    await guest.loadURL('about:blank');
+    guest.attachToIframe(embedder, embedder.mainFrame.frames[0].frameToken);
+
+    const destroyed = once(guest, 'destroyed');
+    guest.destroy();
+    await destroyed;
+
+    expect(webContentsView.webContents).to.equal(guest);
+    expect(() => webContentsView.setBackgroundColor('#123456')).not.to.throw();
+    expect(() => webContentsView.setBorderRadius(4)).not.to.throw();
   });
 
   it('should throw error when created with already attached webContents to BrowserWindow', () => {
@@ -164,7 +187,7 @@ describe('WebContentsView', () => {
   }
 
   it("doesn't crash when GCed during allocation", (done) => {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new WebContentsView();
     setTimeout(() => {
       // NB. the crash we're testing for is the lack of a current `v8::Context`

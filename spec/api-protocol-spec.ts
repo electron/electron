@@ -1,4 +1,4 @@
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -17,12 +17,12 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
-import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer, ifit } from './lib/spec-helpers';
-import { WebmGenerator } from './lib/video-helpers';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
+import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
+import { listen, defer, ifit } from './lib/spec-helpers.ts';
+import { WebmGenerator } from './lib/video-helpers.js';
+import { closeAllWindows, closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;
@@ -94,7 +94,7 @@ describe('protocol module', () => {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+    await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
   }
 
@@ -278,7 +278,7 @@ describe('protocol module', () => {
       it('can load iframes with custom protocols', async () => {
         registerFileProtocol('custom', (request, callback) => {
           const filename = request.url.substring(9);
-          const p = path.join(__dirname, 'fixtures', 'pages', filename);
+          const p = path.join(import.meta.dirname, 'fixtures', 'pages', filename);
           callback({ path: p });
         });
 
@@ -291,7 +291,7 @@ describe('protocol module', () => {
         });
 
         const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
-        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
         await loaded;
       });
 
@@ -412,7 +412,7 @@ describe('protocol module', () => {
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses, sandbox: true } });
       defer(() => w.destroy());
-      await w.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      await w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
       const r = await w.webContents.executeJavaScript(`ajax("${protocolName}://fake-host", {})`);
       expect(r.data).to.equal(text);
 
@@ -654,7 +654,7 @@ describe('protocol module', () => {
         const hasClosedPromise = once(events, 'close');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasRespondedPromise;
-        await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+        await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
         await hasClosedPromise;
       });
 
@@ -938,7 +938,7 @@ describe('protocol module', () => {
 
   describe('protocol.registerSchemeAsPrivileged', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
       let stdout = '';
       let stderr = '';
@@ -959,6 +959,44 @@ describe('protocol module', () => {
       expect(code).to.equal(0);
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+    });
+
+    it('throws for invalid scheme names', () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
+      const bootEval = `
+        const { protocol } = require('electron');
+        const results = {};
+        for (const scheme of ['foo,bar', '1foo', 'foo_bar', '', 'foo-bar.baz+qux']) {
+          try {
+            protocol.registerSchemesAsPrivileged([{ scheme, privileges: { standard: true } }]);
+            results[scheme] = null;
+          } catch (e) {
+            results[scheme] = e.message;
+          }
+        }
+        console.log(JSON.stringify(results));
+        process.exit(0);
+      `;
+      const result = ChildProcess.spawnSync(process.execPath, [appPath, `--boot-eval=${bootEval}`]);
+
+      const stdout = result.stdout.toString();
+      expect(result.status, `stdout: ${stdout}\nstderr: ${result.stderr.toString()}`).to.equal(0);
+
+      const line = stdout.split('\n').find((l) => l.startsWith('{'));
+      expect(line, `unexpected stdout: ${stdout}`).to.be.a('string');
+
+      const invalid = (scheme: string) =>
+        `Invalid scheme name '${scheme}'. Scheme names must ` +
+        "start with an ASCII letter and contain only ASCII letters, digits, '+', '-', or '.'.";
+
+      expect(JSON.parse(line!)).to.deep.equal({
+        'foo,bar': invalid('foo,bar'),
+        '1foo': invalid('1foo'),
+        foo_bar: invalid('foo_bar'),
+        '': invalid(''),
+        // A valid RFC 3986 scheme still registers.
+        'foo-bar.baz+qux': null
+      });
     });
   });
 
@@ -1721,6 +1759,29 @@ describe('protocol module', () => {
   describe('handle', () => {
     afterEach(closeAllWindows);
 
+    it('reports the origin that issued the request', async () => {
+      // http-like is registered as standard + fetch-enabled in spec/index.js.
+      const initiators: Record<string, string | undefined> = {};
+      protocol.handle('http-like', (req) => {
+        initiators[new URL(req.url).pathname] = (req as any).initiatorOrigin;
+        return new Response('<p>hi</p>', { headers: { 'content-type': 'text/html' } });
+      });
+      defer(() => {
+        protocol.unhandle('http-like');
+      });
+      const w = new BrowserWindow({ show: false });
+      // Browser-initiated navigation: no initiator.
+      await w.loadURL('http-like://page/');
+      expect(initiators).to.have.property('/');
+      expect(initiators['/']).to.equal(undefined);
+      // A fetch from that document carries the document's origin, even with
+      // no referrer.
+      await w.webContents.executeJavaScript(
+        "fetch('http-like://page/data', { referrerPolicy: 'no-referrer' }).then(r => r.text())"
+      );
+      expect(initiators['/data']).to.equal('http-like://page');
+    });
+
     it('receives requests to a custom scheme', async () => {
       protocol.handle('test-scheme', (req) => new Response('hello ' + req.url));
       defer(() => {
@@ -1757,7 +1818,7 @@ describe('protocol module', () => {
     });
 
     it('receives requests to the existing file scheme', (done) => {
-      const filePath = path.join(__dirname, 'fixtures', 'pages', 'a.html');
+      const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
 
       protocol.handle('file', (req) => {
         let file;
@@ -2034,7 +2095,7 @@ describe('protocol module', () => {
 
     it('can forward to file', async () => {
       protocol.handle('test-scheme', () =>
-        net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString())
+        net.fetch(url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString())
       );
       defer(() => {
         protocol.unhandle('test-scheme');
@@ -2639,51 +2700,65 @@ describe('protocol module', () => {
       defer(() => server.close());
       const { url } = await listen(server);
 
-      const fetchPayload = async () => {
-        const begin = Date.now();
-        const length = await contents.executeJavaScript(`
-          fetch(${JSON.stringify(url)}).then(async response => {
+      let handlerCalls = 0;
+      const fetchPayload = async (intercepted = false) => {
+        const callsBefore = handlerCalls;
+        const { elapsed, length } = await contents.executeJavaScript(`
+          (async () => {
+            const begin = performance.now();
+            const response = await fetch(${JSON.stringify(url)});
             const reader = response.body.getReader();
             let length = 0;
             while (true) {
               const { done, value } = await reader.read();
-              if (done) return length;
+              if (done) return { elapsed: performance.now() - begin, length };
               length += value.byteLength;
             }
-          })
+          })()
         `);
-        const end = Date.now();
         expect(length).to.equal(chunk.byteLength);
-        return end - begin;
+        expect(handlerCalls - callsBefore, intercepted ? 'intercepted fetch' : 'direct fetch').to.equal(
+          intercepted ? 1 : 0
+        );
+        return elapsed;
       };
 
-      const measurePayload = async () => {
-        const samples = [];
-        for (let i = 0; i < 3; i++) {
-          samples.push(await fetchPayload());
+      const measureInterceptedPayload = async () => {
+        protocol.handle('http', async (req) => {
+          handlerCalls++;
+          return net.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+        try {
+          return await fetchPayload(true);
+        } finally {
+          protocol.unhandle('http');
         }
-        samples.sort((a, b) => a - b);
-        return samples[1];
       };
 
       await fetchPayload(); // Warm the direct network path.
-      const rawTime = await measurePayload();
+      await measureInterceptedPayload(); // Warm the protocol handler path.
 
       // Fetching through an intercepted handler should not be too much slower
       // than it would be if the protocol hadn't been intercepted.
+      const samples = [];
+      for (const directFirst of [true, false, true, false]) {
+        let directTime: number;
+        let interceptedTime: number;
+        if (directFirst) {
+          directTime = await fetchPayload();
+          interceptedTime = await measureInterceptedPayload();
+        } else {
+          interceptedTime = await measureInterceptedPayload();
+          directTime = await fetchPayload();
+        }
+        samples.push({ directTime, interceptedTime, ratio: interceptedTime / directTime });
+      }
 
-      protocol.handle('http', async (req) => {
-        return net.fetch(req, { bypassCustomProtocolHandlers: true });
-      });
-      defer(() => {
-        protocol.unhandle('http');
-      });
-
-      await fetchPayload(); // Warm the protocol handler path.
-      const interceptedTime = await measurePayload();
-      // Interception adds another response body pipeline; allow headroom above
-      // its expected ~2x cost while still catching substantial regressions.
-      expect(interceptedTime).to.be.lessThan(rawTime * 3);
+      const ratios = samples.map(({ ratio }) => ratio).sort((a, b) => a - b);
+      const medianRatio = (ratios[1] + ratios[2]) / 2;
+      // Balance pair order to reduce drift and use the median to limit isolated outliers.
+      // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
+      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).to.be.lessThan(3);
     });
   });
 });

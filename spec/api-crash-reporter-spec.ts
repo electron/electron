@@ -8,22 +8,27 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers.ts';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
+const isWindows20H1OrLater = () => {
+  const [major, , build] = os.release().split('.').map(Number);
+  return major > 10 || (major === 10 && build >= 19041);
+};
 
 type CrashInfo = {
   prod: string;
   ver: string;
-  process_type: string; // eslint-disable-line camelcase
+  process_type: string;
   ptype: string;
   platform: string;
   _productName: string;
   _version: string;
-  upload_file_minidump: Buffer; // eslint-disable-line camelcase
+  upload_file_minidump: Buffer;
   guid: string;
   mainProcessSpecific: 'mps' | undefined;
   rendererSpecific: 'rs' | undefined;
@@ -110,7 +115,7 @@ function runApp(appPath: string, args: Array<string> = []) {
 }
 
 function runCrashApp(crashType: string, port: number, extraArgs: Array<string> = []) {
-  const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+  const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash');
   return runApp(appPath, [`--crash-type=${crashType}`, `--crash-reporter-url=http://127.0.0.1:${port}`, ...extraArgs]);
 }
 
@@ -152,6 +157,21 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
 
+    // __fastfail crashes never reach crashpad's in-process handler; they are
+    // captured out-of-process by the electron_wer.dll WER runtime exception
+    // helper, which Windows only invokes on 10.0.19041 (20H1) and later.
+    for (const crashType of ['renderer-fastfail', 'node-renderer-fastfail']) {
+      ifit(process.platform === 'win32' && isWindows20H1OrLater())(
+        `when ${crashType === 'renderer-fastfail' ? 'sandboxed' : 'node-integrated'} renderer terminates via __fastfail`,
+        async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp(crashType, port);
+          const crash = await waitForCrash();
+          checkCrash('renderer', crash);
+        }
+      );
+    }
+
     it('when main process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('main', port);
@@ -183,7 +203,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
       const { port, waitForCrash } = await startServer();
       let exitCode: number | null = null;
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash');
       const crashType = 'node-extra-args';
       const crashProcess = childProcess.spawn(
         process.execPath,
@@ -376,7 +396,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           ignoreSystemCrashHandler: true,
           extra: { longParam: 'a'.repeat(100000) }
         });
-        setTimeout().then(() => process.crash());
+        global.setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
       expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(
@@ -402,7 +422,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
             }
           });
           require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
-          setTimeout().then(() => process.crash());
+          global.setTimeout(() => process.crash());
         },
         port,
         kKeyLengthMax
@@ -584,9 +604,13 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         });
       }
       // TODO(nornagon): how to enable crashpad in a node child process...?
-      const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], {
-        silent: true
-      });
+      const child = childProcess.fork(
+        path.join(import.meta.dirname, 'fixtures', 'module', 'print-crash-parameters.js'),
+        [],
+        {
+          silent: true
+        }
+      );
       const output = await slurp(child.stdout!);
       expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
     });
@@ -604,7 +628,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     function crash(processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
-          setTimeout().then(() => {
+          global.setTimeout(() => {
             process.crash();
           });
         });
@@ -619,7 +643,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           bw.webContents.executeJavaScript('process.crash()');
         });
       } else if (processType === 'sandboxed-renderer') {
-        const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+        const preloadPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
         return remotely((preload: string) => {
           const { BrowserWindow } = require('electron');
           const bw = new BrowserWindow({
@@ -629,7 +653,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           bw.loadURL('about:blank');
         }, preloadPath);
       } else if (processType === 'node') {
-        const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+        const crashScriptPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
         return remotely((crashScriptPath: string) => {
           const { app } = require('electron');
           const childProcess = require('node:child_process');
@@ -772,7 +796,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
 
   describe('when not started', () => {
     it('does not prevent process from crashing', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'cookie-app');
       await runApp(appPath);
     });
   });

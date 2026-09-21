@@ -108,11 +108,13 @@ if (process.platform === 'darwin') {
 }
 
 // highlight-start
-const submenu = Menu.buildFromTemplate([{
-  label: 'Open a Dialog',
-  click: () => dialog.showMessageBox({ message: 'Hello World!' }),
-  accelerator: 'CommandOrControl+Alt+R'
-}])
+const submenu = Menu.buildFromTemplate([
+  {
+    label: 'Open a Dialog',
+    click: () => dialog.showMessageBox({ message: 'Hello World!' }),
+    accelerator: 'CommandOrControl+Alt+R'
+  }
+])
 menu.append(new MenuItem({ label: 'Custom Menu', submenu }))
 // highlight-end
 

@@ -22,7 +22,7 @@ When building an application menu in Electron, each top-level array menu item **
 Electron will set a default menu for your app if this API is never called. Below is an example of
 that default menu being created manually using shorthand [`MenuItem` roles](./menus.md#roles).
 
-```js title='Manually creating the default menu' @ts-expect-error=[107]
+```js title='Manually creating the default menu' @ts-expect-error=[94]
 const { shell } = require('electron/common')
 const { app, Menu } = require('electron/main')
 
@@ -30,27 +30,27 @@ const isMac = process.platform === 'darwin'
 const template = [
   // { role: 'appMenu' }
   ...(isMac
-    ? [{
-        label: app.name,
-        submenu: [
-          { role: 'about' },
-          { type: 'separator' },
-          { role: 'services' },
-          { type: 'separator' },
-          { role: 'hide' },
-          { role: 'hideOthers' },
-          { role: 'unhide' },
-          { type: 'separator' },
-          { role: 'quit' }
-        ]
-      }]
+    ? [
+        {
+          label: app.name,
+          submenu: [
+            { role: 'about' },
+            { type: 'separator' },
+            { role: 'services' },
+            { type: 'separator' },
+            { role: 'hide' },
+            { role: 'hideOthers' },
+            { role: 'unhide' },
+            { type: 'separator' },
+            { role: 'quit' }
+          ]
+        }
+      ]
     : []),
   // { role: 'fileMenu' }
   {
     label: 'File',
-    submenu: [
-      isMac ? { role: 'close' } : { role: 'quit' }
-    ]
+    submenu: [isMac ? { role: 'close' } : { role: 'quit' }]
   },
   // { role: 'editMenu' }
   {
@@ -70,17 +70,10 @@ const template = [
             { type: 'separator' },
             {
               label: 'Speech',
-              submenu: [
-                { role: 'startSpeaking' },
-                { role: 'stopSpeaking' }
-              ]
+              submenu: [{ role: 'startSpeaking' }, { role: 'stopSpeaking' }]
             }
           ]
-        : [
-            { role: 'delete' },
-            { type: 'separator' },
-            { role: 'selectAll' }
-          ])
+        : [{ role: 'delete' }, { type: 'separator' }, { role: 'selectAll' }])
     ]
   },
   // { role: 'viewMenu' }
@@ -105,15 +98,8 @@ const template = [
       { role: 'minimize' },
       { role: 'zoom' },
       ...(isMac
-        ? [
-            { type: 'separator' },
-            { role: 'front' },
-            { type: 'separator' },
-            { role: 'window' }
-          ]
-        : [
-            { role: 'close' }
-          ])
+        ? [{ type: 'separator' }, { role: 'front' }, { type: 'separator' }, { role: 'window' }]
+        : [{ role: 'close' }])
     ]
   },
   {
@@ -148,14 +134,12 @@ Menu.setApplicationMenu(menu)
 Defining each submenu explicitly can get very verbose. If you want to re-use default submenus
 in your app, you can use various submenu-related roles provided by Electron.
 
-```js title='Using default roles for each submenu' @ts-expect-error=[26]
+```js title='Using default roles for each submenu' @ts-expect-error=[24]
 const { shell } = require('electron/common')
 const { app, Menu } = require('electron/main')
 
 const template = [
-  ...(process.platform === 'darwin'
-    ? [{ role: 'appMenu' }]
-    : []),
+  ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
   { role: 'fileMenu' },
   { role: 'editMenu' },
   { role: 'viewMenu' },
@@ -194,10 +178,7 @@ const win = new BrowserWindow()
 const menu = Menu.buildFromTemplate([
   {
     label: 'my custom menu',
-    submenu: [
-      { role: 'copy' },
-      { role: 'paste' }
-    ]
+    submenu: [{ role: 'copy' }, { role: 'paste' }]
   }
 ])
 win.setMenu(menu)

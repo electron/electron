@@ -4,7 +4,9 @@
 * `nodeIntegration` boolean (optional) - Whether node integration is enabled.
   Default is `false`.
 * `nodeIntegrationInWorker` boolean (optional) - Whether node integration is
-  enabled in web workers. Default is `false`. More about this can be found
+  enabled in web workers. Default is `false`. Only workers created by a frame
+  that itself has access to Node.js (the main frame, or any frame when
+  `nodeIntegrationInSubFrames` is enabled) get it. More about this can be found
   in [Multithreading](../../tutorial/multithreading.md).
 * `nodeIntegrationInSubFrames` boolean (optional) - Experimental option for
   enabling Node.js support in sub-frames such as iframes and child windows. All your preloads will load for

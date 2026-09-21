@@ -7,16 +7,19 @@ import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
-import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
+import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
 describe('utilityProcess module', () => {
@@ -316,6 +319,17 @@ describe('utilityProcess module', () => {
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
+
+    ifit(process.platform !== 'win32')('lets a child that handles SIGTERM decide its own exit', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'sigterm-handler.js'));
+      deferKillUtilityProcess(child);
+      const [msg] = await once(child, 'message');
+      expect(msg).to.equal('ready');
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      const [code] = await exit;
+      expect(code).to.equal(42);
+    });
   });
 
   describe('esm', () => {
@@ -575,13 +589,14 @@ describe('utilityProcess module', () => {
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
       deferKillUtilityProcess(child);
-      // The fixture prints dns.getDefaultResultOrder() and exits on its own.
-      const output = await outputUntil(child, /ipv4first|verbatim/);
-      expect(output).to.contain('ipv4first', 'default verbatim should be ipv4first');
+      await once(child, 'spawn');
+      const result = once(child, 'message');
+      child.postMessage('get-default-result-order');
+      const [order] = await result;
+      expect(order).to.equal('ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
@@ -632,7 +647,7 @@ describe('utilityProcess module', () => {
           preload: path.join(fixturesPath, 'preload.js')
         }
       });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
       // Create Message port pair for Renderer <-> Utility Process.
       const { port1: rendererPort, port2: childPort1 } = new MessageChannelMain();
       w.webContents.postMessage('port', result, [rendererPort]);

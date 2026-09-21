@@ -2,7 +2,7 @@ name: Issue Template Check
 
 on:
   issues:
-    types: [opened, edited]
+    types: [opened, edited, reopened]
 
 permissions: {}
 
@@ -157,15 +157,16 @@ jobs:
               return;
             }
 
-            if (!(await hasMarkerComment())) {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body: `${MARKER}\n\nHello @${issue.user.login}. Thanks for taking the time to open an issue and helping to make Electron better!\n\nThis issue was automatically closed because its body does not follow any of this repository's issue templates. Maintainers rely on the sections in those templates to triage issues, and issues that are missing them usually cannot be acted upon.\n\nTo get this issue triaged, please either:\n\n* Edit the issue body above to include all of the sections from one of our [issue templates](https://github.com/electron/electron/tree/main/.github/ISSUE_TEMPLATE) - it will be reopened automatically once it does, or\n* File a new issue via https://github.com/electron/electron/issues/new/choose, which will fill in the correct template for you.`,
-              });
-            }
+            // We'll re-run this workflow when an issue is re-opened
             if (issue.state === 'open') {
+              if (!(await hasMarkerComment())) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body: `${MARKER}\n\nHello @${issue.user.login}. Thanks for taking the time to open an issue and helping to make Electron better!\n\nThis issue was automatically closed because its body does not follow any of this repository's issue templates. Maintainers rely on the sections in those templates to triage issues, and issues that are missing them usually cannot be acted upon.\n\nTo get this issue triaged, please either:\n\n* Edit the issue body above to include all of the sections from one of our [issue templates](https://github.com/electron/electron/tree/main/.github/ISSUE_TEMPLATE) - it will be reopened automatically once it does, or\n* File a new issue via https://github.com/electron/electron/issues/new/choose, which will fill in the correct template for you.`,
+                });
+              }
               if (!hasLabel) {
                 await github.rest.issues.addLabels({
                   owner,

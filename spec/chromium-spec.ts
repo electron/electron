@@ -1,7 +1,7 @@
-import { MediaAccessPermissionRequest } from 'electron';
+import type { MediaAccessPermissionRequest } from 'electron';
 import {
   BrowserWindow,
-  WebContents,
+  type WebContents,
   webFrameMain,
   session,
   ipcMain,
@@ -11,38 +11,42 @@ import {
   protocol,
   webContents,
   dialog,
-  MessageBoxOptions
+  type MessageBoxOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as ws from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
-import { PipeTransport } from './pipe-transport';
+import { emittedUntil } from './lib/events-helpers.ts';
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+import { PipeTransport } from './pipe-transport.ts';
+
+import type { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const certPath = path.join(fixturesPath, 'certificates');
 
 describe('reporting api', () => {
   it('sends a report for an intervention', async () => {
     const reporting = new EventEmitter();
+    const ses = session.fromPartition(`reporting-${Math.random()}`);
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
-    session.defaultSession.setCertificateVerifyProc((req, cb) => {
+    ses.setCertificateVerifyProc((req, cb) => {
       cb(0);
     });
 
@@ -76,17 +80,18 @@ describe('reporting api', () => {
     });
 
     await listen(server);
-    const bw = new BrowserWindow({ show: false });
+    const bw = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    const pageUrl = `https://localhost:${(server.address() as AddressInfo).port}/a`;
 
     try {
       const reportGenerated = once(reporting, 'report');
-      await bw.loadURL(`https://localhost:${(server.address() as AddressInfo).port}/a`);
+      await bw.loadURL(pageUrl);
 
       const [reports] = await reportGenerated;
       expect(reports).to.be.an('array').with.lengthOf(1);
       const { type, url, body } = reports[0];
       expect(type).to.equal('intervention');
-      expect(url).to.equal(url);
+      expect(url).to.equal(pageUrl);
       expect(body.id).to.equal('NavigatorVibrate');
       expect(body.message).to.match(
         /Blocked call to navigator.vibrate because user hasn't tapped on the frame or any embedded frame yet/
@@ -94,7 +99,7 @@ describe('reporting api', () => {
     } finally {
       bw.destroy();
       server.close();
-      session.defaultSession.setCertificateVerifyProc(null);
+      ses.setCertificateVerifyProc(null);
     }
   });
 });
@@ -383,7 +388,7 @@ describe('web security', () => {
   describe('accessing file://', () => {
     async function loadFile(w: BrowserWindow) {
       const thisFile = url.format({
-        pathname: __filename.replaceAll('\\', '/'),
+        pathname: import.meta.filename.replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -575,6 +580,7 @@ describe('command line switches', () => {
       if (printEnv) {
         args.push('--print-env');
       }
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       appProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -620,7 +626,9 @@ describe('command line switches', () => {
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -642,7 +650,9 @@ describe('command line switches', () => {
     });
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+      const args = ['--remote-debugging-pipe', '--remote-debugging-port=0'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'pipe', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       let stderr = '';
@@ -667,7 +677,9 @@ describe('command line switches', () => {
     });
     it('should shut down Electron upon Browser.close CDP command', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -687,7 +699,9 @@ describe('command line switches', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      const args = ['--remote-debugging-port='];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args);
       appProcess.stdout.on('data', (data) => {
         console.log(data);
       });
@@ -799,12 +813,12 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: ws.WebSocket;
+        socket: WebSocket;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new ws.WebSocket(browserWsUrl);
+        const socket = new WebSocket(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
@@ -867,6 +881,7 @@ describe('command line switches', () => {
         },
         sessionA
       );
+      await waitUntil(async () => (await innerSize(clientA, sessionA)) === '800x450');
       expect(await innerSize(clientA, sessionA)).to.equal('800x450');
 
       // Drop the TCP connection like a killed client process would.
@@ -945,7 +960,9 @@ describe('chromium features', () => {
 
     it('loads first party sets', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'base');
-      const fpsProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
       fpsProcess.stdout.on('data', (data) => {
@@ -959,6 +976,7 @@ describe('chromium features', () => {
     it('loads sets from the command line', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'command-line');
       const args = [appPath, `--use-first-party-set=${fps}`];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -978,7 +996,7 @@ describe('chromium features', () => {
         done();
       });
       w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+      w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'jquery.html'));
     });
   });
 
@@ -1551,9 +1569,11 @@ describe('chromium features', () => {
       });
     });
 
-    it('denies permission when trying to create a writable file handle', (done) => {
+    it('denies permission when trying to create a writable file handle', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const trace = (phase: string) => console.log(`File System denial: ${phase}`);
+      const permissionRequests: unknown[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1563,48 +1583,70 @@ describe('chromium features', () => {
         }
       });
 
+      w.webContents.on('ipc-message', (_event, channel, message) => {
+        if (channel === 'file-system-progress' || channel === 'file-system-error') {
+          trace(`${channel}: ${message}`);
+        }
+      });
+
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
-          const { href } = url.pathToFileURL(writablePath);
-          expect(details).to.deep.equal({
-            fileAccessType: 'writable',
-            isDirectory: false,
-            isMainFrame: true,
-            filePath: testFile,
-            requestingUrl: href
-          });
-
-          callback(false);
-          return;
+          trace(`permission requested: ${JSON.stringify(details)}`);
+          permissionRequests.push(details);
         }
         callback(false);
       });
 
-      ipcMain.once('did-create-file-handle', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const writable = await handle.createWritable();
-              resolve(true);
-            } catch {
-              resolve(false);
-            }
-          })
-        `,
-          true
+      trace('loading fixture');
+      await w.loadFile(writablePath);
+      trace('fixture loaded');
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+      trace('clipboard written');
+
+      const handleCreated = emittedUntil(w.webContents, 'ipc-message', (_event: unknown, channel: string) => {
+        return (
+          channel === 'did-create-file-handle' ||
+          channel === 'did-create-directory-handle' ||
+          channel === 'file-system-error'
         );
-        expect(result).to.be.false();
-        done();
       });
+      w.webContents.focus();
+      trace('paste requested');
+      w.webContents.paste();
+      const [, channel, message] = await handleCreated;
+      if (channel === 'file-system-error') {
+        throw new Error(`File handle acquisition failed: ${message}`);
+      }
+      expect(channel).to.equal('did-create-file-handle');
+      trace('file handle received');
 
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
+      trace(`initial permission: ${permission}`);
+      trace('createWritable requested');
+      const writeError = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          try {
+            await handle.createWritable();
+            return null;
+          } catch (error) {
+            return { name: error.name, message: error.message };
+          }
+        })()
+      `,
+        true
+      );
+      trace(`createWritable ${writeError ? `rejected: ${writeError.name}: ${writeError.message}` : 'succeeded'}`);
+      expect(writeError?.name).to.equal('NotAllowedError');
+      expect(permissionRequests).to.deep.equal([
+        {
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: url.pathToFileURL(writablePath).href
+        }
+      ]);
     });
 
     it('calls twice when trying to query a read/write file handle permissions', (done) => {
@@ -1822,6 +1864,174 @@ describe('chromium features', () => {
     });
   });
 
+  describe('File System Access permission scope', () => {
+    // Pages obtain FileSystemHandles by pasting a file:// URI, the same way the
+    // tests above do, so no picker is needed.
+    const handlePage = `<!doctype html><body contenteditable tabindex="0">fsa<script>
+      window.gotHandle = false; window.handle = null; window.handleError = null;
+      document.onpaste = (event) => {
+        event.preventDefault();
+        event.clipboardData.items[0].getAsFileSystemHandle().then(
+          (h) => { window.handle = h; window.gotHandle = true; },
+          (e) => { window.handleError = String(e); window.gotHandle = true; });
+      };
+    </script></body>`;
+    let serverA: http.Server;
+    let serverB: http.Server;
+    let urlA: string;
+    let urlB: string;
+    before(async () => {
+      const handler = (_req: http.IncomingMessage, res: http.ServerResponse) => {
+        res.setHeader('content-type', 'text/html');
+        res.end(handlePage);
+      };
+      serverA = http.createServer(handler);
+      serverB = http.createServer(handler);
+      urlA = (await listen(serverA)).url;
+      urlB = (await listen(serverB)).url;
+    });
+    after(() => {
+      serverA.close();
+      serverB.close();
+    });
+    afterEach(closeAllWindows);
+
+    const pasteHandle = async (w: BrowserWindow, frame: Electron.WebFrameMain, dirOrFile: string) => {
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(dirOrFile).href })]);
+      if (!w.webContents.isFocused()) {
+        const focused = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focused;
+      }
+      await frame.executeJavaScript('window.focus(); document.body.focus(); window.gotHandle = false; true');
+      w.webContents.paste();
+    };
+    const waitForHandle = (frame: Electron.WebFrameMain) =>
+      waitUntil(async () => (await frame.executeJavaScript('window.gotHandle')) === true);
+
+    it('does not let a cross-origin iframe request more access than it was granted', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlB)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const requests: any[] = [];
+      ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        if (permission === 'fileSystem') requests.push(details);
+        callback(true);
+      });
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      await pasteHandle(w, iframe, testFile);
+      await waitForHandle(iframe);
+      expect(await iframe.executeJavaScript('window.handle && window.handle.kind')).to.equal('file');
+      // Matches Chrome: a third-party iframe cannot ask for more than it has.
+      const status = await iframe.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' }).catch((e) => e.name)",
+        true
+      );
+      expect(status).to.equal('SecurityError');
+      expect(requests).to.be.empty();
+
+      // The same request from the top-level document reaches the handler.
+      await pasteHandle(w, w.webContents.mainFrame, testFile);
+      await waitForHandle(w.webContents.mainFrame);
+      const topStatus = await w.webContents.mainFrame.executeJavaScript(
+        "window.handle.requestPermission({ mode: 'readwrite' })",
+        true
+      );
+      expect(topStatus).to.equal('granted');
+      expect(requests).to.have.lengthOf(1);
+      expect(requests[0].isMainFrame).to.equal(true);
+    });
+
+    it("asks about a restricted path once per requester, with that requester's identity", async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const events: { details: any; callback: (action: 'allow' | 'deny' | 'tryAgain') => void }[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        events.push({ details, callback });
+      });
+      const wa = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wa.loadURL(urlA);
+      const wb = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await wb.loadURL(urlB);
+      const restricted = os.homedir();
+
+      await pasteHandle(wa, wa.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 1);
+      await pasteHandle(wb, wb.webContents.mainFrame, restricted);
+      await waitUntil(() => events.length === 2);
+
+      expect(events[0].details.origin).to.equal(`${urlA}/`);
+      expect(events[0].details.webContents).to.equal(wa.webContents);
+      expect(events[0].details.frame).to.equal(wa.webContents.mainFrame);
+      expect(events[1].details.origin).to.equal(`${urlB}/`);
+      expect(events[1].details.webContents).to.equal(wb.webContents);
+      expect(events[1].details.frame).to.equal(wb.webContents.mainFrame);
+
+      // Answers are independent.
+      events[1].callback('allow');
+      events[0].callback('deny');
+      await waitForHandle(wb.webContents.mainFrame);
+      await waitForHandle(wa.webContents.mainFrame);
+      expect(await wb.webContents.executeJavaScript('window.handle && window.handle.kind')).to.equal('directory');
+      expect(await wa.webContents.executeJavaScript('window.handle')).to.equal(null);
+    });
+
+    it('revokes active grants once no top-level document of the origin remains', async function () {
+      this.timeout(60000);
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      // A top-level document of origin A obtains read/write access to the file.
+      const top = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await top.loadURL(urlA);
+      await pasteHandle(top, top.webContents.mainFrame, testFile);
+      await waitForHandle(top.webContents.mainFrame);
+      expect(
+        await top.webContents.mainFrame.executeJavaScript(
+          "window.handle.requestPermission({ mode: 'readwrite' })",
+          true
+        )
+      ).to.equal('granted');
+
+      // An origin-A iframe inside an origin-B page holds a handle to the same
+      // file and shares that grant.
+      const host = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await host.loadURL(urlB);
+      await host.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(urlA)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = host.webContents.mainFrame.frames[0];
+      await pasteHandle(host, iframe, testFile);
+      await waitForHandle(iframe);
+      const query = () => iframe.executeJavaScript("window.handle.queryPermission({ mode: 'readwrite' })");
+      expect(await query()).to.equal('granted');
+
+      // While another top-level origin-A document exists the grant survives the
+      // first one closing...
+      const otherTop = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await otherTop.loadURL(urlA);
+      top.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('granted');
+
+      // ...and once the last one is gone it is revoked, so the embedded frame
+      // can no longer write without the app being asked again.
+      otherTop.close();
+      await setTimeout(6000);
+      expect(await query()).to.equal('prompt');
+    });
+  });
+
   describe('web workers', () => {
     let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
 
@@ -1833,9 +2043,11 @@ describe('chromium features', () => {
     });
 
     it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'self-module-paths');
 
-      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(process.execPath, args);
 
       const [code] = await once(appProcess, 'exit');
       expect(code).to.equal(0);
@@ -1879,7 +2091,7 @@ describe('chromium features', () => {
           headers.append('Content-Type', 'text/xml');
         }).not.to.throw();
       },
-      [path.join(__dirname, 'fixtures')]
+      [path.join(import.meta.dirname, 'fixtures')]
     );
 
     it('Worker can work', async () => {
@@ -1918,6 +2130,59 @@ describe('chromium features', () => {
       w.loadURL(`file://${fixturesPath}/pages/worker.html`);
       const [, data] = await once(ipcMain, 'worker-result');
       expect(data).to.equal('object function object function');
+    });
+
+    it('only gives node integration to workers created by frames that have it themselves', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const probe = `new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`;
+      // The main frame's workers get Node...
+      expect(await w.webContents.mainFrame.executeJavaScript(probe)).to.equal('object function');
+      // ...a same-origin (same-process) iframe's workers do not, because the
+      // iframe itself has no Node integration (nodeIntegrationInSubFrames is off).
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      expect(await iframe.executeJavaScript(probe)).to.equal('undefined undefined');
+    });
+
+    it('gives node integration to subframe workers when nodeIntegrationInSubFrames is on', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegrationInWorker: true,
+          nodeIntegrationInSubFrames: true,
+          contextIsolation: false
+        }
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = location.href;
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const result = await iframe.executeJavaScript(`new Promise((resolve) => {
+        const src = 'postMessage([typeof process, typeof require].join(" "))';
+        const worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+        worker.onmessage = (e) => { worker.terminate(); resolve(e.data); };
+      })`);
+      expect(result).to.equal('object function');
     });
 
     it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
@@ -2190,7 +2455,7 @@ describe('chromium features', () => {
 
     it('is always resizable', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`
         { b = window.open('about:blank', '', 'resizable=no,show=no'); null }
       `);
@@ -2206,7 +2471,7 @@ describe('chromium features', () => {
         windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-node.html`);
 
         const w = new BrowserWindow({ show: false });
-        w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
         const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2251,8 +2516,8 @@ describe('chromium features', () => {
       'disables JavaScript when it is disabled on the parent window',
       async () => {
         const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
-        w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
-        const windowUrl = require('node:url').format({
+        w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
+        const windowUrl = url.format({
           pathname: `${fixturesPath}/pages/window-no-javascript.html`,
           protocol: 'file',
           slashes: true
@@ -2279,7 +2544,7 @@ describe('chromium features', () => {
         targetURL = `file://${fixturesPath}/pages/base-page.html`;
       }
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`);
       const [, window] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(window.webContents, 'did-finish-load');
@@ -2288,7 +2553,7 @@ describe('chromium features', () => {
 
     it('defines a window.location setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
@@ -2301,7 +2566,7 @@ describe('chromium features', () => {
 
     it('defines a window.location.href setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
@@ -2352,7 +2617,7 @@ describe('chromium features', () => {
         }
       });
 
-      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const { contextObject } = await w.webContents.executeJavaScript(`(async () => {
         const vm = require('node:vm');
@@ -2368,7 +2633,7 @@ describe('chromium features', () => {
     // FIXME(nornagon): I'm not sure this ... ever was correct?
     xit('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const url = `file://${fixturesPath}/pages/window-open-size.html`;
       const { width, height, eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2389,7 +2654,7 @@ describe('chromium features', () => {
 
     it('does not override child options', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size.html`;
       const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2403,7 +2668,7 @@ describe('chromium features', () => {
 
     it('window opened with innerWidth option has the same innerWidth', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
       const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
@@ -2420,7 +2685,7 @@ describe('chromium features', () => {
     });
     it('window opened with innerHeight option has the same innerHeight', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
       const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
@@ -2451,7 +2716,7 @@ describe('chromium features', () => {
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [{ message }] = await once(webContents, 'console-message');
       expect(message).to.equal(
-        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}'
+        '{"require":"function","module":"object","exports":"object","process":"object","Buffer":"undefined"}'
       );
     });
 
@@ -2460,7 +2725,7 @@ describe('chromium features', () => {
       windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-webview.html`);
 
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2518,7 +2783,7 @@ describe('chromium features', () => {
         action: 'allow',
         overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
       }));
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
       const eventData = await w.webContents.executeJavaScript(`
@@ -2532,7 +2797,7 @@ describe('chromium features', () => {
   describe('window.opener.postMessage', () => {
     it('sets source and origin correctly', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener-postMessage.html`;
       const { sourceIsChild, origin } = await w.webContents.executeJavaScript(`
@@ -2608,7 +2873,7 @@ describe('chromium features', () => {
 
       it('delivers messages that match the origin', async () => {
         const w = new BrowserWindow({ show: false });
-        w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
         const data = await w.webContents.executeJavaScript(`
           window.open(${JSON.stringify(serverURL)}, '', 'show=no');
           new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data)
@@ -3460,7 +3725,7 @@ describe('chromium features', () => {
 
   ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
     const pdfSource = url.format({
-      pathname: path.join(__dirname, 'fixtures', 'cat.pdf').replaceAll('\\', '/'),
+      pathname: path.join(import.meta.dirname, 'fixtures', 'cat.pdf').replaceAll('\\', '/'),
       protocol: 'file',
       slashes: true
     });
@@ -3488,7 +3753,7 @@ describe('chromium features', () => {
         });
       });
 
-      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
 
       const frames = w.webContents.mainFrame.frames;
       expect(frames.length).to.equal(1);
@@ -3572,9 +3837,9 @@ describe('chromium features', () => {
       const w1 = new BrowserWindow({ show: true });
       const w2 = new BrowserWindow({ show: true });
       const w3 = new BrowserWindow({ show: false });
-      await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w1.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
+      await w2.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
+      await w3.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents()?.id).to.equal(w2.webContents.id);
       let focus = false;
       focus = await w1.webContents.executeJavaScript('document.hasFocus()');
@@ -3752,7 +4017,7 @@ describe('chromium features', () => {
       const server = http.createServer();
       defer(() => server.close());
       const { port } = await listen(server);
-      const wss = new ws.Server({ server });
+      const wss = new WebSocketServer({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -4160,6 +4425,29 @@ describe('chromium features', () => {
   });
 });
 
+ifdescribe(process.platform === 'darwin' && !process.mas)('kill ring', () => {
+  afterEach(closeAllWindows);
+
+  it('yanks back text killed with Ctrl+K', async () => {
+    const w = new BrowserWindow({ show: true });
+    await w.loadURL('data:text/html,<textarea id="t">kill me</textarea>');
+    w.webContents.focus();
+    await w.webContents.executeJavaScript(
+      'const t = document.getElementById("t"); t.focus(); t.setSelectionRange(0, 0); null'
+    );
+    w.webContents.debugger.attach();
+    const press = async (key: string, code: string, keyCode: number, commands: string[]) => {
+      const base = { key, code, windowsVirtualKeyCode: keyCode, modifiers: 2 };
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'rawKeyDown', commands });
+      await w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+    };
+    await press('k', 'KeyK', 75, ['deleteToEndOfParagraph']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('');
+    await press('y', 'KeyY', 89, ['yank']);
+    expect(await w.webContents.executeJavaScript('t.value')).to.equal('kill me');
+  });
+});
+
 describe('font fallback', () => {
   async function getRenderedFonts(html: string) {
     const w = new BrowserWindow({ show: false });
@@ -4294,14 +4582,14 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await once(w, 'leave-full-screen');
   });
 
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
-    const fullscreenChange = once(ipcMain, 'fullscreenChange');
-    w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
-    await fullscreenChange;
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentDocument.querySelector('video').requestFullscreen()",
+      true
+    );
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(fullscreenWidth > 0).to.true();
@@ -4309,6 +4597,32 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await w.webContents.executeJavaScript('document.exitFullscreen()');
     const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(width).to.equal(0);
+  });
+
+  it('emits fullscreenchange on the parent document for in-process iframes', async () => {
+    if (process.platform === 'darwin') await once(w, 'enter-full-screen');
+
+    w.webContents.setBackgroundThrottling(false);
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    const fullscreenElementIsIframe = await w.webContents.executeJavaScript(
+      `(async () => {
+        const iframe = document.querySelector('iframe');
+        const fullscreenChange = new Promise(resolve => {
+          document.addEventListener('fullscreenchange', () => {
+            resolve(document.fullscreenElement === iframe);
+          }, { once: true });
+        });
+        const [isFullscreen] = await Promise.all([
+          fullscreenChange,
+          iframe.contentDocument.querySelector('video').requestFullscreen()
+        ]);
+        return isFullscreen;
+      })()`,
+      true
+    );
+    expect(fullscreenElementIsIframe).to.be.true('parent document fullscreenElement is the iframe');
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
   });
 });
 
@@ -4598,6 +4912,49 @@ describe('navigator.clipboard.write', () => {
   });
 });
 
+describe('pointer lock permission request', () => {
+  let server: http.Server;
+  let crossOriginUrl: string;
+  before(async () => {
+    server = http.createServer((_req, res) => {
+      res.setHeader('content-type', 'text/html');
+      res.end('<!doctype html><body>frame</body>');
+    });
+    crossOriginUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('is attributed to the frame that called requestPointerLock()', async () => {
+    const ses = session.fromPartition(`pointer-lock-${Math.random()}`);
+    const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    await w.webContents.executeJavaScript(`new Promise((resolve) => {
+      const f = document.createElement('iframe');
+      f.src = ${JSON.stringify(crossOriginUrl)};
+      f.onload = resolve;
+      document.body.appendChild(f);
+    })`);
+    const iframe = w.webContents.mainFrame.frames[0];
+    const requests: { wc: Electron.WebContents; permission: string; details: any }[] = [];
+    ses.setPermissionRequestHandler((wc, permission, callback, details) => {
+      requests.push({ wc, permission, details });
+      callback(false);
+    });
+    w.webContents.focus();
+    const result = await iframe.executeJavaScript(
+      "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
+      true
+    );
+    expect(result).to.not.equal('locked');
+    const request = requests.find((r) => r.permission === 'pointerLock');
+    expect(request).to.exist();
+    expect(request!.wc).to.equal(w.webContents);
+    expect(request!.details.requestingUrl).to.equal(`${crossOriginUrl}/`);
+    expect(request!.details.isMainFrame).to.equal(false);
+  });
+});
+
 describe('paste execCommand', () => {
   const readClipboard = async (w: BrowserWindow) => {
     if (!w.webContents.isFocused()) {
@@ -4606,6 +4963,8 @@ describe('paste execCommand', () => {
       await focus;
     }
 
+    // No user gesture: these tests exercise the permission path, and a
+    // gesture on the requesting frame allows paste by itself.
     return w.webContents.executeJavaScript(
       `
       new Promise((resolve) => {
@@ -4621,7 +4980,7 @@ describe('paste execCommand', () => {
         document.execCommand('paste');
       });
     `,
-      true
+      false
     );
   };
 
@@ -4745,6 +5104,83 @@ describe('paste execCommand', () => {
     await clipboard.writeText(text);
     const paste = await readClipboard(childWindow);
     expect(paste).to.equal(text);
+  });
+
+  describe('user activation', () => {
+    // A cross-origin iframe next to a main frame that the user just clicked in.
+    let server: http.Server;
+    let crossOriginUrl: string;
+    before(async () => {
+      server = http.createServer((_req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end('<!doctype html><body contenteditable>frame</body>');
+      });
+      crossOriginUrl = (await listen(server)).url;
+    });
+    after(() => server.close());
+
+    const pasteIn = (frame: Electron.WebFrameMain) =>
+      frame.executeJavaScript(
+        `new Promise((resolve) => {
+          const timeout = setTimeout(() => resolve(''), 1000);
+          document.addEventListener('paste', (event) => {
+            clearTimeout(timeout);
+            event.preventDefault();
+            resolve(event.clipboardData.getData('text'));
+          }, { once: true });
+          document.execCommand('paste');
+        })`,
+        false
+      );
+
+    const clickMainFrame = async (w: BrowserWindow) => {
+      if (!w.webContents.isFocused()) {
+        const focus = once(w.webContents, 'focus');
+        w.webContents.focus();
+        await focus;
+      }
+      w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
+      w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
+      await waitUntil(
+        async () => (await w.webContents.mainFrame.executeJavaScript('navigator.userActivation.isActive')) === true
+      );
+    };
+
+    it('lets the frame the user interacted with paste without a permission grant', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const text = 'paste with activation';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(w.webContents.mainFrame)).to.equal(text);
+    });
+
+    it('does not extend a click in the main frame to a cross-origin iframe', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { enableDeprecatedPaste: true, session: ses } });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.style.cssText = 'position:absolute;top:200px;left:0;width:200px;height:100px';
+        f.src = ${JSON.stringify(crossOriginUrl)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const checks: string[] = [];
+      ses.setPermissionCheckHandler((_wc, permission, requestingOrigin) => {
+        if (permission === 'deprecated-sync-clipboard-read') checks.push(requestingOrigin);
+        return false;
+      });
+      const text = 'main frame click, iframe paste';
+      clipboard.writeText(text);
+      await clickMainFrame(w);
+      expect(await pasteIn(iframe)).to.equal('');
+      // The iframe had no activation of its own, so the decision went to the
+      // check handler, attributed to the iframe.
+      expect(checks).to.not.be.empty();
+      for (const origin of checks) expect(origin).to.equal(`${crossOriginUrl}/`);
+      expect(await clipboard.readText()).to.equal(text);
+    });
   });
 });
 
@@ -5027,7 +5463,7 @@ describe('navigator.hid', () => {
   });
 
   it('excludes a device when a exclusionFilter is specified', async () => {
-    const exclusionFilters = <any>[];
+    const exclusionFilters: any[] = [];
     let haveDevices = false;
     let checkForExcludedDevice = false;
 
@@ -5312,6 +5748,26 @@ describe('navigator.usb', () => {
       }
     }
   });
+
+  it('does not crash when the requesting webContents is destroyed from the select-usb-device handler', async () => {
+    const guest = (webContents as typeof ElectronInternal.WebContents).create({
+      type: 'webview',
+      embedder: w.webContents
+    });
+    await guest.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    session.defaultSession.setPermissionCheckHandler(() => true);
+    session.defaultSession.setDevicePermissionHandler(() => true);
+    const selectFired = new Promise<void>((resolve) => {
+      w.webContents.session.once('select-usb-device', () => {
+        guest.destroy();
+        resolve();
+      });
+    });
+    guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
+    await selectFired;
+    await setTimeout();
+    expect(guest.isDestroyed()).to.be.true();
+  });
 });
 
 describe('iframe sandbox external protocols', () => {
@@ -5354,7 +5810,13 @@ describe('iframe sandbox external protocols', () => {
   });
 
   it('blocks navigation to external protocol from a sandboxed iframe', async () => {
-    const consoleMessage = once(w.webContents, 'console-message');
+    // The page has no CSP, so the main frame also logs an "Electron Security
+    // Warning" when it finishes loading, which can arrive first.
+    const consoleMessage = emittedUntil(
+      w.webContents,
+      'console-message',
+      ({ message }: { message: string }) => !message.startsWith('Electron Security Warning')
+    );
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
     const [{ message }] = await consoleMessage;
     expect(message).to.match(/external protocol blocked by sandbox/);
@@ -5391,6 +5853,211 @@ describe('iframe sandbox external protocols', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
     await requested;
     expect(openExternalRequests).to.deep.equal(['magnet:sandbox-test']);
+  });
+});
+
+describe('external protocol permission attribution', () => {
+  // The document that starts a navigation to an external protocol can be gone
+  // by the time the browser handles it: the navigation lives in the navigating
+  // frame (here, a popup), not in its initiator. The openExternal permission
+  // request must not be attributed to whatever the popup's WebContents happens
+  // to have committed (here, the trusted top-level origin).
+  let trusted: http.Server;
+  let untrusted: http.Server;
+  let trustedUrl: string;
+  let untrustedUrl: string;
+
+  before(async () => {
+    untrusted = http.createServer((req, res) => {
+      if (req.url!.startsWith('/slow-redirect')) {
+        // Give the initiating iframe time to navigate away first.
+        setTimeout(600).then(() => {
+          res.writeHead(302, { Location: 'magnet:attribution-test' });
+          res.end();
+        });
+        return;
+      }
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/self') {
+        res.end('<script>location.href = "/slow-redirect"</script>');
+        return;
+      }
+      // Cross-origin iframe content: open a popup on the trusted origin, send
+      // it to the slow redirect, then leave.
+      res.end(`<script>
+        (async () => {
+          const trusted = decodeURIComponent(location.hash.slice(1));
+          const w = window.open(trusted + '/blank', 'popup');
+          await new Promise(r => setTimeout(r, 400));
+          w.location = location.origin + '/slow-redirect';
+          await new Promise(r => setTimeout(r, 100));
+          location.href = 'about:blank';
+        })();
+      </script>`);
+    });
+    untrustedUrl = (await listen(untrusted)).url.replace('127.0.0.1', 'localhost');
+    trusted = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/blank') {
+        res.end('<p>trusted popup</p>');
+      } else {
+        res.end(`<iframe src="${untrustedUrl}/#${encodeURIComponent(trustedUrl)}"></iframe>`);
+      }
+    });
+    trustedUrl = (await listen(trusted)).url;
+  });
+
+  after(() => {
+    trusted.close();
+    untrusted.close();
+  });
+
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+    return closeAllWindows();
+  });
+
+  it('does not report the popup main frame as the requester when the initiator is gone', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({
+      action: 'allow',
+      overrideBrowserWindowOptions: { show: false }
+    }));
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(trustedUrl);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Before the fix this was the trusted popup's URL with isMainFrame: true.
+    expect(details.requestingUrl).to.not.contain(new URL(trustedUrl).host);
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.be.a('boolean');
+  });
+
+  it('keeps attributing a redirected navigation to the live document that started it', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    // The trusted main frame navigates itself to an untrusted URL that
+    // redirects to the external protocol; the requester is still that frame.
+    w.webContents.executeJavaScript(`location.href = ${JSON.stringify(untrustedUrl + '/slow-redirect')}; true`);
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a redirected browser-initiated navigation to the redirecting origin', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    w.loadURL(`${untrustedUrl}/slow-redirect`).catch(() => {});
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    // Not the previously committed trusted page.
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('attributes a direct browser-initiated navigation to the navigating main frame', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(`${trustedUrl}/blank`);
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve({ wc, details });
+      });
+    });
+    w.loadURL('magnet:direct-test').catch(() => {});
+    const { wc, details } = await request;
+    expect(wc).to.equal(w.webContents);
+    expect(details.externalURL).to.equal('magnet:direct-test');
+    expect(details.requestingUrl).to.equal(`${trustedUrl}/blank`);
+    expect(details.isMainFrame).to.equal(true);
+  });
+
+  it('still attributes to the initiating frame while it is alive', async () => {
+    const w = new BrowserWindow({ show: false });
+    const request = new Promise<any>((resolve) => {
+      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        callback(false);
+        if (permission === 'openExternal') resolve(details);
+      });
+    });
+    await w.loadURL(`data:text/html,<iframe src="${untrustedUrl}/self"></iframe>`);
+    // The iframe's own document navigates to the redirect and stays alive
+    // until it resolves, so attribution comes from that document.
+    const details = await request;
+    expect(details.externalURL).to.equal('magnet:attribution-test');
+    expect(details.requestingUrl).to.equal(`${untrustedUrl}/self`);
+    expect(details.isMainFrame).to.equal(false);
+  });
+});
+
+describe('links opened into a new window', () => {
+  // A modifier-clicked link goes through OpenURLFromTab. The window the app
+  // creates for it must start its navigation as the clicking document did
+  // (renderer-initiated, with that document as initiator), not as a fresh
+  // browser-initiated load.
+  let server: http.Server;
+  let serverUrl: string;
+  const requests: Record<string, http.IncomingHttpHeaders> = {};
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      requests[req.url!] = req.headers;
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/popup') {
+        res.end('<p>popup</p>');
+        return;
+      }
+      res.end(`<a id="a" href="/popup" target="_blank">link</a><script>
+        window.clickLink = () => document.getElementById('a').dispatchEvent(new MouseEvent('click', {
+          ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+        }));
+      </script>`);
+    });
+    serverUrl = (await listen(server)).url;
+  });
+  after(() => server.close());
+  afterEach(closeAllWindows);
+
+  it('navigates the new window as the initiating document', async () => {
+    const w = new BrowserWindow({ show: false });
+    w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { show: false } }));
+    await w.loadURL(`${serverUrl}/opener`);
+    // The navigation starts before did-create-window is emitted, so hook the
+    // new webContents as soon as it exists.
+    const started = new Promise<any>((resolve) => {
+      app.once('web-contents-created', (_event, contents) => {
+        contents.once('did-start-navigation', (details: any) => resolve(details));
+      });
+    });
+    const created = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, any]>;
+    await w.webContents.executeJavaScript('window.clickLink(); true');
+    const [child] = await created;
+    const details = await started;
+    if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+    expect(details.url).to.equal(`${serverUrl}/popup`);
+    // The clicking document is the initiator...
+    expect(details.initiator).to.exist();
+    expect(details.initiator.routingId).to.equal(w.webContents.mainFrame.routingId);
+    // ...so the request is same-origin rather than a browser-typed load.
+    expect(requests['/popup']['sec-fetch-site']).to.equal('same-origin');
   });
 });
 

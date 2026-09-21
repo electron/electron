@@ -1,11 +1,9 @@
-/* eslint-disable import/newline-after-import */
-/* eslint-disable import/order */
 // Initialize ASAR support in fs module.
 import { wrapFsWithAsar } from './asar-fs-wrapper';
 wrapFsWithAsar(require('fs'));
 
 // Hook child_process.fork.
-import cp = require('child_process'); // eslint-disable-line import/first
+import cp = require('child_process'); // oxlint-disable-line import/first
 const originalFork = cp.fork;
 cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
   // Parse optional args.
@@ -24,7 +22,14 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
     return originalFork(modulePath, args, options);
   }
   // When forking a child script, we setup a special environment to make
-  // the electron binary run like upstream Node.js.
+  // the electron binary run like upstream Node.js. With the runAsNode fuse
+  // disabled that environment is ignored and the child would start another
+  // copy of the app instead, so refuse up front.
+  if (!process._linkedBinding('electron_common_features').isRunAsNodeEnabled()) {
+    throw new Error(
+      'child_process.fork() is not supported when the runAsNode fuse is disabled; use utilityProcess.fork() instead'
+    );
+  }
   options = options ?? {};
   options.env = Object.create(options.env || process.env);
   options.env!.ELECTRON_RUN_AS_NODE = '1';
@@ -41,9 +46,7 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
 // both with the normalized file and envPairs.
 if (process.platform === 'linux') {
   const { getCrashdumpSignalFD, getCrashpadHandlerPID } = process._linkedBinding('electron_common_crashpad_support');
-  const childProcess = __non_webpack_require__(
-    'internal/child_process'
-  ) as typeof import('@node/lib/internal/child_process');
+  const childProcess = require('internal/child_process') as typeof import('@node/lib/internal/child_process');
   // Invalid options are left for Node's own validation to reject.
   const addCrashpadEnv = (options: any) => {
     if (
@@ -72,7 +75,7 @@ if (process.platform === 'linux') {
 }
 
 // Prevent Node from adding paths outside this app to search paths.
-import path = require('path'); // eslint-disable-line import/first
+import path = require('path'); // oxlint-disable-line import/first
 const Module = require('module') as NodeJS.ModuleInternal;
 const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep;
 const originalNodeModulePaths = Module._nodeModulePaths;

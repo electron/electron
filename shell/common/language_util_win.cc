@@ -8,9 +8,9 @@
 #include <windows.system.userprofile.h>
 #include <wrl.h>
 
+#include "base/i18n/win/preferred_languages.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/core_winrt_util.h"
-#include "base/win/i18n.h"
 
 namespace electron {
 
@@ -27,7 +27,9 @@ bool GetPreferredLanguagesUsingGlobalization(
   if (FAILED(hr))
     return false;
 
-  ABI::Windows::Foundation::Collections::IVectorView<HSTRING>* langs;
+  Microsoft::WRL::ComPtr<
+      ABI::Windows::Foundation::Collections::IVectorView<HSTRING>>
+      langs;
   hr = prefs->get_Languages(&langs);
   if (FAILED(hr))
     return false;
@@ -38,30 +40,31 @@ bool GetPreferredLanguagesUsingGlobalization(
     return false;
 
   for (unsigned i = 0; i < size; ++i) {
-    HSTRING hstr;
-    hr = langs->GetAt(i, &hstr);
-    if (SUCCEEDED(hr)) {
-      std::wstring_view str = base::win::ScopedHString(hstr).Get();
-      languages->emplace_back(str.data(), str.size());
-    }
+    base::win::ScopedHString str(nullptr);
+    hr = langs->GetAt(i, base::win::ScopedHString::Receiver(str).get());
+    if (SUCCEEDED(hr))
+      languages->emplace_back(str.Get());
   }
 
   return true;
 }
 
 std::vector<std::string> GetPreferredLanguages() {
+  std::vector<std::string> languages;
   std::vector<std::wstring> languages16;
 
   // Attempt to use API available on Windows 10 or later, which
   // returns the full list of language preferences.
-  if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
-    base::win::i18n::GetThreadPreferredUILanguageList(&languages16);
+  if (GetPreferredLanguagesUsingGlobalization(&languages16)) {
+    for (const auto& language : languages16) {
+      languages.push_back(base::SysWideToUTF8(language));
+    }
+  } else {
+    for (const auto& tag : base::i18n::GetThreadPreferredUILanguageList()) {
+      languages.emplace_back(tag.tag_string());
+    }
   }
 
-  std::vector<std::string> languages;
-  for (const auto& language : languages16) {
-    languages.push_back(base::SysWideToUTF8(language));
-  }
   return languages;
 }
 

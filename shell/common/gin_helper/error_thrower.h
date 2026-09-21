@@ -31,7 +31,7 @@ class ErrorThrower {
                                                   v8::Local<v8::Value> options);
   void Throw(ErrorGenerator gen, std::string_view err_msg) const;
 
-  raw_ptr<v8::Isolate> isolate_ = {};
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
 };
 
 }  // namespace gin_helper

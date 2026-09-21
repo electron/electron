@@ -25,6 +25,7 @@
 #include "shell/common/world_ids.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -826,6 +827,8 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
   ExposeAPI(isolate, source_context, target_context, key, api);
 }
 
+// Main-world overrides used by the tests (internalContextBridge).
+#if DCHECK_IS_ON()
 std::optional<gin_helper::Dictionary> TraceKeyPath(
     const gin_helper::Dictionary& start,
     const std::vector<std::string>& key_path,
@@ -930,6 +933,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     return success;
   }
 }
+#endif  // DCHECK_IS_ON()
 
 // Serialize script to be executed in the given world.
 v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
@@ -1138,6 +1142,78 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
 
 namespace {
 
+// process.contextIsolated for the calling context: a frame's web preference,
+// always true in a service worker preload realm.
+bool CheckContextIsolated(v8::Isolate* isolate) {
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  blink::ExecutionContext* execution_context =
+      blink::ExecutionContext::From(context);
+  bool isolated = execution_context && !execution_context->IsWindow();
+  if (!isolated) {
+    auto* render_frame = electron::GetRenderFrame(isolate, context->Global());
+    isolated =
+        render_frame && render_frame->GetBlinkPreferences().context_isolation;
+  }
+  if (!isolated) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "contextBridge API can only be used when contextIsolation is enabled");
+  }
+  return isolated;
+}
+
+void ExposeInMainWorld(v8::Isolate* isolate,
+                       const std::string& key,
+                       v8::Local<v8::Value> api) {
+  if (CheckContextIsolated(isolate))
+    electron::api::ExposeAPIInWorld(isolate, electron::WorldIDs::MAIN_WORLD_ID,
+                                    key, api);
+}
+
+void ExposeInIsolatedWorld(v8::Isolate* isolate,
+                           int world_id,
+                           const std::string& key,
+                           v8::Local<v8::Value> api) {
+  if (CheckContextIsolated(isolate))
+    electron::api::ExposeAPIInWorld(isolate, world_id, key, api);
+}
+
+v8::Local<v8::Value> ExecuteInMainWorld(v8::Isolate* isolate,
+                                        gin::Arguments* args) {
+  if (!CheckContextIsolated(isolate))
+    return {};
+  return electron::api::ExecuteInWorld(isolate,
+                                       electron::WorldIDs::MAIN_WORLD_ID, args);
+}
+
+#if DCHECK_IS_ON()
+void OverrideGlobalValueFromIsolatedWorld(v8::Isolate* isolate,
+                                          const std::vector<std::string>& keys,
+                                          v8::Local<v8::Object> value) {
+  electron::api::OverrideGlobalValueFromIsolatedWorld(isolate, keys, value,
+                                                      false, false);
+}
+
+void OverrideGlobalValueWithDynamicPropsFromIsolatedWorld(
+    v8::Isolate* isolate,
+    const std::vector<std::string>& keys,
+    v8::Local<v8::Object> value) {
+  electron::api::OverrideGlobalValueFromIsolatedWorld(isolate, keys, value,
+                                                      true, false);
+}
+
+bool OverrideGlobalPropertyFromIsolatedWorld(
+    v8::Isolate* isolate,
+    const std::vector<std::string>& keys,
+    v8::Local<v8::Object> getter,
+    gin::Arguments* args) {
+  v8::Local<v8::Value> setter;
+  if (!args->GetNext(&setter) || setter->IsUndefined())
+    setter = v8::Null(isolate);
+  return electron::api::OverrideGlobalPropertyFromIsolatedWorld(isolate, keys,
+                                                                getter, setter);
+}
+#endif
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -1146,13 +1222,24 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("executeInWorld", &electron::api::ExecuteInWorld);
   dict.SetMethod("exposeAPIInWorld", &electron::api::ExposeAPIInWorld);
-  dict.SetMethod("_overrideGlobalValueFromIsolatedWorld",
-                 &electron::api::OverrideGlobalValueFromIsolatedWorld);
-  dict.SetMethod("_overrideGlobalPropertyFromIsolatedWorld",
-                 &electron::api::OverrideGlobalPropertyFromIsolatedWorld);
+
+  // The `contextBridge` module of 'electron'.
+  auto context_bridge = gin_helper::Dictionary::CreateEmpty(isolate);
+  context_bridge.SetMethod("exposeInMainWorld", &ExposeInMainWorld);
+  context_bridge.SetMethod("exposeInIsolatedWorld", &ExposeInIsolatedWorld);
+  context_bridge.SetMethod("executeInMainWorld", &ExecuteInMainWorld);
 #if DCHECK_IS_ON()
-  dict.Set("_isDebug", true);
+  // Test-only access to the main-world override helpers.
+  auto internal = gin_helper::Dictionary::CreateEmpty(isolate);
+  internal.SetMethod("overrideGlobalValueFromIsolatedWorld",
+                     &OverrideGlobalValueFromIsolatedWorld);
+  internal.SetMethod("overrideGlobalValueWithDynamicPropsFromIsolatedWorld",
+                     &OverrideGlobalValueWithDynamicPropsFromIsolatedWorld);
+  internal.SetMethod("overrideGlobalPropertyFromIsolatedWorld",
+                     &OverrideGlobalPropertyFromIsolatedWorld);
+  context_bridge.Set("internalContextBridge", internal);
 #endif
+  dict.Set("contextBridge", context_bridge);
 }
 
 }  // namespace

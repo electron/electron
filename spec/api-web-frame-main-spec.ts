@@ -1,4 +1,12 @@
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents, clipboard } from 'electron/main';
+import {
+  BrowserWindow,
+  type WebFrameMain,
+  webFrameMain,
+  ipcMain,
+  app,
+  type WebContents,
+  clipboard
+} from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -8,10 +16,10 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { emittedNTimes } from './lib/events-helpers';
-import { containsText, readPDF } from './lib/pdf-helpers';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { emittedNTimes } from './lib/events-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
+import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -39,7 +47,7 @@ async function onceUnload(webContents: WebContents) {
 }
 
 describe('webFrameMain module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
@@ -349,6 +357,40 @@ describe('webFrameMain module', () => {
       await w.loadURL(server.crossOriginUrl);
       expect(w.webContents.mainFrame).to.equal(mainFrame);
       expect(mainFrame.url).to.equal(server.crossOriginUrl);
+    });
+
+    it('keeps a single instance when mainFrame is touched from focus/blur during a cross-origin swap', async () => {
+      // The swap re-focuses the view before RenderFrameHostChanged, so these
+      // handlers see the new RFH first; they must get the existing object.
+      const win = new BrowserWindow({ show: true });
+      await win.loadURL(server.url);
+      win.focus();
+      win.webContents.focus();
+      const { mainFrame } = win.webContents;
+      let navigating = false;
+      const seen: { event: string; navigating: boolean; frame: Electron.WebFrameMain }[] = [];
+      win.webContents.on('did-start-navigation', (e) => {
+        if (e.isMainFrame) navigating = true;
+      });
+      win.webContents.on('did-navigate', () => {
+        navigating = false;
+      });
+      const record = (event: 'focus' | 'blur') => () => {
+        seen.push({ event, navigating, frame: win.webContents.mainFrame });
+      };
+      win.webContents.on('focus', record('focus'));
+      win.webContents.on('blur', record('blur'));
+      await win.loadURL(server.crossOriginUrl);
+      win.webContents.removeAllListeners('focus');
+      win.webContents.removeAllListeners('blur');
+      const duringSwap = seen.filter((s) => s.navigating);
+      expect(duringSwap, 'expected focus/blur to fire during the swap').to.not.be.empty();
+      for (const s of duringSwap) {
+        expect(s.frame).to.equal(mainFrame);
+      }
+      expect(win.webContents.mainFrame).to.equal(mainFrame);
+      expect(mainFrame.url).to.equal(server.crossOriginUrl);
+      expect(mainFrame.framesInSubtree).to.have.lengthOf(1);
     });
 
     it('recovers from renderer crash on same-origin', async () => {

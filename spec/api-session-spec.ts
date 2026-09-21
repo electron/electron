@@ -4,10 +4,10 @@ import {
   BrowserWindow,
   net,
   ipcMain,
-  Session,
+  type Session,
   utilityProcess,
   webFrameMain,
-  WebFrameMain
+  type WebFrameMain
 } from 'electron/main';
 
 import { expect } from 'chai';
@@ -21,12 +21,12 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { parseBasicAuth } from './lib/net-helpers';
-import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { parseBasicAuth } from './lib/net-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
   describe('session.defaultSession', () => {
@@ -43,7 +43,7 @@ describe('session module', () => {
 
   describe('session.fromPath(path)', () => {
     it('returns storage path of a session which was created with an absolute path', () => {
-      const tmppath = require('electron').app.getPath('temp');
+      const tmppath = app.getPath('temp');
       const ses = session.fromPath(tmppath);
       expect(ses.storagePath).to.equal(tmppath);
     });
@@ -133,7 +133,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';
@@ -567,8 +567,16 @@ describe('session module', () => {
     // Shared dictionaries can only be created from real https websites, which we
     // lack the APIs to fake in CI. If you're working on this code, you can run
     // the real-internet tests below by uncommenting the `skip` below.
-    // In CI, we'll run simple tests here that ensure that the code in question doesn't
-    // crash, even if we expect it to not return any real dictionaries.
+    // In CI, we'll run simple tests here that ensure that the code in question
+    // doesn't crash. We clear the default session's shared-dictionary cache in a
+    // beforeEach so the emptiness assertions start from a known-clean state.
+    beforeEach(async () => {
+      // A Chromium background service can register a real shared dictionary
+      // (e.g. from www.google.com) on the default session during the run, which
+      // would make the emptiness assertions below flaky. Start from a clean state.
+      await session.defaultSession.clearSharedDictionaryCache();
+    });
+
     it('can get shared dictionary usage info', async () => {
       expect(await session.defaultSession.getSharedDictionaryUsageInfo()).to.deep.equal([]);
     });
@@ -674,6 +682,67 @@ describe('session module', () => {
 
   describe('will-download event', () => {
     afterEach(closeAllWindows);
+    it('identifies the frame and origin that started the download', async () => {
+      const mockFile = Buffer.alloc(16);
+      const downloadServer = http.createServer((req, res) => {
+        if (req.url === '/file') {
+          res.writeHead(200, {
+            'Content-Length': mockFile.length,
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="f.bin"'
+          });
+          res.end(mockFile);
+          return;
+        }
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<a id="dl" href="/file" download>dl</a>');
+      });
+      const pageServer = http.createServer((_req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<p>top</p>');
+      });
+      const downloadOrigin = (await listen(downloadServer)).url;
+      const topUrl = (await listen(pageServer)).url;
+      defer(() => {
+        downloadServer.close();
+        pageServer.close();
+      });
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(topUrl);
+      await w.webContents.executeJavaScript(`new Promise((resolve) => {
+        const f = document.createElement('iframe');
+        f.src = ${JSON.stringify(downloadOrigin)};
+        f.onload = resolve;
+        document.body.appendChild(f);
+      })`);
+      const iframe = w.webContents.mainFrame.frames[0];
+      const willDownload = new Promise<{ item: Electron.DownloadItem; wc: Electron.WebContents; frame: any }>(
+        (resolve) => {
+          w.webContents.session.once('will-download', (e, item, wc, frame) => {
+            e.preventDefault();
+            resolve({ item, wc, frame });
+          });
+        }
+      );
+      await iframe.executeJavaScript("document.getElementById('dl').click()", true);
+      const { item, wc, frame } = await willDownload;
+      expect(wc).to.equal(w.webContents);
+      expect(frame).to.equal(iframe);
+      expect(item.getInitiatorOrigin()).to.equal(downloadOrigin);
+
+      // A download the app starts itself has no initiating origin or frame.
+      const own = new Promise<{ item: Electron.DownloadItem; frame: any }>((resolve) => {
+        w.webContents.session.once('will-download', (e, item, _wc, frame) => {
+          e.preventDefault();
+          resolve({ item, frame });
+        });
+      });
+      w.webContents.session.downloadURL(`${downloadOrigin}/file`);
+      const ownResult = await own;
+      expect(ownResult.item.getInitiatorOrigin()).to.equal('');
+      expect(ownResult.frame).to.equal(null);
+    });
+
     it('can cancel default download behavior', async () => {
       const w = new BrowserWindow({ show: false });
       const mockFile = Buffer.alloc(1024);
@@ -1314,7 +1383,7 @@ describe('session module', () => {
 
   describe('DownloadItem', () => {
     const mockPDF = Buffer.alloc(1024 * 1024 * 5);
-    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+    const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
     const protocolName = 'custom-dl';
     const contentDisposition = 'inline; filename="mock.pdf"';
     let port: number;
@@ -1693,7 +1762,7 @@ describe('session module', () => {
       });
 
       it('can set options for the save dialog', async () => {
-        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+        const filePath = path.join(import.meta.dirname, 'fixtures', 'mock.pdf');
         const options = {
           window: null,
           title: 'title',
@@ -1731,7 +1800,7 @@ describe('session module', () => {
         it('does not display a save dialog and reports the done state as interrupted', async () => {
           const w = new BrowserWindow({ show: false });
           const willDownload = once(w.webContents.session, 'will-download');
-          w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+          w.webContents.downloadURL(`file://${path.join(import.meta.dirname, 'does-not-exist.txt')}`);
           const [, item] = await willDownload;
           item.savePath = downloadFilePath;
           if (item.getState() === 'interrupted') {
@@ -1773,7 +1842,7 @@ describe('session module', () => {
   describe('ses.createInterruptedDownload(options)', () => {
     afterEach(closeAllWindows);
     it('can create an interrupted download item', async () => {
-      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+      const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
       const options = {
         path: downloadFilePath,
         urlChain: ['http://127.0.0.1/'],
@@ -1895,7 +1964,7 @@ describe('session module', () => {
         cb(`<html><script>(${remote})()</script></html>`);
       });
 
-      const result = once(require('electron').ipcMain, 'message');
+      const result = once(ipcMain, 'message');
 
       function remote() {
         (navigator as any).requestMIDIAccess({ sysex: true }).then(
@@ -2091,6 +2160,58 @@ describe('session module', () => {
         ses.setPermissionCheckHandler(null);
       }
     });
+
+    for (const [permission, api] of [
+      ['hid', 'navigator.hid.requestDevice({ filters: [] })'],
+      ['usb', 'navigator.usb.requestDevice({ filters: [] })']
+    ] as const) {
+      it(`provides iframe origin as requestingOrigin for ${permission} check from cross-origin subFrame`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            partition: `very-temp-permission-handler-${permission}`
+          }
+        });
+        const ses = w.webContents.session;
+        const iframeUrl = 'https://myfakesite/';
+        let captured: { origin: string; webContents: Electron.WebContents | null; details: any } | undefined;
+
+        ses.protocol.interceptStringProtocol('https', (req, cb) => {
+          cb('<html><body>iframe</body></html>');
+        });
+
+        ses.setPermissionCheckHandler((wc, perm, requestingOrigin, details) => {
+          if (perm === permission) {
+            captured = { origin: requestingOrigin, webContents: wc, details };
+          }
+          return false;
+        });
+
+        try {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`
+            var iframe = document.createElement('iframe');
+            iframe.src = '${iframeUrl}';
+            iframe.allow = '${permission}';
+            document.body.appendChild(iframe);
+            null;
+          `);
+          const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+          const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+          await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
+
+          expect(captured).to.not.be.undefined();
+          expect(captured!.origin).to.equal(iframeUrl);
+          expect(captured!.webContents).to.equal(w.webContents);
+          expect(captured!.details.isMainFrame).to.be.false();
+          expect(captured!.details.requestingUrl).to.equal(iframeUrl);
+          expect(captured!.details.securityOrigin).to.equal(iframeUrl);
+        } finally {
+          ses.protocol.uninterceptProtocol('https');
+          ses.setPermissionCheckHandler(null);
+        }
+      });
+    }
   });
 
   describe('ses.isPersistent()', () => {
@@ -2191,7 +2312,7 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
       const certPath = path.join(fixturesPath, 'certificates');
       const server = https.createServer(
         {
@@ -2381,7 +2502,7 @@ describe('session module', () => {
       await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       w.webContents.session.registerLocalAIHandler(aiHandler);
@@ -2394,7 +2515,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
@@ -2409,7 +2530,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
@@ -2426,7 +2547,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler1 = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler1);
       session.registerLocalAIHandler(aiHandler1);
@@ -2436,7 +2557,7 @@ describe('session module', () => {
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
 
       const aiHandler2 = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler2);
       session.registerLocalAIHandler(aiHandler2);
@@ -2457,7 +2578,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);

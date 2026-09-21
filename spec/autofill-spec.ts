@@ -5,9 +5,9 @@ import { expect } from 'chai';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('autofill', () => {
   afterEach(closeAllWindows);

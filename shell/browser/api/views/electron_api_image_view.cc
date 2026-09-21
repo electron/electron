@@ -52,8 +52,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("ImageView", gin_helper::CreateConstructor<ImageView>(
-                            isolate, base::BindRepeating(&ImageView::New)));
+  dict.Set("ImageView",
+           gin_helper::CreateConstructor<ImageView>(
+               isolate, base::BindRepeating(&ImageView::New),
+               electron::api::View::GetConstructorTemplate(isolate)));
 }
 
 }  // namespace

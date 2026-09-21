@@ -61,7 +61,7 @@ localAIHandler.setPromptAPIHandler((details) => {
   // details.securityOrigin — origin of the calling page
 
   return class MyLanguageModel extends LanguageModelUtility {
-    static async create (options) {
+    static async create(options) {
       // options.signal - AbortSignal to cancel the creation of the model
       // options.initialPrompts - initial prompts to pass to the language model
 
@@ -71,26 +71,26 @@ localAIHandler.setPromptAPIHandler((details) => {
       })
     }
 
-    static async availability () {
+    static async availability() {
       // Return 'available', 'downloadable', 'downloading', or 'unavailable'
       return 'available'
     }
 
-    async prompt (input) {
+    async prompt(input) {
       // input is a LanguageModelMessage[]
       // Return a string response from your model, or a ReadableStream
       // to return a streaming response.
       return 'This is a response from your local LLM!'
     }
 
-    async clone () {
+    async clone() {
       return new MyLanguageModel({
         contextUsage: this.contextUsage,
         contextWindow: this.contextWindow
       })
     }
 
-    destroy () {
+    destroy() {
       // Clean up model resources
     }
   }

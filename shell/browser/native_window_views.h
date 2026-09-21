@@ -215,6 +215,8 @@ class NativeWindowViews : public NativeWindow,
   [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
 
  private:
+  // Applies |menu_model| to the in-window menu bar.
+  void SetRootViewMenu(ElectronMenuModel* menu_model);
   void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
   }

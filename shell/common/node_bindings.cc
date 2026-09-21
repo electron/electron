@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -72,6 +73,7 @@
   V(electron_browser_desktop_capturer)    \
   V(electron_browser_dialog)              \
   V(electron_browser_event_emitter)       \
+  V(electron_browser_ipc_dispatch)        \
   V(electron_browser_global_shortcut)     \
   V(electron_browser_image_view)          \
   V(electron_browser_in_app_purchase)     \
@@ -108,6 +110,7 @@
   V(electron_common_command_line)     \
   V(electron_common_crashpad_support) \
   V(electron_common_environment)      \
+  V(electron_common_events)           \
   V(electron_common_features)         \
   V(electron_common_native_image)     \
   V(electron_common_shared_texture)   \
@@ -526,8 +529,6 @@ void SetNodeOptions(base::Environment* env) {
 
 namespace electron {
 
-namespace {
-
 base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
@@ -538,7 +539,6 @@ base::FilePath GetResourcesPath() {
   return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
-}  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
@@ -761,11 +761,10 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     exit(result->exit_code());
 
 #if BUILDFLAG(IS_WIN)
-  // uv_init overrides error mode to suppress the default crash dialog, bring
-  // it back if user wants to show it.
-  if (browser_env_ == BrowserEnvironment::kBrowser ||
-      env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
-    SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
+  // libuv sets SEM_NOGPFAULTERRORBOX, which stops Windows Error Reporting
+  // from handling crashes that bypass crashpad's in-process handler (see
+  // electron_wer.dll). Clear it in every process type, as Chromium does.
+  SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
   g_is_initialized = true;
@@ -852,22 +851,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     std::vector<std::string> args,
     std::vector<std::string> exec_args,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-  // Feed node the path to initialization script.
-  std::string process_type;
-  switch (browser_env_) {
-    case BrowserEnvironment::kBrowser:
-      process_type = "browser";
-      break;
-    case BrowserEnvironment::kRenderer:
-      process_type = "renderer";
-      break;
-    case BrowserEnvironment::kWorker:
-      process_type = "worker";
-      break;
-    case BrowserEnvironment::kUtility:
-      process_type = "utility";
-      break;
-  }
+  const std::string process_type(ProcessType());
 
   // Electron: when consuming the embedded Node startup snapshot, the caller
   // passed an empty context -- the main context is materialized by
@@ -879,27 +863,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   std::unique_ptr<gin::ContextHolder> gin_context_holder;
   auto set_up_context = [&](v8::Local<v8::Context> ctx,
                             node::IsolateData* iso_data) {
-    if (browser_env_ == BrowserEnvironment::kBrowser) {
-      const std::vector<std::string> search_paths = {"app.asar", "app",
-                                                     "default_app.asar"};
-      const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate,
-              gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()
-                               ? app_asar_search_paths
-                               : search_paths));
-      ctx->Global()->SetPrivate(
-          ctx,
-          v8::Private::ForApi(
-              isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
-                           .As<v8::String>()),
-          gin::ConvertToV8(isolate,
-                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
-    }
     ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                          static_cast<void*>(iso_data),
                                          v8::kEmbedderDataTypeTagDefault);
@@ -908,10 +871,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       gin_context_holder->SetContext(ctx);
     }
   };
-
-  std::string init_script = "electron/js2c/" + process_type + "_init";
-
-  args.insert(args.begin() + 1, init_script);
 
   // The Node startup snapshot's per-isolate data (templates, primordials)
   // is fed to CreateIsolateData so the bootstrap is deserialized.
@@ -1025,18 +984,89 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       ElectronCommandLine::AsUtf8(), {}, on_app_code_ready);
 }
 
+namespace {
+
+// Node's internal/options caches the CLI option values on first use; drop that
+// cache through `require` (Node's internal require) so later reads are fresh.
+void RefreshCachedNodeOptions(v8::Local<v8::Context> context,
+                              v8::Local<v8::Function> require) {
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  v8::Local<v8::Value> id = gin::StringToV8(isolate, "internal/options");
+  v8::Local<v8::Value> options;
+  v8::Local<v8::Value> refresh;
+  if (require->Call(context, v8::Null(isolate), 1, &id).ToLocal(&options) &&
+      options->IsObject() &&
+      options.As<v8::Object>()
+          ->Get(context, gin::StringToV8(isolate, "refreshOptions"))
+          .ToLocal(&refresh) &&
+      refresh->IsFunction()) {
+    std::ignore =
+        refresh.As<v8::Function>()->Call(context, options, 0, nullptr);
+  }
+}
+
+}  // namespace
+
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  // Re-assert Electron's build-time cache for the electron/js2c/* framework
-  // bundles (browser_init etc.). Every BuiltinLoader already starts from it
-  // (InstallProcessCodeCache), but when booting from the Node startup snapshot
-  // Environment's constructor then merges the caches node_mksnapshot embedded
-  // for the same bundle ids over it; RefreshCodeCache uses insert_or_assign, so
-  // this puts the build-time (eagerly compiled) entries back on top while the
-  // node-internal entries are kept. A no-op merge when bootstrapped from
-  // scratch.
+  // Re-assert Electron's build-time cache for the internal/electron/js2c/*
+  // framework bundles (browser_init etc.). Every BuiltinLoader already starts
+  // from it (InstallProcessCodeCache), but when booting from the Node startup
+  // snapshot Environment's constructor then merges the caches node_mksnapshot
+  // embedded for the same bundle ids over it; RefreshCodeCache uses
+  // insert_or_assign, so this puts the build-time (eagerly compiled) entries
+  // back on top while the node-internal entries are kept. A no-op merge when
+  // bootstrapped from scratch.
   electron::util::FeedEnvironmentCodeCache(env);
-  node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
+
+  // The init bundle is this process's entry script: like Node's own runMain it
+  // runs without a v8::TryCatch, so an exception thrown while it loads the app
+  // reaches process.on('uncaughtException') through V8's message listener.
+  //
+  // Node pauses for --inspect-brk before an embedder entry point runs; mask it
+  // so the pause stays on the app's own entry rather than the first line of
+  // the init bundle, and refresh the options JS cached meanwhile.
+  node::DebugOptions* const debug_options = env->options()->get_debug_options();
+  const bool break_first_line = debug_options->break_first_line;
+  debug_options->break_first_line = false;
+  const std::string bundle_id =
+      "internal/electron/js2c/" + std::string(ProcessType()) + "_init";
+  node::LoadEnvironment(
+      env,
+      [&](const node::StartExecutionCallbackInfo& info) {
+        v8::Isolate* const isolate = env->isolate();
+        v8::Local<v8::Context> context = env->context();
+        v8::Local<v8::Function> require =
+            env->principal_realm()->builtin_module_require();
+        if (break_first_line) {
+          debug_options->break_first_line = true;
+          RefreshCachedNodeOptions(context, require);
+        }
+        v8::LocalVector<v8::String> params =
+            js2c::MakeBundleParams(isolate, js2c::kInitBundleParams);
+        v8::Local<v8::Value> args[] = {info.process_object, require};
+        v8::Local<v8::Function> bundle;
+        if (!electron::util::CompileBundle(context, bundle_id.c_str(), &params)
+                 .ToLocal(&bundle)) {
+          return v8::MaybeLocal<v8::Value>();
+        }
+        return bundle->Call(context, v8::Null(isolate), std::size(args), args);
+      },
+      &OnNodePreload);
+  debug_options->break_first_line = break_first_line;
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
+}
+
+std::string_view NodeBindings::ProcessType() const {
+  switch (browser_env_) {
+    case BrowserEnvironment::kBrowser:
+      return "browser";
+    case BrowserEnvironment::kRenderer:
+      return "renderer";
+    case BrowserEnvironment::kWorker:
+      return "worker";
+    case BrowserEnvironment::kUtility:
+      return "utility";
+  }
 }
 
 void NodeBindings::PrepareEmbedThread() {
@@ -1225,7 +1255,7 @@ void OnNodePreload(node::Environment* env,
 
   // Execute lib/node/init.ts.
   v8::LocalVector<v8::String> bundle_params =
-      js2c::MakeBundleParams(env->isolate(), js2c::kNodeInitParams);
+      js2c::MakeBundleParams(env->isolate(), js2c::kInitBundleParams);
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
   electron::util::CompileAndCall(env->isolate(), env->context(),
                                  js2c::kNodeInitId, &bundle_params,

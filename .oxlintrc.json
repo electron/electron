@@ -21,6 +21,7 @@
     "correctness": "off"
   },
   "options": {
+    "reportUnusedDisableDirectives": "error",
     "typeAware": false
   },
   "env": {
@@ -350,6 +351,20 @@
       "rules": {
         "no-only-tests/no-only-tests": "error",
         "no-floating-spec-helpers/no-floating-spec-helpers": "error"
+      }
+    },
+    {
+      // Specs run straight from source with Node's type stripping, which leaves
+      // imports untouched: a type imported without `type` fails at load time.
+      "files": [
+        "spec/**/*.ts"
+      ],
+      "rules": {
+        "typescript/consistent-type-imports": [
+          "error",
+          { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }
+        ],
+        "typescript/no-import-type-side-effects": "error"
       }
     },
     {

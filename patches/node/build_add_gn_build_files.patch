@@ -15,7 +15,7 @@ was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
 diff --git a/configure.py b/configure.py
-index 7fd64a9620e3365c9bb8cb2aae19b7b376bf0d52..979f50cd92898500108daa343cbefa00c590c776 100755
+index 3c3b5a34925b5e578aa4b507674e15b88c4035c7..65da589f59e1eb7fc82c08dc05429fb19a1772eb 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1987,7 +1987,7 @@ def configure_v8(o, configs):

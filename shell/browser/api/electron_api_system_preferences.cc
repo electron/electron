@@ -29,25 +29,24 @@ gin::WrapperInfo SystemPreferences::kWrapperInfo =
 
 #if BUILDFLAG(IS_WIN)
 SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
   InitializeWindow();
 }
 #elif BUILDFLAG(IS_LINUX)
 SystemPreferences::SystemPreferences(v8::Isolate* isolate)
     : ui_theme_(ui::NativeTheme::GetInstanceForNativeUi()) {
-  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
   ui_theme_->AddObserver(this);
 }
 #else
 SystemPreferences::SystemPreferences(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 }
 #endif
 
 SystemPreferences::~SystemPreferences() = default;
 
-void SystemPreferences::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+void SystemPreferences::OnBeforeMicrotasksRunnerDispose() {
   Dispose();
 }
 

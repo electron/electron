@@ -41,7 +41,6 @@
   "parallel/test-openssl-ca-options",
   "parallel/test-os-checked-function",
   "parallel/test-process-versions",
-  "parallel/test-process-get-builtin",
   "parallel/test-repl-mode",
   "parallel/test-promise-swallowed-event",
   "parallel/test-repl-underscore",

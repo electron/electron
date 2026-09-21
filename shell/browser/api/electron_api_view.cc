@@ -17,6 +17,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -566,13 +567,23 @@ gin_helper::WrappableBase* View::New(gin::Arguments* args) {
 }
 
 // static
-v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
-  static base::NoDestructor<v8::Global<v8::Function>> constructor;
-  if (constructor.get()->IsEmpty()) {
-    constructor->Reset(isolate, gin_helper::CreateConstructor<View>(
-                                    isolate, base::BindRepeating(&View::New)));
+v8::Local<v8::FunctionTemplate> View::GetConstructorTemplate(
+    v8::Isolate* isolate) {
+  static base::NoDestructor<v8::Global<v8::FunctionTemplate>> tmpl;
+  if (tmpl->IsEmpty()) {
+    tmpl->Reset(isolate,
+                gin_helper::CreateConstructorTemplate<View>(
+                    isolate, base::BindRepeating(&View::New),
+                    gin_helper::internal::GetEventEmitterTemplate(isolate)));
   }
-  return v8::Local<v8::Function>::New(isolate, *constructor.get());
+  return v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl);
+}
+
+// static
+v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
+  return GetConstructorTemplate(isolate)
+      ->GetFunction(isolate->GetCurrentContext())
+      .ToLocalChecked();
 }
 
 // static

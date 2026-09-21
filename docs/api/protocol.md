@@ -88,9 +88,7 @@ Policy:
 ```js
 const { protocol } = require('electron')
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'foo', privileges: { bypassCSP: true } }
-])
+protocol.registerSchemesAsPrivileged([{ scheme: 'foo', privileges: { bypassCSP: true } }])
 ```
 
 A standard scheme adheres to what RFC 3986 calls [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3).
@@ -133,6 +131,12 @@ expect streaming responses.
 
 Register a protocol handler for `scheme`. Requests made to URLs with this
 scheme will delegate to this handler to determine what response should be sent.
+
+In addition to the standard `Request` fields, `request.initiatorOrigin` is set to the
+origin that issued the request (for example `https://example.com`, or `null`
+for an opaque origin) when web content made it; it is absent for requests the
+browser started itself. Unlike `request.referrer` it is not controlled by the
+requesting page, so prefer it when deciding whether to serve a request.
 
 Either a `Response` or a `Promise<Response>` can be returned.
 
@@ -405,7 +409,7 @@ const { protocol } = require('electron')
 
 const { PassThrough } = require('node:stream')
 
-function createStream (text) {
+function createStream(text) {
   const rv = new PassThrough() // PassThrough is also a Readable stream
   rv.push(text)
   rv.push(null)

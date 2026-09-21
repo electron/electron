@@ -6,16 +6,15 @@ description: 'Ensures proper binaries are in place'
 # 2. Fixing esbuild (wrong binary)
 # 3. Fixing rustc (wrong binary)
 # 4. Fixing gn (wrong binary)
-# 5. Fix reclient (wrong binary)
-# 6. Fixing dsymutil (wrong binary)
-# 7. Ensuring we are using the correct ninja and adding it to PATH
-# 8. Fixing angle (wrong remote)
-# 9. Install windows toolchain on Windows
-# 10. Fix node binary on Windows
-# 11. Fix rc binary on Windows
-# 12. Fix clang-format binary on Windows
-# 13. Install the host typescript-go (tsc v7) binary on macOS
-# 14. Fixing the hermetic host Python binary
+# 5. Fixing dsymutil (wrong binary)
+# 6. Ensuring we are using the correct ninja and adding it to PATH
+# 7. Fixing angle (wrong remote)
+# 8. Install windows toolchain on Windows
+# 9. Fix node binary on Windows
+# 10. Fix rc binary on Windows
+# 11. Fix clang-format binary on Windows
+# 12. Install the host typescript-go (tsc v7) binary on macOS
+# 13. Fixing the hermetic host Python binary
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
@@ -126,22 +125,6 @@ runs:
         installation-dir: src/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}/src
         target-platform: ${{ inputs.target-platform }}
         package: chromium/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}
-    - name: Fix rollup
-      if: ${{ inputs.target-platform != 'linux' }}
-      uses: ./src/electron/.github/actions/cipd-install
-      with:
-        cipd-root-prefix-path: src/third_party/devtools-frontend/src/
-        dependency: rollup_libs
-        deps-file: src/third_party/devtools-frontend/src/DEPS
-        installation-dir: third_party/rollup_libs
-        target-platform: ${{ inputs.target-platform }}
-        package: infra/3pp/tools/rollup_libs/${platform}
-    - name: Sync native rollup libs
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        cd src/third_party/devtools-frontend/src
-        python3 scripts/deps/sync_rollup_libs.py
     - name: Fix gn (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
@@ -160,20 +143,6 @@ runs:
         installation-dir: src/buildtools/win 
         target-platform: ${{ inputs.target-platform }}
         package: gn/gn/windows-amd64
-    - name: Fix reclient
-      if: ${{ inputs.target-platform != 'linux' }}
-      uses: ./src/electron/.github/actions/cipd-install
-      with:
-        dependency: reclient
-        deps-file: src/DEPS
-        installation-dir: src/buildtools/reclient
-        target-platform: ${{ inputs.target-platform }}
-        package: infra/rbe/client/${platform}
-    - name: Configure reclient configs
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
     - name: Fix ninja
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install

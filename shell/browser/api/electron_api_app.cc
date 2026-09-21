@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -55,11 +56,13 @@
 #include "sandbox/policy/switches.h"
 #include "services/network/network_service.h"
 #include "shell/app/command_line_args.h"
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
 #include "shell/browser/api/process_metric.h"
+#include "shell/browser/app_package.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
@@ -72,6 +75,7 @@
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -617,6 +621,7 @@ void App::OnActivate(bool has_visible_windows) {
 }
 
 void App::OnWillFinishLaunching() {
+  Menu::InstallDefaultApplicationMenu(JavascriptEnvironment::GetIsolate());
   Emit("will-finish-launching");
 }
 
@@ -749,10 +754,9 @@ void App::AllowCertificateError(
       electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default = Emit(
-      "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
-      request_url, net::ErrorToString(cert_error), ssl_info.cert,
-      adapted_callback, is_main_frame_request);
+  bool prevent_default = Emit("certificate-error", web_contents, request_url,
+                              net::ErrorToString(cert_error), ssl_info.cert,
+                              adapted_callback, is_main_frame_request);
 
   // Deny the certificate by default.
   if (!prevent_default)
@@ -783,8 +787,7 @@ base::OnceClosure App::SelectClientCertificate(
   // |web_contents| is null for requests that did not originate from a renderer
   // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
   v8::Local<v8::Value> web_contents_value =
-      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
-                   : v8::Null(isolate).As<v8::Value>();
+      gin::ConvertToV8(isolate, web_contents);
   bool prevent_default =
       Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
@@ -2101,7 +2104,22 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("app", electron::api::App::Get());
+  electron::api::App* app = electron::api::App::Get();
+  v8::Local<v8::Object> wrapper;
+  if (app->GetWrapper(isolate).ToLocal(&wrapper)) {
+    // app is an EventEmitter.
+    std::ignore = wrapper->SetPrototype(
+        context, electron::GetEventEmitterPrototype(isolate));
+  }
+  dict.Set("app", app);
+#if BUILDFLAG(IS_LINUX)
+  // For desktop-name-spec.
+  dict.SetMethod(
+      "defaultDesktopName",
+      base::BindRepeating([](std::optional<std::u16string> name) {
+        return electron::DefaultDesktopName(name.value_or(std::u16string()));
+      }));
+#endif
 }
 
 }  // namespace

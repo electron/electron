@@ -94,7 +94,7 @@ When communicating with the [Chrome DevTools Protocol](https://chromedevtools.gi
 it can be useful to lookup a WebContents instance based on its assigned TargetID.
 
 ```js
-async function lookupTargetId (browserWindow) {
+async function lookupTargetId(browserWindow) {
   const wc = browserWindow.webContents
   await wc.debugger.attach('1.3')
   const { targetInfo } = await wc.debugger.sendCommand('Target.getTargetInfo')
@@ -472,7 +472,7 @@ win.webContents.on('will-prevent-unload', (event) => {
     defaultId: 0,
     cancelId: 1
   })
-  const leave = (choice === 0)
+  const leave = choice === 0
   if (leave) {
     event.preventDefault()
   }
@@ -926,6 +926,15 @@ app.whenReady().then(() => {
 
 #### Event: 'paint'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "`image` now has the view's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 Returns:
 
 * `details` Event\<\>
@@ -934,6 +943,8 @@ Returns:
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
 Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
+`image` has the view's device scale factor, so `image.getSize()` is in DIPs, while
+`dirtyRect` is in the pixels of `image.toBitmap()`.
 
 ```js
 const { BrowserWindow } = require('electron')
@@ -961,7 +972,7 @@ win.webContents.on('paint', async (e, dirty, image) => {
   if (e.texture) {
     // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`
     // to other processes (not `e.texture`, the `e.texture.release` function is not passable through IPC).
-    await new Promise(resolve => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
     // You can send the native texture handle to native code for importing into your rendering pipeline.
     // Read more at https://github.com/electron/electron/blob/main/shell/browser/osr/README.md
@@ -1437,7 +1448,8 @@ Code execution will be suspended until web page stop loading.
 ```js
 const win = new BrowserWindow()
 
-win.webContents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+win.webContents
+  .executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
   .then((result) => {
     console.log(result) // Will be the JSON object from the fetch call
   })
@@ -1804,6 +1816,15 @@ console.log(requestId)
 
 #### `contents.capturePage([rect, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 * `opts` Object (optional)
   * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
@@ -1814,6 +1835,7 @@ Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
 The page is considered visible when its browser window is hidden and the capturer count is non-zero.
 If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 #### `contents.isBeingCaptured()`
 
@@ -1881,10 +1903,12 @@ const win = new BrowserWindow()
 const options = {
   silent: true,
   deviceName: 'My-Printer',
-  pageRanges: [{
-    from: 0,
-    to: 1
-  }]
+  pageRanges: [
+    {
+      from: 0,
+      to: 1
+    }
+  ]
 }
 win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
@@ -1917,14 +1941,17 @@ app.whenReady().then(() => {
   win.webContents.on('did-finish-load', () => {
     // Use default printing options
     const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
-    win.webContents.printToPDF({}).then(data => {
-      fs.writeFile(pdfPath, data, (error) => {
-        if (error) throw error
-        console.log(`Wrote PDF successfully to ${pdfPath}`)
+    win.webContents
+      .printToPDF({})
+      .then((data) => {
+        fs.writeFile(pdfPath, data, (error) => {
+          if (error) throw error
+          console.log(`Wrote PDF successfully to ${pdfPath}`)
+        })
       })
-    }).catch(error => {
-      console.log(`Failed to write PDF to ${pdfPath}: `, error)
-    })
+      .catch((error) => {
+        console.log(`Failed to write PDF to ${pdfPath}: `, error)
+      })
   })
 })
 ```
@@ -2176,6 +2203,15 @@ Sends an input `event` to the page.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `onlyDirty` boolean (optional) - Defaults to `false`.
 * `callback` Function
   * `image` [NativeImage](native-image.md)
@@ -2186,7 +2222,8 @@ will be called with `callback(image, dirtyRect)` when there is a presentation
 event.
 
 The `image` is an instance of [NativeImage](native-image.md) that stores the
-captured frame.
+captured frame. It has the page's device scale factor, so `image.getSize()` is
+in DIPs, while `dirtyRect` is in the pixels of `image.toBitmap()`.
 
 The `dirtyRect` is an object with `x, y, width, height` properties that
 describes which part of the page was repainted. If `onlyDirty` is set to
@@ -2227,11 +2264,14 @@ const win = new BrowserWindow()
 win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', async () => {
-  win.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
-    console.log('Page was saved successfully.')
-  }).catch(err => {
-    console.log(err)
-  })
+  win.webContents
+    .savePage('/tmp/test.html', 'HTMLComplete')
+    .then(() => {
+      console.log('Page was saved successfully.')
+    })
+    .catch((err) => {
+      console.log(err)
+    })
 })
 ```
 
@@ -2325,6 +2365,10 @@ Setting the WebRTC UDP Port Range allows you to restrict the udp port range used
 Returns `string` - The identifier of a WebContents stream. This identifier can be used
 with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
 The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
+The `desktop` source only accepts screen and window identifiers from
+[`desktopCapturer.getSources`](desktop-capturer.md#desktopcapturergetsourcesoptions);
+to capture a WebContents use this identifier with the `tab` source, or
+[`ses.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts).
 
 #### `contents.getOrCreateDevToolsTargetId()`
 

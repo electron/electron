@@ -55,7 +55,6 @@ function parseArgs(argv) {
 }
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log('[collect-profile]', ...args);
 }
 
@@ -376,6 +375,13 @@ async function main() {
   // abort on the first workload failure (PGO_ABORT_ON_FAILURE) since their
   // output is discarded anyway; the final attempt runs to completion so a
   // persistent failure still yields a maximal partial profile.
+  //
+  // The app exits non-zero when it aborts an attempt itself: a renderer death
+  // mid-workload leaves that workload half-run in every other process, so
+  // the app records it (rendererDeath: true) and bails immediately instead of
+  // finishing the run. Such an attempt is lost - its counters are wiped and
+  // the app relaunched - and if it is the last one, nothing is merged: a
+  // profile weighted by a partial workload must never be published.
   const maxAttempts = parseInt(args.attempts || '5', 10);
   // Attempts can be slow when a workload burns its own timeout before
   // failing (jetstream2 alone allows 45 minutes), so the attempt count alone
@@ -387,7 +393,9 @@ async function main() {
   const collectionStart = Date.now();
   let exitCode = 1;
   let failedWorkloads = [];
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+  let attemptLost = false;
+  let attempt = 0;
+  while (attempt++ < maxAttempts) {
     const finalAttempt = attempt === maxAttempts;
     // Always start clean: counters from a failed attempt (or stale %m pool
     // files from a previous run, which append) must not merge into this one.
@@ -426,27 +434,56 @@ async function main() {
 
     // Electron's clean-shutdown path (app.quit()) always exits 0, so workload
     // failures are reported through the results file rather than the exit code.
+    // A non-zero exit (the app aborted on a renderer death, crashed, or was
+    // killed) or a missing results file means the attempt did not run to a
+    // clean shutdown: its counters are not those of one complete run.
+    attemptLost = exitCode !== 0;
     failedWorkloads = [];
     if (fs.existsSync(resultsFile)) {
       const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
       log(`workload results:\n${JSON.stringify(results, null, 2)}`);
       failedWorkloads = results.filter((r) => !r.ok);
+      const rendererDeaths = failedWorkloads.filter((r) => r.rendererDeath);
+      if (rendererDeaths.length > 0) {
+        log(`renderer died during: ${rendererDeaths.map((w) => w.name).join(', ')} - attempt aborted`);
+        attemptLost = true;
+      }
     } else {
       log('WARNING: no results file was written - the app may have crashed');
       failedWorkloads = [{ name: 'all', error: 'results file missing' }];
+      attemptLost = true;
     }
     if (exitCode === 0 && failedWorkloads.length > 0) {
       exitCode = 1;
     }
     if (exitCode === 0 || finalAttempt) break;
+    // A clean run that wrote no profraw at all means the binary is not
+    // instrumented (or LLVM_PROFILE_FILE is not honoured); relaunching cannot
+    // fix that, so fail fast - the merge step below reports it.
+    const profrawCount = fs.readdirSync(profrawDir).filter((f) => f.endsWith('.profraw')).length;
+    if (!attemptLost && profrawCount === 0) {
+      log('no .profraw files written by a run that exited cleanly - not retrying');
+      break;
+    }
     if (Date.now() - collectionStart > retryDeadlineMs) {
-      log(`retry deadline reached after attempt ${attempt} - keeping this attempt's partial output`);
+      log(`retry deadline reached after attempt ${attempt} - not launching another`);
       break;
     }
     const reason = failedWorkloads.map((w) => w.name).join(', ') || `exit code ${exitCode}`;
     log(`attempt ${attempt} failed (${reason}) - wiping profiles and retrying`);
   }
   server.close();
+
+  // The last attempt was lost and no retry is left, so there is no complete
+  // run to merge. Wipe the leftovers so nothing partial reaches --output
+  // (which CI uploads even when this step fails) and fail the job.
+  if (attemptLost) {
+    fs.rmSync(profrawDir, { recursive: true, force: true });
+    throw new Error(
+      `collection attempt ${attempt} was lost (${failedWorkloads.map((w) => w.name).join(', ')}) ` +
+        'and no retries remain - no profile to merge'
+    );
+  }
 
   // 3. Merge (or hand off the raw files for later merging).
   const profrawFiles = fs

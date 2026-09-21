@@ -15,6 +15,7 @@
 #include "content/public/browser/global_routing_id.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "printing/buildflags/buildflags.h"
@@ -24,13 +25,15 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/serialized_value.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
 
 namespace content {
 class RenderFrameHost;
-}
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;
@@ -52,6 +55,17 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static WebFrameMain* New(v8::Isolate* isolate);
+
+  static constexpr char kFrameDisposedError[] =
+      "Render frame was disposed before the request completed";
+
+  // A mojom::ElectronFrame reply callback of the (success, value, error)
+  // shape: resolves |promise| with the deserialized value, rejects it with the
+  // value or with an Error carrying |error|, or rejects it if the renderer
+  // goes away before replying.
+  static base::OnceCallback<
+      void(bool, electron::SerializedValue, const std::string&)>
+  BindPromiseToReply(gin_helper::Promise<v8::Local<v8::Value>> promise);
 
   static WebFrameMain* From(v8::Isolate* isolate,
                             content::RenderFrameHost* render_frame_host);
@@ -88,6 +102,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   // Called when FrameTreeNode is deleted.
   void Destroyed();
 
+  // Calls Destroyed() on every instance belonging to |web_contents|; used when
+  // api::WebContents stops observing a WebContents it does not own.
+  static void DestroyAllForWebContents(content::WebContents* web_contents);
+
   // Mark RenderFrameHost as disposed and to no longer access it. This can
   // happen when the WebFrameMain v8-forward.handle is GC'd or when a
   // FrameTreeNode is removed.
@@ -97,6 +115,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  // Null when there is no live render frame. Ordered with navigation.
+  mojom::ElectronFrame* GetFrameApi();
   void MaybeSetupMojoConnection();
   void TeardownMojoConnection();
   void OnRendererConnectionError();
@@ -109,11 +129,13 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   // prior to accessing it.
   bool CheckRenderFrame() const;
 
+  v8::Local<v8::Promise> TransferSharedTexture(v8::Isolate* isolate,
+                                               v8::Local<v8::Value> transfer,
+                                               const std::string& texture_id,
+                                               v8::Local<v8::Value> args);
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
-#if BUILDFLAG(ENABLE_PRINTING)
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
   void CopyVideoFrameAt(int x, int y);
   void SaveVideoFrameAs(int x, int y);
   bool Reload();
@@ -158,6 +180,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
       "process.")
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of the renderer remote is not needed in the browser "
+      "process.")
+  mojo::AssociatedRemote<mojom::ElectronFrame> frame_api_;
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;

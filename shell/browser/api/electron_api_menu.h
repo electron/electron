@@ -8,22 +8,40 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
+#include <vector>
 
+#include "base/functional/function_ref.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "ui/base/models/image_model.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
+#include "v8/include/cppgc/garbage-collected.h"
 #include "v8/include/cppgc/member.h"
+#include "v8/include/v8-traced-handle.h"
+
+#if BUILDFLAG(IS_MAC)
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
+#endif
 
 namespace gin {
 class Arguments;
 }  // namespace gin
 
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
+
 namespace electron::api {
 
 class BaseWindow;
+class MenuItem;
 class WebFrameMain;
 
 class Menu : public gin::Wrappable<Menu>,
@@ -50,6 +68,7 @@ class Menu : public gin::Wrappable<Menu>,
 
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static void FillInstanceTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Menu"; }
 
 #if BUILDFLAG(IS_MAC)
@@ -62,6 +81,65 @@ class Menu : public gin::Wrappable<Menu>,
 
   ElectronMenuModel* model() const { return model_.get(); }
 
+  // Throws on |thrower| and returns an empty handle for an invalid template.
+  static v8::Local<v8::Value> BuildFromTemplate(
+      gin_helper::ErrorThrower thrower,
+      v8::Local<v8::Value> tmpl);
+
+  // |args| is only present when constructed from JS.
+  static Menu* Create(v8::Isolate* isolate, gin::Arguments* args = nullptr);
+
+  // The items in order; an item may be in more than one menu.
+  class Entry final : public cppgc::GarbageCollected<Entry> {
+   public:
+    Entry(MenuItem* item, Entry* next);
+    ~Entry();
+    void Trace(cppgc::Visitor* visitor) const;
+    cppgc::Member<MenuItem> item;
+    cppgc::Member<Entry> next;
+  };
+  size_t GetItemCount() const;
+  MenuItem* ItemAt(size_t index) const;
+  void ForEachInRadioGroup(int group_id,
+                           base::FunctionRef<void(MenuItem*)> fn) const;
+
+  // ElectronMenuModel::Delegate:
+  void ActivatedAt(size_t index, int event_flags) override;
+  void MenuWillShow() override;
+  // 0 <= pos <= count. Throws on |thrower|, if given, for an invalid item.
+  void InsertItem(v8::Isolate* isolate,
+                  int pos,
+                  MenuItem* item,
+                  gin_helper::ErrorThrower* thrower = nullptr);
+  void AppendItem(v8::Isolate* isolate, MenuItem* item);
+#if BUILDFLAG(IS_MAC)
+  v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
+#endif
+
+  // JS API.
+  void Insert(gin_helper::ErrorThrower thrower,
+              int index,
+              v8::Local<v8::Value> item);
+  void Append(gin_helper::ErrorThrower thrower, v8::Local<v8::Value> item);
+  v8::Local<v8::Value> Items(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetMenuItemById(gin::Arguments* args);
+  v8::Local<v8::Value> FindItemById(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> id);
+  v8::Local<v8::Value> Popup(gin::Arguments* args);
+  void ClosePopup(gin::Arguments* args);
+  int GetIndexOfCommandId(int command_id) const;
+  void ActivateForTesting(int command_id);
+  void MenuWillShowForTesting();
+  static void SetApplicationMenuFromJS(gin::Arguments* args);
+  static v8::Local<v8::Value> GetApplicationMenu(v8::Isolate* isolate);
+  // Menu.setApplicationMenu(menu); a null |menu| removes it.
+  static void ChangeApplicationMenu(Menu* menu);
+  // The menu passed to Menu.setApplicationMenu, or the default one.
+  static Menu* application_menu();
+  // Installs the File/Edit/View/Window role menu as the application menu
+  // unless the app has already called Menu.setApplicationMenu.
+  static void InstallDefaultApplicationMenu(v8::Isolate* isolate);
+
  protected:
   // Remove this instance as an observer from the model. Called by derived
   // class destructors to ensure observer is removed before platform-specific
@@ -71,30 +149,9 @@ class Menu : public gin::Wrappable<Menu>,
   // passed |callback| is called.
   base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
 
-  // ui::SimpleMenuModel::Delegate:
-  bool IsCommandIdChecked(int command_id) const override;
-  bool IsCommandIdEnabled(int command_id) const override;
-  bool IsCommandIdVisible(int command_id) const override;
-  std::u16string GetLabelForCommandId(int command_id) const override;
-  std::u16string GetAccessibilityLabelForCommandId(
-      int command_id) const override;
-  std::u16string GetSecondaryLabelForCommandId(int command_id) const override;
-  ui::ImageModel GetIconForCommandId(int command_id) const override;
-  bool ShouldCommandIdWorkWhenHidden(int command_id) const override;
-  bool GetAcceleratorForCommandIdWithParams(
-      int command_id,
-      bool use_default_accelerator,
-      ui::Accelerator* accelerator) const override;
-  bool ShouldRegisterAcceleratorForCommandId(int command_id) const override;
 #if BUILDFLAG(IS_MAC)
-  bool GetSharingItemForCommandId(
-      int command_id,
-      ElectronMenuModel::SharingItem* item) const override;
-  v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
   virtual void SimulateSubmenuCloseSequenceForTesting();
 #endif
-  void ExecuteCommand(int command_id, int event_flags) override;
-  void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
   virtual void PopupAt(BaseWindow* window,
                        std::optional<WebFrameMain*> frame,
@@ -111,33 +168,15 @@ class Menu : public gin::Wrappable<Menu>,
   void OnMenuWillShow() override;
 
  private:
-  void InsertItemAt(int index, int command_id, const std::u16string& label);
-  void InsertSeparatorAt(int index);
-  void InsertCheckItemAt(int index,
-                         int command_id,
-                         const std::u16string& label);
-  void InsertRadioItemAt(int index,
-                         int command_id,
-                         const std::u16string& label,
-                         int group_id);
-  void InsertSubMenuAt(int index,
-                       int command_id,
-                       const std::u16string& label,
-                       Menu* menu);
-  void SetIcon(int index, const gfx::Image& image);
-  void SetSublabel(int index, const std::u16string& sublabel);
-  void SetToolTip(int index, const std::u16string& toolTip);
-  void SetRole(int index, const std::u16string& role);
-  void SetCustomType(int index, const std::u16string& customType);
-#if BUILDFLAG(IS_MAC)
-  void SetBadge(int index, std::optional<ElectronMenuModel::Badge> badge);
-#endif
-  void Clear();
-  int GetIndexOfCommandId(int command_id) const;
-  int GetItemCount() const;
+  int GenerateGroupId(int pos);
 
   std::unique_ptr<ElectronMenuModel> model_;
   cppgc::Member<Menu> parent_;
+  // Owns the items model_ refers to.
+  cppgc::Member<Entry> first_entry_;
+  cppgc::Member<Entry> last_entry_;
+  // menu.items, rebuilt after the item list changes.
+  v8::TracedReference<v8::Array> items_;
 
   // Keep active menus alive even if they've been replaced.
   gin_helper::SelfKeepAlive<Menu> keep_alive_{nullptr};
@@ -146,6 +185,39 @@ class Menu : public gin::Wrappable<Menu>,
 }  // namespace electron::api
 
 namespace gin {
+
+#if BUILDFLAG(IS_MAC)
+template <>
+struct Converter<electron::ElectronMenuModel::SharingItem> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::ElectronMenuModel::SharingItem* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.GetOptional("texts", &(out->texts));
+    dict.GetOptional("filePaths", &(out->file_paths));
+    dict.GetOptional("urls", &(out->urls));
+    return true;
+  }
+};
+
+template <>
+struct Converter<electron::ElectronMenuModel::Badge> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::ElectronMenuModel::Badge* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    out->type = "none";
+    dict.Get("type", &(out->type));
+    dict.GetOptional("count", &(out->count));
+    dict.GetOptional("content", &(out->content));
+    return true;
+  }
+};
+#endif
 
 template <>
 struct Converter<electron::ElectronMenuModel*> {

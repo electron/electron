@@ -10,10 +10,13 @@ import { expect } from 'chai';
 import * as dbus from 'dbus-native';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;

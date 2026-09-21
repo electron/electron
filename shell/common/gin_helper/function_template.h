@@ -88,7 +88,6 @@ class CallbackHolderBase {
 
     // gin::PerIsolateData::DisposeObserver
     void OnBeforeDispose(v8::Isolate* isolate) override;
-    void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {}
     void OnDisposed() override;
 
    private:

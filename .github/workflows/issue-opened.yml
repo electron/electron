@@ -46,11 +46,12 @@ jobs:
             .yarn
           persist-credentials: false
       - run: yarn workspaces focus @electron/gha-workflows
-      - name: Add labels
+      - name: Add labels and set issue type
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: add-labels
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
+          LOOKS_LIKE_BUG_REPORT: ${{ contains(github.event.issue.body, '# Expected Behavior') }}
         with:
           github-token: ${{ steps.generate-token.outputs.token }}
           script: |
@@ -68,6 +69,16 @@ jobs:
             const tree = fromMarkdown(process.env.ISSUE_BODY);
 
             const labels = [];
+
+            if (process.env.LOOKS_LIKE_BUG_REPORT === 'true') {
+              labels.push('bug :beetle:');
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                type: 'Bug',
+              });
+            }
 
             const electronVersion = select('heading:has(> text[value="Electron Version"]) + paragraph > text', tree)?.value.trim();
             if (electronVersion !== undefined) {

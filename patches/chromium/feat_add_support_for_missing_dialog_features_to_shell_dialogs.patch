@@ -16,7 +16,7 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index b31ecc3480370db866964e057ca1278a8f62553e..dfb32a6d9cf5606535dc87a82b15e8ea9e0d0ecd 100644
+index b31ecc3480370db866964e057ca1278a8f62553e..1a661f69e0b1b334fa00217e8d8110c8318ab897 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
 @@ -310,8 +310,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
@@ -47,15 +47,7 @@ index b31ecc3480370db866964e057ca1278a8f62553e..dfb32a6d9cf5606535dc87a82b15e8ea
    gtk_dialog_set_default_response(GTK_DIALOG(dialog), GTK_RESPONSE_CANCEL);
    SetGtkTransientForAura(dialog, parent, platform_);
    AddFilters(GTK_FILE_CHOOSER(dialog));
-@@ -480,6 +486,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
-     GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
-                                    *last_opened_path());
-   }
-+  gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), show_hidden());
-   return dialog;
- }
- 
-@@ -495,11 +502,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -495,11 +501,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -76,17 +68,16 @@ index b31ecc3480370db866964e057ca1278a8f62553e..dfb32a6d9cf5606535dc87a82b15e8ea
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -522,7 +533,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -522,7 +532,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
 -  gtk_file_chooser_set_select_multiple(chooser, FALSE);
 +  gtk_file_chooser_set_select_multiple(chooser, allow_multiple_selection());
-+  gtk_file_chooser_set_show_hidden(chooser, show_hidden());
    return dialog;
  }
  
-@@ -559,10 +571,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -559,10 +569,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    std::string title_string =
        !title.empty() ? title
                       : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
@@ -100,7 +91,7 @@ index b31ecc3480370db866964e057ca1278a8f62553e..dfb32a6d9cf5606535dc87a82b15e8ea
        kResponseTypeAccept);
    SetGtkTransientForAura(dialog, parent, platform_);
  
-@@ -588,9 +601,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -588,8 +599,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -109,11 +100,9 @@ index b31ecc3480370db866964e057ca1278a8f62553e..dfb32a6d9cf5606535dc87a82b15e8ea
 +    gtk_file_chooser_set_do_overwrite_confirmation(
 +        GTK_FILE_CHOOSER(dialog), show_overwrite_confirmation());
    }
-+  gtk_file_chooser_set_show_hidden(GTK_FILE_CHOOSER(dialog), show_hidden());
    return dialog;
  }
- 
-@@ -646,15 +660,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
+@@ -646,15 +657,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
  void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
      GtkWidget* dialog,
      int response_id) {
@@ -173,10 +162,10 @@ index e112fd4ee491820f73a376784e5ea39a6f46f165..777ae6ea77a31ef73f28095ec04f2c3c
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..4ac06587203d2d2adf1390d9256e537e8cf7b21d 100644
+index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..330c1143944b3456283cf3ba33aeb2d0b8a63c14 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
-@@ -224,6 +224,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
+@@ -224,6 +224,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
                    const GURL* caller = nullptr);
    bool HasMultipleFileTypeChoices();
  
@@ -189,7 +178,6 @@ index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..4ac06587203d2d2adf1390d9256e537e
 +  virtual void SetOverwriteConfirmationShown(bool is_shown) = 0;
 +
 +  // Set whether hidden files should be shown.
-+  virtual void SetHiddenShown(bool is_shown) = 0;
 +
 +  // Set whether multiple file/directory selections are allowed
 +  virtual void SetMultipleSelectionsAllowed(bool is_allowed) = 0;
@@ -199,10 +187,10 @@ index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..4ac06587203d2d2adf1390d9256e537e
    friend class base::RefCountedThreadSafe<SelectFileDialog>;
  
 diff --git a/ui/shell_dialogs/select_file_dialog_linux.cc b/ui/shell_dialogs/select_file_dialog_linux.cc
-index 4b540a7fcdf077640e6eab0249f23ccb35a0fcb1..1ca82e8c12d2c9af09ab5facdd9753e83fcc44e4 100644
+index 4b540a7fcdf077640e6eab0249f23ccb35a0fcb1..5b8ec04c5d612b035ff6b48063885dc6a65d193c 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux.cc
-@@ -37,4 +37,17 @@ bool SelectFileDialogLinux::CallDirectoryExistsOnUIThread(
+@@ -37,4 +37,14 @@ bool SelectFileDialogLinux::CallDirectoryExistsOnUIThread(
    return base::DirectoryExists(path);
  }
  
@@ -212,72 +200,54 @@ index 4b540a7fcdf077640e6eab0249f23ccb35a0fcb1..1ca82e8c12d2c9af09ab5facdd9753e8
 +void SelectFileDialogLinux::SetOverwriteConfirmationShown(bool is_shown) {
 +  show_overwrite_confirmation_ = is_shown;
 +}
-+void SelectFileDialogLinux::SetHiddenShown(bool is_shown) {
-+  show_hidden_ = is_shown;
-+}
 +void SelectFileDialogLinux::SetMultipleSelectionsAllowed(bool is_allowed) {
 +  allow_multiple_selection_ = is_allowed;
 +}
 +
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux.h b/ui/shell_dialogs/select_file_dialog_linux.h
-index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443cafff8bb 100644
+index 61683d0eddb04c494ca5e650e7d556b44968ec49..0e39a83664fe12dc844f433e32e44605ebaac1b1 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux.h
 +++ b/ui/shell_dialogs/select_file_dialog_linux.h
-@@ -33,6 +33,12 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
+@@ -33,6 +33,11 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
    // BaseShellDialog implementation.
    void ListenerDestroyed() override;
  
 +  // SelectFileDialog:
 +  void SetButtonLabel(const std::string& label) override;
 +  void SetOverwriteConfirmationShown(bool is_shown) override;
-+  void SetHiddenShown(bool is_shown) override;
 +  void SetMultipleSelectionsAllowed(bool is_allowed) override;
 +
   protected:
    explicit SelectFileDialogLinux(Listener* listener,
                                   std::unique_ptr<ui::SelectFilePolicy> policy);
-@@ -77,6 +83,11 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
+@@ -77,6 +82,10 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
      *last_opened_path_ = last_opened_path;
    }
  
 +  const std::string& button_label() { return button_label_; }
 +  bool show_overwrite_confirmation() { return show_overwrite_confirmation_; }
-+  bool show_hidden() { return show_hidden_; }
 +  bool allow_multiple_selection() { return allow_multiple_selection_; }
 +
   private:
    // The file filters.
    FileTypeInfo file_types_;
-@@ -92,6 +103,11 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
+@@ -92,6 +101,10 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinux : public SelectFileDialog {
    // file so that we can display future dialogs with the same starting path.
    static base::FilePath* last_saved_path_;
    static base::FilePath* last_opened_path_;
 +
 +  std::string button_label_;
 +  bool show_overwrite_confirmation_ = true;
-+  bool show_hidden_ = false;
 +  bool allow_multiple_selection_ = false;
  };
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index cf60f909cb2bed76024e3393ca858df15d73d0df..6a258bac924d12a81b4602ba702695cd64d3cfce 100644
+index cf60f909cb2bed76024e3393ca858df15d73d0df..189aa6236dcbd35e16674df385f7075eaf65ab74 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -22,9 +22,11 @@
- #include "components/dbus/xdg/portal.h"
- #include "components/dbus/xdg/portal_constants.h"
- #include "components/dbus/xdg/request.h"
-+#include "components/dbus/xdg/systemd.h"
- #include "dbus/message.h"
- #include "dbus/object_path.h"
- #include "dbus/object_proxy.h"
-+#include "electron/shell/browser/ui/file_dialog.h"
- #include "ui/aura/window_tree_host.h"
- #include "ui/base/l10n/l10n_util.h"
- #include "ui/gfx/native_ui_types.h"
-@@ -347,11 +349,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -347,11 +347,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
@@ -295,7 +265,7 @@ index cf60f909cb2bed76024e3393ca858df15d73d0df..6a258bac924d12a81b4602ba702695cd
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -364,6 +369,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -364,6 +367,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  

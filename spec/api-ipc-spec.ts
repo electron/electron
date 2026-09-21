@@ -1,4 +1,5 @@
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
+import { nativeImage } from 'electron/common';
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -6,11 +7,11 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen, startRemoteControlApp } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -65,6 +66,41 @@ describe('ipc module', () => {
       await done;
     });
 
+    it('receives a NativeImage response', async () => {
+      const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
+      ipcMain.handleOnce('test', () => image);
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg.result.toPNG()).to.deep.equal(image.toPNG());
+    });
+
+    it('receives a response from a handler that returns a lazy thenable', async () => {
+      // Promise subclasses such as this one only start their work when
+      // then() is called, so the reply must go through it.
+      class Lazy extends Promise<number> {
+        static get [Symbol.species]() {
+          return Promise;
+        }
+
+        started = false;
+        then(onFulfilled?: any, onRejected?: any): any {
+          this.started = true;
+          return Promise.resolve(3).then(onFulfilled, onRejected);
+        }
+      }
+      let returned: Lazy | undefined;
+      ipcMain.handleOnce('test', () => {
+        returned = new Lazy(() => {});
+        return returned;
+      });
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg).to.deep.equal({ result: 3 });
+      expect(returned?.started).to.equal(true);
+    });
+
     it('receives an error from a synchronous handler', async () => {
       ipcMain.handleOnce('test', () => {
         throw new Error('some error');
@@ -77,6 +113,14 @@ describe('ipc module', () => {
       );
       await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       await done;
+    });
+
+    it('receives an error when the handler result cannot be cloned', async () => {
+      ipcMain.handleOnce('test', () => ({ notCloneable() {} }));
+      const result = once(ipcMain, 'result');
+      await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+      const [, arg] = await result;
+      expect(arg.error).to.match(/could not be cloned/);
     });
 
     it('receives an error from an asynchronous handler', async () => {
@@ -92,6 +136,29 @@ describe('ipc module', () => {
       );
       await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       await done;
+    });
+
+    it('does not report an unhandled rejection for a handler that rejects', async () => {
+      let unhandled = false;
+      const onUnhandled = () => {
+        unhandled = true;
+      };
+      process.on('unhandledRejection', onUnhandled);
+      try {
+        // Rejected before it is returned: an async function that throws
+        // before its first await.
+        ipcMain.handleOnce('test', async () => {
+          throw new Error('some error');
+        });
+        const result = once(ipcMain, 'result');
+        await w.webContents.executeJavaScript(`(${rendererInvoke})()`);
+        const [, arg] = await result;
+        expect(arg.error).to.match(/some error/);
+        await new Promise(setImmediate);
+        expect(unhandled).to.equal(false);
+      } finally {
+        process.off('unhandledRejection', onUnhandled);
+      }
     });
 
     it('throws an error if no handler is registered', async () => {
@@ -633,6 +700,15 @@ describe('ipc module', () => {
         expect(ev.data).to.equal('hello');
       });
 
+      it('can send a NativeImage within the process', async () => {
+        const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
+        const { port1, port2 } = new MessageChannelMain();
+        port1.postMessage(image);
+        port2.start();
+        const [event] = await once(port2, 'message');
+        expect(event.data.toPNG()).to.deep.equal(image.toPNG());
+      });
+
       it('can pass one end to a WebContents', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -1167,7 +1243,7 @@ describe('ipc module', () => {
             w.destroy();
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(templatesCreated).to.be.below(messageCount / 2);

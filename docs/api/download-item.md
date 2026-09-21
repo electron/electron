@@ -139,6 +139,22 @@ Returns `string` - The files mime type.
 
 Returns `boolean` - Whether the download has user gesture.
 
+#### `downloadItem.getInitiatorOrigin()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53685
+```
+-->
+
+Returns `string` - The origin that started the download (for example
+`https://example.com`, or `null` for an opaque origin), or an empty string if
+the download was not started by web content (for example
+`webContents.downloadURL()`). Use this rather than `getURL()` or the
+`webContents` to decide whose download it is: the URL is chosen by the
+initiator and the `webContents` is the whole tab.
+
 #### `downloadItem.getFilename()`
 
 Returns `string` - The file name of the download item.

@@ -53,7 +53,6 @@ class BrowserWindow : public BaseWindow,
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowIsKeyChanged(bool is_key) override;
-  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
   // BaseWindow:
   void OnWindowBlur() override;
@@ -76,11 +75,12 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+  WebContents* GetLiveWebContents() const;
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
-  base::WeakPtr<api::WebContents> api_web_contents_;
+  cppgc::WeakPersistent<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
 };

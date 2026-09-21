@@ -6,11 +6,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { expectDeprecationMessages } from './lib/warning-helpers';
+import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import { expectDeprecationMessages } from './lib/warning-helpers.ts';
 
 describe('nativeImage module', () => {
-  const fixturesPath = path.join(__dirname, 'fixtures');
+  const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
   const imageLogo = {
     path: path.join(fixturesPath, 'assets', 'logo.png'),
@@ -242,6 +242,19 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('toJPEG()', () => {
+    it('encodes an image that only has a non-1x representation', () => {
+      const image = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      const jpeg = image.toJPEG(90);
+      expect(jpeg).to.not.be.empty();
+      expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({ width: 8, height: 6 });
+    });
+  });
+
   describe('toPNG()', () => {
     it('returns a buffer at 1x scale factor by default', () => {
       const imageData = imageLogo;
@@ -277,8 +290,8 @@ describe('nativeImage module', () => {
       expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(__dirname).isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(__filename).isEmpty()).to.be.true();
+      expect(nativeImage.createFromPath(import.meta.dirname).isEmpty()).to.be.true();
+      expect(nativeImage.createFromPath(import.meta.filename).isEmpty()).to.be.true();
     });
 
     it('loads images from paths relative to the current working directory', () => {

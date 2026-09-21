@@ -88,13 +88,14 @@ jobs:
             - '.github/dependabot.yml'
             - '.github/faraday.yml'
             - README.md
+            - REVIEW.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           pgo:
             - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,REVIEW.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
           # Changes that can affect compiled native code (C/C++/Objective-C,
           # GN build config, patches, and the Chromium checkout inputs).
           # Currently gates clang-tidy; designed to be reused by future
@@ -326,6 +327,13 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   # Build Jobs - These cascade into testing jobs
+  #
+  # Pull requests run a reduced macOS test matrix: the x64 legs and the mas
+  # legs each run one shard over an allowlist (script/macos-*-spec-allowlist.txt)
+  # while darwin arm64 runs the whole suite. The whole suite runs on every leg
+  # for pushes to main and release branches, for roller/ PRs and for PRs
+  # carrying the run-full-macos label (labels are read from the event that
+  # started the run, so add the label before the next push).
   macos-x64:
     permissions:
       contents: read
@@ -343,6 +351,7 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
+      full-macos-tests: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'roller/') || contains(github.event.pull_request.labels.*.name, 'run-full-macos') }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
@@ -379,6 +388,7 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
+      full-macos-tests: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'roller/') || contains(github.event.pull_request.labels.*.name, 'run-full-macos') }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}

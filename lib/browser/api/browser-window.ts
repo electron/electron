@@ -3,12 +3,7 @@ import type { BrowserWindow as BWT } from 'electron/main';
 
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
-Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
-
 BrowserWindow.prototype._init = function (this: BWT) {
-  // Call parent class's _init.
-  (BaseWindow.prototype as any)._init.call(this);
-
   // Avoid recursive require.
   const { app } = require('electron');
 
@@ -67,22 +62,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
     if (unresponsiveEvent) clearTimeout(unresponsiveEvent);
     unresponsiveEvent = null;
   });
-
-  // Subscribe to visibilityState changes and pass to renderer process.
-  let isVisible = this.isVisible() && !this.isMinimized();
-  const visibilityChanged = () => {
-    const newState = this.isVisible() && !this.isMinimized();
-    if (isVisible !== newState) {
-      isVisible = newState;
-      const visibilityState = isVisible ? 'visible' : 'hidden';
-      this.webContents.emit('-window-visibility-change', visibilityState);
-    }
-  };
-
-  const visibilityEvents = ['show', 'hide', 'minimize', 'maximize', 'restore'];
-  for (const event of visibilityEvents) {
-    this.on(event as any, visibilityChanged);
-  }
 
   this._browserViews = [];
 

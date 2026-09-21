@@ -14,7 +14,100 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Breaking API Changes (46.0)
+
+### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
+
+`child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the
+child had not exited. It now matches Node's `child_process.kill()`: it sends
+`SIGTERM` on POSIX (or terminates the process on Windows) and returns, and a
+child that handles `SIGTERM` decides when, or whether, to exit. A child that
+ignores `SIGTERM` is no longer terminated by `kill()`; have it exit from its
+`SIGTERM` handler instead.
+
+### Removed: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods, deprecated in Electron 45, have been
+removed along with Chromium's synchronous OSCrypt backend. Use
+`safeStorage.isAsyncEncryptionAvailable()`, `safeStorage.encryptStringAsync()`
+and `safeStorage.decryptStringAsync()` instead. They use the same per-platform
+key stores, so data encrypted with `safeStorage.encryptString()` by earlier
+versions of Electron decrypts with `safeStorage.decryptStringAsync()`.
+
+### Behavior Changed: captured page images have the page's scale factor
+
+The [`NativeImage`](api/native-image.md) returned by `webContents.capturePage()`
+(and `win.capturePage()` / `<webview>.capturePage()`), passed to the offscreen
+`paint` event, and passed to the `webContents.beginFrameSubscription()`
+callback now has the page's device scale factor. These images used to always
+be marked as 1x, so on a HiDPI display, or with
+`webPreferences.offscreen.deviceScaleFactor`, `image.getSize()` returned pixels.
+It now returns DIPs, and `image.crop()` and `image.resize()` take DIPs. The
+pixel data returned by `toBitmap()`, `toPNG()`, `toJPEG()` and `toDataURL()` is
+unchanged.
+
+```js
+const image = await win.webContents.capturePage()
+const [scaleFactor] = image.getScaleFactors()
+const { width, height } = image.getSize() // DIPs
+console.log(width * scaleFactor, height * scaleFactor) // pixels, as before
+```
+
+### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+
+With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
+the same process as the main frame used to get Node.js integration even though
+the iframe itself had none. Workers now only get Node.js integration when the
+frame that creates them has it: the main frame, or any frame when
+`nodeIntegrationInSubFrames` is enabled.
+
+### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+
+A `chrome-extension://` document used to receive the window's preload script
+(and session preload scripts) wherever it was embedded. It now only does so
+when it is a top-level frame or is hosted inside the DevTools front-end (a
+`devtools_page` or panel); an extension frame embedded in an ordinary page is
+treated like any other subframe and follows `nodeIntegrationInSubFrames`.
+
 ## Breaking API Changes (45.0)
+
+### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
+
+Sandboxed preload scripts (the default since Electron 20) and service worker preload
+scripts no longer have access to the `events`, `timers` and `url` Node.js module
+shims through `require`, and are no longer run with `Buffer`, `setImmediate` and
+`clearImmediate` in scope. These were browser polyfills bundled into every sandboxed
+renderer rather than the Node.js implementations. `require` in a sandboxed preload
+now only loads `electron` (and `electron/renderer`, `electron/common`); `process`
+and `global` are still provided.
+
+Use the equivalent Web APIs instead, or bundle the polyfill you need into your
+preload script:
+
+| Removed | Use instead |
+| --- | --- |
+| `require('events')` / `EventEmitter` | `EventTarget` and `Event`, or bundle the `events` package |
+| `require('timers')`, `setImmediate`, `clearImmediate` | `setTimeout` / `clearTimeout`, `queueMicrotask` |
+| `require('url')` | `URL`, `URLSearchParams` |
+| `Buffer` | `Uint8Array`, `TextEncoder` / `TextDecoder`, `atob` / `btoa`, or bundle the `buffer` package |
+
+`ipcRenderer` and the preload's `process` object keep their `EventEmitter` methods
+(`on`, `once`, `off`, `emit`, `removeListener`, `removeAllListeners`, ...).
+Preload scripts for renderers with `sandbox: false` are unaffected and continue to
+have the full Node.js environment.
+
+### Behavior Changed: `ipcRenderer` and `process` in sandboxed preload scripts use a native `EventEmitter`
+
+In sandboxed preload scripts and service worker preload scripts, `ipcRenderer`,
+`webFrame` and the preload's `process` object now inherit from an `EventEmitter`
+implemented natively by Electron instead of one from a bundled copy of the `events`
+npm package. It provides the same instance API as before (`on`, `once`, `off`,
+`emit`, `addListener`, `removeListener`, `removeAllListeners`, `prependListener`,
+`prependOnceListener`, `listeners`, `rawListeners`, `listenerCount`, `eventNames`,
+`setMaxListeners`, `getMaxListeners`, the `newListener` / `removeListener` events and
+the max-listener warning) with the same behavior. The static helpers that were only
+reachable through `require('events')` (`once`, `listenerCount`, `init`) are not
+provided.
 
 ### Removed: `contentTracing.enableHeapProfiling()`
 
@@ -120,6 +213,28 @@ win.webContents.setWindowOpenHandler(() => ({
 
 Setting `nodeIntegration: true` in the override also makes the child unsandboxed and has
 the same effect.
+
+### Deprecated: `safeStorage.isEncryptionAvailable()`, `safeStorage.encryptString()` and `safeStorage.decryptString()`
+
+The synchronous `safeStorage` methods are deprecated and will be removed in
+Electron 46, following Chromium's removal of the synchronous OSCrypt backend
+they are built on. Use the asynchronous methods instead, which use the same
+per-platform key stores. Data encrypted with `safeStorage.encryptString()` can
+be decrypted with `safeStorage.decryptStringAsync()`.
+
+```js
+// Deprecated
+if (safeStorage.isEncryptionAvailable()) {
+  const encrypted = safeStorage.encryptString('secret')
+  const decrypted = safeStorage.decryptString(encrypted)
+}
+
+// Replace with
+if (await safeStorage.isAsyncEncryptionAvailable()) {
+  const encrypted = await safeStorage.encryptStringAsync('secret')
+  const { result: decrypted } = await safeStorage.decryptStringAsync(encrypted)
+}
+```
 
 ## Breaking API Changes (44.0)
 
@@ -297,7 +412,7 @@ now reached through a new `clipboard.selection` sub-namespace.
 ```js
 const { clipboard, ClipboardItem } = require('electron')
 
-function getClipboardToUse (clipboardType) {
+function getClipboardToUse(clipboardType) {
   if (clipboardType === 'selection') {
     return clipboard.selection
   } else {
@@ -305,10 +420,10 @@ function getClipboardToUse (clipboardType) {
   }
 }
 
-async function readClipboard (format, clipboardType) {
+async function readClipboard(format, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   const clipboardItems = await clipboardToUse.read()
-  const foundItem = clipboardItems.find(clipboardItem => {
+  const foundItem = clipboardItems.find((clipboardItem) => {
     return clipboardItem.types.includes(format)
   })
   if (foundItem) {
@@ -318,7 +433,7 @@ async function readClipboard (format, clipboardType) {
   }
 }
 
-async function writeClipboard (format, text, clipboardType) {
+async function writeClipboard(format, text, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
@@ -327,10 +442,10 @@ async function writeClipboard (format, text, clipboardType) {
   ])
 }
 
-async function readBuffer (format, clipboardType) {
+async function readBuffer(format, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   const clipboardItems = await clipboardToUse.read()
-  const foundItem = clipboardItems.find(clipboardItem => {
+  const foundItem = clipboardItems.find((clipboardItem) => {
     return clipboardItem.types.includes(format)
   })
   if (foundItem) {
@@ -340,7 +455,7 @@ async function readBuffer (format, clipboardType) {
   }
 }
 
-async function writeBuffer (format, buffer, clipboardType) {
+async function writeBuffer(format, buffer, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
@@ -349,7 +464,7 @@ async function writeBuffer (format, buffer, clipboardType) {
   ])
 }
 
-async function availableFormats (clipboardType) {
+async function availableFormats(clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   const clipboardItems = await clipboardToUse.read()
   const clipboardFormats = []
@@ -363,7 +478,7 @@ async function availableFormats (clipboardType) {
   return clipboardFormats
 }
 
-async function has (format, clipboardType, isRawFormat) {
+async function has(format, clipboardType, isRawFormat) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   let mimeType = format
   if (isRawFormat) {
@@ -373,10 +488,10 @@ async function has (format, clipboardType, isRawFormat) {
 }
 
 const BOOKMARK_MIME_TYPE = 'electron application/bookmark'
-async function readBookmark (clipboardType) {
+async function readBookmark(clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   const clipboardItems = await clipboardToUse.read()
-  const foundItem = clipboardItems.find(clipboardItem => {
+  const foundItem = clipboardItems.find((clipboardItem) => {
     return clipboardItem.types.includes(BOOKMARK_MIME_TYPE)
   })
   if (foundItem) {
@@ -386,7 +501,7 @@ async function readBookmark (clipboardType) {
   }
 }
 
-async function writeBookmark (title, url, clipboardType) {
+async function writeBookmark(title, url, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
@@ -396,41 +511,39 @@ async function writeBookmark (title, url, clipboardType) {
 }
 
 const FIND_TEXT_MIME_TYPE = 'electron application/findtext'
-async function readFindText () {
+async function readFindText() {
   return readClipboard(FIND_TEXT_MIME_TYPE)
 }
 
-async function writeFindText (text) {
+async function writeFindText(text) {
   return writeClipboard(FIND_TEXT_MIME_TYPE, text)
 }
 
 const HTML_MIME_TYPE = 'text/html'
-async function readHTML (clipboardType) {
+async function readHTML(clipboardType) {
   return readClipboard(HTML_MIME_TYPE, clipboardType)
 }
 
-async function writeHTML (markup, clipboardType) {
+async function writeHTML(markup, clipboardType) {
   return writeClipboard(HTML_MIME_TYPE, markup, clipboardType)
 }
 
 const PNG_MIME_TYPE = 'image/png'
 const JPEG_MIME_TYPE = 'image/jpeg'
-async function readImage (clipboardType) {
+async function readImage(clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   const clipboardItems = await clipboardToUse.read()
   // Look for PNG first
-  let foundItem = clipboardItems.find(clipboardItem => {
+  let foundItem = clipboardItems.find((clipboardItem) => {
     return clipboardItem.types.includes(PNG_MIME_TYPE)
   })
   if (!foundItem) {
-    foundItem = clipboardItems.find(clipboardItem => {
+    foundItem = clipboardItems.find((clipboardItem) => {
       return clipboardItem.types.includes(JPEG_MIME_TYPE)
     })
   }
   if (foundItem) {
-    const mimeType = foundItem.types.includes(PNG_MIME_TYPE)
-      ? PNG_MIME_TYPE
-      : JPEG_MIME_TYPE
+    const mimeType = foundItem.types.includes(PNG_MIME_TYPE) ? PNG_MIME_TYPE : JPEG_MIME_TYPE
     // getType() resolves to a Blob; convert it to a Buffer for nativeImage.
     const blob = await foundItem.getType(mimeType)
     const buffer = Buffer.from(await blob.arrayBuffer())
@@ -438,7 +551,7 @@ async function readImage (clipboardType) {
   }
 }
 
-async function writeImage (image, clipboardType) {
+async function writeImage(image, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
@@ -448,11 +561,11 @@ async function writeImage (image, clipboardType) {
 }
 
 const RTF_MIME_TYPE = 'text/rtf'
-async function readRTF (clipboardType) {
+async function readRTF(clipboardType) {
   return readClipboard(RTF_MIME_TYPE, clipboardType)
 }
 
-async function writeRTF (text, clipboardType) {
+async function writeRTF(text, clipboardType) {
   return writeClipboard(RTF_MIME_TYPE, text, clipboardType)
 }
 ```
@@ -689,14 +802,12 @@ Per [Chromium update](https://source.chromium.org/chromium/chromium/src/+/ad17e8
 
 Electron's `desktopCapturer` will create a dead audio stream if the new permission is absent however no errors or warnings will occur. This is partially a side-effect of Chromium not falling back to the older `Screen & System Audio Recording` permissions system if the new system fails.
 
-To restore previous behavior:
+To restore previous behavior (Electron 39 through 44 only; the flag was removed upstream in
+Electron 45 and no longer has any effect):
 
 ```js
-// main.js (right beneath your require/import statments)
-app.commandLine.appendSwitch(
-  'disable-features',
-  'MacCatapLoopbackAudioForScreenShare'
-)
+// main.js (right beneath your require/import statements)
+app.commandLine.appendSwitch('disable-features', 'MacCatapLoopbackAudioForScreenShare')
 ```
 
 ### Behavior Changed: shared texture OSR `paint` event data structure
@@ -1015,7 +1126,9 @@ protocol.registerFileProtocol('other', () => {
 })
 
 const mainWindow = new BrowserWindow()
-mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://C:\\myapp' })
+mainWindow.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+  baseURLForDataURL: 'other://C:\\myapp'
+})
 mainWindow.loadURL('other://C:\\myapp\\index.html')
 
 // Replace with
@@ -1093,7 +1206,7 @@ electron.showFilePath(file)
 const { contextBridge, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
-  showFilePath (file) {
+  showFilePath(file) {
     // It's best not to expose the full file path to the web content if
     // possible.
     const path = webUtils.getPathForFile(file)
@@ -1232,10 +1345,14 @@ Use the new `render-process-gone` event instead.
 
 ```js
 // Removed
-app.on('renderer-process-crashed', (event, webContents, killed) => { /* ... */ })
+app.on('renderer-process-crashed', (event, webContents, killed) => {
+  /* ... */
+})
 
 // Replace with
-app.on('render-process-gone', (event, webContents, details) => { /* ... */ })
+app.on('render-process-gone', (event, webContents, details) => {
+  /* ... */
+})
 ```
 
 ### Removed: `crashed` event on `WebContents` and `<webview>`
@@ -1245,12 +1362,20 @@ Use the new `render-process-gone` event instead.
 
 ```js
 // Removed
-win.webContents.on('crashed', (event, killed) => { /* ... */ })
-webview.addEventListener('crashed', (event) => { /* ... */ })
+win.webContents.on('crashed', (event, killed) => {
+  /* ... */
+})
+webview.addEventListener('crashed', (event) => {
+  /* ... */
+})
 
 // Replace with
-win.webContents.on('render-process-gone', (event, details) => { /* ... */ })
-webview.addEventListener('render-process-gone', (event) => { /* ... */ })
+win.webContents.on('render-process-gone', (event, details) => {
+  /* ... */
+})
+webview.addEventListener('render-process-gone', (event) => {
+  /* ... */
+})
 ```
 
 ### Removed: `gpu-process-crashed` event on `app`
@@ -1260,10 +1385,14 @@ Use the new `child-process-gone` event instead.
 
 ```js
 // Removed
-app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
+app.on('gpu-process-crashed', (event, killed) => {
+  /* ... */
+})
 
 // Replace with
-app.on('child-process-gone', (event, details) => { /* ... */ })
+app.on('child-process-gone', (event, details) => {
+  /* ... */
+})
 ```
 
 ## Breaking API Changes (28.0)
@@ -1336,10 +1465,14 @@ Use the new `render-process-gone` event instead.
 
 ```js
 // Deprecated
-app.on('renderer-process-crashed', (event, webContents, killed) => { /* ... */ })
+app.on('renderer-process-crashed', (event, webContents, killed) => {
+  /* ... */
+})
 
 // Replace with
-app.on('render-process-gone', (event, webContents, details) => { /* ... */ })
+app.on('render-process-gone', (event, webContents, details) => {
+  /* ... */
+})
 ```
 
 ### Deprecated: `params.inputFormType` property on `context-menu` on `WebContents`
@@ -1355,12 +1488,20 @@ Use the new `render-process-gone` event instead.
 
 ```js
 // Deprecated
-win.webContents.on('crashed', (event, killed) => { /* ... */ })
-webview.addEventListener('crashed', (event) => { /* ... */ })
+win.webContents.on('crashed', (event, killed) => {
+  /* ... */
+})
+webview.addEventListener('crashed', (event) => {
+  /* ... */
+})
 
 // Replace with
-win.webContents.on('render-process-gone', (event, details) => { /* ... */ })
-webview.addEventListener('render-process-gone', (event) => { /* ... */ })
+win.webContents.on('render-process-gone', (event, details) => {
+  /* ... */
+})
+webview.addEventListener('render-process-gone', (event) => {
+  /* ... */
+})
 ```
 
 ### Deprecated: `gpu-process-crashed` event on `app`
@@ -1370,10 +1511,14 @@ Use the new `child-process-gone` event instead.
 
 ```js
 // Deprecated
-app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
+app.on('gpu-process-crashed', (event, killed) => {
+  /* ... */
+})
 
 // Replace with
-app.on('child-process-gone', (event, details) => { /* ... */ })
+app.on('child-process-gone', (event, details) => {
+  /* ... */
+})
 ```
 
 ## Breaking API Changes (27.0)
@@ -1402,11 +1547,17 @@ Use the new `updated` event on the `nativeTheme` module instead.
 
 ```js
 // Removed
-systemPreferences.on('inverted-color-scheme-changed', () => { /* ... */ })
-systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
+systemPreferences.on('inverted-color-scheme-changed', () => {
+  /* ... */
+})
+systemPreferences.on('high-contrast-color-scheme-changed', () => {
+  /* ... */
+})
 
 // Replace with
-nativeTheme.on('updated', () => { /* ... */ })
+nativeTheme.on('updated', () => {
+  /* ... */
+})
 ```
 
 ### Removed: Some `window.setVibrancy` options on macOS
@@ -1627,13 +1778,13 @@ const imagePath = path.join('path', 'to', 'capybara.png')
 
 // Scaling up a smaller image.
 const upSize = { width: 256, height: 256 }
-nativeImage.createThumbnailFromPath(imagePath, upSize).then(result => {
+nativeImage.createThumbnailFromPath(imagePath, upSize).then((result) => {
   console.log(result.getSize()) // { width: 256, height: 256 }
 })
 
 // Scaling down a larger image.
 const downSize = { width: 64, height: 64 }
-nativeImage.createThumbnailFromPath(imagePath, downSize).then(result => {
+nativeImage.createThumbnailFromPath(imagePath, downSize).then((result) => {
   console.log(result.getSize()) // { width: 64, height: 64 }
 })
 ```
@@ -1644,7 +1795,7 @@ Previous Behavior (on Windows):
 // a 128x128 image
 const imagePath = path.join('path', 'to', 'capybara.png')
 const size = { width: 256, height: 256 }
-nativeImage.createThumbnailFromPath(imagePath, size).then(result => {
+nativeImage.createThumbnailFromPath(imagePath, size).then((result) => {
   console.log(result.getSize()) // { width: 128, height: 128 }
 })
 ```
@@ -1699,13 +1850,13 @@ const w = new BrowserWindow({ show: false })
 
 // Removed in Electron 23
 w.webContents.incrementCapturerCount()
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
   w.webContents.decrementCapturerCount()
 })
 
 // Replace with
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
 })
 ```
@@ -1720,13 +1871,13 @@ const w = new BrowserWindow({ show: false })
 
 // Removed in Electron 23
 w.webContents.incrementCapturerCount()
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
   w.webContents.decrementCapturerCount()
 })
 
 // Replace with
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
 })
 ```
@@ -1743,13 +1894,13 @@ const w = new BrowserWindow({ show: false })
 
 // Removed in Electron 23
 w.webContents.incrementCapturerCount()
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
   w.webContents.decrementCapturerCount()
 })
 
 // Replace with
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
 })
 ```
@@ -1764,13 +1915,13 @@ const w = new BrowserWindow({ show: false })
 
 // Removed in Electron 23
 w.webContents.incrementCapturerCount()
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
   w.webContents.decrementCapturerCount()
 })
 
 // Replace with
-w.capturePage().then(image => {
+w.capturePage().then((image) => {
   console.log(image.toDataURL())
 })
 ```
@@ -1886,30 +2037,33 @@ address changes upstream that made our previous implementation untenable and rif
 // Main process
 const { webContents } = require('electron')
 
-webContents.printToPDF({
-  landscape: true,
-  displayHeaderFooter: true,
-  printBackground: true,
-  scale: 2,
-  pageSize: 'Ledger',
-  margins: {
-    top: 2,
-    bottom: 2,
-    left: 2,
-    right: 2
-  },
-  pageRanges: '1-5, 8, 11-13',
-  headerTemplate: '<h1>Title</h1>',
-  footerTemplate: '<div><span class="pageNumber"></span></div>',
-  preferCSSPageSize: true
-}).then(data => {
-  fs.writeFile(pdfPath, data, (error) => {
-    if (error) throw error
-    console.log(`Wrote PDF successfully to ${pdfPath}`)
+webContents
+  .printToPDF({
+    landscape: true,
+    displayHeaderFooter: true,
+    printBackground: true,
+    scale: 2,
+    pageSize: 'Ledger',
+    margins: {
+      top: 2,
+      bottom: 2,
+      left: 2,
+      right: 2
+    },
+    pageRanges: '1-5, 8, 11-13',
+    headerTemplate: '<h1>Title</h1>',
+    footerTemplate: '<div><span class="pageNumber"></span></div>',
+    preferCSSPageSize: true
   })
-}).catch(error => {
-  console.log(`Failed to write PDF to ${pdfPath}: `, error)
-})
+  .then((data) => {
+    fs.writeFile(pdfPath, data, (error) => {
+      if (error) throw error
+      console.log(`Wrote PDF successfully to ${pdfPath}`)
+    })
+  })
+  .catch((error) => {
+    console.log(`Failed to write PDF to ${pdfPath}: `, error)
+  })
 ```
 
 ## Breaking API Changes (20.0)
@@ -1981,10 +2135,7 @@ If you need this functionality, it can be replaced as follows:
 // Main process
 const { ipcMain, desktopCapturer } = require('electron')
 
-ipcMain.handle(
-  'DESKTOP_CAPTURER_GET_SOURCES',
-  (event, opts) => desktopCapturer.getSources(opts)
-)
+ipcMain.handle('DESKTOP_CAPTURER_GET_SOURCES', (event, opts) => desktopCapturer.getSources(opts))
 ```
 
 ```js
@@ -2466,7 +2617,9 @@ The APIs are now synchronous and the optional callback is no longer needed.
 
 ```js
 // Deprecated
-protocol.unregisterProtocol(scheme, () => { /* ... */ })
+protocol.unregisterProtocol(scheme, () => {
+  /* ... */
+})
 // Replace with
 protocol.unregisterProtocol(scheme)
 ```
@@ -2495,7 +2648,9 @@ The APIs are now synchronous and the optional callback is no longer needed.
 
 ```js
 // Deprecated
-protocol.registerFileProtocol(scheme, handler, () => { /* ... */ })
+protocol.registerFileProtocol(scheme, handler, () => {
+  /* ... */
+})
 // Replace with
 protocol.registerFileProtocol(scheme, handler)
 ```
@@ -2510,7 +2665,9 @@ and `protocol.isProtocolIntercepted` instead.
 
 ```js
 // Deprecated
-protocol.isProtocolHandled(scheme).then(() => { /* ... */ })
+protocol.isProtocolHandled(scheme).then(() => {
+  /* ... */
+})
 // Replace with
 const isRegistered = protocol.isProtocolRegistered(scheme)
 const isIntercepted = protocol.isProtocolIntercepted(scheme)
@@ -2727,11 +2884,17 @@ Use the new `updated` event on the `nativeTheme` module instead.
 
 ```js
 // Deprecated
-systemPreferences.on('inverted-color-scheme-changed', () => { /* ... */ })
-systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
+systemPreferences.on('inverted-color-scheme-changed', () => {
+  /* ... */
+})
+systemPreferences.on('high-contrast-color-scheme-changed', () => {
+  /* ... */
+})
 
 // Replace with
-nativeTheme.on('updated', () => { /* ... */ })
+nativeTheme.on('updated', () => {
+  /* ... */
+})
 ```
 
 ### Deprecated: methods in `systemPreferences`
@@ -2814,13 +2977,11 @@ webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
 webFrame.setIsolatedWorldHumanReadableName(worldId, name)
 webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)
 // Replace with
-webFrame.setIsolatedWorldInfo(
-  worldId,
-  {
-    securityOrigin: 'some_origin',
-    name: 'human_readable_name',
-    csp: 'content_security_policy'
-  })
+webFrame.setIsolatedWorldInfo(worldId, {
+  securityOrigin: 'some_origin',
+  name: 'human_readable_name',
+  csp: 'content_security_policy'
+})
 ```
 
 ### Removed: `marked` property on `getBlinkMemoryInfo`
@@ -3034,13 +3195,11 @@ webFrame.setIsolatedWorldContentSecurityPolicy(worldId, csp)
 webFrame.setIsolatedWorldHumanReadableName(worldId, name)
 webFrame.setIsolatedWorldSecurityOrigin(worldId, securityOrigin)
 // Replace with
-webFrame.setIsolatedWorldInfo(
-  worldId,
-  {
-    securityOrigin: 'some_origin',
-    name: 'human_readable_name',
-    csp: 'content_security_policy'
-  })
+webFrame.setIsolatedWorldInfo(worldId, {
+  securityOrigin: 'some_origin',
+  name: 'human_readable_name',
+  csp: 'content_security_policy'
+})
 ```
 
 ### API Changed: `webFrame.setSpellCheckProvider` now takes an asynchronous callback
@@ -3057,7 +3216,7 @@ webFrame.setSpellCheckProvider('en-US', true, {
 // Replace with
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck: (words, callback) => {
-    callback(words.filter(text => spellchecker.isMisspelled(text)))
+    callback(words.filter((text) => spellchecker.isMisspelled(text)))
   }
 })
 ```
@@ -3309,8 +3468,12 @@ webview.setAttribute('guestinstance', instanceId)
 // There is no replacement for this API
 
 // Keyboard listeners no longer work on webview tag
-webview.onkeydown = () => { /* handler */ }
-webview.onkeyup = () => { /* handler */ }
+webview.onkeydown = () => {
+  /* handler */
+}
+webview.onkeyup = () => {
+  /* handler */
+}
 ```
 
 ### Node Headers URL
