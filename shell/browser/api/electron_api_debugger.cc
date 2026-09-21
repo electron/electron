@@ -75,8 +75,10 @@ class Debugger::AgentHostLifecycle final
 
   bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
   void OnBeforeMicrotasksRunnerDispose() override {
+    cppgc::Persistent<Debugger> debugger(debugger_.Get());
     debugger_.Clear();
-    Detach();
+    if (Detach() && debugger)
+      debugger->AgentHostClosed();
   }
 
   void AgentHostClosed(DevToolsAgentHost* agent_host) override {

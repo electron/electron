@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { emittedUntil } from './lib/events-helpers';
-import { listen, waitUntil } from './lib/spec-helpers';
+import { listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('debugger module', () => {
@@ -93,6 +93,28 @@ describe('debugger module', () => {
       // the view pinned at the emulated size.
       w.webContents.debugger.detach();
       await waitUntil(async () => (await innerSize()) !== '200x150');
+    });
+
+    it('fires detach event for a webContents that is still attached at quit', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      await rc.remotely(async () => {
+        const { app, webContents } = require('electron');
+        const contents = (webContents as any).create();
+        await contents.loadURL('about:blank');
+        contents.debugger.on('detach', (_event: unknown, reason: string) => {
+          process.stdout.write(`debugger-detach: ${reason}\n`);
+        });
+        contents.debugger.attach();
+        (globalThis as any).contents = contents;
+        setImmediate(() => app.quit());
+      });
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(stdout).to.contain('debugger-detach: target closed');
     });
   });
 
