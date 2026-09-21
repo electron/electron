@@ -130,8 +130,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("exitImmediately", &ExitImmediately);
 #if DCHECK_IS_ON()
   dict.SetMethod("getJs2cCodeCacheStatus", &GetJs2cCodeCacheStatus);
-  dict.SetMethod("setIpcSerializationBufferLimitForTesting",
-                 &electron::SetIpcSerializationBufferLimitForTesting);
 #endif
 }
 
