@@ -15,6 +15,7 @@
 #include "gin/converter.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/process_util.h"
 #include "shell/common/serialized_value.h"
 #include "skia/public/mojom/bitmap.mojom.h"
@@ -40,6 +41,12 @@ namespace {
 constexpr uint8_t kNativeImageTag = 'i';
 constexpr uint8_t kTrailerOffsetTag = 0xFE;
 constexpr uint8_t kVersionTag = 0xFF;
+
+bool IsElectronApiWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
+  return object->IsApiWrapper() &&
+         v8::Object::Unwrap<v8::Object::Wrappable>(isolate, object,
+                                                   kElectronWrappableTagRange);
+}
 
 }  // namespace
 
@@ -121,6 +128,15 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     heap_ = {};
     transport_ = {};
     capacity_ = 0;
+  }
+
+  bool HasCustomHostObject(v8::Isolate* isolate) override { return true; }
+
+  v8::Maybe<bool> IsHostObject(v8::Isolate* isolate,
+                               v8::Local<v8::Object> object) override {
+    if (IsElectronApiWrapper(isolate, object))
+      return v8::Just(true);
+    return v8::ValueSerializer::Delegate::IsHostObject(isolate, object);
   }
 
   v8::Maybe<bool> WriteHostObject(v8::Isolate* isolate,

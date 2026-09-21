@@ -72,28 +72,6 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
 
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
-                                gin_helper::DeprecatedWrappable<T>* object,
-                                const std::string_view method_name,
-                                Args&&... args) {
-  v8::EscapableHandleScope scope(isolate);
-  v8::Local<v8::Object> v8_object;
-  if (object->GetWrapper(isolate).ToLocal(&v8_object))
-    return scope.Escape(CustomEmit(isolate, v8_object, method_name,
-                                   std::forward<Args>(args)...));
-  else
-    return {};
-}
-
-template <typename T, typename... Args>
-v8::Local<v8::Value> CallMethod(gin_helper::DeprecatedWrappable<T>* object,
-                                const std::string_view method_name,
-                                Args&&... args) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  return CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
-}
-
-template <typename T, typename... Args>
-v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
                                 gin::Wrappable<T>* object,
                                 const std::string_view method_name,
                                 Args&&... args) {
