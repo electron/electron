@@ -266,7 +266,7 @@ With `@electron/osx-sign`, you can set custom entitlements per file as such:
 ```js @ts-nocheck
 const { signAsync } = require('@electron/osx-sign')
 
-function getEntitlementsForFile (filePath) {
+function getEntitlementsForFile(filePath) {
   if (filePath.startsWith('my-path-1')) {
     return './my-path-1.plist'
   } else {
