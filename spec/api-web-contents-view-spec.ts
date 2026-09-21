@@ -635,6 +635,8 @@ describe('WebContentsView', () => {
         this.skip();
       }
 
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const w = new BaseWindow({ show: true, width: 400, height: 400 });
 
       const bottom = new WebContentsView({
