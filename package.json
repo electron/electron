@@ -32,7 +32,7 @@
     "semver": "^7.6.3",
     "stream-json": "^1.9.1",
     "tap-xunit": "^2.4.1",
-    "typescript": "^5.8.3",
+    "typescript": "^7.0.2",
     "yaml": "^2.8.1"
   },
   "private": true,
