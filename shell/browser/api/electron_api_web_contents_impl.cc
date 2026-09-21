@@ -29,23 +29,18 @@ void WebContents::DetachFromOuterFrame() {
 }
 
 OffScreenWebContentsView* WebContents::GetOffScreenWebContentsView() const {
-  if (IsOffScreen()) {
-    const auto* impl =
-        static_cast<const content::WebContentsImpl*>(web_contents());
-    return static_cast<OffScreenWebContentsView*>(impl->GetView());
-  } else {
-    return nullptr;
-  }
+  // A clone of an offscreen contents keeps the type but gets a platform view.
+  return IsOffScreen()
+             ? OffScreenWebContentsView::FromWebContents(web_contents())
+             : nullptr;
 }
 
 OffScreenRenderWidgetHostView* WebContents::GetOffScreenRenderWidgetHostView()
     const {
-  if (IsOffScreen()) {
-    return static_cast<OffScreenRenderWidgetHostView*>(
-        web_contents()->GetRenderWidgetHostView());
-  } else {
+  if (!GetOffScreenWebContentsView())
     return nullptr;
-  }
+  return static_cast<OffScreenRenderWidgetHostView*>(
+      web_contents()->GetRenderWidgetHostView());
 }
 
 }  // namespace electron::api

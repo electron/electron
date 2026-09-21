@@ -37,6 +37,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
+#include "shell/browser/osr/osr_drag_delegate.h"
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
@@ -134,6 +135,7 @@ class WebContents final : public ExclusiveAccessContext,
                           public content::WebContentsObserver,
                           public content::WebContentsDelegate,
                           private content::RenderWidgetHost::InputEventObserver,
+                          private OffScreenDragDelegate,
                           public content::JavaScriptDialogManager,
                           public InspectableWebContentsDelegate,
                           public InspectableWebContentsViewDelegate,
@@ -505,6 +507,14 @@ class WebContents final : public ExclusiveAccessContext,
   void OnInputEvent(const content::RenderWidgetHost& rfh,
                     const blink::WebInputEvent& event,
                     input::InputEventSource source) override;
+
+  // OffScreenDragDelegate:
+  void OnOffScreenDragStart(const gfx::ImageSkia& image,
+                            const gfx::Vector2d& image_offset,
+                            blink::DragOperationsMask allowed_ops) override;
+  void OnOffScreenDragUpdate(ui::mojom::DragOperation operation) override;
+  void OnOffScreenDragEnd(ui::mojom::DragOperation operation,
+                          bool cancelled) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
@@ -925,6 +935,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Use 1.0f for consistent behavior.
   float offscreen_device_scale_factor_ = 1.0f;
+
+  // Post 'offscreen-drag-end' instead of emitting it synchronously.
+  bool defer_offscreen_drag_end_ = false;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;

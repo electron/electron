@@ -855,6 +855,11 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   render_widget_host_->ForwardWheelEvent(event);
 }
 
+void OffScreenRenderWidgetHostView::SetCallback(
+    const OnPaintCallback& callback) {
+  callback_ = callback;
+}
+
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   painting_ = painting;
 
