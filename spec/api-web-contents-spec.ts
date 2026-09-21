@@ -13,7 +13,7 @@ import {
 
 import { assert, expect } from 'chai';
 
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
@@ -1823,6 +1823,109 @@ describe('webContents module', () => {
         globalY: 300,
         clickCount: 0
       });
+    });
+  });
+
+  describe('input-event event', () => {
+    afterEach(closeAllWindows);
+
+    it('is emitted to a listener added after the page loaded', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      const inputEvent = once(w.webContents, 'input-event') as Promise<[any, Electron.InputEvent]>;
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+      const [, input] = await inputEvent;
+      expect(input.type).to.equal('mouseMove');
+    });
+  });
+
+  // Native code does not call emit() for an event nobody listens to. These use
+  // 'input-event' because sendInputEvent() emits it synchronously.
+  describe('events without listeners', () => {
+    afterEach(closeAllWindows);
+
+    const loadWindow = async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      return w;
+    };
+
+    it('does not look up emit() a second time to call it', async () => {
+      const w = await loadWindow();
+      // Deciding whether to emit reads emit once; emitting reads it again. An
+      // accessor that hands back the real emit() counts both without changing
+      // what is emitted.
+      let lookups = 0;
+      const emit = w.webContents.emit;
+      Object.defineProperty(w.webContents, 'emit', {
+        configurable: true,
+        get: () => {
+          lookups++;
+          return emit;
+        }
+      });
+      const lookupsFor = (send: () => void) => {
+        lookups = 0;
+        send();
+        return lookups;
+      };
+      const send = () => w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+
+      const unobserved = lookupsFor(send);
+
+      let received = 0;
+      const listener = () => {
+        received++;
+      };
+      w.webContents.on('input-event', listener);
+      const observed = lookupsFor(send);
+      expect(received).to.equal(1);
+      expect(observed).to.be.greaterThan(unobserved);
+
+      w.webContents.off('input-event', listener);
+      expect(lookupsFor(send)).to.equal(unobserved);
+      expect(received).to.equal(1);
+    });
+
+    it('still reach an emit() replaced on the instance', async () => {
+      const w = await loadWindow();
+      const seen: string[] = [];
+      const emit = w.webContents.emit;
+      w.webContents.emit = function (this: Electron.WebContents, eventName: any, ...args: any[]) {
+        seen.push(eventName);
+        return emit.call(this, eventName, ...args);
+      } as any;
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+      expect(seen).to.include('input-event');
+    });
+
+    it('still reach an emit() replaced on EventEmitter.prototype', async () => {
+      const w = await loadWindow();
+      const seen: (string | symbol)[] = [];
+      const emit = EventEmitter.prototype.emit;
+      EventEmitter.prototype.emit = function (this: EventEmitter, eventName: string | symbol, ...args: any[]) {
+        if (this === w.webContents) seen.push(eventName);
+        return emit.call(this, eventName, ...args);
+      };
+      try {
+        w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+      } finally {
+        EventEmitter.prototype.emit = emit;
+      }
+      expect(seen).to.include('input-event');
+    });
+
+    it('are emitted again once the original emit() is back', async () => {
+      const w = await loadWindow();
+      const emit = w.webContents.emit;
+      w.webContents.emit = function (this: Electron.WebContents, eventName: any, ...args: any[]) {
+        return emit.call(this, eventName, ...args);
+      } as any;
+      delete (w.webContents as any).emit;
+
+      const inputEvent = once(w.webContents, 'input-event');
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+      await inputEvent;
     });
   });
 
