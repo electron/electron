@@ -22,7 +22,12 @@
 //
 // Failed collections are retried (up to --attempts, default 5) by wiping the
 // profraw dir and relaunching the app from scratch, so a published profile
-// only ever contains counters from one fully-successful run.
+// only ever contains counters from one complete run. A renderer that dies
+// mid-workload is recovered inside the app instead (the window is recreated
+// and the workload retried - see benchmark-app/main.js); a run that gave up
+// on a workload after those retries is still accepted, since only the dead
+// renderer's counters are lost and relaunching would most likely hit the same
+// death again.
 //
 // The flow mirrors Chromium's tools/pgo/generate_profile.py:
 //   1. Serve the benchmark workloads locally (Speedometer 3, JetStream 2,
@@ -371,10 +376,17 @@ async function main() {
   // are on disk (and Darwin's %c continuous-mode counters accumulate for the
   // whole app lifetime), so failures are retried by wiping the profraw dir
   // and relaunching the app from scratch: a published profile only ever
-  // contains counters from one fully-successful run. Non-final attempts
-  // abort on the first workload failure (PGO_ABORT_ON_FAILURE) since their
-  // output is discarded anyway; the final attempt runs to completion so a
-  // persistent failure still yields a maximal partial profile.
+  // contains counters from one complete run. Non-final attempts abort on the
+  // first workload failure (PGO_ABORT_ON_FAILURE) since their output is
+  // discarded anyway; the final attempt runs to completion so a persistent
+  // failure still yields a maximal partial profile.
+  //
+  // The exception is a workload whose renderer died: the app recovers that in
+  // place (fresh window, workload retried) and, if the renderer keeps dying,
+  // records the workload with `recovered: false` and carries on. Such a run
+  // is accepted rather than relaunched - the loss is bounded to that one
+  // renderer's counters, every other process shut down cleanly, and a
+  // relaunch would most likely die the same way and burn the retry budget.
   const maxAttempts = parseInt(args.attempts || '5', 10);
   // Attempts can be slow when a workload burns its own timeout before
   // failing (jetstream2 alone allows 45 minutes), so the attempt count alone
@@ -425,24 +437,55 @@ async function main() {
 
     // Electron's clean-shutdown path (app.quit()) always exits 0, so workload
     // failures are reported through the results file rather than the exit code.
+    const appExitCode = exitCode;
     failedWorkloads = [];
+    let recoveredWorkloads = [];
+    let resultsPresent = false;
     if (fs.existsSync(resultsFile)) {
+      resultsPresent = true;
       const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
       log(`workload results:\n${JSON.stringify(results, null, 2)}`);
       failedWorkloads = results.filter((r) => !r.ok);
+      recoveredWorkloads = results.filter((r) => r.ok && r.recovered);
     } else {
       log('WARNING: no results file was written - the app may have crashed');
       failedWorkloads = [{ name: 'all', error: 'results file missing' }];
     }
+    const profrawCount = fs.readdirSync(profrawDir).filter((f) => f.endsWith('.profraw')).length;
+    if (recoveredWorkloads.length > 0) {
+      log(`recovered from renderer death in: ${recoveredWorkloads.map((w) => w.name).join(', ')}`);
+    }
     if (exitCode === 0 && failedWorkloads.length > 0) {
       exitCode = 1;
     }
-    if (exitCode === 0 || finalAttempt) break;
+    // Relaunch when the run itself was lost (the app died, or hung until it
+    // was killed, or never wrote a results file) or a workload failed for a
+    // reason the app does not recover in place. Workloads given up on after
+    // in-app renderer recovery (recovered: false) do not trigger a relaunch -
+    // see above.
+    const runLost = appExitCode !== 0 || !resultsPresent;
+    const relaunchFor = failedWorkloads.filter((w) => w.recovered !== false);
+    // A clean run that wrote no profraw at all means the binary is not
+    // instrumented (or LLVM_PROFILE_FILE is not honoured); relaunching cannot
+    // fix that, so fail fast - the merge step below reports it.
+    if (!runLost && profrawCount === 0) {
+      log('no .profraw files written by a run that exited cleanly - not retrying');
+      break;
+    }
+    if (!runLost && relaunchFor.length === 0) {
+      if (failedWorkloads.length > 0) {
+        log(
+          `accepting attempt ${attempt} despite unrecovered renderer deaths in: ${failedWorkloads.map((w) => w.name).join(', ')}`
+        );
+      }
+      break;
+    }
+    if (finalAttempt) break;
     if (Date.now() - collectionStart > retryDeadlineMs) {
       log(`retry deadline reached after attempt ${attempt} - keeping this attempt's partial output`);
       break;
     }
-    const reason = failedWorkloads.map((w) => w.name).join(', ') || `exit code ${exitCode}`;
+    const reason = relaunchFor.map((w) => w.name).join(', ') || `exit code ${appExitCode}`;
     log(`attempt ${attempt} failed (${reason}) - wiping profiles and retrying`);
   }
   server.close();

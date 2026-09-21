@@ -202,6 +202,24 @@ function describeRendererGone(details) {
   return `renderer process gone (reason: ${details.reason}, exit code: ${details.exitCode})`;
 }
 
+// Failures caused by the renderer dying carry the render-process-gone details
+// so the orchestrator can tell a recoverable crash (destroy the window,
+// create a fresh one, retry the workload - see runWithRendererRecovery) from
+// a genuine workload failure. Every failure path in the window-driven
+// workloads goes through tagRendererDeath so a death that surfaced indirectly
+// (a failed navigation, a driver that never became startable) is classified
+// the same way as one caught directly.
+function rendererGoneError(details) {
+  const err = new Error(describeRendererGone(details));
+  err.rendererGone = details;
+  return err;
+}
+
+function tagRendererDeath(err, diag) {
+  if (diag && diag.rendererGone && !err.rendererGone) err.rendererGone = diag.rendererGone;
+  return err;
+}
+
 // ---------------------------------------------------------------------------
 // Failure diagnostics
 //
@@ -237,7 +255,7 @@ function attachDiagnostics(win) {
   win.webContents.on('render-process-gone', (_event, details) => {
     diag.rendererGone = details;
     log(`DIAGNOSTIC: renderer process gone: ${JSON.stringify(details)}`);
-    failRenderer(new Error(describeRendererGone(details)));
+    failRenderer(rendererGoneError(details));
   });
   win.webContents.on('unresponsive', () => {
     diag.unresponsive = true;
@@ -277,6 +295,9 @@ async function reportWorkloadFailure(win, workloadName, diag) {
 
   // Memory + DOM snapshot, best effort: a hung renderer may never respond,
   // so give it a strict deadline rather than hanging the collection further.
+  // A dead renderer cannot answer at all; skip the query so recovery is not
+  // delayed by the deadline.
+  if (diag.rendererGone) return;
   try {
     const state = await Promise.race([
       win.webContents.executeJavaScript(
@@ -324,13 +345,16 @@ async function runWorkload(win, workload, diag) {
   const throwIfRendererGone = async () => {
     if (!diag || !diag.rendererGone) return;
     await reportWorkloadFailure(win, workload.name, diag);
-    throw new Error(`workload ${workload.name} aborted: ${describeRendererGone(diag.rendererGone)}`);
+    throw tagRendererDeath(
+      new Error(`workload ${workload.name} aborted: ${describeRendererGone(diag.rendererGone)}`),
+      diag
+    );
   };
   try {
     await loadURLWithTimeout(win, workload.url);
   } catch (err) {
     if (diag) await reportWorkloadFailure(win, workload.name, diag);
-    throw err;
+    throw tagRendererDeath(err, diag);
   }
 
   // Install page-side error capture for failure diagnostics. Benchmark
@@ -395,7 +419,7 @@ async function runWorkload(win, workload, diag) {
     }
     if (!started) {
       if (diag) await reportWorkloadFailure(win, workload.name, diag);
-      throw new Error(`workload ${workload.name} never became startable`);
+      throw tagRendererDeath(new Error(`workload ${workload.name} never became startable`), diag);
     }
   }
 
@@ -432,14 +456,14 @@ async function runWorkload(win, workload, diag) {
       }
       if (!succeeded) {
         if (diag) await reportWorkloadFailure(win, workload.name, diag);
-        throw new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`);
+        throw tagRendererDeath(new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`), diag);
       }
       log(`finished workload: ${workload.name} in ${elapsed}s`);
       return { name: workload.name, ok: true, seconds: Number(elapsed) };
     }
   }
   if (diag) await reportWorkloadFailure(win, workload.name, diag);
-  throw new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`);
+  throw tagRendererDeath(new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`), diag);
 }
 
 // ---------------------------------------------------------------------------
@@ -734,7 +758,7 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     );
   } catch (err) {
     await reportWorkloadFailure(win, 'ipc-contextbridge', diag);
-    throw err;
+    throw tagRendererDeath(err, diag);
   } finally {
     win.destroy();
     ipcMain.removeHandler('pgo-ping');
@@ -831,7 +855,7 @@ async function runNetworkWorkload(win, diag, durationMs, maxRequests) {
     );
   } catch (err) {
     await reportWorkloadFailure(win, 'network', diag);
-    throw err;
+    throw tagRendererDeath(err, diag);
   }
 
   // Main process: Node-side HTTPS/HTTP requests.
@@ -891,26 +915,77 @@ const NETWORK_MAX_REQUESTS = 8000; // per side (renderer fetches / node requests
 const ASYNC_CHURN_MAX_OPS = 250000;
 const NETWORK_TIMEOUT_MS = 90 * 1000;
 
-app.whenReady().then(async () => {
+// Renderer-death recovery. A renderer dying mid-workload (OOM on the 32-bit
+// Windows collector, a crash in the instrumented build) used to cost the whole
+// attempt: collect-profile.js wiped the profraw dir and relaunched from
+// scratch. But a dead renderer only loses its own counters - with exit-time
+// profile writing (%m on Linux/Windows) the crashed process never runs its
+// writer; under %c continuous mode (Darwin) even those survive in its
+// mmap-backed file. Every other process (browser, GPU, network service,
+// utility, earlier renderers) is unaffected, and the counters the partial run
+// did accumulate are real workload mass, not junk. So the workload is
+// recovered in place: the dead window is destroyed, a fresh one created, and
+// the workload retried up to PGO_RENDERER_RETRIES more times before it is
+// recorded as failed and the run moves on - so every other process still
+// shuts down cleanly and writes its counters.
+const RENDERER_RETRIES = Math.max(0, parseInt(process.env.PGO_RENDERER_RETRIES ?? '2', 10) || 0);
+const RENDERER_RETRY_DELAY_MS = 5 * 1000;
+
+// Benchmark BrowserWindows use default webPreferences so the renderer
+// configuration matches what apps ship.
+function createBenchmarkWindow() {
   const win = new BrowserWindow({
     width: 1200,
     height: 900,
     useContentSize: true,
     show: true
   });
+  return { win, diag: attachDiagnostics(win) };
+}
+
+// Runs one workload, retrying it when its renderer dies. `shared` holds the
+// window the browser benchmarks and the network workload run in; when that
+// window's renderer is the one that died it is replaced on every death - also
+// after the last retry, so the remaining workloads get a live renderer. (The
+// IPC workload owns a window of its own and recreates it per run.) Failures
+// that are not renderer deaths propagate untouched.
+async function runWithRendererRecovery(name, shared, phase) {
+  for (let deaths = 0; ; ) {
+    try {
+      const result = await phase();
+      if (deaths > 0) Object.assign(result, { recovered: true, rendererDeaths: deaths });
+      return result;
+    } catch (err) {
+      if (!err.rendererGone) throw err;
+      deaths++;
+      const reason = `reason: ${err.rendererGone.reason}, exit code: ${err.rendererGone.exitCode}`;
+      if (shared.diag.rendererGone) {
+        shared.win.destroy();
+        Object.assign(shared, createBenchmarkWindow());
+      }
+      if (deaths > RENDERER_RETRIES) {
+        log(`renderer died during ${name} (${reason}) ${deaths} times, giving up on ${name}, continuing`);
+        throw Object.assign(err, { rendererDeaths: deaths });
+      }
+      log(`renderer died during ${name} (${reason}), recreating window and retrying (${deaths}/${RENDERER_RETRIES})`);
+      await sleep(RENDERER_RETRY_DELAY_MS);
+    }
+  }
+}
+
+app.whenReady().then(async () => {
+  const shared = createBenchmarkWindow();
 
   const results = [];
   let exitCode = 0;
 
-  const diag = attachDiagnostics(win);
-
   let phases = [
-    ...WORKLOADS.map((workload) => () => runWorkload(win, workload, diag)),
+    ...WORKLOADS.map((workload) => () => runWorkload(shared.win, workload, shared.diag)),
     () => runMainProcessWorkload(MAIN_PROCESS_TIMEOUT_MS, MAIN_PROCESS_MAX_ITERATIONS),
     () => runAsyncChurnWorkload(ASYNC_CHURN_MAX_OPS),
     () => runPackagedAppWorkload(),
     () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
-    () => runNetworkWorkload(win, diag, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
+    () => runNetworkWorkload(shared.win, shared.diag, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
   let phaseNames = [
     ...WORKLOADS.map((w) => w.name),
@@ -928,24 +1003,29 @@ app.whenReady().then(async () => {
     log(`workload filter active: ${phaseNames.join(', ')}`);
   }
 
-  // No in-app retry: a failed attempt's counters cannot be excised from
-  // already-running processes (continuous-mode counters in particular are
-  // app-lifetime cumulative), so retrying in-process would leave the failed
-  // attempt's mass in the profile. Failures are instead retried by
-  // collect-profile.js, which wipes the profraw dir and relaunches the whole
-  // app. When the orchestrator signals a relaunch is coming
-  // (PGO_ABORT_ON_FAILURE), bail on the first failure - finishing the
-  // remaining workloads is wasted work. On the final attempt the variable is
-  // unset and the run continues past failures so the partial profile keeps
-  // as much coverage as possible.
+  // Only renderer deaths are retried in-app (runWithRendererRecovery). Any
+  // other failure's counters cannot be excised from already-running processes
+  // (continuous-mode counters in particular are app-lifetime cumulative), so
+  // retrying those in-process would leave a hung or broken attempt's mass in
+  // the profile; they are instead retried by collect-profile.js, which wipes
+  // the profraw dir and relaunches the whole app. When the orchestrator
+  // signals a relaunch is coming (PGO_ABORT_ON_FAILURE), bail on the first
+  // such failure - finishing the remaining workloads is wasted work. A
+  // workload given up on after renderer recovery is accepted by the
+  // orchestrator (relaunching would most likely hit the same death), so it
+  // never cuts the run short. On the final attempt the variable is unset and
+  // the run continues past every failure so the partial profile keeps as much
+  // coverage as possible.
   for (let i = 0; i < phases.length; i++) {
     try {
-      results.push(await phases[i]());
+      results.push(await runWithRendererRecovery(phaseNames[i], shared, phases[i]));
     } catch (err) {
       log(`ERROR: ${err.message}`);
-      results.push({ name: phaseNames[i], ok: false, error: err.message });
+      const result = { name: phaseNames[i], ok: false, error: err.message };
+      if (err.rendererGone) Object.assign(result, { recovered: false, rendererDeaths: err.rendererDeaths });
+      results.push(result);
       exitCode = 1;
-      if (process.env.PGO_ABORT_ON_FAILURE) {
+      if (process.env.PGO_ABORT_ON_FAILURE && !err.rendererGone) {
         log('aborting remaining workloads; the orchestrator will wipe profiles and relaunch');
         break;
       }
@@ -964,5 +1044,6 @@ app.whenReady().then(async () => {
   app.quit();
 });
 
-// The bridge workload closes its own window mid-run; never let that quit the app.
+// The bridge workload closes its own window mid-run and renderer recovery
+// replaces the shared one; never let that quit the app.
 app.on('window-all-closed', () => {});
