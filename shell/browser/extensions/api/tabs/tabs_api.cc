@@ -283,12 +283,9 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();
   auto all_contents = electron::api::WebContents::GetWebContentsList();
-  all_contents.remove_if([&bc](electron::api::WebContents* wc) {
-    return (bc != wc->web_contents()->GetBrowserContext());
-  });
-
-  for (auto* contents : all_contents) {
-    if (!contents || !contents->web_contents())
+  for (const auto& contents : all_contents) {
+    if (!contents || !contents->web_contents() ||
+        bc != contents->web_contents()->GetBrowserContext())
       continue;
 
     auto* wc = contents->web_contents();

@@ -576,8 +576,7 @@ void MenuItem::ClickThunk(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
   BaseWindow* window = BaseWindow::FromValue(isolate, info[1]);
   WebContents* web_contents = nullptr;
-  if (gin_helper::IsValidWrappable(info[2], &WebContents::kWrapperInfo))
-    gin::ConvertFromV8(isolate, info[2], &web_contents);
+  gin::ConvertFromV8(isolate, info[2], &web_contents);
   if (!item->RunBuiltInAction(window, web_contents))
     item->CallClick(isolate, info[1], info[0]);
 }

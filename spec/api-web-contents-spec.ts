@@ -1332,22 +1332,15 @@ describe('webContents module', () => {
     it('Inspect activates detached devtools window', async () => {
       const window = new BrowserWindow({ show: true });
       await window.loadURL('about:blank');
-      const webContentsBeforeOpenedDevtools = webContents.getAllWebContents();
+      window.focus();
+      await waitUntil(() => window.isFocused());
 
       const windowWasBlurred = once(window, 'blur');
+      const devToolsOpened = once(window.webContents, 'devtools-opened');
       window.webContents.openDevTools({ mode: 'detach' });
-      await windowWasBlurred;
+      await Promise.all([windowWasBlurred, devToolsOpened]);
 
-      let devToolsWebContents = null;
-      for (const newWebContents of webContents.getAllWebContents()) {
-        const oldWebContents = webContentsBeforeOpenedDevtools.find((oldWebContents) => {
-          return newWebContents.id === oldWebContents.id;
-        });
-        if (oldWebContents !== null) {
-          devToolsWebContents = newWebContents;
-          break;
-        }
-      }
+      const devToolsWebContents = window.webContents.devToolsWebContents;
       assert(devToolsWebContents !== null);
 
       const windowFocused = once(window, 'focus');
@@ -4779,6 +4772,17 @@ describe('webContents module', () => {
       for (const data of results) {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
+    });
+
+    it('rejects queued jobs when the WebContents is destroyed', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      const first = w.webContents.printToPDF({});
+      const second = w.webContents.printToPDF({});
+      w.webContents.destroy();
+
+      first.catch(() => {});
+      await expect(second).to.eventually.be.rejectedWith('Object has been destroyed');
     });
 
     it('does not crash when called multiple times in sequence', async () => {
