@@ -4483,6 +4483,10 @@ describe('BrowserWindow module', () => {
             case '/cross-site':
               response.end(`<html><body><h1>${request.url}</h1></body></html>`);
               break;
+            case '/redirect-cross-site':
+              response.writeHead(302, { Location: '/cross-site' });
+              response.end();
+              break;
             default:
               throw new Error(`unsupported endpoint: ${request.url}`);
           }
@@ -4506,6 +4510,51 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test).to.equal('preload');
+      });
+
+      it('does not run the sandbox bundle on an initial empty document without startup data', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: path.join(fixtures, 'module', 'preload-location.js'),
+            contextIsolation: false
+          }
+        });
+        const consoleMessages: string[] = [];
+        w.webContents.on('console-message', (event) => {
+          consoleMessages.push(event.message);
+        });
+
+        // Cancel the first navigation before it commits, so the frame stays on
+        // its initial empty document, which never receives startup data.
+        w.webContents.once('will-redirect', (event) => {
+          event.preventDefault();
+        });
+        await expect(w.loadURL(`${serverUrl}/redirect-cross-site`)).to.eventually.be.rejected();
+
+        // Force a main-world script context onto that document the way
+        // DevTools does. Console calls made while the context is set up are
+        // reported on the protocol ahead of the evaluate reply.
+        w.webContents.debugger.attach('1.3');
+        w.webContents.debugger.on('message', (_event, method, params) => {
+          if (method === 'Runtime.consoleAPICalled') {
+            consoleMessages.push(params.args.map((arg: any) => arg.value ?? arg.description).join(' '));
+          }
+        });
+        await w.webContents.debugger.sendCommand('Runtime.enable');
+        const { result } = await w.webContents.debugger.sendCommand('Runtime.evaluate', {
+          expression: 'location.href'
+        });
+        expect(result.value).to.equal('about:blank');
+        w.webContents.debugger.detach();
+        expect(consoleMessages.filter((message) => /failed to run|startupData/.test(message))).to.deep.equal([]);
+
+        // The document that commits afterwards gets the bundle and its preload.
+        const preloadLocation = once(ipcMain, 'preload-location');
+        await w.loadURL(`${serverUrl}/cross-site`);
+        const [, href] = await preloadLocation;
+        expect(href).to.equal(`${serverUrl}/cross-site`);
       });
 
       it('exposes ipcRenderer to preload script (path has special chars)', async () => {
