@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('process._linkedBinding', () => {
   describe('in the main process', () => {

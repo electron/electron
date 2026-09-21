@@ -4,11 +4,14 @@ import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vm from 'node:vm';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 // electron_xcache ships in xcache.zip next to dist.zip; CI unzips it into the
 // same directory (on macOS that is the directory holding Electron.app).

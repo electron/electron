@@ -101,7 +101,7 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
+  const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
   // Register cleanup before awaiting the port so a stalled startup that trips
   // mocha's timeout doesn't leak the child into the in-job retry.

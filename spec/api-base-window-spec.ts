@@ -5,9 +5,9 @@ import { expect } from 'chai';
 
 import { type EventEmitter, once } from 'node:events';
 
-import { isScaleFactorRounding } from './lib/screen-helpers';
-import { ifdescribe, isWayland } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { isScaleFactorRounding } from './lib/screen-helpers.ts';
+import { ifdescribe, isWayland } from './lib/spec-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 const expectBoundsEqual = (actual: any, expected: any) => {
   if (!isScaleFactorRounding()) {

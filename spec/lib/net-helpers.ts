@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import * as dns from 'node:dns';
 import * as http from 'node:http';
 
-import { defer, listen } from './spec-helpers';
+import { defer, listen } from './spec-helpers.ts';
 
 import type { Socket } from 'node:net';
 

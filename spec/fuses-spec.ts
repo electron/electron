@@ -6,7 +6,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 ifdescribe(isTestingBindingAvailable())('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {
@@ -40,7 +40,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
           return (error as Error).message;
         }
       },
-      path.join(__dirname, 'fixtures', 'module', 'noop.js')
+      path.join(import.meta.dirname, 'fixtures', 'module', 'noop.js')
     );
     expect(message).to.include('runAsNode fuse is disabled');
   });
@@ -54,7 +54,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
           await bw.loadFile(fixture);
           return await bw.webContents.executeJavaScript("ajax('file:///etc/passwd')");
         },
-        path.join(__dirname, 'fixtures', 'pages', 'fetch.html')
+        path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html')
       )
     ).to.eventually.be.rejectedWith('Failed to fetch');
   });

@@ -21,12 +21,12 @@ import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
-import { expectWarningMessages } from './lib/warning-helpers';
-import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
+import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { expectWarningMessages } from './lib/warning-helpers.ts';
+import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
-const fixtures = path.join(__dirname, 'fixtures');
+const fixtures = path.join(import.meta.dirname, 'fixtures');
 
 describe('chrome extensions', () => {
   const emptyPage = '<html><body><h1>EMPTY PAGE</h1></body></html>';
@@ -716,7 +716,7 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome extension content scripts', () => {
-    const fixtures = path.resolve(__dirname, 'fixtures');
+    const fixtures = path.resolve(import.meta.dirname, 'fixtures');
     const extensionPath = path.resolve(fixtures, 'extensions');
 
     const addExtension = (name: string) =>

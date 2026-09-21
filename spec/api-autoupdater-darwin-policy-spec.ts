@@ -8,8 +8,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { type Mutation, setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { type Mutation, setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 // When Squirrel.Mac refuses or alters an update: version rules, a running
 // app, tampered payloads, JSON update mode and direct contents writes. The
@@ -240,7 +240,7 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchAppSandboxed(
               appPath,
-              path.resolve(__dirname, 'fixtures/auto-update/sandbox/block-ditto.sb'),
+              path.resolve(import.meta.dirname, 'fixtures/auto-update/sandbox/block-ditto.sb'),
               [`http://localhost:${ctx.port}/update-check`]
             );
             logOnError(launchResult, () => {

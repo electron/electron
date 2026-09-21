@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { parseCommaSeparatedKeyValue, parseFeatures } from '../lib/browser/parse-features-string';
+import { parseCommaSeparatedKeyValue, parseFeatures } from '../lib/browser/parse-features-string.ts';
 
 describe('feature-string parsing', () => {
   it('is indifferent to whitespace around keys and values', () => {

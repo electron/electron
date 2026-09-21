@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 
-import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers';
+import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers.ts';
 import {
   getElectronExecutable,
   getMainJsFixturePath,
@@ -13,8 +13,8 @@ import {
   spawn,
   uninstallMsixPackage,
   unregisterExecutableWithIdentity
-} from './lib/msix-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+} from './lib/msix-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 import type * as http from 'node:http';
 import type { AddressInfo } from 'node:net';

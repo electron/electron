@@ -9,7 +9,7 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout } from 'node:timers/promises';
 import * as vm from 'node:vm';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 // FIXME: The tests are skipped on linux arm64
 ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
@@ -249,7 +249,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         included_categories: ['node.fs.sync']
       });
 
-      fs.readFileSync(__filename, 'utf8');
+      fs.readFileSync(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');
@@ -267,7 +267,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       });
 
       vm.runInNewContext('1 + 1');
-      await fs.promises.readFile(__filename, 'utf8');
+      await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');
@@ -288,8 +288,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         included_categories: ['node.fs.*']
       });
 
-      fs.readFileSync(__filename, 'utf8');
-      await fs.promises.readFile(__filename, 'utf8');
+      fs.readFileSync(import.meta.filename, 'utf8');
+      await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');

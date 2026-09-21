@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers.ts';
 
 const partition = 'service-workers-spec';
 
@@ -34,7 +34,7 @@ describe('session.serviceWorkers', () => {
       if (file.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
       }
-      res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
+      res.end(fs.readFileSync(path.resolve(import.meta.dirname, 'fixtures', 'api', 'service-workers', file)));
     });
     const { port } = await listen(server);
     baseUrl = `http://localhost:${port}/${uuid}`;

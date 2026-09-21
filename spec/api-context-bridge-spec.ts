@@ -10,10 +10,10 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'context-bridge');
 
 describe('contextBridge', () => {
   let w: BrowserWindow;
